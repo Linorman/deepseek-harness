@@ -59,7 +59,7 @@ it.each(['json', 'sqlite'] as const)('keeps genuine three-actor task reviews usa
     '@clocky/clocky-client-ui-simulation': { pageSize: 1, controlRefreshMs: 50 },
   } }
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(patches))
-  const scaffold = await launchWebScaffold({ extraOverlayPath: overlay, tempRoot: directory, productPrincipalId: 'execution-matrix-owner',
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: overlay, tempRoot: directory, productPrincipalId: 'execution-matrix-owner',
     agentPresets: { default: 'simulation', roots: [{ path: join(process.cwd(), 'examples/simulation-company/presets'), trust: 'system' }] } })
   const { context, setNativeZoom } = await createNativeZoomContext(output, { viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const page = await context.newPage(), errors = watchConsole(page), probe = scaffold.ctx.simulationBrowserProbe
@@ -80,7 +80,7 @@ it.each(['json', 'sqlite'] as const)('keeps genuine three-actor task reviews usa
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: zh.title, exact: true }).click()
     const workspace = page.locator('[data-simulation-workspace-page]')
-    await workspace.getByRole('button', { name: zh.createTitle, exact: true }).focus(); await page.keyboard.press('Enter')
+    await workspace.locator('header').getByRole('button', { name: zh.createTitle, exact: true }).focus(); await page.keyboard.press('Enter')
     const creation = page.getByRole('dialog', { name: zh.createTitle, exact: true })
     await creation.getByRole('radio').focus(); await page.keyboard.press('Space')
     for (const [label, text] of [[zh.name, '多角色任务验证 · '.repeat(12)], [zh.buyerName, '发布者'],
@@ -145,12 +145,14 @@ it.each(['json', 'sqlite'] as const)('keeps genuine three-actor task reviews usa
       return await region.getByRole('button', { name: zh.next, exact: true }).count()
     }).toBe(1)
     const firstRows = await region.locator('li').innerText()
+    const firstTaskId = await region.locator('li code').first().innerText()
     await region.getByRole('button', { name: zh.next, exact: true }).click()
     await region.getByRole('alert').waitFor(); expect(await region.locator('li').innerText()).toBe(firstRows)
     await teamEvidence(page, region, output, 'pagination-failure', { locale: 'zh', theme: 'light', data: 'retained first review page',
       assertion: 'failed continuation is visible and keeps original rows; no execution or repeated approval' })
     await region.getByRole('button', { name: zh['reviews.refresh'], exact: true }).click()
     await region.getByRole('button', { name: zh.next, exact: true }).click()
+    await expect.poll(() => region.locator('li code').first().innerText()).not.toBe(firstTaskId)
     await region.getByRole('button', { name: zh['reviews.open'], exact: true }).first().click()
     review = page.getByRole('dialog', { name: zh['reviews.open'], exact: true })
     await review.getByLabel(zh['reviews.reason'], { exact: true }).fill('Approve supplier response')
@@ -186,7 +188,7 @@ it.each(['json', 'sqlite'] as const)('retains exact public cancellation after ge
     if (row.name === './model.ts') row.name = join(process.cwd(), 'examples/headless-agent/tests/fixtures/simulation/simulation-administration/model.ts')
   }
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(patches))
-  const scaffold = await launchWebScaffold({ extraOverlayPath: overlay, tempRoot: directory, productPrincipalId: 'cancel-matrix-owner',
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: overlay, tempRoot: directory, productPrincipalId: 'cancel-matrix-owner',
     agentPresets: { default: 'simulation', roots: [{ path: join(process.cwd(), 'examples/simulation-company/presets'), trust: 'system' }] } })
   const { context, setNativeZoom } = await createNativeZoomContext(output, { viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const page = await context.newPage(), errors = watchConsole(page), probe = scaffold.ctx.simulationBrowserProbe
@@ -206,7 +208,7 @@ it.each(['json', 'sqlite'] as const)('retains exact public cancellation after ge
     await scaffold.authenticateBrowserPage(page); await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '仿真', exact: true }).click()
     const workspace = page.locator('[data-simulation-workspace-page]')
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     const creation = page.getByRole('dialog', { name: '新建仿真', exact: true })
     await creation.getByRole('radio').check()
     for (const [label, value] of [['运行名称', '原报告保留与取消'], ['采购方名称', '发布者'], ['供应方名称', '供应者'], ['初始库存', '2']]) {

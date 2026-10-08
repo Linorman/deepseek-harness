@@ -16,7 +16,7 @@ Log summaries occupy the first UTF-8 line of the same atomically replaced journa
 - A missing file opens as an empty unit and materializes on the first write. A foreign or unparsable file rejects with `malformed-medium`; a stored version differing from the descriptor rejects with `version-mismatch` (no migration, pre-release stance).
 - Write ordering across calls belongs to the caller (the domain layer's write chain); each single call is atomic and durable once resolved.
 - Log streams live in `logs/<base64url-name>.json`. An expected-tail append rewrites the complete stream document atomically, so an accepted batch is visible together; checkpoints cannot move backward or exceed the tail. In-memory pages index the contiguous retained sequence range directly.
-- The log facet takes one root-wide owner record before any log operation. A second local Hub fails with `writer-locked`; a dead same-host owner is quarantined before recovery, while a different-host owner fails closed.
+- The log facet takes one root-wide owner record before any log operation. A second local Hub fails with `writer-locked`; a dead same-host owner is quarantined before recovery, while a different-host owner fails closed. The acquisition descriptor closes after the record is synchronized; the record remains until the backend drains its streams and releases ownership.
 
 ## Config
 

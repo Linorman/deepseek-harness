@@ -4,6 +4,10 @@ English | [中文](README.zh.md)
 
 The OpenTelemetry backend for [the telemetry seam](../session-telemetry/) — an optional deployment plugin. Its `mode` decides whether the seam follows session events live, replays the canonical log only at recorded feedback, or keeps telemetry local. Uploading modes compose the OTel JS SDK as-is (`LoggerProvider` → `BatchLogRecordProcessor` → OTLP/HTTP log exporter) and map each handed-over record onto `logger.emit()`, under two instrumentation scopes: ledger records on `@clocky/clocky-session-sessionTelemetry-otel`, operational records on `@clocky/clocky-session-sessionTelemetry-otel/ops`. Resource identity contains only the configured service name and version, carried once per export batch rather than per record; this package creates no user identifier and chooses no collector endpoint.
 
+## Shared SDK pipeline
+
+The independent `./pipeline` subpath supplies `createOtelPipeline()` and `emitOtelRecord()` to this Session backend and the Team OTel backend. It imports no Session service or capture policy and mounts no plugin. Each consumer retains its sharing mode, redaction, severity mapping, instrumentation scope, flush, and bounded shutdown. Exporter and processor options pass through to the SDK unchanged. Installed consumers use the compiled subpath produced by the Host build.
+
 ## Config
 
 ```yaml

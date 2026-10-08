@@ -1,3 +1,6 @@
+import { taskCreateHumanProofInput as humanTaskCreateProofInput, taskRevisionHumanProofInput as humanTaskRevisionProofInput, taskReviewHumanProofInput as humanTaskReviewProofInput } from '@clocky/clocky-team'
+import { channelOpenHumanProofInput as humanChannelOpenProofInput, channelCloseHumanProofInput as humanChannelCloseProofInput } from '@clocky/clocky-team'
+import { resolveSessionContentOwner } from '@clocky/clocky-session'
 import { productAuthorizationScope } from './product-authorization-scope.ts'
 import { createSimulationProductApi } from './simulation-product-api.ts'
 import { teamIdentityResolveInputSchema, teamIdentityResolutionSchema } from './api/teams.schema.ts'
@@ -63,9 +66,7 @@ import {
   teamIdSchema,
 } from '@clocky/clocky-team'
 import type {
-  ChannelCloseInput,
   ChannelEnvelopePostInput,
-  ChannelOpenInput,
   ChannelSnapshot,
   ChannelId,
   EnvelopeId,
@@ -74,7 +75,6 @@ import type {
   ParticipantId,
   ParticipantInviteInput,
   ParticipantPhaseTransitionInput,
-  ParticipantSnapshot,
   JsonObject,
   TeamHumanActionId,
   TeamHumanActionKind,
@@ -91,11 +91,6 @@ import type {
   TeamGoalPhaseTransitionInput,
   TeamGoalUpdateInput,
   TeamResumeInput,
-  TeamTaskCancelInput,
-  TeamTaskCreateInput,
-  TeamTaskDeleteInput,
-  TeamTaskDetailsUpdateInput,
-  TeamTaskReviewResolveInput,
   TeamParticipantOwner,
 } from '@clocky/clocky-team'
 import type {} from '@clocky/clocky-team'
@@ -2341,6 +2336,57 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     }
   }
 
+  /** Reject unauthenticated writes before exposing Team and human-proof services to a route. */
+  function humanTeamMutationServices<T>(request: RpcRequest<unknown>, teamId?: TeamId):
+    | { readonly teams: Context['teams']; readonly humanActors: Context['teamHumanActors'] }
+    | { readonly refused: RpcResponse<T> } {
+    const refused = requireTeamMutationAuthentication<T>(request)
+    if (refused !== undefined) return { refused }
+    const service = teamServiceFor<T>(request)
+    if ('refused' in service) return service
+    const humanActors = ctx.get('teamHumanActors')
+    if (humanActors === undefined) return { refused: teamActorUnavailable(request, teamId) }
+    return { teams: service.teams, humanActors }
+  }
+
+  /** Admit one parsed human mutation under its exact actor proof before projecting the response. */
+  async function humanTeamMutation<Input, Value, Output>(
+    request: RpcRequest<{ readonly teamId: TeamId }>,
+    parse: () => Input,
+    proof: (input: Input) => TeamHumanActorProofInput,
+    mutate: (teams: Context['teams'], actor: import('@clocky/clocky-team').TeamHumanActorProof, input: Input) => Promise<Value>,
+    project: (value: Value) => Output,
+  ): Promise<RpcResponse<Output>> {
+    const admission = humanTeamMutationServices<Output>(request, request.payload.teamId)
+    if ('refused' in admission) return admission.refused
+    try {
+      const input = parse()
+      const call = currentAuthenticatedProductCall()
+      if (call === undefined || call.signal.aborted) {
+        return requireTeamMutationAuthentication<Output>(request) ?? teamActorUnavailable(request, request.payload.teamId)
+      }
+      const value = await admission.humanActors.withProof(call, proof(input), async actor => await mutate(admission.teams, actor, input))
+      return ok(request, project(value))
+    } catch (error: unknown) {
+      return teamFailure(request, error, request.payload.teamId)
+    }
+  }
+
+  /** Bind principal-owned inbox operations to the current authenticated product call. */
+  async function humanInboxOperation<T>(
+    request: RpcRequest<unknown>,
+    operate: (inbox: Context['teamHumanDelivery'], call: AuthenticatedProductCall) => Promise<T>,
+    teamId?: TeamId,
+  ): Promise<RpcResponse<T>> {
+    const call = currentAuthenticatedProductCall()
+    if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
+    const inbox = ctx.get('teamHumanDelivery')
+    try {
+      if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
+      return ok(request, await operate(inbox, call))
+    } catch (error: unknown) { return teamFailure(request, error, teamId) }
+  }
+
   /** Keep channel-to-Team ownership private until current principal membership permits the read. */
   async function humanChannelRead<T>(request: RpcRequest<{ readonly channelId: ChannelId }>,
     read: (teams: Context['teams'], owner: import('@clocky/clocky-team').ChannelOwnerSnapshot) => Promise<T>): Promise<RpcResponse<T>> {
@@ -2369,21 +2415,11 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
   /** Resolve a Session's immutable ancestry to the nearest explicit Team owner or standalone root. */
   async function sessionContentOwner(header: SessionHeader): Promise<SessionHeader> {
-    let current = header
-    const seen = new Set<SessionId>()
-    let persisted: Map<SessionId, SessionHeader> | undefined
-    while (current.teamId === undefined && current.participantId === undefined && current.parentSession !== undefined) {
-      if (seen.has(current.id)) throw new TeamError('Session ancestry is unavailable.', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
-      seen.add(current.id)
-      let parent = ctx.get('sessions')?.get(current.parentSession)?.header
-      if (parent === undefined) {
-        persisted ??= new Map((await ctx.get('sessionPersistence')?.list() ?? []).map(candidate => [candidate.id, candidate]))
-        parent = persisted.get(current.parentSession)
-      }
-      if (parent === undefined) throw new TeamError('Session ancestry is unavailable.', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
-      current = parent
-    }
-    return current
+    const owner = await resolveSessionContentOwner(header,
+      id => ctx.get('sessions')?.get(id)?.header,
+      async () => await ctx.get('sessionPersistence')?.list() ?? [])
+    if (owner === undefined) throw new TeamError('Session ancestry is unavailable.', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+    return owner
   }
 
   /** Authorize a Team Session or its durable descendants before IO and revalidate the member tuple afterward. */
@@ -2657,26 +2693,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     }
   }
 
-  /** Bind one complete actor-free channel-open request to an authenticated human proof. */
-  function humanChannelOpenProofInput(input: ChannelOpenInput): TeamHumanActorProofInput {
-    return {
-      teamId: input.teamId,
-      operation: 'channel-open',
-      fence: { kind: 'cursor', cursor: input.expectedCursor },
-      payload: jsonObjectSchema.parse(structuredClone(input)),
-    }
-  }
-
-  /** Bind one complete actor-free channel-close request to the channel's server-derived Team. */
-  function humanChannelCloseProofInput(teamId: TeamId, input: ChannelCloseInput): TeamHumanActorProofInput {
-    return {
-      teamId,
-      operation: 'close',
-      fence: { kind: 'cursor', cursor: input.expectedCursor },
-      payload: jsonObjectSchema.parse(structuredClone(input)),
-    }
-  }
-
   /** Bind one complete actor-free participant invitation to an authenticated human proof. */
   function humanParticipantInviteProofInput(input: ParticipantInviteInput): TeamHumanActorProofInput {
     return {
@@ -2739,41 +2755,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       operation: 'goal-mutate',
       fence: { kind: 'revision', revision: input.expectedRevision },
       payload: jsonObjectSchema.parse(structuredClone(input)),
-    }
-  }
-
-  /** Bind one complete actor-free task creation to an authenticated human proof. */
-  function humanTaskCreateProofInput(input: TeamTaskCreateInput): TeamHumanActorProofInput {
-    return {
-      teamId: input.teamId,
-      operation: 'task-mutate',
-      fence: { kind: 'cursor', cursor: input.expectedCursor },
-      payload: jsonObjectSchema.parse(structuredClone(input)),
-    }
-  }
-
-  /** Bind one complete actor-free task revision mutation to an authenticated human proof. */
-  function humanTaskRevisionProofInput(
-    input: TeamTaskDetailsUpdateInput | TeamTaskCancelInput | TeamTaskDeleteInput,
-  ): TeamHumanActorProofInput {
-    return {
-      teamId: input.teamId,
-      operation: 'task-mutate',
-      fence: { kind: 'revision', revision: input.expectedRevision },
-      payload: jsonObjectSchema.parse(structuredClone(input)),
-    }
-  }
-
-  /** Bind the externally selected Team together with one actor-free review decision to an authenticated human proof. */
-  function humanTaskReviewProofInput(
-    teamId: TeamId,
-    input: TeamTaskReviewResolveInput,
-  ): TeamHumanActorProofInput {
-    return {
-      teamId,
-      operation: 'task-mutate',
-      fence: { kind: 'revision', revision: input.expectedRevision },
-      payload: jsonObjectSchema.parse({ teamId, ...structuredClone(input) }),
     }
   }
 
@@ -4135,78 +4116,33 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async archive(request) {
-        const refused = requireTeamMutationAuthentication<TeamStateSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamStateSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = teamArchiveInputSchema.parse(request.payload)
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<TeamStateSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const state = await humanActors.withProof(
-            call,
-            humanTeamArchiveProofInput(input),
-            async actor => await service.teams.archiveTeam({ actor, ...input }),
-          )
-          return ok(request, redactTeamStateForHuman(state))
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => teamArchiveInputSchema.parse(request.payload),
+          input => humanTeamArchiveProofInput(input),
+          async (teams, actor, input) => await teams.archiveTeam({ actor, ...input }),
+          value => redactTeamStateForHuman(value),
+        )
       },
 
       async goalUpdate(request) {
-        const refused = requireTeamMutationAuthentication<TeamStateSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamStateSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = teamGoalUpdateInputSchema.parse(request.payload)
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<TeamStateSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const state = await humanActors.withProof(
-            call,
-            humanTeamGoalProofInput(input),
-            async actor => await service.teams.updateTeamGoal({ actor, ...input }),
-          )
-          return ok(request, redactTeamStateForHuman(state))
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => teamGoalUpdateInputSchema.parse(request.payload),
+          input => humanTeamGoalProofInput(input),
+          async (teams, actor, input) => await teams.updateTeamGoal({ actor, ...input }),
+          value => redactTeamStateForHuman(value),
+        )
       },
 
       async goalTransition(request) {
-        const refused = requireTeamMutationAuthentication<TeamStateSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamStateSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = teamGoalPhaseTransitionInputSchema.parse(request.payload)
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<TeamStateSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const state = await humanActors.withProof(
-            call,
-            humanTeamGoalProofInput(input),
-            async actor => await service.teams.transitionTeamGoalPhase({ actor, ...input }),
-          )
-          return ok(request, redactTeamStateForHuman(state))
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => teamGoalPhaseTransitionInputSchema.parse(request.payload),
+          input => humanTeamGoalProofInput(input),
+          async (teams, actor, input) => await teams.transitionTeamGoalPhase({ actor, ...input }),
+          value => redactTeamStateForHuman(value),
+        )
       },
 
       async quiescence(request) {
@@ -4214,43 +4150,23 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async inboxRespond(request) {
-        const call = currentAuthenticatedProductCall()
-        if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
-        const inbox = ctx.get('teamHumanDelivery')
-        try {
-          if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
-          return ok(request, await inbox.respond(call, request.payload))
-        } catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+        return await humanInboxOperation(request,
+          async (inbox, call) => await inbox.respond(call, request.payload), request.payload.teamId)
       },
 
       async inboxRead(request) {
-        const call = currentAuthenticatedProductCall()
-        if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
-        const inbox = ctx.get('teamHumanDelivery')
-        try {
-          if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
-          return ok(request, await inbox.read(call, request.payload))
-        } catch (error: unknown) { return teamFailure(request, error) }
+        return await humanInboxOperation(request,
+          async (inbox, call) => await inbox.read(call, request.payload))
       },
 
       async inboxWatch(request) {
-        const call = currentAuthenticatedProductCall()
-        if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
-        const inbox = ctx.get('teamHumanDelivery')
-        try {
-          if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
-          return ok(request, await inbox.watch(call, request.payload))
-        } catch (error: unknown) { return teamFailure(request, error) }
+        return await humanInboxOperation(request,
+          async (inbox, call) => await inbox.watch(call, request.payload))
       },
 
       async inboxAcknowledge(request) {
-        const call = currentAuthenticatedProductCall()
-        if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
-        const inbox = ctx.get('teamHumanDelivery')
-        try {
-          if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
-          return ok(request, await inbox.acknowledge(call, request.payload))
-        } catch (error: unknown) { return teamFailure(request, error) }
+        return await humanInboxOperation(request,
+          async (inbox, call) => await inbox.acknowledge(call, request.payload))
       },
 
       async metrics(request) {
@@ -4353,78 +4269,33 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async memberInvite(request) {
-        const refused = requireTeamMutationAuthentication<ParticipantSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<ParticipantSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = participantInviteInputSchema.parse(request.payload)
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<ParticipantSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const participant = await humanActors.withProof(
-            call,
-            humanParticipantInviteProofInput(input),
-            async actor => await service.teams.inviteParticipant({ actor, ...input }),
-          )
-          return ok(request, participant)
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => participantInviteInputSchema.parse(request.payload),
+          input => humanParticipantInviteProofInput(input),
+          async (teams, actor, input) => await teams.inviteParticipant({ actor, ...input }),
+          value => value,
+        )
       },
 
       async memberActivate(request) {
-        const refused = requireTeamMutationAuthentication<ParticipantSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<ParticipantSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = participantPhaseTransitionInputSchema.parse({ ...request.payload, phase: 'active' })
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<ParticipantSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const participant = await humanActors.withProof(
-            call,
-            humanParticipantPhaseProofInput(input, 'activate'),
-            async actor => await service.teams.transitionParticipantPhase({ actor, ...input }),
-          )
-          return ok(request, participant)
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => participantPhaseTransitionInputSchema.parse({ ...request.payload, phase: 'active' }),
+          input => humanParticipantPhaseProofInput(input, 'activate'),
+          async (teams, actor, input) => await teams.transitionParticipantPhase({ actor, ...input }),
+          value => value,
+        )
       },
 
       async memberRemove(request) {
-        const refused = requireTeamMutationAuthentication<ParticipantSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<ParticipantSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = participantPhaseTransitionInputSchema.parse({ ...request.payload, phase: 'left' })
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<ParticipantSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const participant = await humanActors.withProof(
-            call,
-            humanParticipantPhaseProofInput(input, 'close'),
-            async actor => await service.teams.transitionParticipantPhase({ actor, ...input }),
-          )
-          return ok(request, participant)
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => participantPhaseTransitionInputSchema.parse({ ...request.payload, phase: 'left' }),
+          input => humanParticipantPhaseProofInput(input, 'close'),
+          async (teams, actor, input) => await teams.transitionParticipantPhase({ actor, ...input }),
+          value => value,
+        )
       },
 
       async memberInterrupt(request) {
@@ -4523,12 +4394,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async channelOpen(request) {
-        const refused = requireTeamMutationAuthentication<ChannelSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<ChannelSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        const admission = humanTeamMutationServices<ChannelSnapshot>(request, request.payload.teamId)
+        if ('refused' in admission) return admission.refused
         try {
           const input = channelOpenInputSchema.parse(request.payload)
           const { workflowPlanId, expectedPlanRevision, ...genericInput } = input
@@ -4540,10 +4407,10 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             return requireTeamMutationAuthentication<ChannelSnapshot>(request)
               ?? teamActorUnavailable(request, genericInput.teamId)
           }
-          const channel = await humanActors.withProof(
+          const channel = await admission.humanActors.withProof(
             call,
             humanChannelOpenProofInput(genericInput),
-            async actor => await service.teams.openChannel({ actor, authorityKind: 'human', ...genericInput }),
+            async actor => await admission.teams.openChannel({ actor, authorityKind: 'human', ...genericInput }),
           )
           return ok(request, channel)
         } catch (error: unknown) {
@@ -4552,12 +4419,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async channelInput(request) {
-        const refused = requireTeamMutationAuthentication<TeamEnvelope>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamEnvelope>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request)
+        const admission = humanTeamMutationServices<TeamEnvelope>(request)
+        if ('refused' in admission) return admission.refused
         try {
           const input = teamChannelInputRequestSchema.parse(request.payload)
           const call = currentAuthenticatedProductCall()
@@ -4569,8 +4432,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             if (input.content.length !== 1 || first?.type !== 'text') throw new TeamError('Basic channel input requires exactly one text block', 'TEAM_INVALID_ARGUMENT')
             const draft = await resolvePrincipalChannelText(ctx, call, own, { ...input, text: first.text })
             const command = channelPostCommandInput({ ...input, ...draft })
-            return ok(request, await humanActors.withProof(call, humanChannelPostProofInput(own.channel.manifest.teamId, command),
-              actor => service.teams.postChannelEnvelope({ actor, ...command })))
+            return ok(request, await admission.humanActors.withProof(call, humanChannelPostProofInput(own.channel.manifest.teamId, command),
+              actor => admission.teams.postChannelEnvelope({ actor, ...command })))
           }
           if (own.invitation.status !== 'acknowledged' || (input.idempotencyKey === undefined && own.channel.phase !== 'active')
             || ![3, 4].includes(adapter.version)) {
@@ -4582,8 +4445,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           const content = await durablePromptContent(ctx, parts)
           call.signal.throwIfAborted()
           const command = channelPostCommandInput({ ...input, kind: 'message', payload: jsonObjectSchema.parse({ content }) })
-          const envelope = await humanActors.withProof(call, humanChannelPostProofInput(own.channel.manifest.teamId, command),
-            async actor => await service.teams.postChannelEnvelope({ actor, ...command }))
+          const envelope = await admission.humanActors.withProof(call, humanChannelPostProofInput(own.channel.manifest.teamId, command),
+            async actor => await admission.teams.postChannelEnvelope({ actor, ...command }))
           return ok(request, envelope)
         } catch (error: unknown) { return teamFailure(request, error) }
       },
@@ -4620,24 +4483,20 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async channelPost(request) {
-        const refused = requireTeamMutationAuthentication<TeamEnvelope>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamEnvelope>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request)
+        const admission = humanTeamMutationServices<TeamEnvelope>(request)
+        if ('refused' in admission) return admission.refused
         const input = channelPostCommandInput(request.payload)
         try {
-          const channel = await service.teams.getChannel({ channelId: input.draft.channelId })
+          const channel = await admission.teams.getChannel({ channelId: input.draft.channelId })
           const call = currentAuthenticatedProductCall()
           if (call === undefined || call.signal.aborted) {
             const currentRefusal = requireTeamMutationAuthentication<TeamEnvelope>(request)
             return currentRefusal ?? teamActorUnavailable(request, channel.manifest.teamId)
           }
-          const envelope = await humanActors.withProof(
+          const envelope = await admission.humanActors.withProof(
             call,
             humanChannelPostProofInput(channel.manifest.teamId, input),
-            async actor => await service.teams.postChannelEnvelope({ actor, ...input }),
+            async actor => await admission.teams.postChannelEnvelope({ actor, ...input }),
           )
           return ok(request, envelope)
         } catch (error: unknown) {
@@ -4674,24 +4533,20 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async channelClose(request) {
-        const refused = requireTeamMutationAuthentication<ChannelSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<ChannelSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request)
+        const admission = humanTeamMutationServices<ChannelSnapshot>(request)
+        if ('refused' in admission) return admission.refused
         try {
           const input = channelCloseInputSchema.parse(request.payload)
-          const channel = await service.teams.getChannel({ channelId: input.channelId })
+          const channel = await admission.teams.getChannel({ channelId: input.channelId })
           const call = currentAuthenticatedProductCall()
           if (call === undefined || call.signal.aborted) {
             return requireTeamMutationAuthentication<ChannelSnapshot>(request)
               ?? teamActorUnavailable(request, channel.manifest.teamId)
           }
-          const closed = await humanActors.withProof(
+          const closed = await admission.humanActors.withProof(
             call,
             humanChannelCloseProofInput(channel.manifest.teamId, input),
-            async actor => await service.teams.closeChannel({ actor, ...input }),
+            async actor => await admission.teams.closeChannel({ actor, ...input }),
           )
           return ok(request, closed)
         } catch (error: unknown) {
@@ -4708,29 +4563,16 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async taskCreate(request) {
-        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamTaskSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const { idempotencyKey, ...payload } = request.payload
-          const input = teamTaskCreateInputSchema.parse({ ...payload, createCommand: { idempotencyKey } })
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const task = await humanActors.withProof(
-            call,
-            humanTaskCreateProofInput(input),
-            async actor => await service.teams.createTask({ actor, ...input }),
-          )
-          return ok(request, redactTaskForHuman(task))
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => {
+            const { idempotencyKey, ...payload } = request.payload
+            return teamTaskCreateInputSchema.parse({ ...payload, createCommand: { idempotencyKey } })
+          },
+          input => humanTaskCreateProofInput(input),
+          async (teams, actor, input) => await teams.createTask({ actor, ...input }),
+          value => redactTaskForHuman(value),
+        )
       },
 
       async taskGet(request) {
@@ -4774,108 +4616,48 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async taskUpdate(request) {
-        const refused = requireTeamMutationAuthentication<import('@clocky/clocky-team').TeamTaskDetailsUpdateResult>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<import('@clocky/clocky-team').TeamTaskDetailsUpdateResult>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = teamTaskDetailsUpdateInputSchema.parse(request.payload)
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<import('@clocky/clocky-team').TeamTaskDetailsUpdateResult>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const task = await humanActors.withProof(
-            call,
-            humanTaskRevisionProofInput(input),
-            async actor => await service.teams.updateTaskDetails({ actor, ...input }),
-          )
-          return ok(request, ({ ...task, task: redactTaskForHuman(task.task) }))
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => teamTaskDetailsUpdateInputSchema.parse(request.payload),
+          input => humanTaskRevisionProofInput(input),
+          async (teams, actor, input) => await teams.updateTaskDetails({ actor, ...input }),
+          value => ({ ...value, task: redactTaskForHuman(value.task) }),
+        )
       },
 
       async taskCancel(request) {
-        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamTaskSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = teamTaskCancelInputSchema.parse(request.payload)
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const task = await humanActors.withProof(
-            call,
-            humanTaskRevisionProofInput(input),
-            async actor => await service.teams.cancelTask({ actor, ...input }),
-          )
-          return ok(request, redactTaskForHuman(task))
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => teamTaskCancelInputSchema.parse(request.payload),
+          input => humanTaskRevisionProofInput(input),
+          async (teams, actor, input) => await teams.cancelTask({ actor, ...input }),
+          value => redactTaskForHuman(value),
+        )
       },
 
       async taskDelete(request) {
-        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamTaskSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = teamTaskDeleteInputSchema.parse(request.payload)
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
-              ?? teamActorUnavailable(request, input.teamId)
-          }
-          const task = await humanActors.withProof(
-            call,
-            humanTaskRevisionProofInput(input),
-            async actor => await service.teams.deleteTask({ actor, ...input }),
-          )
-          return ok(request, redactTaskForHuman(task))
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+        return await humanTeamMutation(
+          request,
+          () => teamTaskDeleteInputSchema.parse(request.payload),
+          input => humanTaskRevisionProofInput(input),
+          async (teams, actor, input) => await teams.deleteTask({ actor, ...input }),
+          value => redactTaskForHuman(value),
+        )
       },
 
       async taskReview(request) {
-        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
-        if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamTaskSnapshot>(request)
-        if ('refused' in service) return service.refused
-        const humanActors = ctx.get('teamHumanActors')
-        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
-        try {
-          const input = teamTaskReviewResolveInputSchema.parse({
+        return await humanTeamMutation(
+          request,
+          () => teamTaskReviewResolveInputSchema.parse({
             taskId: request.payload.taskId,
             expectedRevision: request.payload.expectedRevision,
             nextPhase: request.payload.decision === 'accepted' ? 'completed' : 'pending',
             reason: request.payload.reason,
-          })
-          const call = currentAuthenticatedProductCall()
-          if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
-              ?? teamActorUnavailable(request, request.payload.teamId)
-          }
-          const task = await humanActors.withProof(
-            call,
-            humanTaskReviewProofInput(request.payload.teamId, input),
-            async actor => await service.teams.resolveTaskReview({ actor, ...input }),
-          )
-          return ok(request, redactTaskForHuman(task))
-        } catch (error: unknown) {
-          return teamFailure(request, error, request.payload.teamId)
-        }
+          }),
+          input => humanTaskReviewProofInput(request.payload.teamId, input),
+          async (teams, actor, input) => await teams.resolveTaskReview({ actor, ...input }),
+          value => redactTaskForHuman(value),
+        )
       },
 
       async taskWatch(request, signal) {
@@ -5255,53 +5037,51 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       // Skill lookup never creates or resumes an agent. A live Agent supplies
       // its current execution root; a cold Session uses its recorded cwd.
       async list(request) {
-        const { sessionId } = request.payload
-        const session = ctx.sessions.get(sessionId)
-        if (session === undefined) {
-          return err(request, {
-            code: 'session-not-found',
-            message: `session "${sessionId}" not found (not attached)`,
-            details: { sessionId },
-          })
-        }
-        // The host registry is layered per scope and serves every session. A
-        // composition may still realm-mount its own registry instead; that
-        // instance is invisible to host contexts, so address it through the
-        // live agent (`agents.get` keeps the no-side-effect stance above).
-        const live = ctx.agents.get(sessionId)
-        const presets = ctx.get('agentPresets')
-        const scoped = live === undefined ? undefined : presets?.serviceFor(live, 'skills')
-        // Same stance as the commands domain: a missing service means no
-        // composition mounts clocky-skill, not an empty catalog. `ctx.get` also
-        // keeps this handler independent of the gateway plugin's inject list
-        // (an undeclared `ctx.skills` property read fails the reflect proxy).
-        const skillRegistry = scoped ?? ctx.get('skills')
-        if (skillRegistry === undefined) {
-          return err(request, { code: 'internal', message: 'skill registry is absent: neither this session\'s agent preset nor the host composition mounts @clocky/clocky-skill', details: {} })
-        }
-        // The scope presenters resolve in — the live agent, else the recorded
-        // preset's standing key, else the global layer — so a cold session's
-        // '/' popup lists the catalog its composition actually serves.
-        try {
-          const cwd = live === undefined ? session.header.cwd : resolveAgentWorkspaceRoot(live)
-          if (cwd === undefined) {
-            // A cold cwd-less log is pre-project, while a live Agent has
-            // already had its allocation root considered above.
-            return err(request, { code: 'internal', message: `session "${sessionId}" has no project cwd`, details: {} })
+        return await humanSessionRead(request, async () => {
+          const { sessionId } = request.payload
+          try {
+            const session = sourceSession(await historySourceFor(sessionId))
+            // The host registry is layered per scope and serves every session. A
+            // composition may still realm-mount its own registry instead; that
+            // instance is invisible to host contexts, so address it through the
+            // live agent (`agents.get` keeps the no-side-effect stance above).
+            const live = ctx.agents.get(sessionId)
+            const presets = ctx.get('agentPresets')
+            const scoped = live === undefined ? undefined : presets?.serviceFor(live, 'skills')
+            // Same stance as the commands domain: a missing service means no
+            // composition mounts clocky-skill, not an empty catalog. `ctx.get` also
+            // keeps this handler independent of the gateway plugin's inject list
+            // (an undeclared `ctx.skills` property read fails the reflect proxy).
+            const skillRegistry = scoped ?? ctx.get('skills')
+            if (skillRegistry === undefined) {
+              return err(request, { code: 'internal', message: 'skill registry is absent: neither this session\'s agent preset nor the host composition mounts @clocky/clocky-skill', details: {} })
+            }
+            // The scope presenters resolve in — the live agent, else the recorded
+            // preset's standing key, else the global layer — so a cold session's
+            // '/' popup lists the catalog its composition actually serves.
+            const cwd = live === undefined ? session.header.cwd : resolveAgentWorkspaceRoot(live)
+            if (cwd === undefined) {
+              // A cold cwd-less log is pre-project, while a live Agent has
+              // already had its allocation root considered above.
+              return err(request, { code: 'internal', message: `session "${sessionId}" has no project cwd`, details: {} })
+            }
+            const scope = await presenterScopeFor(sessionId, session)
+            const skills = (await skillRegistry.list({ cwd, scope })).filter(isUserInvocable)
+            return ok(request, {
+              skills: skills.map(skill => ({
+                name: skill.name,
+                description: skill.description,
+                ...skill.whenToUse === undefined ? {} : { whenToUse: skill.whenToUse },
+                modelInvocable: skill.invocation.modelInvocable,
+              })),
+            })
+          } catch (error: unknown) {
+            if (error instanceof SessionNotFound) {
+              return err(request, { code: 'session-not-found', message: error.message, details: { sessionId } })
+            }
+            return err(request, { code: 'internal', message: `skill listing failed: ${String(error)}`, details: {} })
           }
-          const scope = await presenterScopeFor(sessionId, session)
-          const skills = (await skillRegistry.list({ cwd, scope })).filter(isUserInvocable)
-          return ok(request, {
-            skills: skills.map(skill => ({
-              name: skill.name,
-              description: skill.description,
-              ...skill.whenToUse === undefined ? {} : { whenToUse: skill.whenToUse },
-              modelInvocable: skill.invocation.modelInvocable,
-            })),
-          })
-        } catch (error: unknown) {
-          return err(request, { code: 'internal', message: `skill listing failed: ${String(error)}`, details: {} })
-        }
+        })
       },
     },
 

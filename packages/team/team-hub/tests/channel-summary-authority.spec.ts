@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import Storage from '@clocky/clocky-storage'
+import type { LogStream } from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import type {
@@ -45,13 +46,21 @@ const summaryPolicy: TeamViewPolicy = {
 }
 
 /** Compose the local Hub over one isolated JSON Team journal backend. */
-async function setup(): Promise<{ readonly ctx: Context; dispose(): Promise<void> }> {
+async function setup(onOpen?: (stream: LogStream) => void): Promise<{ readonly ctx: Context; dispose(): Promise<void> }> {
   const root = await freshRoot()
   const ctx = new Context()
   try {
     await ctx.plugin(Storage)
     await ctx.plugin(StorageJson, { root })
     await ctx.plugin(StorageLog, { backend: 'json', routes: {} })
+    if (onOpen !== undefined) {
+      const open = ctx.storageLog.open.bind(ctx.storageLog)
+      vi.spyOn(ctx.storageLog, 'open').mockImplementation(async (descriptor) => {
+        const stream = await open(descriptor)
+        onOpen(stream)
+        return stream
+      })
+    }
     await ctx.plugin(TeamHub)
     ctx.teams.registerAdapter(directAdapter)
     ctx.teams.registerViewPolicy(summaryPolicy)
@@ -208,5 +217,73 @@ describe('channel summary authority', () => {
     } finally {
       await harness.dispose()
     }
+  })
+
+  it.each(['missing', 'short', 'gap', 'cursor'] as const)(
+    'rejects a %s summary source page and preserves the accepted Envelope', async (fault) => {
+      let source: LogStream | undefined
+      const harness = await setup((stream) => {
+        if (stream.name.startsWith('channel/')) source = stream
+      })
+      try {
+        const original = await summaryInput(harness.ctx)
+        if (source === undefined) throw new Error('Summary source stream was not opened')
+        const input = { ...original,
+          coveredSequenceRange: { from: original.coveredSequenceRange.to - 1, to: original.coveredSequenceRange.to },
+        }
+        const authority = channelSummaryAuthority(harness.ctx)
+        const issued = authority.issue(summaryScope(input))
+        const before = await harness.ctx.teams.readChannel({ channelId: input.channelId, afterCursor: -1 })
+        const read = source.read.bind(source)
+        const damaged = vi.spyOn(source, 'read').mockImplementation(async (after, limit) => {
+          const entries = await read(after, limit)
+          if (fault === 'missing') return []
+          if (fault === 'short') return entries.slice(0, 1)
+          if (fault === 'gap') return [{ ...entries[0]!, sequence: entries[0]!.sequence + 1 }, ...entries.slice(1)]
+          return [{ ...entries[0]!, value: { ...(entries[0]!.value as object), sequence: entries[0]!.sequence + 1 } },
+            ...entries.slice(1)]
+        })
+        const message = fault === 'gap' ? 'cursor gap' : fault === 'cursor' ? 'cursor disagrees' : 'not fully committed'
+        await expect(harness.ctx.teams.summarizeChannel({ actor: issued.proof, ...input }))
+          .rejects.toThrow(message)
+        damaged.mockRestore()
+        expect(await harness.ctx.teams.readChannel({ channelId: input.channelId, afterCursor: -1 })).toEqual(before)
+        const accepted = await harness.ctx.teams.summarizeChannel({ actor: issued.proof, ...input })
+        expect(accepted.sequence).toBe(before.channel.cursor + 1)
+        issued.revoke()
+      } finally {
+        await harness.dispose()
+      }
+    },
+  )
+
+  it('validates an earlier summary while reading the source range of the next one', async () => {
+    const harness = await setup()
+    try {
+      const input = await summaryInput(harness.ctx)
+      const authority = channelSummaryAuthority(harness.ctx)
+      const firstProof = authority.issue(summaryScope(input))
+      const first = await harness.ctx.teams.summarizeChannel({ actor: firstProof.proof, ...input })
+      firstProof.revoke()
+      const envelope = await harness.ctx.teams.postChannelEnvelope({
+        actor: input.requester,
+        expectedCursor: first.sequence,
+        draft: { channelId: input.channelId, audience: [], kind: 'message',
+          payload: { text: 'A second retained source.' }, delivery: 'context' },
+      })
+      const next = { ...input, expectedCursor: envelope.sequence,
+        coveredSequenceRange: { from: first.sequence, to: envelope.sequence },
+        sourceFingerprint: fingerprintChannelSummarySources([envelope]), sourceEnvelopeIds: [envelope.id],
+        text: 'Second summarized source.', idempotencyKey: 'summary-authority-next' as never }
+      const secondProof = authority.issue(summaryScope(next))
+      const second = await harness.ctx.teams.summarizeChannel({ actor: secondProof.proof, ...next })
+      expect(second.sequence).toBe(envelope.sequence + 1)
+      const read = await harness.ctx.teams.readChannel({ channelId: input.channelId, afterCursor: first.sequence - 1 })
+      expect(read.records.filter(record => record.type === 'channel/summary')).toHaveLength(2)
+      const page = await harness.ctx.teams.readChannelPage({ channelId: input.channelId,
+        afterCursor: first.sequence - 1, limit: 3 })
+      expect(page.records.filter(record => record.type === 'channel/summary')).toHaveLength(2)
+      secondProof.revoke()
+    } finally { await harness.dispose() }
   })
 })

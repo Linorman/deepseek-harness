@@ -39,27 +39,51 @@ describe('connection lifecycle', () => {
     } finally { controller.stop() }
   })
 
+  it('drops a queued frame when its generation stops before the handshake completes', async () => {
+    const api = new FakeApiClient()
+    const gate = deferred<Awaited<ReturnType<FakeApiClient['onDescribe']>>>()
+    api.onDescribe = () => gate.promise
+    const seen: string[] = []
+    const controller = new ConnectionController(api, { onMuxEnvelope: envelope => seen.push(envelope.payload.type) }, FAST)
+    controller.start()
+    await vi.waitFor(() => { expect(api.openMuxCount).toBe(1) })
+    api.pushMux(subscribedFrame())
+    await new Promise<void>((resolve) => { setImmediate(resolve) })
+    controller.stop()
+    gate.resolve(ok({ version: '0', cwd: '/f', attachedSessions: 0, home: '/h', canOpenPath: true }))
+    await vi.waitFor(() => { expect(api.openMuxCount).toBe(0) })
+    expect(seen).toEqual([])
+  })
+
   it('reports explicit product denial once without forwarding the denied generation frames', async () => {
     const api = new FakeApiClient()
     api.onDescribe = () => Promise.resolve({ rpcId: 'denied' as never, result: { ok: false,
       error: { code: 'PRODUCT_AUTH_REQUIRED', message: 'Required', details: {} } } })
     const seen: string[] = []
-    const controller = new ConnectionController(api, { onAuthorizationLost: () => { seen.push('denied'); controller.stop() },
+    const controller = new ConnectionController(api, { onAuthorizationLost: () => { seen.push('denied') },
       onMuxEnvelope: () => seen.push('frame') }, FAST)
     controller.start()
     try {
       await vi.waitFor(() => { expect(seen).toEqual(['denied']) })
       expect(api.openMuxCount).toBe(0)
+      await new Promise(resolve => setTimeout(resolve, 75))
+      expect(api.callsOf('host.describe')).toHaveLength(1)
+      expect(seen).toEqual(['denied'])
+      controller.retryAuthorization()
+      await vi.waitFor(() => { expect(seen).toEqual(['denied', 'denied']) })
+      expect(api.callsOf('host.describe')).toHaveLength(2)
     } finally { controller.stop() }
   })
 
   it('announces connected after describe + both streams open, then pumps frames to sinks', async () => {
     const api = new FakeApiClient()
     const muxSeen: string[] = []
+    const hostSeen: string[] = []
     const descriptions: boolean[] = []
     let connected = 0
     const controller = new ConnectionController(api, {
       onMuxEnvelope: envelope => muxSeen.push(envelope.payload.type),
+      onHostEnvelope: envelope => hostSeen.push(envelope.payload.type),
       onConnected: (description) => {
         connected++
         descriptions.push(description.canOpenPath)
@@ -69,7 +93,9 @@ describe('connection lifecycle', () => {
     try {
       await vi.waitFor(() => { expect(connected).toBe(1) })
       api.pushMux(subscribedFrame())
+      api.pushHost({ type: 'host/remote-event', event: 'commands/change', args: [] })
       await vi.waitFor(() => { expect(muxSeen).toEqual(['session/subscribed']) })
+      await vi.waitFor(() => { expect(hostSeen).toEqual(['host/remote-event']) })
       expect(api.callsOf('host.describe')).toHaveLength(1)
       expect(descriptions).toEqual([true])
     } finally {
@@ -164,6 +190,8 @@ describe('connection lifecycle', () => {
       await vi.waitFor(() => { expect(connected).toBe(1) })
       api.pushMux({ type: 'stream/error', error: { code: 'internal', message: 'impl broke', details: {} } })
       await vi.waitFor(() => { expect(connected).toBe(2) }) // treated as loss → reconnect
+      api.pushHost({ type: 'stream/error' } as never)
+      await vi.waitFor(() => { expect(connected).toBe(3) }) // even an omitted optional error terminates the stream
       expect(muxSeen).toEqual([]) // never forwarded to the business sink
     } finally {
       controller.stop()

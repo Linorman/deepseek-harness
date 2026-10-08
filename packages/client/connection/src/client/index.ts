@@ -101,6 +101,8 @@ export interface ConnectionHandle {
   readonly hostDescription: HostDescriptionSource
   /** Generic logical RPC channels over the same Connection transport. */
   readonly rpc: ClientConnectionRpc
+  /** Explicitly retry a terminal authentication refusal once; active connections and disposed loops ignore it. */
+  retryAuthorization(): void
   /**
    * Start the connect/pump/reconnect loop with the consumer's frame sinks.
    * One consumer owns the streams (the runtime object layer); a second call
@@ -124,6 +126,7 @@ export function apply(ctx: Context): void {
   const api: IApiClient = fixtureClient ?? transport?.createApiClient() ?? new WebApiClient()
   const rpc = fixtureClient?.rpc ?? createWebConnectionRpc(transport?.fetch)
   let started = false
+  let controller: ConnectionController | undefined
   let description: HostDescription | undefined
   const descriptionListeners = new Set<() => void>()
   const publishDescription = (next: HostDescription | undefined): void => {
@@ -148,10 +151,11 @@ export function apply(ctx: Context): void {
       },
     },
     rpc,
+    retryAuthorization: () => { controller?.retryAuthorization() },
     start(sinks, config) {
       if (started) throw new Error('connection: the stream loop is already owned by another consumer')
       started = true
-      const controller = new ConnectionController(api, {
+      const ownedController = new ConnectionController(api, {
         ...sinks,
         onConnected: (next) => {
           publishDescription(next)
@@ -171,10 +175,11 @@ export function apply(ctx: Context): void {
           sinks.onAuthorizationLost?.()
         },
       }, config ?? {})
-      controller.start()
+      controller = ownedController
+      ownedController.start()
       return {
         stop: () => {
-          controller.stop()
+          ownedController.stop()
           publishDescription(undefined)
         },
       }

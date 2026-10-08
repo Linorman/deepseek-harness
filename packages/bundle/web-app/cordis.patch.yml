@@ -234,6 +234,93 @@
     - id: command-team-goal
       name: '@clocky/clocky-command-team-goal'
 
+    # Published Simulation composition. Existing profiles inherit this group
+    # through their unchanged Web bundle; user patches can disable it by ID.
+    - id: web-simulation
+      name: cordis:group
+      group: true
+      inject: [webStartup]
+      config:
+        - id: web-simulation-service
+          name: '@clocky/clocky-simulation'
+        - id: web-simulation-local
+          name: '@clocky/clocky-simulation-local'
+          config:
+            name: web-local
+            root: !!js clockyHomePath('simulations')
+            backend: sqlite
+            replayPageSize: 256
+        - id: web-simulation-team
+          name: '@clocky/clocky-simulation-team'
+          config:
+            maxConcurrentModels: 1
+            maxQueuedModels: 16
+            maxContextBytes: 65536
+            deliveryPageSize: 32
+            maxCoordinationRounds: 32
+        - id: web-simulation-product
+          name: '@clocky/clocky-simulation-product'
+          config:
+            directoryStream: web-simulation-directory-v1
+            imports: []
+        - id: web-simulation-administration
+          name: '@clocky/clocky-simulation-product/administration'
+          config:
+            journalStream: web-simulation-commands-v1
+            maxHeldRuns: 8
+            templates:
+              - id: company-procurement-v1
+                version: '1'
+                name: 公司采购 / Company procurement
+                provider: web-local
+                preset: simulation-company
+                objective: Deliver one inventory unit with explicit procurement, transfer and completion evidence.
+                editableLimits: [maxEntities, maxResidentActors, tokensPerModelRequest, maxTokensPerInterval, maxTime]
+                checkpoint:
+                  maxDrainRounds: 32
+                  maxAttempts: 3
+                driver:
+                  version: '1'
+                  maxControlSteps: 8
+                  model: { source: agent-default }
+                  requestDelay: '5'
+                  reportDelay: '1'
+                  replyDelay: '20'
+                  completeDelay: '30'
+                spec:
+                  tickUnit: minute
+                  origin: '0'
+                  maxTime: '360'
+                  rulesVersion: '1'
+                  policyVersion: '1'
+                  maxEntities: 16
+                  maxResidentActors: 2
+                  tokensPerModelRequest: 16384
+                  maxTokensPerInterval: 262144
+                  budgetInterval: '60'
+                  maxDecisionsPerInterval: 16
+                  maxMessagesPerInterval: 32
+                  maxPendingEvents: 64
+                  maxPendingInteractions: 32
+                  maxKnowledgeBytes: 16384
+                  maxKnowledgePerQuery: 16
+                  maxQueuedDecisions: 32
+                  maxDispatchWaitRounds: 8
+                  maxIngressBytes: 16384
+                  maxConflictRetries: 2
+                  decisionTimeoutMs: 60000
+                  maxDecisionsPerWindow: 2
+                  maxOperationsPerDecision: 16
+                  maxResourceQuantity: '1000000'
+                  outboxMaxAttempts: 3
+                  outboxRetryDelayMs: 1000
+                  maxDriveSteps: 32
+                  maxMicrostepsPerTime: 64
+                  phaseOrder: [delivery, decision, deadline]
+                  relationRules: []
+        - id: web-ui-simulation
+          name: '@clocky/clocky-client-ui-simulation'
+
     - id: tool-team-channel-summary
       name: '@clocky/clocky-team-channel-summary/tool'
 

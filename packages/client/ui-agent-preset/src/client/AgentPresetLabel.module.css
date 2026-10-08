@@ -7,11 +7,11 @@
   max-width: 180px;
   padding: 0 2px 0 0;
   height: 22px;
-  border-radius: 6px;
-  background: var(--clocky-alias-fill-tsp-secondary);
-  font-size: 12px;
-  line-height: 22px;
-  color: var(--clocky-alias-label-secondary);
+  border-radius: var(--clocky-radius-sm);
+  background: var(--clocky-bg-hover);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

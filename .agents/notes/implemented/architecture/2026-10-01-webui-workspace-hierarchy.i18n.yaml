@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-01-webui-workspace-hierarchy.md
-2026-10-01-webui-workspace-hierarchy.md: 08b59f605dcf26af9a97b1ba6ce76d6a60a5ee21
-2026-10-01-webui-workspace-hierarchy.zh.md: 333d84733633118f31de9047f6582a8cc1fb480a
+2026-10-01-webui-workspace-hierarchy.md: 891ec26011bff12c0e676ff938b9e86398e255c0
+2026-10-01-webui-workspace-hierarchy.zh.md: 3a5df1c11c9e60bc43ecc68a90d6be3a1d3c919f

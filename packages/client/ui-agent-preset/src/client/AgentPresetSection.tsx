@@ -90,7 +90,7 @@ function CopyDialog({ state, t, actions }: CopyDialogProps): ReactNode {
       footer={(
         <>
           <Button
-            variant="outline"
+            variant="secondary"
             disabled={draft?.saving === true}
             onClick={() => { actions.cancelCopy() }}
           >
@@ -196,7 +196,7 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
     const detail = state.error ?? ''
     return (
       <div className={css.section}>
-        <p className={css.error} role="alert">{`${t('error')} ${detail}`}</p>
+        <p className={css.error} role="alert" title={detail}>{t('error')}</p>
         <button type="button" className={css.secondaryButton} onClick={() => { void load() }}>
           {t('retry')}
         </button>
@@ -379,7 +379,7 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
         description={t('composition')}
         className={css.dialog as string}
         footer={(
-          <Button variant="outline" autoFocus onClick={() => { props.closeView() }}>
+          <Button variant="secondary" autoFocus onClick={() => { props.closeView() }}>
             {t('close')}
           </Button>
         )}
@@ -398,7 +398,7 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
         footer={(
           <>
             <Button
-              variant="outline"
+              variant="secondary"
               autoFocus
               disabled={state.deleting}
               onClick={() => { props.confirmDelete(null) }}
@@ -406,7 +406,7 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
               {t('cancel')}
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               className={css.deleteConfirm}
               disabled={state.deleting}
               onClick={() => { void props.remove() }}

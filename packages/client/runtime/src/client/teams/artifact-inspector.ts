@@ -1,7 +1,7 @@
 /** One authoritative artifact byte window, independent of React and list pagination. */
 import type { IApiClient, TeamId } from '@clocky/clocky-client-connection/client'
 import type { TeamArtifactDetailState } from '../contract/team-tasks.ts'
-import { isTeamAuthorizationError } from './access.ts'
+import { acceptedRead } from './read-state.ts'
 
 /** Retained bytes are never republished after target or authorization retirement. */
 export class ArtifactInspector {
@@ -38,11 +38,8 @@ export class ArtifactInspector {
       if (!this.current(generation, request, linked)) return
       const response = await this.api.teams.artifactRead({ teamId, artifactId }, linked)
       if (!this.current(generation, request, linked)) return
-      if (!response.result.ok) {
-        if (isTeamAuthorizationError(response.result.error)) { this.close(); this.denied(teamId); return }
-        throw new Error(response.result.error.message)
-      }
-      const result = response.result.value
+      const result = acceptedRead(response.result, () => { this.close(); this.denied(teamId) })
+      if (result === undefined) return
       if (result.artifact.id !== artifactId) throw new Error('Artifact response belongs to another reference')
       const padding = result.data.endsWith('==') ? 2 : result.data.endsWith('=') ? 1 : 0
       if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(result.data)

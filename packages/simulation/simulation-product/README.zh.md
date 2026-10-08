@@ -64,11 +64,13 @@ reader 可选 `content` 明确选择 `context`、`knowledge` 和 `sources`；省
 
 ## 持久公司创建
 
-显式 `./administration` 插件提供 `ctx.simulationAdministration` 及 Host fetch `catalog/preflight/create/prepare/request`，依赖读取目录、原生 Simulation／Team owner、已注册 LLM route 和 Agent Presets。受信任 `templates` 包含版本 1 采购设置、完整原生 policy、preset、driver route／偏移及检查点额度。激活时校验 provider 检查能力、preset 解析和模型 provider 登记，不推理。浏览器请求包含命令身份、已安装模板／版本、显示名称、规范正整数初始库存及明确可编辑的额度；任意 spec、路径、代码或凭据均拒绝。
+显式 `./administration` 插件提供 `ctx.simulationAdministration` 及 Host fetch `catalog/preflight/create/prepare/request`，依赖读取目录、原生 Simulation／Team owner、LLM 注册表及 Agent Presets。可信 `templates` 包含 version 1 公司采购设置、完整原生 policy、preset、driver 路由／时间偏移及检查点边界。加载检查原生查看、预设及模板结构，不要求模型提供方已注册。安装配置的 `driver.model` 为显式 `{ provider, name }` 路由或 `{ source: 'agent-default' }`；后者在预检与受理时读取 `agentDefaultModel.currentSelection()`，将其 `model` ID 映射为 driver 的 `name`。目录与预检的严格 `readiness` 区分附带路由的 `ready`、`needs-model` 和附安全原因的 `unavailable`。元数据解析不推理或自动测试连接。公司激活暂不支持显式推理强度覆盖，返回 `reasoning-unsupported`；支持提供方默认行为。浏览器请求包含命令身份、安装模板／版本、名称、规范正库存与可编辑额度；任意 spec、路径、代码与凭据被拒绝。
 
-受信任 `editableLimits` 列出允许降低的 `maxEntities`、`maxResidentActors`、`tokensPerModelRequest`、`maxTokensPerInterval` 和规范十进制 `maxTime`；省略时全部额度固定。已安装 spec 值兼作默认值和上限。目录公开这些额度、允许列表、tick／预算单位、policy 版本及当前共享模型容量。`preflight()` 接受不含 `commandId` 的创建语义，返回完整解析配置或带机器可读字段／code 的有界问题。它校验场景容量、模型采购的单请求 token 准入、完成时间边界、库存、provider、preset 及当前产品容量，不写日志，不分配身份、Team、actor，不推理或预占 permit。仅含确定性步骤的 task workflow 允许区间 token 预算为零，不发起模型请求。创建在持久受理时重新检查同一额度规则；预检通过不预留容量。额度不能改变时钟定义、route 或 Host 共享 permit。原公开选择和完整原生 spec 一同持久保存，后来修改模板不会改变重试或恢复。
+受信任 `editableLimits` 列出允许降低的 `maxEntities`、`maxResidentActors`、`tokensPerModelRequest`、`maxTokensPerInterval` 和规范十进制 `maxTime`；省略时全部额度固定。已安装 spec 值兼作默认值和上限。目录公开这些额度、允许列表、tick／预算单位、policy 版本及当前共享模型容量。`preflight()` 接受不含 `commandId` 或 `expectedModel` 的创建语义，返回完整解析配置或带机器可读字段／code 的有界问题。它校验场景容量、模型采购的单请求 token 准入、完成时间边界、库存、provider、preset 及当前产品容量，不写日志，不分配身份、Team、actor，不推理或预占 permit。仅含确定性步骤的 task workflow 允许区间 token 预算为零，不发起模型请求。创建在持久受理时重新检查同一额度规则；预检通过不预留容量。额度不能改变时钟定义、route 或 Host 共享 permit。原公开选择和完整原生 spec 一同持久保存，后来修改模板不会改变重试或恢复。
 
-必填 `journalStream` 使用独立的 format 2 命令日志。受理在目录登记或原生 IO 前持久记录原主体、分配的产品／原生身份及完整不可变模板解析结果。精确重试必须匹配原 owner 和 payload，返回原请求的保留状态。HTTP 等待丢失或退役不取消已受理准备。`request()` 只读取原日志结果；`not-found` 不能证明失败。后续尝试不替换原失败结果。新的 `prepare()` 命令对账原运行，使用自己的检查点身份。
+创建要求 `expectedModel` 与已展示路由一致，并在串行受理位置复核路由、授权及容量。不一致返回 `SIMULATION_PRODUCT_MODEL_CHANGED`（RPC 为 `simulation-product-model-changed`），确认本次尝试未分配运行，调用方必须重新查看并确认。网络未知结果保留原身份。已受理的精确重试先对照冻结 driver 中的确认路由，再考虑当前默认、模板及模型可用性。
+
+必填 `journalStream` 使用独立的 format 2 命令日志。持久结构不变：语义输入省去冗余确认字段，其精确路由由冻结 driver 重建。部署选择器不进入 driver 或原生 spec，不转换格式或自动重写日志。受理在目录登记或原生 IO 前持久记录原主体、分配的产品／原生身份及完整不可变模板解析结果。精确重试必须匹配原 owner 和 payload，返回原请求的保留状态。HTTP 等待丢失或退役不取消已受理准备。`request()` 只读取原日志结果；`not-found` 不能证明失败。后续尝试不替换原失败结果。新的 `prepare()` 命令对账原运行，使用自己的检查点身份。
 
 `listRequests()` / `simulation.requests.list` 在当前已认证 owner 下发现某个运行仅含 receipt 的行政历史。`maxRequestPageSize` 默认 32；`maxBytes` 约束完整请求和页面。条目按原受理时间和命令身份排序。`snapshotRevision` 统计该运行的受理与终态日志条目，独立于原生世界 revision 和其他运行。加密 continuation 绑定运行、页额度、日志 revision、主体代际与服务生命周期；观察变化后须刷新首页。不公开原参数、输入正文或审核理由，也不创建原生 writer 或模型工作。
 

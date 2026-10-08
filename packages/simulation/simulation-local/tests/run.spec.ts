@@ -16,10 +16,10 @@ afterEach(async () => {
   await Promise.all(providers.splice(0).map(provider => provider.close()))
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
-const spec = {
+const spec = simulationRunSelectionSchema.parse({ provider: 'local', mode: 'create', spec: {
   runId: 'supply', tickUnit: 'minute', origin: '0', maxTime: '100000000000000000000',
   rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
-}
+} }).spec
 function selection(mode: 'create' | 'open' = 'create') {
   return simulationRunSelectionSchema.parse({ provider: 'local', mode, spec })
 }
@@ -168,6 +168,7 @@ it.each(['json', 'sqlite'] as const)('refuses %s history after destructive prefi
   await stream.writeCheckpoint({ sequence: 2, value: {} })
   await stream.compact({ throughSequence: 0, expectedCheckpointSequence: 2 })
   await medium.close()
+  await expect(provider.inspect({ provider: 'local', spec })).rejects.toThrow(/complete retained history/)
   await expect(provider.open(selection('open'))).rejects.toThrow(/prefix/)
 })
 

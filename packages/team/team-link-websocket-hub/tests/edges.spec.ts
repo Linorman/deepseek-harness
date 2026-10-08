@@ -7,7 +7,9 @@ import WebSocket, { WebSocketServer } from 'ws'
 import type { Context } from '@clocky/cordis'
 import type { WebUpgradeRoute } from '@clocky/clocky-host-webserver'
 import { parseTeamLinkServerFrame, TEAM_LINK_FRAME_VERSION } from '@clocky/clocky-team-link'
-import { participantInterruptSnapshotSchema, teamEnvelopeSchema, TeamError } from '@clocky/clocky-team'
+import type { TeamLinkEnrollmentProvider } from '@clocky/clocky-team-link'
+import { channelInvitationSnapshotSchema, channelSnapshotSchema, fingerprintChannelManifest,
+  participantInterruptSnapshotSchema, teamEnvelopeSchema, TeamError } from '@clocky/clocky-team'
 import type {
   ActivationActorProofIssuer,
   ActivationBindingSnapshot,
@@ -30,6 +32,8 @@ afterEach(async () => {
 interface FakeTeams {
   readonly openActivationActorProofIssuer: ReturnType<typeof vi.fn>
   readonly getActivation: ReturnType<typeof vi.fn>
+  readonly getChannelForActor: ReturnType<typeof vi.fn>
+  readonly acknowledgeChannelInvitation: ReturnType<typeof vi.fn>
   readonly getTeam: ReturnType<typeof vi.fn>
   readonly getChannel: ReturnType<typeof vi.fn>
   readonly getChannelAdmission: ReturnType<typeof vi.fn>
@@ -42,8 +46,10 @@ interface FakeTeams {
   readonly postChannelFinalEnvelope: ReturnType<typeof vi.fn>
   readonly claimChannelDelivery: ReturnType<typeof vi.fn>
   readonly claimTaskAttemptStart: ReturnType<typeof vi.fn>
+  readonly getTask: ReturnType<typeof vi.fn>
   readonly heartbeatTaskAttempt: ReturnType<typeof vi.fn>
   readonly settleTaskAttempt: ReturnType<typeof vi.fn>
+  readonly resolveTaskReview: ReturnType<typeof vi.fn>
   readonly ackChannelEnvelope: ReturnType<typeof vi.fn>
 }
 
@@ -70,11 +76,20 @@ function createActorProofIssuer(): FakeActorProofIssuer {
   return { issuer, leases }
 }
 
+function expectLeaseRevoked(lease: TeamActorProofLease): void {
+  const revoke: unknown = Reflect.get(lease, 'revoke')
+  if (!vi.isMockFunction(revoke)) throw new Error('test actor lease has no revoke spy')
+  expect(revoke.mock.calls).toHaveLength(1)
+}
+
 interface FakeHarness {
   readonly teams: FakeTeams
   readonly actorProofIssuer: FakeActorProofIssuer
+  readonly warnings: ReturnType<typeof vi.fn>
+  readonly storageLog: ReturnType<typeof inMemoryStorageLog>
   readonly port: number
   readonly route: WebUpgradeRoute
+  enrollmentProvider(): TeamLinkEnrollmentProvider | undefined
   close(): Promise<void>
 }
 
@@ -121,6 +136,28 @@ function interruptWith(id: string, overrides: Record<string, unknown> = {}) {
 
 const interrupt = interruptWith('interrupt-edge')
 
+function cancellationTask(id: string, revision = 4) {
+  return { id, revision, phase: 'running' as const, lease: { attemptId: `attempt-${id}` },
+    cancellation: { requestedRevision: 3, requestedBy: binding.activation.participantId, requestedAt: 1,
+      target: { kind: 'attempt' as const, attemptId: `attempt-${id}`,
+        participantId: binding.activation.participantId, activationId: binding.activation.id } } }
+}
+
+function admissionInvitation(overrides: Record<string, unknown> = {}, channelId = 'channel-edge') {
+  const channel = channelSnapshotSchema.parse({
+    manifest: { id: channelId, teamId: binding.activation.teamId,
+      adapter: { type: 'direct', version: 1 },
+      participants: [{ id: binding.activation.participantId, role: 'recipient' }], limits: {} },
+    phase: 'active', cursor: 1,
+  })
+  const invitation = channelInvitationSnapshotSchema.parse({
+    participantId: binding.activation.participantId, role: 'recipient', visibility: 'channel', required: true,
+    deadline: 100, endpoint: { kind: 'activation' }, revision: 1,
+    manifestFingerprint: fingerprintChannelManifest(channel.manifest), status: 'pending', ...overrides,
+  })
+  return { channel, invitations: [invitation] }
+}
+
 function config(overrides: Partial<WebSocketHub.Config> = {}): WebSocketHub.Config {
   return {
     path: '/team-link',
@@ -156,6 +193,8 @@ function teams(actorProofIssuer: FakeActorProofIssuer): FakeTeams {
   return {
     openActivationActorProofIssuer: vi.fn(() => actorProofIssuer.issuer),
     getActivation: vi.fn(async () => binding),
+    getChannelForActor: vi.fn(async () => ({ id: 'channel-edge' })),
+    acknowledgeChannelInvitation: vi.fn(async () => ({ phase: 'active' })),
     getTeam: vi.fn(async () => ({ team: { cursor: 0 }, channelIds: [], tasks: [] })),
     getChannel: vi.fn(async () => ({
       phase: 'active',
@@ -179,8 +218,10 @@ function teams(actorProofIssuer: FakeActorProofIssuer): FakeTeams {
     postChannelFinalEnvelope: vi.fn(async () => ({ accepted: true })),
     claimChannelDelivery: vi.fn(async () => undefined),
     claimTaskAttemptStart: vi.fn(async () => ({ phase: 'running' })),
+    getTask: vi.fn(async () => ({ cancellation: undefined })),
     heartbeatTaskAttempt: vi.fn(async () => ({ phase: 'running' })),
     settleTaskAttempt: vi.fn(async () => ({ phase: 'completed' })),
+    resolveTaskReview: vi.fn(async () => ({ phase: 'completed' })),
     ackChannelEnvelope: vi.fn(async () => ({ type: 'channel/receipt' })),
   }
 }
@@ -200,11 +241,13 @@ async function setup(overrides: Partial<WebSocketHub.Config> = {}): Promise<Fake
   const effects: Array<() => unknown> = []
   const actorProofIssuer = createActorProofIssuer()
   const fakeTeams = teams(actorProofIssuer)
-  const enrollmentProviders = new Map<string, unknown>()
+  const warnings = vi.fn()
+  const storageLog = inMemoryStorageLog()
+  const enrollmentProviders = new Map<string, TeamLinkEnrollmentProvider>()
   const ctx = {
     teams: fakeTeams,
     teamLinks: {
-      registerEnrollmentProvider: vi.fn((provider: { readonly name: string }) => {
+      registerEnrollmentProvider: vi.fn((provider: TeamLinkEnrollmentProvider) => {
         enrollmentProviders.set(provider.name, provider)
         return () => { enrollmentProviders.delete(provider.name) }
       }),
@@ -215,7 +258,9 @@ async function setup(overrides: Partial<WebSocketHub.Config> = {}): Promise<Fake
         return () => { route = undefined }
       }),
     },
-    storageLog: inMemoryStorageLog(),
+    storageLog,
+    logger: { warn: warnings },
+    get: () => undefined,
     effect: vi.fn((install: () => unknown) => {
       const dispose: unknown = install()
       if (typeof dispose === 'function') effects.push(dispose as () => unknown)
@@ -243,8 +288,11 @@ async function setup(overrides: Partial<WebSocketHub.Config> = {}): Promise<Fake
   const harness: FakeHarness = {
     teams: fakeTeams,
     actorProofIssuer,
+    warnings,
+    storageLog,
     port: (server.address() as AddressInfo).port,
     route,
+    enrollmentProvider: () => enrollmentProviders.get(config(overrides).enrollmentProviderName),
     async close() {
       for (const dispose of effects.toReversed()) await dispose()
       await closeServer(server)
@@ -255,9 +303,14 @@ async function setup(overrides: Partial<WebSocketHub.Config> = {}): Promise<Fake
 }
 
 /** Provide the one durable log stream the WebSocket Hub ledger needs in fake edge contexts. */
-function inMemoryStorageLog(): { open(descriptor: { readonly name: string; readonly version: number }): Promise<LogStream> } {
+function inMemoryStorageLog(): {
+  failNextAppend(error: Error): void
+  open(descriptor: { readonly name: string; readonly version: number }): Promise<LogStream>
+} {
   const records: unknown[] = []
+  let appendFailure: Error | undefined
   return {
+    failNextAppend(error) { appendFailure = error },
     async open(descriptor) {
       let closed = false
       return {
@@ -267,6 +320,11 @@ function inMemoryStorageLog(): { open(descriptor: { readonly name: string; reado
         get tailSequence() { return records.length - 1 },
         async append(expectedSequence, values) {
           if (closed) throw new Error('fake enrollment stream is closed')
+          if (appendFailure !== undefined) {
+            const failure = appendFailure
+            appendFailure = undefined
+            throw failure
+          }
           if (expectedSequence !== records.length - 1) throw new Error('fake enrollment stream has a stale tail')
           records.push(...structuredClone(values))
           return { tailSequence: records.length - 1 }
@@ -342,7 +400,7 @@ function messageText(data: WebSocket.RawData): string {
   return Buffer.from(data).toString('utf8')
 }
 
-function attach(client: WebSocket, id = 'attach'): void {
+function attach(client: WebSocket, id = 'attach', selectedCapability = capability): void {
   client.send(JSON.stringify({
     v: TEAM_LINK_FRAME_VERSION,
     type: 'attach',
@@ -354,7 +412,7 @@ function attach(client: WebSocket, id = 'attach'): void {
       sessionId: binding.sessionId,
       provider: binding.provider,
     },
-    capability,
+    capability: selectedCapability,
   }))
 }
 
@@ -364,6 +422,21 @@ async function subscribe(client: WebSocket, frames: ReturnType<typeof frameQueue
     ok: true,
     result: { subscribed: true },
   })
+}
+
+async function subscribedHarness(harness: FakeHarness, id: string): Promise<{
+  readonly client: WebSocket
+  readonly frames: ReturnType<typeof frameQueue>
+  readonly closing: Promise<[number, Buffer]>
+}> {
+  const client = await socket(harness)
+  const frames = frameQueue(client)
+  attach(client)
+  await frames.next(next => next.type === 'attached')
+  const closing = closed(client)
+  client.send(JSON.stringify({ v: TEAM_LINK_FRAME_VERSION, type: 'subscribe', id }))
+  await frames.next(next => next.type === 'response' && next.id === id)
+  return { client, frames, closing }
 }
 
 function post(client: WebSocket, id: string): void {
@@ -392,6 +465,7 @@ function closed(client: WebSocket): Promise<[number, Buffer]> {
 
 function frameQueue(client: WebSocket): {
   next(predicate: (next: ReturnType<typeof parseTeamLinkServerFrame>) => boolean): Promise<ReturnType<typeof parseTeamLinkServerFrame>>
+  queued(predicate: (next: ReturnType<typeof parseTeamLinkServerFrame>) => boolean): boolean
 } {
   const frames: ReturnType<typeof parseTeamLinkServerFrame>[] = []
   const waiters = new Set<{
@@ -416,6 +490,7 @@ function frameQueue(client: WebSocket): {
     }
   })
   return {
+    queued(predicate) { return frames.some(predicate) },
     next(predicate) {
       const index = frames.findIndex(predicate)
       if (index >= 0) return Promise.resolve(frames.splice(index, 1)[0] as ReturnType<typeof parseTeamLinkServerFrame>)
@@ -425,6 +500,182 @@ function frameQueue(client: WebSocket): {
 }
 
 describe('WebSocket Team Link Hub protocol edges', () => {
+  it('binds enrollment to one live activation and makes stale revocations harmless', async () => {
+    const harness = await setup({ bindings: [] })
+    const provider = harness.enrollmentProvider()
+    if (provider === undefined) throw new Error('enrollment provider was not registered')
+    const first = await provider.reserve(binding)
+    const rotated = await provider.reserve(binding)
+    expect(rotated.capability).not.toBe(first.capability)
+    await first.revoke()
+    const third = await provider.reserve(binding)
+    expect(third.capability).not.toBe(rotated.capability)
+    await third.revoke()
+    await third.revoke()
+
+    harness.teams.getActivation.mockResolvedValueOnce({ ...binding,
+      activation: { ...binding.activation, status: 'offline' } })
+    await expect(provider.reserve(binding)).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_MISMATCH' })
+    harness.teams.getActivation.mockResolvedValueOnce({ ...binding, sessionId: 'different-session' })
+    await expect(provider.reserve(binding)).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_MISMATCH' })
+    await harness.close()
+    await expect(provider.reserve(binding)).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_MISMATCH' })
+  })
+
+  it('rejects dynamic enrollment of a statically configured binding', async () => {
+    const harness = await setup()
+    const provider = harness.enrollmentProvider()
+    if (provider === undefined) throw new Error('enrollment provider was not registered')
+    await expect(provider.reserve(binding)).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_MISMATCH' })
+  })
+
+  it('rotates a live credential even when cooperative cancellation fails with an unrenderable error', async () => {
+    const harness = await setup({ bindings: [] })
+    const provider = harness.enrollmentProvider()
+    if (provider === undefined) throw new Error('enrollment provider was not registered')
+    const issued = await provider.reserve(binding)
+    const { client, server } = await serverSocket(harness)
+    const frames = frameQueue(client)
+    attach(client, 'dynamic-attach', issued.capability)
+    await frames.next(next => next.type === 'attached')
+    await subscribe(client, frames, 'dynamic-subscribe')
+    const hostile = { toString(): never { throw new Error('cannot render cancellation error') } }
+    Object.defineProperty(server, 'send', { configurable: true,
+      value: (_frame: unknown, done: (error: Error) => void) => { done(hostile as unknown as Error) } })
+    const closing = closed(client)
+    const rotated = await provider.reserve(binding)
+    expect(rotated.capability).not.toBe(issued.capability)
+    await expect(closing).resolves.toEqual([1008, Buffer.from('credential rotated')])
+    expect(String(harness.warnings.mock.calls[0]?.[0])).toContain('[unrenderable cancellation failure]')
+    await rotated.revoke()
+  })
+
+  it('reports a durable credential revocation failure without treating it as Hub shutdown', async () => {
+    const harness = await setup({ bindings: [] })
+    const provider = harness.enrollmentProvider()
+    if (provider === undefined) throw new Error('enrollment provider was not registered')
+    const issued = await provider.reserve(binding)
+    const failure = new Error('credential ledger append failed')
+    harness.storageLog.failNextAppend(failure)
+    await expect(issued.revoke()).rejects.toBe(failure)
+    expect(harness.teams.getActivation).toHaveBeenCalled()
+  })
+
+  it('settles a pending cooperative cancellation when its remote socket closes before acknowledgement', async () => {
+    const harness = await setup({ bindings: [] })
+    const provider = harness.enrollmentProvider()
+    if (provider === undefined) throw new Error('enrollment provider was not registered')
+    const issued = await provider.reserve(binding)
+    const client = await socket(harness)
+    const frames = frameQueue(client)
+    attach(client, 'close-before-cancel-ack', issued.capability)
+    await frames.next(next => next.type === 'attached')
+    await subscribe(client, frames, 'cancel-before-close')
+    const rotating = provider.reserve(binding)
+    await expect(frames.next(next => next.type === 'cancel')).resolves.toMatchObject({ type: 'cancel' })
+    const closing = closed(client)
+    client.close()
+    await closing
+    const next = await rotating
+    expect(next.capability).not.toBe(issued.capability)
+    expect(String(harness.warnings.mock.calls[0]?.[0])).toContain('socket closed before cancellation was acknowledged')
+    await next.revoke()
+  })
+
+  it('closes a socket that sends a cancellation result without a pending Hub request', async () => {
+    const harness = await setup()
+    const client = await socket(harness)
+    attach(client)
+    await expect(frame(client)).resolves.toMatchObject({ type: 'attached' })
+    const closing = closed(client)
+    client.send(JSON.stringify({ v: TEAM_LINK_FRAME_VERSION, type: 'cancelled', id: 'unsolicited', accepted: true }))
+    await expect(closing).resolves.toEqual([1011, Buffer.from('server failure')])
+  })
+
+  it('forwards channel discovery and invitation consent under the attached actor proof', async () => {
+    const harness = await setup()
+    const client = await socket(harness)
+    const frames = frameQueue(client)
+    attach(client)
+    await expect(frames.next(next => next.type === 'attached')).resolves.toMatchObject({ id: 'attach' })
+    client.send(JSON.stringify({ v: TEAM_LINK_FRAME_VERSION, type: 'request', id: 'channel-get',
+      op: 'channel-get', input: { channelId: 'channel-edge' } }))
+    await expect(frames.next(next => next.type === 'response' && next.id === 'channel-get'))
+      .resolves.toMatchObject({ ok: true, result: { id: 'channel-edge' } })
+    expect(harness.teams.getChannelForActor).toHaveBeenCalledWith(expect.objectContaining({
+      channelId: 'channel-edge',
+    }))
+    client.send(JSON.stringify({ v: TEAM_LINK_FRAME_VERSION, type: 'request', id: 'invitation-ack',
+      op: 'invitation-ack', input: { channelId: 'channel-edge', revision: 1,
+        manifestFingerprint: `sha256:${'a'.repeat(64)}`, idempotencyKey: 'consent-edge' } }))
+    await expect(frames.next(next => next.type === 'response' && next.id === 'invitation-ack'))
+      .resolves.toMatchObject({ ok: true, result: { phase: 'active' } })
+    expect(harness.teams.acknowledgeChannelInvitation).toHaveBeenCalledWith(expect.objectContaining({
+      channelId: 'channel-edge', revision: 1,
+    }))
+    client.close()
+  })
+
+  it('derives an omitted post cursor and rejects unavailable integration and foreign task cancellation', async () => {
+    const harness = await setup()
+    harness.teams.getChannel.mockResolvedValue({ cursor: 7 })
+    const client = await socket(harness)
+    const frames = frameQueue(client)
+    attach(client)
+    await frames.next(next => next.type === 'attached')
+    const request = (id: string, op: string, input: Record<string, unknown>): void => {
+      client.send(JSON.stringify({ v: TEAM_LINK_FRAME_VERSION, type: 'request', id, op, input }))
+    }
+    request('current-post', 'post', { idempotencyKey: 'current-post', draft: {
+      channelId: 'channel-edge', audience: ['sender-edge'], kind: 'message',
+      payload: { text: 'Use current cursor' }, delivery: 'turn',
+    } })
+    await expect(frames.next(next => next.type === 'response' && next.id === 'current-post'))
+      .resolves.toMatchObject({ ok: true })
+    expect(harness.teams.postChannelEnvelope).toHaveBeenCalledWith(expect.objectContaining({ expectedCursor: 7 }))
+
+    request('missing-workspace', 'task-integrate', { taskId: 'task-edge', attemptId: 'attempt-edge', expectedRevision: 1 })
+    await expect(frames.next(next => next.type === 'response' && next.id === 'missing-workspace'))
+      .resolves.toMatchObject({ ok: false })
+    request('foreign-cancel', 'task-cancellation-ack', { taskId: 'task-edge', attemptId: 'attempt-edge', expectedRevision: 1 })
+    await expect(frames.next(next => next.type === 'response' && next.id === 'foreign-cancel'))
+      .resolves.toMatchObject({ ok: false })
+    expect(harness.teams.settleTaskAttempt).not.toHaveBeenCalled()
+
+    request('review', 'task-review', { taskId: 'task-edge', expectedRevision: 1,
+      nextPhase: 'completed', reason: 'Reviewed by bound agent' })
+    await expect(frames.next(next => next.type === 'response' && next.id === 'review'))
+      .resolves.toMatchObject({ ok: true, result: { phase: 'completed' } })
+    expect(harness.teams.resolveTaskReview).toHaveBeenCalledOnce()
+    client.close()
+  })
+
+  it('refuses a post whose actor proof lease was revoked while its channel read was pending', async () => {
+    const harness = await setup()
+    const channel = Promise.withResolvers<{ cursor: number }>()
+    harness.teams.getChannel.mockReturnValueOnce(channel.promise)
+    const client = await socket(harness)
+    const frames = frameQueue(client)
+    attach(client)
+    await frames.next(next => next.type === 'attached')
+    client.send(JSON.stringify({ v: TEAM_LINK_FRAME_VERSION, type: 'request', id: 'revoked-post', op: 'post', input: {
+      idempotencyKey: 'revoked-post', draft: { channelId: 'channel-edge', audience: ['sender-edge'],
+        kind: 'message', payload: { text: 'Must not append after revocation' }, delivery: 'turn' },
+    } }))
+    await vi.waitFor(() => { expect(harness.teams.getChannel).toHaveBeenCalledOnce() })
+    const closing = closed(client)
+    client.close()
+    await closing
+    const lease = harness.actorProofIssuer.leases[0]
+    if (lease === undefined) throw new Error('attach did not mint an actor proof')
+    await vi.waitFor(() => { expectLeaseRevoked(lease) })
+    channel.resolve({ cursor: 0 })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(harness.teams.postChannelEnvelope).not.toHaveBeenCalled()
+  })
+
+
+
   it('rejects invalid configuration before registering an upgrade route', () => {
     process.env[capabilityEnv] = capability
     const registerUpgrade = vi.fn()
@@ -435,7 +686,9 @@ describe('WebSocket Team Link Hub protocol edges', () => {
       teamLinks: { registerEnrollmentProvider: vi.fn(() => () => {}) },
     } as unknown as Context
     expect(() => { WebSocketHub.apply(ctx, config({ path: '/team-link/' })) }).toThrow(/exact absolute pathname/)
+    expect(() => { WebSocketHub.apply(ctx, config({ endpoint: 'not-a-url' })) }).toThrow(/complete ws: or wss: URL/)
     expect(() => { WebSocketHub.apply(ctx, config({ endpoint: 'https://example.test/team-link' })) }).toThrow(/ws: or wss/)
+    expect(() => { WebSocketHub.apply(ctx, config({ enrollmentProviderName: ' websocket' })) }).toThrow(/enrollmentProviderName/)
     expect(() => { WebSocketHub.apply(ctx, config({ maxQueuedBytes: 1 })) }).toThrow(/cover maxFrameBytes/)
     expect(() => { WebSocketHub.apply(ctx, config({ maxFrameBytes: 0 })) }).toThrow(/positive safe integer/)
     expect(() => { WebSocketHub.apply(ctx, config({ maxConnections: 0 })) }).toThrow(/positive safe integer/)
@@ -1740,6 +1993,306 @@ describe('WebSocket Team Link Hub protocol edges', () => {
     invalidClient.send(JSON.stringify({ v: TEAM_LINK_FRAME_VERSION, type: 'subscribe', id: 'invalid' }))
     await frame(invalidClient)
     await expect(invalidClosed).resolves.toEqual([1011, Buffer.from('server failure')])
+  })
+
+  it.each([
+    ['pending-closed', 'pending', 'closed', false],
+    ['pending-rejected', 'pending', 'rejected', true],
+    ['inactive-closed', 'quiescing', 'closed', false],
+    ['inactive-rejected', 'quiescing', 'rejected', true],
+    ['pending-missing-result', 'pending', 'missing', true],
+    ['pending-repeated-cursor', 'pending', 'repeat', true],
+    ['foreign-current', 'active', 'foreign', true],
+  ] as const)('handles %s authoritative channel watch state', async (id, phase, outcome, fails) => {
+    const harness = await setup()
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    const current = { phase, cursor: 1, manifest: {
+      teamId: outcome === 'foreign' ? 'other-team' : binding.activation.teamId,
+      participants: [{ id: binding.activation.participantId }],
+    } }
+    harness.teams.getChannel.mockResolvedValueOnce({ ...current, phase: 'active' }).mockResolvedValueOnce(current)
+    if (outcome === 'rejected') harness.teams.watchChannel.mockRejectedValueOnce(new Error('channel watch failed'))
+    else harness.teams.watchChannel.mockResolvedValueOnce(outcome === 'missing' ? undefined
+      : outcome === 'repeat' ? { kind: 'changed', cursor: -1 } : { kind: 'closed' })
+    const { client, closing } = await subscribedHarness(harness, id)
+    if (fails) await expect(closing).resolves.toEqual([1011, Buffer.from('server failure')])
+    else {
+      await vi.waitFor(() => { expect(harness.teams.watchChannel).toHaveBeenCalledOnce() })
+      client.close()
+      await closing
+    }
+  })
+
+  it.each([
+    ['foreign-after-read', 'foreign', 'closed', true],
+    ['inactive-after-read', 'inactive', 'closed', false],
+    ['inactive-watch-rejected', 'inactive', 'rejected', true],
+    ['active-read-failure', 'active', 'closed', true],
+  ] as const)('handles %s while a pending-delivery read fails', async (id, revision, watch, fails) => {
+    const harness = await setup()
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    const current = { phase: 'active', cursor: 1, manifest: {
+      teamId: binding.activation.teamId, participants: [{ id: binding.activation.participantId }],
+    } }
+    harness.teams.getChannel.mockResolvedValueOnce(current).mockResolvedValueOnce(current)
+      .mockResolvedValueOnce({ ...current, phase: revision === 'inactive' ? 'quiescing' : 'active',
+        manifest: { ...current.manifest, teamId: revision === 'foreign' ? 'other-team' : binding.activation.teamId } })
+    harness.teams.listChannelPendingDeliveries.mockRejectedValueOnce(new Error('pending delivery read failed'))
+    if (watch === 'rejected') harness.teams.watchChannel.mockRejectedValueOnce(new Error('channel watch failed'))
+    else harness.teams.watchChannel.mockResolvedValueOnce({ kind: 'closed' })
+    const { client, closing } = await subscribedHarness(harness, id)
+    if (fails) await expect(closing).resolves.toEqual([1011, Buffer.from('server failure')])
+    else {
+      await vi.waitFor(() => { expect(harness.teams.listChannelPendingDeliveries).toHaveBeenCalledOnce() })
+      client.close()
+      await closing
+    }
+  })
+
+  it('drains the remaining cursor of a closed channel before stopping its watch', async () => {
+    const harness = await setup()
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    harness.teams.getChannel.mockResolvedValue({ phase: 'closed', cursor: 2,
+      manifest: { teamId: binding.activation.teamId, participants: [{ id: binding.activation.participantId }] } })
+    harness.teams.watchChannel.mockResolvedValueOnce({ kind: 'changed', cursor: 1 })
+      .mockResolvedValueOnce({ kind: 'closed' })
+    const channel = { phase: 'closed', cursor: 2, manifest: { teamId: binding.activation.teamId } }
+    harness.teams.listChannelPendingDeliveries.mockResolvedValueOnce({ channel, deliveries: [], nextCursor: 1 })
+      .mockResolvedValueOnce({ channel, deliveries: [], nextCursor: 2 })
+    const { client, closing } = await subscribedHarness(harness, 'closed-drain')
+    await vi.waitFor(() => { expect(harness.teams.listChannelPendingDeliveries).toHaveBeenCalledTimes(2) })
+    client.close()
+    await closing
+  })
+
+  it('rejects a channel whose Team ownership changes during its second watch pass', async () => {
+    const harness = await setup()
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    const current = { phase: 'active', cursor: 1,
+      manifest: { teamId: binding.activation.teamId, participants: [{ id: binding.activation.participantId }] } }
+    harness.teams.getChannel.mockResolvedValueOnce(current).mockResolvedValueOnce(current)
+      .mockResolvedValue({ ...current, manifest: { ...current.manifest, teamId: 'other-team' } })
+    harness.teams.watchChannel.mockResolvedValueOnce({ kind: 'changed', cursor: 1 })
+      .mockResolvedValueOnce({ kind: 'closed' })
+    harness.teams.listChannelPendingDeliveries.mockResolvedValueOnce({
+      channel: { ...current, cursor: 1 }, deliveries: [], nextCursor: 0,
+    })
+    const { closing } = await subscribedHarness(harness, 'changed-channel-owner')
+    await expect(closing).resolves.toEqual([1011, Buffer.from('server failure')])
+    expect(harness.teams.getChannel.mock.calls.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('replays a pending invitation and its acknowledged revision through the channel watch', async () => {
+    const harness = await setup()
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    const pending = admissionInvitation()
+    const acknowledged = admissionInvitation({ status: 'acknowledged', revision: 2, settledAt: 2 })
+    harness.teams.getChannel.mockResolvedValue({ ...pending.channel, phase: 'active' })
+    harness.teams.getChannelAdmission.mockResolvedValueOnce(pending).mockResolvedValueOnce(acknowledged)
+    harness.teams.watchChannel.mockResolvedValueOnce({ kind: 'changed', cursor: 1 })
+      .mockResolvedValueOnce({ kind: 'closed' })
+    const channel = { ...pending.channel, phase: 'active', cursor: 1 }
+    harness.teams.listChannelPendingDeliveries.mockResolvedValueOnce({ channel, deliveries: [], nextCursor: 0 })
+      .mockResolvedValueOnce({ channel, deliveries: [], nextCursor: 1 })
+    const { client, frames, closing } = await subscribedHarness(harness, 'invitation-revisions')
+    await expect(frames.next(next => next.type === 'invitation' && next.notification.invitation.status === 'pending'))
+      .resolves.toMatchObject({ type: 'invitation', notification: { invitation: { revision: 1 } } })
+    await expect(frames.next(next => next.type === 'invitation' && next.notification.invitation.status === 'acknowledged'))
+      .resolves.toMatchObject({ type: 'invitation', notification: { invitation: { revision: 2 } } })
+    client.close()
+    await closing
+  })
+
+  it.each([
+    ['human endpoint', { kind: 'human' }],
+    ['foreign activation', { kind: 'activation', activationId: 'other-activation' }],
+    ['foreign Session', { kind: 'activation', sessionId: 'other-session' }],
+  ] as const)('suppresses a pending invitation for a %s', async (_label, endpoint) => {
+    const harness = await setup()
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    harness.teams.getChannel.mockResolvedValue({ phase: 'active', cursor: 1,
+      manifest: { teamId: binding.activation.teamId, participants: [{ id: binding.activation.participantId }] } })
+    harness.teams.getChannelAdmission.mockResolvedValueOnce(admissionInvitation({ endpoint }))
+    harness.teams.watchChannel.mockResolvedValueOnce({ kind: 'closed' })
+    harness.teams.listChannelPendingDeliveries.mockResolvedValueOnce({
+      channel: { phase: 'active', cursor: 1, manifest: { teamId: binding.activation.teamId } },
+      deliveries: [], nextCursor: 1,
+    })
+    const { client, frames, closing } = await subscribedHarness(harness, `ineligible-${_label}`)
+    await vi.waitFor(() => { expect(harness.teams.getChannelAdmission).toHaveBeenCalledOnce() })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(frames.queued(next => next.type === 'invitation')).toBe(false)
+    client.close()
+    await closing
+  })
+
+  it('sends an activation-pinned invitation once and suppresses a duplicate revision', async () => {
+    const harness = await setup()
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    harness.teams.getChannel.mockResolvedValue({ phase: 'active', cursor: 1,
+      manifest: { teamId: binding.activation.teamId, participants: [{ id: binding.activation.participantId }] } })
+    const admission = admissionInvitation({ endpoint: { kind: 'activation',
+      activationId: binding.activation.id, sessionId: binding.sessionId } })
+    harness.teams.getChannelAdmission.mockResolvedValue(admission)
+    harness.teams.watchChannel.mockResolvedValueOnce({ kind: 'changed', cursor: 1 })
+      .mockResolvedValueOnce({ kind: 'closed' })
+    const channel = { phase: 'active', cursor: 1, manifest: { teamId: binding.activation.teamId } }
+    harness.teams.listChannelPendingDeliveries.mockResolvedValueOnce({ channel, deliveries: [], nextCursor: 0 })
+      .mockResolvedValueOnce({ channel, deliveries: [], nextCursor: 1 })
+    const { client, frames, closing } = await subscribedHarness(harness, 'pinned-invitation')
+    await expect(frames.next(next => next.type === 'invitation'))
+      .resolves.toMatchObject({ notification: { invitation: { endpoint: admission.invitations[0]?.endpoint } } })
+    await vi.waitFor(() => { expect(harness.teams.getChannelAdmission).toHaveBeenCalledTimes(2) })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(frames.queued(next => next.type === 'invitation')).toBe(false)
+    client.close()
+    await closing
+  })
+
+  it('does not replay an already-settled invitation without a cached pending revision', async () => {
+    const harness = await setup()
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    harness.teams.getChannel.mockResolvedValue({ phase: 'active', cursor: 1,
+      manifest: { teamId: binding.activation.teamId, participants: [{ id: binding.activation.participantId }] } })
+    harness.teams.getChannelAdmission.mockResolvedValueOnce(admissionInvitation({
+      status: 'acknowledged', settledAt: 2,
+    }))
+    harness.teams.watchChannel.mockResolvedValueOnce({ kind: 'closed' })
+    harness.teams.listChannelPendingDeliveries.mockResolvedValueOnce({
+      channel: { phase: 'active', cursor: 1, manifest: { teamId: binding.activation.teamId } },
+      deliveries: [], nextCursor: 1,
+    })
+    const { client, frames, closing } = await subscribedHarness(harness, 'settled-without-cache')
+    await vi.waitFor(() => { expect(harness.teams.getChannelAdmission).toHaveBeenCalledOnce() })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(frames.queued(next => next.type === 'invitation')).toBe(false)
+    client.close()
+    await closing
+  })
+
+  it('stops invitation and Envelope delivery if their durable binding expires at notification time', async () => {
+    for (const boundary of ['invitation', 'envelope'] as const) {
+      const harness = await setup()
+      harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 }, channelIds: ['channel-edge'], tasks: [] })
+      harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+      const current = { phase: 'active', cursor: 1,
+        manifest: { teamId: binding.activation.teamId, participants: [{ id: binding.activation.participantId }] } }
+      if (boundary === 'invitation') {
+        const observed = Promise.withResolvers<typeof current>()
+        harness.teams.getChannel.mockResolvedValueOnce(current).mockReturnValueOnce(observed.promise)
+        const subscribing = subscribedHarness(harness, `expired-${boundary}`)
+        await vi.waitFor(() => { expect(harness.teams.getChannel).toHaveBeenCalledTimes(2) })
+        harness.teams.getActivation.mockResolvedValueOnce({ ...binding, activation: { ...binding.activation, status: 'offline' } })
+        observed.resolve(current)
+        const { closing } = await subscribing
+        await expect(closing).resolves.toEqual([1008, Buffer.from('binding unavailable')])
+        expect(harness.teams.getChannelAdmission).not.toHaveBeenCalled()
+      } else {
+        harness.teams.getChannel.mockResolvedValue(current)
+        const page = Promise.withResolvers<{ channel: typeof current; deliveries: { envelope: typeof envelope }[]; nextCursor: number }>()
+        harness.teams.listChannelPendingDeliveries.mockReturnValueOnce(page.promise)
+        harness.teams.watchChannel.mockResolvedValueOnce({ kind: 'closed' })
+        const subscribing = subscribedHarness(harness, `expired-${boundary}`)
+        await vi.waitFor(() => { expect(harness.teams.listChannelPendingDeliveries).toHaveBeenCalledOnce() })
+        harness.teams.getActivation.mockResolvedValueOnce({ ...binding, activation: { ...binding.activation, status: 'offline' } })
+        page.resolve({ channel: { ...current, cursor: 2 }, deliveries: [{ envelope }], nextCursor: 2 })
+        const { closing } = await subscribing
+        await expect(closing).resolves.toEqual([1008, Buffer.from('binding unavailable')])
+      }
+    }
+  })
+
+  it('closes a remote client when two pending channel invitations exceed its shared delivery capacity', async () => {
+    const harness = await setup({ maxOutstandingDeliveries: 1 })
+    harness.teams.getTeam.mockResolvedValueOnce({ team: { cursor: 0 },
+      channelIds: ['channel-edge', 'channel-edge-2'], tasks: [] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    harness.teams.getChannel.mockResolvedValue({ phase: 'active', cursor: 1,
+      manifest: { teamId: binding.activation.teamId, participants: [{ id: binding.activation.participantId }] } })
+    harness.teams.getChannelAdmission.mockResolvedValueOnce(admissionInvitation())
+      .mockResolvedValueOnce(admissionInvitation({}, 'channel-edge-2'))
+    harness.teams.watchChannel.mockResolvedValue({ kind: 'closed' })
+    harness.teams.listChannelPendingDeliveries.mockResolvedValue({
+      channel: { phase: 'active', cursor: 1, manifest: { teamId: binding.activation.teamId } },
+      deliveries: [], nextCursor: 1,
+    })
+    const { closing } = await subscribedHarness(harness, 'two-invitations')
+    await expect(closing).resolves.toEqual([1008, Buffer.from('slow invitation consumer')])
+  })
+
+  it('closes a remote client when two exact task cancellations exceed its shared delivery capacity', async () => {
+    const harness = await setup({ maxOutstandingDeliveries: 1 })
+    harness.teams.getTeam.mockResolvedValue({ team: { cursor: 0 }, channelIds: [],
+      tasks: [cancellationTask('task-one'), cancellationTask('task-two')] })
+    harness.teams.watchTeam.mockResolvedValueOnce({ kind: 'closed' })
+    const { closing } = await subscribedHarness(harness, 'two-task-cancellations')
+    await expect(closing).resolves.toEqual([1008, Buffer.from('slow consumer')])
+  })
+
+  it('suppresses one repeated task cancellation and replays it after its durable pending state clears', async () => {
+    const harness = await setup()
+    const task = cancellationTask('task-repeat')
+    let state = { team: { cursor: 0 }, channelIds: [], tasks: [task] }
+    harness.teams.getTeam.mockResolvedValue(state)
+    const first = Promise.withResolvers<{ kind: 'changed'; cursor: number }>()
+    const second = Promise.withResolvers<{ kind: 'changed'; cursor: number }>()
+    const third = Promise.withResolvers<{ kind: 'changed'; cursor: number }>()
+    harness.teams.watchTeam.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+      .mockReturnValueOnce(third.promise).mockResolvedValueOnce({ kind: 'closed' })
+    const { client, frames, closing } = await subscribedHarness(harness, 'task-cancellation-revisions')
+    await expect(frames.next(next => next.type === 'task-cancellation'))
+      .resolves.toMatchObject({ notification: { taskId: task.id, revision: task.revision } })
+    await vi.waitFor(() => { expect(harness.teams.listPendingParticipantInterrupts).toHaveBeenCalledOnce() })
+    state = { ...state, team: { cursor: 1 } }
+    harness.teams.getTeam.mockResolvedValue(state)
+    first.resolve({ kind: 'changed', cursor: 1 })
+    await vi.waitFor(() => { expect(harness.teams.listPendingParticipantInterrupts).toHaveBeenCalledTimes(2) })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(frames.queued(next => next.type === 'task-cancellation')).toBe(false)
+    state = { team: { cursor: 2 }, channelIds: [], tasks: [] }
+    harness.teams.getTeam.mockResolvedValue(state)
+    second.resolve({ kind: 'changed', cursor: 2 })
+    await vi.waitFor(() => { expect(harness.teams.listPendingParticipantInterrupts).toHaveBeenCalledTimes(3) })
+    await new Promise(resolve => setImmediate(resolve))
+    state = { team: { cursor: 3 }, channelIds: [], tasks: [task] }
+    harness.teams.getTeam.mockResolvedValue(state)
+    third.resolve({ kind: 'changed', cursor: 3 })
+    await expect(frames.next(next => next.type === 'task-cancellation'))
+      .resolves.toMatchObject({ notification: { taskId: task.id, revision: task.revision } })
+    client.close()
+    await closing
+  })
+
+  it('suppresses a Team replay wake when its socket closes during the changed-state read', async () => {
+    const harness = await setup()
+    const state = { team: { cursor: 0 }, channelIds: [], tasks: [] }
+    harness.teams.getTeam.mockResolvedValue(state)
+    const changed = Promise.withResolvers<{ kind: 'changed'; cursor: number }>()
+    harness.teams.watchTeam.mockReturnValueOnce(changed.promise)
+    const { client, closing } = await subscribedHarness(harness, 'close-during-team-read')
+    await vi.waitFor(() => { expect(harness.teams.listPendingParticipantInterrupts).toHaveBeenCalledOnce() })
+    const before = harness.teams.getTeam.mock.calls.length
+    const pending = Promise.withResolvers<typeof state>()
+    harness.teams.getTeam.mockReturnValueOnce(pending.promise)
+    changed.resolve({ kind: 'changed', cursor: 1 })
+    await vi.waitFor(() => { expect(harness.teams.getTeam.mock.calls.length).toBeGreaterThan(before) })
+    const replaysBeforeClose = harness.teams.listPendingParticipantInterrupts.mock.calls.length
+    client.close()
+    await closing
+    const lease = harness.actorProofIssuer.leases[0]
+    if (lease === undefined) throw new Error('attach did not mint an actor proof')
+    await vi.waitFor(() => { expectLeaseRevoked(lease) })
+    pending.resolve({ ...state, team: { cursor: 1 } })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(harness.teams.listPendingParticipantInterrupts).toHaveBeenCalledTimes(replaysBeforeClose)
   })
 
   it('closes malformed, binary, duplicate, and rate-limited frame streams', async () => {

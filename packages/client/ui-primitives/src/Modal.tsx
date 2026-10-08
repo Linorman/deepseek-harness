@@ -3,8 +3,8 @@
 // cannot leave sticky page controls above the mask. This is still an in-page
 // WebUI dialog; its native modal top layer owns focus containment and background inertness.
 
-import { useLayoutEffect, useRef } from 'react'
-import type { ReactNode } from 'react'
+import { useModalDialog } from './useModalDialog.ts'
+import type { ReactNode, RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 import { IconCloseOutline16 } from './icons/index.tsx'
@@ -15,6 +15,8 @@ import css from './Modal.module.css'
  * @param props.open - whether the dialog is showing.
  * @param props.onClose - Escape or mask click.
  * @param props.title - dialog heading (aria-label in every mode).
+ * @param props.labelledBy - composed visible heading ID; when supplied, it names the dialog instead of title.
+ * @param props.fallbackFocus - stable owner control when the original opener no longer exists.
  * @param props.closeLabel - accessible close-button label.
  * @param props.description - optional supporting sentence under the title.
  * @param props.children - body (inputs, etc.).
@@ -30,11 +32,13 @@ import css from './Modal.module.css'
  * @returns null when closed; otherwise the overlay tree.
  */
 export function Modal({
-  open, onClose, title, closeLabel = 'Close', description, children, footer, className, contentClassName, bodyClassName, headless = false, size = 'default',
+  open, onClose, title, labelledBy, fallbackFocus, closeLabel = 'Close', description, children, footer, className, contentClassName, bodyClassName, headless = false, size = 'default',
 }: {
   open: boolean
   onClose: () => void
   title: string
+  labelledBy?: string
+  fallbackFocus?: RefObject<HTMLElement>
   closeLabel?: string
   description?: string
   children?: ReactNode
@@ -45,18 +49,7 @@ export function Modal({
   headless?: boolean
   size?: 'default' | 'form'
 }) {
-  const dialogRef = useRef<HTMLDialogElement | null>(null)
-  useLayoutEffect(() => {
-    if (!open) return
-    const dialog = dialogRef.current
-    if (dialog === null) return
-    const previous = document.activeElement
-    dialog.showModal()
-    return () => {
-      dialog.close()
-      if (previous instanceof HTMLElement && previous.isConnected) previous.focus()
-    }
-  }, [open])
+  const dialogRef = useModalDialog(open, fallbackFocus)
 
   if (!open) return null
 
@@ -69,7 +62,8 @@ export function Modal({
         data-workspace-form={size === 'form' || undefined}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-label={labelledBy === undefined ? title : undefined}
+        aria-labelledby={labelledBy}
         onCancel={(event) => { event.preventDefault(); event.stopPropagation(); onClose() }}
         onClick={(event) => {
           if (event.target !== event.currentTarget) return

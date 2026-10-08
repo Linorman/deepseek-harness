@@ -43,7 +43,8 @@
     "@clocky/clocky-subprocess-local": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
     "@clocky/clocky-team-link": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-timeout": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-activation-supervisor": "workspace:^",
@@ -72,6 +73,7 @@
     "@clocky/clocky-team-link": "workspace:^",
     "@clocky/clocky-team-link-websocket-hub": "workspace:^",
     "@clocky/clocky-tool-team": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-timeout": "workspace:^"
   }
 }

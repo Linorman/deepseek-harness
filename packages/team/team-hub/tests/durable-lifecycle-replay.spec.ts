@@ -1,6 +1,7 @@
 /** Serialized lifecycle and usage relationships at the Hub's storage boundary. @module */
 
 import { describe, expect, it } from 'vitest'
+import type { TeamSystemClosureDriverProof, TeamSystemClosureDriverScope } from '@clocky/clocky-team'
 import { createdTeam, goal, goalChanged, participant, participantChanged, taskCreatorId,
   taskCreatorActivationId, taskCreatorSessionId, teamId, teamPhase } from './fixtures.ts'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
@@ -35,6 +36,50 @@ function usage(observedAt = 12, inputTokens = 2) {
 for (const backend of ['json', 'sqlite'] as const) {
   describe(`durable lifecycle replay (${backend})`, () => {
     const prefix = [createdTeam(), teamPhase()]
+    it('rejects a cold completion intent whose objective never became complete', async () => {
+      const rows = [...prefix, closure('complete', 12), teamPhase({ phase: 'quiescing', createdAt: 13 })]
+      const ctx = await recover(backend, rows)
+      const state = await ctx.teams.getTeam({ teamId })
+      expect(state.goal.phase).toBe('active')
+      const intent = state.team.closure
+      if (intent?.kind !== 'complete' || intent.finalChannelId === undefined || intent.finalEnvelopeId === undefined) {
+        throw new Error('Malformed completion fixture omitted its exact final intent')
+      }
+      const input = { teamId, expectedCursor: state.team.cursor }
+      const scope: TeamSystemClosureDriverScope = { kind: 'closure-recover-complete', ...input,
+        closureIdempotencyKey: intent.idempotencyKey, closureRequestedAt: intent.requestedAt,
+        finalChannelId: intent.finalChannelId, finalEnvelopeId: intent.finalEnvelopeId }
+      const proof = Object.freeze({}) as TeamSystemClosureDriverProof
+      const unregister = ctx.teams.registerSystemClosureDriverProofSource({ name: 'team-closure-driver',
+        resolveClosureDriverProof: candidate => candidate === proof ? scope : undefined })
+      try {
+        await expect(ctx.teams.continueTeamClosure({ actor: proof, ...input }))
+          .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+        expect(await ctx.teams.getTeam({ teamId })).toEqual(state)
+      } finally { unregister() }
+    })
+    it('rejects a cold completion intent that names an unattached final channel', async () => {
+      const rows = [...prefix, goalChanged({ goal: goal({ revision: 2, phase: 'complete' }), createdAt: 12 }),
+        closure('complete', 13), teamPhase({ phase: 'quiescing', createdAt: 14 })]
+      const ctx = await recover(backend, rows)
+      const state = await ctx.teams.getTeam({ teamId })
+      const intent = state.team.closure
+      if (intent?.kind !== 'complete' || intent.finalChannelId === undefined || intent.finalEnvelopeId === undefined) {
+        throw new Error('Malformed completion fixture omitted its final identity')
+      }
+      const input = { teamId, expectedCursor: state.team.cursor }
+      const scope: TeamSystemClosureDriverScope = { kind: 'closure-recover-complete', ...input,
+        closureIdempotencyKey: intent.idempotencyKey, closureRequestedAt: intent.requestedAt,
+        finalChannelId: intent.finalChannelId, finalEnvelopeId: intent.finalEnvelopeId }
+      const proof = Object.freeze({}) as TeamSystemClosureDriverProof
+      const unregister = ctx.teams.registerSystemClosureDriverProofSource({ name: 'team-closure-driver',
+        resolveClosureDriverProof: candidate => candidate === proof ? scope : undefined })
+      try {
+        await expect(ctx.teams.continueTeamClosure({ actor: proof, ...input }))
+          .rejects.toMatchObject({ code: 'TEAM_CHANNEL_NOT_FOUND' })
+        expect(await ctx.teams.getTeam({ teamId })).toEqual(state)
+      } finally { unregister() }
+    })
     for (const kind of ['complete', 'fail'] as const) {
       it(`refuses ${kind} intent revisions and prohibited post-intent business records`, async () => {
         const intent = closure(kind, 12)

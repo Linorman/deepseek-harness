@@ -38,6 +38,10 @@ rework 不授予重复已兑现转移的权限。Native continuation 仍要求�
 
 [推进回归](../../../../packages/simulation/simulation-product/tests/task-executor-progression.spec.ts)验证 JSON／SQLite 双决策完成、关联／执行响应丢失、等待／阻塞／决策上限，以及尝试耗尽／仍有次数时的真实规范 rework。[Loader snapshot](../../../../examples/simulation-company/tests/task-executor.snapshot.ts)在两种存储上验证一个真实 attempt 中的两个有序确定性决策，以及 rework 后两个经过审核的 attempt，含已记录输入、精确库存效果、不可变旧结果与完整最终检查点。既有模型和确定性单步 Loader 路径继续覆盖。这些检查不证明覆盖率百分比或待完成的完整故障矩阵。
 
+推进测试还模拟已记录决策的效果结果或接收者回执暂不可见。执行器先等待而不选择新认知步骤，证据可见后继续原 attempt。决策数现在统一取自规范化的已记录关联列表。
+
 [工作流回归](../../../../packages/simulation/simulation-product/tests/task-scenario.spec.ts)验证 JSON／SQLite 不同执行路由的顺序报告任务、供应方审核、错误审核人拒绝、rework 反馈、无库存转移或模型请求，以及模型／可执行配置拒绝。[行政回归](../../../../packages/simulation/simulation-product/tests/task-scenario-administration.spec.ts)在两种存储上验证运行所属审核、暂停意图、精确持久重试和无执行的冷读取。
 
-[未来输入回归](../../../../packages/simulation/simulation-product/tests/workflow-ingress.spec.ts)验证 JSON／SQLite 工作流完成后向新增 auditor 送达输入、暂停准入后显式恢复至 tick `9007199254740993`、精确消费 receipt／decision／正文、任务／报告／资源效果不变，以及无模型推理的幂等输入重试。
+[场景 driver 边界回归](../../../../packages/simulation/simulation-product/tests/task-scenario-driver-edges.spec.ts)使用已准备的原生 run，拒绝不完整的检查点投影，在开启回包丢失后恢复精确的创建与后续窗口，重放已提交决策而不重复任务、关闭已取消窗口而不重复认知，并在保留原任务窗口时拒绝变更执行路由。创建身份已受理却没有任务操作、记录的是其他原生效果或任务 outbox 事件已取消时，场景停止。有效任务创建等待规范回执；driver 在选中任务步骤后沿流程传递该回执，不再于执行后重复读取。测试还覆盖驻留容量、普通任务停止、审核、管理暂停、未来输入排序及送达输入等待接收方容量。
+
+[未来输入回归](../../../../packages/simulation/simulation-product/tests/workflow-ingress.spec.ts)验证 JSON／SQLite 工作流完成后向新增 auditor 送达输入、暂停准入后显式依次恢复到两个未来 tick（终点为 `9007199254740993`）、最早事件先处理、精确消费各 receipt／decision／正文、任务／报告／资源效果不变，以及无模型推理的幂等输入重试。

@@ -99,6 +99,27 @@ export interface ToolRowProps {
    * over the expanded body. Absent = no affordance.
    */
   inspect?: (() => void) | undefined
+  /** Settled call duration, right-aligned on the row; absent while running or when the call fell outside the window. */
+  durationMs?: number | undefined
+}
+
+/**
+ * Settled call duration for a tool block.
+ * @param block - the root or subcall lifecycle value.
+ * @returns milliseconds from call to result, or undefined while running or when the call time is unknown.
+ */
+export function toolDurationMs(
+  block: { readonly kind?: unknown; readonly time: number; readonly callTime?: number | null },
+): number | undefined {
+  if (block.kind !== 'tool-result' || block.callTime === undefined || block.callTime === null) return undefined
+  return Math.max(0, block.time - block.callTime)
+}
+
+/** Compact duration: tenths under ten seconds, whole seconds under a minute, then minutes. */
+function formatDuration(ms: number): string {
+  if (ms < 10_000) return `${(ms / 1000).toFixed(1)}s`
+  if (ms < 60_000) return `${String(Math.round(ms / 1000))}s`
+  return `${String(Math.floor(ms / 60_000))}m ${String(Math.round((ms % 60_000) / 1000))}s`
 }
 
 /** Leading-slot state substitution: the tool icon yields to the terminal state
@@ -145,6 +166,7 @@ export function ToolRow({
   filePath,
   onOpenFile,
   inspect,
+  durationMs,
 }: ToolRowProps) {
   const [expanded, setExpanded] = useState(false)
   const terminalBody = terminal ?? null
@@ -228,6 +250,7 @@ export function ToolRow({
               </span>
             )}
             {suffix !== null && <span className={css.summarySuffix}>{suffix}</span>}
+            {durationMs !== undefined && <span className={css.duration} data-volatile>{formatDuration(durationMs)}</span>}
           </>
         )}
       >

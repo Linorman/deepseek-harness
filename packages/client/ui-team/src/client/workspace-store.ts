@@ -8,8 +8,18 @@ import { taskDraftKey, type TaskFormDraft, type TeamTaskDialogTarget } from './t
 /** Modules owned by the Team workspace. */
 export type TeamWorkspaceView = 'overview' | 'tasks' | 'channels' | 'members' | 'artifacts' | 'workflows' | 'audit' | 'attention'
 
+/** Equivalent overview visualizations; `list` is the table equivalent of the others. */
+export type TeamOverviewViz = 'topology' | 'flow' | 'lanes' | 'list'
+
+/** Settled swarm positions, kept so returning to the overview does not reshuffle nodes. */
+export type SwarmPositions = Readonly<Record<string, { readonly x: number; readonly y: number }>>
+
 /** Local navigation, task filters, and independent module scroll positions. */
 export interface TeamViewState {
+  /** Overview visualization; shareable through the `viz` URL parameter. */
+  overviewViz: TeamOverviewViz
+  /** Settled topology layout for this Team's loaded participants. */
+  swarmPositions?: SwarmPositions | undefined
   workflowPlanId?: import('@clocky/clocky-client-runtime/client').TeamWorkflowSummary['id'] | undefined
   view: TeamWorkspaceView
   taskId: TeamTaskId | undefined
@@ -27,7 +37,7 @@ export interface TeamViewState {
 }
 
 /** Initial preferences for a Team without a retained view. */
-export const DEFAULT_TEAM_VIEW: TeamViewState = { view: 'overview', taskId: undefined, taskListScroll: 0, taskSearch: '', taskPhase: 'all', scroll: {}, channelDrafts: {}, actionDrafts: {}, taskDrafts: {}, channelSearch: '', channelDetails: false }
+export const DEFAULT_TEAM_VIEW: TeamViewState = { overviewViz: 'topology', view: 'overview', taskId: undefined, taskListScroll: 0, taskSearch: '', taskPhase: 'all', scroll: {}, channelDrafts: {}, actionDrafts: {}, taskDrafts: {}, channelSearch: '', channelDetails: false }
 
 /** Public Team view, draft and capability-observation limits. */
 export interface Config {
@@ -120,11 +130,16 @@ export function createTeamWorkspaceStore(config: Config = {}): EngineStoreHandle
     const oldPosition = state.viewOrder.indexOf(teamId)
     if (oldPosition >= 0) state.viewOrder.splice(oldPosition, 1)
     else if (state.viewOrder.length >= limits.maxViewStates) {
-      const evict = state.viewOrder.findIndex(id => Object.keys(state.byTeam[id]?.channelDrafts ?? {}).length === 0
-        && Object.keys(state.byTeam[id]?.actionDrafts ?? {}).length === 0 && Object.keys(state.byTeam[id]?.taskDrafts ?? {}).length === 0)
-      if (evict < 0) throw new DraftCapacityError('No unpinned view state is available')
-      const id = state.viewOrder[evict]
-      if (id !== undefined) state.byTeam = withoutKey(state.byTeam, id)
+      // Ordered views are complete after each synchronous action commits. Each
+      // pinned view owns a counted draft, and maxViewStates > maxDrafts proves
+      // a clean view exists at capacity. Observers run after the full commit.
+      const evict = state.viewOrder.findIndex((id) => {
+        const view = state.byTeam[id] as TeamViewState
+        return Object.keys(view.channelDrafts).length === 0 && Object.keys(view.actionDrafts).length === 0
+          && Object.keys(view.taskDrafts).length === 0
+      })
+      const id = state.viewOrder[evict] as string
+      state.byTeam = withoutKey(state.byTeam, id)
       state.viewOrder.splice(evict, 1)
     }
     state.viewOrder.push(teamId)

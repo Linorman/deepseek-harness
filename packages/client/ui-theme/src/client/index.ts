@@ -40,7 +40,7 @@ declare module '@clocky/clocky-client-ui-slots' {
   }
 }
 
-/** Theme token dictionary: --clocky-alias-* overrides keyed by variable name. */
+/** Theme token dictionary: ui-theme role-token overrides keyed by variable name. */
 export type ThemeTokens = Record<string, string>
 
 /**
@@ -58,7 +58,7 @@ export interface ThemeTokenModes {
 /** Override-layer dictionary: token names to per-mode value pairs. */
 export type ThemeTokenOverrides = Record<string, ThemeTokenModes>
 
-/** One selectable theme: id, dark/light semantics, and alias-token overrides. */
+/** One selectable theme: id, dark/light semantics, and role-token overrides. */
 export interface ThemeDefinition {
   /** Theme id (the setTheme argument for concrete themes). */
   id: string
@@ -67,7 +67,7 @@ export interface ThemeDefinition {
    * `body[data-ds-dark-theme]` from this field — never from the id.
    */
   colorScheme: 'light' | 'dark'
-  /** Alias-layer overrides applied as inline CSS variables over the base palette. */
+  /** Role-token overrides applied as inline CSS variables over the base palette. */
   tokens: ThemeTokens
 }
 
@@ -122,24 +122,25 @@ const BUILTIN_THEMES: readonly ThemeDefinition[] = Object.freeze([
 ])
 
 const BUILTIN_INSPECT_TOKENS: readonly ThemeTokenInspection[] = Object.freeze([
-  { name: '--clocky-alias-bg-base', description: 'Application base background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-bg-base' },
-  { name: '--clocky-alias-bg-layer-1', description: 'Primary raised surface background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-bg-layer-1' },
-  { name: '--clocky-alias-bg-layer-2', description: 'Secondary nested surface background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-bg-layer-2' },
-  { name: '--clocky-alias-bg-overlay', description: 'Overlay and popover background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-bg-overlay' },
-  { name: '--clocky-alias-border-l1', description: 'Primary subtle border.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-border-l1' },
-  { name: '--clocky-alias-border-l2', description: 'Secondary stronger border.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-border-l2' },
-  { name: '--clocky-alias-brand-primary', description: 'Primary brand accent.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-brand-primary' },
-  { name: '--clocky-alias-label-primary', description: 'Primary text color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-label-primary' },
-  { name: '--clocky-alias-label-secondary', description: 'Secondary text color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-label-secondary' },
-  { name: '--clocky-alias-state-error-primary', description: 'Primary error state color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-state-error-primary' },
-  { name: '--clocky-alias-state-success-primary', description: 'Primary success state color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-state-success-primary' },
-  { name: '--clocky-alias-state-warn-primary', description: 'Primary warning state color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-alias-state-warn-primary' },
-  { name: '--clocky-specific-sidebar-fill', description: 'Sidebar column and title-row background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-specific-sidebar-fill' },
+  { name: '--clocky-bg-canvas', description: 'Application canvas behind pages and the conversation.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-bg-canvas' },
+  { name: '--clocky-bg-surface', description: 'Card and panel surface.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-bg-surface' },
+  { name: '--clocky-bg-raised', description: 'Nested raised surface.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-bg-raised' },
+  { name: '--clocky-bg-overlay', description: 'Menu, popover, and dialog surface.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-bg-overlay' },
+  { name: '--clocky-bg-sidebar', description: 'Sidebar column background, one tonal step from the canvas.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-bg-sidebar' },
+  { name: '--clocky-border-subtle', description: 'Hairline separator.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-border-subtle' },
+  { name: '--clocky-border-default', description: 'Default border.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-border-default' },
+  { name: '--clocky-fg-primary', description: 'Primary text color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-fg-primary' },
+  { name: '--clocky-fg-secondary', description: 'Secondary text color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-fg-secondary' },
+  { name: '--clocky-accent-bg', description: 'Brand accent fill for primary actions.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-accent-bg' },
+  { name: '--clocky-accent-fg', description: 'Brand accent for links and accent text.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-accent-fg' },
+  { name: '--clocky-status-failed-fg', description: 'Failure state text and glyphs.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-status-failed-fg' },
+  { name: '--clocky-status-done-fg', description: 'Completed state text and glyphs.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-status-done-fg' },
+  { name: '--clocky-status-needs-you-fg', description: 'Attention-required state text and glyphs.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--clocky-status-needs-you-fg' },
 ])
 
 /**
  * Theme registry and preference owner. `light`/`dark` are built in (the base
- * stylesheets carry both palettes); third-party themes register alias-layer
+ * stylesheets carry both palettes); third-party themes register role-token
  * overrides. Reads go through {@link getTheme}; preference writes only
  * through {@link setTheme}; continuous sync only through the `theme/change`
  * event. {@link overrideTokens} stacks partial token layers over the active
@@ -241,7 +242,7 @@ export class ThemeRuntime {
   /**
    * Register a theme. Duplicate id throws (single occupant per id; the
    * built-in pair counts; `system` is a preference, not a registrable id).
-   * @param definition - theme id, colorScheme, and alias-token overrides.
+   * @param definition - theme id, colorScheme, and role-token overrides.
    * @returns disposer. Disposing the theme backing the active preference
    * resets the preference to the default so the UI never keeps tokens of an
    * unregistered theme.

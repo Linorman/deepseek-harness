@@ -8,7 +8,7 @@
 
 展开品牌行分别渲染 `sidebar.brand.mark` 和 `sidebar.brand.name` 两个 single slot，收起轨道复用同一个标记 slot。没有占用者时显示机器人标记和 Clocky 文字，构建版本通过名称提示显示。部署插件可以分别替换标记或名称，而无需替换新建团队工作操作或轨道几何；声明感知的 `slots.inject()` 支持部署插件在侧边栏前后激活。
 
-New team work 只创建页面局部 Team 草稿并清空当前转录选择；在首条输入由 `team.start` 接纳之前，它既不会创建 Team，也不会创建 Session。Team 专属导航由 ui-team 持有。
+New team work 只创建页面局部 Team 草稿并清空当前转录选择；在首条输入由 `team.start` 接纳之前，它既不会创建 Team，也不会创建 Session。其下方的搜索触发器通过 `ctx.layout.openCommandPalette()` 打开外壳命令面板；按键图示仅作视觉呈现，`aria-keyshortcuts` 提供与平台无关的组合键。Team 专属导航由 ui-team 持有。
 
 `SidebarRootComponentProps` 组合布局 owner share、全局 Session 与 Workspace 钩子、已声明的品牌、`sidebar.workspaceNavigation`、`sidebar.teamTasks`、可选的 `sidebar.workspaces`、`sidebar.settings` 与页脚子 slot，以及注入的 `startTask` 与侧边栏切换回调。这里没有插件 store。
 
@@ -19,6 +19,8 @@ New team work 只创建页面局部 Team 草稿并清空当前转录选择；在
 页脚承载 `sidebar.settings`：侧边栏只渲染固定在底部的布局 slot，并共享其栏状态（`wide`）；ui-settings 在此注册触发行和设置面板。
 
 `/client` 导出表层只包含插件主体（`apply`／`inject`）及约定类型；SidebarRoot、行组件和树派生仍由 slot 注册封装在包内。
+
+当两个及以上工作区注册 `sidebar.workspaceNavigation` 入口时，展开的侧栏把它们渲染为一个分段模式切换器，指示条滑到带 `aria-current` 的入口，并带当前模式的身份光晕。只有一个入口时以及折叠 rail 中保持普通入口。
 
 ## 模型体验
 

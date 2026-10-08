@@ -1,7 +1,8 @@
-// DiffBlock: the inline-diff surface for a file mutation (write/edit) — a copy
-// control over one or more per-file hunks, each a bold path header followed by
-// the removed block (`-`, error color) and the added block (`+`, success
-// color), with a dim `└ +A -R · N file(s)` footer. Unlike the TUI's exact
+// DiffBlock: the inline-diff surface for a file mutation (write/edit). A header
+// bar shared with ReadBlock names the file (or the file count), the `+A −R`
+// change summary, and the copy control; the body holds the removed block (`-`,
+// error color) and the added block (`+`, success color) per hunk, opening each
+// further file with a bold path row when several files changed. Unlike the TUI's exact
 // changed-row comparison, this block renders the old and new sides in full.
 // Both front ends share the line-terminator rule and distinct-path file count.
 // Output never soft-wraps — an aligned source line keeps its indentation and
@@ -156,20 +157,35 @@ export function DiffBlock({ diffs, maxLines = DEFAULT_DIFF_MAX_LINES, className 
 
   if (rows.length === 0) return null
 
-  const hidden = rows.length - maxLines
+  const bodyRows = files === 1 ? rows.length - 1 : rows.length
+  const hidden = bodyRows - maxLines
   const capped = hidden > 0 && !expanded
   // Same split arithmetic as TerminalBlock and the TUI transcript's collapsed
   // card, so a body's head and tail slices agree across the front ends.
   const headLines = Math.ceil(maxLines / 2)
   const tailLines = maxLines - headLines
-  const head = capped ? rows.slice(0, headLines) : rows
-  const tail = capped ? rows.slice(rows.length - tailLines) : []
+
+  // One file: its path heads the card and the body carries only the change.
+  const shown = files === 1 ? rows.filter(row => row.kind !== 'path') : rows
+  const head = capped ? shown.slice(0, headLines) : shown
+  const tail = capped ? shown.slice(shown.length - tailLines) : []
+  // buildRows counts files from diffs; its nonempty single-file result proves
+  // the first typed hunk exists and carries its required path.
+  const label = files === 1 ? (diffs[0] as DiffHunk).path : `${String(files)} files`
 
   return (
     <div className={clsx(css.block, className)} data-diff="">
-      <button type="button" className={css.copyButton} onClick={onCopy}>
-        {copied ? '复制成功' : '复制'}
-      </button>
+      <div className={css.banner}>
+        <div className={css.label} title={label}>{label}</div>
+        <div className={css.action}>
+          <span className={css.counts} aria-label={`+${String(added)} -${String(removed)}`}>
+            <span className={css.countAdd}>+{added}</span> <span className={css.countDel}>−{removed}</span>
+          </span>
+          <button type="button" className={css.copyButton} onClick={onCopy}>
+            {copied ? '复制成功' : '复制'}
+          </button>
+        </div>
+      </div>
       <div className={css.body}>
         {head.map((row, index) => (
           <div key={index} className={clsx(css.line, ROW_CLASS[row.kind])}>{row.text}</div>
@@ -189,7 +205,6 @@ export function DiffBlock({ diffs, maxLines = DEFAULT_DIFF_MAX_LINES, className 
           <div key={index} className={clsx(css.line, ROW_CLASS[row.kind])}>{row.text}</div>
         ))}
       </div>
-      <div className={css.footer}>└ +{added} -{removed} · {files} file{files === 1 ? '' : 's'}</div>
     </div>
   )
 }

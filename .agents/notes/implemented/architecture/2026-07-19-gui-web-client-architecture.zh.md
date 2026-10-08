@@ -83,6 +83,8 @@ Notifier 微任务合批 ──► ConversationSnapshot 缓存 ──uSES──�
 - `bindSnapshotSelector(source)`：把一个源绑定为经 uSES-with-selector 的带类型 selector 钩子。uSES 约定四条按构造成立：getSnapshot 恒返缓存引用；subscribe 是绑定期闭包（引用永稳）；纯 CSR 不传 server snapshot；相等性缺省 `Object.is`，按调用可选 `shallowEqual`。
 - 相等性协议，全链一致：生产端结构共享；消费方以 `Object.is` 或 `shallowEqual` 短路；`React.memo` 浅比较。深比较全链禁止。
 
+共享 UI 行为沿用现有所有者：基础组件共享原生 dialog 生命周期与打开者焦点恢复；功能内部在各入口间共享检查属性与已绑定控件。模型目录失败只对当前操作 generation 发布。Simulation 任务 dialog 共享有界草稿编辑与挂载期结果处理，同时保留各自的 revision 和 attempt 围栏。已受理请求在结果确定前保留原身份，即使之后编辑的文字不同。这些辅助实现避免同级入口的行为分歧，不把业务授权移入 React，也不增加插件。
+
 ## 目录形态
 
 Client 包位于 `packages/client/*`，`apps/web` 是壳 boot 导出之上的薄 Vite 应用。插件包的浏览器半边在 `src/client/` 下；**一切构建产物落 `lib/`**——node 半边为 `lib/index.js`/`lib/invariant.js`，浏览器 bundle 为 `lib/client.js`（共享 tsdown client 预设两者皆出；无 `dist/` 目录，`exports["./client"]` 指向 `./lib/client.js`）。`ui-slots`、runtime 与 ui-renderer 构成基础设施方向；功能插件通过服务与 slot 协作，不导入展示实现。

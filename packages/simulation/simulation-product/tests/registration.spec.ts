@@ -34,3 +34,33 @@ it('retains earlier registrations when capacity or append refuses the next alloc
   await retain(record)
   expect((await next.products.list({}, call())).items).toHaveLength(2)
 })
+
+it('keeps trusted reader registrars process-local, single-owner and closed after disposal', async () => {
+  const h = await fixture()
+  const { products, fiber } = await h.mount()
+  const retry = products.operationRetryReaderRegistrar()
+  const context = products.contextReaderRegistrar()
+  const records = products.recordReaderRegistrar()
+  expect(() => JSON.stringify(retry)).toThrow('process-local')
+  expect(() => JSON.stringify(context)).toThrow('process-local')
+  expect(() => JSON.stringify(records)).toThrow('process-local')
+  const reader: Parameters<typeof retry>[0] = async (_runId, _operationId, native) => native
+  const releaseRetry = retry(reader)
+  expect(() => retry(reader)).toThrow('operation retry reader is unavailable')
+  releaseRetry()
+  const releaseRetryAgain = retry(reader)
+  releaseRetry()
+  releaseRetryAgain()
+  const grant = [{ principalId: 'reader' as never, entityIds: ['actor' as never] }]
+  const releaseContext = context(grant)
+  releaseContext()
+  releaseContext()
+  const disclosure = [{ principalId: 'reader' as never }]
+  const releaseRecords = records(disclosure)
+  releaseRecords()
+  releaseRecords()
+  await fiber.dispose()
+  expect(() => retry(reader)).toThrow('operation retry reader is unavailable')
+  expect(() => context(grant)).toThrow('policy registration is closed')
+  expect(() => records(disclosure)).toThrow('policy registration is closed')
+})

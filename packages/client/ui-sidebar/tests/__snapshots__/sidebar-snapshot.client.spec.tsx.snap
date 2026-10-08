@@ -7,7 +7,7 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
 >
   <div
     class="root collapsed railIn quietBars"
-    style=""
+    style="view-transition-name: clocky-sidebar;"
   >
     <div
       class="logoRow"
@@ -60,9 +60,26 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
         xmlns="http://www.w3.org/2000/svg"
       />
     </button>
+    <button
+      aria-haspopup="dialog"
+      aria-keyshortcuts="Meta+K Control+K"
+      aria-label="Search or jump to"
+      class="searchTrigger"
+      type="button"
+    >
+      <svg
+        data-content="4ca56c6d"
+        fill="none"
+        height="18"
+        viewBox="0 0 16 16"
+        width="18"
+        xmlns="http://www.w3.org/2000/svg"
+      />
+    </button>
     <nav
-      aria-label="Workspaces"
+      aria-label="Main navigation"
       class="productNavigation"
+      data-workspace="team"
     >
       <div
         data-slot="sidebar.workspaceNavigation"
@@ -112,7 +129,7 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
 >
   <div
     class="root quietBars"
-    style="width: 300px;"
+    style="view-transition-name: clocky-sidebar; width: 300px;"
   >
     <div
       class="logoRow"
@@ -194,10 +211,55 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
         New team work
       </span>
     </button>
-    <nav
-      aria-label="Workspaces"
-      class="productNavigation"
+    <button
+      aria-haspopup="dialog"
+      aria-keyshortcuts="Meta+K Control+K"
+      aria-label="Search or jump to"
+      class="searchTrigger"
+      type="button"
     >
+      <svg
+        data-content="4ca56c6d"
+        fill="none"
+        height="14"
+        viewBox="0 0 16 16"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      />
+      <span
+        class="searchLabel wide"
+      >
+        Search…
+      </span>
+      <span
+        aria-hidden="true"
+      >
+        <kbd
+          class="combo"
+        >
+          <kbd
+            class="key"
+          >
+            Ctrl
+          </kbd>
+          <kbd
+            class="key"
+          >
+            K
+          </kbd>
+        </kbd>
+      </span>
+    </button>
+    <nav
+      aria-label="Main navigation"
+      class="productNavigation"
+      data-workspace="team"
+    >
+      <span
+        aria-hidden="true"
+        class="modeIndicator"
+        style="--indicator-opacity: 0;"
+      />
       <div
         data-slot="sidebar.workspaceNavigation"
         style="display: contents;"
@@ -246,13 +308,13 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
 >
   <div
     class="root quietBars"
-    style="width: 300px;"
+    style="view-transition-name: clocky-sidebar; width: 300px;"
   >
     <div
       class="logoRow"
     >
       <button
-        aria-label="新建团队工作"
+        aria-label="新建团队任务"
         class="brand wide"
         type="button"
       >
@@ -310,7 +372,7 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
       </button>
     </div>
     <button
-      aria-label="新建团队工作"
+      aria-label="新建团队任务"
       class="newSession"
       type="button"
     >
@@ -325,13 +387,58 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
       <span
         class="newSessionLabel wide"
       >
-        新建团队工作
+        新建团队任务
+      </span>
+    </button>
+    <button
+      aria-haspopup="dialog"
+      aria-keyshortcuts="Meta+K Control+K"
+      aria-label="搜索或跳转"
+      class="searchTrigger"
+      type="button"
+    >
+      <svg
+        data-content="4ca56c6d"
+        fill="none"
+        height="14"
+        viewBox="0 0 16 16"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      />
+      <span
+        class="searchLabel wide"
+      >
+        搜索…
+      </span>
+      <span
+        aria-hidden="true"
+      >
+        <kbd
+          class="combo"
+        >
+          <kbd
+            class="key"
+          >
+            Ctrl
+          </kbd>
+          <kbd
+            class="key"
+          >
+            K
+          </kbd>
+        </kbd>
       </span>
     </button>
     <nav
-      aria-label="工作区"
+      aria-label="主导航"
       class="productNavigation"
+      data-workspace="team"
     >
+      <span
+        aria-hidden="true"
+        class="modeIndicator"
+        style="--indicator-opacity: 0;"
+      />
       <div
         data-slot="sidebar.workspaceNavigation"
         style="display: contents;"

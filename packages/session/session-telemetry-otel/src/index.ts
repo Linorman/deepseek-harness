@@ -1,3 +1,4 @@
+import { createOtelPipeline,emitOtelRecord } from './pipeline.ts'
 /**
  * OpenTelemetry Service Provider for the session telemetry capability.
  *
@@ -24,16 +25,12 @@ import {
   type SessionTelemetrySeverity,
   type SessionTelemetrySharingStatus,
 } from '@clocky/clocky-session-telemetry'
-import { APP_IDENTITY } from '@clocky/clocky-llm'
 import {
-  BatchLogRecordProcessor,
-  LoggerProvider,
+  type LoggerProvider,
   type BatchLogRecordProcessorOptions,
 } from '@opentelemetry/sdk-logs'
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http'
 import type { OTLPExporterNodeConfigBase } from '@opentelemetry/otlp-exporter-base'
 import { SeverityNumber, type AnyValue, type Logger } from '@opentelemetry/api-logs'
-import { resourceFromAttributes } from '@opentelemetry/resources'
 
 // The package's own manifest is the single source of the instrumentation-scope
 // version (same pattern as clocky-llm's attribution identity).
@@ -193,37 +190,12 @@ export class OpenTelemetrySessionBackend extends SessionTelemetryBackend {
       throw new Error(`session-telemetry-otel: shutdownTimeoutMillis must be a positive finite number no greater than ${MAX_TIMER_DELAY_MILLIS}, got ${String(shutdownTimeoutMillis)}`)
     }
     this.shutdownTimeoutMillis = shutdownTimeoutMillis
-    this.provider = new LoggerProvider({
-      resource: resourceFromAttributes({
-        'service.name': APP_IDENTITY.product,
-        'service.version': APP_IDENTITY.version,
-      }),
-      processors: [
-        new BatchLogRecordProcessor({
-          ...config.processor,
-          // The complete validated exporter object, verbatim: every SDK
-          // option (`timeoutMillis`, `compression`, `keepAlive`, …) reaches
-          // the exporter — rebuilding selected fields here would silently
-          // ignore the rest. App identity travels in the Resource
-          // (service.name/version); the transport-level user-agent is the
-          // SDK's own, per the axiom.
-          exporter: new OTLPLogExporter(config.exporter),
-        }),
-      ],
-    })
+    this.provider = createOtelPipeline(config.exporter, config.processor)
     const ledger = this.provider.getLogger('@clocky/clocky-session-telemetry-otel', version)
     const ops = this.provider.getLogger('@clocky/clocky-session-telemetry-otel/ops', version)
     const enqueue: SessionTelemetrySink['emit'] = (record) => {
       const logger: Logger = record.channel === 'ops' ? ops : ledger
-      logger.emit({
-        timestamp: record.time,
-        observedTimestamp: record.time,
-        ...SEVERITY[record.severity],
-        // JSON-serializable by the seam's contract (validated at Session.append),
-        // which is exactly the AnyValue subset.
-        body: record.body as AnyValue,
-        attributes: record.attributes,
-      })
+      emitOtelRecord(logger, { time: record.time, body: record.body as AnyValue, attributes: record.attributes }, SEVERITY[record.severity])
     }
     const backend: SessionTelemetrySink = {
       emit: enqueue,

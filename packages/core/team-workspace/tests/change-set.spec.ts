@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { taskAttemptIdSchema } from '@clocky/clocky-team'
 import {
   encodeTeamWorkspaceChangeSet,
+  encodeTeamWorkspaceChangeSetIfSupported,
   parseTeamWorkspaceChangeSet,
   selectTeamWorkspacePatchArtifact,
   teamWorkspaceSourceIntegrationResult,
@@ -150,4 +151,14 @@ describe('Team workspace portable change sets', () => {
       expect.objectContaining({ status: 'conflict', conflictPaths: ['one'] }),
     ])
   })
+})
+
+
+it('preserves an unexpected serialization failure instead of converting it to unsupported publication', () => {
+  const failure = new Error('Serializer unavailable')
+  const stringify = vi.spyOn(JSON, 'stringify').mockImplementationOnce(() => { throw failure })
+  try {
+    expect(() => encodeTeamWorkspaceChangeSetIfSupported({ provider: 'sandbox-local', sourceAttemptId,
+      changes: [{ path: 'safe', kind: 'delete' }] }, 1024)).toThrow(failure)
+  } finally { stringify.mockRestore() }
 })

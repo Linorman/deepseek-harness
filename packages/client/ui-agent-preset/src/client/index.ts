@@ -72,7 +72,8 @@ export function apply(ctx: ClientContext): void {
         if (ns !== AGENT_PRESET_SETTINGS_NS) return
         refresh()
       }),
-      ctx.on('connection/reset', () => { refresh() }),
+      ctx.on('connection/reset', () => { controller.resumeAuthorization(); section.resumeAuthorization(); refresh() }),
+      ctx.on('connection/authorization-cleared', () => { controller.clearAuthorization(); section.clearAuthorization() }),
     ]
     return () => { for (const dispose of disposers) dispose() }
   }, 'ui-agent-preset: settings refresh')

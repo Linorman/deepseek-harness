@@ -699,6 +699,19 @@ describe('@clocky/clocky-team-activation-recovery', () => {
     expect(maximumCalls).toBe(1)
   })
 
+  it('treats a concurrent activation replacement as settled by its current owner', async () => {
+    const teamId = teamIdSchema.parse('team-startup-conflicting-recovery')
+    const worker = participant(teamId, 'participant-recovery-conflicting')
+    const current = state('team-startup-conflicting-recovery', 'active', [worker], [
+      binding(teamId, worker, 'activation-recovery-conflicting'),
+    ])
+    const test = harness([current.team], [current])
+    test.coldReplace.mockRejectedValue(new TeamError('Another owner replaced the epoch', 'TEAM_ACTIVATION_RECOVERY_CONFLICT'))
+    await expect(test.mount()).resolves.toBeDefined()
+    expect(test.coldReplace).toHaveBeenCalledOnce()
+    expect(test.getTeam).toHaveBeenCalledTimes(2)
+  })
+
   it('ignores plans outside the configured host/profile and completed epochs', async () => {
     const teamId = teamIdSchema.parse('team-startup-filtered')
     const noPlan = participant(teamId, 'participant-recovery-none')

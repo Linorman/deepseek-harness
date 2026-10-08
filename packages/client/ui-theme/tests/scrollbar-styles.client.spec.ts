@@ -1,11 +1,11 @@
 /**
  * Scrollbar stylesheet contract, asserted against the CSS text on disk: every
- * --clocky-alias-scrollbar-* token design-platform.css defines has a consumer,
+ * --clocky-thumb-l* token tokens.css defines has a consumer,
  * scrollbar.css binds the base-surface pair through the rebindable
  * indirection, the width variable mirrors the ::-webkit-scrollbar rule for
  * consumers that align beside the bar, and elevated surfaces rebind that
  * indirection in complete pairs. The expected token set is scanned out of
- * design-platform.css, so adding, renaming, or dropping a scrollbar token
+ * tokens.css, so adding, renaming, or dropping a scrollbar token
  * moves these assertions with it.
  */
 import { readdirSync, readFileSync } from 'node:fs'
@@ -23,21 +23,21 @@ const STYLES = new URL('../src/styles/', import.meta.url)
 const PACKAGES_DIR = fileURLToPath(new URL('../../../', import.meta.url))
 const read = (name: string): string => readFileSync(fileURLToPath(new URL(name, STYLES)), 'utf8')
 
-const platformCss = read('design-platform.css')
+const platformCss = read('tokens.css')
 const scrollbarCss = read('scrollbar.css')
 
 /** Body attribute selecting the dark palette; ui-layout's ThemePresenter sets it. */
 const DARK_ATTRIBUTE = '[data-ds-dark-theme]'
 /** Alias tokens under test: the prefix the elevation pairs share. */
-const TOKEN_PREFIX = '--clocky-alias-scrollbar-'
+const TOKEN_PREFIX = '--clocky-thumb-l'
 /** Prefix of the rebindable indirection scrollbar.css owns. */
 const INDIRECTION_PREFIX = '--clocky-scrollbar-'
 /** The one non-token rebind value: a surface that draws no thumb at all. */
 const HIDDEN_THUMB = 'transparent'
 /** The elevation rebind, spelled per property: value-wholeness, not token shape. */
 const ELEVATED_REBIND = new Map([
-  ['--clocky-scrollbar-thumb', '--clocky-alias-scrollbar-bg-l2'],
-  ['--clocky-scrollbar-thumb-hover', '--clocky-alias-scrollbar-hover-l2'],
+  ['--clocky-scrollbar-thumb', '--clocky-thumb-l2'],
+  ['--clocky-scrollbar-thumb-hover', '--clocky-thumb-l2-hover'],
 ].map(([property, token]) => [property!, `var(${token!})`]))
 
 /**
@@ -203,18 +203,18 @@ const OVERFLOW_PROPERTIES = ['overflow', 'overflow-x', 'overflow-y']
 const SURFACE_PROPERTIES = ['background', 'background-color']
 /**
  * Token families that name a SURFACE — a background an element is drawn on, and
- * so something a scrollbar can sit against. `--clocky-alias-button-*`,
- * `--clocky-alias-interactive-*`, and `--clocky-alias-markdown-*` reach the same dark
- * elevation rungs while naming a control or an inline span, which no scroll
+ * so something a scrollbar can sit against. Accent, status, and media-control
+ * tokens can reach the same dark elevation rungs while naming a control or an
+ * inline span, which no scroll
  * container renders its bar against (ChatView's floating `.toBottom` pill,
  * CodeBlock's banner). Family, not geometry: a floating button legitimately
  * carries a radius, a shadow, and a fixed size, so shape cannot separate them.
  */
-const SURFACE_TOKEN_PATTERN = /^--clocky-(?:alias-bg-|specific-)/
+const SURFACE_TOKEN_PATTERN = /^--clocky-bg-(?!control$)/
 
 /**
- * The palette's own dark elevation ladder, resolved from `design-platform.css`:
- * `bg-layer-2` and `bg-layer-3` are the rungs above the base surfaces, and the
+ * The palette's own dark elevation ladder, resolved from `tokens.css`:
+ * `bg-raised` and `bg-overlay` are the rungs above the base surfaces, and the
  * l1/l2 scrollbar split encodes exactly that step. Reading it from the palette
  * rather than from the sheets that happen to rebind is what lets the check flag
  * a surface NOBODY has rebound yet.
@@ -239,7 +239,7 @@ function elevatedRungs(): Set<string> {
     }
     return current
   }
-  const rungs = new Set([resolve('--clocky-alias-bg-layer-2'), resolve('--clocky-alias-bg-layer-3')])
+  const rungs = new Set([resolve('--clocky-bg-raised'), resolve('--clocky-bg-overlay')])
   const tokens = new Set<string>()
   for (const name of definitions.keys()) {
     if (SURFACE_TOKEN_PATTERN.test(name) && rungs.has(resolve(name))) tokens.add(name)
@@ -277,7 +277,7 @@ for (const file of packageStylesheets()) {
   sheetSurfaces.set(file, surfaces)
 }
 
-describe('design-platform.css scrollbar tokens', () => {
+describe('tokens.css scrollbar tokens', () => {
   it('defines the same scrollbar token set in the light and the dark block', () => {
     // A token present only in the light block silently keeps its light value
     // under the dark palette, since the dark block only overrides.
@@ -287,13 +287,13 @@ describe('design-platform.css scrollbar tokens', () => {
   })
 
   it('resolves every scrollbar token to a static scale value, not to another alias', () => {
-    // The alias layer is the only indirection in the token sheet: an alias
-    // pointing at a second alias makes the dark override order-dependent.
+    // Thumb tokens name palette steps directly: a thumb pointing at a role
+    // token would make the dark override order-dependent.
     for (const rule of platformRules) {
       for (const [property, value] of rule.declarations) {
         if (!property.startsWith(TOKEN_PREFIX)) continue
         for (const reference of varReferences(value)) {
-          expect(reference, `${property}: ${value}`).toMatch(/^--clocky-static-/)
+          expect(reference, `${property}: ${value}`).toMatch(/^--clocky-neutral-/)
         }
       }
     }
@@ -308,7 +308,7 @@ describe('scrollbar token consumers', () => {
     expect(sorted(referencedTokens.keys())).toEqual(sorted(allTokens))
   })
 
-  it('every referenced scrollbar token is defined in design-platform.css', () => {
+  it('every referenced scrollbar token is defined in tokens.css', () => {
     // A dangling var() renders the UA default instead of failing loudly, so a
     // rename has to move the reference and the definition together.
     for (const [token, files] of referencedTokens) {
@@ -323,8 +323,8 @@ describe('scrollbar.css base-surface binding', () => {
   it('renders the l1 pair through the rebindable indirection', () => {
     // l1 is the base-surface default the indirection resolves to; the
     // indirection only counts as bound when a rendering declaration reads it.
-    expect(rendered).toContain(`${TOKEN_PREFIX}bg-l1`)
-    expect(rendered).toContain(`${TOKEN_PREFIX}hover-l1`)
+    expect(rendered).toContain(`${TOKEN_PREFIX}1`)
+    expect(rendered).toContain(`${TOKEN_PREFIX}1-hover`)
   })
 
   it('routes the standard property and the WebKit thumb through the same indirection', () => {
@@ -409,7 +409,7 @@ describe('scrollbar.css selectors', () => {
     .flatMap(rule => rule.selectors)
 
   it('declares scrollbar-color only where the body-scoped tokens are visible', () => {
-    // design-platform.css defines the alias tokens on `body`, and custom
+    // tokens.css defines the alias tokens on `body`, and custom
     // properties inherit downward only: the same declaration on `html` or
     // `:root` resolves to the guaranteed-invalid value, which computes
     // scrollbar-color to `auto` and drops the theming entirely.
@@ -531,13 +531,13 @@ describe('elevated surface rebinds', () => {
   it('rebinds the pair to one target: the l2 elevation pair, or transparent', () => {
     // The rule as a whole, not each declaration on its own. Per-declaration
     // checking accepts a MIXED rule — `thumb: transparent` beside
-    // `thumb-hover: var(--clocky-alias-scrollbar-hover-l2)` — which repaints the
+    // `thumb-hover: var(--clocky-thumb-l2-hover)` — which repaints the
     // bar the moment the pointer reaches it while passing a gate that claims
     // the two targets are exclusive.
     //
     // The elevation half compares the whole value against the pair's canonical
     // spelling rather than checking that every token it mentions ends in `-l2`.
-    // A shape check admits `color-mix(…, var(--clocky-alias-scrollbar-bg-l2) 85%,
+    // A shape check admits `color-mix(…, var(--clocky-thumb-l2) 85%,
     // white)` and a crossed pair (the hover token bound to the resting
     // property); neither is what the contract says.
     for (const { file, rule } of rebindRules) {
@@ -557,18 +557,16 @@ describe('elevated surface rebinds', () => {
     // remembered, and a surface nobody has rebound yet — the case the check
     // exists for — would define itself as unelevated. Anchoring it here means a
     // new palette token on an elevated rung is in scope the moment it is
-    // defined. `--clocky-specific-tip` is the regression that proved the point: it
-    // resolves to the same dark rung as the menu surface, and the Todo panel
-    // scrolled on it unrebound while a rebind-derived set stayed green.
-    expect(elevatedSurfaces).toContain('--clocky-alias-bg-layer-2')
-    expect(elevatedSurfaces).toContain('--clocky-alias-bg-layer-3')
-    expect(elevatedSurfaces).toContain('--clocky-specific-menu')
-    expect(elevatedSurfaces).toContain('--clocky-specific-input-major')
-    expect(elevatedSurfaces).toContain('--clocky-specific-tip')
+    // defined. A panel surface that once resolved to the same dark rung as the
+    // menu scrolled unrebound while a rebind-derived set stayed green.
+    expect(elevatedSurfaces).toContain('--clocky-bg-raised')
+    expect(elevatedSurfaces).toContain('--clocky-bg-overlay')
     // Base surfaces stay out, or every scroll container would be in scope and
-    // the check would say nothing.
-    expect(elevatedSurfaces).not.toContain('--clocky-alias-bg-base')
-    expect(elevatedSurfaces).not.toContain('--clocky-alias-bg-layer-1')
+    // the check would say nothing. Floating control fills are not surfaces.
+    expect(elevatedSurfaces).not.toContain('--clocky-bg-canvas')
+    expect(elevatedSurfaces).not.toContain('--clocky-bg-surface')
+    expect(elevatedSurfaces).not.toContain('--clocky-bg-sunken')
+    expect(elevatedSurfaces).not.toContain('--clocky-bg-control')
   })
 
   it('every sheet that scrolls on an elevated surface rebinds', () => {
@@ -582,7 +580,7 @@ describe('elevated surface rebinds', () => {
     // Surface-level, not element-level: the elevated card and the descendant
     // that scrolls are separate rules, and CSS text does not say which contains
     // which. What keeps that from over-reporting is the token FAMILY: only
-    // `--clocky-alias-bg-*` and `--clocky-specific-*` name a surface, so a floating
+    // `--clocky-bg-*` names a surface, so a floating
     // button or an inline code span reaching the same rung is out of scope
     // (ChatView's `.toBottom`, CodeBlock's banner). Geometry cannot make that
     // call — a floating button carries a radius, a shadow, and a fixed size.

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { ChangeEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import clsx from 'clsx'
 import {
-  IconPlusOutline16, IconWarningOutline16, Toast, Tooltip,
+  IconPlusOutline16, IconWarningOutline16, StatusGlyph, Toast, Tooltip,
 } from '@clocky/clocky-client-ui-primitives'
 // Type-only: the `plan` projection key merge (the TodoDock posture — the
 // composer reads a host-computed value; the domain owns the key).
@@ -20,11 +20,12 @@ import type {} from '@clocky/clocky-plan-mode/client'
 // api-remotes import already places it in every client program.
 import type { Translate } from '@clocky/clocky-client-ui-slots'
 import type { ComposerBarProps } from '../contract/slots.ts'
-import { deriveDecorations } from '../input/decorations.ts'
-import type { DraftDecorations } from '../input/decorations.ts'
-import type { EditRange } from '../input/contract.ts'
+import { deriveDecorations } from '../contract/decorations.ts'
+import { composerActivity } from '../contract/composer-activity.ts'
+import type { DraftDecorations } from '../contract/decorations.ts'
+import type { EditRange } from '../contract/input.ts'
 import { attachmentErrorText, imageSizeText } from '../image-labels.ts'
-import { ReferenceIcon } from '../reference/ReferenceIcon.tsx'
+import { ReferenceIcon } from '../contract/ReferenceIcon.tsx'
 import { ContextMeter } from './ContextMeter.tsx'
 import { PermissionSelect } from './PermissionSelect.tsx'
 import { isSafariBrowser, repairSafariTextareaLayout } from './safari.ts'
@@ -92,6 +93,12 @@ export function InputBar({
   const teamOwned = useTeamTasks?.(state => state.current !== undefined) ?? false
   const promptError = useSession(s => s.promptError) ?? null
   const running = useSession(s => s.running) ?? false
+  // The status row names the running step; primitives keep the selectors stable.
+  const activityTool = useSession(s => s.runningCalls.at(-1)?.name)
+  const activityToolStep = useSession(s => s.runningCalls.at(-1)?.step)
+  const partialStep = useSession(s => s.partial?.step)
+  const partialBlock = useSession(s => s.partial?.blocks.at(-1)?.kind)
+  const activity = composerActivity({ running, tool: activityTool, toolStep: activityToolStep, partialStep, partialBlock })
   const removed = useSession(s => s.removed) ?? false
   // Plan mode swaps the textarea placeholder (the projection is the folded
   // host value; owner-prop placeholders — hero, session-unavailable — win).
@@ -677,6 +684,7 @@ export function InputBar({
       >
         {overlay !== undefined && <div className={css.overlayAnchor}>{overlay}</div>}
         {accessory !== undefined && <div className={css.accessory}>{accessory}</div>}
+
         {renderSlot('conversation.input.attachments', {
           attachments,
           canAcceptDrop,
@@ -748,15 +756,31 @@ export function InputBar({
                 <IconPlusOutline16 size={14} />
               </button>
             </Tooltip>
+            {/* Model, permission, and plan choices group on the left; the
+                context ring and send stay on the right. */}
             <div className={css.modes}>
               {accessSelect}
               {!teamOwned && renderSlot('conversation.input.plan', { locked, teamOwned })}
+              {renderSlot('conversation.input.model', { locked: modelSeatLocked, teamOwned })}
             </div>
             {leftItems}
           </div>
           <div className={css.trailing}>
+            {/* What the running turn is doing, in the toolbar so the composer
+                never changes height mid-turn (a height change would unpin the
+                transcript from its bottom). Stop stays the primary button. */}
+            {activity !== undefined && (
+              <span className={css.activity} role="status" data-composer-activity={activity.kind}>
+                <StatusGlyph status="running" />
+                <span className={css.activityText}>
+                  {activity.kind === 'tool'
+                    ? t('input.activity.tool', { name: activity.name })
+                    : t(`input.activity.${activity.kind}`)}
+                </span>
+                {activity.kind !== 'working' && <span className={css.activityStep}>{t('input.activity.step', { step: activity.step })}</span>}
+              </span>
+            )}
             {rightItems}
-            {renderSlot('conversation.input.model', { locked: modelSeatLocked, teamOwned })}
             <ContextMeter useProjection={useProjection} t={t} />
             <Tooltip label={primaryLabel} side="top" delayMs={500}>
               <button

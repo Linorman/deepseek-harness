@@ -1,54 +1,54 @@
-- toolbar "Trajectory toolbar":
-  - button "Use actual duration": Duration
-  - button "Collapse turns": Turns
-  - button "Collapse calls": Calls
+- toolbar "轨迹工具栏":
+  - button "按实际耗时显示": 耗时
+  - button "折叠轮次": 轮次
+  - button "折叠调用": 调用
   - img
-  - searchbox "Search trajectory"
-- region "Trajectory timeline":
-  - tooltip "ASSISTANT {{clock}} → {{clock}} Total {{duration}} · TTFT {{duration}} · Decoding {{duration}}"
+  - searchbox "搜索轨迹"
+- region "轨迹时间线":
+  - tooltip "助手 {{clock}} → {{clock}} 总耗时 {{duration}} · TTFT {{duration}} · 解码 {{duration}}"
 - table:
   - rowgroup:
-    - row "SYSTEM, Initial System Prompt":
-      - cell "SYSTEM"
+    - row "系统，Initial System Prompt":
+      - cell "系统"
       - cell "Initial System Prompt"
-    - 'row "USER, NavScenario: first run bash to print exactly NAVIGATION_OK, then read nav-a.md and nav-b.md using two read calls in ONE assistant message, then reply with the single word FIRST_DONE and stop."':
-      - cell "Turn 1 USER": USER
+    - 'row "用户，NavScenario: first run bash to print exactly NAVIGATION_OK, then read nav-a.md and nav-b.md using two read calls in ONE assistant message, then reply with the single word FIRST_DONE and stop."':
+      - cell "轮次 1 用户": 用户
       - 'cell "NavScenario: first run bash to print exactly NAVIGATION_OK, then read nav-a.md and nav-b.md using two read calls in ONE assistant message, then reply with the single word FIRST_DONE and stop."'
-    - 'row "Request 1, ASSISTANT, The user wants me to follow a specific navigation scenario. Let me: Run bash to print \"NAVIGATION_OK\" Read nav-a.md and nav-b.md in two read calls in ONE message Reply with \"FIRST_DONE\" Let me start with the bash command and the reads."':
-      - 'cell "Request #1 ASSISTANT"':
-        - 'button "Request #1"'
-        - text: ASSISTANT
+    - 'row "请求 1，助手，The user wants me to follow a specific navigation scenario. Let me: Run bash to print \"NAVIGATION_OK\" Read nav-a.md and nav-b.md in two read calls in ONE message Reply with \"FIRST_DONE\" Let me start with the bash command and the reads."':
+      - 'cell "请求 #1 助手"':
+        - 'button "请求 #1"'
+        - text: 助手
       - 'cell "The user wants me to follow a specific navigation scenario. Let me: Run bash to print \"NAVIGATION_OK\" Read nav-a.md and nav-b.md in two read calls in ONE message Reply with \"FIRST_DONE\" Let me start with the bash command and the reads."'
-    - 'row "TOOL, bash {\"command\": \"echo NAVIGATION_OK\", \"description\": \"Print NAVIGATION_OK\"}" [selected]':
-      - cell "TOOL"
+    - 'row "工具，bash {\"command\": \"echo NAVIGATION_OK\", \"description\": \"Print NAVIGATION_OK\"}" [selected]':
+      - cell "工具"
       - 'cell "bash{\"command\": \"echo NAVIGATION_OK\", \"description\": \"Print NAVIGATION_OK\"} → NAVIGATION_OK"'
-    - 'row "TOOL, read {\"file_path\": \"nav-a.md\"}"':
-      - cell "TOOL"
+    - 'row "工具，read {\"file_path\": \"nav-a.md\"}"':
+      - cell "工具"
       - 'cell "read{\"file_path\": \"nav-a.md\"} → <path>{{cwd}}/nav-a.md</path> <type>file</type> <content> 1: # alpha nav (End of file - total 1 lines) </content>"'
-    - 'row "TOOL, read {\"file_path\": \"nav-b.md\"}"':
-      - cell "TOOL"
+    - 'row "工具，read {\"file_path\": \"nav-b.md\"}"':
+      - cell "工具"
       - 'cell "read{\"file_path\": \"nav-b.md\"} → <path>{{cwd}}/nav-b.md</path> <type>file</type> <content> 1: # beta nav (End of file - total 1 lines) </content>"'
-    - row "Request 2, ASSISTANT, FIRST_DONE":
-      - 'cell "Request #2 ASSISTANT"':
-        - 'button "Request #2"'
-        - text: ASSISTANT
+    - row "请求 2，助手，FIRST_DONE":
+      - 'cell "请求 #2 助手"':
+        - 'button "请求 #2"'
+        - text: 助手
       - cell "FIRST_DONE"
-    - 'row "USER, Reply in markdown with: a level-2 heading \"Navigation Summary\", a bulleted list of exactly two items, and a fenced code block containing echo WATERFALL. Then stop."':
-      - cell "Turn 2 USER": USER
+    - 'row "用户，Reply in markdown with: a level-2 heading \"Navigation Summary\", a bulleted list of exactly two items, and a fenced code block containing echo WATERFALL. Then stop."':
+      - cell "轮次 2 用户": 用户
       - 'cell "Reply in markdown with: a level-2 heading \"Navigation Summary\", a bulleted list of exactly two items, and a fenced code block containing echo WATERFALL. Then stop."'
-    - row "Request 3, ASSISTANT, Navigation Summary alpha nav beta nav echo WATERFALL":
-      - 'cell "Request #3 ASSISTANT"':
-        - 'button "Request #3"'
-        - text: ASSISTANT
+    - row "请求 3，助手，Navigation Summary alpha nav beta nav echo WATERFALL":
+      - 'cell "请求 #3 助手"':
+        - 'button "请求 #3"'
+        - text: 助手
       - cell "Navigation Summary alpha nav beta nav echo WATERFALL"
-- complementary "Event details":
-  - separator "Resize event details"
-  - text: TOOL Turn 1 · Step 1
-  - button "Close details"
-  - tablist "Event details":
-    - tab "Summary"
-    - tab "Payload"
-    - tab "Result" [selected]
-    - tab "Schema"
-    - tab "Timing"
-  - tabpanel "Result": NAVIGATION_OK
+- complementary "事件详情":
+  - separator "调整事件详情宽度"
+  - text: 工具 轮次 1 · 步骤 1
+  - button "关闭详情"
+  - tablist "事件详情":
+    - tab "概述"
+    - tab "输入"
+    - tab "结果" [selected]
+    - tab "schema"
+    - tab "计时"
+  - tabpanel "结果": NAVIGATION_OK

@@ -9,8 +9,8 @@
 
   margin: 16px 0;
   padding: 12px 14px;
-  color: var(--clocky-alias-label-primary);
-  background: var(--clocky-alias-markdown-code-block);
+  color: var(--clocky-fg-primary);
+  background: var(--clocky-bg-sunken);
   border-radius: var(--dsl-web-radius);
 }
 
@@ -58,9 +58,9 @@
 }
 
 .sourceLink {
-  color: var(--clocky-alias-state-business-primary);
-  font-size: 14px;
-  line-height: 20px;
+  color: var(--clocky-accent-fg);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   word-break: break-word;
 }
 
@@ -70,27 +70,27 @@
 
 .snippet {
   margin-top: 2px;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 13px;
-  line-height: 19px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   word-break: break-word;
 }
 
 .published {
   margin-top: 2px;
-  color: var(--clocky-alias-label-tertiary);
-  font: var(--clocky-font-xs-13);
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-body-small);
 }
 
 .truncated {
   margin-top: 8px;
-  color: var(--clocky-alias-label-tertiary);
-  font: var(--clocky-font-xs-13);
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-body-small);
 }
 
 .empty {
-  color: var(--clocky-alias-label-secondary);
-  font: var(--clocky-font-xs-13);
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-body-small);
 }
 
 /* The fetch card is a compact summary: the URL over a status/truncation row. */
@@ -101,10 +101,10 @@
 }
 
 .fetchUrl {
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
   font-family: var(--ds-font-family-code);
-  font-size: 13px;
-  line-height: 19px;
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   word-break: break-all;
 }
 
@@ -119,8 +119,8 @@
 }
 
 .status {
-  color: var(--clocky-alias-label-secondary);
-  font: var(--clocky-font-xs-13);
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-body-small);
 }
 
 /* The fetch card's truncation note sits inline beside the status, so it drops

@@ -1,9 +1,11 @@
 import { afterEach, expect, it } from 'vitest'
-import { simulationDecisionIdSchema, simulationEntityIdSchema, simulationWriterEpochSchema } from '@clocky/clocky-simulation'
+import { simulationDecisionIdSchema, simulationEntityIdSchema, simulationWriterEpochSchema,
+  simulationTaskResultRequestSchema } from '@clocky/clocky-simulation'
 import type { SimulationSnapshot } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from './business-harness.ts'
 import { acceptanceRecords, assertBusinessProjection, assertDecisionOwner, requireDecision } from '../src/decisions.ts'
 import { foldEntry } from '../src/journal.ts'
+import { assertTaskExecutions, assertTaskResultEvidence } from '../src/task-execution.ts'
 
 const cleanups: Array<() => Promise<void>> = []
 afterEach(async () => { for (const close of cleanups.splice(0).reverse()) await close() })
@@ -39,6 +41,27 @@ it('rejects foreign ownership, missing decisions, oversized proposals and forwar
   const { simulationOperationIdSchema } = await import('@clocky/clocky-simulation')
   expect(() => acceptanceRecords(state, h.decision, [{ ...h.proposals[0]!, after: [simulationOperationIdSchema.parse('toString')] }]))
     .toThrow(/does not exist/)
+})
+
+it('refuses replacement effects or an unproven acknowledgement for a report continuation', async () => {
+  const h = await setup()
+  const state = h.run.snapshot()
+  const attemptId = 'continuation-attempt' as never
+  const execution = { request: { attemptId, operationId: 'report-operation', reportContinuation: {
+    attemptId: 'original-attempt', operationId: 'report-operation', contextFingerprint: 'original-context',
+  } }, decisions: [{ request: { decisionId: h.decision.id } }] } as never
+  const associated = { ...state, taskExecutions: { [attemptId]: execution },
+    taskDecisionOwners: { [h.decision.id]: { attemptId, index: 0 } } }
+  expect(() => acceptanceRecords(associated, h.decision, h.proposals))
+    .toThrow('report continuation accepts only acknowledgement')
+  expect(() => acceptanceRecords(associated, h.decision, []))
+    .toThrow('report continuation accepts only acknowledgement')
+  expect(() => { assertTaskExecutions(associated) })
+    .toThrow('report continuation lost its immutable retired source evidence')
+  const result = simulationTaskResultRequestSchema.parse({ attemptId, policy: { id: 'report', version: '1' },
+    operations: ['report-operation'], outcome: { kind: 'completed', result: { summary: 'Reported' } } })
+  expect(() => { assertTaskResultEvidence(associated, execution, result) })
+    .toThrow('report continuation result requires its recorded acknowledgement and exact original report')
 })
 
 it('rejects malformed acceptance identities and truncated or altered intent batches', async () => {

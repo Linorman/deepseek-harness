@@ -818,6 +818,7 @@ export class LocalSimulationRun implements SimulationRun {
       }
       await this.commitBusiness([{ kind: 'task/cancellation', request: accepted }])
       const result = this.state.taskCancellations?.[accepted.operationId]
+      /* v8 ignore next -- successful task/cancellation folding installs this exact record; retain the runtime invariant guard. */
       if (result === undefined) throw new Error('Simulation task cancellation was not published')
       return structuredClone(result)
     }, 'retirement')

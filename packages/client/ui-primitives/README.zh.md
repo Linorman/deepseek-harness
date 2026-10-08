@@ -2,9 +2,11 @@
 
 [English](README.md) | 中文
 
-纯 React 原子组件（零 cordis）：StateDot、DisclosureRow、共享图标、Button/Pill/Menu/Modal/Input、Toast 短时横幅、OnboardingSurface 首次使用接管层（portal 到 body 的遮罩加不透明展示层，在且仅在自身生命周期内保持 `#root` 为 `inert`）、markdown 家族（MessageText/MarkdownText/JsonBlock）、只读 JsonTree 检查器、`useAnchoredMaxHeight` 钩子（把底部锚定的浮层高度收敛到锚点上方的视口空间，并在 resize、scroll 与调用方提供的依赖变化时重新测量）、`useAnchoredPosition` 钩子（让固定定位的浮动面板跟住锚点：测量、偏移、按视口边距钳制，并在捕获阶段滚动、窗口缩放与面板自身尺寸变化时重新定位）、TerminalBlock、DiffBlock、ReadBlock、SearchBlock，以及 WebBlock。
+纯 React 原子组件（零 cordis）：StateDot、DisclosureRow、共享图标、Button（`sm`/`md`/`lg` × `primary`/`secondary`/`ghost`/`danger`/`toolbar`，`loading` 状态保留原标签）与 IconButton（类型强制要求无障碍 `label`）、StatusBadge 与 StatusGlyph（七种智能体状态各有独立形状，状态从不只靠颜色表达；运行态弧线按 spin token 旋转，减少动效时静止）、Pill/Menu/Modal/Input、Toast 短时横幅、OnboardingSurface 首次使用接管层（portal 到 body 的遮罩加不透明展示层，在且仅在自身生命周期内保持 `#root` 为 `inert`）、markdown 家族（MessageText/MarkdownText/JsonBlock）、只读 JsonTree 检查器、`useAnchoredMaxHeight` 钩子（把底部锚定的浮层高度收敛到锚点上方的视口空间，并在 resize、scroll 与调用方提供的依赖变化时重新测量）、`useAnchoredPosition` 钩子（让固定定位的浮动面板跟住锚点：测量、偏移、按视口边距钳制，并在捕获阶段滚动、窗口缩放与面板自身尺寸变化时重新定位）、TerminalBlock、DiffBlock、ReadBlock、SearchBlock，以及 WebBlock。
 
-`Modal` 使用原生 dialog 顶层隔离焦点和背景输入，并保留应用的遮罩与卡片样式。Escape 请求由 owner 控制的关闭；关闭后恢复此前仍连接在文档中的焦点目标。`bodyClassName` 支持独立滚动的表单正文，同时保留标题和底部操作。锚点位于活跃 dialog 内时，`Menu` 和 `HoverCard` 的 portal 内容也保留在该 dialog 内。 `size="form"` 提供 800px 宽、由视口约束的稳定高度桌面表单，以及窄屏全高视图。字段滚动而操作保持原位；视口高度不超过 420px 时改为整卡滚动，避免标题／页脚把字段挤出可访问区域。默认确认框仍为 380px 宽。
+改版原子组件共用角色 token。已导出：`Avatar`（按角色着色的首字母，身份仍以文字表达）、`Kbd`、`Popover`（锚定在触发器旁并从触发器缩放出现，Escape 与外部点击关闭，焦点回到触发器）、`FactValue`（已观察、零、带原因的不可用、未知、已隐藏或已截断的事实，不可用绝不显示为 `0`）、`SimClock`（精确十进制模拟时间，数字分组并带沙漏图标，从不经过 `Number` 转换）、`CommandPalette`（分区模糊排序、输入法安全的键盘模型、可选预览）以及 `ConnectionBanner`。`Tabs`、`Card`/`Section`/`EmptyState`/`Skeleton`/`KeyValue`、`Sheet` 与 `SplitPane` 已实现并有测试，但在首个消费方发布前保持不导出。`Modal` 与 `Menu` 原地淡入而不移动：移动的盒子在稳定前会推迟指针可操作性；减少动效时完全去掉入场动画。
+
+`Modal` 使用原生 dialog 顶层隔离焦点和背景输入，并保留应用的遮罩与卡片样式。Escape 请求由 owner 控制的关闭；关闭后恢复此前仍连接在文档中的焦点目标，入口已移除时使用 `fallbackFocus`。组合标题可通过 `labelledBy` 为对话框命名。`bodyClassName` 支持独立滚动的表单正文，同时保留标题和底部操作。锚点位于活跃 dialog 内时，`Menu`、`HoverCard` 与 `Popover` 的 portal 内容也保留在该 dialog 内。Popover 的 Escape 阻止父原生 dialog 继续取消，并恢复自己的入口焦点；风险确认由临时菜单项打开时，可传入稳定的返回控件。 `size="form"` 提供 800px 宽、由视口约束的稳定高度桌面表单，以及窄屏全高视图。字段滚动而操作保持原位；视口高度不超过 420px 时改为整卡滚动，避免标题／页脚把字段挤出可访问区域。默认确认框仍为 380px 宽。
 
 ## 悬浮卡片
 
@@ -12,11 +14,11 @@
 
 ## Toast
 
-`Toast` 是顶部的短时横幅：滑入后满不透明度停留三秒，再用一秒淡出，随后调用 `onDone` 由持有方卸载。它渲染 `role="alert"`，带可选的前置图标插槽，文案是必填 prop（零 cordis，由持有方本地化）。它经 body portal 渲染且 `pointer-events: none`，距视口顶部 120px，水平中心跟随可选的 `anchor` 元素（窗口尺寸变化时重测）——composer 传入自己的卡片，横幅因此在聊天列而非整个窗口上居中——不传则回退到视口居中。重复展示同一条消息需要重新挂载，持有方用每次展示递增的序号作为 key，让相同文案重新走完停留与淡出，而不是静默复用已淡出的横幅。`prefers-reduced-motion: reduce` 下去掉滑入，只保留延迟淡出。它的层级高于 ui-attachment 的图片灯箱，预览打开时报出的失败仍然可读。
+`Toast` 是顶部的短时横幅：滑入后按 `--clocky-duration-dwell` token 满不透明度停留，再按 `--clocky-duration-spin` 淡出，并在该淡出的 `animationend` 触发时调用 `onDone`，因此时序只由样式表决定。它渲染 `role="alert"`，带可选的前置图标插槽，文案是必填 prop（零 cordis，由持有方本地化）。它经 body portal 渲染且 `pointer-events: none`，距视口顶部 120px，水平中心跟随可选的 `anchor` 元素（窗口尺寸变化时重测）——composer 传入自己的卡片，横幅因此在聊天列而非整个窗口上居中——不传则回退到视口居中。重复展示同一条消息需要重新挂载，持有方用每次展示递增的序号作为 key，让相同文案重新走完停留与淡出，而不是静默复用已淡出的横幅。`prefers-reduced-motion: reduce` 下去掉滑入，只保留延迟淡出。它的层级高于 ui-attachment 的图片灯箱，预览打开时报出的失败仍然可读。
 
 ## Markdown 渲染
 
-`MarkdownText` 通过 React 元素渲染来自不受信任 assistant 输出的 GFM 与 `$…$`、`$$…$$`、`\(…\)` 和 `\[…\]` TeX 公式，公式由 KaTeX 排版并禁用受信任命令；块级同一行 `$$…$$` 是显示公式并支持 `\tag{}`。一个小范围的 micromark 扩展允许由星号标记、以标点结尾的粗体在紧邻的 CJK 文本前闭合，以适应 CJK 文本通常省略 CommonMark 所要求空格的写法；单星号强调、紧邻非 CJK 文本的情况、转义、代码与数学公式仍沿用上游解析行为。它会省略原始 HTML，使相对链接及非 HTTP(S)/mailto 链接失效，以安全的外部链接属性打开 HTTP(S) 链接，并在不发送 referrer 的情况下渲染采用绝对 HTTP(S) URL 的图片；相对路径、绝对本地路径、`file:` URL 与不受支持的 scheme 会保留其 alt 文本。完整内容为绝对 HTTP(S) URL 的行内代码会保留代码样式，并获得同样安全的外部链接；命令、非完整 URL、其他 scheme 与围栏代码仍不会成为链接。可选的 `fileMentions` 解析器让持有该组件的视图为命名真实文件的行内代码添加可点击入口：token 保留代码样式，并获得一个连接到解析所得 opener 的按钮，按钮带有解析器提供的无障碍标签和以完整路径为值的 `title`。渲染器绝不猜测哪些内容像路径：未解析的 token 保持不可交互；文件提及仅应用于已定稿的渲染（流式缓存不得固化可能过期的 handler）；锚点内的 token 也保持不可交互，因为按钮不能嵌套其中。回复流式输出期间，`MarkdownText` 增量解析：除末尾两个块外全部冻结为缓存的 React 元素，每个分片只重新解析其后的源文本尾部，因此每分片的工作量跟随尾部而非整个回复（[机制与 DOM 一致性约定](../../../.agents/notes/implemented/architecture/2026-08-06-web-markdown-incremental-ast-renderer.zh.md)）。表格按列数决定尺寸：不足四列——或位于 blockquote 内——的表格填满所在列，单元格文本换行收缩至最小可读列宽；四列及以上的表格保持自然宽度、在包裹层内横向滚动，并携带稳定的 `md-table-wide` 类，供宿主布局把包裹层加宽到所在列之外（`clocky-client-ui-conversation` 中聊天转录区的容器查询突破样式）；宽表的横向滚动条在悬停或键盘聚焦（包裹层带 `tabindex="0"`）时才出现、不再常驻（[决策记录](../../../.agents/notes/implemented/feature/2026-08-19-web-markdown-wide-table-view.zh.md)）。`MessageText` 仍是用户创作内容使用的字面文本原语。`extractMarkdownPlainText` 会移除 Markdown 呈现标记以用于紧凑标签，同时将原始 HTML 保留为字面文本。元素间距、响应式图片、表格、链接与行内代码使用 `--clocky-alias-markdown-*` / `--clocky-font-markdown-*` token。围栏代码块通过 `CodeBlock` 渲染（语言横幅、复制控件，以及对已注册语法使用 shiki）。
+`MarkdownText` 通过 React 元素渲染来自不受信任 assistant 输出的 GFM 与 `$…$`、`$$…$$`、`\(…\)` 和 `\[…\]` TeX 公式，公式由 KaTeX 排版并禁用受信任命令；块级同一行 `$$…$$` 是显示公式并支持 `\tag{}`。一个小范围的 micromark 扩展允许由星号标记、以标点结尾的粗体在紧邻的 CJK 文本前闭合，以适应 CJK 文本通常省略 CommonMark 所要求空格的写法；单星号强调、紧邻非 CJK 文本的情况、转义、代码与数学公式仍沿用上游解析行为。它会省略原始 HTML，使相对链接及非 HTTP(S)/mailto 链接失效，以安全的外部链接属性打开 HTTP(S) 链接，并在不发送 referrer 的情况下渲染采用绝对 HTTP(S) URL 的图片；相对路径、绝对本地路径、`file:` URL 与不受支持的 scheme 会保留其 alt 文本。完整内容为绝对 HTTP(S) URL 的行内代码会保留代码样式，并获得同样安全的外部链接；命令、非完整 URL、其他 scheme 与围栏代码仍不会成为链接。可选的 `fileMentions` 解析器让持有该组件的视图为命名真实文件的行内代码添加可点击入口：token 保留代码样式，并获得一个连接到解析所得 opener 的按钮，按钮带有解析器提供的无障碍标签和以完整路径为值的 `title`。渲染器绝不猜测哪些内容像路径：未解析的 token 保持不可交互；文件提及仅应用于已定稿的渲染（流式缓存不得固化可能过期的 handler）；锚点内的 token 也保持不可交互，因为按钮不能嵌套其中。回复流式输出期间，`MarkdownText` 增量解析：除末尾两个块外全部冻结为缓存的 React 元素，每个分片只重新解析其后的源文本尾部，因此每分片的工作量跟随尾部而非整个回复（[机制与 DOM 一致性约定](../../../.agents/notes/implemented/architecture/2026-08-06-web-markdown-incremental-ast-renderer.zh.md)）。表格按列数决定尺寸：不足四列——或位于 blockquote 内——的表格填满所在列，单元格文本换行收缩至最小可读列宽；四列及以上的表格保持自然宽度、在包裹层内横向滚动，并携带稳定的 `md-table-wide` 类，供宿主布局把包裹层加宽到所在列之外（`clocky-client-ui-conversation` 中聊天转录区的容器查询突破样式）；宽表的横向滚动条在悬停或键盘聚焦（包裹层带 `tabindex="0"`）时才出现、不再常驻（[决策记录](../../../.agents/notes/implemented/feature/2026-08-19-web-markdown-wide-table-view.zh.md)）。`MessageText` 仍是用户创作内容使用的字面文本原语。`extractMarkdownPlainText` 会移除 Markdown 呈现标记以用于紧凑标签，同时将原始 HTML 保留为字面文本。元素间距、响应式图片、表格、链接与行内代码使用表面角色 token 与 `--clocky-font-markdown-*` 组合。围栏代码块通过 `CodeBlock` 渲染（语言横幅、复制控件，以及对已注册语法使用 shiki）。
 
 ## 终端输出
 
@@ -28,7 +30,7 @@
 
 ## Diff 渲染
 
-`DiffBlock` 将一次文件改动渲染为内联 diff 表层：每个文件一个粗体路径头、删除行（`- `，error token）在新增行（`+ `，success token）之上、同文件第二个 hunk 前一个 `⋯` gap，以及暗色 `└ +A -R · N file(s)` 页脚。各行使用 `white-space: pre` 并横向滚动，因此源码行保留其缩进而不软换行；超过 `maxLines`（默认 16，与 `TerminalBlock` 相同的切分算法）时折叠为头部切片加尾部切片，由展开按钮控制。新建（`oldText: null`）没有删除侧。复制控件写入带前缀的 diff 文本（路径头、`- `/`+ ` 行、gap），使多文件复制保持可归属，并浮在右上角而非占据自己的 banner 行。几何结构与 `CodeBlock`/`TerminalBlock` 一致。原理：[Web diff 卡片笔记](../../../.agents/notes/implemented/feature/2026-07-30-web-diff-card.zh.md)。
+`DiffBlock` 将一次文件改动渲染为内联 diff 表层，顶部是与 `ReadBlock` 共用的标题栏：改动文件的路径（多个文件时为 `N files`）、`+A −R` 摘要与复制控件。正文中删除行（`- `，error token）在新增行（`+ `，success token）之上，同文件第二个 hunk 前有一个 `⋯` gap，只有多个文件改动时才以粗体路径行开启每个文件。各行使用 `white-space: pre` 并横向滚动，因此源码行保留其缩进而不软换行；超过 `maxLines`（默认 16，与 `TerminalBlock` 相同的切分算法）时折叠为头部切片加尾部切片，由展开按钮控制。新建（`oldText: null`）没有删除侧。复制控件写入包含全部路径的带前缀 diff 文本，使复制内容保持可归属。原理：[Web diff 卡片笔记](../../../.agents/notes/implemented/feature/2026-07-30-web-diff-card.zh.md)。
 
 ## 搜索结果
 
@@ -52,5 +54,5 @@
 - **回退图形使用机器人标记**：`BrandPlaceholderMark`、`BrandPlaceholderWordmark` 与 `BrandPlaceholderBadge` 让持久图像位置在部署提供自己的品牌 slot 占位者之前保持可见。
 - **Pill 与 Input 没有设计来源**：两个原子组件均自行定义；与其相似的侧边栏搜索字段和视图标签条由消费方组合，不是这些原子组件。
 - **StateDot 没有 `Active` 变体**：支持的状态为 done、warning、ongoing 和 error。
-- **面向用户的文案经 label props 本地化，默认值为原中文字面量**：这些原子组件是 zero-cordis 的，拿不到 `ctx.locale`，因此 `HoverCard`（`copyLabel`/`copiedLabel`）、`TerminalBlock`（`labels`）、`JsonTree`（`labels`）、`CodeBlock`（`copyLabel`/`copiedLabel`）、`MarkdownText`（`codeLabels`）、`JsonBlock`（`truncatedLabel`）、`ConnectionBanner`（`label`）和 `Modal`（`closeLabel`）都把文案作为可选 props 接收。已本地化的插件用自己的 `t` 席位传入字典驱动的 label；什么都不传的消费方得到的就是这些默认值。`WebBlock` 尚未跟进这一模式：它的来源列表截断提示与 fetch 截断提示、以及空搜索提示仍是内联中文，待同样的 label-prop 处理。
+- **面向用户的文案经 label props 本地化，默认值为原中文字面量**：这些原子组件是 zero-cordis 的，拿不到 `ctx.locale`，因此 `HoverCard`（`copyLabel`/`copiedLabel`）、`TerminalBlock`（`labels`）、`JsonTree`（`labels`）、`CodeBlock`（`copyLabel`/`copiedLabel`）、`MarkdownText`（`codeLabels`）、`JsonBlock`（`truncatedLabel`）、`ConnectionBanner`（`labels`：重连提示，以及凭据失效说明与恢复提示）和 `Modal`（`closeLabel`）都把文案作为可选 props 接收。已本地化的插件用自己的 `t` 席位传入字典驱动的 label；什么都不传的消费方得到的就是这些默认值。`WebBlock` 尚未跟进这一模式：它的来源列表截断提示与 fetch 截断提示、以及空搜索提示仍是内联中文，待同样的 label-prop 处理。
 - **`TerminalBlock` 不是终端模拟器**：它渲染已结束或仍在运行的命令输出，而不是交互式会话：SGR 颜色与属性会被遵循，进度行所用的行内光标移动同样被遵循——回车、退格、行内擦除、制表位与字符宽度。绝对光标定位、清屏与备用屏幕序列会被剥离。基础 16 色中的洋红与青色没有对应 token，保持字面 rgb。

@@ -46,7 +46,7 @@ async function inspect(root: string, kind: Backend): Promise<void> {
   expect(views).toHaveLength(1)
   const view = views[0]!
   expect(view.adapter).toEqual({ type: 'consult', version: 1 })
-  expect(view.viewPolicy).toEqual({ type: 'directed', version: 1 })
+  expect(view.viewPolicy).toEqual({ type: 'recent-window', version: 1 })
   expect(view.sourceEnvelopeIds).toEqual([view.triggeringEnvelopeId])
   const content = view.content
   expect(Array.isArray(content)).toBe(true)

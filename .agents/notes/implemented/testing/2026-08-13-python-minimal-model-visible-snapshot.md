@@ -10,7 +10,7 @@ The Python lane never compared what the minimal composition actually shows the m
 
 ## Decision
 
-The `sdk-minimal` scenario in [the packaged-runtime smoke](../../../../scripts/smoke-python-runtime.py) records `scripts/snapshots/python-sdk-single-exe/minimal/model-visible.json`: for every model request of the turn, the advertised tool schemas verbatim and the message list. System and user messages keep their full text with the scenario's temporary directory tokenized; assistant and tool messages keep only call identity, because their PTY and filesystem text differs across the platforms the expected output replays on.
+The `sdk-minimal` scenario in [the packaged-runtime smoke](../../../../scripts/smoke-python-runtime.py) records `scripts/snapshots/python-sdk-single-exe/minimal/model-visible.json`: for every model request of the turn, the advertised tool schemas verbatim and the message list. System and user messages keep their full text with the scenario's temporary directory and native Team, channel, coordinator Session and human Participant identities tokenized from the SDK result and logged user source; assistant and tool messages keep only call identity, because their PTY and filesystem text differs across the platforms the expected output replays on.
 
 One model-visible message is excluded: the agent loop's dynamic runtime-context snapshot. The same composition emits it on macOS and not on Linux, which the required lane runs, so no single expected output can carry it. That difference is a defect in its own right ([#2488](https://github.com/clocky/clocky/issues/2488)) — this expected output covers every other model-visible message rather than waiting for it.
 

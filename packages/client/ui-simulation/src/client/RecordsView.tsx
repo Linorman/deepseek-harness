@@ -55,7 +55,8 @@ export function RecordsView({ view, data, pageSize, read, close, navigate, expor
   useLayoutEffect(() => {
     if (view.recordSequence !== undefined) inspector.current?.querySelector('h2')?.focus()
     else if (previous.current !== undefined) {
-      const origin = [...rows.current?.querySelectorAll<HTMLButtonElement>('[data-record-sequence]') ?? []]
+      // This scroll region is always rendered; React attaches its ref before layout effects.
+      const origin = [...(rows.current as HTMLDivElement).querySelectorAll<HTMLButtonElement>('[data-record-sequence]')]
         .find(button => button.dataset.recordSequence === String(previous.current))
       ;(origin ?? form.current?.querySelector('input'))?.focus()
     }
@@ -70,15 +71,14 @@ export function RecordsView({ view, data, pageSize, read, close, navigate, expor
         event.preventDefault(); if (composing.current) return
         navigate({ ...view, recordKind: kind || undefined, recordSequence: undefined })
       }}>
-        <Menu open={kindMenu} portal selectedId={view.recordKind === undefined ? '@all'
-          : recordKinds.some(([kind]) => kind === view.recordKind) ? view.recordKind : undefined}
-        items={[{ id: '@all', label: t('all') }, ...recordKinds.map(([id, key]) => ({ id, label: `${t(key)} · ${id}` }))]}
-        anchor={<Button variant="outline" aria-expanded={kindMenu} onClick={() => { setKindMenu(!kindMenu) }}>
-          {t('records.chooseType')}<IconChevronDownOutline14 /></Button>}
-        onClose={() => { setKindMenu(false) }} onSelect={(id) => {
-          setKindMenu(false); setKind(id === '@all' ? '' : id)
-          navigate({ ...view, recordKind: id === '@all' ? undefined : id, recordSequence: undefined })
-        }} />
+        <Menu open={kindMenu} portal selectedId={view.recordKind ?? '@all'}
+          items={[{ id: '@all', label: t('all') }, ...recordKinds.map(([id, key]) => ({ id, label: `${t(key)} · ${id}` }))]}
+          anchor={<Button variant="secondary" aria-expanded={kindMenu} onClick={() => { setKindMenu(!kindMenu) }}>
+            {t('records.chooseType')}<IconChevronDownOutline14 /></Button>}
+          onClose={() => { setKindMenu(false) }} onSelect={(id) => {
+            setKindMenu(false); setKind(id === '@all' ? '' : id)
+            navigate({ ...view, recordKind: id === '@all' ? undefined : id, recordSequence: undefined })
+          }} />
         <label htmlFor="simulation-record-kind">{t('recordKind')}</label>
         <Input id="simulation-record-kind" value={kind} maxLength={128} onChange={(event) => { setKind(event.target.value) }}
           onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }} />

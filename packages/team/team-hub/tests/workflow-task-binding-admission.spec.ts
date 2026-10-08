@@ -7,18 +7,21 @@ import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
 import {
-  teamTaskCreateIdempotencyKeySchema, teamTaskCreateInputSchema, teamTaskIdSchema, teamWorkflowPlanIdempotencyKeySchema,
+  jsonObjectSchema, teamTaskCreateIdempotencyKeySchema, teamTaskCreateInputSchema, teamTaskIdSchema, teamWorkflowPlanIdempotencyKeySchema,
   teamWorkflowPlanSchema, teamWorkflowPlanTaskBindInputSchema, teamWorkflowTaskTemplateIdSchema,
 } from '@clocky/clocky-team'
 import type {
-  ParticipantId, TeamSystemWorkflowProof, TeamSystemWorkflowScope, TeamTaskId,
+  ParticipantId, TeamSystemWorkflowProof, TeamSystemWorkflowScope, TeamTaskId, TeamViewPolicy,
   TeamWorkflowPlanSnapshot, TeamWorkflowTaskTemplateId,
 } from '@clocky/clocky-team'
 import { createTestRootTeam, inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
+import { acknowledgeTestChannelActivations } from '../../../core/team/tests/channel-lifecycle-authority.ts'
+import { workflowChannelAdapter } from '@clocky/clocky-team-channel-workflow'
 import { postActor } from './fixtures.ts'
 import TeamHub from '../src/index.ts'
 
 type Backend = 'json' | 'sqlite'
+const workflowView: TeamViewPolicy = { type: 'binding-workflow-view', version: 1, project: () => ({}) }
 const roots: string[] = []
 const contexts = new Set<Context>()
 
@@ -36,6 +39,8 @@ async function hub(backend: Backend, root: string) {
   else await ctx.plugin(StorageSqlite, { path: join(root, 'hub.db') })
   await ctx.plugin(StorageLog, { backend, routes: {} })
   await ctx.plugin(TeamHub)
+  ctx.teams.registerAdapter(workflowChannelAdapter)
+  ctx.teams.registerViewPolicy(workflowView)
   return ctx
 }
 
@@ -121,6 +126,48 @@ async function bind(
     async actor => await ctx.teams.bindWorkflowPlanTask({ actor, ...input }))
 }
 
+/** Open an actual plan-owned channel through the compiler authority. */
+async function openChannel(fixture: Awaited<ReturnType<typeof setup>>, plan: TeamWorkflowPlanSnapshot,
+  acknowledge = true, reverseRoles = false) {
+  if (plan.actor === undefined) throw new Error('Channel binding requires the plan author')
+  const state = await fixture.ctx.teams.getTeam({ teamId: fixture.teamId })
+  const members = plan.plan.channel.participantRoles.map((role) => {
+    const participant = state.participants.find(value => value.role === role)
+    if (participant === undefined) throw new Error(`Workflow fixture lacks role ${role}`)
+    return { id: participant.id, role }
+  })
+  if (reverseRoles) members.reverse()
+  const initial = members.find(member => member.role === 'coordinator')
+  if (initial === undefined) throw new Error('Workflow fixture has no initial coordinator')
+  const input = { teamId: fixture.teamId, expectedCursor: state.team.cursor,
+    adapter: { type: 'workflow' as const, version: 1 },
+    viewPolicy: { type: workflowView.type, version: workflowView.version },
+    workflowPlanId: plan.id, expectedPlanRevision: plan.revision,
+    participants: members, limits: jsonObjectSchema.parse({ graph: {
+      initial: { kind: 'participant', participantId: initial.id },
+      transitions: [{ condition: { kind: 'always' }, target: { kind: 'terminate' } }], maxTurns: 1,
+    } }) }
+  const channel = await withCompiler(fixture.ctx, { kind: 'team-run-workflow-channel-open',
+    teamId: fixture.teamId, coordinator: plan.actor, planId: plan.id,
+    expectedCursor: input.expectedCursor, expectedRevision: plan.revision,
+    adapter: input.adapter, viewPolicy: input.viewPolicy, participants: members, limits: input.limits },
+  async actor => await fixture.ctx.teams.openChannel({ actor, ...input }))
+  if (acknowledge) {
+    for (const member of members) await postActor(fixture.ctx, fixture.teamId, member.id)
+    await acknowledgeTestChannelActivations(fixture.ctx, channel.manifest.id)
+  }
+  return await fixture.ctx.teams.getChannel({ channelId: channel.manifest.id })
+}
+
+async function bindChannel(fixture: Awaited<ReturnType<typeof setup>>, plan: TeamWorkflowPlanSnapshot,
+  channelId: Awaited<ReturnType<typeof openChannel>>['manifest']['id']) {
+  if (plan.actor === undefined) throw new Error('Channel binding requires the plan author')
+  const input = { teamId: fixture.teamId, planId: plan.id, channelId, expectedRevision: plan.revision,
+    expectedCursor: (await fixture.ctx.teams.getTeam({ teamId: fixture.teamId })).team.cursor }
+  return await withCompiler(fixture.ctx, { kind: 'team-run-workflow-channel-bind', coordinator: plan.actor, ...input },
+    async actor => await fixture.ctx.teams.bindWorkflowPlanChannel({ actor, ...input }))
+}
+
 const firstId = teamWorkflowTaskTemplateIdSchema.parse('first')
 const parallelId = teamWorkflowTaskTemplateIdSchema.parse('parallel')
 const dependentId = teamWorkflowTaskTemplateIdSchema.parse('dependent')
@@ -202,6 +249,53 @@ describe('workflow task binding admission', () => {
       await expect(bind(f.ctx, failed, parallelId, parallel.id)).rejects.toThrow('is not compiling')
       expect(await bind(f.ctx, failed, firstId, first.id)).toEqual(failed)
       expect(await f.ctx.teams.getTeam({ teamId: f.teamId })).toEqual(before)
+    })
+  }
+})
+
+describe('workflow channel binding admission', () => {
+  for (const backend of ['json', 'sqlite'] as const) {
+    it(`waits for the exact workflow channel to activate and replays its binding on ${backend}`, async () => {
+      const f = await setup(backend)
+      const plan = await admit(f, 'channel-activation')
+      const opening = await openChannel(f, plan, false)
+      await expect(bindChannel(f, plan, opening.manifest.id))
+        .rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+      for (const member of opening.manifest.participants) await postActor(f.ctx, f.teamId, member.id)
+      await acknowledgeTestChannelActivations(f.ctx, opening.manifest.id)
+      const active = await f.ctx.teams.getChannel({ channelId: opening.manifest.id })
+      expect(active.phase).toBe('active')
+      const bound = await bindChannel(f, plan, active.manifest.id)
+      expect(bound.channelId).toBe(active.manifest.id)
+      const before = await f.ctx.teams.getTeam({ teamId: f.teamId })
+      expect(await bindChannel(f, bound, active.manifest.id)).toEqual(bound)
+      expect(await f.ctx.teams.getTeam({ teamId: f.teamId })).toEqual(before)
+    })
+
+    it(`rejects another plan's channel, a failed plan, and retargeting on ${backend}`, async () => {
+      const f = await setup(backend)
+      const plan = await admit(f, 'channel-owner')
+      const other = await admit(f, 'other-channel-owner')
+      const foreign = await openChannel(f, other)
+      await expect(bindChannel(f, plan, foreign.manifest.id))
+        .rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+      const own = await openChannel(f, plan)
+      const bound = await bindChannel(f, plan, own.manifest.id)
+      await expect(bindChannel(f, bound, foreign.manifest.id)).rejects.toThrow('already bound to another channel')
+      const failedPlan = await admit(f, 'channel-failed-plan')
+      const unbound = await openChannel(f, failedPlan)
+      if (failedPlan.actor === undefined) throw new Error('Workflow plan has no author')
+      const input = { teamId: f.teamId, planId: failedPlan.id,
+        expectedCursor: (await f.ctx.teams.getTeam({ teamId: f.teamId })).team.cursor,
+        expectedRevision: failedPlan.revision, phase: 'failed' as const,
+        failure: { code: 'COMPILER_STOPPED', message: 'Channel compilation stopped.' } }
+      const failed = await withCompiler(f.ctx, { kind: 'team-run-workflow-plan-phase', coordinator: failedPlan.actor, ...input },
+        async actor => await f.ctx.teams.transitionWorkflowPlan({ actor, ...input }))
+      await expect(bindChannel(f, failed, unbound.manifest.id)).rejects.toThrow('is not compiling')
+      const wrongRolesPlan = await admit(f, 'channel-wrong-roles')
+      const wrongOrder = await openChannel(f, wrongRolesPlan, true, true)
+      await expect(bindChannel(f, wrongRolesPlan, wrongOrder.manifest.id))
+        .rejects.toThrow('participant roles do not match')
     })
   }
 })

@@ -6,10 +6,10 @@ import { createBusinessHarness } from './business-harness.ts'
 import { createTaskReceipt } from './task-evidence-fixture.ts'
 import { foldTaskExecution, assertTaskExecutions, taskExecutionRecordSchema } from '../src/task-execution.ts'
 
-async function fixture(backend: 'json' | 'sqlite') {
+async function fixture(backend: 'json' | 'sqlite', maxAttempts = 2) {
   const h = await createBusinessHarness(backend)
   const actor = await h.actor('executor')
-  const operationId = await createTaskReceipt(h, actor.lease, 'task')
+  const operationId = await createTaskReceipt(h, actor.lease, 'task', maxAttempts)
   const entity = h.run.snapshot().entities[actor.id]!
   const request = simulationTaskExecutionRequestSchema.parse({ runId: h.selection.spec.runId, operationId,
     attemptId: 'attempt', taskId: 'task', taskRevision: 1, ordinal: 1, entityId: actor.id,
@@ -102,6 +102,29 @@ describe.each(['json', 'sqlite'] as const)('%s task execution responsibility', (
       expect((await h.run.reserveTaskExecution(second, h.run.snapshot().revision)).request).toEqual(second)
       await expect(h.run.reserveTaskExecution({ ...second, attemptId: taskAttemptIdSchema.parse('third'), ordinal: 3 },
         h.run.snapshot().revision)).rejects.toThrow(/current accepted source/)
+    } finally { await h.close() }
+  })
+
+  it('orders two settled predecessors before reserving the third bounded attempt', async () => {
+    const h = await fixture(backend, 3)
+    try {
+      await h.run.reserveTaskExecution(h.request, h.run.snapshot().revision)
+      await h.run.observeTaskExecution({ attemptId: h.request.attemptId, task: h.task })
+      await h.run.observeTaskExecution({ attemptId: h.request.attemptId, task: simulationTaskEvidenceSchema.parse({
+        ...h.task, revision: 3, phase: 'pending', executor: { ...h.task.executor, outcome: 'failed' },
+      }) })
+      const second = { ...h.request, attemptId: taskAttemptIdSchema.parse('second'), taskRevision: 3, ordinal: 2 }
+      await h.run.reserveTaskExecution(second, h.run.snapshot().revision)
+      const assignedSecond = simulationTaskEvidenceSchema.parse({ ...h.task, revision: 4, phase: 'assigned',
+        executor: { ...h.task.executor, attemptId: second.attemptId, ordinal: 2 } })
+      await h.run.observeTaskExecution({ attemptId: second.attemptId, task: assignedSecond })
+      await h.run.observeTaskExecution({ attemptId: second.attemptId, task: simulationTaskEvidenceSchema.parse({
+        ...assignedSecond, revision: 5, phase: 'pending', executor: { ...assignedSecond.executor, outcome: 'failed' },
+      }) })
+      const third = { ...h.request, attemptId: taskAttemptIdSchema.parse('third'), taskRevision: 5, ordinal: 3 }
+      const reserved = await h.run.reserveTaskExecution(third, h.run.snapshot().revision)
+      expect(reserved.request).toEqual(third)
+      expect(Object.keys(h.run.snapshot().taskExecutions ?? {})).toHaveLength(3)
     } finally { await h.close() }
   })
 })

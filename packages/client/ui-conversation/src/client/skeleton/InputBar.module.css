@@ -31,11 +31,11 @@
   max-width: var(--clocky-composer-card-max-width);
   margin-bottom: 6px;
   padding: 4px 8px;
-  border-radius: 8px;
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-secondary);
-  font-size: 12px;
-  line-height: 18px;
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .card {
@@ -52,19 +52,19 @@
   /* Input stroke: black/0.10 light, white/0.06 dark (figma darkmode note says
      the input border is one notch weaker than buttons) — exactly the
      l2-darkmode-thin pair. Fill: the input surface token (elevated in dark). */
-  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
-  border-radius: 22px;
-  background: var(--clocky-specific-input-major);
-  box-shadow: var(--clocky-shadow-lv2);
-  font-size: 16px;
-  line-height: 24px;
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-surface);
+  box-shadow: var(--clocky-elevation-2);
+  font-size: var(--clocky-type-heading-size);
+  line-height: var(--clocky-type-heading-line-height);
   /* Elevated surface in dark, same as the menus: the draft scrollport inside
      scrolls once the composer hits its height cap, so the thumb takes the l2
      pair. Declared on the card because the elevation belongs to the surface,
      and the custom properties inherit down to the box that actually scrolls
      (see ui-theme styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .accessory {
@@ -72,6 +72,32 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px 0;
+}
+
+/* What the running turn is doing, inline in the toolbar: it shrinks and
+   elides before the context ring or the stop button would move. */
+.activity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--clocky-space-1);
+  min-width: 0;
+  max-width: 240px;
+  margin-right: var(--clocky-space-2);
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-caption);
+}
+
+.activityText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityStep {
+  flex: none;
+  color: var(--clocky-fg-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Floating overlay anchor (menu / popupSelect shell): entries position
@@ -109,37 +135,37 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   pointer-events: none;
 }
 
 .backdropDisabled,
 .backdropDisabled :is(.hlToken, .hint, .textRef, .chip, .chipInvalid) {
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .hlToken {
   background-color: transparent;
-  color: var(--clocky-alias-state-warn-label);
+  color: var(--clocky-status-needs-you-fg);
 }
 
 .hlSegment {
-  border-radius: 4px;
+  border-radius: var(--clocky-radius-xs);
   background-color: transparent;
   color: transparent;
 }
 
 .hint {
-  color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* Machine pending dot (adjudicating / submitting). */
 .pending {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: var(--clocky-alias-state-business-primary);
-  animation: input-pending 1s ease-in-out infinite alternate;
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-accent-bg);
+  animation: input-pending var(--clocky-duration-spin) var(--clocky-ease-standard) infinite alternate;
 }
 
 @keyframes input-pending {
@@ -164,7 +190,7 @@
   color: transparent;
   -webkit-text-fill-color: transparent;
   /* Business blue, not brand-primary: that token resolves to ink in this sheet. */
-  caret-color: var(--clocky-alias-state-business-primary);
+  caret-color: var(--clocky-accent-bg);
 }
 
 .input,
@@ -201,8 +227,8 @@
 
 /* figma 34:10434: #ADB2B8 light / #81858C dark — the caption pair exactly. */
 .input::placeholder {
-  color: var(--clocky-alias-label-caption);
-  -webkit-text-fill-color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
+  -webkit-text-fill-color: var(--clocky-fg-tertiary);
   user-select: none;
 }
 
@@ -287,14 +313,14 @@
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 999px;
-  background: var(--clocky-specific-selector);
-  color: var(--clocky-alias-label-primary);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-bg-sunken);
+  color: var(--clocky-fg-primary);
   cursor: pointer;
 }
 
 .add:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-solid);
+  background: var(--clocky-bg-sunken);
 }
 
 .add:disabled {
@@ -309,16 +335,16 @@
   height: 28px;
   padding: 0 20px 0 8px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
   outline: none;
   background-color: transparent;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2381858C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 4px center;
   background-size: 12px 12px;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 13px;
-  line-height: 20px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -326,7 +352,7 @@
 }
 
 .select:hover:not(:disabled) {
-  background-color: var(--clocky-alias-interactive-bg-hover);
+  background-color: var(--clocky-bg-hover);
 }
 
 .select:disabled {
@@ -344,13 +370,13 @@
   width: 34px;
   height: 34px;
   border: none;
-  border-radius: 999px;
-  background: var(--clocky-alias-button-info-fill);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-accent-bg);
   /* Static white, not the foreground token: the arrow stays white on the blue
      fill in both themes (design 34:10465). */
-  color: #fff;
+  color: var(--clocky-fg-on-accent);
   cursor: pointer;
-  transition: background-color 100ms ease;
+  transition: background-color var(--clocky-duration-instant) var(--clocky-ease-standard);
   /* Opts out of the row's 2px downward shift (.row top pad): the send circle
      keeps its original seat while the smaller chips sit lower. Transform, not
      margin, so flex centering math is untouched. */
@@ -358,7 +384,7 @@
 }
 
 .primary:hover:not(:disabled) {
-  background: var(--clocky-alias-button-info-hover);
+  background: var(--clocky-accent-bg-hover);
 }
 
 .primary:disabled {
@@ -370,10 +396,10 @@
   margin-left: 8px;
   padding: 1px 8px;
   border: 1px solid currentColor;
-  border-radius: 4px;
+  border-radius: var(--clocky-radius-xs);
   background: transparent;
   color: inherit;
-  font-size: 12px;
+  font-size: var(--clocky-type-caption-size);
   cursor: pointer;
 }
 
@@ -382,7 +408,7 @@
    Chip family colors; clone keeps rounded ends on soft-wrap fragments. */
 .textRef {
   background-color: transparent;
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
@@ -411,7 +437,7 @@
    reserves the icon's advance while the backdrop paints the domain glyph. */
 .chip {
   position: relative;
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
   background: transparent;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -435,5 +461,5 @@
 .chipInvalid {
   text-decoration: line-through;
   opacity: 0.7;
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }

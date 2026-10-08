@@ -4,6 +4,12 @@
 - id: team-agent-client
   disabled: true
 
+- id: team-run
+  config:
+    workerPreset: standard
+    workerCount: 1
+    maxWorkerCount: 1
+
 - id: agent-default-model
   config:
     provider: task-isolation-model

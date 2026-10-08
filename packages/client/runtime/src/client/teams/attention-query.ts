@@ -1,3 +1,5 @@
+import { failedRead, ReadPageRevision } from './read-state.ts'
+import { ReadRequest } from './read-request.ts'
 /** Independent pending preview/list ownership with cancellation, authorization and revision fences. */
 import type { IApiClient, TeamId } from '@clocky/clocky-client-connection/client'
 import type { TeamAttentionState } from '../contract/team-tasks.ts'
@@ -9,9 +11,8 @@ interface AttentionWatch { readonly spec: AttentionSpec; readonly refreshMs: num
 /** Retain one bounded window; polling never fetches all continuations. */
 export class AttentionQuery {
   private state: TeamAttentionState | undefined
-  private request: AbortController | undefined
-  private generation = 0
-  private minimumCursor = 0
+  private readonly requests = new ReadRequest()
+  private readonly pageRevision = new ReadPageRevision()
   private connected = true
   private watcher: AttentionWatch | undefined
   private timer: ReturnType<typeof setTimeout> | undefined
@@ -30,8 +31,8 @@ export class AttentionQuery {
    * @returns disposer belonging to this exact watcher.
    */
   watch(spec: AttentionSpec, refreshMs: number): () => void {
-    const generation = this.cancel()
-    if (generation !== this.generation) return () => {}
+    const generation = this.requests.cancel(() => { clearTimeout(this.timer); this.timer = undefined })
+    if (generation !== this.requests.generation) return () => {}
     const watcher = { spec, refreshMs }
     this.watcher = watcher
     void this.read(spec)
@@ -48,18 +49,18 @@ export class AttentionQuery {
     if (!this.connected || mode === 'next' && (!same || previous.loading || previous.hasNewer || previous.error !== undefined
       || previous.disconnected || previous.page?.nextCursor === undefined)) return
     const cursor = mode === 'next' ? previous?.page?.nextCursor : undefined
-    const generation = this.cancel()
-    if (generation !== this.generation) return
-    this.minimumCursor = same ? Math.max(this.minimumCursor, spec.minimumCursor) : spec.minimumCursor
+    const generation = this.requests.cancel(() => { clearTimeout(this.timer); this.timer = undefined })
+    if (generation !== this.requests.generation) return
+    this.pageRevision.minimumCursor = same ? Math.max(this.pageRevision.minimumCursor, spec.minimumCursor) : spec.minimumCursor
     const controller = new AbortController()
-    this.request = controller
+    this.requests.begin(controller)
     this.set({ teamId: spec.teamId, limit: spec.limit, startCursor: same ? previous.startCursor : undefined,
       page: same ? previous.page : undefined, loading: true, hasNewer: same && previous.hasNewer, disconnected: false })
     try {
-      if (!this.current(generation, controller)) return
+      if (!this.requests.current(generation, controller)) return
       const response = await this.api.teams.attentionRead({ teamId: spec.teamId, limit: spec.limit,
         ...cursor === undefined ? {} : { cursor } }, controller.signal)
-      if (!this.current(generation, controller)) return
+      if (!this.requests.current(generation, controller)) return
       if (!response.result.ok) {
         const error = response.result.error
         if (isTeamAuthorizationError(error)) { this.close(); this.denied(spec.teamId); return }
@@ -68,26 +69,22 @@ export class AttentionQuery {
         return
       }
       const page = response.result.value
-      if (page.teamId !== spec.teamId || page.teamCursor < this.minimumCursor || page.items.length > spec.limit) {
+      if (page.teamId !== spec.teamId || page.teamCursor < this.pageRevision.minimumCursor || page.items.length > spec.limit) {
         throw new Error('Pending response does not match the current Team revision; refresh the list')
       }
-      this.minimumCursor = page.teamCursor
+      this.pageRevision.minimumCursor = page.teamCursor
       this.set({ teamId: spec.teamId, limit: spec.limit, startCursor: cursor, page, loading: false, hasNewer: false, disconnected: false })
     } catch (error: unknown) {
-      if (this.current(generation, controller)) this.set({ ...this.active(), loading: false,
-        error: error instanceof Error ? error.message : String(error) })
+      if (this.requests.current(generation, controller)) this.set(failedRead(this.active(), error))
     } finally {
-      if (this.request === controller) {
-        this.request = undefined
-        this.schedule()
-      }
+      this.requests.finish(controller, () => { this.schedule() })
     }
   }
 
   /** Stop polling and current IO without discarding navigation's retained page. */
   pause(): void {
-    const generation = this.cancel()
-    if (generation !== this.generation) return
+    const generation = this.requests.cancel(() => { clearTimeout(this.timer); this.timer = undefined })
+    if (generation !== this.requests.generation) return
     if (this.state?.loading) this.set({ ...this.state, loading: false })
   }
 
@@ -102,7 +99,7 @@ export class AttentionQuery {
   async reconnect(): Promise<void> {
     this.connected = true
     const state = this.state
-    if (state !== undefined) await this.read({ teamId: state.teamId, limit: state.limit, minimumCursor: this.minimumCursor })
+    if (state !== undefined) await this.read({ teamId: state.teamId, limit: state.limit, minimumCursor: this.pageRevision.minimumCursor })
     else if (this.watcher !== undefined) await this.read(this.watcher.spec)
   }
 
@@ -111,17 +108,16 @@ export class AttentionQuery {
    * @param cursor - Current journal watermark.
    */
   changed(teamId: TeamId, cursor: number): void {
-    if (this.state?.teamId !== teamId) return
-    this.minimumCursor = Math.max(this.minimumCursor, cursor)
-    if (cursor > (this.state.page?.teamCursor ?? cursor)) this.set({ ...this.state, hasNewer: true })
+    const next = this.pageRevision.changed(this.state, teamId, cursor)
+    if (next !== undefined && next !== this.state) this.set(next)
   }
 
   /** Release this selection and prevent late responses from recreating it. */
   close(): void {
     this.watcher = undefined
-    const generation = this.cancel()
-    if (generation !== this.generation) return
-    this.minimumCursor = 0
+    const generation = this.requests.cancel(() => { clearTimeout(this.timer); this.timer = undefined })
+    if (generation !== this.requests.generation) return
+    this.pageRevision.minimumCursor = 0
     this.state = undefined
     this.publish(undefined)
   }
@@ -129,7 +125,7 @@ export class AttentionQuery {
   /** Re-read the retained scope from the beginning without changing another reader. */
   async refresh(): Promise<void> {
     const state = this.state
-    if (state !== undefined) await this.read({ teamId: state.teamId, limit: state.limit, minimumCursor: this.minimumCursor })
+    if (state !== undefined) await this.read({ teamId: state.teamId, limit: state.limit, minimumCursor: this.pageRevision.minimumCursor })
   }
 
   private schedule(): void {
@@ -138,18 +134,7 @@ export class AttentionQuery {
     this.timer = setTimeout(() => { void this.read(watcher.spec) }, watcher.refreshMs)
   }
 
-  private cancel(): number {
-    const generation = ++this.generation
-    clearTimeout(this.timer); this.timer = undefined
-    const request = this.request
-    this.request = undefined
-    request?.abort()
-    return generation
-  }
 
-  private current(generation: number, controller: AbortController): boolean {
-    return generation === this.generation && !controller.signal.aborted
-  }
 
   private active(): TeamAttentionState {
     // v8 ignore next -- current generation checks retain the state between publication and response handling.

@@ -1,0 +1,206 @@
+/* Mode tile: one workspace entry on the launch screen. Mode identity tints
+   the chrome (corner glow, hairline, eyebrow, hub); satellites keep status
+   roles. */
+
+.tile {
+  --tile-fg: var(--clocky-mode-team-fg);
+  --tile-subtle: var(--clocky-mode-team-subtle);
+  --tile-glow: var(--clocky-mode-team-glow);
+  --pointer-light-tint: var(--tile-fg);
+  position: relative;
+  transform-style: preserve-3d;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--clocky-space-3);
+  min-height: 156px;
+  padding: var(--clocky-space-4) var(--clocky-space-5);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-xl);
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--tile-subtle), transparent 62%) padding-box,
+    linear-gradient(var(--clocky-surface-glass), var(--clocky-surface-glass)) padding-box,
+    linear-gradient(140deg, color-mix(in srgb, var(--tile-fg) 55%, transparent), var(--clocky-border-subtle) 45%, var(--clocky-border-subtle)) border-box;
+  backdrop-filter: var(--clocky-blur-glass);
+  color: var(--clocky-fg-primary);
+  text-align: start;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform var(--clocky-duration-slow) var(--clocky-ease-enter);
+}
+
+.tile[data-mode="simulation"] {
+  --tile-fg: var(--clocky-mode-simulation-fg);
+  --tile-subtle: var(--clocky-mode-simulation-subtle);
+  --tile-glow: var(--clocky-mode-simulation-glow);
+}
+
+/* Hover halo sits on a pseudo-element so only its opacity animates. */
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--tile-glow);
+  opacity: 0;
+  transition: opacity var(--clocky-duration-base) var(--clocky-ease-standard);
+  pointer-events: none;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
+}
+
+.tile:active {
+  transform: scale(0.99);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-1);
+  min-width: 0;
+}
+
+.eyebrow {
+  align-self: flex-start;
+  padding: 0 var(--clocky-space-2);
+  border-radius: var(--clocky-radius-full);
+  font: var(--clocky-type-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tile-fg);
+  background: var(--tile-subtle);
+}
+
+.title {
+  margin-top: var(--clocky-space-1);
+  font: var(--clocky-type-title);
+  color: var(--clocky-fg-primary);
+}
+
+.tagline {
+  font: var(--clocky-type-body-small);
+  color: var(--clocky-fg-secondary);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--clocky-space-2);
+  margin-top: auto;
+  padding-top: var(--clocky-space-3);
+}
+
+.stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--clocky-space-1);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-tertiary);
+}
+
+.stat strong {
+  font: var(--clocky-type-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--clocky-fg-primary);
+}
+
+.stat[data-tone="running"] strong { color: var(--clocky-status-running-fg); }
+.stat[data-tone="needs-you"] strong { color: var(--clocky-status-needs-you-fg); }
+
+.footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--clocky-space-3);
+  padding-top: var(--clocky-space-2);
+  border-top: 1px solid var(--clocky-border-subtle);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-tertiary);
+}
+
+.recent {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrow {
+  flex: none;
+  font: var(--clocky-type-label);
+  color: var(--tile-fg);
+  transition: transform var(--clocky-duration-base) var(--clocky-ease-spring);
+}
+
+.preview {
+  align-self: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover { transform: translateY(-3px); }
+  .tile:hover::before { opacity: 1; }
+  .tile:hover .arrow { transform: translateX(4px); }
+}
+
+/* Glyphs ---------------------------------------------------------------- */
+
+.ring {
+  fill: none;
+  stroke: var(--clocky-viz-edge);
+  stroke-dasharray: 2 4;
+}
+
+.orbit {
+  transform-box: view-box;
+  transform-origin: center;
+  animation: spin var(--clocky-duration-orbit) linear infinite;
+}
+
+.orbit[data-reverse] {
+  animation-direction: reverse;
+  animation-duration: calc(var(--clocky-duration-orbit) * 1.6);
+}
+
+.glyph[data-paused] .orbit {
+  animation-play-state: paused;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.hub {
+  fill: var(--tile-fg);
+}
+
+.hubHalo {
+  fill: var(--tile-fg);
+  opacity: 0.16;
+}
+
+.satellite {
+  fill: var(--clocky-status-idle-border);
+  stroke: var(--clocky-bg-surface);
+  stroke-width: 1.5;
+}
+
+.satellite[data-state="running"] { fill: var(--clocky-status-running-fg); }
+.satellite[data-state="waiting"] { fill: var(--clocky-status-waiting-fg); }
+.satellite[data-state="needs-you"] { fill: var(--clocky-status-needs-you-fg); }
+.satellite[data-state="blocked"] { fill: var(--clocky-status-blocked-fg); }
+.satellite[data-state="done"] { fill: var(--clocky-status-done-fg); }
+.satellite[data-state="failed"] { fill: var(--clocky-status-failed-fg); }
+
+.star {
+  fill: var(--tile-fg);
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit { animation: none; }
+  .tile:hover, .tile:active, .tile:hover .arrow { transform: none; }
+}

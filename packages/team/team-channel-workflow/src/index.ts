@@ -107,9 +107,8 @@ export class WorkflowExtensionRegistry extends Service {
       this.extensions.set(key, entry)
       const ref = { kind: extension.kind, name: extension.name, version: extension.version }
       yield () => {
-        if (!entry.accepting) return
         entry.accepting = false
-        if (this.extensions.get(key) === entry) this.extensions.delete(key)
+        this.extensions.delete(key)
         if (entry.leases > 0) this.retiredExtensions.add(entry)
         this.ctx.emit('workflow/extension-removed', ref)
       }

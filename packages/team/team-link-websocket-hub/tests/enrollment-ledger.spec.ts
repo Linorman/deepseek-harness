@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
@@ -47,6 +47,68 @@ afterEach(async () => {
 })
 
 describe('EnrollmentLedger', () => {
+  it('rejects stale, missing, malformed, and closed credential operations', async () => {
+    const context = await contextAt(await freshRoot())
+    const ledger = await EnrollmentLedger.open(context, { enrollmentProviderName, recoveryPageSize: 2 })
+    expect(ledger.get(binding)).toBeUndefined()
+    await expect(ledger.revoke(binding, 1)).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_NOT_FOUND' })
+    await expect(ledger.rotate(binding, 1, 'replacement')).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_NOT_FOUND' })
+    await expect(ledger.issue(binding, '')).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_MALFORMED' })
+    await expect(ledger.issue({ ...binding, sessionId: '' } as never, 'credential'))
+      .rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_MALFORMED' })
+    await expect(ledger.revoke(binding, 0)).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_MALFORMED' })
+    const issued = await ledger.issue(binding, 'credential')
+    await ledger.revoke(binding, issued.generation)
+    await expect(ledger.rotate(binding, issued.generation, 'replacement'))
+      .rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_NOT_ISSUED' })
+    const closing = ledger.close()
+    expect(ledger.close()).toBe(closing)
+    await closing
+    expect(() => ledger.get(binding)).toThrow(/closed/)
+    await expect(ledger.issue(binding, 'another')).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_CLOSED' })
+  })
+
+  it('validates provider names, recovery bounds, and mutation timestamps before writing', async () => {
+    const context = await contextAt(await freshRoot())
+    await expect(EnrollmentLedger.open(context, { enrollmentProviderName: ' ', recoveryPageSize: 2 })).rejects.toThrow(TypeError)
+    await expect(EnrollmentLedger.open(context, { enrollmentProviderName, recoveryPageSize: 0 })).rejects.toThrow(TypeError)
+    const ledger = await EnrollmentLedger.open(context, { enrollmentProviderName, recoveryPageSize: 2, now: () => -1 })
+    try {
+      await expect(ledger.issue(binding, 'credential')).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_MALFORMED' })
+      expect(ledger.get(binding)).toBeUndefined()
+    } finally { await ledger.close() }
+  })
+
+  it('rejects incomplete retained prefixes, sequence gaps, and malformed record identities during recovery', async () => {
+    const issued = { version: WEBSOCKET_ENROLLMENT_LEDGER_RECORD_VERSION, type: 'enrollment', state: 'issued',
+      enrollmentProviderName, binding, generation: 1, credentialDigest: sha256('credential'), issuedAt: 1 }
+    const revoked = { version: WEBSOCKET_ENROLLMENT_LEDGER_RECORD_VERSION, type: 'enrollment', state: 'revoked',
+      enrollmentProviderName, binding, generation: 1, revokedAt: 2 }
+    for (const example of [
+      { firstSequence: 1, records: [] },
+      { firstSequence: 0, records: [{ sequence: 1, value: issued }] },
+      { firstSequence: 0, records: [{ sequence: 0, value: { ...issued, enrollmentProviderName: 'foreign' } }] },
+      { firstSequence: 0, records: [{ sequence: 0, value: revoked }] },
+      { firstSequence: 0, records: [{ sequence: 0, value: {} }] },
+    ]) {
+      const fake = fakeLedgerStream(example.records, example.firstSequence)
+      await expect(EnrollmentLedger.open(fake.context, { enrollmentProviderName, recoveryPageSize: 1 }))
+        .rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_MALFORMED' })
+      expect(fake.stream.close).toHaveBeenCalledOnce()
+    }
+  })
+
+  it('rejects an append acknowledgement that does not advance the exact durable tail', async () => {
+    const fake = fakeLedgerStream()
+    const ledger = await EnrollmentLedger.open(fake.context, { enrollmentProviderName, recoveryPageSize: 1 })
+    fake.stream.append.mockResolvedValue({ tailSequence: 4 })
+    try {
+      await expect(ledger.issue(binding, 'credential')).rejects.toMatchObject({ code: 'TEAM_LINK_ENROLLMENT_LEDGER_MALFORMED' })
+      expect(ledger.get(binding)).toBeUndefined()
+    } finally { await ledger.close() }
+  })
+
+
   it.each(['json', 'sqlite'] as const)('%s persists only credential digests and recovers rotation, revocation, and later reissue', async (backend) => {
     const root = await freshRoot()
     const firstContext = await contextAt(root, backend)
@@ -255,4 +317,17 @@ async function freshRoot(): Promise<string> {
 /** Compute the expected storage-safe credential representation. */
 function sha256(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex')
+}
+
+/** Inject one in-memory stream fault at the storage boundary without changing the production parser. */
+function fakeLedgerStream(records: readonly { sequence: number; value: unknown }[] = [], firstSequence = 0) {
+  let readCount = 0
+  const stream = {
+    firstSequence,
+    read: vi.fn(async () => readCount++ === 0 ? records : []),
+    append: vi.fn(async () => ({ tailSequence: 0 })),
+    close: vi.fn(async () => {}),
+  }
+  const context = { storageLog: { open: vi.fn(async () => stream) } } as unknown as Context
+  return { context, stream }
 }

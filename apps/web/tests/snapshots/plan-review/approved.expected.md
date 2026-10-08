@@ -1,14 +1,13 @@
-- banner:
-  - text: {{workspace}}
+- text: {{workspace}}
+- img
+- text: Standard mode
+- button "Session log":
+  - text: Session log
   - img
-  - text: Standard mode
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
-- text: "Direct message from participant-{{uuid}}: Plan a small change: add a --greeting flag to a CLI. Do not read or write any files. Call exit_plan_mode with a short plan of at most five bullet points. Once the plan is approved, reply with the single word DONE and stop. {{clock}}"
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
+- text: "From a Team member Plan a small change: add a --greeting flag to a CLI. Do not read or write any files. Call exit_plan_mode with a short plan of at most five bullet points. Once the plan is approved, reply with the single word DONE and stop. {{clock}}"
 - button "Copy":
   - img
 - button "Context injection @clocky/clocky-system-prompt":
@@ -23,10 +22,10 @@
   - text: Since the user has explicitly asked me not to read or write any files and to go straight to planning, I'll proceed with
   - code: exit_plan_mode
   - text: .
-- 'button "Tool call exit_plan_mode · # Add `--greeting` flag to CLI"':
+- 'button "Tool call exit_plan_mode · # Add `--greeting` flag to CLI {{duration}}"':
   - img
   - img
-  - text: "Tool call exit_plan_mode · # Add `--greeting` flag to CLI"
+  - text: "Tool call exit_plan_mode · # Add `--greeting` flag to CLI {{duration}}"
 - 'button "Think The plan was approved. The user''s last instruction says: \"Once the plan is approved, reply with the single word DONE and stop.\" So I should just reply with DONE and stop."':
   - img
   - img
@@ -46,5 +45,7 @@
   - text: Test Model
   - img
 - button "4% of context used"
+- tooltip "4% of context used"
 - button "Send message" [disabled]
-- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 51% Input 10.2K tok · Output 346 tok
+- text: 1 turns · 2 steps
+- button "Session statistics": ⓘ

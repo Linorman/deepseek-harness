@@ -1,22 +1,26 @@
 /** Company scene policies select recorded inventory facts and reject invalid durable input without IO. */
 import { expect, it, vi } from 'vitest'
-import type { SimulationDeterministicPolicy, SimulationTaskCompletionPolicy, SimulationSnapshot } from '@clocky/clocky-simulation'
+import type { SimulationDeterministicPolicy, SimulationTaskCompletionPolicy, SimulationSnapshot,
+  SimulationTaskExecution } from '@clocky/clocky-simulation'
 import { simulationOperationIdSchema } from '@clocky/clocky-simulation'
-import { registerCompanyTaskPolicies, companyTaskTransfer, recoverCompanyTask, companyTaskCompletion } from '../src/company-task-policies.ts'
+import { registerCompanyTaskPolicies, companyTaskTransfer, recoverCompanyTask, companyTaskCompletion,
+  companyTaskReviewedCompletion } from '../src/company-task-policies.ts'
 import { companyFixture, companyConfig, companySettings } from './company-driver-fixture.ts'
 import { SimulationCompanyDriver, simulationCompanyDriverSchema } from '../src/company-driver.ts'
 
 function capturePolicies() {
-  let cognition: SimulationDeterministicPolicy | undefined, completion: SimulationTaskCompletionPolicy | undefined
+  let cognition: SimulationDeterministicPolicy | undefined, completion: SimulationTaskCompletionPolicy | undefined,
+    reviewed: SimulationTaskCompletionPolicy | undefined
   const removeCognition = vi.fn(), removeCompletion = vi.fn(), removeReviewed = vi.fn()
   const registry = { registerDeterministicPolicy: (policy: SimulationDeterministicPolicy) => { cognition = policy; return removeCognition },
     registerTaskCompletionPolicy: (policy: SimulationTaskCompletionPolicy) => {
       if (policy.id === companyTaskCompletion.id) { completion = policy; return removeCompletion }
+      if (policy.id === companyTaskReviewedCompletion.id) reviewed = policy
       return removeReviewed
     } }
   const remove = registerCompanyTaskPolicies(registry)
-  if (cognition === undefined || completion === undefined) throw new Error('Company policies not registered')
-  return { cognition, completion, remove, removeCognition, removeCompletion, removeReviewed, registry }
+  if (cognition === undefined || completion === undefined || reviewed === undefined) throw new Error('Company policies not registered')
+  return { cognition, completion, reviewed, remove, removeCognition, removeCompletion, removeReviewed, registry }
 }
 
 async function evidence() {
@@ -42,6 +46,13 @@ it('removes both policy generations and rolls back a partially rejected registra
   expect(() => registerCompanyTaskPolicies({ registerDeterministicPolicy: () => remove,
     registerTaskCompletionPolicy: () => { throw new Error('policy-occupied') } })).toThrow('policy-occupied')
   expect(remove).toHaveBeenCalledOnce()
+  const removeFirst = vi.fn(), removeSecond = vi.fn()
+  let registration = 0
+  expect(() => registerCompanyTaskPolicies({ registerDeterministicPolicy: () => removeFirst,
+    registerTaskCompletionPolicy: () => { if (registration++ === 0) return removeSecond; throw new Error('review-policy-occupied') } }))
+    .toThrow('review-policy-occupied')
+  expect(removeSecond).toHaveBeenCalledOnce()
+  expect(removeFirst).toHaveBeenCalledOnce()
 })
 
 it('releases actual registered generations when their contributing fiber is disposed', async () => {
@@ -123,5 +134,58 @@ it('waits for unapplied effects, fails rejected work, and refuses unrelated or a
     const noExecution = { ...state }
     delete noExecution.taskExecutions
     expect(companyTaskTransfer(noExecution, execution.request.operationId)).toBeUndefined()
+  } finally { await h.close() }
+})
+
+it('reviews only current-attempt persisted reports after the original transfer is applied', async () => {
+  const { h, state, execution, transfer } = await evidence()
+  try {
+    const { reviewed } = capturePolicies()
+    const withoutExecutions = { ...state }
+    delete withoutExecutions.taskExecutions
+    expect(reviewed.evaluate(withoutExecutions, execution).status).toBe('waiting')
+    const rejected: SimulationSnapshot = { ...state, operations: { ...state.operations,
+      [transfer.id]: { ...transfer, status: 'rejected', result: { status: 'rejected', code: 'SIM_RESOURCE_CONFLICT' } } } }
+    expect(reviewed.evaluate(rejected, execution)).toMatchObject({ status: 'result', outcome: { kind: 'failed' } })
+    const association = execution.decisions![0]!, decision = state.decisions[association.request.decisionId]!
+    expect(reviewed.evaluate(state, execution)).toMatchObject({ status: 'waiting' })
+    expect(reviewed.evaluate({ ...state, decisions: {} }, execution).status).toBe('waiting')
+    const withoutDecisions = { ...execution }
+    delete withoutDecisions.decisions
+    expect(reviewed.evaluate(state, withoutDecisions).status).toBe('waiting')
+    expect(reviewed.evaluate({ ...state, decisions: { ...state.decisions,
+      [decision.id]: { ...decision, context: undefined } } }, execution).status).toBe('waiting')
+    if (decision.context?.status !== 'prepared') throw new Error('Fixture context was not prepared')
+    const noInventoryBlock = { ...decision, context: { ...decision.context,
+      view: { ...decision.context.view, content: [] } } }
+    expect(reviewed.evaluate({ ...state, decisions: { ...state.decisions,
+      [decision.id]: noInventoryBlock } }, execution).status).toBe('waiting')
+  } finally { await h.close() }
+})
+
+it('acknowledges one retained transfer from an accepted continuation without repeating its effect', async () => {
+  const { h, state, execution, transfer } = await evidence()
+  try {
+    const { completion } = capturePolicies()
+    const accepted = state.decisions[execution.decisions![0]!.request.decisionId]!
+    const continuationId = 'continuation-confirm' as never
+    const continuation: SimulationTaskExecution = { ...execution, request: { ...execution.request,
+      interaction: { execution: 'continuation' } as never }, decisions: [{ ...execution.decisions![0]!,
+      request: { ...execution.decisions![0]!.request, decisionId: continuationId }, input: {} as never }] }
+    const withConfirmation = { ...state, decisions: { ...state.decisions,
+      [continuationId]: { ...accepted, id: continuationId, operationIds: [] } } } as SimulationSnapshot
+    expect(completion.evaluate(withConfirmation, continuation)).toMatchObject({ status: 'result',
+      operations: [transfer.id], outcome: { kind: 'completed', result: { summary: 'Confirmed the original delivered inventory unit' } } })
+    const noInput = { ...continuation.decisions![0]! }
+    delete noInput.input
+    expect(completion.evaluate(withConfirmation, { ...continuation,
+      decisions: [noInput] }).status).toBe('waiting')
+    expect(completion.evaluate({ ...withConfirmation, decisions: { ...withConfirmation.decisions,
+      [continuationId]: { ...accepted, id: continuationId, status: 'open', operationIds: [] } } }, continuation).status).toBe('waiting')
+    expect(recoverCompanyTask(state, [execution])).toBe('retry')
+    expect(recoverCompanyTask(state, [{ ...execution, request: { ...execution.request, entityId: 'buyer' as never } }])).toBe('blocked')
+    const withoutDecisions = { ...execution }
+    delete withoutDecisions.decisions
+    expect(recoverCompanyTask(state, [withoutDecisions])).toBe('retry')
   } finally { await h.close() }
 })

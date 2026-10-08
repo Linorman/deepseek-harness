@@ -19,19 +19,22 @@ export const statuses = {
  */
 export function normalize(view: Route): Route {
   const allowed: readonly string[] = statuses[view.module]
-  return { runId: view.runId, module: view.module, search: view.search, objectId: view.module === 'records' || view.module === 'requests' ? undefined : view.objectId,
+  // Each numeric assertion below follows Number.isSafeInteger: undefined and
+  // non-numbers are rejected before the comparison, including zero ordinals.
+  const collectionModule = view.module === 'entities' || view.module === 'decisions' || view.module === 'operations' || view.module === 'checkpoints'
+  return { display: collectionModule && view.display === 'visual' ? 'visual' : undefined, runId: view.runId, module: view.module, search: view.search, objectId: view.module === 'records' || view.module === 'requests' ? undefined : view.objectId,
     recordKind: view.module === 'records' && view.recordKind !== undefined && view.recordKind.length <= 128 ? view.recordKind || undefined : undefined,
-    recordSequence: view.module === 'records' && Number.isSafeInteger(view.recordSequence) && (view.recordSequence ?? -1) >= 0 ? view.recordSequence : undefined,
+    recordSequence: view.module === 'records' && Number.isSafeInteger(view.recordSequence) && (view.recordSequence as number) >= 0 ? view.recordSequence : undefined,
     status: view.status !== undefined && allowed.includes(view.status) ? view.status : undefined,
     cognition: view.module === 'entities' && (view.cognition === 'none' || view.cognition === 'agent') ? view.cognition : undefined,
     entityId: view.module === 'decisions' || view.module === 'operations' ? view.entityId : undefined,
     decisionId: view.module === 'operations' ? view.decisionId : undefined,
     sourceIndex: view.module === 'decisions' && view.section === 'context' && view.objectId !== undefined
-      && Number.isSafeInteger(view.sourceIndex) && (view.sourceIndex ?? -1) >= 0 ? view.sourceIndex : undefined,
+      && Number.isSafeInteger(view.sourceIndex) && (view.sourceIndex as number) >= 0 ? view.sourceIndex : undefined,
     knowledgeId: view.module === 'decisions' && view.section === 'knowledge' && Number.isSafeInteger(view.knowledgeRevision)
-      && (view.knowledgeRevision ?? 0) > 0 ? view.knowledgeId : undefined,
+      && (view.knowledgeRevision as number) > 0 ? view.knowledgeId : undefined,
     knowledgeRevision: view.module === 'decisions' && view.section === 'knowledge' && view.knowledgeId !== undefined
-      && Number.isSafeInteger(view.knowledgeRevision) && (view.knowledgeRevision ?? 0) > 0 ? view.knowledgeRevision : undefined,
+      && Number.isSafeInteger(view.knowledgeRevision) && (view.knowledgeRevision as number) > 0 ? view.knowledgeRevision : undefined,
     section: view.objectId === undefined ? undefined
       : (view.module === 'entities' || view.module === 'decisions') && view.section === 'knowledge' ? 'knowledge'
         : view.module === 'operations' && view.section === 'attempts' ? 'attempts'

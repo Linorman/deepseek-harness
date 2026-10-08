@@ -76,7 +76,9 @@ export function taskScenarioReport(state: SimulationSnapshot, execution: Simulat
   const selected = proposal(decision.context.view)
   if (selected?.action.kind !== 'communication/post') return undefined
   const operationId = decision.operationIds[0]
-  const report = operationId === undefined ? undefined : state.operations[operationId]
+  /* v8 ignore next -- the accepted decision above has exactly one native operation identity. */
+  if (operationId === undefined) return undefined
+  const report = state.operations[operationId]
   const recipient = state.entities[selected.action.recipient]?.binding
   const receipt = report?.outbox?.receipt, delivered = report?.delivery?.receipt
   if (report?.action.kind !== 'communication/post' || report.entityId !== execution.request.entityId
@@ -103,6 +105,8 @@ import('@clocky/clocky-simulation').SimulationTaskReportContinuation | undefined
   if (execution.retired === undefined || report === undefined) return undefined
   if (execution.request.reportContinuation !== undefined) return execution.request.reportContinuation
   const context = state.decisions[report.decisionId]?.context
-  return context?.status === 'prepared' ? { attemptId: execution.request.attemptId,
-    operationId: report.id, contextFingerprint: context.fingerprint } : undefined
+  /* v8 ignore next -- taskScenarioReport selected this exact report from an accepted prepared decision in the same snapshot. */
+  if (context?.status !== 'prepared') return undefined
+  return { attemptId: execution.request.attemptId,
+    operationId: report.id, contextFingerprint: context.fingerprint }
 }

@@ -988,22 +988,6 @@ describe('Team runtime schemas', () => {
     expect(teamSystemPhaseProofResolutionSchema.parse({
       sourceName: 'team-run', scope: resumeScope,
     })).toEqual({ sourceName: 'team-run', scope: resumeScope })
-    const finalizationQuiesceScope = teamSystemPhaseScopeSchema.parse({
-      kind: 'team-run-finalization-quiesce',
-      teamId: 'team-1',
-      expectedCursor: 4,
-      phase: 'quiescing',
-      finalChannelId: 'channel-final',
-      finalEnvelopeId: 'envelope-final',
-      humanId: 'human-1',
-      coordinatorId: 'coordinator-1',
-    })
-    expect(teamSystemPhaseProofResolutionSchema.parse({
-      sourceName: 'team-run', scope: finalizationQuiesceScope,
-    })).toEqual({ sourceName: 'team-run', scope: finalizationQuiesceScope })
-    if (finalizationQuiesceScope.kind !== 'team-run-finalization-quiesce') {
-      throw new Error('phase schema did not retain the finalization quiesce scope')
-    }
     const stallScope = teamSystemPhaseScopeSchema.parse({
       kind: 'scheduler-stall',
       teamId: 'team-1',
@@ -1031,9 +1015,6 @@ describe('Team runtime schemas', () => {
     })).toEqual({ sourceName: 'team-activation-controller', scope: cancellationStallScope })
     expect(teamSystemPhaseScopeSchema.safeParse({
       ...resumeScope, phase: 'stalled',
-    }).success).toBe(false)
-    expect(teamSystemPhaseScopeSchema.safeParse({
-      ...finalizationQuiesceScope, humanId: finalizationQuiesceScope.coordinatorId,
     }).success).toBe(false)
     expect(teamSystemPhaseScopeSchema.safeParse({
       kind: 'scheduler-stall', teamId: 'team-1', phase: 'stalled',

@@ -1,33 +1,17 @@
+import { disconnectedRead, failedRead } from './read-state.ts'
+import { ReadRequest } from './read-request.ts'
+import type { TaskReferencesState, TaskReferencesOptions } from '../contract/team-tasks.ts'
+export type { TaskReferencesState, TaskReferencesOptions } from '../contract/team-tasks.ts'
 /** One form's exact dependency facts; collection membership does not establish their status. */
 import type { IApiClient, TeamId, TeamTaskId, TeamTaskReference } from '@clocky/clocky-client-connection/client'
 import { isTeamAuthorizationError } from './access.ts'
-
-/** Current facts only for the IDs requested by the current form. */
-export interface TaskReferencesState {
-  readonly teamId: TeamId
-  readonly taskIds: readonly TeamTaskId[]
-  readonly items: readonly TeamTaskReference[]
-  readonly teamCursor?: number | undefined
-  readonly loading: boolean
-  readonly disconnected: boolean
-  readonly hasNewer: boolean
-  readonly error?: string | undefined
-}
-
-/** Validated consumer limits for retained references, requests and observation. */
-export interface TaskReferencesOptions {
-  readonly capacity: number
-  readonly batchSize: number
-  readonly refreshMs: number
-}
 
 /** Publish a complete same-revision reference set or retain the prior authorized facts. */
 export class TaskReferences {
   private state: TaskReferencesState | undefined
   private options: TaskReferencesOptions | undefined
-  private request: AbortController | undefined
   private timer: ReturnType<typeof setTimeout> | undefined
-  private generation = 0
+  private readonly requests = new ReadRequest()
   private watcher = 0
   private minimumCursor = 0
   private connected = true
@@ -48,8 +32,8 @@ export class TaskReferences {
    */
   watch(teamId: TeamId, taskIds: readonly TeamTaskId[], options: TaskReferencesOptions): () => void {
     const previous = this.state
-    const generation = this.cancel()
-    if (generation !== this.generation) return () => {}
+    const generation = this.requests.cancel(() => { clearTimeout(this.timer) })
+    if (generation !== this.requests.generation) return () => {}
     const watcher = ++this.watcher
     const ids = [...new Set(taskIds)]
     if (previous?.teamId !== teamId) this.minimumCursor = 0
@@ -65,14 +49,14 @@ export class TaskReferences {
   async refresh(): Promise<void> {
     const state = this.state
     const options = this.options
-    if (state === undefined || options === undefined || !this.connected || this.request !== undefined) return
+    if (state === undefined || options === undefined || !this.connected || this.requests.request !== undefined) return
     clearTimeout(this.timer)
-    const generation = this.generation
+    const generation = this.requests.generation
     const controller = new AbortController()
-    this.request = controller
+    this.requests.begin(controller)
     this.set({ ...state, loading: true, error: undefined })
     try {
-      if (!this.current(generation, controller)) return
+      if (!this.requests.current(generation, controller)) return
       if (state.taskIds.length > options.capacity) throw new Error('Selected task references exceed the configured capacity')
       const items: TeamTaskReference[] = []
       let cursor: number | undefined
@@ -82,7 +66,7 @@ export class TaskReferences {
         do {
           const response = await this.api.teams.taskReferences({ teamId: state.teamId, taskIds: batch, afterCursor: offset,
             ...cursor === undefined ? {} : { expectedTeamCursor: cursor } }, controller.signal)
-          if (!this.current(generation, controller)) return
+          if (!this.requests.current(generation, controller)) return
           if (!response.result.ok) {
             if (isTeamAuthorizationError(response.result.error)) { this.close(); this.denied(state.teamId); return }
             throw new Error(response.result.error.message)
@@ -106,13 +90,9 @@ export class TaskReferences {
       this.set({ teamId: state.teamId, taskIds: state.taskIds, items, teamCursor: cursor,
         loading: false, disconnected: false, hasNewer: false })
     } catch (error: unknown) {
-      if (this.current(generation, controller)) this.set({ ...this.active(), loading: false,
-        error: error instanceof Error ? error.message : String(error) })
+      if (this.requests.current(generation, controller)) this.set(failedRead(this.active(), error))
     } finally {
-      if (this.request === controller) {
-        this.request = undefined
-        this.timer = setTimeout(() => { void this.refresh() }, options.refreshMs)
-      }
+      this.requests.finish(controller, () => { this.timer = setTimeout(() => { void this.refresh() }, options.refreshMs) })
     }
   }
 
@@ -129,9 +109,9 @@ export class TaskReferences {
   /** Preserve visibly stale facts during ordinary connection loss. */
   disconnect(): void {
     this.connected = false
-    const generation = this.cancel()
-    if (generation !== this.generation) return
-    if (this.state !== undefined) this.set({ ...this.state, loading: false, disconnected: true, hasNewer: true })
+    const generation = this.requests.cancel(() => { clearTimeout(this.timer) })
+    if (generation !== this.requests.generation) return
+    if (this.state !== undefined) this.set(disconnectedRead(this.state))
   }
 
   /** Revalidate the current exact reference set after the new handshake. */
@@ -139,22 +119,11 @@ export class TaskReferences {
 
   /** Release reference bodies and prevent old reads from recreating them. */
   close(): void {
-    const generation = this.cancel()
-    if (generation !== this.generation) return
+    const generation = this.requests.cancel(() => { clearTimeout(this.timer) })
+    if (generation !== this.requests.generation) return
     this.options = undefined; this.state = undefined; this.publish(undefined)
   }
 
-  private cancel(): number {
-    const generation = ++this.generation
-    clearTimeout(this.timer)
-    const request = this.request
-    this.request = undefined
-    request?.abort()
-    return generation
-  }
-  private current(generation: number, controller: AbortController): boolean {
-    return generation === this.generation && !controller.signal.aborted
-  }
   private active(): TaskReferencesState {
     // v8 ignore next -- a current request owns its state until cancellation fences its generation.
     if (this.state === undefined) throw new Error('Task references have no current selection')

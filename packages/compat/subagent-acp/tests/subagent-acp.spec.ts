@@ -25,8 +25,17 @@ import { spawnSubprocess } from '@clocky/clocky-subprocess-local/src/spawn.ts'
 
 const mockServer = fileURLToPath(new URL('./mock-acp-server.ts', import.meta.url))
 
-/** A parent Agent stub whose resolved workspace root falls back to its Session header. */
-const fakeParent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+/** Parent fixture supplies Agent's mandatory runtime fields for depth and workspace resolution. */
+function parentAgent(cwd?: string): Agent {
+  return {
+    id: 'parent',
+    options: {},
+    ctx: new Context(),
+    session: { header: cwd === undefined ? {} : { cwd } },
+  } as unknown as Agent
+}
+
+const fakeParent = parentAgent(process.cwd())
 
 function request(text = 'p', signal = new AbortController().signal) {
   return { prompt: [{ type: 'text' as const, text }], parent: fakeParent, signal }
@@ -132,7 +141,7 @@ describe('child env layering (through the subprocess seam)', () => {
     // config.env; the seam's scrub drops only the AMBIENT namesakes, so the
     // explicit entry merges after it and the child must see the value.
     const ctx = await setup({ MOCK_ECHO_ENV: 'CLOCKY_ACP_TEST_FACT', CLOCKY_ACP_TEST_FACT: 'managed' })
-    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const parent = parentAgent(process.cwd())
     const run = await ctx.subagents.start('acp', {
       label: 'p', prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal,
     })
@@ -205,7 +214,7 @@ describe('cwd resolution', () => {
     const workdir = realpathSync(mkdtempSync(join(tmpdir(), 'acp-parent-cwd-')))
     try {
       const ctx = await setup({ MOCK_ECHO_CWD: '1' })
-      const parent = { id: 'parent', session: { header: { cwd: workdir } } } as unknown as Agent
+      const parent = parentAgent(workdir)
       const run = await ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal })
       const result = await run.result
       await run.dispose()
@@ -219,7 +228,7 @@ describe('cwd resolution', () => {
 
   it('uses a live allocation root from the delegating Agent before its session cwd', async () => {
     const allocationRoot = realpathSync(mkdtempSync(join(tmpdir(), 'acp-allocation-root-')))
-    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const parent = parentAgent(process.cwd())
     const lease = openAgentWorkspaceLease(parent)
     try {
       lease.publishRoot(allocationRoot)
@@ -247,7 +256,7 @@ describe('cwd resolution', () => {
       await ctx.plugin(LocalSubprocessRuntime)
       // A command that would create the sentinel if the child were ever spawned.
       await ctx.plugin(acp, { providerName: 'acp', command: 'touch', args: [sentinel], permission: 'reject', env: {} })
-      const parent = { id: 'parent', session: { header: {} } } as unknown as Agent
+      const parent = parentAgent()
       await expect(ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal }))
         .rejects.toThrow('no working directory')
       // Resolution failed BEFORE the process boundary — nothing was launched.
@@ -272,7 +281,7 @@ describe('cwd resolution', () => {
         permission: 'reject',
         env: { MOCK_ECHO_CWD: '1' },
       })
-      const parent = { id: 'parent', session: { header: { cwd: parentDir } } } as unknown as Agent
+      const parent = parentAgent(parentDir)
       const lease = openAgentWorkspaceLease(parent)
       try {
         lease.markUnavailable()
@@ -374,13 +383,13 @@ describe('cwd resolution', () => {
     // header, and resolving it against the server process cwd would silently
     // re-introduce the launch-directory dependency this resolution removes.
     const ctx = await setup({})
-    const parent = { id: 'parent', session: { header: { cwd: 'relative/workspace' } } } as unknown as Agent
+    const parent = parentAgent('relative/workspace')
     await expect(ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal }))
       .rejects.toThrow('must be an absolute path')
   })
 
   it('fails closed when the parent workspace lease is unavailable', async () => {
-    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const parent = parentAgent(process.cwd())
     const lease = openAgentWorkspaceLease(parent)
     const ctx = await setup()
     try {
@@ -400,7 +409,7 @@ describe('cwd resolution', () => {
     writeFileSync(file, 'x')
     try {
       const ctx = await setup({})
-      const parent = { id: 'parent', session: { header: { cwd: file } } } as unknown as Agent
+      const parent = parentAgent(file)
       await expect(ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal }))
         .rejects.toThrow('not an accessible directory')
     } finally {
@@ -416,7 +425,7 @@ describe('cwd resolution', () => {
       await ctx.plugin(SubagentRuntime)
       await ctx.plugin(LocalSubprocessRuntime)
       await ctx.plugin(acp, { providerName: 'acp', command: 'touch', args: [sentinel], permission: 'reject', env: {} })
-      const parent = { id: 'parent', session: { header: { cwd: join(tmp, 'vanished') } } } as unknown as Agent
+      const parent = parentAgent(join(tmp, 'vanished'))
       await expect(ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal }))
         .rejects.toThrow('not an accessible directory')
       expect(existsSync(sentinel)).toBe(false)

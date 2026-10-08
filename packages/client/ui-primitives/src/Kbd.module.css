@@ -1,0 +1,23 @@
+.combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font: inherit;
+}
+
+.key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--clocky-space-1);
+  border: 1px solid var(--clocky-border-default);
+  border-bottom-width: 2px;
+  border-radius: var(--clocky-radius-xs);
+  background: var(--clocky-bg-surface);
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-mono-small);
+  font-size: var(--clocky-type-micro-size);
+  line-height: 1;
+}

@@ -70,7 +70,7 @@ describe('the shipped headless Team composition', () => {
       const rows = new Map<string, Entry>()
       for (const entry of ctx.loader.entries()) rows.set(entry.options.id, entry)
       for (const id of ['goal', 'goal-round-driver', 'command-goal', 'tool-goal']) {
-        expect(rows.get(id)?.disabled, `${id} must be disabled`).toBe(true)
+        expect(rows.has(id), `${id} must be absent`).toBe(false)
       }
       for (const id of TEAM_ROWS) expect(rows.get(id)?.disabled, `${id} must be enabled`).not.toBe(true)
       expect(rows.get('team-storage-sqlite')?.disabled).not.toBe(true)

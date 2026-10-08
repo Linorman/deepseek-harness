@@ -160,3 +160,36 @@ it('rejects progressed history, unexpected channels and insufficient bootstrap a
     expect(h.run.snapshot()).toEqual(state)
   } finally { await h.close() }
 })
+
+it('rechecks paused history before reserving a team after the preparation microtask starts', async () => {
+  const h = await fixture()
+  try {
+    const original = h.run.snapshot()
+    const ensureTeam = vi.spyOn(h.ctx.simulationTeams, 'ensureTeam')
+    vi.spyOn(h.run, 'snapshot').mockReturnValueOnce(original).mockReturnValueOnce({ ...original, phase: 'running' })
+    await expect(prepareSimulationCompany(h.ctx.simulationTeams, h.run, settings)).rejects.toThrow('unstarted paused history')
+    expect(ensureTeam).not.toHaveBeenCalled()
+    expect(h.run.snapshot()).toEqual(original)
+  } finally { await h.close() }
+})
+
+it('closes its temporary attachment when a participant reservation loses its binding', async () => {
+  const h = await fixture()
+  try {
+    const attach = h.ctx.simulationTeams.attach.bind(h.ctx.simulationTeams)
+    const close = vi.fn()
+    vi.spyOn(h.ctx.simulationTeams, 'attach').mockImplementation(async (...args) => {
+      const connection = await attach(...args)
+      const nativeClose = connection.close.bind(connection)
+      const ensureParticipant = connection.ensureParticipant.bind(connection)
+      vi.spyOn(connection, 'ensureParticipant').mockImplementation(async (...input) => {
+        const binding = await ensureParticipant(...input)
+        return input[0] === 'buyer' ? undefined as never : binding
+      })
+      vi.spyOn(connection, 'close').mockImplementation(async () => { close(); await nativeClose() })
+      return connection
+    })
+    await expect(prepareSimulationCompany(h.ctx.simulationTeams, h.run, settings)).rejects.toThrow('lost its company foundation')
+    expect(close).toHaveBeenCalledOnce()
+  } finally { await h.close() }
+})

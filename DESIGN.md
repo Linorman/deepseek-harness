@@ -107,7 +107,9 @@ Modal views have a visible title and close/return action, contain keyboard focus
 
 ### Motion
 
-Feedback motion explains navigation or a real state change. Module entry is brief; task inspection enters from its neighboring edge; Session inspection uses a short vertical reveal. High-frequency interaction remains immediate. No animation invents throughput or progress. Reduced-motion mode removes movement and ongoing status animation while retaining text feedback. Shared theme timing and easing remain the source for reusable motion values.
+Navigation commits synchronously before returning, independent of native capture. The delayed visual callback cannot overwrite Back/Forward; optional capture may show the already committed view. Each navigation runs once; fresh pointer or keyboard input and document hiding retire the optional native capture before the next action. Visual completion uses the shared instant timing token and stays within the recorded interaction budget. Settings uses the shared body-portaled native dialog, a section rail at widths of 720px or more and a labeled native section picker below that threshold. Platform popup geometry is accepted for that picker; fields use full content width.
+
+Feedback motion explains navigation or a real state change. The topology frame uses a viewport-bounded height so task and member previews stay on the first desktop screen. Module entry is brief; task inspection enters from its neighboring edge; Session inspection uses a short vertical reveal. High-frequency interaction remains immediate. Default ambient glows and directory glyphs are static; empty and settled rings create no animation. Live motion pauses behind a native modal or a shell-marked foreground page as well as while hidden or off-screen. No animation invents throughput or progress. Reduced-motion mode removes movement and ongoing status animation while retaining text feedback. Shared theme timing and easing remain the source for reusable motion values.
 
 ## Do's and Don'ts
 

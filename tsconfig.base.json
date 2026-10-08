@@ -31,6 +31,7 @@
     // not declaration path aliases, keep each package/vendor source compiled
     // under its own tsconfig boundary.
     "paths": {
+      "@clocky/clocky-session-telemetry-otel/pipeline": ["./packages/session/session-telemetry-otel/src/pipeline.ts"],
       "@clocky/clocky-client-ui-simulation": ["./packages/client/ui-simulation/src/index.ts"],
       "@clocky/clocky-client-ui-simulation/client": ["./packages/client/ui-simulation/src/client/index.ts"],
       "@clocky/clocky-simulation/identities": ["./packages/simulation/simulation/src/identities.ts"],
@@ -225,6 +226,7 @@
       "@clocky/clocky-client-ui-slots": ["./packages/client/ui-slots/src/index.ts"],
       "@clocky/clocky-client-ui-attachment": ["./packages/client/ui-attachment/src/index.ts"],
       "@clocky/clocky-client-ui-primitives": ["./packages/client/ui-primitives/src/index.ts"],
+      "@clocky/clocky-client-ui-viz": ["./packages/client/ui-viz/src/index.ts"],
       "@clocky/clocky-client-ui-renderer": ["./packages/client/ui-renderer/src/index.ts"],
       "@clocky/clocky-client-ui-renderer/client": ["./packages/client/ui-renderer/src/client/index.ts"],
       "@clocky/clocky-client-ui-renderer/invariant": ["./packages/client/ui-renderer/src/invariant.ts"],

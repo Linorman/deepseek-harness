@@ -297,3 +297,32 @@ describe('messageOf', () => {
     expect(messageOf(undefined)).toBe('undefined')
   })
 })
+
+it('retires provider and credential data and drops a late read after authorization is cleared', async () => {
+  let release: (value: RpcResponse<{ providers: typeof DIRECTORY }>) => void = () => {}
+  const slow = new Promise<RpcResponse<{ providers: typeof DIRECTORY }>>((resolve) => { release = resolve })
+  const { face, mirror, seenRefs } = api({ providers: () => slow })
+  const controller = new ModelsSettingsStore(face, settingsSchema, mirror)
+  const pending = controller.load()
+  controller.clearAuthorization()
+  await controller.load()
+  release(ok({ providers: DIRECTORY }))
+  await pending
+  expect(controller.store.getSnapshot()).toMatchObject({ status: 'unauthorized', authorizationRevision: 1,
+    writable: false, rows: [] })
+  expect(controller.store.getSnapshot().namespaces.size).toBe(0)
+  expect(seenRefs).toEqual([])
+  controller.resumeAuthorization()
+  await controller.load()
+  expect(controller.store.getSnapshot().status).toBe('ready')
+})
+
+it('folds a committed default without drafting its namespace Map and reports the new revision', async () => {
+  const { face, mirror } = api()
+  const wire = face as unknown as { settings: { replace: (value: unknown) => Promise<RpcResponse<unknown>> } }
+  wire.settings.replace = () => Promise.resolve(ok({ ns: 'agent-default-model', schema: {},
+    value: { provider: 'openai', model: 'picked' }, applies: 'new-session', secrets: [], revision: 3 }))
+  const store = new ModelsSettingsStore(face, settingsSchema, mirror)
+  await store.load()
+  expect(await store.saveDefault({ provider: 'openai', model: 'picked' }, 2)).toMatchObject({ revision: 3 })
+})

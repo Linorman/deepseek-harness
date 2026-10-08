@@ -8,7 +8,7 @@
   position: absolute;
   bottom: calc(100% + 4px);
   left: 0;
-  z-index: 100;
+  z-index: var(--clocky-layer-dropdown);
   min-width: min(260px, 100%);
   /* 537 is the design cap; the 100% clamp keeps the menu inside the composer
      card when a narrow viewport shrinks the card below the cap (the overlay
@@ -20,15 +20,15 @@
   overflow: hidden;
   /* Elevated surface: the scrollbar thumb takes the l2 elevation tokens
      (see ui-theme styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
   padding: 4px;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 12px;
-  background: var(--clocky-specific-menu);
-  box-shadow: var(--clocky-shadow-lv3);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
 }
 
 .viewport {
@@ -46,28 +46,28 @@
   min-height: 40px;
   padding: 8px 10px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--clocky-radius-md);
   background: transparent;
   cursor: pointer;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-primary);
   text-align: left;
 }
 
 .item:hover,
 .item.active {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .sectionTitle {
   flex: none;
   min-height: 26px;
   padding: 6px 10px 2px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
   font-weight: 500;
-  line-height: 18px;
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .sectionTitle:not(:first-child) {
@@ -81,7 +81,7 @@
   height: 16px;
   align-items: center;
   justify-content: center;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .itemName {
@@ -98,16 +98,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* Heading row above a source group: non-interactive small grey text,
  * padding aligned with items (mirrors ui-primitives Menu .label). */
 .groupTitle {
   padding: 8px 10px;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* Pending-source row: same cell metrics, dimmed label. */
@@ -116,7 +116,7 @@
   align-items: center;
   min-height: 40px;
   padding: 8px 10px;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--clocky-alias-label-dimmed);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-disabled);
 }

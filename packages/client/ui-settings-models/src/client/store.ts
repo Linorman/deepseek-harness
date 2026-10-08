@@ -8,6 +8,7 @@
 
 import type {
   ConfigurableProviderView, CredentialView, IApiClient, SettingsNamespaceView,
+  ModelProviderGroup, ModelCatalogFailure,
 } from '@clocky/clocky-api-remotes/client'
 import type { SnapshotStore } from '@clocky/clocky-client-runtime/client'
 import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
@@ -36,7 +37,13 @@ export interface ProviderRow {
 
 /** Page snapshot. */
 export interface ModelsSettingsState {
-  status: 'idle' | 'loading' | 'ready' | 'error'
+  /** Host model directory used by the default-selection editor; it performs no inference. */
+  modelCatalog?: { readonly groups: readonly ModelProviderGroup[]; readonly failures: readonly ModelCatalogFailure[] } | undefined
+  /** Catalog refresh failed; an existing directory remains readable but cannot authorize a new selection. */
+  modelCatalogError?: true | undefined
+  status: 'idle' | 'loading' | 'ready' | 'error' | 'unauthorized'
+  /** Retires component-owned private editors when the authenticated principal is cleared. */
+  authorizationRevision?: number
   /** Whole-load failure text; row-level write failures stay in the editor. */
   error: string | null
   /** Credential enrichment failure; provider/settings rows remain usable. */
@@ -113,6 +120,20 @@ export class ModelsSettingsStore {
 
   /** Latest load wins; an older response never overwrites a newer one. */
   private generation = 0
+  private authorization = new AbortController()
+
+  /** Cancel reads and remove provider/credential data and private editor ownership without refetching. */
+  clearAuthorization(): void {
+    this.authorization.abort()
+    this.generation += 1
+    this.store.set({ status: 'unauthorized', authorizationRevision: (this.store.getSnapshot().authorizationRevision ?? 0) + 1,
+      error: null, credentialError: null, writable: false, rows: [], namespaces: new Map() })
+  }
+
+  /** Resume reads after a successful handshake; the caller owns the refresh budget. */
+  resumeAuthorization(): void {
+    if (this.authorization.signal.aborted) this.authorization = new AbortController()
+  }
 
   /**
    * @param api - the wire face (credentials/llm domains, and settings writes).
@@ -125,6 +146,28 @@ export class ModelsSettingsStore {
   ) {}
 
   /**
+   * Save one explicitly picked default route; no inference or catalog-first automatic selection occurs.
+   * @param selection - Provider/model and optional explicit reasoning effort chosen by the user.
+   * @param expectedRevision - Revision captured when the default editor opened.
+   * @returns after the committed settings view is folded and the page refreshes; refusal preserves the draft.
+   */
+  async saveDefault(selection: { provider: string; model: string; reasoningEffort?: string }, expectedRevision: number):
+  Promise<SettingsNamespaceView | undefined> {
+    const signal = this.authorization.signal
+    const cancelled = () => signal.aborted
+    if (cancelled()) throw new Error('Browser access is unavailable')
+    const response = await this.api.settings.replace({ ns: 'agent-default-model', section: selection, expectedRevision }, signal)
+    if (cancelled()) return
+    if (!response.result.ok) throw new Error(response.result.error.message)
+    const view = response.result.value
+    this.describeFace.acceptView(view)
+    const namespaces = new Map(this.store.getSnapshot().namespaces).set(view.ns, view)
+    this.store.update((state) => { state.namespaces = namespaces })
+    await this.load()
+    return view
+  }
+
+  /**
    * Refresh the whole page snapshot: the provider directory and the mirror's
    * settings answer in parallel, then one batched credential describe over
    * every referenced ref. Provider failure or absence of an initial settings
@@ -133,14 +176,19 @@ export class ModelsSettingsStore {
    * @returns nothing; the snapshot carries the outcome.
    */
   async load(): Promise<void> {
+    if (this.authorization.signal.aborted) return
+    const signal = this.authorization.signal
     const generation = ++this.generation
     this.store.update((s) => { s.status = 'loading'; s.error = null })
     let providers: ConfigurableProviderView[]
     let writable: boolean
     let views: readonly SettingsNamespaceView[]
+    let modelCatalog: ModelsSettingsState['modelCatalog']
+    let modelCatalogError: true | undefined
     try {
-      const [providersResponse] = await Promise.all([
-        this.api.llm.providers({}),
+      const [providersResponse, catalogResponse] = await Promise.all([
+        this.api.llm.providers({}, signal),
+        this.api.llm.models({}, signal),
         this.describeFace.ensure(),
       ])
       if (!providersResponse.result.ok) throw new Error(providersResponse.result.error.message)
@@ -151,6 +199,8 @@ export class ModelsSettingsStore {
       providers = providersResponse.result.value.providers
       writable = mirrored.view.writable
       views = mirrored.view.namespaces
+      modelCatalog = catalogResponse.result.ok ? catalogResponse.result.value : this.store.getSnapshot().modelCatalog
+      modelCatalogError = catalogResponse.result.ok ? undefined : true
     } catch (error) {
       if (generation !== this.generation) return
       this.store.update((s) => {
@@ -160,6 +210,7 @@ export class ModelsSettingsStore {
       return
     }
     const namespaces = new Map(views.map(view => [view.ns, view]))
+    if (generation !== this.generation || signal.aborted) return
     const rows: ProviderRow[] = providers.map((entry) => {
       const namespace = namespaces.get(entry.settingsNs)
       const configured = namespace !== undefined
@@ -181,7 +232,7 @@ export class ModelsSettingsStore {
     let credentialError: string | null = null
     if (refs.length > 0) {
       try {
-        const response = await this.api.credentials.describe({ refs })
+        const response = await this.api.credentials.describe({ refs }, signal)
         // Credential state is an enrichment for the Models page: neither a
         // business rejection nor a transport failure fails the load. The
         if (response.result.ok) credentials = response.result.value.credentials
@@ -203,6 +254,8 @@ export class ModelsSettingsStore {
           : {},
       }))
       s.namespaces = namespaces
+      s.modelCatalog = modelCatalog
+      s.modelCatalogError = modelCatalogError
     })
   }
 }

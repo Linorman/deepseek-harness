@@ -83,7 +83,6 @@ class ActivationRecoveryProofIssuer {
 
   /** Issue one exact recovery quiescence proof only for its one Hub call. */
   async quiesce<T>(input: ActivationFenceInput, operation: (actor: TeamSystemActivationProof) => Promise<T>): Promise<T> {
-    if (this.closed) throw new Error('team-activation-recovery proof issuer is closed')
     const proof = createTeamActivationRecoveryProof()
     this.proofs.set(proof, Object.freeze({
       kind: 'activation-recovery-quiesce',

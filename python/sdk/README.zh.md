@@ -107,6 +107,8 @@ Team-list 的 `nextCursor` 是 opaque string，`after_cursor=-1` 开始新扫描
 
 `list_simulation_tasks()` 读取有界的规范运行任务控制。`cancel_simulation_task()` 固定来源操作、任务 revision、原命令与精确 attempt；必填且可空的 `expectedAttemptId` 将显式 `None` 保留为 JSON `null`，要求没有活动 lease。SDK 核对运行／命令／回执类型，拒绝缺失的 fence、actor 字段及无效操作提示。`get_simulation_request()` 仅在匹配的 `cancel-task` 回执下公开原始 `cancellation`；查询不重试，也不推理。
 
+目录与预检 DTO 要求严格的 `readiness` 变体。创建必须传入来自已观察 `ready.model` 的 `expectedModel`，其中 `name` 是提供方模型 ID。缺少模型配置时已安装模板仍可读，但不能伪装为就绪路由。客户端不自动更换路由或重试创建。
+
 ## 单任务取消
 
 `HarnessClient.cancel_team_task()`和`Team.cancel_task()`接收`teamId`、`taskId`、`expectedRevision`及可选`reason`（Team helper 提供自身 Team id）。`value.cancellation`保留精确 intent；assigned 或 running phase 表示终止仍在等待。Team 继续运行，应观察任务直到 cancelled。 [取消归属](../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.zh.md).

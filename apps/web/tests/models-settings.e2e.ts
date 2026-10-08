@@ -71,7 +71,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     // The button enables once the dormant catalog lands in the join.
     await expect.poll(async () => add.isEnabled(), { timeout: 10_000 }).toBe(true)
     await add.click()
-    const pick = dialog.getByLabel('提供方')
+    const pick = dialog.locator('select[aria-label="提供方"]')
     await pick.waitFor({ timeout: 10_000 })
     await expect.poll(async () => pick.locator('option').count(), { timeout: 10_000 }).toBeGreaterThan(30)
     const options = await pick.locator('option').allTextContents()
@@ -107,7 +107,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-models-native-auth'))
     const dialog = page.getByRole('dialog', { name: '设置' })
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
-    const row = dialog.getByText('minimax-cn', { exact: true }).first()
+    const row = dialog.getByRole('list').first().getByText('minimax-cn', { exact: true }).first()
     await row.waitFor({ timeout: 10_000 })
     await dialog.getByText('已保存 minimax-cn。', { exact: true }).waitFor({ timeout: 10_000 })
     expect(await dialog.getByRole('img', { name: 'API 密钥已配置' }).count()).toBe(0)
@@ -228,12 +228,12 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     // No reasoning effort on a provider card at all: effort is a per-model
     // capability, the models under one provider disagree about it, and a
     // switch in the composer already records provider+model+effort together.
-    expect(await dialog.getByLabel('推理强度').count()).toBe(0)
+    expect(await dialog.locator('[class*="addCard"]').getByLabel('推理强度', { exact: true }).count()).toBe(0)
     await dialog.getByRole('button', { name: '添加模型' }).click()
     await dialog.getByLabel('模型 ID 1').fill('acme-large')
     await dialog.getByRole('button', { name: '创建提供方', exact: true }).click()
 
-    const row = dialog.getByText('Acme Gateway', { exact: true }).first()
+    const row = dialog.getByRole('list').first().getByText('Acme Gateway', { exact: true }).first()
     await row.waitFor({ timeout: 10_000 })
     const document = await readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8')
     expect(document).toContain('acme-gateway:')
@@ -273,7 +273,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     // it under the new name: an unserviceable profile would have been refused
     // at the write instead, and a rename that did not re-register would leave
     // the old label on the row.
-    await dialog.getByText('Acme 网关', { exact: true }).first().waitFor({ timeout: 10_000 })
+    await dialog.getByRole('list').first().getByText('Acme 网关', { exact: true }).first().waitFor({ timeout: 10_000 })
     // The status line names the route as the refreshed directory reports it;
     // the target captured when the card opened still carries the old name.
     await dialog.getByText('已保存 Acme 网关 (acme-gateway)。', { exact: true }).waitFor({ timeout: 10_000 })

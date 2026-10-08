@@ -40,7 +40,7 @@ it.each(['json', 'sqlite'])('grants and reconciles an unknown outbox operation t
   }
   try {
     await initialize(sdk)
-    const created = await sdk.createSimulation({ commandId: 'sdk-operation-create', templateId: 'company', templateVersion: '1',
+    const created = await sdk.createSimulation({ commandId: 'sdk-operation-create', templateId: 'company', templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' },
       name: 'Unknown publication company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
     const runId = created.runId
     expect((await settled(created.commandId)).request.status).toBe('completed')

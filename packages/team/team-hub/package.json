@@ -39,7 +39,8 @@
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-storage-log": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-invariants": "workspace:^",
@@ -49,6 +50,7 @@
     "@clocky/clocky-storage-log": "workspace:^",
     "@clocky/clocky-storage-sqlite": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^"
   }
 }

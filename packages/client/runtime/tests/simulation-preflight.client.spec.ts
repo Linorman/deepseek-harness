@@ -7,7 +7,7 @@ import { FakeApiClient, ok, err } from './fake-api.client.ts'
 
 const input: SimulationProductPreflightInput = { templateId: 'company' as never, templateVersion: '1', name: 'Original',
   parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' }, limits: { maxTime: '9007199254740993' } }
-const result: SimulationProductPreflightResult = { status: 'invalid', issues: [{ field: 'limits.maxTime', code: 'invalid',
+const result: SimulationProductPreflightResult = { status: 'invalid', readiness: { status: 'ready', model: { provider: 'company', name: 'scripted' } }, issues: [{ field: 'limits.maxTime', code: 'invalid',
   message: { text: 'Tick exceeds installed maximum', truncated: false } }] }
 function fixture() {
   const ctx = new Context(), api = new FakeApiClient(), runtime = new SimulationRuntime(ctx, api)
@@ -65,7 +65,7 @@ it.each(['disconnect', 'replacement', 'pause'] as const)('retires validation bef
 it('marks retained ready configuration stale when the same draft refresh loses its result', async () => {
   const h = fixture()
   try {
-    const ready: SimulationProductPreflightResult = { status: 'ready', configuration: {
+    const ready: SimulationProductPreflightResult = { status: 'ready', readiness: { status: 'ready', model: { provider: 'company', name: 'scripted' } }, configuration: {
       limits: { maxEntities: 2, maxResidentActors: 2, tokensPerModelRequest: 100, maxTokensPerInterval: 1000, maxTime: '1000' },
       budgetInterval: '100', sharedModelLimit: 1, tickUnit: { text: 'tick', truncated: false },
       rulesVersion: { text: '1', truncated: false }, policyVersion: { text: '1', truncated: false },

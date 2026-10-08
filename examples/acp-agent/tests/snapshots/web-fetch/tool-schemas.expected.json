@@ -189,7 +189,7 @@
     },
     {
       "name": "team_final",
-      "description": "Send the final answer through one two-party direct Team channel. Use the exact channel_id of the final-answer channel; the recipient is derived from that channel.",
+      "description": "Send the final answer through the assigned Team result channel. Use the exact channel_id of the final-answer channel; the recipient is derived from that channel.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -244,7 +244,7 @@
     },
     {
       "name": "team_message",
-      "description": "Send an explicit text message to a Team channel. The sender is derived from your current activation; the channel adapter validates recipients, turn order, and delivery intent.",
+      "description": "Send an explicit text message to a Team channel. The sender is derived from your current activation; the channel adapter validates recipients, turn order, and delivery intent. For an ordinary consult, answer its logged request with turn delivery; task reviews require team_task_review.",
       "parameters": {
         "type": "object",
         "properties": {

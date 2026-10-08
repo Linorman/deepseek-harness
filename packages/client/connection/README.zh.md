@@ -10,7 +10,7 @@
 
 成功的 product-auth bootstrap 若携带已有会话 cookie，会在安装新会话前撤销旧会话，并中止旧会话已准入的调用与流。失败的 bootstrap 保留当前会话。连接后的 Host 描述携带不透明授权上下文标识，供消费者清除按主体隔离的缓存。
 
-HTTP 拒绝携带结构化访问错误。认证退役以协议码 `4001` 关闭 WebSocket 下行；浏览器丢弃排队帧并报告访问失效。控制器将业务帧保留到 Host 握手与授权重置完成后，忽略已退役代际的帧。`onAuthorizationLost` 清理按主体隔离的数据；普通网络失败保留此前可读内容。
+HTTP 拒绝携带结构化访问错误。认证退役以协议码 `4001` 关闭 WebSocket 下行；浏览器丢弃排队帧并报告访问失效。控制器将业务帧保留到 Host 握手与授权重置完成后，忽略已退役代际的帧。`onAuthorizationLost` 清理按主体隔离的数据，并终止该授权生命周期的重连调度。`ctx.connection.retryAuthorization()` 允许一次用户主动请求的握手；握手进行中或已销毁后的重复调用不执行。普通网络失败保留此前可读内容与指数退避。
 
 WebSocket 下行保留完整的已认证调用，并在 upgrade 后于该主体下打开每个事件 source；其退役信号关闭 socket 与 source。HTTP 读取流和下载接收相同调用上下文。网关 root export 拥有共享调用上下文，避免打包后的消费者产生第二份签发状态。
 
@@ -28,7 +28,7 @@ node 半侧在桥接或 upgrade 前守卫 `/api` 下的每个入口（`src/api-r
 
 ## `/api` WebSocket 下行
 
-`/api/events.mux` 与 `/api/events.host` 各接受一条 WebSocket upgrade，并只向浏览器发送对应的 `ServerRequest` 文本消息；客户端不会在这些 socket 上发送业务数据。任一 socket 结束都会使当前 connection generation 失败并重建两条流，连接就绪仍要求两条 socket 均已打开且 `host.describe` HTTP 调用成功。Host teardown 会终止两条 socket、中止各自的 source，并等待 source 清理完成后再返回。普通网络 GET 这些路径会返回 426，不保留 SSE（Server-Sent Events）回退；`toFetchHandler` 的 SSE 编解码只服务进程内同构载体。
+`/api/events.mux` 与 `/api/events.host` 各接受一条 WebSocket upgrade，并只向浏览器发送对应的 `ServerRequest` 文本消息；客户端不会在这些 socket 上发送业务数据。普通 socket 结束会使当前 connection generation 失败并重建两条流；明确认证退役则终止重连，连接就绪仍要求两条 socket 均已打开且 `host.describe` HTTP 调用成功。Host teardown 会终止两条 socket、中止各自的 source，并等待 source 清理完成后再返回。普通网络 GET 这些路径会返回 426，不保留 SSE（Server-Sent Events）回退；`toFetchHandler` 的 SSE 编解码只服务进程内同构载体。
 
 ## 模型体验
 

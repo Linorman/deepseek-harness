@@ -9,7 +9,7 @@
 import { Context } from '@clocky/cordis'
 import { describe, expect, it } from 'vitest'
 import type { SessionId } from '@clocky/clocky-api-remotes/client'
-import { createScope, scopeOf } from '../src/client/agents/scope.ts'
+import { createScope, scopeOf } from '../src/client/sessions/scope.ts'
 
 const sid = (k: string): SessionId => k as SessionId
 

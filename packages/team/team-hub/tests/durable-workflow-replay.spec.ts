@@ -1,6 +1,10 @@
 /** Workflow plan revisions and task bindings recovered from actual serialized logs. @module */
 
 import { describe, expect, it } from 'vitest'
+import type { Context } from '@clocky/cordis'
+import { teamSystemWorkflowScopeSchema, teamWorkflowPlanIdSchema, teamWorkflowPlanPhaseInputSchema,
+  teamWorkflowPlanResultSchema } from '@clocky/clocky-team'
+import type { TeamSystemWorkflowProof, TeamSystemWorkflowScope } from '@clocky/clocky-team'
 import { teamProjectionFromData } from '../src/fold.ts'
 import { teamProjectionDataSchema } from '../src/schema.ts'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
@@ -9,6 +13,22 @@ import { createdTeam, participant, participantChanged, task, taskChanged, taskCr
 
 function changed(plan: object, createdAt: number) {
   return { type: 'workflow-plan/changed', plan, createdAt }
+}
+
+/** Issue the compiler's exact operation proof for one public phase command. */
+async function transition(ctx: Context, phase: 'ready' | 'completed' | 'failed' | 'cancelled',
+  details: Readonly<Record<string, unknown>> = {}) {
+  const state = await ctx.teams.getTeam({ teamId })
+  const plan = state.workflowPlans?.find(value => value.id === 'workflow-a')
+  if (plan?.actor === undefined) throw new Error('Workflow phase fixture has no retained coordinator')
+  const input = teamWorkflowPlanPhaseInputSchema.parse({ teamId, planId: plan.id,
+    expectedCursor: state.team.cursor, expectedRevision: plan.revision, phase, ...details })
+  const actor = Object.freeze({}) as TeamSystemWorkflowProof
+  const scope = teamSystemWorkflowScopeSchema.parse({ kind: 'team-run-workflow-plan-phase', coordinator: plan.actor, ...input })
+  const dispose = ctx.teams.registerSystemWorkflowProofSource({ name: 'team-run',
+    resolveWorkflowProof: proof => proof === actor ? scope : undefined })
+  try { return await ctx.teams.transitionWorkflowPlan({ actor, ...input }) }
+  finally { dispose() }
 }
 
 function workflow(withDependency = false) {
@@ -83,6 +103,31 @@ function settledWorkflow(firstKind: 'completed' | 'failed') {
 
 for (const backend of ['json', 'sqlite'] as const) {
   describe(`durable workflow replay (${backend})`, () => {
+    it('keeps an exact failed phase retry and rejects changed or later terminal facts', async () => {
+      const { readyRows } = workflow()
+      const ctx = await recover(backend, readyRows, checkpointFor(readyRows))
+      const failure = { code: 'COMPILER_STOPPED', message: 'The compiler stopped after admission.' }
+      const failed = await transition(ctx, 'failed', { failure })
+      expect(failed.phase).toBe('failed')
+      const before = await ctx.teams.getTeam({ teamId })
+      expect(await transition(ctx, 'failed', { failure })).toEqual(failed)
+      await expect(transition(ctx, 'failed', { failure: { ...failure, message: 'Another cause.' } }))
+        .rejects.toThrow('different')
+      await expect(transition(ctx, 'ready')).rejects.toThrow('already terminal')
+      expect(await ctx.teams.getTeam({ teamId })).toEqual(before)
+    })
+
+    it('checks compiled task outcomes before accepting a completed plan result', async () => {
+      const { prefix, completed } = settledWorkflow('completed')
+      const ctx = await recover(backend, prefix, checkpointFor(prefix))
+      const altered = { ...completed.result, tasks: completed.result.tasks.map((task, index) => index === 0
+        ? { ...task, result: { summary: 'Never recorded by the task.' } } : task) }
+      await expect(transition(ctx, 'completed', { result: altered })).rejects.toThrow('does not match')
+      const accepted = await transition(ctx, 'completed', { result: completed.result })
+      expect(accepted).toMatchObject({ phase: 'completed', result: completed.result })
+      expect(await transition(ctx, 'completed', { result: completed.result })).toEqual(accepted)
+    })
+
     it('preserves partial compiling bindings and ignores duplicate or foreign checkpoint plans', async () => {
       const { partialRows, partial } = workflow()
       const data = checkpointFor(partialRows)
@@ -106,6 +151,17 @@ for (const backend of ['json', 'sqlite'] as const) {
       const secondPage = await ctx.teams.listWorkflowPlansPage({ teamId, afterCursor: first.nextCursor!, limit: 1 })
       expect(secondPage.items.map(item => item.id)).toEqual(['workflow-b'])
       expect(secondPage.nextCursor).toBeUndefined()
+      expect(await ctx.teams.listWorkflowPlansPage({ teamId, afterCursor: 99, limit: 1 })).toEqual({ items: [] })
+      await expect(ctx.teams.getWorkflowPlan({ teamId, planId: teamWorkflowPlanIdSchema.parse('missing-workflow') }))
+        .rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_NOT_FOUND' })
+    })
+
+    it('bounds workflow inspection metadata before returning a selected plan', async () => {
+      const { readyRows, plan } = workflow()
+      const ctx = await recover(backend, readyRows, undefined, teamId, [], readyRows.length - 1, [],
+        { maxSelectionBytes: 100 })
+      await expect(ctx.teams.inspectWorkflowPlan({ teamId, planId: teamWorkflowPlanIdSchema.parse(plan.id), limit: 1 }))
+        .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
     })
 
     it('rejects intrinsic workflow damage at serialized journal and checkpoint parsing', async () => {
@@ -342,4 +398,146 @@ it.each(['cancelled', 'failed'] as const)('retains deleted task bindings on a %s
   expect(() => teamProjectionFromData(parsed)).not.toThrow()
   const reopening = teamProjectionDataSchema.parse({ ...parsed, workflowPlans: [ready] })
   expect(() => teamProjectionFromData(reopening)).toThrow('binds missing or deleted task')
+})
+
+
+/** Submit exact phase facts through the real TeamRun-owned proof seam. */
+async function transitionRetainedWorkflow(ctx: Awaited<ReturnType<typeof recover>>, result: unknown,
+  phase: 'ready' | 'completed' | 'failed' = 'completed') {
+  const state = await ctx.teams.getTeam({ teamId })
+  const plan = state.workflowPlans![0]!
+  const input = teamWorkflowPlanPhaseInputSchema.parse({ teamId, planId: plan.id, expectedCursor: state.team.cursor,
+    expectedRevision: plan.revision, phase, ...result === undefined ? {} : { result },
+    ...phase === 'failed' ? { failure: { code: 'WORKFLOW_TASK_FAILED', message: 'Retained failed task' } } : {} })
+  const proofs = new Map<TeamSystemWorkflowProof, TeamSystemWorkflowScope>()
+  const stop = ctx.teams.registerSystemWorkflowProofSource({ name: 'team-run', resolveWorkflowProof: proof => proofs.get(proof) })
+  const actor = Object.freeze({ toJSON(): never { throw new Error('Proof is runtime-only') } }) as unknown as TeamSystemWorkflowProof
+  proofs.set(actor, teamSystemWorkflowScopeSchema.parse({ kind: 'team-run-workflow-plan-phase', ...input, coordinator: plan.actor }))
+  try { return await ctx.teams.transitionWorkflowPlan({ ...input, actor }) }
+  finally { proofs.clear(); stop() }
+}
+
+it.each(['completed', 'failed'] as const)('admits exact retained %s workflow outcomes through the current coordinator proof', async (kind) => {
+  const f = settledWorkflow(kind)
+  const ctx = await recover('json', f.prefix, checkpointFor(f.prefix))
+  try {
+    const transitioned = await transitionRetainedWorkflow(ctx, f.completed.result, kind)
+    expect(transitioned.phase).toBe(kind)
+    expect(transitioned.result).toEqual(f.completed.result)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('replays exact terminal workflow facts without another write and rejects changed terminal facts', async () => {
+  const f = settledWorkflow('completed')
+  const ctx = await recover('json', f.prefix, checkpointFor(f.prefix))
+  try {
+    const ready = await ctx.teams.getTeam({ teamId })
+    await expect(transitionRetainedWorkflow(ctx, f.completed.result, 'failed'))
+      .rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(ready)
+    const completed = await transitionRetainedWorkflow(ctx, f.completed.result)
+    const before = await ctx.teams.getTeam({ teamId })
+    await expect(transitionRetainedWorkflow(ctx, f.completed.result)).resolves.toEqual(completed)
+    expect((await ctx.teams.getTeam({ teamId })).team.cursor).toBe(before.team.cursor)
+    const changed = structuredClone(f.completed.result)
+    const first = changed.tasks[0]!
+    changed.tasks[0] = { ...first, result: { summary: 'Conflicting terminal summary.',
+      evidence: ['Retained attempt evidence.'] } }
+    await expect(transitionRetainedWorkflow(ctx, changed)).rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+    await expect(transitionRetainedWorkflow(ctx, f.completed.result, 'failed'))
+      .rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('does not mark a partially compiled workflow ready or append a Team record', async () => {
+  const partial = workflow()
+  const ctx = await recover('json', partial.partialRows, checkpointFor(partial.partialRows))
+  try {
+    const before = await ctx.teams.getTeam({ teamId })
+    await expect(transitionRetainedWorkflow(ctx, undefined, 'ready'))
+      .rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('marks a fully bound workflow ready without terminal result facts', async () => {
+  const fixture = workflow()
+  const compiled = { ...fixture.ready, phase: 'compiling' as const }
+  const records = [...fixture.readyRows.slice(0, -1), changed(compiled, 22)]
+  const ctx = await recover('json', records, checkpointFor(records))
+  try {
+    const before = await ctx.teams.getTeam({ teamId })
+    const ready = await transitionRetainedWorkflow(ctx, undefined, 'ready')
+    expect(ready).toMatchObject({ phase: 'ready', revision: compiled.revision + 1,
+      channelId: compiled.channelId, taskBindings: compiled.taskBindings })
+    expect(ready.result).toBeUndefined()
+    expect((await ctx.teams.getTeam({ teamId })).team.cursor).toBe(before.team.cursor + 1)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it.each(['missing-result-row', 'wrong-template', 'wrong-task', 'wrong-task-phase', 'wrong-completed-facts'] as const)
+('refuses %s instead of replacing authoritative terminal task outcomes', async (kind) => {
+  const f = settledWorkflow('completed')
+  const ctx = await recover('json', f.prefix, checkpointFor(f.prefix))
+  const first = f.completed.result.tasks[0]!
+  const tasks: unknown[] = structuredClone(f.completed.result.tasks)
+  if (kind === 'missing-result-row') tasks.pop()
+  else if (kind === 'wrong-template') tasks[0] = { ...first, templateId: 'other' }
+  else if (kind === 'wrong-task') tasks[0] = { ...first, taskId: 'other' }
+  else if (kind === 'wrong-task-phase') tasks[0] = { templateId: first.templateId, taskId: first.taskId, phase: 'cancelled' }
+  else tasks[0] = { templateId: first.templateId, taskId: first.taskId, phase: 'completed', result: { summary: 'Invented completion' } }
+  const result = { kind: 'task-results', tasks }
+  try {
+    const before = await ctx.teams.getTeam({ teamId })
+    await expect(transitionRetainedWorkflow(ctx, result)).rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('refuses a projected completion while its real compiled task is still pending', async () => {
+  const ready = workflow()
+  const final = settledWorkflow('completed')
+  const ctx = await recover('json', ready.readyRows, checkpointFor(ready.readyRows))
+  try {
+    await expect(transitionRetainedWorkflow(ctx, final.completed.result)).rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('refuses different failure facts under an otherwise valid completed workflow projection', async () => {
+  const f = settledWorkflow('failed')
+  const ctx = await recover('json', f.prefix, checkpointFor(f.prefix))
+  const result = structuredClone(f.completed.result)
+  result.tasks[0] = { templateId: result.tasks[0]!.templateId, taskId: result.tasks[0]!.taskId, phase: 'failed',
+    failure: { code: 'INVENTED', message: 'Not the retained failure' } }
+  try {
+    await expect(transitionRetainedWorkflow(ctx, result, 'failed')).rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+  } finally { await ctx.fiber.dispose() }
+})
+
+
+it('rejects incomplete compiling bindings before terminal result validation or journal mutation', async () => {
+  const partial = workflow()
+  const final = settledWorkflow('completed')
+  const ctx = await recover('json', partial.partialRows, checkpointFor(partial.partialRows))
+  try {
+    const before = await ctx.teams.getTeam({ teamId })
+    await expect(transitionRetainedWorkflow(ctx, final.completed.result)).rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('accepts a failed projection with omitted optional diagnostic facts without inventing failure detail', async () => {
+  const f = settledWorkflow('failed')
+  const ctx = await recover('json', f.prefix, checkpointFor(f.prefix))
+  const parsed = teamWorkflowPlanResultSchema.parse(f.completed.result)
+  const result = { ...parsed, tasks: parsed.tasks.map(item => ({
+    templateId: item.templateId, taskId: item.taskId, phase: item.phase,
+    ...item.phase === 'completed' ? { result: item.result } : {},
+  })) }
+  try {
+    const accepted = await transitionRetainedWorkflow(ctx, result, 'failed')
+    expect(accepted.result?.tasks[0]).not.toHaveProperty('failure')
+    expect(accepted.phase).toBe('failed')
+  } finally { await ctx.fiber.dispose() }
 })

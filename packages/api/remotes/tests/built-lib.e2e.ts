@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Built-artifact smoke for the first generated Remote: plain Node boots the
+ * Built-artifact smoke for the generated command Remote: plain Node boots the
  * Host and Browser bundle handoffs, then crosses the shared `/api` HTTP route.
  */
 
@@ -20,15 +20,15 @@ const requiredArtifacts = [
   'packages/api/remotes/lib/client.js',
   'packages/core/agent/lib/index.js',
   'packages/core/session/lib/index.js',
-  'packages/compat/goal/lib/index.js',
-  'packages/compat/goal/lib/typert.host.js',
+  'packages/interaction/commands/lib/index.js',
+  'packages/interaction/commands/lib/typert.host.js',
   'packages/api/gateway/lib/client.js',
   'packages/api/gateway/lib/index.js',
   'packages/typert/registry/lib/client.js',
   'packages/typert/registry/lib/index.js',
 ].every(path => existsSync(artifact(path)))
 
-describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
+describe.skipIf(!requiredArtifacts)('Command Remote built LIB chain', () => {
   it('runs root and Agent-scoped calls through generated bundles and real HTTP', async () => {
     const urls = Object.fromEntries(Object.entries({
       agent: 'packages/core/agent/lib/index.js',
@@ -36,8 +36,8 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
       apiGatewayHost: 'packages/api/gateway/lib/index.js',
       connectionClient: 'packages/client/connection/lib/client.js',
       connectionHost: 'packages/client/connection/lib/index.js',
-      goal: 'packages/compat/goal/lib/index.js',
-      goalTypert: 'packages/compat/goal/lib/typert.host.js',
+      commands: 'packages/interaction/commands/lib/index.js',
+      commandsTypert: 'packages/interaction/commands/lib/typert.host.js',
       registryClient: 'packages/typert/registry/lib/client.js',
       registryHost: 'packages/typert/registry/lib/index.js',
       remotesClient: 'packages/api/remotes/lib/client.js',
@@ -52,8 +52,8 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
       const { default: AgentRegistry } = await import(urls.agent)
       const connectionHost = await import(urls.connectionHost)
       const { default: TypertRemoteService } = await import(urls.apiGatewayHost)
-      const { default: GoalService } = await import(urls.goal)
-      const { TYPERT } = await import(urls.goalTypert)
+      const { default: CommandRuntime } = await import(urls.commands)
+      const { TYPERT } = await import(urls.commandsTypert)
       const { default: TypertRegistry } = await import(urls.registryHost)
       const { Session, SessionId } = await import(urls.session)
 
@@ -71,7 +71,7 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
       await host.plugin(TypertRegistry)
       await host.plugin(AgentRegistry)
       await host.plugin(TypertRemoteService)
-      await host.plugin(GoalService)
+      await host.plugin(CommandRuntime)
       host.typert.register(TYPERT)
 
       const makeAgent = rawId => {
@@ -97,6 +97,8 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
       const scopedAgent = makeAgent('built-scoped-agent')
       host.agents.register(rootAgent)
       host.agents.register(scopedAgent)
+      host.commands.register({ name: 'echo', description: 'Echo the command input',
+        handler: ({ rawInput }) => ({ kind: 'success', text: rawInput.trim() }) })
 
       if (routes.length !== 1 || routes[0].path !== '/api') {
         throw new Error('Connection did not register exactly one /api route')
@@ -143,27 +145,21 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
 
       let invalidRejected = false
       try {
-        await client.remote.goals.create(rootAgent.id, { objective: 1 })
+        await client.remote.commands.execute(rootAgent.id, 1, [])
       } catch {
         invalidRejected = true
       }
       // Every generated method resolves to the RemoteResult envelope; the
       // business values below are what the assertions pin.
-      const rootResult = await client.remote.goals.create(rootAgent.id, { objective: 'root goal' })
-      const rootEdit = await client.remote.goals.edit(
-        rootAgent.id,
-        rootResult.value.ref,
-        { objective: 'edited root goal' },
-      )
+      const rootResult = await client.remote.commands.execute(rootAgent.id, '/echo root command', [])
+      const rootList = await client.remote.commands.list(rootAgent.id)
       const agentContext = client.extend({ builtAgentId: scopedAgent.id })
-      const scopedResult = await agentContext.remote.goals.create({ objective: 'scoped goal', maxGoalRounds: 3 })
+      const scopedResult = await agentContext.remote.commands.execute('/echo scoped command', [])
       const result = {
         invalidRejected,
         rootResult: rootResult.value,
-        rootEdit: rootEdit.value,
+        rootList: rootList.value,
         scopedResult: scopedResult.value,
-        rootGoal: host.goals.get(rootAgent)?.objective,
-        scopedGoal: host.goals.get(scopedAgent)?.objective,
         rootEvents: rootAgent.session.events.length,
         scopedEvents: scopedAgent.session.events.length,
       }
@@ -181,26 +177,23 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
     expect(result.exitCode, `stderr:\n${result.stderr}`).toBe(0)
     const output = JSON.parse(result.stdout.trim().split('\n').at(-1) ?? '{}') as {
       invalidRejected: boolean
-      rootResult: { ref: { id: string; revision: number } }
-      rootEdit: { objective: string; revision: number }
-      scopedResult: { ref: { id: string; revision: number } }
-      rootGoal: string
-      scopedGoal: string
+      rootResult: { commandId: string; result: { kind: string; text: string } }
+      rootList: { name: string; description: string }[]
+      scopedResult: { commandId: string; result: { kind: string; text: string } }
       rootEvents: number
       scopedEvents: number
     }
     expect(output).toMatchObject({
       invalidRejected: true,
-      rootResult: { ref: { revision: 1 } },
-      rootEdit: { objective: 'edited root goal', revision: 2 },
-      scopedResult: { ref: { revision: 1 } },
-      rootGoal: 'edited root goal',
-      scopedGoal: 'scoped goal',
+      rootResult: { result: { kind: 'success', text: 'root command' } },
+      rootList: [{ name: 'echo', description: 'Echo the command input' }],
+      scopedResult: { result: { kind: 'success', text: 'scoped command' } },
       rootEvents: 2,
-      scopedEvents: 1,
+      scopedEvents: 2,
     })
-    expect(output.rootResult.ref.id).toMatch(/^goal-/)
-    expect(output.scopedResult.ref.id).toMatch(/^goal-/)
+    expect(output.rootResult.commandId).toMatch(/^cmd-/)
+    expect(output.scopedResult.commandId).toMatch(/^cmd-/)
+    expect(output.scopedResult.commandId).not.toBe(output.rootResult.commandId)
   }, 60_000)
 })
 

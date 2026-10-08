@@ -83,11 +83,13 @@ it('keeps relation history, scope and exact half-open time separate from entity 
 
 it('refuses retired context grants after provider IO and never returns a pending private body during unload', async () => {
   const h = await worldFixture({ contextReaders: [{ principalId: 'reader' as never, entityIds: ['actor' as never] }] })
-  const input = { runId: registration().id, collection: 'decisions', id: 'decision' as never, section: 'context', limit: 1 } as const
+  const input = { runId: registration().id, collection: 'decisions', id: 'decision' as never, section: 'context', limit: 32 } as const
   const actor = await h.native.actor('actor')
   const decisionId = simulationDecisionIdSchema.parse('decision')
-  await actor.lease.openDecision(decisionId, h.native.run.snapshot().revision)
-  await actor.lease.prepareContext(decisionId, contextRequest())
+  const opened = await actor.lease.openDecision(decisionId, h.native.run.snapshot().revision)
+  const context = contextRequest()
+  context.sources.push({ kind: 'run-event', runId: h.native.run.snapshot().spec.runId, sequence: opened.snapshotRevision })
+  await actor.lease.prepareContext(decisionId, context)
   Object.assign(h.state, h.native.run.snapshot())
   const controller = new AbortController()
   h.inspect.mockImplementationOnce(async () => { controller.abort(); return { snapshot: h.state, owner: 'unowned' } })
@@ -100,6 +102,7 @@ it('refuses retired context grants after provider IO and never returns a pending
     if (result.value?.section !== 'context') throw new Error('Retired context has no metadata')
     expect(result.value.bodyAccess).toBe('withheld')
     expect(result.value.items.items.every(item => item.kind !== 'section' || item.body.status === 'withheld')).toBe(true)
+    expect(result.value.items.items.some(item => item.kind === 'run-event')).toBe(true)
   })
   await entered.promise
   const retiring = h.fiber.dispose()

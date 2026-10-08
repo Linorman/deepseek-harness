@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CENTER_MIN, clampWidth, computeColumns,
-  DETAILS_DEFAULT, DETAILS_MIN, SIDEBAR_COLLAPSED, SIDEBAR_DEFAULT, SIDEBAR_MIN,
+  CENTER_MIN, clampWidth, computeColumns, computePane,
+  DETAILS_DEFAULT, DETAILS_MIN, PANE_DEFAULT, PANE_MAX, PANE_MIN, SIDEBAR_COLLAPSED, SIDEBAR_DEFAULT, SIDEBAR_MIN, TEAM_MIN,
 } from '@clocky/clocky-client-ui-layout/src/client/columns.ts'
 
 // Numeric preference form (0 = closed); helpers keep the scenario names readable.
@@ -88,5 +88,41 @@ describe('computeColumns — degenerate viewports', () => {
     // Reaches step 3's auto-close with the compact rail sidebar.
     expect(computeColumns(500, closed(300), open(DETAILS_DEFAULT)))
       .toEqual({ sidebar: SIDEBAR_COLLAPSED, center: 500 - SIDEBAR_COLLAPSED, details: 0 })
+  })
+})
+
+describe('computePane', () => {
+  it('keeps the preferred pane beside a Team page that keeps its floor', () => {
+    expect(computePane(1056, 480, 0, false)).toEqual({ mode: 'split', pane: 480, team: 576, details: 0 })
+  })
+
+  it('shrinks the pane toward its floor before the Team page drops below TEAM_MIN', () => {
+    expect(computePane(TEAM_MIN + PANE_MIN + 20, 600, 0, false)).toEqual({ mode: 'split', pane: PANE_MIN + 20, team: TEAM_MIN, details: 0 })
+  })
+
+  it('presents a sheet when the Team page and a minimum pane no longer fit', () => {
+    expect(computePane(TEAM_MIN + PANE_MIN - 1, 480, 0, false)).toEqual({ mode: 'sheet', pane: TEAM_MIN + PANE_MIN - 1, team: TEAM_MIN + PANE_MIN - 1, details: 0 })
+  })
+
+  it('spans the center column while expanded', () => {
+    expect(computePane(1200, 480, 0, true)).toEqual({ mode: 'expanded', pane: 1200, team: 0, details: 0 })
+  })
+
+  it('fits details inside the pane and closes it before squeezing the transcript', () => {
+    expect(computePane(1600, 880, 360, false).details).toBe(360)
+    expect(computePane(1600, PANE_MIN + 10, 360, false).details).toBe(0)
+    expect(computePane(1200, 480, 0, true).details).toBe(0)
+  })
+
+  it('clamps stale pane preferences into range', () => {
+    expect(computePane(2400, 9999, 0, false).pane).toBe(PANE_MAX)
+    expect(computePane(2400, 10, 0, false).pane).toBe(PANE_MIN)
+  })
+
+  it('keeps the Team page visible at 1280px with the default sidebar and pane', () => {
+    const center = computeColumns(1280, SIDEBAR_DEFAULT, 0).center
+    const pane = computePane(center, PANE_DEFAULT, 0, false)
+    expect(pane.mode).toBe('split')
+    expect(pane.team).toBeGreaterThanOrEqual(TEAM_MIN)
   })
 })

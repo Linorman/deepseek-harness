@@ -47,7 +47,7 @@ export function BrandPlaceholderWordmark({ size = 24, className }: IconProps) {
       <RobotGlyph />
       <path d="M34 7h70M34 12h93M34 17h54" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <rect x="112" y="5" width="40" height="14" rx="3" fill="currentColor" />
-      <path d="M119 9h26M119 13h18" stroke="var(--clocky-alias-label-primary-inverted)" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M119 9h26M119 13h18" stroke="var(--clocky-fg-inverse)" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   )
 }

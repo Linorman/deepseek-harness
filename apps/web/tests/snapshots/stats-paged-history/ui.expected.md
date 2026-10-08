@@ -296,4 +296,5 @@
   - text: Test Model
   - img
 - button "Send message" [disabled]
-- text: 28 turns · 28 steps LLM {{duration}}
+- text: 28 turns · 28 steps
+- button "Session statistics": ⓘ

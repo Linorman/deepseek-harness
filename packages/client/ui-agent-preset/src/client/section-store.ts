@@ -131,6 +131,18 @@ export function draftBlocker(
 export class AgentPresetSectionController {
   /** Page snapshot the renderer subscribes to. */
   readonly store: SnapshotStore<AgentPresetSectionState> = createSnapshotStore(INITIAL)
+  private authorization = new AbortController()
+
+  /** Cancel reads/writes and discard private copy, viewer and location drafts without reloading. */
+  clearAuthorization(): void {
+    this.authorization.abort()
+    this.store.set({ ...INITIAL, status: 'unavailable' })
+  }
+
+  /** Restore the read lifetime only after successful authentication. */
+  resumeAuthorization(): void {
+    if (this.authorization.signal.aborted) this.authorization = new AbortController()
+  }
 
   constructor(
     private readonly api: Pick<IApiClient, 'agentPresets' | 'settings'>,
@@ -145,6 +157,7 @@ export class AgentPresetSectionController {
   ) {}
 
   private set(patch: Partial<AgentPresetSectionState>): void {
+    if (this.authorization.signal.aborted) return
     this.store.set({ ...this.store.getSnapshot(), ...patch })
   }
 
@@ -161,7 +174,7 @@ export class AgentPresetSectionController {
    * @returns once the snapshot reflects the host.
    */
   async load(): Promise<void> {
-    const roster = await beginRosterRead(this.api, this.store)
+    const roster = await beginRosterRead(this.api, this.store, this.authorization.signal)
     if (roster === undefined) return
     const { presets, authorable, hasDocument } = roster
     if (presets.length === 0) {
@@ -190,9 +203,13 @@ export class AgentPresetSectionController {
    * @returns once the composition loaded or the failure is on the page.
    */
   async view(id: string): Promise<void> {
+    const signal = this.authorization.signal
+    const cancelled = () => signal.aborted
+    if (cancelled()) return
     this.set({ error: null })
     try {
-      const response = await this.api.agentPresets.read({ agentPreset: id })
+      const response = await this.api.agentPresets.read({ agentPreset: id }, signal)
+      if (cancelled()) return
       if (!response.result.ok) {
         this.set({ error: response.result.error.message })
         return
@@ -200,6 +217,7 @@ export class AgentPresetSectionController {
       const { name, content } = response.result.value
       this.set({ view: { id, title: name ?? id, content } })
     } catch (error) {
+      if (cancelled()) return
       this.set({ error: messageOf(error) })
     }
   }
@@ -249,6 +267,9 @@ export class AgentPresetSectionController {
    * @returns once the copy settled and the page reflects it.
    */
   async confirmCopy(): Promise<void> {
+    const signal = this.authorization.signal
+    const cancelled = () => signal.aborted
+    if (cancelled()) return
     const draft = this.store.getSnapshot().copy
     if (draft === null || draft.saving) return
     if (draftBlocker(draft, this.store.getSnapshot().rows) !== undefined) return
@@ -259,18 +280,21 @@ export class AgentPresetSectionController {
         from: draft.from,
         agentPreset: draft.id,
         ...name === '' ? {} : { name },
-      })
+      }, signal)
+      if (cancelled()) return
       if (!response.result.ok) {
         this.patchCopy({ saving: false, error: response.result.error.message })
         return
       }
       this.set({ copy: null })
       await this.load()
+      if (cancelled()) return
       this.rosterChanged()
       // A preset is its files from here on (the dialog collected nothing
       // else), so landing in them is the completion, not a follow-up.
       await this.openLocation(draft.id)
     } catch (error) {
+      if (cancelled()) return
       this.patchCopy({ saving: false, error: messageOf(error) })
     }
   }
@@ -282,8 +306,12 @@ export class AgentPresetSectionController {
    * @returns once the host answered and the page reflects it.
    */
   async openLocation(id: string): Promise<void> {
+    const signal = this.authorization.signal
+    const cancelled = () => signal.aborted
+    if (cancelled()) return
     try {
-      const response = await this.api.agentPresets.openDocument({ agentPreset: id })
+      const response = await this.api.agentPresets.openDocument({ agentPreset: id }, signal)
+      if (cancelled()) return
       if (!response.result.ok) {
         this.set({ error: response.result.error.message })
         return
@@ -292,6 +320,7 @@ export class AgentPresetSectionController {
       const { path } = response.result.value
       this.set({ revealedPaths: { ...this.store.getSnapshot().revealedPaths, [id]: path } })
     } catch (error) {
+      if (cancelled()) return
       this.set({ error: messageOf(error) })
     }
   }
@@ -313,19 +342,25 @@ export class AgentPresetSectionController {
    * @returns once the delete settled and the page reflects it.
    */
   async remove(): Promise<void> {
+    const signal = this.authorization.signal
+    const cancelled = () => signal.aborted
+    if (cancelled()) return
     const { pendingDelete, deleting } = this.store.getSnapshot()
     if (pendingDelete === null || deleting) return
     this.set({ deleting: true, error: null })
     try {
-      const response = await this.api.agentPresets.remove({ agentPreset: pendingDelete })
+      const response = await this.api.agentPresets.remove({ agentPreset: pendingDelete }, signal)
+      if (cancelled()) return
       if (!response.result.ok) {
         this.set({ deleting: false, pendingDelete: null, error: response.result.error.message })
         return
       }
       this.set({ deleting: false, pendingDelete: null })
       await this.load()
+      if (cancelled()) return
       this.rosterChanged()
     } catch (error) {
+      if (cancelled()) return
       this.set({ deleting: false, pendingDelete: null, error: messageOf(error) })
     }
   }
@@ -337,7 +372,11 @@ export class AgentPresetSectionController {
    * @returns once the write settled and the roster was re-read.
    */
   async makeDefault(id: string): Promise<void> {
-    const failure = await writeDefaultPreset(this.api, id)
+    const signal = this.authorization.signal
+    const cancelled = () => signal.aborted
+    if (cancelled()) return
+    const failure = await writeDefaultPreset(this.api, id, signal)
+    if (cancelled()) return
     if (failure !== undefined) {
       this.set({ error: failure })
       return

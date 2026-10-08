@@ -3,9 +3,16 @@ import { mkdir, mkdtemp, open, readFile, readdir, rm, writeFile } from 'node:fs/
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import { JsonStorageBackend } from '../src/index.ts'
+import { logFileName } from '../src/log.ts'
 
 const cleanups: Array<() => Promise<void>> = []
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup() })
+
+async function discover(backend: JsonStorageBackend, prefix: string, maxNameBytes: number) {
+  const names: Array<string | undefined> = []
+  for await (const name of backend.log.scanNames!(prefix, maxNameBytes)) names.push(name)
+  return names
+}
 
 it('accounts for unrelated files without reading a malformed journal body', async () => {
   await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
@@ -64,4 +71,42 @@ it('reads a byte-bounded atomic header independently of malformed or large histo
   await expect(backend.log.readSummary!(descriptor, 256)).rejects.toMatchObject({ code: 'malformed-medium' })
   await writeFile(path, '{"other":1,\n')
   await expect(backend.log.readSummary!(descriptor, 256)).rejects.toMatchObject({ code: 'malformed-medium' })
+})
+
+it('distinguishes absent durable metadata from a malformed log pathname and refuses access after close', async () => {
+  await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
+  const root = await mkdtemp(join(process.cwd(), '.tmp/json-existence-'))
+  const backend = new JsonStorageBackend(root)
+  cleanups.push(async () => { await backend.close(); await rm(root, { recursive: true, force: true }) })
+  const descriptor = { name: 'team/exists', version: 1 }
+  expect(await backend.log.has!(descriptor.name)).toBe(false)
+  expect(await backend.log.readSummary!(descriptor, 256)).toBeUndefined()
+  const stream = await backend.log.open(descriptor)
+  await stream.append(-1, [{}]); await stream.close()
+  expect(await backend.log.has!(descriptor.name)).toBe(true)
+  await expect(discover(backend, 'team/', 5)).rejects.toMatchObject({ code: 'invalid-value' })
+  await mkdir(join(root, 'logs', logFileName('team/directory')))
+  await expect(backend.log.has!('team/directory')).rejects.toMatchObject({ code: 'malformed-medium' })
+  await expect(discover(backend, 'team/', 1024)).rejects.toMatchObject({ code: 'malformed-medium' })
+  // POSIX reports overlong file components distinctly from absent paths; Windows maps them differently.
+  if (process.platform !== 'win32') {
+    const oversizedName = 'x'.repeat(512)
+    await expect(backend.log.has!(oversizedName)).rejects.toMatchObject({ code: 'ENAMETOOLONG' })
+    await expect(backend.log.readSummary!({ name: oversizedName, version: 1 }, 256))
+      .rejects.toMatchObject({ code: 'ENAMETOOLONG' })
+  }
+  await backend.close()
+  await expect(backend.log.has!(descriptor.name)).rejects.toMatchObject({ code: 'closed' })
+  await expect(backend.log.readSummary!(descriptor, 256)).rejects.toMatchObject({ code: 'closed' })
+  await expect(backend.log.scanNames!('team/', 1024)[Symbol.asyncIterator]().next()).rejects.toMatchObject({ code: 'closed' })
+})
+
+it.each(['!.json', 'dGVhbS9h=.json'])('rejects a noncanonical discovery filename without reading its payload (%s)', async (file) => {
+  await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
+  const root = await mkdtemp(join(process.cwd(), '.tmp/json-invalid-name-'))
+  const backend = new JsonStorageBackend(root)
+  cleanups.push(async () => { await backend.close(); await rm(root, { recursive: true, force: true }) })
+  expect(await backend.log.has!('absent')).toBe(false)
+  await writeFile(join(root, 'logs', file), 'not a journal')
+  await expect(discover(backend, '', 1024)).rejects.toMatchObject({ code: 'malformed-medium' })
 })

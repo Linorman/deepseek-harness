@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   activationIdSchema,
+  activationBindingSnapshotSchema,
   participantIdSchema,
   taskAttemptIdSchema,
   taskAttemptSnapshotSchema,
@@ -10,7 +11,7 @@ import {
 import type { TeamRuntime, TeamTaskSnapshot } from '@clocky/clocky-team'
 import { SessionId } from '@clocky/clocky-session'
 import { executeTeamIntegrationTask } from '../src/index.ts'
-import type { TeamWorkspaceRegistry } from '../src/index.ts'
+import type { TeamWorkspaceRegistry, TeamIntegrationTaskExecutionRequest, TeamWorkspaceSourceIntegrateResult } from '../src/index.ts'
 
 const teamId = 'integration-executor-team' as TeamTaskSnapshot['teamId']
 const participantId = participantIdSchema.parse('integration-executor-participant')
@@ -268,4 +269,106 @@ describe('Team artifact-sourced integration executor', () => {
     })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
     expect(integrateSource).not.toHaveBeenCalled()
   })
+})
+
+
+/** Mutable authoritative observations let each refusal pin its own pre-effect fence. */
+function executorFixture() {
+  const observed = { current: integrationTask(), source: sourceTask(), binding: activationBindingSnapshotSchema.parse({
+    activation: { id: activationId, teamId, participantId, status: 'idle' }, sessionId: SessionId('integration-executor-session'),
+    provider: 'in-process',
+  }) }
+  const result: TeamWorkspaceSourceIntegrateResult = { teamId, sourceTaskId, sourceAttemptId, integrationTaskId, integrationAttemptId,
+    target: 'main', status: 'integrated', targetVersion: 'target-version' }
+  const integrateSource = vi.fn(async () => result)
+  const settleTaskAttempt = vi.fn(async (input: Parameters<TeamRuntime['settleTaskAttempt']>[0]) => {
+    const lease = observed.current.lease!
+    return teamTaskSnapshotSchema.parse({ ...observed.current, phase: 'completed', revision: observed.current.revision + 1,
+      lease: undefined, attemptHistory: [{ id: integrationAttemptId, teamId, taskId: integrationTaskId, ordinal: lease.ordinal,
+        participantId, activationId, assignedAt: lease.assignedAt, leaseExpiresAt: lease.expiresAt,
+        settledAt: 20, outcome: input.outcome }] })
+  })
+  const teams = {
+    getTask: vi.fn(async ({ taskId }: { taskId: TeamTaskSnapshot['id'] }) => taskId === observed.current.id ? observed.current : observed.source),
+    getActivation: vi.fn(async () => observed.binding), settleTaskAttempt,
+  }
+  const request: TeamIntegrationTaskExecutionRequest = { actor, teamId, participantId, activationId, taskId: integrationTaskId,
+    attemptId: integrationAttemptId, expectedRevision: observed.current.revision }
+  return { observed, request, result, integrateSource, settleTaskAttempt,
+    run: (input: TeamIntegrationTaskExecutionRequest = request) => executeTeamIntegrationTask(teams as unknown as TeamRuntime,
+      { integrateSource } as unknown as TeamWorkspaceRegistry, input) }
+}
+
+it.each(['team', 'participant', 'status'] as const)(
+  'refuses a deliverable binding with the wrong %s before target mutation', async (field) => {
+    const fixture = executorFixture()
+    const activation = fixture.observed.binding.activation
+    fixture.observed.binding = activationBindingSnapshotSchema.parse({ ...fixture.observed.binding, activation: {
+      ...activation,
+      ...field === 'team' ? { teamId: 'foreign' } : field === 'participant' ? { participantId: 'foreign' } : { status: 'offline' },
+    } })
+    await expect(fixture.run()).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    expect(fixture.integrateSource).not.toHaveBeenCalled()
+    expect(fixture.settleTaskAttempt).not.toHaveBeenCalled()
+  })
+
+it('refuses a retained non-integration outcome instead of invoking its target again', async () => {
+  const fixture = executorFixture()
+  fixture.observed.current = integrationTask({ phase: 'cancelled', lease: undefined, attemptHistory: [taskAttemptSnapshotSchema.parse({
+    id: integrationAttemptId, teamId, taskId: integrationTaskId, ordinal: 1, participantId, activationId,
+    assignedAt: 1, leaseExpiresAt: 101, settledAt: 20, outcome: { kind: 'cancelled' },
+  })] })
+  await expect(fixture.run()).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  expect(fixture.integrateSource).not.toHaveBeenCalled()
+})
+
+it('refuses a moved current revision and a task without an integration specification', async () => {
+  const fixture = executorFixture()
+  await expect(fixture.run({ ...fixture.request, expectedRevision: fixture.request.expectedRevision + 1 }))
+    .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  const { integration: _integration, ...ordinary } = fixture.observed.current
+  fixture.observed.current = teamTaskSnapshotSchema.parse(ordinary)
+  await expect(fixture.run()).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  expect(fixture.integrateSource).not.toHaveBeenCalled()
+})
+
+it('refuses a source that has not retained its completed original attempt', async () => {
+  const fixture = executorFixture()
+  fixture.observed.source = task(sourceTaskId)
+  await expect(fixture.run()).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  expect(fixture.integrateSource).not.toHaveBeenCalled()
+})
+
+it.each(['proposed', 'conflict'] as const)('settles %s results with exact optional provenance and no invented verification', async (status) => {
+  const fixture = executorFixture()
+  const artifact = { id: 'patch', kind: 'patch' as const, uri: 'artifact:patch', visibility: 'team' as const, sourceAttemptId }
+  const result: TeamWorkspaceSourceIntegrateResult = { ...fixture.result, status, artifact,
+    ...status === 'conflict' ? { conflictPaths: ['changed'] } : {} }
+  const { targetVersion: _version, ...unversioned } = result
+  fixture.integrateSource.mockResolvedValue(unversioned)
+  const settled = await fixture.run()
+  expect(settled.phase).toBe('completed')
+  const settlement = fixture.settleTaskAttempt.mock.calls[0]![0]
+  expect(settlement.outcome.kind).toBe('completed')
+  if (settlement.outcome.kind !== 'completed') throw new Error('Integration settlement must retain its completed outcome')
+  expect(settlement.outcome.result.summary).toContain(status === 'conflict' ? 'has conflicts' : 'Prepared an integration proposal')
+  expect(settlement.outcome.result.integration).toEqual({ target: 'main', expectedTarget: 'base-commit', status,
+    ...status === 'proposed' ? { proposalArtifact: artifact } : { artifacts: [artifact], conflictPaths: ['changed'] } })
+  expect(settlement.outcome.result).not.toHaveProperty('verification')
+})
+
+it('allows an unfenced proposal from a completed source with no artifact bytes', async () => {
+  const fixture = executorFixture()
+  fixture.observed.current = integrationTask({ integration: {
+    sourceTaskId, sourceAttemptId, provider: 'worktree', target: 'main', mode: 'proposal',
+  } })
+  const attempt = fixture.observed.source.attemptHistory[0]!
+  fixture.observed.source = teamTaskSnapshotSchema.parse({ ...fixture.observed.source, attemptHistory: [{ ...attempt,
+    outcome: { kind: 'completed', result: { summary: 'No patch bytes' } } }] })
+  const { targetVersion: _version, ...proposal } = fixture.result
+  fixture.integrateSource.mockResolvedValue({ ...proposal, status: 'proposed' })
+  await expect(fixture.run()).resolves.toMatchObject({ phase: 'completed' })
+  expect(fixture.integrateSource).toHaveBeenCalledWith('worktree', expect.objectContaining({ source: {
+    teamId, taskId: sourceTaskId, attemptId: sourceAttemptId, artifacts: [],
+  } }))
 })

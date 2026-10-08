@@ -355,7 +355,7 @@ it('retains bounded task and member pages after failed continuation reads and of
     await panel.screenshot({ path: join(output, 'workflow-recovered-panel.png') })
     await page.setViewportSize({ width: 390, height: 844 })
     await page.locator('[data-sidebar-collapsed]').waitFor()
-    await page.locator('[data-sidebar-collapsed]').evaluate(async (element) => { await Promise.all(element.getAnimations().map(animation => animation.finished)) })
+    await page.locator('[data-sidebar-collapsed]').evaluate(async (element) => { await Promise.allSettled(element.getAnimations().map(animation => animation.finished)) })
     await expect.poll(async () => {
       const box = await panel.boundingBox()
       return box !== null && box.x >= 0 && box.x + box.width <= 390 && box.y >= 0 && box.y + box.height <= 844

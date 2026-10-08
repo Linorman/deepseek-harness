@@ -20,6 +20,7 @@ import type { SettingsSchemaOperations } from './schema-operations.ts'
 import { ProviderEditor, type ProviderEditorProps } from './ProviderEditor.tsx'
 import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
+import { DefaultModelEditor } from './DefaultModelEditor.tsx'
 
 /** Injected dependencies of {@link ModelsSection} (slot `inject`). */
 export interface ModelsSectionInjected {
@@ -162,7 +163,13 @@ export function ModelsSection(props: ModelsSectionProps): ReactNode {
     controller === undefined || useSnapshot === undefined || api === undefined
     || schema === undefined || t === undefined
   ) return null
-  return <Loaded injected={{ controller, useSnapshot, api, schema, t }} />
+  return <Authorized injected={{ controller, useSnapshot, api, schema, t }} />
+}
+
+/** Private editors belong to one authorization lifetime, even when the section remains mounted. */
+function Authorized({ injected }: { injected: ModelsSectionFace }): ReactNode {
+  const revision = injected.useSnapshot(snapshot => snapshot.authorizationRevision ?? 0)
+  return <Loaded key={revision} injected={injected} />
 }
 
 function Loaded({ injected }: { injected: ModelsSectionFace }): ReactNode {
@@ -213,6 +220,7 @@ function Loaded({ injected }: { injected: ModelsSectionFace }): ReactNode {
   }
 
   if (state.status === 'idle') void controller.load()
+  if (state.status === 'unauthorized') return <p role="status">{t('authorizationRequired')}</p>
   if (state.status === 'error') {
     /* v8 ignore next -- an error status always carries text; the fallback satisfies the nullable type */
     const errorText = state.error ?? ''
@@ -245,11 +253,16 @@ function Loaded({ injected }: { injected: ModelsSectionFace }): ReactNode {
   // one whose schema names the protocols one may speak; without it mounted
   // there is nothing to declare and the entry point stays disabled.
   const protocols = protocolChoices(state.namespaces.get('llm-pi-ai'), schema)
+  const defaultNamespace = state.namespaces.get('agent-default-model')
 
   return (
     <div className={styles['section']}>
       <h2 className={styles['title']}>{t('title')}</h2>
       <p className={styles['intro']}>{t('intro')}</p>
+      {defaultNamespace !== undefined && <DefaultModelEditor
+        namespace={defaultNamespace} groups={state.modelCatalog?.groups ?? []}
+        unavailable={state.modelCatalog === undefined || state.modelCatalogError === true}
+        writable={state.writable && state.status === 'ready'} controller={controller} t={t} />}
       {!state.writable && state.status === 'ready' ? <p className={styles['notice']}>{t('readOnly')}</p> : null}
       {savedIdentity === undefined
         ? null
@@ -463,11 +476,11 @@ function Loaded({ injected }: { injected: ModelsSectionFace }): ReactNode {
         className={styles['deleteDialog'] as string}
         footer={(
           <>
-            <Button variant="outline" autoFocus disabled={deleting} onClick={closeDelete}>
+            <Button variant="secondary" autoFocus disabled={deleting} onClick={closeDelete}>
               {t('cancel')}
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               className={styles['deleteConfirm']}
               disabled={deleting}
               onClick={confirmDelete}

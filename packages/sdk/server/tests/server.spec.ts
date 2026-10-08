@@ -10,7 +10,7 @@ import * as agentCore from '@clocky/clocky-agent-spine-demo'
 import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
 import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
 import SubagentRuntime, { type SubagentResult, type SubagentRunEndInfo } from '@clocky/clocky-compat-subagent'
-import { channelSummaryHumanProofInput, emptyTeamLatencyHistogram, TeamError } from '@clocky/clocky-team'
+import { channelSummaryHumanProofInput, emptyTeamLatencyHistogram, teamIdSchema, TeamError } from '@clocky/clocky-team'
 import { TeamArtifactError } from '@clocky/clocky-team-artifact'
 import { ProductPrincipalError, productPrincipalId } from '@clocky/clocky-product-principal'
 import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
@@ -116,6 +116,9 @@ describe('HarnessSdkJsonRpcServer', () => {
       objective: 'Before initialization.',
       contentBlocks: [{ type: 'text', text: 'hello' }],
     })).rejects.toThrow('SDK server is not initialized with a provider and model')
+    await expect(server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(),
+      provider: 'test-provider', model: 'test-model' }))
+      .rejects.toMatchObject({ data: { code: 'PRODUCT_AUTH_REQUIRED' } })
     expect(teamRuns.create).not.toHaveBeenCalled()
     await server.shutdown()
   })
@@ -168,20 +171,36 @@ describe('HarnessSdkJsonRpcServer', () => {
       model: 'test-model',
     })).resolves.toMatchObject({ serverInfo: { name: 'clocky-sdk-runtime' } })
     await expect(server.handleRequest('team/metrics', {})).resolves.toEqual({ activeAdmissions: 0 })
+    await expect(server.handleRequest('team/metrics', undefined)).resolves.toEqual({ activeAdmissions: 0 })
     expect(authenticate).toHaveBeenCalledWith({ provider: 'local', credential: SDK_TEST_CREDENTIAL })
-    expect(withCall).toHaveBeenCalledTimes(2)
+    expect(withCall).toHaveBeenCalledTimes(3)
     await expect(server.handleRequest('team/inbox-read', {})).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
     await expect(server.handleRequest('team/inbox-watch', { afterCursor: -1, limit: 1 })).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
     await expect(server.handleRequest('team/inbox-acknowledge', { throughCursor: 2 })).resolves.toEqual({ displayCursor: 2 })
     expect(inbox.read.mock.calls).toMatchObject([[{ principal: { id: 'sdk-dispatch-principal' } }, {}]])
     await expect(server.handleRequest('team/inbox-read', { principalId: 'forged' })).rejects.toMatchObject({ code: -32602 })
     expect(inbox.read).toHaveBeenCalledOnce()
+    await expect(server.handleRequest('team/inbox-read', undefined)).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
+    await expect(server.handleRequest('team/inbox-watch', undefined)).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
+    await expect(server.handleRequest('team/inbox-acknowledge', undefined)).rejects.toMatchObject({ code: -32_602 })
+    const unrelatedInboxFailure = new TeamError('Inbox read failed', 'TEAM_INVALID_ARGUMENT')
+    inbox.read.mockRejectedValueOnce(unrelatedInboxFailure)
+    await expect(server.handleRequest('team/inbox-read', undefined)).rejects.toBe(unrelatedInboxFailure)
     for (const method of ['team/inbox-read', 'team/inbox-watch'] as const) {
       const handler = method === 'team/inbox-read' ? inbox.read : inbox.watch
       handler.mockRejectedValueOnce(new TeamError('Inbox history compacted', 'TEAM_INBOX_COMPACTED', { details: { firstCursor: 9 } }))
       await expect(server.handleRequest(method, { afterCursor: -1 })).rejects.toMatchObject({
         code: -32002, data: { code: 'TEAM_INBOX_COMPACTED', firstCursor: 9 },
       })
+    }
+    for (const details of [{}, { firstCursor: '9' }, { firstCursor: 1.5 }, { firstCursor: -1 }]) {
+      inbox.read.mockRejectedValueOnce(new TeamError('Inbox history compacted', 'TEAM_INBOX_COMPACTED', { details }))
+      const denied = await server.handleRequest('team/inbox-read', undefined).then(
+        () => { throw new Error('Compacted inbox unexpectedly returned a page') },
+        (error: unknown) => error,
+      )
+      expect(denied).toMatchObject({ code: -32_002 })
+      expect((denied as { data: unknown }).data).toEqual({ code: 'TEAM_INBOX_COMPACTED' })
     }
 
 
@@ -247,6 +266,7 @@ describe('HarnessSdkJsonRpcServer', () => {
         team: { id: teamId, cursor: 1, phase: 'cancelled' as const },
       })),
     }
+    let teamsMounted = true
     const ctx = {
       on: vi.fn(() => () => undefined),
       agents: { create: vi.fn(), get: vi.fn() },
@@ -254,7 +274,7 @@ describe('HarnessSdkJsonRpcServer', () => {
       get: (name: string) => name === 'productPrincipals'
         ? { authenticate }
         : name === 'teams'
-          ? teams
+          ? teamsMounted ? teams : undefined
           : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
@@ -292,6 +312,8 @@ describe('HarnessSdkJsonRpcServer', () => {
     expect(String(deniedCancel)).not.toContain(otherCredential)
     expect(teamRuns.waitForFinal).not.toHaveBeenCalled()
     expect(teamRuns.cancel).not.toHaveBeenCalled()
+    await expect(server.resumeTeam({ teamId: waited.teamId, expectedCursor: 1 }))
+      .rejects.toMatchObject({ data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' } })
 
     await initialize(ownerCredential)
     await expect(server.waitForTeamFinal({ teamId: waited.teamId })).resolves.toMatchObject({ teamId: waited.teamId })
@@ -303,11 +325,16 @@ describe('HarnessSdkJsonRpcServer', () => {
     expect(teamRuns.cancel).toHaveBeenCalledWith(cancelled.teamId, {
       kind: 'product-principal', principalId: productPrincipalId('sdk-owner-principal'),
     })
+    const withoutProjection = await server.createTeam({ objective: 'Cancel without a mounted Team reader.',
+      contentBlocks: [{ type: 'text', text: 'Cancel.' }] })
+    teamsMounted = false
+    await expect(server.cancelTeam({ teamId: withoutProjection.teamId })).resolves.toEqual({ phase: 'cancelled' })
     await server.shutdown()
   })
 
   it('keeps an actor-free SDK resume authorization live through TeamRun provider preflight', async () => {
     let proofLive = false
+    let coordinatorPublished = true
     const entered = Promise.withResolvers<undefined>()
     const release = Promise.withResolvers<undefined>()
     const authorization = {
@@ -360,7 +387,7 @@ describe('HarnessSdkJsonRpcServer', () => {
         await release.promise
         return {
           teamId: 'resumed-team',
-          coordinatorLease: { localAgent: { session: { id: SessionId('resumed-coordinator') } } },
+          coordinatorLease: { localAgent: coordinatorPublished ? { session: { id: SessionId('resumed-coordinator') } } : undefined },
         }
       }),
       waitForFinal: vi.fn(async ({ teamId }: { readonly teamId: string }) => ({
@@ -401,6 +428,12 @@ describe('HarnessSdkJsonRpcServer', () => {
     await expect(server.handleRequest('team/resume', {
       teamId: 'resumed-team', expectedCursor: 4, actor: 'forged',
     })).rejects.toMatchObject({ code: -32_602 })
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider',
+      model: 'test-model', maxTokens: 321 })
+    coordinatorPublished = false
+    await expect(server.resumeTeam({ teamId: 'resumed-team', expectedCursor: 4 }))
+      .rejects.toThrow("Team 'resumed-team' resume did not publish a local coordinator")
+    expect(authorization.close).toHaveBeenCalledTimes(2)
     await server.shutdown()
   })
 
@@ -495,6 +528,7 @@ describe('HarnessSdkJsonRpcServer', () => {
 
   it('binds one actor-free SDK channel post to the current authenticated human proof', async () => {
     const postRequests: Record<string, unknown>[] = []
+    let expectedAudience: readonly string[] | null = ['coordinator-1']
     const postChannelEnvelope = vi.fn(async (request: Record<string, unknown>) => {
       postRequests.push(request)
       return {
@@ -527,7 +561,7 @@ describe('HarnessSdkJsonRpcServer', () => {
             expectedCursor: 3,
             draft: {
               channelId: 'channel-1',
-              audience: ['coordinator-1'],
+              audience: expectedAudience,
               kind: 'message',
               payload: { text: 'SDK-authenticated post.' },
             },
@@ -572,6 +606,18 @@ describe('HarnessSdkJsonRpcServer', () => {
     }
     expect((draft as Record<string, unknown>)['channelId']).toBe('channel-1')
     expect(postRequest['actor']).toBeDefined()
+
+    const metadata = { priority: 'urgent' as const, causationId: 'prior-envelope', correlationId: 'conversation',
+      taskId: 'task-1', traceId: 'trace-1', ttlMs: 100, idempotencyKey: 'post-retry' }
+    await server.postTeamChannel({ channelId: 'channel-1', expectedCursor: 3, audience: ['coordinator-1'],
+      kind: 'message', payload: { text: 'SDK-authenticated post.' }, delivery: 'turn', ...metadata })
+    expect(postRequests.at(-1)).toMatchObject({ idempotencyKey: metadata.idempotencyKey,
+      draft: { priority: metadata.priority, causationId: metadata.causationId, correlationId: metadata.correlationId,
+        taskId: metadata.taskId, traceId: metadata.traceId, ttlMs: metadata.ttlMs } })
+    expectedAudience = null
+    await server.postTeamChannel({ channelId: 'channel-1', expectedCursor: 3, audience: null,
+      kind: 'message', payload: { text: 'SDK-authenticated post.' }, delivery: 'turn' })
+    expect(postRequests.at(-1)).toMatchObject({ draft: { audience: null } })
 
     await expect(server.handleRequest('team/channel-post', {
       channelId: 'channel-1',
@@ -651,6 +697,16 @@ describe('HarnessSdkJsonRpcServer', () => {
     expect(inputs[0]?.payload).toMatchObject({ displayName: 'Worker', role: 'worker' })
     expect(inputs[4]?.payload).toMatchObject({ adapter: { type: 'direct', version: 1 }, participants: [] })
     expect(inputs[5]?.payload).toMatchObject({ channelId: 'channel-1', reason: 'done' })
+
+    const routed = { provider: 'test-provider', preset: 'worker-preset', model: 'worker-model', authScheme: 'remote-auth' }
+    await server.inviteTeamMember({ teamId: 'team-1', expectedCursor: 7, kind: 'remote-agent', displayName: 'Remote',
+      role: 'worker', capabilities: [], ...routed })
+    expect(inputs.at(-1)?.payload).toMatchObject(routed)
+    await server.openTeamChannel({ teamId: 'team-1', expectedCursor: 8, adapter: { type: 'discussion', version: 1 },
+      viewPolicy: { type: 'recent-window', version: 1 }, participants: [], limits: {} })
+    expect(inputs.at(-1)?.payload).toMatchObject({ viewPolicy: { type: 'recent-window', version: 1 } })
+    await server.closeTeamChannel({ channelId: 'channel-1', expectedCursor: 9 })
+    expect(inputs.at(-1)?.payload).not.toHaveProperty('reason')
 
     await expect(server.handleRequest('team/member-invite', {
       teamId: 'team-1', expectedCursor: 1, kind: 'local-agent', displayName: 'Worker', role: 'worker', capabilities: [], actor: 'forged',
@@ -738,6 +794,23 @@ describe('HarnessSdkJsonRpcServer', () => {
     if (reviewRequest === undefined) throw new Error('SDK task review did not reach the Team provider')
     expect(reviewRequest).not.toHaveProperty('participantId')
 
+    await server.createTeamTask({ teamId: 'team-1', expectedCursor: 6, idempotencyKey: 'nested-integration-task',
+      parentTaskId: 'parent-task', subject: 'Integration', description: 'Publish proposal', blockedBy: ['source-task'],
+      integration: { sourceTaskId: 'source-task' as never, sourceAttemptId: 'source-attempt' as never, provider: 'git', target: 'master', mode: 'proposal' },
+      requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {},
+      reviewPolicy: { kind: 'none' }, maxAttempts: 1 })
+    expect(inputs.at(-1)?.payload).toMatchObject({ parentTaskId: 'parent-task', blockedBy: ['source-task'],
+      integration: { sourceTaskId: 'source-task', mode: 'proposal' } })
+    await server.updateTeamTask({ teamId: 'team-1', taskId: 'task-1', commandId: 'description-update',
+      expectedRevision: 6, description: 'Only details changed' })
+    expect(inputs.at(-1)?.payload).toEqual({ teamId: 'team-1', taskId: 'task-1', commandId: 'description-update',
+      expectedRevision: 6, description: 'Only details changed' })
+    await server.cancelTeamTask({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 7 })
+    expect(inputs.at(-1)?.payload).not.toHaveProperty('reason')
+    await server.deleteTeamTask({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 8 })
+    await server.reviewTeamTask({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 9, decision: 'rework', reason: 'Revise evidence' })
+    expect(inputs.at(-1)?.payload).toMatchObject({ nextPhase: 'pending', reason: 'Revise evidence' })
+
     await expect(server.handleRequest('team/task-create', {
       teamId: 'team-1', expectedCursor: 1, idempotencyKey: 'sdk-task-create-2', subject: 'Task', description: 'Do the task.',
       blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {},
@@ -808,6 +881,10 @@ describe('HarnessSdkJsonRpcServer', () => {
         },
       },
     ])
+    await server.updateTeamGoal({ teamId: 'team-1', expectedRevision: 9, budgets: { turns: 8 } })
+    expect(inputs.at(-1)?.payload).toEqual({ teamId: 'team-1', expectedRevision: 9, budgets: { turns: 8 } })
+    await server.transitionTeamGoal({ teamId: 'team-1', expectedRevision: 10, phase: 'active' })
+    expect(inputs.at(-1)?.payload).toEqual({ teamId: 'team-1', expectedRevision: 10, phase: 'active' })
     await expect(server.handleRequest('team/goal-update', {
       teamId: 'team-1', expectedRevision: 7, objective: 'Forged.', actor: 'forged',
     })).rejects.toMatchObject({ code: -32_602 })
@@ -1043,16 +1120,23 @@ describe('HarnessSdkJsonRpcServer', () => {
   })
 
   it('forwards every bounded Team page cursor and limit to the provider', async () => {
+    let auditWithoutBounds = false
     const teams = {
       resolveIdentities: vi.fn(async () => ({ items: [] })),
       getChannelOwner: vi.fn(async () => ({ teamId: 'team', channelId: 'channel' })),
+      watchChannel: vi.fn(async (request: unknown) => ({ channel: {}, cursor: 5, request })),
+      watchTeam: vi.fn(async (request: unknown) => ({ cursor: 7, request })),
       listHumanTeamsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 'next', request })),
       listParticipantsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 5, request })),
       readChannelPage: vi.fn(async (request: unknown) => ({ channel: {}, records: [], nextCursor: 6, request })),
       listTasksPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 7, request })),
       listArtifactsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 8, request })),
       listWorkflowPlansPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 10, request })),
-      readAudit: vi.fn(async (request: unknown) => ({ teamId: 'team', firstCursor: 8, items: [], nextCursor: 9, request })),
+      inspectQuiescence: vi.fn(async (teamId: unknown) => ({ teamId, activeLeases: 0 })),
+      readAudit: vi.fn(async (request: { channelId?: string }) => auditWithoutBounds
+        ? { teamId: 'team', items: [], request }
+        : { teamId: 'team', ...request.channelId === undefined ? {} : { channelId: request.channelId },
+          firstCursor: 8, items: [], nextCursor: 9, request }),
     }
     const ctx = {
       on: vi.fn(() => () => undefined),
@@ -1069,6 +1153,9 @@ describe('HarnessSdkJsonRpcServer', () => {
     await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
 
     await expect(server.handleRequest('team/list', { afterCursor: 'previous', limit: 3 })).resolves.toMatchObject({ items: [], nextCursor: 'next' })
+    await expect(server.handleRequest('team/list', undefined)).resolves.toMatchObject({ items: [] })
+    await expect(server.listTeams({})).resolves.toMatchObject({ items: [] })
+    await expect(server.listTeams({ afterCursor: -1 })).resolves.toMatchObject({ items: [] })
     await expect(server.handleRequest('team/member-list', { teamId: 'team', afterCursor: 3, limit: 4 })).resolves.toMatchObject({ items: [], nextCursor: 5 })
     await expect(server.handleRequest('team/channel-read', { channelId: 'channel', afterCursor: 4, limit: 5 })).resolves.toMatchObject({ value: { records: [], nextCursor: 6 } })
     await expect(server.handleRequest('team/task-list', { teamId: 'team', afterCursor: 5, limit: 6 })).resolves.toMatchObject({ items: [], nextCursor: 7 })
@@ -1076,23 +1163,89 @@ describe('HarnessSdkJsonRpcServer', () => {
     await expect(server.handleRequest('team/artifact-list', { teamId: 'team', afterCursor: 7, limit: 8 })).resolves.toMatchObject({ items: [] })
     await expect(server.handleRequest('team/audit-read', { teamId: 'team', afterCursor: 6, limit: 7 }))
       .resolves.toMatchObject({ teamId: 'team', firstCursor: 8, items: [], nextCursor: 9 })
+    await expect(server.handleRequest('team/audit-read', { teamId: 'team', channelId: 'channel', afterCursor: 6, limit: 7 }))
+      .resolves.toMatchObject({ teamId: 'team', channelId: 'channel', firstCursor: 8, items: [], nextCursor: 9 })
+    await expect(server.listTeamMembers({ teamId: 'team' })).resolves.toMatchObject({ items: [] })
+    await expect(server.listTeamArtifacts({ teamId: 'team' })).resolves.toMatchObject({ items: [] })
+    await expect(server.teamAuditRead({ teamId: 'team' })).resolves.toMatchObject({ items: [] })
+    await expect(server.teamQuiescence({ teamId: 'team' })).resolves.toEqual({ value: { teamId: 'team', activeLeases: 0 } })
+    auditWithoutBounds = true
+    await expect(server.teamAuditRead({ teamId: 'team' })).resolves.toEqual({ teamId: 'team', items: [] })
+    await expect(server.listTeamTasks({ teamId: 'team' })).resolves.toMatchObject({ items: [] })
+    await expect(server.listWorkflowPlans({ teamId: 'team' })).resolves.toMatchObject({ items: [] })
+    await expect(server.readTeamChannel({ channelId: 'channel' })).resolves.toMatchObject({ value: { records: [] } })
+    const watchSignal = new AbortController().signal
+    await expect(server.watchTeamChannel({ channelId: 'channel', afterCursor: 4 }, watchSignal))
+      .resolves.toMatchObject({ value: { cursor: 5 } })
+    await expect(server.watchTeamTasks({ teamId: 'team', afterCursor: 6 }, watchSignal))
+      .resolves.toMatchObject({ value: { cursor: 7 } })
+    await expect(server.watchTeamChannel({ channelId: 'channel' })).resolves.toMatchObject({ value: { cursor: 5 } })
+    await expect(server.watchTeamTasks({ teamId: 'team' })).resolves.toMatchObject({ value: { cursor: 7 } })
     expect(teams.listHumanTeamsPage).toHaveBeenCalledWith(expect.objectContaining({ afterCursor: 'previous', limit: 3 }))
+    expect(teams.listHumanTeamsPage).toHaveBeenCalledWith(expect.objectContaining({ afterCursor: -1, limit: 128 }))
     expect(teams.listParticipantsPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 3, limit: 4 })
     expect(teams.readChannelPage).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: 4, limit: 5 })
     expect(teams.listTasksPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 5, limit: 6 })
     expect(teams.listArtifactsPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 7, limit: 8 })
     expect(teams.listWorkflowPlansPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 6, limit: 7 })
     expect(teams.readAudit).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 6, limit: 7 })
+    expect(teams.readAudit).toHaveBeenCalledWith({ teamId: 'team', channelId: 'channel', afterCursor: 6, limit: 7 })
+    expect(teams.listParticipantsPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: -1, limit: 128 })
+    expect(teams.listArtifactsPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: -1, limit: 128 })
+    expect(teams.readAudit).toHaveBeenCalledWith({ teamId: 'team', afterCursor: -1, limit: 128 })
+    expect(teams.inspectQuiescence).toHaveBeenCalledWith('team')
+    expect(teams.listTasksPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: -1, limit: 128 })
+    expect(teams.listWorkflowPlansPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: -1, limit: 128 })
+    expect(teams.readChannelPage).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: -1, limit: 128 })
+    expect(teams.watchChannel).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: 4, signal: expect.any(AbortSignal) as AbortSignal })
+    expect(teams.watchTeam).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 6, signal: expect.any(AbortSignal) as AbortSignal })
+    expect(teams.watchChannel).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: -1, signal: expect.any(AbortSignal) as AbortSignal })
+    expect(teams.watchTeam).toHaveBeenCalledWith({ teamId: 'team', afterCursor: -1, signal: expect.any(AbortSignal) as AbortSignal })
+    await expect(server.handleRequest('shutdown', undefined)).resolves.toEqual({})
     await server.shutdown()
+  })
+
+  it('labels canonical parent authority on a selected Team read', async () => {
+    let teamsMounted = true
+    let retireOnIdentityRead = false
+    const teams = {
+      resolveIdentities: vi.fn(async () => {
+        if (retireOnIdentityRead) teamsMounted = false
+        return { items: [] }
+      }),
+      getTeamSelection: vi.fn(async (request: unknown) => ({ teamId: 'child', request })),
+      getChannelOwner: vi.fn(async () => { throw new TeamError('Channel is absent', 'TEAM_CHANNEL_NOT_FOUND') }) }
+    const actors = { async withProof<T>(_call: AuthenticatedProductCall, _input: TeamHumanActorProofInput,
+      operation: (actor: TeamHumanActorProof, authorityTeamId: ReturnType<typeof teamIdSchema.parse>) => Promise<T>): Promise<T> {
+      return await operation(Object.freeze({}) as TeamHumanActorProof, teamIdSchema.parse('parent'))
+    } }
+    const ctx = { on: vi.fn(() => () => undefined), agents: { create: vi.fn(), get: vi.fn() }, teamRuns: {},
+      get: (name: string) => name === 'productPrincipals' ? testProductPrincipals() : name === 'teamHumanActors' ? actors
+        : name === 'teams' ? teamsMounted ? teams : undefined : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    try {
+      await expect(server.getTeamSelection({ teamId: 'child' })).resolves.toMatchObject({
+        selection: { request: { teamId: 'child', readAccess: 'parent-inspection' } },
+      })
+      expect(teams.resolveIdentities).toHaveBeenCalledTimes(2)
+      await expect(server.readTeamChannel({ channelId: 'missing' })).rejects.toMatchObject({
+        data: { code: 'SDK_TEAM_FORBIDDEN' },
+      })
+      retireOnIdentityRead = true
+      await expect(server.teamQuiescence({ teamId: 'child' })).rejects.toThrow('Team provider')
+    } finally { await server.shutdown() }
   })
 
   it('reads only visible durable Team artifacts and maps provider failures', async () => {
     const visible = { id: 'visible', provider: 'local', kind: 'report' as const, uri: 'artifact://visible', visibility: 'team' as const }
-    const artifactsById = new Map([
+    const artifactsById = new Map<string, typeof visible | (Omit<typeof visible, 'provider'> & { provider: undefined })>([
       ['visible', visible],
       ['proposal', { ...visible, id: 'proposal' }],
       ['retained-loss-artifact', { ...visible, id: 'retained-loss-artifact' }],
       ['child-report', { ...visible, id: 'child-report' }],
+      ['unmounted', { ...visible, id: 'unmounted', provider: undefined }],
     ])
     const teams = {
       resolveIdentities: vi.fn(async () => ({ items: [] })),
@@ -1103,6 +1256,7 @@ describe('HarnessSdkJsonRpcServer', () => {
       getProvider: vi.fn(() => ({ name: 'local' })),
       read: vi.fn(async () => new Uint8Array([116, 101, 115, 116])),
     }
+    let artifactsMounted = true
     const ctx = {
       on: vi.fn(() => () => undefined),
       agents: { create: vi.fn(), get: vi.fn() },
@@ -1110,7 +1264,7 @@ describe('HarnessSdkJsonRpcServer', () => {
       get: (name: string) => name === 'teams'
         ? teams
         : name === 'teamArtifacts'
-          ? artifacts
+          ? artifactsMounted ? artifacts : undefined
           : name === 'teamHumanActors' ? readerFixture()
             : name === 'productPrincipals'
               ? testProductPrincipals()
@@ -1124,6 +1278,11 @@ describe('HarnessSdkJsonRpcServer', () => {
       bytes: 4,
       data: 'dGVzdA==',
     })
+    artifactsMounted = false
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'visible' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_UNAVAILABLE' },
+    })
+    artifactsMounted = true
     await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'proposal' }))
       .resolves.toMatchObject({ artifact: { id: 'proposal' }, bytes: 4 })
     await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'retained-loss-artifact' }))
@@ -1155,6 +1314,17 @@ describe('HarnessSdkJsonRpcServer', () => {
     artifacts.read.mockRejectedValueOnce(new TeamArtifactError('missing', 'TEAM_ARTIFACT_NOT_FOUND'))
     await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'visible' })).rejects.toMatchObject({
       data: { code: 'SDK_TEAM_ARTIFACT_NOT_FOUND' },
+    })
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'unmounted' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_UNAVAILABLE' },
+    })
+    artifacts.read.mockRejectedValueOnce(new Error('backend read failed'))
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'visible' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_UNAVAILABLE' },
+    })
+    artifacts.read.mockResolvedValueOnce(new Uint8Array(8 * 1024 * 1024 + 1))
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'visible' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_UNAVAILABLE' },
     })
     await server.shutdown()
   })
@@ -1237,24 +1407,41 @@ describe('HarnessSdkJsonRpcServer', () => {
     }) }
     const teams = { listAdapters: () => [{ type: 'discussion', version: 1 }], listViewPolicies: () => [{ type: 'summarized-window', version: 1 }],
       getChannel: vi.fn(async () => ({ manifest: { teamId: 'team-1' } })) }
+    let actorsMounted = true
+    let teamsMounted = true
+    let summariesMounted = true
     const ctx = { on: vi.fn(() => () => undefined), agents: { create: vi.fn(), get: vi.fn() }, teamRuns: {},
-      get: (name: string) => name === 'productPrincipals' ? testProductPrincipals() : name === 'teamHumanActors' ? humanActors
-        : name === 'teams' ? teams : name === 'teamChannelSummaries' ? summaries : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+      get: (name: string) => name === 'productPrincipals' ? testProductPrincipals() : name === 'teamHumanActors' ? actorsMounted ? humanActors : undefined
+        : name === 'teams' ? teamsMounted ? teams : undefined : name === 'teamChannelSummaries' ? summariesMounted ? summaries : undefined
+          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
     await expect(server.handleRequest('team/channel-catalog', {})).rejects.toBeDefined()
     await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
-    expect(await server.handleRequest('team/channel-catalog', {})).toEqual({ adapters: teams.listAdapters(), viewPolicies: teams.listViewPolicies(), summary: capabilities })
-    expect(scopes).toEqual([])
     const params = { channelId: 'channel-1', expectedCursor: 8, coveredSequenceRange: { from: 3, to: 5 }, idempotencyKey: 'selection' }
+    expect(await server.handleRequest('team/channel-catalog', {})).toEqual({ adapters: teams.listAdapters(), viewPolicies: teams.listViewPolicies(), summary: capabilities })
+    summariesMounted = false
+    expect(await server.getTeamChannelCatalog()).toEqual({ adapters: teams.listAdapters(), viewPolicies: teams.listViewPolicies() })
+    await expect(server.summarizeTeamChannel(params)).rejects.toThrow('channel summary Consumer')
+    summariesMounted = true
+    teamsMounted = false
+    await expect(server.getTeamChannelCatalog()).rejects.toThrow('Team provider')
+    await expect(server.summarizeTeamChannel(params)).rejects.toThrow('Team provider')
+    teamsMounted = true
+    actorsMounted = false
+    await expect(server.summarizeTeamChannel(params))
+      .rejects.toMatchObject({ data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' } })
+    actorsMounted = true
+    expect(scopes).toEqual([])
     await expect(server.handleRequest('team/channel-summarize', params)).resolves.toEqual({ value })
     expect(scopes).toEqual([channelSummaryHumanProofInput('team-1' as never, params as never)])
     expect(summaries.summarize).toHaveBeenCalledWith({ requester: actor, ...params })
+    await expect(server.summarizeTeamChannel(params)).resolves.toEqual({ value })
     await expect(server.handleRequest('team/channel-summarize', { ...params, requester: 'forged' })).rejects.toMatchObject({ code: -32_602 })
     await expect(server.handleRequest('team/channel-catalog', { actor: 'forged' })).rejects.toMatchObject({ code: -32_602 })
     revoked = true
     await expect(server.handleRequest('team/channel-summarize', params)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
-    expect(summaries.summarize).toHaveBeenCalledTimes(1)
+    expect(summaries.summarize).toHaveBeenCalledTimes(2)
     await server.shutdown()
   })
 
@@ -1344,6 +1531,7 @@ describe('HarnessSdkJsonRpcServer', () => {
   it('archives a detached terminal Team through an exact authenticated human proof', async () => {
     const inputs: TeamHumanActorProofInput[] = []
     const archiveRequests: Record<string, unknown>[] = []
+    let archivedAt: number | undefined = 12
     const humanActors = {
       async withProof<T>(
         call: AuthenticatedProductCall,
@@ -1358,7 +1546,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     const teams = {
       archiveTeam: vi.fn(async (request: Record<string, unknown>) => {
         archiveRequests.push(request)
-        return { team: { id: 'detached-terminal', archivedAt: 12 } }
+        return { team: { id: 'detached-terminal', archivedAt } }
       }),
     }
     const teamRuns = { archiveTerminal: vi.fn() }
@@ -1392,6 +1580,10 @@ describe('HarnessSdkJsonRpcServer', () => {
     expect(archiveRequest).toMatchObject({ teamId: 'detached-terminal', expectedCursor: 8 })
     expect(Object.hasOwn(archiveRequest, 'actor')).toBe(true)
     expect(teamRuns.archiveTerminal).not.toHaveBeenCalled()
+
+    archivedAt = undefined
+    await expect(server.archiveTeam({ teamId: 'detached-terminal', expectedCursor: 8 }))
+      .rejects.toThrow("Team provider archived Team 'detached-terminal' without an archive timestamp")
 
     await expect(server.handleRequest('team/archive', {
       teamId: 'detached-terminal', expectedCursor: 8, actor: 'forged',
@@ -1537,6 +1729,53 @@ describe('HarnessSdkJsonRpcServer', () => {
     await server.shutdown()
   })
 
+  it.each(['admission', 'missing-coordinator', 'rollback'] as const)(
+    'rolls back a Team when initial %s fails before publishing product ownership', async (failureMode) => {
+      const admissionFailure = new Error('initial human input failed')
+      const rollbackFailure = new Error('rollback failed')
+      const cancel = vi.fn(async () => {
+        if (failureMode === 'rollback') throw rollbackFailure
+      })
+      const teamRuns = {
+        create: vi.fn(async () => ({ teamId: 'failed-team', coordinatorLease: {
+          localAgent: failureMode === 'missing-coordinator' ? undefined : { session: { id: SessionId('failed-coordinator') } },
+        } })),
+        postHumanInput: vi.fn(async () => {
+          if (failureMode !== 'missing-coordinator') throw admissionFailure
+          return { id: 'admitted-input' }
+        }),
+        cancel,
+      }
+      const ctx = {
+        on: vi.fn(() => () => undefined),
+        agents: { create: vi.fn(), get: vi.fn() },
+        teamRuns,
+        get: (name: string) => name === 'productPrincipals'
+          ? testProductPrincipals()
+          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+      } as unknown as Context
+      const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+      try {
+        await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+        const creating = server.createTeam({ objective: 'Admit a new Team.', contentBlocks: [{ type: 'text', text: 'hello' }] })
+        if (failureMode === 'rollback') {
+          await expect(creating).rejects.toMatchObject({ errors: [admissionFailure, rollbackFailure] })
+        } else if (failureMode === 'missing-coordinator') {
+          await expect(creating).rejects.toThrow('did not publish a local coordinator')
+        } else {
+          await expect(creating).rejects.toBe(admissionFailure)
+        }
+        expect(cancel).toHaveBeenCalledExactlyOnceWith('failed-team', {
+          kind: 'product-principal', principalId: productPrincipalId('sdk-test-principal'),
+        })
+        await expect(server.cancelTeam({ teamId: 'failed-team' }))
+          .rejects.toMatchObject({ data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' } })
+      } finally {
+        await server.shutdown()
+      }
+    },
+  )
+
   it('waits for an in-flight product Team creation before cancelling active ownership on shutdown', async () => {
     const createEntered = Promise.withResolvers<undefined>()
     const create = Promise.withResolvers<{
@@ -1570,6 +1809,9 @@ describe('HarnessSdkJsonRpcServer', () => {
     const creating = server.createTeam({ objective: 'Race shutdown.', contentBlocks: [{ type: 'text', text: 'Race shutdown.' }] })
     await createEntered.promise
     const shuttingDown = server.shutdown()
+    await expect(server.createTeam({ objective: 'Rejected after shutdown starts.',
+      contentBlocks: [{ type: 'text', text: 'late input' }] })).rejects.toThrow('SDK server is shutting down')
+    expect(teamRuns.create).toHaveBeenCalledOnce()
     create.resolve({
       teamId: 'race-team',
       coordinatorLease: { localAgent: { session: { id: SessionId('race-coordinator') } } },

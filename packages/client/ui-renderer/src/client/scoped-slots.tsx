@@ -353,6 +353,7 @@ function standardProps(
         useSessions: observableHook(host.sessions.list),
         useWorkspaces: observableHook(host.workspaces.list),
         ...host.teamTasks === undefined ? {} : { useTeamTasks: observableHook(host.teamTasks.list) },
+        ...host.sessions.connection === undefined ? {} : { useConnection: observableHook(host.sessions.connection) },
       },
       session: new WeakMap(),
       sessionMaybe: new WeakMap(),

@@ -385,6 +385,57 @@ describe('workspaces', () => {
 })
 
 describe('Team tasks', () => {
+  it('records channel input without inventing durable state and forwards an explicit stub unchanged', async () => {
+    const runtime = await runtimeWithFrame()
+    try {
+      const teamId = 'team-input' as Parameters<ITeamTasks['open']>[0]
+      const content = [{ type: 'text', text: 'recorded input' }]
+      const signal = new AbortController().signal
+      const original = runtime.teamTasks.list.getSnapshot()
+      await runtime.teamTasks.postInput(teamId, content, 'turn', signal)
+      expect(runtime.teamTasks.list.getSnapshot()).toBe(original)
+      expect(runtime.teamTasks.calls).toEqual([{ method: 'postInput', args: [teamId, content, 'turn', signal] }])
+      const post = vi.fn<ITeamTasks['postInput']>(async () => {})
+      runtime.teamTasks.stub('postInput', post)
+      await runtime.teamTasks.postInput(teamId, content, 'context', signal)
+      expect(post).toHaveBeenCalledExactlyOnceWith(teamId, content, 'context', signal)
+    } finally { await runtime.dispose() }
+  })
+
+  it('retains local route choices under one idempotency key and ignores edits after abandonment', async () => {
+    const runtime = await runtimeWithFrame()
+    try {
+      act(() => { runtime.teamTasks.startDraft() })
+      const key = runtime.teamTasks.list.getSnapshot().draft!.idempotencyKey
+      const selection = { provider: 'test-provider', model: 'test-model' }
+      act(() => { runtime.teamTasks.updateDraft({ agentPreset: 'cordis', cwd: '/draft', selection }) })
+      expect(runtime.teamTasks.list.getSnapshot().draft).toMatchObject({
+        idempotencyKey: key, agentPreset: 'cordis', cwd: '/draft', selection,
+      })
+      act(() => { runtime.teamTasks.abandonDraft() })
+      const abandoned = runtime.teamTasks.list.getSnapshot()
+      act(() => { runtime.teamTasks.updateDraft({ cwd: '/ignored' }) })
+      expect(runtime.teamTasks.list.getSnapshot()).toBe(abandoned)
+      act(() => { runtime.teamTasks.startDraft({ cwd: '/fresh', selection }) })
+      expect(runtime.teamTasks.list.getSnapshot().draft).toMatchObject({ cwd: '/fresh', selection })
+      expect(runtime.teamTasks.list.getSnapshot().draft!.idempotencyKey).not.toBe(key)
+      await runtime.teamTasks.refresh(true)
+      expect(runtime.teamTasks.calls.at(-1)).toEqual({ method: 'refresh', args: [true] })
+    } finally { await runtime.dispose() }
+  })
+
+  it.each(['inspect', 'archive', 'cancel', 'resume'] as const)(
+    'refuses an unstubbed durable %s action while retaining the exact request identity', async (method) => {
+      const runtime = await runtimeWithFrame()
+      try {
+        const teamId = 'team-required-stub' as Parameters<ITeamTasks['open']>[0]
+        const signal = new AbortController().signal
+        await expect(runtime.teamTasks[method](teamId, signal)).rejects.toThrow(`${method} is not stubbed`)
+        expect(runtime.teamTasks.calls).toEqual([{ method, args: [teamId, signal] }])
+      } finally { await runtime.dispose() }
+    },
+  )
+
   it('feeds useTeamTasks, transitions local drafts, and records explicitly stubbed operations', async () => {
     const runtime = await runtimeWithFrame()
     runtime.slots.register(

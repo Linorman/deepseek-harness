@@ -8,9 +8,9 @@
 .error {
   max-width: 180px;
   overflow: hidden;
-  color: var(--clocky-alias-state-error-primary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-status-failed-fg);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

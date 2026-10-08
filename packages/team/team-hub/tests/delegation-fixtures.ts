@@ -4,19 +4,26 @@ import { createTestRootTeam } from '../../../core/team/tests/bootstrap-topology-
 import { createTestCoordinatorTask, provisionTestCoordinator } from './fixtures.ts'
 
 /** Create a real parent reservation using the same public commands as the Consumer. */
-export async function delegationFixture(ctx: Context, workspacePath: string, budgets: JsonObject = {}, childBudgets: JsonObject = {}) {
+export async function delegationFixture(ctx: Context, workspacePath: string, budgets: JsonObject = {},
+  childBudgets: JsonObject = {}, taskBudget: JsonObject = {}) {
   let actualWorkspace = workspacePath
   let beforeWorkspaceRead: (() => Promise<void>) | undefined
+  let retireOnResolve = false
   const proofs = new Map<TeamSystemDelegationProof, TeamSystemDelegationScope>()
-  ctx.teams.registerSystemDelegationProofSource({ name: 'team-delegation', resolveDelegationProof: proof => proofs.get(proof),
-    resolveChildWorkspace: async () => { await beforeWorkspaceRead?.(); return actualWorkspace } })
+  let unregister = () => {}
+  unregister = ctx.teams.registerSystemDelegationProofSource({ name: 'team-delegation', resolveDelegationProof: (proof) => {
+    const scope = proofs.get(proof)
+    if (scope !== undefined && retireOnResolve) { retireOnResolve = false; unregister() }
+    return scope
+  },
+  resolveChildWorkspace: async () => { await beforeWorkspaceRead?.(); return actualWorkspace } })
   const parent = await createTestRootTeam(ctx, { goal: { objective: 'Parent work', budgets: {} }, rules: { workspacePath }, budgets })
   await provisionTestCoordinator(ctx, parent.team.id)
   let state = await ctx.teams.getTeam({ teamId: parent.team.id })
   const authorityGrant = { ...state.team.authorityGrant!, workspaceModes: ['shared'] as const, readScopes: [], writeScopes: [] }
   const task = await createTestCoordinatorTask(ctx, {
     teamId: parent.team.id, expectedCursor: state.team.cursor, subject: 'Delegate child work', description: 'Create one nested Team.',
-    blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {},
+    blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: taskBudget,
     reviewPolicy: { kind: 'none' }, maxAttempts: 1,
     execution: { kind: 'child-team', templateId: 'fixture', templateVersion: 1, authorityGrant, budget: childBudgets },
   })
@@ -31,6 +38,7 @@ export async function delegationFixture(ctx: Context, workspacePath: string, bud
     revoke(proof: TeamSystemDelegationProof) { proofs.delete(proof) },
     replace(proof: TeamSystemDelegationProof, scope: TeamSystemDelegationScope) { proofs.set(proof, scope) },
     moveWorkspace(path: string) { actualWorkspace = path },
+    retireSourceDuringNextProofResolution() { retireOnResolve = true },
     beforeWorkspaceRead(callback: () => Promise<void>) { beforeWorkspaceRead = callback },
     async current() {
       const latest = await ctx.teams.getTeam({ teamId: state.team.id })

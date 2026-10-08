@@ -24,6 +24,37 @@ function provider(overrides: Partial<ActivationSupervisorProvider> = {}): Activa
 }
 
 describe('activation supervision', () => {
+  it.each([{ name: '' }, { name: ' noncanonical ' }, { version: 0 }, { version: 1.5 }])
+  ('rejects noncanonical provider registrations before publication (%j)', async (invalid) => {
+    const ctx = new Context()
+    await ctx.plugin(ActivationSupervisors)
+    try {
+      expect(() => ctx.activationSupervisors.registerProvider(provider(invalid))).toThrow(expect.objectContaining({ code: 'SUPERVISOR_INVALID' }))
+      expect(() => ctx.activationSupervisors.resolve(binding)).toThrow(expect.objectContaining({ code: 'SUPERVISOR_UNAVAILABLE' }))
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('rejects duplicate providers, missing descriptors and remote local-ownership admission', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActivationSupervisors)
+    try {
+      const owner = provider()
+      const dispose = ctx.activationSupervisors.registerProvider(owner)
+      expect(() => ctx.activationSupervisors.registerProvider(provider())).toThrow(expect.objectContaining({ code: 'SUPERVISOR_INVALID' }))
+      const { recovery: _recovery, ...withoutRecovery } = binding
+      expect(() => ctx.activationSupervisors.resolve(withoutRecovery)).toThrow(expect.objectContaining({ code: 'SUPERVISOR_UNAVAILABLE' }))
+      await expect(ctx.activationSupervisors.admitOwned(binding)).rejects.toMatchObject({ code: 'SUPERVISOR_INVALID' })
+      dispose(); dispose()
+      const admitOwned = vi.fn(async () => {})
+      const replacement = provider({ admitOwned })
+      ctx.activationSupervisors.registerProvider(replacement)
+      dispose()
+      expect(ctx.activationSupervisors.resolve(binding)).toBe(replacement)
+      await ctx.activationSupervisors.admitOwned(binding)
+      expect(admitOwned).toHaveBeenCalledWith(binding)
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it('rejects absent versions and retires admission while a retained fence settles', async () => {
     const ctx = new Context()
     await ctx.plugin(ActivationSupervisors)

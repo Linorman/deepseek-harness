@@ -143,7 +143,9 @@ function workspaceManifests(): WorkspaceManifest[] {
 }
 
 const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
-  '@clocky/clocky-activation-supervisor-http': ['lib/endpoint.js', 'lib/protocol.js'],
+  '@clocky/clocky-activation-supervisor-http': ['lib/endpoint.js', 'lib/protocol.js', 'lib/identity-config.js'],
+  // Session and Team providers consume this independently built SDK transport entry.
+  '@clocky/clocky-session-telemetry-otel': ['lib/pipeline.js'],
   '@clocky/clocky-team-channel-admission': ['lib/principal.js'],
   '@clocky/clocky-team-channel-summary': ['lib/tool.js'],
   // Statically linked client libraries keep their stylesheets next to the emitted
@@ -152,6 +154,7 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // The glob covers whichever sheets a package emits; sourcemaps stay
   // unpublished, as everywhere else in the repository.
   '@clocky/clocky-client-ui-primitives': ['lib/**/*.css'],
+  '@clocky/clocky-client-ui-viz': ['lib/**/*.css'],
   '@clocky/clocky-client-web': ['lib/**/*.css'],
   '@clocky/clocky-client-ui-theme': ['lib/styles'],
   // The CPython side ships as source .py files, published as-is rather than built.
@@ -441,17 +444,7 @@ export function checkExperimentalDependencyIsolation(manifests: readonly Workspa
     .filter(entry => experimentalPackageDirectory.test(entry.dir))
     .map(entry => entry.manifest.name)
     .filter(name => name !== undefined))
-  const errors: string[] = []
-  for (const { dir, manifest } of manifests) {
-    if (!releaseMemberDirectory.test(dir) && dir !== 'python/sdk-runtime') continue
-    for (const section of runtimeDependencySections) {
-      for (const name of Object.keys(manifest[section] ?? {})) {
-        if (!experimentalNames.has(name)) continue
-        errors.push(`${manifest.name ?? dir}: ${section}.${name} must not reference an experimental package`)
-      }
-    }
-  }
-  return errors
+  return checkRuntimeDependencyIsolation(manifests, experimentalNames, 'must not reference an experimental package')
 }
 
 /**
@@ -465,13 +458,20 @@ export function checkPrivateCompatibilityDependencyIsolation(manifests: readonly
     .filter(entry => privateCompatibilityPackageDirectory.test(entry.dir))
     .map(entry => entry.manifest.name)
     .filter(name => name !== undefined))
+  return checkRuntimeDependencyIsolation(manifests, compatibilityNames, 'must not reference a private compatibility package')
+}
+
+/** Check release and SDK carriers against one classified dependency set. */
+function checkRuntimeDependencyIsolation(
+  manifests: readonly WorkspaceManifest[], excludedNames: ReadonlySet<string>, description: string,
+): string[] {
   const errors: string[] = []
   for (const { dir, manifest } of manifests) {
     if (!releaseMemberDirectory.test(dir) && dir !== 'python/sdk-runtime') continue
     for (const section of runtimeDependencySections) {
       for (const name of Object.keys(manifest[section] ?? {})) {
-        if (!compatibilityNames.has(name)) continue
-        errors.push(`${manifest.name ?? dir}: ${section}.${name} must not reference a private compatibility package`)
+        if (!excludedNames.has(name)) continue
+        errors.push(`${manifest.name ?? dir}: ${section}.${name} ${description}`)
       }
     }
   }

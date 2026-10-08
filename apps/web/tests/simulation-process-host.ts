@@ -1,19 +1,24 @@
 /** Separate real Host processes share parent-owned test roots; crash hooks only pause durable publication. */
 import { spawn } from 'node:child_process'
+import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { launchWebScaffold } from './scaffold.ts'
 import { REPO_ROOT } from './support.ts'
+import { LlmAdapter, type GenerateOptions, type LlmModelInfo } from '@clocky/clocky-llm'
+import type { SimulationRun } from '@clocky/clocky-simulation'
+import { companyModel } from '../../../packages/simulation/simulation-product/tests/company-model.ts'
 import type {} from '../../../examples/headless-agent/tests/fixtures/simulation/simulation-administration/model.ts'
 
 type Stage = 'accepted-create' | 'completed-checkpoint' | 'completed-review'
-interface Settings { workspaceCwd: string; persistenceRoot: string; overlay: string; port: number }
+interface Settings { workspaceCwd: string; persistenceRoot: string; overlay?: string; port: number; published?: boolean; model?: string }
 type Command = { type: 'arm'; stage: Stage } | { type: 'observe' }
 interface Ready { type: 'ready'; pid: number; baseUrl: string; credential: string }
 interface Held { type: 'held'; stage: Stage; runId: string; commandId: string; checkpointId?: string }
 interface Observation {
   type: 'observation'
   requests: number
+  opens?: number
   tasks: number
   reports: number
   transfers: number
@@ -24,8 +29,11 @@ interface Observation {
   ingressCount: number
   time?: string
   driver?: string
+  stop?: string
   inFlight?: boolean
   phase?: string
+  teamPhase?: string
+  teamStallCode?: string
   stock?: string
   received?: string
 }
@@ -66,8 +74,9 @@ function parseMessage(value: unknown): Message {
       if (['requests', 'tasks', 'reports', 'transfers', 'completedCheckpoints', 'entityCount', 'channelCount',
         'decisionCount', 'ingressCount'].every(key =>
         typeof input[key] === 'number' && Number.isSafeInteger(input[key]) && input[key] >= 0)
-        && ['phase', 'stock', 'received', 'time', 'driver'].every(key => input[key] === undefined || typeof input[key] === 'string')
+        && ['phase', 'teamPhase', 'teamStallCode', 'stock', 'received', 'time', 'driver', 'stop'].every(key => input[key] === undefined || typeof input[key] === 'string')
         && (input.inFlight === undefined || typeof input.inFlight === 'boolean')) {
+        if (input.opens !== undefined && (typeof input.opens !== 'number' || !Number.isSafeInteger(input.opens) || input.opens < 0)) break
         return input as unknown as Observation
       }
       break
@@ -82,7 +91,11 @@ function parseCommand(value: unknown): Command {
 }
 function parseSettings(value: unknown): Settings {
   const input = record(value)
-  if (['workspaceCwd', 'persistenceRoot', 'overlay'].every(key => typeof input[key] === 'string')
+  if (['workspaceCwd', 'persistenceRoot'].every(key => typeof input[key] === 'string')
+    && (input.overlay === undefined || typeof input.overlay === 'string')
+    && (input.published === undefined || typeof input.published === 'boolean')
+    && (input.model === undefined || typeof input.model === 'string')
+    && (input.published === true || typeof input.overlay === 'string')
     && typeof input.port === 'number' && Number.isSafeInteger(input.port) && input.port > 0 && input.port < 65536) {
     return input as unknown as Settings
   }
@@ -149,13 +162,37 @@ export async function launchSimulationProcessHost(settings: Settings): Promise<S
 
 async function serveChild(): Promise<void> {
   const settings = parseSettings(JSON.parse(process.argv[3] ?? '{}'))
-  const scaffold = await launchWebScaffold({ retainedWorld: settings, port: settings.port, extraOverlayPath: settings.overlay,
-    productPrincipalId: 'simulation-restart-owner', agentPresets: { default: 'simulation',
-      roots: [{ path: join(REPO_ROOT, 'examples/simulation-company/presets'), trust: 'system' }] } })
+  const scaffold = await launchWebScaffold({ retainedWorld: settings, port: settings.port,
+    productPrincipalId: 'simulation-restart-owner', ...settings.published ? {} : {
+      disableDefaultSimulation: true, extraOverlayPath: settings.overlay!, agentPresets: { default: 'simulation',
+        roots: [{ path: join(REPO_ROOT, 'examples/simulation-company/presets'), trust: 'system' as const }] },
+    } })
+  let publishedRun: SimulationRun | undefined
+  let opens = 0
+  const requests: Array<{ stage: string; tools: string[]; goal: string }> = []
+  if (settings.published) {
+    const open = scaffold.ctx.simulations.open.bind(scaffold.ctx.simulations)
+    scaffold.ctx.simulations.open = async (...args) => { opens++; publishedRun = await open(...args); return publishedRun }
+    const scripts = new WeakMap<SimulationRun, ReturnType<typeof companyModel>>()
+    scaffold.ctx.llm.registerAdapter(['published-restart'], new class extends LlmAdapter {
+      override listModels(provider: string): Promise<readonly LlmModelInfo[]> {
+        return Promise.resolve([{ provider, id: settings.model ?? 'procurement', name: 'Procurement replay' }])
+      }
+      override async *stream(options: GenerateOptions) {
+        if (publishedRun === undefined) throw new Error('Published model request has no accepted world')
+        let script = scripts.get(publishedRun)
+        if (script === undefined) { script = companyModel(publishedRun, requests); scripts.set(publishedRun, script) }
+        // External response pacing leaves real accepted work to pause/recover;
+        // production driver timers and native scheduling remain unchanged.
+        for await (const chunk of script.stream(options)) { await delay(100); yield chunk }
+      }
+    }())
+    await scaffold.ctx.agentDefaultModel.saveSelection({ provider: 'published-restart', model: settings.model ?? 'procurement' })
+  }
   const send = (message: Message): void => { process.send?.(message) }
   let armed: Stage | undefined
   const commands = new Map<string, StoredCommand>()
-  const stream = scaffold.ctx.storageLog.get('browser-simulation-commands')
+  const stream = scaffold.ctx.storageLog.get(settings.published ? 'web-simulation-commands-v1' : 'browser-simulation-commands')
   if (stream === undefined) throw new Error('Simulation restart has no durable administration journal')
   const append = stream.append.bind(stream)
   const hold = async (stage: Stage, commandId: string): Promise<void> => {
@@ -182,14 +219,15 @@ async function serveChild(): Promise<void> {
   process.on('message', (value: unknown) => {
     const command = parseCommand(value)
     if (command.type === 'arm') { armed = command.stage; send({ type: 'armed', stage: armed }); return }
-    const state = scaffold.ctx.simulationBrowserProbe.run?.snapshot()
+    const state = settings.published ? publishedRun?.snapshot() : scaffold.ctx.simulationBrowserProbe.run?.snapshot()
     // Read scheduling metadata from the exact fixture owner without an authenticated write or another run open.
     const administration = scaffold.ctx.simulationAdministration as unknown as {
-      held: Map<string, { owner?: { observe(): { driver: string; inFlight: boolean } } }>
+      held: Map<string, { owner?: { observe(): { driver: string; inFlight: boolean; stop?: string } } }>
     }
     const control = state === undefined ? undefined : administration.held.get(String(state.spec.runId))?.owner?.observe()
     const observation: Extract<Message, { type: 'observation' }> = { type: 'observation',
-      requests: scaffold.ctx.simulationBrowserProbe.systemPrompts.length,
+      requests: settings.published ? requests.length : scaffold.ctx.simulationBrowserProbe.systemPrompts.length,
+      ...settings.published ? { opens } : {},
       tasks: Object.values(state?.taskExecutions ?? {}).length,
       reports: Object.values(state?.operations ?? {}).filter(operation => operation.action.kind === 'communication/post').length,
       transfers: Object.values(state?.operations ?? {}).filter(operation => operation.action.kind === 'resource/transfer').length,
@@ -199,12 +237,18 @@ async function serveChild(): Promise<void> {
       decisionCount: Object.keys(state?.decisions ?? {}).length,
       ingressCount: Object.keys(state?.ingresses ?? {}).length,
       ...state === undefined ? {} : { time: state.time },
-      ...control === undefined ? {} : { driver: control.driver, inFlight: control.inFlight },
+      ...control === undefined ? {} : { driver: control.driver, inFlight: control.inFlight,
+        ...control.stop === undefined ? {} : { stop: control.stop } },
       ...state === undefined ? {} : { phase: state.phase },
       ...state?.resources['stock' as never] === undefined ? {} : { stock: state.resources['stock' as never]!.quantity },
       ...state?.resources['received' as never] === undefined ? {} : { received: state.resources['received' as never]!.quantity },
     }
-    send(observation)
+    const teamId = state?.teamReservation?.teamId
+    if (teamId === undefined) send(observation)
+    else void scaffold.ctx.teams.getTeam({ teamId }).then((team) => {
+      send({ ...observation, teamPhase: team.team.phase,
+        ...team.team.stallReason === undefined ? {} : { teamStallCode: team.team.stallReason.code } })
+    }).catch(() => { process.stderr.write('Simulation Team observation failed\n'); process.exit(1) })
   })
   const principal = scaffold.ctx.get('productPrincipals')
   if (principal === undefined) throw new Error('Simulation restart has no authenticated bootstrap owner')

@@ -89,6 +89,19 @@ it('loads a durable question into the current inbox page and submits its answer'
     await expect.poll(() => inbox.getByRole('button', { name: '查看保留的历史', exact: true }).count()).toBe(0)
     await page.screenshot({ path: join(output, 'retained-history.png'), animations: 'disabled' })
 
+    // Keyboard triage: K/J move between entries, Enter opens the focused entry's Team.
+    const entries = inbox.locator('[data-inbox-entry]')
+    await entries.first().getByRole('button', { name: 'Inbox page question', exact: true }).focus()
+    await page.keyboard.press('k')
+    await expect.poll(() => entries.first().evaluate(element => element === document.activeElement)).toBe(true)
+    await page.keyboard.press('j')
+    const count = await entries.count()
+    await expect.poll(() => entries.nth(Math.min(1, count - 1)).evaluate(element => element === document.activeElement)).toBe(true)
+    await page.keyboard.press('k')
+    await page.keyboard.press('Enter')
+    await inbox.waitFor({ state: 'hidden' })
+    await page.locator('[data-team-workspace-page]').getByRole('heading', { name: 'Inbox page question', exact: true }).waitFor()
+
   } catch (error: unknown) { failure = error; throw error }
   finally {
     await browser.close()

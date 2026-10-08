@@ -134,6 +134,8 @@ export interface RpcErrorDetailsMap {
   'simulation-product-invalid': {}
   /** Selected world revision, object section or authenticated continuation expired; refresh the first page. */
   'simulation-product-stale': {}
+  /** Creation was not accepted because its confirmed model changed; preview and confirm again. */
+  'simulation-product-model-changed': {}
   /** The provider durably refused this original update; the command cannot execute later. */
   'team-task-update-rejected': { rejection: import('@clocky/clocky-team').TeamTaskUpdateRejection }
   'team-task-stale-revision': { teamId?: TeamId; taskId?: TeamTaskId }
@@ -187,6 +189,25 @@ export function transportError<T>(error: unknown): RpcResult<T> {
     ok: false,
     error: { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} },
   }
+}
+
+/**
+ * Classify a thrown carrier failure for presentation. Explicit product-access
+ * refusals keep their access code so a view can defer to the shell's
+ * reauthentication banner instead of printing the transport message;
+ * everything else becomes `internal`. Unlike {@link transportError}, which
+ * keeps every carrier failure `internal` for retry and outcome logic, this is
+ * for display state only.
+ * @param error - the thrown value from the carrier.
+ * @returns the classified error.
+ */
+export function rpcErrorFrom(error: unknown): RpcError {
+  const message = error instanceof Error ? error.message : String(error)
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    if (error.code === 'PRODUCT_AUTH_INVALID') return { code: 'PRODUCT_AUTH_INVALID', message, details: {} }
+    if (error.code === 'PRODUCT_AUTH_REQUIRED') return { code: 'PRODUCT_AUTH_REQUIRED', message, details: {} }
+  }
+  return { code: 'internal', message, details: {} }
 }
 
 /**

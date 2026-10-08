@@ -6,6 +6,7 @@ import { useCallback, useRef } from 'react'
 import clsx from 'clsx'
 import type { ConversationSlotProps, InputZone } from '../contract/slots.ts'
 import { HeroGlow, HeroShell } from './EmptyHero.tsx'
+import { HeroLauncher } from './HeroLauncher.tsx'
 import css from './ConversationRoot.module.css'
 
 /** Full props composed from the slot contract. */
@@ -13,8 +14,9 @@ export type ConversationRootProps = ConversationSlotProps
 
 export function ConversationRoot({
   sessionId, useSession, useSessions, useInput, useComposerBlock,
-  useTeamTasks, renderSlot, renderSlotChain, t,
+  useTeamTasks, renderSlot, renderSlotChain, launcher, t,
 }: ConversationRootProps) {
+  const seatRef = useRef<HTMLDivElement | null>(null)
   const openState = useSession(s => s.openState)
   const composerPhase = useSession(s => s.composerPhase)
   const pending = useSession(s => s.pending) ?? []
@@ -49,6 +51,7 @@ export function ConversationRoot({
   // churn while the first blank session fills the resident body outlet.
   const seatObserver = useRef<ResizeObserver | null>(null)
   const seatResizeRef = useCallback((seat: HTMLDivElement | null): void => {
+    seatRef.current = seat
     seatObserver.current?.disconnect()
     seatObserver.current = null
     const scroller = seat?.parentElement ?? null
@@ -105,6 +108,9 @@ export function ConversationRoot({
     <div className={clsx(css.composerStack, hero && css.composerHero)}>
       {hero && inspection === 'unrelated' && <HeroGlow className={css.heroGlow} />}
       {hero && inspection === 'unrelated' && <HeroShell t={t} renderSlot={renderSlot} />}
+      {hero && inspection === 'unrelated' && <div className={css.heroModes} role="group" aria-label={t('launcher.modes')}>
+        {renderSlot('conversation.hero.modes', {})}
+      </div>}
       {hero && inspection !== 'unrelated' && <section className={css.contextualEmpty}>
         <h2>{t(inspection === 'coordinator' ? 'session.coordinatorEmpty' : 'session.recordEmpty')}</h2>
         {coordinatorObjective !== undefined && <p>{coordinatorObjective}</p>}
@@ -113,6 +119,11 @@ export function ConversationRoot({
       {inspection === 'record' && <p role="status">{t('session.workerReadOnly')}</p>}
       {!readOnly && zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}
+      {hero && inspection === 'unrelated' && teamDraft !== undefined && launcher !== undefined && (
+        <HeroLauncher cwd={teamDraft.cwd} agentPreset={teamDraft.agentPreset} pickFolder={launcher.pickFolder}
+          setDraftText={launcher.setDraftText} t={t}
+          focusComposer={() => { seatRef.current?.querySelector('textarea')?.focus() }} />
+      )}
     </div>
   )
 

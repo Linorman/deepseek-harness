@@ -70,6 +70,56 @@ it.each(['json', 'sqlite'] as const)('collects a complete original checkpoint an
   } finally { await h.close() }
 })
 
+it('keeps a cold restore failure attributed to unavailable native history', async () => {
+  const h = await ownerFixture()
+  try {
+    const runId = await h.create()
+    await h.fiber.dispose(); await h.mount()
+    vi.spyOn(h.ctx.simulations, 'inspect').mockRejectedValueOnce(new Error('Native history volume is offline'))
+    const input = simulationProductRestoreInputSchema.parse({ runId, commandId: 'offline-native-restore',
+      checkpointId: `product-initial/${h.input.commandId}` })
+    expect((await h.ctx.simulationAdministration.restore(input, call())).status).toBe('accepted')
+    expect(await h.finished(input.commandId)).toMatchObject({ status: 'failed', failure: 'restore-failed',
+      diagnostic: { stage: 'restore', code: 'source-unavailable' } })
+    expect(await h.ctx.simulationAdministration.request({ commandId: input.commandId }, call()))
+      .toMatchObject({ status: 'found', request: { status: 'failed' } })
+  } finally { await h.close() }
+})
+
+it('retains a native failed checkpoint result with its safe diagnostic', async () => {
+  const h = await ownerFixture()
+  try {
+    const runId = await h.create()
+    const native = vi.spyOn(SimulationCompanyOwner.prototype, 'checkpoint').mockImplementationOnce(async request => ({ request,
+      startedSequence: 1, finishedSequence: 2, status: 'failed', error: 'private collector details',
+      diagnostic: { stage: 'collect', code: 'source-unavailable', subject: { kind: 'run' } },
+    }))
+    const input = simulationProductCheckpointInputSchema.parse({ runId, commandId: 'native-failed-cut' })
+    await h.ctx.simulationAdministration.checkpoint(input, call())
+    const failed = await h.finished(input.commandId)
+    expect(native).toHaveBeenCalledOnce()
+    expect(failed).toMatchObject({ status: 'failed', failure: 'checkpoint-failed',
+      diagnostic: { stage: 'collect', code: 'source-unavailable' } })
+    expect(JSON.stringify(failed)).not.toContain('private collector details')
+  } finally { await h.close() }
+})
+
+it('keeps a nonterminal checkpoint reply as a failed original without inventing a diagnostic', async () => {
+  const h = await ownerFixture()
+  try {
+    const runId = await h.create()
+    const native = vi.spyOn(SimulationCompanyOwner.prototype, 'checkpoint').mockImplementationOnce(async request => ({
+      request, startedSequence: 1, status: 'in-progress',
+    }))
+    const input = simulationProductCheckpointInputSchema.parse({ runId, commandId: 'in-progress-cut' })
+    await h.ctx.simulationAdministration.checkpoint(input, call())
+    const failed = await h.finished(input.commandId)
+    expect(native).toHaveBeenCalledOnce()
+    expect(failed).toMatchObject({ status: 'failed', failure: 'checkpoint-failed' })
+    expect(failed.diagnostic).toBeUndefined()
+  } finally { await h.close() }
+})
+
 it('retires an accepted inference during checkpoint collection and keeps the browser waiter independent', async () => {
   const h = await ownerFixture()
   const started = Promise.withResolvers<undefined>()
@@ -402,6 +452,15 @@ it('queries unavailable cold history without opening execution or exposing provi
     expect(await h.ctx.simulationAdministration.ingressRequest({ runId, ingressId: 'unknown' as never }, call())).toMatchObject({ status: 'not-found' })
     const input = simulationProductCheckpointInputSchema.parse({ runId, commandId: 'new-cold-cut' })
     await expect(h.ctx.simulationAdministration.checkpoint(input, call())).rejects.toThrow('prepared live owner')
+    const unavailableRestore = simulationProductRestoreInputSchema.parse({ runId, commandId: 'unavailable-native-history',
+      checkpointId: `product-initial/${h.input.commandId}` })
+    inspect.mockRejectedValueOnce(new Error('private unavailable restore source'))
+    await h.ctx.simulationAdministration.restore(unavailableRestore, call())
+    const failedSource = await h.finished(unavailableRestore.commandId)
+    expect(failedSource).toMatchObject({ status: 'failed', failure: 'restore-failed', diagnostic: {
+      stage: 'restore', code: 'source-unavailable', subject: { kind: 'run' },
+    } })
+    expect(JSON.stringify(failedSource)).not.toContain('private unavailable restore source')
     const restore = simulationProductRestoreInputSchema.parse({ runId, commandId: 'missing-native', checkpointId: 'absent' })
     inspect.mockResolvedValueOnce(undefined)
     await h.ctx.simulationAdministration.restore(restore, call())

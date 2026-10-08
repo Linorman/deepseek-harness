@@ -21,7 +21,5 @@
         maxPendingOperations: 128
         watchTimeoutMs: 30000
         pollIntervalMs: 250
-    - id: workflow-cancel-human-actor
-      name: '@clocky/clocky-team-human-actor'
     - id: workflow-task-cancellation-driver
       name: './snapshot-fixtures/headless-workflow-task-cancellation-driver.ts'

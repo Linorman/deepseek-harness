@@ -33,6 +33,32 @@ class SimulationModelRoute(SimulationModel):
     name: Identity
 
 
+class SimulationModelReady(SimulationModel):
+    """Metadata-resolved route available for explicit confirmation; no inference is performed."""
+
+    status: Literal["ready"]
+    model: SimulationModelRoute
+
+
+class SimulationModelMissing(SimulationModel):
+    """Installed template remains visible while no complete default model exists."""
+
+    status: Literal["needs-model"]
+    reason: Literal["default-model-missing"]
+
+
+class SimulationModelUnavailable(SimulationModel):
+    """Safe current deployment reason; private provider errors are withheld."""
+
+    status: Literal["unavailable"]
+    reason: Literal["provider-unavailable", "metadata-unavailable", "reasoning-unsupported", "execution-unavailable", "template-unavailable"]
+
+
+SimulationModelReadiness = Annotated[
+    SimulationModelReady | SimulationModelMissing | SimulationModelUnavailable, Field(discriminator="status")
+]
+
+
 LimitKey = Literal["maxEntities", "maxResidentActors", "tokensPerModelRequest", "maxTokensPerInterval", "maxTime"]
 
 
@@ -80,7 +106,7 @@ class SimulationTemplate(SimulationModel):
     version: Literal["1"]
     name: SimulationText
     kind: Literal["company-procurement", "task-workflow"]
-    model: SimulationModelRoute
+    readiness: SimulationModelReadiness
     tickUnit: SimulationText
     execution: Literal["cognition-only", "automatic-tasks"]
     cognition: Literal["model", "deterministic"] | None = None
@@ -109,6 +135,7 @@ class SimulationCreateInput(SimulationModel):
     commandId: Identity
     templateId: Identity
     templateVersion: Literal["1"]
+    expectedModel: SimulationModelRoute
     name: Identity
     parameters: SimulationCompanyParameters
     limits: SimulationLimitsInput | None = None
@@ -136,13 +163,14 @@ class SimulationPreflightResult(SimulationModel):
     """Current readiness observation; creation independently rechecks before acceptance."""
 
     status: Literal["ready", "invalid"]
+    readiness: SimulationModelReadiness
     configuration: SimulationConfiguration | None = None
     issues: Annotated[list[SimulationPreflightIssue], Field(min_length=1, max_length=32)] | None = None
 
     @model_validator(mode="after")
     def _outcome(self) -> SimulationPreflightResult:
         if self.status == "ready":
-            if self.configuration is None or "issues" in self.model_fields_set:
+            if self.configuration is None or "issues" in self.model_fields_set or not isinstance(self.readiness, SimulationModelReady):
                 raise ValueError("Ready preflight carries only resolved configuration")
         elif self.issues is None or "configuration" in self.model_fields_set:
             raise ValueError("Invalid preflight carries only field issues")
@@ -1551,6 +1579,7 @@ class SimulationScenarioObserved(SimulationModel):
     templateId: SimulationText
     version: Literal["1"]
     driverVersion: Literal["1"]
+    execution: Literal["cognition-only", "automatic-tasks"]
 
 
 class SimulationVersionSummary(SimulationModel):

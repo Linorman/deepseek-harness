@@ -2,14 +2,15 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button, Modal } from '@clocky/clocky-client-ui-primitives'
 import type { SimulationReadState, SimulationProductTaskReviewPage, SimulationProductTaskReviewListInput,
-  SimulationProductRunId, SimulationCommand, SimulationCommandKey, SimulationCommandState } from '@clocky/clocky-client-runtime/client'
+  SimulationProductRunId, SimulationCommandKey } from '@clocky/clocky-client-runtime/client'
 import { reviewDraftKey } from './store.ts'
 import type { SimulationReviewDraft, SimulationReviewTarget } from './store.ts'
 import { CommandRecord } from './CommandRecord.tsx'
-import type { Key } from './locales.ts'
+import { commandUnresolved, type CommandProps } from './command-props.ts'
 import css from './Workspace.module.css'
+import { useTaskDraft } from './useTaskDraft.ts'
 
-type Props = {
+type Props = CommandProps & {
   runId: SimulationProductRunId
   ready: boolean
   value: SimulationReadState<SimulationProductTaskReviewPage>
@@ -21,11 +22,7 @@ type Props = {
   target?: SimulationReviewTarget | undefined
   select: (target?: SimulationReviewTarget) => void
   change: (key: string, draft?: SimulationReviewDraft) => void
-  commands: Readonly<Record<string, SimulationCommandState>>
-  retain: (command: SimulationCommand, version: number) => SimulationCommandKey
-  submit: (key: SimulationCommandKey) => Promise<SimulationCommandState | undefined>
-  query: (key: SimulationCommandKey) => Promise<SimulationCommandState | undefined>
-  t: (key: Key) => string
+
 }
 /** Render a bounded pending window and one exact-attempt dialog without exposing task bodies. */
 export function TaskReviews(props: Props) {
@@ -40,12 +37,12 @@ export function TaskReviews(props: Props) {
   }
   const selectedDraft = props.target?.runId === runId ? props.drafts[reviewDraftKey(props.target)] : undefined
   const retained = Object.entries(props.drafts).filter(([, draft]) => draft.runId === runId)
-  return <section className={css.review} data-empty={page?.total === 0 || page === undefined && value.error !== undefined || undefined} aria-label={t('reviews.title')}>
+  return <section className={css.review} data-empty={page?.total === 0 || page === undefined && value.error !== undefined || undefined} aria-label={t('reviews.title')} data-simulation-reviews>
     <header className={css.reviewHeader}><h2>{t('reviews.title')}{page === undefined ? '' : ` · ${page.total}`}</h2>
-      <Button variant="outline" disabled={!connected || value.loading} aria-busy={value.loading}
+      <Button variant="secondary" disabled={!connected || value.loading} aria-busy={value.loading}
         onClick={() => { void refresh() }}>{t('reviews.refresh')}</Button></header>
     {value.loading && <p role="status">{t('loading')}</p>}
-    {value.stale && <p role="status">{t('reviews.stale')}</p>}
+    {value.stale && <p role="status" className={css.stalePill}>{t('reviews.stale')}</p>}
     {value.error !== undefined && <p role="alert">{t(value.error)}</p>}
     {error !== undefined && <p role="alert">{error}</p>}
     {page?.items.length === 0 && <p>{t('reviews.empty')}</p>}
@@ -70,9 +67,6 @@ function ReviewDialog({ draft, refresh, ...props }: Props & { draft: SimulationR
   const reasonId = useId()
   const { t, value, connected, commands } = props
   const key = reviewDraftKey(draft)
-  const latest = useRef(draft)
-  latest.current = draft
-  const [error, setError] = useState<string>()
   const [discard, setDiscard] = useState(false)
   const admission = useRef(false)
   const record = draft.commandKey === undefined ? Object.values(commands).find(value => value.command.kind === 'review'
@@ -81,8 +75,7 @@ function ReviewDialog({ draft, refresh, ...props }: Props & { draft: SimulationR
   const commandKey = draft.commandKey
   const original = record?.command.kind === 'review' ? record.command.input : undefined
   const pending = record?.pending === true
-  const unresolved = record !== undefined && (record.unknown || record.pending || record.receipt === undefined
-    || record.receipt.value.status === 'accepted')
+  const unresolved = commandUnresolved(record)
   const row = value.value?.runId === draft.runId ? value.value.items.find(item => item.operationId === draft.operationId
     && item.attemptId === draft.attemptId) : undefined
   const fresh = connected && !value.loading && !value.stale && value.error === undefined
@@ -91,12 +84,7 @@ function ReviewDialog({ draft, refresh, ...props }: Props & { draft: SimulationR
     && draft.expectedRevision === original.expectedRevision
   const canSubmit = fresh && row?.action.allowed === true && row.taskRevision === draft.expectedRevision
     && draft.reason.trim() !== '' && !unresolved && !failedSameIntent && record?.error !== 'forbidden' && !admission.current
-  const change = (next: SimulationReviewDraft) => {
-    try { props.change(key, next); latest.current = next; setError(undefined) }
-    catch { setError(t('commandCapacity')) }
-  }
-  const active = useRef(true)
-  useEffect(() => { active.current = true; return () => { active.current = false } }, [])
+  const { latest, active, error, setError, change } = useTaskDraft(draft, (next) => { props.change(key, next) }, () => t('commandCapacity'))
   const settle = async (commandKey: SimulationCommandKey, query: boolean) => {
     const result = await (query ? props.query(commandKey) : props.submit(commandKey))
     if (!active.current) return result
@@ -130,13 +118,13 @@ function ReviewDialog({ draft, refresh, ...props }: Props & { draft: SimulationR
   }
   return <>
     <Modal open title={t('reviews.open')} closeLabel={t('closeKeepDraft')} onClose={() => { props.select(undefined) }}
-      footer={<><Button variant="outline" onClick={() => { setDiscard(true) }}>{t('discardDraft')}</Button>
+      footer={<><Button variant="secondary" onClick={() => { setDiscard(true) }}>{t('discardDraft')}</Button>
         <Button disabled={!canSubmit || pending} onClick={() => { void submit() }}>{t(draft.nextPhase === 'completed' ? 'reviews.approve' : 'reviews.rework')}</Button></>}>
       <div className={`${css.formBody} ${css.review}`}>
         <p>{t('reviews.notice')}</p><code>{draft.operationId}</code> · <code>{draft.attemptId}</code>
         {row !== undefined && <ReviewEvidence row={row} t={t} />}
         <p>{t('reviews.revision')}: {draft.expectedRevision}</p>
-        {!fresh && <p role="status">{t('reviews.stale')}</p>}
+        {!fresh && <p role="status" className={css.stalePill}>{t('reviews.stale')}</p>}
         {failedSameIntent && <p role="status">{t('reviews.failedSameIntent')}</p>}
         {row === undefined && <p role="status">{t('reviews.targetUnavailable')}</p>}
         {row !== undefined && row.taskRevision !== draft.expectedRevision && <p role="status">{t('reviews.changed')}</p>}

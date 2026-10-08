@@ -1,5 +1,5 @@
 /** Exact selected versions remain subject to current native audience and transitive premise visibility. */
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { simulationDecisionIdSchema, simulationKnowledgeRequestSchema } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from '../../simulation-local/tests/business-harness.ts'
 import { contextRequest } from '../../simulation-local/tests/context-fixture.ts'
@@ -39,6 +39,18 @@ it.each(['json', 'sqlite'] as const)('separates current and frozen knowledge, re
       result = await products.inspectObject({ ...input, cursor: result.value.knowledge.nextCursor }, call())
     }
     expect(parts.join('')).toBe('原始🙂知识')
+    const internals = products as unknown as { boundedPage: (...args: unknown[]) => unknown }
+    const boundedPage = internals.boundedPage.bind(internals)
+    const projected = vi.spyOn(internals, 'boundedPage').mockImplementation((...args) => {
+      const page = boundedPage(...args)
+      queueMicrotask(remove)
+      return page
+    })
+    const retired = await products.inspectObject(input, call())
+    expect(retired.value).toMatchObject({ section: 'knowledge', bodyAccess: 'withheld', knowledge: { items: [], total: 0 } })
+    projected.mockRestore()
+    const renewed = products.contextReaderRegistrar()([{ principalId: 'reader' as never, entityIds: ['b' as never],
+      content: ['knowledge', 'sources'] }])
     const current = await products.inspectObject({ runId: registration().id, collection: 'entities', id: b.id, section: 'knowledge' }, call())
     if (current.value?.section !== 'knowledge') throw new Error('Missing current knowledge')
     expect(current.value.knowledge.items.every(item => item.reference.revision === 2)).toBe(true)
@@ -50,6 +62,7 @@ it.each(['json', 'sqlite'] as const)('separates current and frozen knowledge, re
     expect(result.value).toMatchObject({ bodyAccess: 'allowed', knowledge: { items: [], total: 0 } })
     expect(JSON.stringify(result)).not.toContain('原始')
     remove()
+    renewed()
     expect((await products.inspectObject(input, call())).value).toMatchObject({ bodyAccess: 'withheld' })
   } finally { await native.close() }
 })

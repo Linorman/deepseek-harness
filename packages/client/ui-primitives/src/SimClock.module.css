@@ -1,0 +1,13 @@
+.clock {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--clocky-space-1);
+  color: var(--clocky-fg-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.icon {
+  flex: none;
+  color: var(--clocky-status-waiting-fg);
+}

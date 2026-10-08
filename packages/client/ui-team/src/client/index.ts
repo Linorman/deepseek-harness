@@ -1,5 +1,6 @@
 import { WorkspaceNavigationError } from './navigation-error.ts'
 import { WorkspaceNavigation } from './WorkspaceNavigation.tsx'
+import { TeamModeCard } from './TeamModeCard.tsx'
 /** Registers the Team task browser in the sidebar shell. */
 
 import type { BoundActions } from '@clocky/clocky-client-ui-slots'
@@ -9,6 +10,7 @@ import type { ConnectionHandle } from '@clocky/clocky-client-connection/client'
 import type {} from '@clocky/clocky-client-locale/client'
 import type {} from '@clocky/clocky-client-ui-sidebar/client'
 import type {} from '@clocky/clocky-client-ui-layout/client'
+import type {} from '@clocky/clocky-client-ui-conversation/client'
 import type { TeamInboxControls } from './TeamInboxDialog.tsx'
 import type { TeamBrowserInjected } from './TeamBrowser.tsx'
 import { TeamBrowser } from './TeamBrowser.tsx'
@@ -17,7 +19,9 @@ import { createTeamWorkspaceStore, Config } from './workspace-store.ts'
 import { createSessionInspection } from './session-inspection.ts'
 import type { TeamChannelMessageOwnerProps } from './channel-message-types.ts'
 export type { TeamChannelMessageOwnerProps, TeamChannelMessageProps } from './channel-message-types.ts'
-import { en, zh, type TeamKey } from './locales.ts'
+import { en, zh, teamPhaseKey, type TeamKey } from './locales.ts'
+import { deriveShortTitle } from './team-row.ts'
+import { memberLabels, memberPageLabels } from './member-labels.ts'
 
 export type { TeamBrowserInjected, TeamBrowserProps } from './TeamBrowser.tsx'
 export { Config } from './workspace-store.ts'
@@ -145,12 +149,10 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   const closeChannelView = () => { ctx.teamTasks.closeChannelView?.() }
   const readChannels = ctx.teamTasks.readChannels === undefined ? undefined
     : async (teamId: TeamId, mode?: 'refresh' | 'next' | 'first') => { await ctx.teamTasks.readChannels?.(teamId, mode) }
-  const readChannelAttachment = ctx.teamTasks.readChannelAttachment === undefined ? undefined
-    : async (input: Parameters<NonNullable<TeamBrowserInjected['readChannelAttachment']>>[0], signal?: AbortSignal) => {
-      const result = await ctx.teamTasks.readChannelAttachment?.(input, signal)
-      if (result === undefined) throw new Error('Channel image reader is unavailable')
-      return result
-    }
+  const attachmentReader = ctx.teamTasks.readChannelAttachment?.bind(ctx.teamTasks)
+  const readChannelAttachment = attachmentReader === undefined ? undefined
+    : async (input: Parameters<NonNullable<TeamBrowserInjected['readChannelAttachment']>>[0], signal?: AbortSignal) =>
+      await attachmentReader(input, signal)
   const readChannelCatalog = ctx.teamTasks.readChannelCatalog === undefined ? undefined
     : async () => { await ctx.teamTasks.readChannelCatalog?.() }
   const readArtifact = async (teamId: TeamId, artifactId: string, signal?: AbortSignal) => {
@@ -161,22 +163,27 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   const readTaskDetail: TeamBrowserInjected['readTaskDetail'] = ctx.teamTasks.readTaskDetail === undefined ? undefined
     : async (teamId, taskId, section, mode) => { await ctx.teamTasks.readTaskDetail?.(teamId, taskId, section, mode) }
   const closeTaskDetail = () => { ctx.teamTasks.closeTaskDetail?.() }
-  const watchIdentities: TeamBrowserInjected['watchIdentities'] = ctx.teamTasks.watchIdentities === undefined ? undefined
-    : (teamId, ids) => ctx.teamTasks.watchIdentities?.(teamId, ids, { refreshMs: limits.identityRefreshMs,
-      capacity: limits.identityCacheCapacity, batchSize: limits.identityBatchSize }) ?? (() => {})
+  const identityWatcher = ctx.teamTasks.watchIdentities?.bind(ctx.teamTasks)
+  const watchIdentities: TeamBrowserInjected['watchIdentities'] = identityWatcher === undefined ? undefined
+    : (teamId, ids) => identityWatcher(teamId, ids, { refreshMs: limits.identityRefreshMs,
+      capacity: limits.identityCacheCapacity, batchSize: limits.identityBatchSize })
   const refreshIdentities = async (): Promise<void> => { await ctx.teamTasks.refreshIdentities?.() }
-  const watchExecutionProfiles: TeamBrowserInjected['watchExecutionProfiles'] = ctx.teamTasks.watchExecutionProfiles === undefined ? undefined
-    : input => ctx.teamTasks.watchExecutionProfiles?.(input, limits.capabilityRefreshMs) ?? (() => {})
+  const executionProfileWatcher = ctx.teamTasks.watchExecutionProfiles?.bind(ctx.teamTasks)
+  const watchExecutionProfiles: TeamBrowserInjected['watchExecutionProfiles'] = executionProfileWatcher === undefined ? undefined
+    : input => executionProfileWatcher(input, limits.capabilityRefreshMs)
   const refreshExecutionProfiles = async (): Promise<void> => { await ctx.teamTasks.refreshExecutionProfiles?.() }
-  const watchMemberReadiness: TeamBrowserInjected['watchMemberReadiness'] = ctx.teamTasks.watchMemberReadiness === undefined ? undefined
-    : input => ctx.teamTasks.watchMemberReadiness?.(input, limits.readinessRefreshMs) ?? (() => {})
+  const memberReadinessWatcher = ctx.teamTasks.watchMemberReadiness?.bind(ctx.teamTasks)
+  const watchMemberReadiness: TeamBrowserInjected['watchMemberReadiness'] = memberReadinessWatcher === undefined ? undefined
+    : input => memberReadinessWatcher(input, limits.readinessRefreshMs)
   const refreshMemberReadiness = ctx.teamTasks.refreshMemberReadiness?.bind(ctx.teamTasks)
-  const watchTaskCapabilities: TeamBrowserInjected['watchTaskCapabilities'] = ctx.teamTasks.watchTaskCapabilities === undefined ? undefined
-    : input => ctx.teamTasks.watchTaskCapabilities?.(input, limits.capabilityRefreshMs) ?? (() => {})
+  const taskCapabilityWatcher = ctx.teamTasks.watchTaskCapabilities?.bind(ctx.teamTasks)
+  const watchTaskCapabilities: TeamBrowserInjected['watchTaskCapabilities'] = taskCapabilityWatcher === undefined ? undefined
+    : input => taskCapabilityWatcher(input, limits.capabilityRefreshMs)
   const refreshTaskCapabilities = ctx.teamTasks.refreshTaskCapabilities?.bind(ctx.teamTasks)
-  const watchAttention: TeamBrowserInjected['watchAttention'] = ctx.teamTasks.watchAttention === undefined ? undefined
-    : teamId => ctx.teamTasks.watchAttention?.(teamId, { limit: limits.attentionPreviewLimit,
-      refreshMs: limits.attentionRefreshMs }) ?? (() => {})
+  const attentionWatcher = ctx.teamTasks.watchAttention?.bind(ctx.teamTasks)
+  const watchAttention: TeamBrowserInjected['watchAttention'] = attentionWatcher === undefined ? undefined
+    : teamId => attentionWatcher(teamId, { limit: limits.attentionPreviewLimit,
+      refreshMs: limits.attentionRefreshMs })
   const readAttention: TeamBrowserInjected['readAttention'] = ctx.teamTasks.readAttention === undefined ? undefined
     : async (teamId, mode) => { await ctx.teamTasks.readAttention?.(teamId, limits.attentionPageLimit, mode) }
   const refreshAttentionPreview: TeamBrowserInjected['refreshAttentionPreview'] = ctx.teamTasks.refreshAttentionPreview === undefined ? undefined
@@ -189,9 +196,10 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   const readTaskQuery = ctx.teamTasks.readTaskQuery?.bind(ctx.teamTasks)
   const pauseTaskQuery = ctx.teamTasks.pauseTaskQuery?.bind(ctx.teamTasks)
   const lookupTaskUpdate = ctx.teamTasks.lookupTaskUpdate?.bind(ctx.teamTasks)
-  const watchTaskReferences: TeamBrowserInjected['watchTaskReferences'] = ctx.teamTasks.watchTaskReferences === undefined ? undefined
-    : (teamId, ids) => ctx.teamTasks.watchTaskReferences?.(teamId, ids, { capacity: limits.taskReferenceCapacity,
-      batchSize: limits.taskReferenceBatchSize, refreshMs: limits.taskReferenceRefreshMs }) ?? (() => {})
+  const taskReferenceWatcher = ctx.teamTasks.watchTaskReferences?.bind(ctx.teamTasks)
+  const watchTaskReferences: TeamBrowserInjected['watchTaskReferences'] = taskReferenceWatcher === undefined ? undefined
+    : (teamId, ids) => taskReferenceWatcher(teamId, ids, { capacity: limits.taskReferenceCapacity,
+      batchSize: limits.taskReferenceBatchSize, refreshMs: limits.taskReferenceRefreshMs })
   const refreshTaskReferences = ctx.teamTasks.refreshTaskReferences?.bind(ctx.teamTasks)
   const readDependencies = ctx.teamTasks.readDependencies?.bind(ctx.teamTasks)
   const closeDependencies = ctx.teamTasks.closeDependencies?.bind(ctx.teamTasks)
@@ -216,10 +224,92 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   ): Promise<void> => {
     await ctx.teamTasks.cancelTask?.(teamId, taskId, expectedRevision, reason, signal)
   }
+  const tt = ctx.locale.bind(NS)
+  ctx.effect(() => ctx.layout.registerCommands({
+    id: 'team.actions',
+    label: () => tt('palette.actions'),
+    items: () => [{
+      id: 'new',
+      label: tt('palette.newTeam'),
+      run: () => {
+        ctx.layout.showWorkspace('team')
+        if (draftControls.startDraft !== undefined) draftControls.startDraft()
+        else { cancelRestoration(); inspection.cancel(); ctx.sessions.clear() }
+      },
+    }],
+  }), 'ui-team: palette actions')
+  ctx.effect(() => ctx.layout.registerCommands({
+    id: 'team.teams',
+    label: () => tt('palette.teams'),
+    // Loaded Team summaries only; the palette never pages the directory itself.
+    items: () => ctx.teamTasks.list.getSnapshot().items.map(team => ({
+      id: team.id,
+      label: deriveShortTitle(team.goal.objective),
+      hint: `${tt(teamPhaseKey[team.phase])}${team.workspacePath === undefined ? '' : ` · ${team.workspacePath.split(/[\\/]/u).filter(Boolean).at(-1) ?? ''}`}`,
+      keywords: [team.goal.objective],
+      run: () => { void openTeam(team.id).catch((reason: unknown) => { ctx.logger.warn('ui-team: palette Team open failed', reason) }) },
+    })),
+  }), 'ui-team: palette Teams')
+  ctx.effect(() => ctx.layout.registerCommands({
+    id: 'team.members',
+    label: () => tt('palette.members'),
+    // The selected Team's loaded member page plus its coordinator; opening one inspects its Session.
+    items: () => {
+      const { current, selected, collections } = ctx.teamTasks.list.getSnapshot()
+      if (current === undefined || selected?.teamId !== current) return []
+      const page = collections?.teamId === current ? collections.members.items : []
+      return memberLabels(selected.state, memberPageLabels(page)).map(member => ({
+        id: member.id,
+        label: member.displayName,
+        hint: member.role,
+        keywords: [member.role],
+        run: () => {
+          void openParticipantSession(current, member.id).catch((reason: unknown) => {
+            ctx.logger.warn('ui-team: palette member Session open failed', reason)
+          })
+        },
+      }))
+    },
+  }), 'ui-team: palette members')
   ctx.slots.inject('sidebar.workspaceNavigation', () => ctx.slots.register({
     name: 'sidebar.workspaceNavigation', id: 'team', order: -100, locale: NS,
     inject: () => ({ open: () => { ctx.layout.showWorkspace('team') } }),
   }, WorkspaceNavigation))
+  ctx.slots.inject('conversation.hero.modes', () => ctx.slots.register({
+    name: 'conversation.hero.modes', id: 'team', order: -100, locale: NS,
+    inject: () => ({
+      open: (teamId?: TeamId) => {
+        if (teamId === undefined) ctx.layout.showWorkspace('team')
+        else void openTeam(teamId).catch((error: unknown) => { ctx.logger.warn('ui-team: recent Team open failed', error) })
+      },
+      hooks: { tasks: ctx.teamTasks.list },
+    }),
+  }, TeamModeCard))
+  const inspectionControls = {
+    readMemberDetail: ctx.teamTasks.readMemberDetail?.bind(ctx.teamTasks),
+    closeMemberDetail: ctx.teamTasks.closeMemberDetail?.bind(ctx.teamTasks),
+    readWorkflowDetail: ctx.teamTasks.readWorkflowDetail?.bind(ctx.teamTasks),
+    closeWorkflowDetail: ctx.teamTasks.closeWorkflowDetail?.bind(ctx.teamTasks),
+    openParticipantSession,
+    readAudit,
+    ...manageTeam === undefined ? {} : { manageTeam },
+    readChannel,
+    ...acknowledgeChannel === undefined ? {} : { acknowledgeChannel },
+    closeChannelView,
+    ...readChannels === undefined ? {} : { readChannels },
+    ...readChannelAttachment === undefined ? {} : { readChannelAttachment },
+    ...readChannelCatalog === undefined ? {} : { readChannelCatalog },
+    readArtifact,
+    ...readCollections === undefined ? {} : { readCollections },
+    ...readTaskDetail === undefined ? {} : { readTaskDetail, closeTaskDetail },
+    watchAttention, readAttention, refreshAttentionPreview, pauseAttention, openPendingAction, inspectAction, closeActionDetail,
+    readTaskQuery, pauseTaskQuery, readDependencies, closeDependencies, watchTaskReferences, refreshTaskReferences, lookupTaskUpdate,
+    watchIdentities, refreshIdentities,
+    watchExecutionProfiles, refreshExecutionProfiles,
+    watchTaskCapabilities, refreshTaskCapabilities, watchMemberReadiness, refreshMemberReadiness,
+    ...deleteTask === undefined ? {} : { deleteTask },
+    ...cancelTask === undefined ? {} : { cancelTask },
+  }
   ctx.slots.inject('sidebar.teamTasks', () => ctx.slots.register({
     name: 'sidebar.teamTasks',
     locale: NS,
@@ -231,29 +321,7 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
       archiveTeam,
       cancelTeam,
       resumeTeam,
-      readMemberDetail: ctx.teamTasks.readMemberDetail?.bind(ctx.teamTasks),
-      closeMemberDetail: ctx.teamTasks.closeMemberDetail?.bind(ctx.teamTasks),
-      readWorkflowDetail: ctx.teamTasks.readWorkflowDetail?.bind(ctx.teamTasks),
-      closeWorkflowDetail: ctx.teamTasks.closeWorkflowDetail?.bind(ctx.teamTasks),
-      openParticipantSession,
-      readAudit,
-      ...manageTeam === undefined ? {} : { manageTeam },
-      readChannel,
-      ...acknowledgeChannel === undefined ? {} : { acknowledgeChannel },
-      closeChannelView,
-      ...readChannels === undefined ? {} : { readChannels },
-      ...readChannelAttachment === undefined ? {} : { readChannelAttachment },
-      ...readChannelCatalog === undefined ? {} : { readChannelCatalog },
-      readArtifact,
-      ...readCollections === undefined ? {} : { readCollections },
-      ...readTaskDetail === undefined ? {} : { readTaskDetail, closeTaskDetail },
-      watchAttention, readAttention, refreshAttentionPreview, pauseAttention, openPendingAction, inspectAction, closeActionDetail,
-      readTaskQuery, pauseTaskQuery, readDependencies, closeDependencies, watchTaskReferences, refreshTaskReferences, lookupTaskUpdate,
-      watchIdentities, refreshIdentities,
-      watchExecutionProfiles, refreshExecutionProfiles,
-      watchTaskCapabilities, refreshTaskCapabilities, watchMemberReadiness, refreshMemberReadiness,
-      ...deleteTask === undefined ? {} : { deleteTask },
-      ...cancelTask === undefined ? {} : { cancelTask },
+      ...inspectionControls,
       ...draftControls,
       hooks: { tasks: ctx.teamTasks.list },
     }),
@@ -289,7 +357,6 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
           // History/source restoration revalidates the target even when an older selection is retained.
           const selected = await inspect(route.teamId, signal)
           signal.throwIfAborted()
-          if (ctx.teamTasks.list.getSnapshot().current !== route.teamId) return
           if (route.actionId !== undefined) {
             const current = await inspectAction?.(route.teamId, route.actionId)
             signal.throwIfAborted()
@@ -318,7 +385,8 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
             const resolved = await ctx.teamTasks.participantSession(route.teamId, route.participantId, signal)
             if (resolved !== route.sessionId) throw new WorkspaceNavigationError('binding', 'This Session does not belong to the selected member')
           }
-          actions.update(route.teamId, { view: route.view, taskForm: route.taskForm, actionId: route.actionId, ...(route.view === 'workflows' ? { workflowPlanId: route.planId } : {}), ...(route.view === 'tasks' ? { taskId: route.taskId, taskSearch: route.search, taskPhase: route.phase } : {}) })
+          if (ctx.teamTasks.list.getSnapshot().current !== route.teamId) return
+          actions.update(route.teamId, { view: route.view, taskForm: route.taskForm, ...(route.view === 'overview' ? { overviewViz: route.viz ?? 'topology' } : {}), actionId: route.actionId, ...(route.view === 'workflows' ? { workflowPlanId: route.planId } : {}), ...(route.view === 'tasks' ? { taskId: route.taskId, taskSearch: route.search, taskPhase: route.phase } : {}) })
           if (route.sessionId === undefined) ctx.sessions.clear()
           if (route.view === 'channels' && route.channelId !== undefined && ctx.teamTasks.list.getSnapshot().channel?.channelId !== route.channelId) await readChannel(route.channelId, -1, signal)
           signal.throwIfAborted()
@@ -344,30 +412,8 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
       cancelTeam,
       resumeTeam,
       openTeam,
-      readMemberDetail: ctx.teamTasks.readMemberDetail?.bind(ctx.teamTasks),
-      closeMemberDetail: ctx.teamTasks.closeMemberDetail?.bind(ctx.teamTasks),
-      readWorkflowDetail: ctx.teamTasks.readWorkflowDetail?.bind(ctx.teamTasks),
-      closeWorkflowDetail: ctx.teamTasks.closeWorkflowDetail?.bind(ctx.teamTasks),
-      openParticipantSession,
-      readAudit,
-      ...manageTeam === undefined ? {} : { manageTeam },
+      ...inspectionControls,
       ...respondAction === undefined ? {} : { respondAction, openActionContext },
-      readChannel,
-      ...acknowledgeChannel === undefined ? {} : { acknowledgeChannel },
-      closeChannelView,
-      ...readChannels === undefined ? {} : { readChannels },
-      ...readChannelAttachment === undefined ? {} : { readChannelAttachment },
-      ...readChannelCatalog === undefined ? {} : { readChannelCatalog },
-      readArtifact,
-      ...readCollections === undefined ? {} : { readCollections },
-      ...readTaskDetail === undefined ? {} : { readTaskDetail, closeTaskDetail },
-      watchAttention, readAttention, refreshAttentionPreview, pauseAttention, openPendingAction, inspectAction, closeActionDetail,
-      readTaskQuery, pauseTaskQuery, readDependencies, closeDependencies, watchTaskReferences, refreshTaskReferences, lookupTaskUpdate,
-      watchIdentities, refreshIdentities,
-      watchExecutionProfiles, refreshExecutionProfiles,
-      watchTaskCapabilities, refreshTaskCapabilities, watchMemberReadiness, refreshMemberReadiness,
-      ...deleteTask === undefined ? {} : { deleteTask },
-      ...cancelTask === undefined ? {} : { cancelTask },
     }),
   }, TeamWorkspace))
 }

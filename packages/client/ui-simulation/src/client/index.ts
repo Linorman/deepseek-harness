@@ -1,12 +1,15 @@
 /** Opt-in Simulation navigation and read-only workspace registration; runtime owns all business responses. */
 import type { ClientContext, SimulationProductCursor } from '@clocky/clocky-client-runtime/client'
 import type {} from '@clocky/clocky-client-ui-layout/client'
+import type {} from '@clocky/clocky-client-ui-conversation/client'
+import type {} from '@clocky/clocky-client-ui-settings/client'
 import type {} from '@clocky/clocky-client-ui-sidebar/client'
 import type {} from '@clocky/clocky-client-locale/client'
 import { Navigation } from './Navigation.tsx'
+import { ModeCard } from './ModeCard.tsx'
 import { Config } from '../config.ts'
 import { Workspace } from './Workspace.tsx'
-import { createSimulationStore } from './store.ts'
+import { createSimulationStore, routeUrl } from './store.ts'
 import { en, zh } from './locales.ts'
 import type { Key } from './locales.ts'
 export { Config } from '../config.ts'
@@ -48,10 +51,31 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   const teams = () => { ctx.layout.showWorkspace('team') }
   ctx.effect(() => ctx.locale.register('simulation', { en, zh }), 'simulation UI: localized feedback')
   ctx.effect(() => () => { pause(); teams() }, 'simulation UI: view lifetime')
+  const ts = ctx.locale.bind('simulation')
+  const openRoute = (runId?: string) => {
+    ctx.sessions.clear()
+    ctx.layout.navigate(routeUrl({ runId, module: 'overview', search: '' }).href)
+  }
+  ctx.effect(() => ctx.layout.registerCommands({
+    id: 'simulation.runs',
+    label: () => ts('palette.runs'),
+    // Only the loaded directory page; opening a run reuses the deep-link owner.
+    items: () => [
+      { id: 'open', label: ts('palette.open'), run: () => { openRoute() } },
+      ...(ctx.simulationRuns.state.getSnapshot().directory.value?.items ?? []).map(item => ({
+        id: item.id, label: item.name.text, keywords: [item.id], run: () => { openRoute(item.id) },
+      })),
+    ],
+  }), 'simulation UI: palette runs')
   ctx.slots.inject('sidebar.workspaceNavigation', () => ctx.slots.register({ name: 'sidebar.workspaceNavigation', id: 'simulation',
     locale: 'simulation', store, inject: () => ({ open: () => { ctx.sessions.clear(); ctx.layout.showWorkspace('simulation') } }),
   }, Navigation))
+  ctx.slots.inject('conversation.hero.modes', () => ctx.slots.register({ name: 'conversation.hero.modes', id: 'simulation',
+    locale: 'simulation', inject: () => ({ open: (runId?: string) => { openRoute(runId) }, readDirectory: async () => { await directory('') },
+      hooks: { simulation: ctx.simulationRuns.state } }),
+  }, ModeCard))
   ctx.slots.inject('simulation.workspace', () => ctx.slots.register({ name: 'simulation.workspace', locale: 'simulation', store,
+    children: { 'settings.model-setup': { kind: 'single', scope: 'root' } },
     inject: () => ({
       unknownOperations: ctx.simulationRuns.unknownOperations.bind(ctx.simulationRuns),
       runStatuses: ctx.simulationRuns.runStatuses.bind(ctx.simulationRuns),

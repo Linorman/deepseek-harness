@@ -413,6 +413,7 @@ export class SlotRegistry extends Service {
       sessions: {
         list: sessions.list,
         provideInfo: sessions.currentProvideInfo,
+        connection: sessions.connection,
       },
       workspaces: { list: workspaces.list },
       ...teamTasks === undefined ? {} : { teamTasks: { list: teamTasks.list } },

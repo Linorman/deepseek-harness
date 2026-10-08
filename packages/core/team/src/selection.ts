@@ -1,3 +1,4 @@
+export { emptyTeamMetricsSnapshot } from './metrics.ts'
 export { normalizeTaskDetailsUpdate, taskUpdateReceipt, taskUpdateRejection } from './task-update.ts'
 export { resolveTaskReferences } from './task-references.ts'
 export { resolveTeamIdentities } from './identity-resolution.ts'
@@ -379,4 +380,18 @@ export function findHumanActor(participants: Iterable<ParticipantSnapshot>,
   }
   if (match === undefined) return undefined
   return { participantId: match.id, operations: [...new Set(match.authorityGrant?.operations ?? [])] }
+}
+
+/** Match a non-direct model view's review fence to the exact selected review-request Envelope.
+ * @param review - Persisted view fence, absent when no review metadata was projected.
+ * @param envelope - Exact pending delivery selected by the claim.
+ * @returns whether the review identity and every fence field agree with the admitted Envelope.
+ */
+export function channelViewReviewMatches(
+  review: import('./types.ts').TeamChannelViewEventData['review'], envelope: import('./types.ts').TeamEnvelope,
+): boolean {
+  if (envelope.kind !== 'review-request' || review === undefined) return false
+  const payload = envelope.payload as Record<string,unknown>
+  return review.attemptId === payload['attemptId'] && review.reviewRevision === payload['reviewRevision']
+    && review.reviewerId === payload['reviewerId'] && review.initiatorId === payload['initiatorId']
 }

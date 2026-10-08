@@ -24,11 +24,31 @@ export async function teamAppearance(page: Page, locale: 'zh' | 'en', theme: 'li
 export async function teamEvidence(page: Page, target: Locator, output: string, name: string,
   state: { locale: string; theme: string; data: string; assertion: string; nativeZoom?: NativeZoomEvidence }): Promise<void> {
   await target.waitFor({ state: 'visible' })
+  // Theme attributes update before finite background/color transitions settle.
+  // Measure the same presentation the screenshot records, including the
+  // reduced-motion checkpoint for already-running transitions.
+  await target.evaluate(async (root) => { await Promise.allSettled(root.getAnimations({ subtree: true })
+    .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished)) })
   const measurement = await target.evaluate((root) => {
     type Color = [number, number, number, number]
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = 1
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    if (context === null) throw new Error('Rendered contrast requires the browser color compositor')
+    const colors = new Map<string, Color>()
     const rgba = (value: string): Color => {
-      const values = value.match(/[\d.]+/g)?.map(Number) ?? []
-      return [values[0] ?? 0, values[1] ?? 0, values[2] ?? 0, values[3] ?? 1]
+      const retained = colors.get(value)
+      if (retained !== undefined) return retained
+      // Computed color-mix values use CSS Color 4's color(srgb ...) form;
+      // its channels are fractions, unlike rgb()'s byte channels. Let the
+      // browser normalize every supported CSS color into sRGB pixels.
+      context.clearRect(0, 0, 1, 1)
+      context.fillStyle = value
+      context.fillRect(0, 0, 1, 1)
+      const pixel = context.getImageData(0, 0, 1, 1).data
+      const result: Color = [pixel[0]!, pixel[1]!, pixel[2]!, pixel[3]! / 255]
+      colors.set(value, result)
+      return result
     }
     const over = (front: Color, back: Color): Color => {
       const a = front[3] + back[3] * (1 - front[3])

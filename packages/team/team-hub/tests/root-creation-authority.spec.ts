@@ -10,6 +10,8 @@ import type {
   TeamPolicy,
   TeamSystemRootCreationProof,
   TeamSystemRootCreationScope,
+  TeamSystemPhaseProof,
+  TeamSystemPhaseScope,
 } from '@clocky/clocky-team'
 import { teamDelegationIdSchema } from '@clocky/clocky-team'
 import TeamHub from '../src/index.ts'
@@ -268,12 +270,40 @@ it('reuses only an exact Simulation genesis and rejects foreign source, run and 
     ])
     expect(first.team.id).toBe(scope.teamId)
     expect(second).toEqual(first)
+    const schedulerProof = Object.freeze({}) as TeamSystemPhaseProof
+    const schedulerScope: TeamSystemPhaseScope = { kind: 'scheduler-stall', teamId: first.team.id,
+      phase: 'stalled', reason: { code: 'TASK_NO_ELIGIBLE_OWNER', message: 'A generic scheduler cannot stall Simulation.' } }
+    const unregisterScheduler = ctx.teams.registerSystemPhaseProofSource({ name: 'team-scheduler-dag',
+      resolvePhaseProof: proof => proof === schedulerProof ? schedulerScope : undefined })
+    try {
+      const beforeStall = await ctx.teams.getTeam({ teamId: first.team.id })
+      await expect(ctx.teams.transitionTeamPhase({ actor: schedulerProof, teamId: first.team.id,
+        expectedCursor: beforeStall.team.cursor, phase: 'stalled', reason: schedulerScope.reason }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      expect(await ctx.teams.getTeam({ teamId: first.team.id })).toEqual(beforeStall)
+    } finally { unregisterScheduler() }
+    const journal = ctx.storageLog.get(`team/${scope.teamId}`)
+    if (journal === undefined) throw new Error('Reserved Simulation Team journal is missing')
+    const missingGenesis = vi.spyOn(journal, 'read').mockResolvedValueOnce([])
+    try {
+      await expect(ctx.teams.createTeam({ ...input, actor: good.proof }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    } finally { missingGenesis.mockRestore() }
     const changed = { ...input, goal: { objective: 'Changed after creation', budgets: {} } }
     const changedProof = source.issue({ ...scope, ...changed })
     await expect(ctx.teams.createTeam({ ...changed, actor: changedProof.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
     const otherRules = { ...input, rules: { ...input.rules, activationLifecycleOwner: 'another-owner' } }
     const otherOwner = source.issue({ ...scope, ...otherRules, lifecycleOwner: 'another-owner' })
     await expect(ctx.teams.createTeam({ ...otherRules, actor: otherOwner.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const interrupted = source.issue({ ...scope, teamId: teamIdSchema.parse('storage-fault-reservation') })
+    const open = ctx.storageLog.open.bind(ctx.storageLog)
+    const failure = new Error('reserved Team storage unavailable')
+    const storageFault = vi.spyOn(ctx.storageLog, 'open').mockImplementation(async (descriptor) => {
+      if (descriptor.name === 'team/storage-fault-reservation') throw failure
+      return await open(descriptor)
+    })
+    try { await expect(ctx.teams.createTeam({ ...input, actor: interrupted.proof })).rejects.toBe(failure) }
+    finally { storageFault.mockRestore() }
     const revoked = source.issue({ ...scope, teamId: teamIdSchema.parse('revoked-reservation') })
     ctx.teams.registerPolicy('register', { name: 'revoke-simulation-bootstrap', async apply(_request, next) {
       revoked.revoke()

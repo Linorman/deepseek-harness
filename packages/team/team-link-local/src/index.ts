@@ -1,3 +1,4 @@
+import { withTeamOperationTimeout } from '@clocky/clocky-team'
 import type { ChannelInvitationAcknowledgeInput, ChannelAdmissionSnapshot } from '@clocky/clocky-team'
 import type { TeamLinkInvitationNotification } from '@clocky/clocky-team-link'
 /**
@@ -86,7 +87,6 @@ const DEFAULT_CONFIG: Config = {
 }
 
 /** One resolved Team/channel watch result or its contained rejection. */
-type Settled<T> = { readonly kind: 'fulfilled'; readonly value: T } | { readonly kind: 'rejected'; readonly reason: unknown }
 
 /** One retained local background failure surfaced by later Link lifecycle calls. */
 interface LinkFailure {
@@ -404,13 +404,10 @@ class LocalTeamLink implements TeamLink {
 
   /** Establish each watch before replaying the currently retained exact-binding cancellation intents. */
   private async watchTaskCancellations(signal: AbortSignal): Promise<void> {
-    let state = await this.ctx.teams.getTeam({ teamId: this.binding.activation.teamId })
-    while (!signal.aborted) {
-      const watch = settle(this.ctx.teams.watchTeam({ teamId: state.team.id, afterCursor: state.team.cursor, signal }))
+    await this.watchTeamState(signal, (state) => {
       for (const task of state.tasks) {
         const cancellation = task.cancellation
         const target = cancellation?.target
-        // oxlint-disable-next-line typescript/no-unnecessary-condition -- subscriber delivery can synchronously revoke this watch.
         if (signal.aborted) break
         if ((task.phase !== 'assigned' && task.phase !== 'running') || task.lease === undefined || cancellation === undefined || target?.kind !== 'attempt'
           || target.activationId !== this.binding.activation.id || target.participantId !== this.binding.activation.participantId) continue
@@ -427,12 +424,7 @@ class LocalTeamLink implements TeamLink {
           this.cancellationRevisions.delete(taskId)
         }
       }
-      const observed = await watch
-      if (observed.kind === 'rejected') throw observed.reason
-      if (observed.value.kind === 'closed') return
-      assertTeamWatchCursor(observed.value, state.team.cursor)
-      state = await this.ctx.teams.getTeam({ teamId: this.binding.activation.teamId })
-    }
+    })
   }
 
   /**
@@ -545,41 +537,28 @@ class LocalTeamLink implements TeamLink {
 
   /** Start Team cursor watches before discovering the first full channel set. */
   private async watchTeam(signal: AbortSignal): Promise<void> {
-    let state = await this.ctx.teams.getTeam({ teamId: this.binding.activation.teamId })
-    while (!signal.aborted) {
-      const watch = settle(this.ctx.teams.watchTeam({
-        teamId: state.team.id,
-        afterCursor: state.team.cursor,
-        signal,
-      }))
-      this.startChannels(state, signal)
-      const observed = await watch
-      if (observed.kind === 'rejected') throw observed.reason
-      if (observed.value.kind === 'closed') return
-      assertTeamWatchCursor(observed.value, state.team.cursor)
-      state = await this.ctx.teams.getTeam({ teamId: this.binding.activation.teamId })
-    }
+    await this.watchTeamState(signal, (state) => { this.startChannels(state, signal) })
   }
 
   /** Watch the Team journal around each exact-binding pending-interrupt replay. */
   private async watchInterrupts(signal: AbortSignal): Promise<void> {
+    await this.watchTeamState(signal, () => this.replayInterrupts(signal))
+  }
+
+  /** Establish each cursor watch before replaying its retained facts, then reject non-advancing updates. */
+  private async watchTeamState(signal: AbortSignal, visit: (state: TeamStateSnapshot) => void | Promise<void>): Promise<void> {
     let state = await this.ctx.teams.getTeam({ teamId: this.binding.activation.teamId })
     while (!signal.aborted) {
-      const watch = settle(this.ctx.teams.watchTeam({
-        teamId: state.team.id,
-        afterCursor: state.team.cursor,
-        signal,
-      }))
-      await this.replayInterrupts(signal)
+      const watch = settle(this.ctx.teams.watchTeam({ teamId: state.team.id, afterCursor: state.team.cursor, signal }))
+      await visit(state)
       const observed = await watch
-      if (observed.kind === 'rejected') throw observed.reason
+      if (observed.status === 'rejected') throw observed.reason
       if (observed.value.kind === 'closed') return
       assertTeamWatchCursor(observed.value, state.team.cursor)
       state = await this.ctx.teams.getTeam({ teamId: this.binding.activation.teamId })
     }
   }
 
-  /** Replay every unacknowledged soft interrupt selected by this exact Link binding. */
   private async replayInterrupts(signal: AbortSignal): Promise<void> {
     const interrupts = await this.ctx.teams.listPendingParticipantInterrupts({
       actor: this.actorLease.proof,
@@ -640,21 +619,21 @@ class LocalTeamLink implements TeamLink {
       if (current.phase === 'pending') {
         afterCursor = current.cursor
         const observed = await watch
-        if (observed.kind === 'rejected') throw observed.reason
+        if (observed.status === 'rejected') throw observed.reason
         assertWatchCursor(observed.value, watchAfterCursor, channelId)
         if (observed.value.kind === 'closed') return
         continue
       }
       if ((current.phase !== 'active' && current.phase !== 'closed')) {
         const observed = await watch
-        if (observed.kind === 'rejected') throw observed.reason
+        if (observed.status === 'rejected') throw observed.reason
         assertWatchCursor(observed.value, watchAfterCursor, channelId)
         return
       }
       const team = await this.ctx.teams.getTeam({ teamId: this.binding.activation.teamId })
       if (team.team.phase !== 'active' || team.team.cancellation !== undefined || team.team.closure !== undefined) {
         const observed = await watch
-        if (observed.kind === 'rejected') throw observed.reason
+        if (observed.status === 'rejected') throw observed.reason
         return
       }
       let page
@@ -671,7 +650,7 @@ class LocalTeamLink implements TeamLink {
         const team = await this.ctx.teams.getTeam({ teamId: this.binding.activation.teamId })
         if (current.phase !== 'active' || team.team.phase !== 'active' || team.team.cancellation !== undefined || team.team.closure !== undefined) {
           const observed = await watch
-          if (observed.kind === 'rejected') throw observed.reason
+          if (observed.status === 'rejected') throw observed.reason
           assertWatchCursor(observed.value, watchAfterCursor, channelId)
           return
         }
@@ -697,7 +676,7 @@ class LocalTeamLink implements TeamLink {
       }
       afterCursor = page.nextCursor
       const observed = await watch
-      if (observed.kind === 'rejected') throw observed.reason
+      if (observed.status === 'rejected') throw observed.reason
       assertWatchCursor(observed.value, watchAfterCursor, channelId)
       if (page.channel.phase === 'closed') {
         if (afterCursor < page.channel.cursor) continue
@@ -995,11 +974,8 @@ function hasChannelParticipant(channel: ChannelSnapshot, participantId: Activati
 }
 
 /** Return a fulfilled/rejected discriminated result without leaving a watch rejection unobserved. */
-function settle<T>(operation: Promise<T>): Promise<Settled<T>> {
-  return operation.then(
-    value => ({ kind: 'fulfilled', value }),
-    (reason: unknown) => ({ kind: 'rejected', reason }),
-  )
+function settle<T>(operation: Promise<T>): Promise<PromiseSettledResult<T>> {
+  return Promise.allSettled([operation]).then(([result]) => result)
 }
 
 /** Reject a changed watch that repeats or rewinds the cursor it was asked to observe. */
@@ -1087,21 +1063,8 @@ function resolveConfig(config: Config): Config {
 }
 
 /** Bound local Link shutdown without retaining a timer after normal settlement. */
-async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer!: ReturnType<typeof setTimeout>
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      reject(new TeamLinkLocalError(
-        `local Team Link disposal exceeded ${timeoutMs}ms`,
-        'TEAM_LINK_LOCAL_DISPOSAL_TIMEOUT',
-      ))
-    }, timeoutMs)
-  })
-  try {
-    return await Promise.race([operation, timeout])
-  } finally {
-    clearTimeout(timer)
-  }
+function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  return withTeamOperationTimeout(operation, timeoutMs, () => new TeamLinkLocalError(`local Team Link disposal exceeded ${timeoutMs}ms`, 'TEAM_LINK_LOCAL_DISPOSAL_TIMEOUT'))
 }
 
 /** Render a contained listener or background-work failure without letting diagnostics throw. */

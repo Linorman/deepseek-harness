@@ -26,10 +26,10 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--clocky-alias-bg-base) 60%, transparent) 55%,
+    color-mix(in srgb, var(--clocky-bg-canvas) 60%, transparent) 55%,
     transparent 100%
   );
-  animation: clocky-skill-row-sweep 2.6s ease-out infinite;
+  animation: clocky-skill-row-sweep var(--clocky-duration-sweep) var(--clocky-ease-enter) infinite;
   pointer-events: none;
 }
 
@@ -47,17 +47,17 @@
   align-items: center;
   justify-content: center;
   margin-right: 6px;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .chevron {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .iconIdle {
   display: inline-flex;
   opacity: 1;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .chevronHover {
@@ -65,7 +65,7 @@
   inset: 0;
   margin: auto;
   opacity: 0;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .row:hover .iconIdle {
@@ -78,18 +78,18 @@
 
 .title {
   flex: none;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-secondary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-secondary);
 }
 
 .separator {
   flex: none;
   width: 2px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: var(--clocky-radius-xs);
   margin: 0 8px;
-  background: var(--clocky-alias-label-caption);
+  background: var(--clocky-fg-tertiary);
 }
 
 .summary {
@@ -98,13 +98,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .errorSummary {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .bodyWrap {
@@ -118,20 +118,20 @@
   max-height: 260px;
   margin: 4px 0 4px 4px;
   overflow: hidden;
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 12px;
-  background: var(--clocky-alias-markdown-code-block);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-sunken);
 }
 
 .instructionsHeader {
   flex: none;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--clocky-alias-border-l2);
-  background: var(--clocky-alias-markdown-code-block-banner);
-  font-size: 11px;
+  border-bottom: 1px solid var(--clocky-border-default);
+  background: var(--clocky-bg-sunken);
+  font-size: var(--clocky-type-micro-size);
   font-weight: 500;
-  line-height: 16px;
-  color: var(--clocky-alias-label-caption);
+  line-height: var(--clocky-type-micro-line-height);
+  color: var(--clocky-fg-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -144,17 +144,17 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font: var(--clocky-font-markdown-code-block-small);
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .instructions[data-error] {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .instructions::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   background-clip: padding-box;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 .instructions::-webkit-scrollbar-track {
@@ -168,15 +168,15 @@
   gap: 4px;
   margin: 4px 0 2px 4px;
   padding: 2px 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 999px;
-  background: var(--clocky-alias-bg-base);
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-bg-canvas);
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .card:hover .inspectButton,
@@ -185,8 +185,8 @@
 }
 
 .inspectButton:hover {
-  background: var(--clocky-alias-interactive-bg-hover-solid);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-sunken);
+  color: var(--clocky-fg-primary);
 }
 
 .visuallyHidden {

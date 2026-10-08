@@ -1,16 +1,18 @@
-- banner:
-  - text: {{workspace}}
+- text: {{workspace}}
+- img
+- text: Standard mode
+- button "Session log":
+  - text: Session log
   - img
-  - text: Standard mode
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
-- text: "Direct message from participant-{{uuid}}: Using ONE run_code program: run bash `echo CODE_ROUND_OK`, then read the file missing.txt catching its error in the program. Return an object with both outcomes. Then reply DONE and stop. {{clock}}"
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
+- text: "From a Team member Using ONE run_code program: run bash `echo CODE_ROUND_OK`, then read the file missing.txt catching its error in the program. Return an object with both outcomes. Then reply DONE and stop. {{clock}}"
 - button "Copy":
   - img
+- button "Worked for {{duration}} · 3 steps" [expanded]:
+  - img
+  - text: Worked for {{duration}} · 3 steps
 - button "Context injection @clocky/clocky-system-prompt":
   - img
   - img
@@ -19,10 +21,10 @@
   - img
   - img
   - text: "Think The user wants me to write a single `run_code` program that:"
-- button "Code Run bash echo and catch missing file read":
+- button "Code Run bash echo and catch missing file read {{duration}}":
   - img
   - img
-  - text: Code Run bash echo and catch missing file read
+  - text: Code Run bash echo and catch missing file read {{duration}}
 - img
 - text: Bash Echo CODE_ROUND_OK Failed
 - 'button "Read Error: cannot read \"{{cwd}}/missing.txt\": not found"':
@@ -48,4 +50,5 @@
   - img
 - button "7% of context used"
 - button "Send message" [disabled]
-- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 52% Input 17.2K tok · Output 252 tok
+- text: 1 turns · 2 steps
+- button "Session statistics": ⓘ

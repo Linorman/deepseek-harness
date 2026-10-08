@@ -127,6 +127,12 @@ it('projects exact entity and decision metadata while withholding profiles, know
     if (id === 'overflow') expect(result.value).toMatchObject({ context: { status: 'overflow', requiredBytes: 1001 } })
     if (id === 'absent') expect(result.value).toMatchObject({ context: { status: 'absent' } })
   }
+  for (const id of ['overflow', 'absent']) {
+    const result = await h.products.inspectObject({ runId: registration().id, collection: 'decisions',
+      id: id as never, section: 'context' }, call())
+    expect(result.value).toMatchObject({ collection: 'decisions', section: 'context' })
+    expect(result.value).not.toHaveProperty('frozen')
+  }
   expect(JSON.stringify(actor)).not.toContain('private-profile-body')
 })
 

@@ -1,4 +1,7 @@
+import { channelAudienceDeliveryIntents } from '@clocky/clocky-team'
+import { assertChannelJsonKeys as exactKeys, isChannelJsonObject as isObject, requireChannelJsonText as requireText } from '@clocky/clocky-team'
 /** Declarative bounded workflow channel adapter and transition graph parser. */
+import { channelEnvelopeMessages } from '@clocky/clocky-team'
 
 import {
   isDeepStrictEqual,
@@ -7,7 +10,6 @@ import type {
   ChannelAdapterRecordDraft,
   ChannelExpectedNext,
   ChannelManifest,
-  DeliveryIntent,
   JsonObject,
   JsonValue,
   ParticipantId,
@@ -16,6 +18,7 @@ import type {
   TeamChannelAdapterRuntimeLease,
   TeamEnvelope,
   TeamEnvelopeDraft,
+  TeamWorkflowCondition,
 } from '@clocky/clocky-team'
 
 /** Adapter type for declarative participant transitions. */
@@ -35,12 +38,7 @@ export const WORKFLOW_CHANNEL_VERSION_V1 = WORKFLOW_CHANNEL_VERSION
 export const WORKFLOW_GRAPH_LIMIT = 'graph'
 
 /** A workflow condition evaluated against the just-accepted Envelope. */
-export type WorkflowCondition =
-  | { readonly kind: 'always' }
-  | { readonly kind: 'envelope-kind'; readonly value: string }
-  | { readonly kind: 'payload-present'; readonly path: string }
-  | { readonly kind: 'payload-equals'; readonly path: string; readonly value: JsonValue }
-  | { readonly kind: 'extension'; readonly name: string; readonly version: number; readonly config: JsonValue }
+export type WorkflowCondition = TeamWorkflowCondition
 
 /** A workflow target resolved to a next speaker by the adapter. */
 export type WorkflowTarget =
@@ -295,14 +293,7 @@ export function createWorkflowChannelAdapter(resolver?: WorkflowExtensionResolve
       const current = parseWorkflowState(state, resolver)
       assertWorkflowStateMatchesManifest(current, parsed)
       assertWorkflowEnvelope(current, envelope, 'after', resolver)
-      const audience = envelope.audience === null
-        ? parsed.participantIds.filter(participantId => participantId !== envelope.senderId)
-        : [...envelope.audience]
-      return Object.freeze(audience.map(participantId => Object.freeze({
-        participantId,
-        envelopeId: envelope.id,
-        delivery: envelope.delivery,
-      } satisfies DeliveryIntent)))
+      return channelAudienceDeliveryIntents(envelope, parsed.participantIds)
     },
 
     projectView({ manifest, state, records }) {
@@ -314,14 +305,7 @@ export function createWorkflowChannelAdapter(resolver?: WorkflowExtensionResolve
         turnCount: current.turnCount,
         maxTurns: current.maxTurns,
         expectedNext: expected.kind === 'terminate' ? null : expected.participantId,
-        messages: Object.freeze(records.flatMap(record => record.type === 'channel/envelope'
-          ? [{
-            id: record.envelope.id,
-            senderId: record.envelope.senderId,
-            kind: record.envelope.kind,
-            payload: record.envelope.payload,
-          }]
-          : [])),
+        messages: channelEnvelopeMessages(records),
       })
     },
   }
@@ -629,11 +613,6 @@ function parseTarget(value: JsonValue | undefined, resolver?: WorkflowExtensionR
   }
 }
 
-/** Require a strict object-key set. */
-function exactKeys(value: JsonObject, keys: readonly string[], subject: string): void {
-  const actual = Object.keys(value)
-  if (actual.length !== keys.length || actual.some(key => !keys.includes(key))) throw new Error(`${subject} has unsupported fields`)
-}
 
 /** Read a dotted property path from a JSON object. */
 function readPath(value: JsonObject, path: string): JsonValue | undefined {
@@ -645,11 +624,6 @@ function readPath(value: JsonObject, path: string): JsonValue | undefined {
   return current
 }
 
-/** Require one non-empty text field. */
-function requireText(value: JsonValue | undefined, subject: string): string {
-  if (typeof value !== 'string' || value.length === 0) throw new Error(`${subject} must be a nonempty string`)
-  return value
-}
 
 /** Require one valid dotted JSON path. */
 function requirePath(value: JsonValue | undefined): string {
@@ -681,10 +655,6 @@ function assertNever(value: never): never {
   throw new Error(`unreachable workflow target ${String(value)}`)
 }
 
-/** Recognize a JSON object. */
-function isObject(value: JsonValue | undefined): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 /** Recognize a resolver that can retain exact implementations for a graph. */
 function isWorkflowExtensionLeaseAcquirer(resolver: WorkflowExtensionResolver | undefined): resolver is WorkflowExtensionLeaseAcquirer {

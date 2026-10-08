@@ -11,7 +11,7 @@
  * @module @clocky/clocky-loader-smoke
  */
 
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execa } from 'execa'
@@ -175,6 +175,8 @@ export async function runLoaderSmoke(options: LoaderSmokeOptions): Promise<Loade
   const cwd = await mkdtemp(join(tmpdir(), options.tempDirPrefix))
   const processTimeoutMs = options.processTimeoutMs ?? DEFAULT_PROCESS_TIMEOUT_MS
   try {
+    // A project-local TMPDIR must not make the fixture inherit the repository's instructions or skills.
+    await mkdir(join(cwd, '.git'), { recursive: true })
     await options.prepare?.(cwd)
     const launch = resolveExampleLaunch({
       srcBin: options.binScript,

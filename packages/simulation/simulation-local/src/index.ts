@@ -115,14 +115,18 @@ export class LocalSimulationProvider implements SimulationProvider {
     const log = this.config.backend === 'json'
       ? await readJsonLogSnapshot(join(directory, 'journal'), descriptor, this.inspectionLimits)
       : await readSqliteLogSnapshot(join(directory, 'journal.sqlite'), descriptor, this.inspectionLimits)
-    if (log === undefined) return undefined
-    const first = log.entries[0]
-    if (log.firstSequence !== 0 || first === undefined) throw new Error('Simulation inspection has no complete retained history')
-    const initial = foldEntry(undefined, first, selection.spec, this.config.backend)
-    const state = foldEntries(initial, log.entries.slice(1), selection.spec, this.config.backend)
-    assertWriterProjection(state); assertBusinessProjection(state); assertSchedulerProjection(state)
-    const owner = this.runs.has(selection.spec.runId) ? 'this-provider' : await observeRunOwner(join(directory, 'owner.sqlite'))
-    return { snapshot: state, owner, ...selection.includeRecords === true ? { records: log.entries } : {} }
+    // Explicit arms keep V8 from deriving a negative implicit fallthrough count across awaited snapshot readers.
+    if (log === undefined) {
+      return undefined
+    } else {
+      const first = log.entries[0]
+      if (log.firstSequence !== 0 || first === undefined) throw new Error('Simulation inspection has no complete retained history')
+      const initial = foldEntry(undefined, first, selection.spec, this.config.backend)
+      const state = foldEntries(initial, log.entries.slice(1), selection.spec, this.config.backend)
+      assertWriterProjection(state); assertBusinessProjection(state); assertSchedulerProjection(state)
+      const owner = this.runs.has(selection.spec.runId) ? 'this-provider' : await observeRunOwner(join(directory, 'owner.sqlite'))
+      return { snapshot: state, owner, ...selection.includeRecords === true ? { records: log.entries } : {} }
+    }
   }
 
   private async openOwned(selection: SimulationRunSelection): Promise<LocalSimulationRun> {

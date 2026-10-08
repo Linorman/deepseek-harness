@@ -17,8 +17,8 @@ import type { SubmitImageAttachment, SubmitOutcome } from '@clocky/clocky-client
 import type { ImageAttachmentRef, ImageMediaType } from '@clocky/clocky-attachment'
 import type { ComposerAttachment } from './contract/slots.ts'
 import type { QueueAction, QueueItemId } from './contract/queue.ts'
-import type { ComposerBlocks } from './input/blocks.ts'
-import type { DraftAttachmentId, SessionInputResolver } from './input/contract.ts'
+import type { ComposerBlocks } from './contract/composer-blocks.ts'
+import type { DraftAttachmentId, SessionInputResolver } from './contract/input.ts'
 import type { InputSubmitMode } from './contract/composer-submission.ts'
 
 /**

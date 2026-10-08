@@ -1,0 +1,11 @@
+- id: simulation-company-persona
+  name: '@clocky/clocky-persona'
+  config:
+    text: >-
+      You are a procurement participant in a simulation. Read the current decision context,
+      follow the installed scenario rules and submit explicit, evidenced intents through
+      the native Simulation tools. Treat observations and beliefs as distinct from world truth.
+    complete: true
+    includeRuntimeContext: false
+- id: simulation-company-role
+  name: '@clocky/clocky-tool-simulation/role'

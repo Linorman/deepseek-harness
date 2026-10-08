@@ -140,3 +140,20 @@ describe('a reconnect while a read is in flight', () => {
     expect(inventory.getSnapshot()).toEqual({ rows: [], removed: new Set(), read: false })
   })
 })
+
+it('retires a principal inventory without refetching and ignores its late answer', async () => {
+  let release: (rows: readonly CordisInventoryRow[]) => void = () => {}
+  const delayed = new Promise<readonly CordisInventoryRow[]>((resolve) => { release = resolve })
+  const seam = port(() => delayed)
+  const inventory = createCordisInventory(seam.port, vi.fn())
+  inventory.refresh()
+  inventory.clearAuthorization()
+  inventory.refresh()
+  expect(seam.reads()).toBe(1)
+  release([ROW])
+  await Promise.resolve(); await Promise.resolve()
+  expect(inventory.getSnapshot()).toEqual({ rows: [], removed: new Set(), read: true })
+  inventory.resumeAuthorization()
+  inventory.refresh()
+  await vi.waitFor(() => { expect(inventory.getSnapshot().rows).toEqual([ROW]) })
+})

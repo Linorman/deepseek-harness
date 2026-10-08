@@ -43,6 +43,20 @@ function fixture(inactive = false) {
 }
 
 describe('ordered channel message draft', () => {
+  it('never lets the Enter that confirms an input-method candidate act on the form', () => {
+    const props = fixture()
+    const view = render(<TeamManagementDialog {...props} />)
+    const message = view.getByLabelText('Message')
+    fireEvent.change(message, { target: { value: '你好' } })
+    // fireEvent returns false when a handler prevented the default action.
+    fireEvent.compositionStart(message)
+    expect(fireEvent.keyDown(message, { key: 'Enter' })).toBe(false)
+    fireEvent.compositionEnd(message)
+    expect(fireEvent.keyDown(message, { key: 'Enter', isComposing: true })).toBe(false)
+    expect(fireEvent.keyDown(message, { key: 'Enter' })).toBe(true)
+    expect(props.manage).not.toHaveBeenCalled()
+  })
+
   it('selects active channel recipients by the exact sender identity, including another human', async () => {
     const props = fixture(true)
     const view = render(<TeamManagementDialog {...props} />)
@@ -62,8 +76,14 @@ describe('ordered channel message draft', () => {
     props.manage.mockRejectedValueOnce(new Error('Response interrupted'))
     const view = render(<TeamManagementDialog {...props} />)
     fireEvent.click(view.getByRole('radio', { name: 'Broadcast to other channel members' }))
+    fireEvent.click(view.getByRole('radio', { name: 'Selected recipients' }))
+    fireEvent.click(view.getByRole('radio', { name: 'Broadcast to other channel members' }))
     fireEvent.change(view.getByLabelText('Message'), { target: { value: 'Before image' } })
-    fireEvent.change(view.getByLabelText('Add images', { selector: 'input' }), { target: { files: [imageFile()] } })
+    const picker = view.getByLabelText('Add images', { selector: 'input' })
+    const choose = vi.spyOn(picker, 'click')
+    fireEvent.click(view.getByRole('button', { name: 'Add images' }))
+    expect(choose).toHaveBeenCalledOnce()
+    fireEvent.change(picker, { target: { files: [imageFile()] } })
     await view.findByAltText('tiny.png')
     fireEvent.click(view.getByRole('button', { name: 'Add text' }))
     fireEvent.change(view.getByLabelText('Text content 3'), { target: { value: 'After image' } })
@@ -182,6 +202,9 @@ describe('ordered channel message draft', () => {
     fireEvent.change(view.getByLabelText('Message'), { target: { value: 'Unsent input' } })
     fireEvent.click(view.getByRole('button', { name: 'Discard this draft' }))
     expect(discard).not.toHaveBeenCalled()
+    fireEvent.click(view.getByRole('dialog', { name: 'Discard this draft' }).querySelector<HTMLButtonElement>('button[aria-label="Cancel"]')!)
+    expect(view.queryByRole('dialog', { name: 'Discard this draft' })).toBeNull()
+    fireEvent.click(view.getByRole('button', { name: 'Discard this draft' }))
     fireEvent.click(view.getByRole('button', { name: 'Keep editing' }))
     expect((view.getByLabelText('Message') as HTMLTextAreaElement).value).toBe('Unsent input')
     fireEvent.click(view.getByRole('button', { name: 'Discard this draft' }))

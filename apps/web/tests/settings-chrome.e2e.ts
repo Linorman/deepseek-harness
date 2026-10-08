@@ -94,8 +94,8 @@ describe('web e2e: settings modal and General preferences', () => {
     const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(DIALOG_EXPECTED, snapshot, MODE)
     // Section switch: aria-current moves (the Models page itself has its own scenario file).
-    await dialog.getByRole('button', { name: '模型' }).click()
-    await expect.poll(() => dialog.getByRole('button', { name: '模型' }).getAttribute('aria-current'), { timeout: 5_000 }).toBe('true')
+    await dialog.getByRole('button', { name: '模型', exact: true }).click()
+    await expect.poll(() => dialog.getByRole('button', { name: '模型', exact: true }).getAttribute('aria-current'), { timeout: 5_000 }).toBe('true')
     expect(await dialog.getByRole('button', { name: '通用设置' }).getAttribute('aria-current')).toBeNull()
     // Plugins is a read-only projection of the same assembled Loader tree.
     // Capture one stable shipped row rather than the whole inventory so adding
@@ -114,7 +114,7 @@ describe('web e2e: settings modal and General preferences', () => {
       .toBe(String(expectedPluginCount))
     expect(await dialog.getByRole('button', { name: '插件', exact: true }).getAttribute('aria-current')).toBe('true')
     expect(await dialog.getByRole('tab', { name: '插件列表', exact: true }).getAttribute('aria-selected')).toBe('true')
-    expect(await dialog.getByRole('button', { name: '模型' }).getAttribute('aria-current')).toBeNull()
+    expect(await dialog.getByRole('button', { name: '模型', exact: true }).getAttribute('aria-current')).toBeNull()
     const pluginsSnapshot = await captureStableAria(
       page,
       PLUGIN_ROW_SELECTOR,
@@ -164,6 +164,17 @@ describe('web e2e: settings modal and General preferences', () => {
     await dialog.getByRole('button', { name: 'Read Only' }).click()
     await page.getByRole('menuitem', { name: 'Full access' }).click()
     const confirmation = page.getByRole('dialog', { name: '确认启用 Full access？' })
+    await confirmation.waitFor()
+    await page.keyboard.press('Escape')
+    await confirmation.waitFor({ state: 'hidden' })
+    expect(await dialog.isVisible()).toBe(true)
+    await expect.poll(() => dialog.getByRole('button', { name: 'Read Only' })
+      .evaluate(element => element === element.ownerDocument.activeElement)).toBe(true)
+    await dialog.getByRole('button', { name: 'Read Only' }).click()
+    await page.keyboard.press('Escape')
+    expect(await dialog.isVisible()).toBe(true)
+    await dialog.getByRole('button', { name: 'Read Only' }).click()
+    await page.getByRole('menuitem', { name: 'Full access' }).click()
     const enable = confirmation.getByRole('button', { name: '启用 Full access' })
     expect(await enable.isDisabled()).toBe(true)
     await confirmation.getByRole('checkbox').click()
@@ -262,7 +273,7 @@ describe('web e2e: settings modal and General preferences', () => {
         legacy: localStorage.getItem('clocky.theme'),
         themeColor: metas[0]?.content ?? null,
         themeColorCount: metas.length,
-        token: computed.getPropertyValue('--clocky-alias-bg-base').trim(),
+        token: computed.getPropertyValue('--clocky-bg-canvas').trim(),
       }
     })
     const expectThemeColorSynchronized = (state: ThemeState): void => {
@@ -484,6 +495,7 @@ describe('web e2e: settings modal and General preferences', () => {
       const dialog = enPage.getByRole('dialog', { name: 'Settings' })
       await dialog.waitFor({ timeout: 10_000 })
       await dialog.getByRole('button', { name: 'English' }).waitFor({ timeout: 10_000 })
+      await expect.poll(() => dialog.getByRole('button', { name: 'Standard mode' }).isEnabled()).toBe(true)
       // This page has no closing inventory spec to sweep its console, so the
       // scenario clears both tripwire channels itself.
       expect(enTripwire.pageErrors).toEqual([])
@@ -504,7 +516,15 @@ describe('web e2e: settings modal and General preferences', () => {
     onTestFailed(() => saveFailureShot(frPage, 'web-e2e-settings-unshipped-language'))
     try {
       await fresh.authenticateBrowserPage(frPage)
+      // The handshake refresh can disable the preset row after it first becomes
+      // enabled. Capture only after the mirror's eager + authenticated reads.
+      let described = 0
+      const settingsReady = frPage.waitForResponse((response) => {
+        if (new URL(response.url()).pathname !== '/api/settings.describe') return false
+        return ++described === 2
+      })
       await frPage.goto(fresh.baseUrl, { waitUntil: 'load' })
+      await settingsReady
       await frPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
       expect(await frPage.evaluate(() => localStorage.getItem('clocky.locale'))).toBeNull()
       await frPage.getByRole('button', { name: 'Settings', exact: true }).click()

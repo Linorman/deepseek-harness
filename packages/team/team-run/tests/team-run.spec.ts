@@ -19,10 +19,11 @@ import TeamHub from '@clocky/clocky-team-hub'
 import TeamChannelAdmission from '@clocky/clocky-team-channel-admission'
 import * as TeamPlacement from '@clocky/clocky-team-placement-default'
 import * as ToolTeam from '@clocky/clocky-tool-team'
-import { jsonObjectSchema, fingerprintTeamChildResultContent, teamChildRunBindingSchema, teamDelegationResultAdmissionSchema, teamTaskSnapshotSchema, channelPostIdempotencyKeySchema, teamTaskCreateIdempotencyKeySchema, teamWorkflowPlanIdempotencyKeySchema, teamWorkflowPlanSchema, TeamError } from '@clocky/clocky-team'
+import { jsonObjectSchema, fingerprintTeamChildResultContent, teamChildRunBindingSchema, teamDelegationResultAdmissionSchema, teamTaskSnapshotSchema, channelPostIdempotencyKeySchema, teamTaskCreateIdempotencyKeySchema, teamWorkflowPlanIdempotencyKeySchema, teamWorkflowTaskTemplateIdSchema, teamWorkflowPlanSchema, teamWorkspaceAllocationIdSchema, teamWorkspaceAllocationReserveInputSchema, teamWorkspaceAllocationPreserveInputSchema, teamWorkspaceAllocationReleaseRequestInputSchema, teamWorkspaceAllocationReleaseInputSchema, TeamError } from '@clocky/clocky-team'
 import type {
   ActivationActorProofIssuer,
   ParticipantSnapshot,
+  TeamMemberExecutionSources,
   TeamEnvelope,
   TeamId,
   TeamPhase,
@@ -48,6 +49,8 @@ import type {
   TeamTaskId,
   TeamTaskWorkspaceMode,
   TeamTaskSnapshot,
+  TeamSystemWorkspaceAllocationProof,
+  TeamSystemWorkspaceAllocationScope,
 } from '@clocky/clocky-team'
 import * as TeamActivationController from '@clocky/clocky-team-activation-controller'
 import type { TeamActivationLease } from '@clocky/clocky-team-activation-controller'
@@ -220,6 +223,35 @@ class CoordinatorGateWorkerReplyAdapter extends LlmAdapter {
   }
 }
 
+/** Hold the coordinator's first turn while later worker and reviewer turns end without tools. */
+class FirstCoordinatorTurnGateAdapter extends LlmAdapter {
+  readonly coordinatorStarted = Promise.withResolvers<undefined>()
+  readonly releaseCoordinator = Promise.withResolvers<undefined>()
+  private requests = 0
+
+  constructor(private readonly reviewerOutcome: 'stopped' | 'errored' = 'stopped') { super() }
+
+  async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    if (options.purpose === 'session-title') {
+      yield { type: 'finish', reason: { kind: 'stop' } }
+      return
+    }
+    this.requests += 1
+    if (this.requests === 1) {
+      this.coordinatorStarted.resolve(undefined)
+      await this.releaseCoordinator.promise
+    }
+    if (this.requests >= 3 && this.reviewerOutcome === 'errored') {
+      yield { type: 'finish', reason: { kind: 'error', failure: { code: 'REVIEW_MODEL_ERROR', message: 'review model unavailable' } } }
+      return
+    }
+    yield { type: 'block-start', index: 0, blockType: 'text' }
+    yield { type: 'text-delta', index: 0, text: 'The turn ended without calling a Team tool.' }
+    yield { type: 'block-end', index: 0, block: { type: 'text', text: 'The turn ended without calling a Team tool.' } }
+    yield { type: 'finish', reason: { kind: 'stop' } }
+  }
+}
+
 /** Compose the real local Team execution path around one deterministic model adapter. */
 async function setup(
   withModel = true,
@@ -275,8 +307,8 @@ const taskWorkspaceProvider: TeamWorkspaceProvider = {
   async reconcileRelease() { throw new Error('Team-run scheduler test does not reconcile a workspace') },
 }
 
-async function setupTaskRun(adapter: LlmAdapter, teamRunConfig: TeamRun.Config = {}): Promise<Context> {
-  const ctx = await setup(true, Object.assign({ workerPreset: 'worker' }, teamRunConfig), adapter)
+async function setupTaskRun(adapter: LlmAdapter, teamRunConfig: TeamRun.Config = {}, withClosureDriver = true): Promise<Context> {
+  const ctx = await setup(true, Object.assign({ workerPreset: 'worker' }, teamRunConfig), adapter, withClosureDriver)
   await ctx.plugin(TeamWorkspaceRegistry)
   ctx.teamWorkspaces.registerProvider(taskWorkspaceProvider)
   await ctx.plugin(TeamSchedulerDag, {
@@ -420,7 +452,6 @@ type CoordinatorActorProofIssuerInternals = {
 type PhaseProofInternals = {
   readonly resumePhaseProofs: WeakMap<TeamSystemPhaseProof, { readonly scope: TeamSystemPhaseScope }>
   readonly resumePhaseProofByTeam: Map<TeamId, TeamSystemPhaseProof>
-  readonly finalizationQuiescePhaseProofs: Map<TeamSystemPhaseProof, { readonly scope: TeamSystemPhaseScope }>
 }
 
 type InterruptProofInternals = {
@@ -541,6 +572,40 @@ async function settleTaskAttemptAsOwner(
   }
 }
 
+/** Submit a real consult response from the reviewer activation of one settled worker attempt. */
+async function respondToTaskReview(ctx: Context, task: TeamTaskSnapshot, decision: 'accepted' | 'rework'): Promise<void> {
+  const basic = await import('@clocky/clocky-team-channel-basic')
+  const reviewerId = task.reviewPolicy.kind === 'participant' ? task.reviewPolicy.reviewerId : undefined
+  const initiatorId = task.attemptHistory.at(-1)?.participantId
+  if (reviewerId === undefined || initiatorId === undefined) throw new Error('Task has no review route')
+  const state = await ctx.teams.getTeam({ teamId: task.teamId })
+  const binding = state.activations.findLast(candidate => candidate.activation.participantId === reviewerId)
+  if (binding === undefined) throw new Error('Reviewer has no activation')
+  for (const channelId of state.channelIds) {
+    const channel = await ctx.teams.getChannel({ channelId })
+    if (channel.manifest.adapter.type !== basic.CONSULT_CHANNEL_TYPE) continue
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const read = await ctx.teams.readChannel({ channelId, afterCursor: -1 })
+      const request = read.records.find(record => record.type === 'channel/envelope'
+        && record.envelope.kind === basic.CONSULT_REVIEW_REQUEST_KIND && record.envelope.taskId === task.id)
+      if (request?.type !== 'channel/envelope') break
+      const issuer = ctx.teams.openActivationActorProofIssuer()
+      const reviewerActor = issuer.issue(binding)
+      try {
+        await ctx.teams.postChannelEnvelope({ actor: reviewerActor.proof, expectedCursor: read.channel.cursor,
+          draft: { channelId, audience: [initiatorId], kind: basic.CONSULT_RESPONSE_KIND, delivery: 'turn',
+            causationId: request.envelope.id, taskId: task.id,
+            payload: { text: decision === 'accepted' ? 'The completed attempt is accepted.' : 'The attempt needs rework.', decision } },
+        })
+        return
+      } catch (error: unknown) {
+        if (!(error instanceof TeamError) || error.code !== 'TEAM_CHANNEL_CURSOR_CONFLICT' || attempt === 3) throw error
+      } finally { reviewerActor.revoke(); issuer.close() }
+    }
+  }
+  throw new Error('Task has no active review request')
+}
+
 function leaseWithoutLocalAgent(lease: TeamActivationLease): TeamActivationLease {
   return {
     binding: lease.binding,
@@ -552,6 +617,66 @@ function leaseWithoutLocalAgent(lease: TeamActivationLease): TeamActivationLease
 }
 
 describe('local Team run', () => {
+  it('observes managed member routes only for participants owned by the current run', async () => {
+    const ctx = await setup(true, { workerCount: 1 }, new GateAdapter())
+    const run = await ctx.teamRuns.create({ objective: 'Observe managed route ownership.', cwd: process.cwd() })
+    const worker = run.workers[0]
+    if (worker === undefined) throw new Error('run did not retain its configured worker')
+    const observe = async (member: ParticipantSnapshot, sources: TeamMemberExecutionSources = {}, observedTeamId: TeamId = run.teamId) =>
+      await ctx.waterfall(ctx.teams, 'team/member-execution-observe', { teamId: observedTeamId, participant: member },
+        async () => sources)
+    expect(await observe(run.recipient)).toEqual({})
+    expect(await observe(worker, {}, 'unowned-team' as TeamId)).toEqual({})
+    expect(await observe({ ...worker, id: 'unowned-worker' as ParticipantSnapshot['id'] })).toEqual({})
+    expect(await observe(worker)).toMatchObject({ route: { kind: 'managed', provider: 'in-process' } })
+    await expect(observe(worker, { route: { kind: 'managed', provider: 'other', configuration: 'fixture', reasons: [] } }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    const provider = vi.spyOn(ctx.agentRuntimes, 'getProvider').mockReturnValueOnce(undefined)
+    try {
+      expect((await observe(worker)).route?.reasons).toContain('provider-unavailable')
+      const runtime = ctx.agentRuntimes.getProvider('in-process')
+      if (runtime === undefined) throw new Error('in-process provider disappeared')
+      provider.mockReturnValueOnce({ ...runtime, participantKinds: [] })
+      expect((await observe(worker)).route?.reasons).toContain('participant-kind-unsupported')
+    } finally { provider.mockRestore() }
+    await ctx.teamRuns.cancel(run.teamId)
+  })
+
+  it('reports the frozen provider route of one custom template member', async () => {
+    const member: TeamRun.TeamRunMember = { role: 'builder', displayName: 'Builder', kind: 'local-agent',
+      capabilities: ['build'], provider: 'in-process', modelProvider: 'mock', model: 'builder-model', maxTokens: 128 }
+    const ctx = await setup(true, { members: [member], workerCount: 0, maxWorkerCount: 0 }, new GateAdapter())
+    const run = await ctx.teamRuns.create({ objective: 'Observe the custom member.', cwd: process.cwd() })
+    const builder = run.members[0]
+    if (builder === undefined) throw new Error('TeamRun omitted the custom member')
+    const sources = await ctx.waterfall(ctx.teams, 'team/member-execution-observe', {
+      teamId: run.teamId, participant: builder,
+    }, async () => ({}))
+    expect(sources.route).toMatchObject({ kind: 'managed', provider: member.provider, configuration: 'team-run' })
+    await ctx.teamRuns.cancel(run.teamId)
+  })
+
+  it('owns a declared member lease whose provider publishes no in-process Agent', async () => {
+    const member: TeamRun.TeamRunMember = { role: 'builder', displayName: 'Builder', kind: 'local-agent',
+      capabilities: ['build'], provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128 }
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [member] })
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+      const state = await ctx.teams.getTeam({ teamId: request.teamId })
+      const participant = state.participants.find(candidate => candidate.id === request.participantId)
+      const lease = await activate(request)
+      return participant?.role === member.role ? leaseWithoutLocalAgent(lease) : lease
+    })
+    const run = await ctx.teamRuns.create({ objective: 'Own a nonresident template member.', cwd: process.cwd() })
+    expect(run.members.map(value => value.role)).toEqual(['builder'])
+    const before = await ctx.teams.getTeam({ teamId: run.teamId })
+    const builderId = run.members[0]?.id
+    expect(before.activations.find(binding => binding.activation.participantId === builderId)?.activation.status).toBe('idle')
+    await ctx.teamRuns.cancel(run.teamId)
+    const after = await ctx.teams.getTeam({ teamId: run.teamId })
+    expect(after.activations.find(binding => binding.activation.participantId === builderId)?.activation.status).toBe('offline')
+  })
+
   it('resolves only the selected child template version without creating a Team or lending mutable configuration', async () => {
     const ctx = await setup(true, {
       templateId: 'review-team', templateVersion: 2, workerCount: 0, maxWorkerCount: 0,
@@ -560,6 +685,8 @@ describe('local Team run', () => {
     const description = ctx.teamRuns.describeChildTemplate('review-team', 2)
     expect(description).toMatchObject({ productTemplate: { id: 'review-team', version: 2 },
       childRuntime: { selection: { provider: 'mock', model: 'mock' }, config: { workerCount: 0, maxWorkerCount: 0 } } })
+    vi.spyOn(ctx.agentDefaultModel, 'currentSelection').mockReturnValueOnce(undefined)
+    expect(() => ctx.teamRuns.describeChildTemplate('review-team', 2)).toThrow('explicit coordinator model route')
     expect(description).toMatchObject({ productTemplate: { placement: { roles: ['worker'] } } })
     expect(description).not.toHaveProperty('workspacePath')
     const runtime = description.childRuntime as { config: { workerCount: number } }
@@ -621,6 +748,50 @@ describe('local Team run', () => {
       adapter.releaseCoordinator.resolve(undefined)
       await ctx.teamRuns.cancel(run.teamId)
     }
+  })
+
+  it('compiles built-in and registered workflow routes into the durable channel graph', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: [],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }, adapter)
+    ctx.workflowExtensions.register({ kind: 'condition', name: 'approved-condition', version: 1,
+      validate() {}, evaluate() { return true } })
+    ctx.workflowExtensions.register({ kind: 'target', name: 'finished-target', version: 1,
+      validate() {}, resolve() { return { kind: 'terminate' } } })
+    const run = await ctx.teamRuns.create({ objective: 'Compile every route kind.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no local coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Compile the route graph.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const base = workflowPlan(1, ['builder'])
+      const graph = { initial: { kind: 'participant', role: 'coordinator' }, maxTurns: 5,
+        transitions: [
+          { condition: { kind: 'envelope-kind', value: 'message' }, target: { kind: 'round-robin' } },
+          { condition: { kind: 'payload-present', path: 'text' }, target: { kind: 'stay' } },
+          { condition: { kind: 'payload-equals', path: 'text', value: 'done' }, target: { kind: 'return-to-initiator' } },
+          { condition: { kind: 'extension', name: 'approved-condition', version: 1, config: {} },
+            target: { kind: 'extension', name: 'finished-target', version: 1, config: {} } },
+        ], defaultTarget: { kind: 'terminate' },
+      }
+      const plan = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+        ...task, requiredCapabilities: [],
+      })), channel: { ...base.channel, graph } })
+      const started = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-mixed-routes'), plan,
+      }))
+      expect(started.phase).toBe('ready')
+      if (started.channelId === undefined) throw new Error('Compiled workflow has no channel')
+      const channel = await ctx.teams.getChannel({ channelId: started.channelId })
+      expect(channel.manifest.limits.graph).toMatchObject({
+        initial: { kind: 'participant', participantId: run.coordinator.id },
+        transitions: graph.transitions,
+        defaultTarget: { kind: 'terminate' },
+      })
+    } finally { adapter.releaseCoordinator.resolve(undefined) }
   })
 
   it('reactivates a dormant custom workflow role through placement before publishing its tasks', async () => {
@@ -700,6 +871,73 @@ describe('local Team run', () => {
     expect(compiled.phase).toBe('ready')
     expect(state.tasks).toEqual([expect.objectContaining({ workspaceMode: 'sandbox', phase: 'pending' })])
     adapter.releaseCoordinator.resolve(undefined)
+  })
+
+  it('rejects unroutable workflow tasks and channel extensions before admission', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: [],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Validate workflow execution routes.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team-run did not publish a local coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Validate workflow routes.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const isolatedBase = workflowPlan(1, ['builder'], 1, false, 'sandbox')
+      const isolated = teamWorkflowPlanSchema.parse({ ...isolatedBase, tasks: isolatedBase.tasks.map(task => ({
+        ...task, requiredCapabilities: [],
+      })) })
+      const cancelled = new AbortController()
+      const cancellation = new Error('Stop workflow compilation')
+      cancelled.abort(cancellation)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-cancelled-before-admission'),
+        plan: isolated, signal: cancelled.signal,
+      }))).rejects.toBe(cancellation)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-without-workspaces'), plan: isolated,
+      }))).rejects.toThrow("has no provider for workspace mode 'sandbox'")
+
+      await ctx.plugin(TeamWorkspaceRegistry)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-without-sandbox-provider'), plan: isolated,
+      }))).rejects.toThrow("has no provider for workspace mode 'sandbox'")
+
+      const base = workflowPlan(1, ['builder'])
+      const incapable = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+        ...task, requiredCapabilities: ['capability-no-participant-has'],
+      })) })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-without-capable-participant'), plan: incapable,
+      }))).rejects.toThrow('has no capable declared execution participant')
+
+      const routed = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+        ...task, requiredCapabilities: [],
+      })) })
+      const missingExtension = teamWorkflowPlanSchema.parse({ ...routed, channel: {
+        ...routed.channel, graph: { ...routed.channel.graph,
+          initial: { kind: 'extension', name: 'unregistered-route', version: 1, config: {} } },
+      } })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-without-channel-extension'), plan: missingExtension,
+      }))).rejects.toThrow("workflow target extension 'unregistered-route@1' is not registered")
+      const missingCondition = teamWorkflowPlanSchema.parse({ ...routed, channel: {
+        ...routed.channel, graph: { ...routed.channel.graph, transitions: [{
+          condition: { kind: 'extension', name: 'unregistered-condition', version: 1, config: {} },
+          target: { kind: 'terminate' },
+        }] },
+      } })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-without-condition-extension'), plan: missingCondition,
+      }))).rejects.toThrow("workflow condition extension 'unregistered-condition@1' is not registered")
+
+      const state = await ctx.teams.getTeam({ teamId: run.teamId })
+      expect(state.tasks).toEqual([])
+      expect(state.workflowPlans ?? []).toEqual([])
+    } finally { adapter.releaseCoordinator.resolve(undefined) }
   })
 
   it('rejects a missing workflow view policy before durable admission and permits a corrected retry key', async () => {
@@ -841,62 +1079,145 @@ describe('local Team run', () => {
     adapter.releaseCoordinator.resolve(undefined)
   })
 
-  it('closes an unbound workflow channel and retries compiler binding after a cursor race', async () => {
-    const adapter = new CoordinatorGateWorkerReplyAdapter()
-    const ctx = await setup(true, { workerPreset: 'worker' }, adapter)
-    const run = await ctx.teamRuns.create({ objective: 'Close an unbound workflow channel.', cwd: process.cwd() })
-    const coordinator = run.coordinatorLease.localAgent
-    if (coordinator === undefined) throw new Error('Team-run did not publish a local coordinator')
-    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
-    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async request => request.participantId === run.worker!.id
-      ? await activate({
-        ...request,
-        agent: {
-          options: request.agent.options,
-          ...request.agent.cwd === undefined ? {} : { cwd: request.agent.cwd },
-        },
+  it.each(['TEAM_CURSOR_CONFLICT', 'TEAM_WORKFLOW_PLAN_STALE_REVISION'] as const)(
+    'closes an unbound workflow channel and retries compiler binding after %s', async (code) => {
+      const adapter = new CoordinatorGateWorkerReplyAdapter()
+      const ctx = await setup(true, { workerPreset: 'worker' }, adapter)
+      const run = await ctx.teamRuns.create({ objective: 'Close an unbound workflow channel.', cwd: process.cwd() })
+      const coordinator = run.coordinatorLease.localAgent
+      if (coordinator === undefined) throw new Error('Team-run did not publish a local coordinator')
+      const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+      vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async request => request.participantId === run.worker!.id
+        ? await activate({
+          ...request,
+          agent: {
+            options: request.agent.options,
+            ...request.agent.cwd === undefined ? {} : { cwd: request.agent.cwd },
+          },
+        })
+        : await activate(request))
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const bindFailure = new TeamError('workflow channel binding raced', code)
+      vi.spyOn(ctx.teams, 'bindWorkflowPlanChannel').mockImplementationOnce(async () => { throw bindFailure })
+      const closeWorkflowChannel = ctx.teams.closeWorkflowChannel.bind(ctx.teams)
+      let cleanupRequest: Parameters<typeof ctx.teams.closeWorkflowChannel>[0] | undefined
+      vi.spyOn(ctx.teams, 'closeWorkflowChannel').mockImplementation(async (request) => {
+        cleanupRequest = request
+        return await closeWorkflowChannel(request)
       })
-      : await activate(request))
-    const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
-    const bindFailure = new TeamError('workflow channel binding raced', 'TEAM_CURSOR_CONFLICT')
-    vi.spyOn(ctx.teams, 'bindWorkflowPlanChannel').mockImplementationOnce(async () => { throw bindFailure })
-    const closeWorkflowChannel = ctx.teams.closeWorkflowChannel.bind(ctx.teams)
-    let cleanupRequest: Parameters<typeof ctx.teams.closeWorkflowChannel>[0] | undefined
-    vi.spyOn(ctx.teams, 'closeWorkflowChannel').mockImplementation(async (request) => {
-      cleanupRequest = request
-      return await closeWorkflowChannel(request)
+      coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Compile and clean up the workflow.' }], source: { kind: 'user' } }))
+      await adapter.coordinatorStarted.promise
+      try {
+        const compiled = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+          idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-cleanup-failure'),
+          plan: workflowPlan(),
+        }))
+        expect(compiled).toMatchObject({ phase: 'ready' })
+        const cleanup = cleanupRequest
+        if (cleanup === undefined) throw new Error('Team-run did not request workflow channel cleanup')
+        expect(cleanup).toMatchObject({
+          teamId: run.teamId,
+          expectedRevision: 1,
+          reason: 'Workflow channel did not bind.',
+        })
+        expect(typeof cleanup.expectedTeamCursor).toBe('number')
+        expect(cleanup.actor).not.toHaveProperty('teamId')
+        expect(() => JSON.stringify(cleanup.actor)).toThrow(/runtime-only/u)
+        expect(workflowProofInternals(ctx.teamRuns).workflowProofs.size).toBe(0)
+        const state = await ctx.teams.getTeam({ teamId: run.teamId })
+        const plan = (state.workflowPlans ?? []).find(candidate => candidate.id === cleanup.planId)
+        expect(plan).toMatchObject({ phase: 'ready' })
+        expect(plan?.channelId).not.toBe(cleanup.channelId)
+        await expect(ctx.teams.getChannel({ channelId: cleanup.channelId })).resolves.toMatchObject({ phase: 'closed' })
+        const boundChannelId = plan?.channelId
+        if (boundChannelId === undefined) throw new Error('workflow retry did not bind a replacement channel')
+        await expect(ctx.teams.getChannel({ channelId: boundChannelId })).resolves.toMatchObject({ phase: 'active' })
+        await expect(ctx.teams.closeWorkflowChannel(cleanup)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      } finally {
+        adapter.releaseCoordinator.resolve(undefined)
+      }
     })
-    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Compile and clean up the workflow.' }], source: { kind: 'user' } }))
+
+  it('resumes a durable compiling workflow while waiting after channel opening fails', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: [],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Resume a compiling workflow.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Start the workflow.' }], source: { kind: 'user' } }))
     await adapter.coordinatorStarted.promise
     try {
-      const compiled = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
-        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-cleanup-failure'),
-        plan: workflowPlan(),
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const base = workflowPlan(1, ['builder'])
+      const plan = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+        ...task, requiredCapabilities: [],
+      })) })
+      const idempotencyKey = teamWorkflowPlanIdempotencyKeySchema.parse('resume-compiling-workflow')
+      const failure = new Error('workflow channel unavailable during compilation')
+      const opening = vi.spyOn(ctx.teams, 'openChannel').mockRejectedValueOnce(failure)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey, plan,
+      }))).rejects.toBe(failure)
+      opening.mockRestore()
+      const retained = (await ctx.teams.getTeam({ teamId: run.teamId })).workflowPlans?.[0]
+      if (retained === undefined) throw new Error('Workflow admission did not persist')
+      expect(retained.phase).toBe('compiling')
+      const waiting = ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForWorkflowPlan(authority, {
+        planId: retained.id,
       }))
-      expect(compiled).toMatchObject({ phase: 'ready' })
-      const cleanup = cleanupRequest
-      if (cleanup === undefined) throw new Error('Team-run did not request workflow channel cleanup')
-      expect(cleanup).toMatchObject({
-        teamId: run.teamId,
-        expectedRevision: 1,
-        reason: 'Workflow channel did not bind.',
-      })
-      expect(typeof cleanup.expectedTeamCursor).toBe('number')
-      expect(cleanup.actor).not.toHaveProperty('teamId')
-      expect(() => JSON.stringify(cleanup.actor)).toThrow(/runtime-only/u)
-      expect(workflowProofInternals(ctx.teamRuns).workflowProofs.size).toBe(0)
-      const state = await ctx.teams.getTeam({ teamId: run.teamId })
-      const plan = (state.workflowPlans ?? []).find(candidate => candidate.id === cleanup.planId)
-      expect(plan).toMatchObject({ phase: 'ready' })
-      expect(plan?.channelId).not.toBe(cleanup.channelId)
-      await expect(ctx.teams.getChannel({ channelId: cleanup.channelId })).resolves.toMatchObject({ phase: 'closed' })
-      const boundChannelId = plan?.channelId
-      if (boundChannelId === undefined) throw new Error('workflow retry did not bind a replacement channel')
-      await expect(ctx.teams.getChannel({ channelId: boundChannelId })).resolves.toMatchObject({ phase: 'active' })
-      await expect(ctx.teams.closeWorkflowChannel(cleanup)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
-    } finally {
-      adapter.releaseCoordinator.resolve(undefined)
-    }
+      await vi.waitFor(async () => {
+        const current = await ctx.teams.getWorkflowPlan({ teamId: run.teamId, planId: retained.id })
+        expect(current.phase).toBe('ready')
+      }, { timeout: 5000 })
+      await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelWorkflowTask(authority, {
+        planId: retained.id, templateId: plan.tasks[0]!.id,
+        reason: 'Withdraw the recovered workflow task.',
+      }))
+      await expect(waiting).resolves.toMatchObject({ id: retained.id, phase: 'cancelled' })
+    } finally { adapter.releaseCoordinator.resolve(undefined) }
+  }, 15_000)
+
+  it('reports workflow binding and cleanup failures, then reuses the durable channel', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: [],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Report both workflow failures.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Compile the workflow.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const base = workflowPlan(1, ['builder'])
+      const plan = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+        ...task, requiredCapabilities: [],
+      })) })
+      const bindingFailure = new TeamError('workflow binding raced', 'TEAM_CURSOR_CONFLICT')
+      const cleanupFailure = new Error('unbound channel storage unavailable')
+      vi.spyOn(ctx.teams, 'bindWorkflowPlanChannel').mockRejectedValueOnce(bindingFailure)
+      const close = vi.spyOn(ctx.teams, 'closeWorkflowChannel').mockRejectedValueOnce(cleanupFailure)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-double-failure'), plan,
+      }))).rejects.toMatchObject({ errors: [bindingFailure, cleanupFailure] })
+      expect(close).toHaveBeenCalledOnce()
+      const current = await ctx.teams.getTeam({ teamId: run.teamId })
+      expect(current.workflowPlans?.[0]?.phase).toBe('compiling')
+      const orphan = current.channelIds.find(channelId => channelId !== run.channel.manifest.id)
+      if (orphan === undefined) throw new Error('Failed cleanup left no workflow channel to recover')
+      const retried = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-double-failure'), plan,
+      }))
+      expect(retried.phase).toBe('ready')
+      const after = await ctx.teams.getTeam({ teamId: run.teamId })
+      expect(after.channelIds.filter(channelId => channelId !== run.channel.manifest.id)).toEqual([orphan])
+      expect(retried.channelId).toBe(orphan)
+      expect((await ctx.teams.getChannel({ channelId: orphan })).phase).toBe('active')
+    } finally { adapter.releaseCoordinator.resolve(undefined) }
   })
 
   it('activates a configured worker pool and fans out independent workflow tasks across its members', async () => {
@@ -1049,6 +1370,64 @@ describe('local Team run', () => {
     adapter.releaseCoordinator.resolve(undefined)
   })
 
+  it('reports an undecided reviewer turn while waiting for a workflow plan', async () => {
+    const adapter = new FirstCoordinatorTurnGateAdapter()
+    const ctx = await setupTaskRun(adapter, { workerPreset: 'worker', reviewerPreset: 'worker' })
+    const basic = await import('@clocky/clocky-team-channel-basic')
+    await ctx.plugin(basic)
+    const run = await ctx.teamRuns.create({ objective: 'Detect an undecided workflow review.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no local coordinator')
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+      const { preset: _preset, ...agent } = request.agent
+      return await activate({ ...request, agent })
+    })
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Start reviewed workflow work.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const base = workflowPlan(1, ['worker', 'reviewer'])
+      const plan = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+        ...task, reviewPolicy: { kind: 'participant', reviewerRole: 'reviewer' },
+      })) })
+      const started = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-undecided-review'), plan,
+      }))
+      let task: TeamTaskSnapshot | undefined
+      await vi.waitFor(async () => {
+        task = (await ctx.teams.getTeam({ teamId: run.teamId })).tasks.find(candidate => candidate.workflowPlanId === started.id)
+        expect(task?.phase).toBe('running')
+      }, { timeout: 5000 })
+      if (task === undefined) throw new Error('Workflow task did not begin')
+      const reviewing = await settleTaskAttemptAsOwner(ctx, task, {
+        kind: 'completed', result: { summary: 'Workflow change ready for review.' },
+      })
+      expect(reviewing.phase).toBe('review')
+      const reviewerId = reviewing.reviewPolicy.kind === 'participant' ? reviewing.reviewPolicy.reviewerId : undefined
+      if (reviewerId === undefined) throw new Error('Workflow task has no reviewer')
+      await vi.waitFor(async () => {
+        const state = await ctx.teams.getTeam({ teamId: run.teamId })
+        const binding = state.activations.findLast(candidate => candidate.activation.participantId === reviewerId)
+        const reviewer = binding === undefined ? undefined : ctx.agents.get(binding.sessionId)
+        expect(reviewer?.session.events.some(event => event.type === 'turn/end')).toBe(true)
+      }, { timeout: 5000 })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForWorkflowPlan(authority, {
+        planId: started.id,
+      }))).rejects.toMatchObject({ code: 'TEAM_RUN_REVIEW_FAILED' })
+      expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: reviewing.id })).phase).toBe('review')
+      await respondToTaskReview(ctx, reviewing, 'accepted')
+      await vi.waitFor(async () => {
+        expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: reviewing.id })).phase).toBe('completed')
+      }, { timeout: 5000 })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForWorkflowPlan(authority, {
+        planId: started.id,
+      }))).resolves.toMatchObject({ phase: 'completed', result: { kind: 'task-results', tasks: [{
+        taskId: reviewing.id, phase: 'completed',
+      }] } })
+    } finally { adapter.releaseCoordinator.resolve(undefined) }
+  }, 15_000)
+
   it('fails a workflow wait on a non-advancing Team watch', async () => {
     const adapter = new CoordinatorGateWorkerReplyAdapter()
     const ctx = await setup(true, {
@@ -1079,6 +1458,26 @@ describe('local Team run', () => {
         planId: started.id,
       }))).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_QUIESCENT' })
       expect(watch).toHaveBeenCalled()
+      watch.mockResolvedValueOnce({ kind: 'closed' })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForWorkflowPlan(authority, {
+        planId: started.id,
+      }))).rejects.toThrow('closed before workflow plan')
+      const aborted = new AbortController()
+      const reason = new Error('Stop waiting for the workflow')
+      aborted.abort(reason)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForWorkflowPlan(authority, {
+        planId: started.id, signal: aborted.signal,
+      }))).rejects.toBe(reason)
+      const beforeStall = await ctx.teams.getTeam({ teamId: run.teamId })
+      const scope: Extract<TeamSystemPhaseScope, { readonly kind: 'scheduler-stall' }> = {
+        kind: 'scheduler-stall', teamId: run.teamId, phase: 'stalled',
+        reason: { code: 'TASK_NO_ELIGIBLE_OWNER', message: 'The workflow has no eligible owner.' },
+      }
+      await ctx.teams.transitionTeamPhase({ actor: schedulerStallAuthority(ctx, scope), teamId: run.teamId,
+        expectedCursor: beforeStall.team.cursor, phase: scope.phase, reason: scope.reason })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForWorkflowPlan(authority, {
+        planId: started.id,
+      }))).rejects.toThrow('stalled before workflow')
     } finally { adapter.releaseCoordinator.resolve(undefined) }
   })
 
@@ -1108,6 +1507,9 @@ describe('local Team run', () => {
       const unrelated = plans[1]!
       const before = await ctx.teams.getTeam({ teamId: run.teamId })
       const other = before.tasks.find(task => task.workflowPlanId === unrelated.id)!
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelWorkflowTask(authority, {
+        planId: selected.id, templateId: teamWorkflowTaskTemplateIdSchema.parse('unbound-template'),
+      }))).rejects.toThrow("workflow template 'unbound-template' is not bound")
       const cancel = ctx.teams.cancelTask.bind(ctx.teams)
       let accepted: Parameters<typeof cancel>[0] | undefined
       vi.spyOn(ctx.teams, 'cancelTask').mockImplementation(async (request) => {
@@ -1125,10 +1527,84 @@ describe('local Team run', () => {
       await expect(cancel(request)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
       const after = await ctx.teams.getTeam({ teamId: run.teamId })
       expect(after.workflowPlans?.find(plan => plan.id === selected.id)).toMatchObject({ phase: 'cancelled' })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForWorkflowPlan(authority, {
+        planId: selected.id,
+      }))).resolves.toMatchObject({ id: selected.id, phase: 'cancelled' })
       expect(after.workflowPlans?.find(plan => plan.id === unrelated.id)).toEqual(unrelated)
       expect(after.tasks.filter(task => task.workflowPlanId === unrelated.id))
         .toEqual(before.tasks.filter(task => task.workflowPlanId === unrelated.id))
       expect(after.team.phase).toBe('active')
+    } finally { adapter.releaseCoordinator.resolve(undefined) }
+  })
+
+  it.each(['TEAM_CURSOR_CONFLICT', 'TEAM_TASK_STALE_REVISION'] as const)(
+    'retries workflow task cancellation after %s with fresh task authority', async (code) => {
+      const adapter = new CoordinatorGateWorkerReplyAdapter()
+      const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, receiptRetryAttempts: 2, members: [{
+        role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: [],
+        provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+      }] }, adapter)
+      const run = await ctx.teamRuns.create({ objective: 'Retry one workflow task cancellation.', cwd: process.cwd() })
+      const coordinator = run.coordinatorLease.localAgent
+      if (coordinator === undefined) throw new Error('Team run has no coordinator')
+      coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Cancel one workflow task.' }], source: { kind: 'user' } }))
+      await adapter.coordinatorStarted.promise
+      try {
+        const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+        const base = workflowPlan(1, ['builder'])
+        const plan = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+          ...task, requiredCapabilities: [],
+        })) })
+        const started = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+          idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse(`retry-workflow-cancel-${code}`), plan,
+        }))
+        const cancelTask = ctx.teams.cancelTask.bind(ctx.teams)
+        const cancel = vi.spyOn(ctx.teams, 'cancelTask')
+          .mockRejectedValueOnce(new TeamError('workflow task moved before cancellation', code))
+          .mockImplementation(async request => await cancelTask(request))
+        const result = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelWorkflowTask(authority, {
+          planId: started.id, templateId: plan.tasks[0]!.id,
+        }))
+        expect(result.phase).toBe('cancelled')
+        expect(cancel).toHaveBeenCalledTimes(2)
+        expect(cancel.mock.calls[0]?.[0]?.actor).not.toBe(cancel.mock.calls[1]?.[0]?.actor)
+        await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelWorkflowTask(authority, {
+          planId: started.id, templateId: plan.tasks[0]!.id,
+        }))).resolves.toMatchObject({ id: result.id, phase: 'cancelled' })
+      } finally { adapter.releaseCoordinator.resolve(undefined) }
+    })
+
+  it('leaves a workflow task pending when cancellation exhausts its revision retries', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, receiptRetryAttempts: 1, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: [],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Report exhausted workflow cancellation.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Cancel one workflow task.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const base = workflowPlan(1, ['builder'])
+      const plan = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+        ...task, requiredCapabilities: [],
+      })) })
+      const started = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('workflow-cancel-exhausted'), plan,
+      }))
+      const cancel = vi.spyOn(ctx.teams, 'cancelTask')
+        .mockRejectedValue(new TeamError('workflow task revision remains stale', 'TEAM_TASK_STALE_REVISION'))
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelWorkflowTask(authority, {
+        planId: started.id, templateId: plan.tasks[0]!.id,
+      }))).rejects.toThrow('workflow task cancellation exhausted its revision retries')
+      const pending = (await ctx.teams.getTeam({ teamId: run.teamId })).tasks.find(task => task.workflowPlanId === started.id)
+      expect(pending?.phase).toBe('pending')
+      cancel.mockRestore()
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelWorkflowTask(authority, {
+        planId: started.id, templateId: plan.tasks[0]!.id,
+      }))).resolves.toMatchObject({ phase: 'cancelled' })
     } finally { adapter.releaseCoordinator.resolve(undefined) }
   })
 
@@ -1224,6 +1700,17 @@ describe('local Team run', () => {
       },
       budgets: {},
     })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  })
+
+  it('uses a runtime-only invitation proof for system human endpoint consent', async () => {
+    const ctx = await setup()
+    const acknowledge = vi.spyOn(ctx.teams, 'acknowledgeChannelInvitation')
+    const run = await ctx.teamRuns.create({ objective: 'Accept the system result endpoint.', cwd: process.cwd() })
+    const consent = acknowledge.mock.calls.find(([request]) => request.channelId === run.channel.manifest.id)?.[0]
+    if (consent === undefined) throw new Error('TeamRun did not acknowledge the system human invitation')
+    expect(() => JSON.stringify(consent.actor)).toThrow('runtime-only')
+    await expect(ctx.teams.acknowledgeChannelInvitation(consent))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
   })
 
   it('grants the default human the immutable interactive product-control authority', async () => {
@@ -1464,6 +1951,322 @@ describe('local Team run', () => {
     expect(resumed.worker).toBeUndefined()
     expect(resumed.coordinator.id).toBe(run.coordinator.id)
     expect(resumed.coordinatorLease.binding.sessionId).toBe(run.coordinatorLease.binding.sessionId)
+  })
+
+  it('preflights an authenticated product owner before cold coordinator recovery', async () => {
+    const config = { workerCount: 0, maxWorkerCount: 0 }
+    const ctx = await setup(true, config)
+    const humanOwner = { kind: 'product-principal' as const, principalId: 'owner-a' as never }
+    const original = await withPrincipalAdmission(ctx, 'owner-a', async admitHumanChannel => await ctx.teamRuns.create({
+      objective: 'Recover a principal-owned Team.', cwd: process.cwd(), humanOwner, admitHumanChannel,
+    }))
+    const runtime = ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+    const preflight = vi.spyOn(ctx.teamActivations, 'preflightResume')
+    const recovered = await withPrincipalAdmission(ctx, 'owner-a', async (admitHumanChannel, call) => {
+      const current = await ctx.teams.getTeam({ teamId: original.teamId })
+      const input = { teamId: original.teamId, expectedCursor: current.team.cursor }
+      return await ctx.teamHumanActors.withProof(call, {
+        teamId: input.teamId, operation: 'activate', fence: { kind: 'cursor', cursor: input.expectedCursor },
+        payload: jsonObjectSchema.parse(structuredClone(input)),
+      }, async (actor) => {
+        const authorization = await ctx.teams.authorizeHumanResume({ actor, ...input })
+        try {
+          return await ctx.teamRuns.resume({ teamId: original.teamId, humanOwner, admitHumanChannel, authorization })
+        } finally { authorization.close() }
+      })
+    })
+    expect(recovered.coordinator.id).toBe(original.coordinator.id)
+    expect(recovered.coordinatorLease.binding.sessionId).toBe(original.coordinatorLease.binding.sessionId)
+    expect(preflight).toHaveBeenCalledWith(expect.objectContaining({
+      teamId: original.teamId, participantId: original.coordinator.id,
+      activationId: original.coordinatorLease.binding.activation.id,
+    }))
+  })
+
+  it('requires a current model route when a cold Team has no persisted coordinator request', async () => {
+    const config = { workerCount: 0, maxWorkerCount: 0 }
+    const ctx = await setup(true, config)
+    const run = await ctx.teamRuns.create({ objective: 'Resume only with an explicit model route.', cwd: process.cwd() })
+    const runtime = ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+    const selection = vi.spyOn(ctx.agentDefaultModel, 'currentSelection').mockReturnValueOnce(undefined)
+    await expect(ctx.teamRuns.resume({ teamId: run.teamId })).rejects.toMatchObject({ code: 'TEAM_RUN_MODEL_REQUIRED' })
+    selection.mockRestore()
+    const inspect = ctx.sessionPersistence.inspect.bind(ctx.sessionPersistence)
+    for (const changed of [{ teamId: 'foreign-team' }, { participantId: 'foreign-participant' }]) {
+      const foreign = vi.spyOn(ctx.sessionPersistence, 'inspect').mockImplementationOnce(async (...args) => {
+        const result = await inspect(...args)
+        return { ...result, meta: { ...result.meta, ...changed } }
+      })
+      await expect(ctx.teamRuns.resume({ teamId: run.teamId })).rejects.toThrow('does not belong to Team coordinator')
+      foreign.mockRestore()
+    }
+    const missingCwd = vi.spyOn(ctx.sessionPersistence, 'inspect').mockImplementationOnce(async (...args) => {
+      const result = await inspect(...args)
+      const { cwd: _cwd, ...meta } = result.meta
+      return { ...result, meta }
+    })
+    await expect(ctx.teamRuns.resume({ teamId: run.teamId })).rejects.toThrow('no persisted coordinator cwd')
+    missingCwd.mockRestore()
+    await expect(ctx.teamRuns.resume({ teamId: run.teamId,
+      humanOwner: { kind: 'product-principal', principalId: 'foreign-owner' as never },
+    })).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_FOUND' })
+    const getTeam = ctx.teams.getTeam.bind(ctx.teams)
+    const missingActivation = vi.spyOn(ctx.teams, 'getTeam').mockImplementationOnce(async (...args) => {
+      const result = await getTeam(...args)
+      return { ...result, activations: [] }
+    })
+    await expect(ctx.teamRuns.resume({ teamId: run.teamId })).rejects.toThrow('no durable coordinator activation')
+    missingActivation.mockRestore()
+    const resumed = await ctx.teamRuns.resume({ teamId: run.teamId })
+    expect(resumed.coordinatorLease.binding.sessionId).toBe(run.coordinatorLease.binding.sessionId)
+  })
+
+  it('joins concurrent cold resumes before publishing one coordinator epoch', async () => {
+    const config = { workerCount: 0, maxWorkerCount: 0 }
+    const ctx = await setup(true, config)
+    const original = await ctx.teamRuns.create({ objective: 'Coalesce cold coordinator recovery.', cwd: process.cwd() })
+    const runtime = ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+    const inspect = ctx.sessionPersistence.inspect.bind(ctx.sessionPersistence)
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    vi.spyOn(ctx.sessionPersistence, 'inspect').mockImplementationOnce(async (...args) => {
+      entered.resolve(undefined)
+      await release.promise
+      return await inspect(...args)
+    })
+    const first = ctx.teamRuns.resume({ teamId: original.teamId })
+    await entered.promise
+    const second = ctx.teamRuns.resume({ teamId: original.teamId })
+    release.resolve(undefined)
+    const [a, b] = await Promise.all([first, second])
+    expect(a).toBe(b)
+    expect(a.coordinatorLease.binding.sessionId).toBe(original.coordinatorLease.binding.sessionId)
+    const state = await ctx.teams.getTeam({ teamId: original.teamId })
+    expect(state.activations.filter(binding => binding.activation.participantId === original.coordinator.id)).toHaveLength(2)
+  })
+
+  it('recovers declared members and worker capacity with their durable identities after a cold restart', async () => {
+    const config: TeamRun.Config = { workerCount: 1, maxWorkerCount: 2, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: ['build'],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }
+    const ctx = await setup(true, config)
+    const original = await ctx.teamRuns.create({ objective: 'Recover the exact Team execution roster.', cwd: process.cwd() })
+    const runtime = ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+
+    const resumed = await ctx.teamRuns.resume({ teamId: original.teamId })
+    expect(resumed.coordinator.id).toBe(original.coordinator.id)
+    expect(resumed.worker?.id).toBe(original.worker?.id)
+    expect(resumed.members.map(member => member.id)).toEqual(original.members.map(member => member.id))
+    const state = await ctx.teams.getTeam({ teamId: original.teamId })
+    expect(state.activations.filter(binding => binding.activation.participantId === original.coordinator.id)).toHaveLength(2)
+    expect(state.activations.filter(binding => binding.activation.participantId === original.members[0]?.id)).toHaveLength(2)
+  })
+
+  it('recovers coordinator ownership of pending tasks and workflow plans after a cold restart', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const config = { workerPreset: 'worker' }
+    const ctx = await setup(true, config, adapter, false)
+    const run = await ctx.teamRuns.create({ objective: 'Recover durable coordinator work.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no local coordinator')
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+      const { preset: _preset, ...agent } = request.agent
+      return await activate({ ...request, agent })
+    })
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Prepare recoverable work.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+    const pending = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+      idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('cold-owned-task'),
+      subject: 'Pending durable work', instructions: 'Wait for recovery.', readScopes: [], writeScopes: [],
+    }))
+    const plan = workflowPlan(1)
+    const started = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+      idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('cold-owned-workflow'), plan,
+    }))
+    adapter.releaseCoordinator.resolve(undefined)
+    await coordinator.whenIdle()
+    const runtime = ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+
+    const resumeAdapter = new GateAdapter()
+    ctx.llm.registerAdapter(['resume-mock'], resumeAdapter)
+    const resumed = await ctx.teamRuns.resume({ teamId: run.teamId,
+      selection: { provider: 'resume-mock', model: 'mock' } })
+    const current = resumed.coordinatorLease.localAgent
+    if (current === undefined) throw new Error('Cold recovery did not publish a coordinator')
+    current.followup(createUserMessage({ content: [{ type: 'text', text: 'Resume durable work.' }], source: { kind: 'user' } }))
+    await resumeAdapter.started.promise
+    try {
+      const recoveredAuthority = ctx.teamRuns.coordinatorTaskAuthority(current)
+      const tasks = await ctx.agents.withInitiator(current, async () => await ctx.teamRuns.listDefaultWorkerTasks(recoveredAuthority))
+      expect(tasks.tasks.map(task => task.id)).toContain(pending.id)
+      const cancelled = await ctx.agents.withInitiator(current, async () => await ctx.teamRuns.cancelWorkflowTask(recoveredAuthority, {
+        planId: started.id, templateId: plan.tasks[0]!.id, reason: 'Owner resumed and withdrew this work.',
+      }))
+      expect(cancelled.phase).toBe('cancelled')
+    } finally { resumeAdapter.release.resolve(undefined) }
+  })
+
+  it('reactivates the durable reviewer when a cold Team still owns a task in review', async () => {
+    const config = { workerPreset: 'worker', reviewerPreset: 'worker' }
+    const adapter = new FirstCoordinatorTurnGateAdapter()
+    const ctx = await setupTaskRun(adapter, config)
+    const basic = await import('@clocky/clocky-team-channel-basic')
+    await ctx.plugin(basic)
+    const run = await ctx.teamRuns.create({ objective: 'Recover a pending task review.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    const reviewerBlock: { id?: ParticipantSnapshot['id']; active: boolean } = { active: false }
+    const reviewerFailure = new Error('reviewer activation unavailable during recovery')
+    const cleanupFailure = new Error('coordinator cleanup reply failed after release')
+    let failedCoordinatorCleanup = false
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+      if (reviewerBlock.active && request.participantId === reviewerBlock.id) throw reviewerFailure
+      const { preset: _preset, ...agent } = request.agent
+      const lease = await activate({ ...request, agent })
+      if (!reviewerBlock.active || request.participantId !== run.coordinator.id) return lease
+      return { binding: lease.binding, localAgent: lease.localAgent,
+        health: () => lease.health(), interrupt: (...args) => { lease.interrupt(...args) },
+        dispose: async () => {
+          await lease.dispose()
+          if (!failedCoordinatorCleanup) { failedCoordinatorCleanup = true; throw cleanupFailure }
+        },
+      }
+    })
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Prepare a review before restart.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+    const created = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+      idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('cold-review-task'),
+      subject: 'Review durable work', instructions: 'Produce a result for review.',
+      readScopes: ['packages/team'], writeScopes: ['packages/team'],
+    }))
+    let running: TeamTaskSnapshot = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+    await vi.waitFor(async () => {
+      running = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+      expect(running.phase).toBe('running')
+    }, { timeout: 5000 })
+    const reviewing = await settleTaskAttemptAsOwner(ctx, running, {
+      kind: 'completed', result: { summary: 'Review after recovery.' },
+    })
+    expect(reviewing.phase).toBe('review')
+    const reviewerId = reviewing.reviewPolicy.kind === 'participant' ? reviewing.reviewPolicy.reviewerId : undefined
+    if (reviewerId === undefined) throw new Error('Task has no reviewer')
+    reviewerBlock.id = reviewerId
+    const scheduler = ctx.registry.get(TeamSchedulerDag)
+    if (scheduler === undefined) throw new Error('Team scheduler is not mounted')
+    for (const fiber of [...scheduler.fibers]) await fiber.dispose()
+    adapter.releaseCoordinator.resolve(undefined)
+    await coordinator.whenIdle()
+    const runtime = ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+    reviewerBlock.active = true
+    await expect(ctx.teamRuns.resume({ teamId: run.teamId })).rejects.toBe(reviewerFailure)
+    expect(failedCoordinatorCleanup).toBe(true)
+    const afterFailure = await ctx.teams.getTeam({ teamId: run.teamId })
+    const coordinatorEpochs = afterFailure.activations.filter(binding =>
+      binding.activation.participantId === run.coordinator.id)
+    expect(coordinatorEpochs.at(-1)?.activation.status).toBe('offline')
+    reviewerBlock.active = false
+    const resumed = await ctx.teamRuns.resume({ teamId: run.teamId })
+    expect(resumed.coordinator.id).toBe(run.coordinator.id)
+    const state = await ctx.teams.getTeam({ teamId: run.teamId })
+    expect(state.tasks.find(task => task.id === created.id)?.phase).toBe('review')
+    expect(state.activations.filter(binding => binding.activation.participantId === reviewerId)).toHaveLength(2)
+  }, 15_000)
+
+  it('releases a resumed coordinator when a declared member prompt fails, then retries recovery', async () => {
+    const config: TeamRun.Config = { workerCount: 0, maxWorkerCount: 0, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: ['build'],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }
+    const ctx = await setup(true, config)
+    const original = await ctx.teamRuns.create({ objective: 'Recover after a member prompt fault.', cwd: process.cwd() })
+    const runtime = ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+    const section = ctx.systemPrompt.section.bind(ctx.systemPrompt)
+    const failure = new Error('resumed member reporting prompt unavailable')
+    const prompt = vi.spyOn(ctx.systemPrompt, 'section').mockImplementation((request) => {
+      if (request.name === 'team-run:template-task-report') throw failure
+      return section(request)
+    })
+    await expect(ctx.teamRuns.resume({ teamId: original.teamId })).rejects.toBe(failure)
+    const afterFailure = await ctx.teams.getTeam({ teamId: original.teamId })
+    const coordinatorEpochs = afterFailure.activations.filter(binding =>
+      binding.activation.participantId === original.coordinator.id)
+    expect(coordinatorEpochs).toHaveLength(2)
+    expect(coordinatorEpochs.every(binding => binding.activation.status === 'offline')).toBe(true)
+    prompt.mockRestore()
+    const recovered = await ctx.teamRuns.resume({ teamId: original.teamId })
+    expect(recovered.coordinator.id).toBe(original.coordinator.id)
+    expect(recovered.members.map(member => member.id)).toEqual(original.members.map(member => member.id))
+  })
+
+  it('drains activated member and coordinator leases when cold recovery is cancelled before publication', async () => {
+    const config: TeamRun.Config = { workerCount: 0, maxWorkerCount: 0, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: ['build'],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }
+    const ctx = await setup(true, config)
+    const original = await ctx.teamRuns.create({ objective: 'Cancel a partially resumed roster.', cwd: process.cwd() })
+    const runtime = ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+    const controller = new AbortController()
+    const reason = new Error('caller cancelled recovery after member activation')
+    const section = ctx.systemPrompt.section.bind(ctx.systemPrompt)
+    const prompt = vi.spyOn(ctx.systemPrompt, 'section').mockImplementation((request) => {
+      const dispose = section(request)
+      if (request.name === 'team-run:template-task-report') controller.abort(reason)
+      return dispose
+    })
+    await expect(ctx.teamRuns.resume({ teamId: original.teamId, signal: controller.signal })).rejects.toBe(reason)
+    const afterFailure = await ctx.teams.getTeam({ teamId: original.teamId })
+    for (const participant of [original.coordinator, ...original.members]) {
+      const epochs = afterFailure.activations.filter(binding => binding.activation.participantId === participant.id)
+      expect(epochs).toHaveLength(2)
+      expect(epochs.at(-1)?.activation.status).toBe('offline')
+    }
+    prompt.mockRestore()
+    const recovered = await ctx.teamRuns.resume({ teamId: original.teamId })
+    expect(recovered.coordinator.id).toBe(original.coordinator.id)
+    expect(recovered.members.map(member => member.id)).toEqual(original.members.map(member => member.id))
+  })
+
+  it('refuses cold recovery after the Session persistence provider has been unmounted', async () => {
+    const config = { workerCount: 0, maxWorkerCount: 0 }
+    const ctx = await setup(true, config)
+    const run = await ctx.teamRuns.create({ objective: 'Require durable Session recovery.', cwd: process.cwd() })
+    const teamRun = ctx.registry.get(TeamRun), persistence = ctx.registry.get(JsonlSessionPersistence)
+    if (teamRun === undefined || persistence === undefined) throw new Error('Recovery fixture is missing a mounted owner')
+    for (const fiber of [...teamRun.fibers]) await fiber.dispose()
+    for (const fiber of [...persistence.fibers]) await fiber.dispose()
+    await ctx.plugin(TeamRun, config)
+    await expect(ctx.teamRuns.resume({ teamId: run.teamId })).rejects.toThrow('requires a mounted Session persistence provider')
+    const state = await ctx.teams.getTeam({ teamId: run.teamId })
+    expect(state.activations.filter(value => value.activation.participantId === run.coordinator.id)).toHaveLength(1)
   })
 
   it('re-attaches an offline durable coordinator without creating a new Team or Session', async () => {
@@ -1867,6 +2670,11 @@ describe('local Team run', () => {
     coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Resize workers as work changes.' }], source: { kind: 'user' } }))
     await adapter.coordinatorStarted.promise
     const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+    for (const targetCount of [-1, 1.5]) {
+      await expect(ctx.agents.withInitiator(coordinator, async () =>
+        await ctx.teamRuns.setWorkerPoolSize(authority, { targetCount })))
+        .rejects.toMatchObject({ code: 'TEAM_RUN_INVALID_WORKER_POOL' })
+    }
 
     const grown = await ctx.agents.withInitiator(coordinator, async () =>
       await ctx.teamRuns.setWorkerPoolSize(authority, { targetCount: 3 }))
@@ -1902,6 +2710,391 @@ describe('local Team run', () => {
     adapter.releaseCoordinator.resolve(undefined)
     await ctx.teamRuns.cancel(run.teamId)
   }, 30_000)
+
+  it('recovers a worker invitation whose provisioning committed before a cursor-conflict reply', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 1, maxWorkerCount: 2 }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Recover an admitted worker provisioning.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team-run did not publish a local coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Grow the worker pool.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    const transition = ctx.teams.transitionParticipantPhase.bind(ctx.teams)
+    let committed = false
+    vi.spyOn(ctx.teams, 'transitionParticipantPhase').mockImplementation(async (request) => {
+      const result = await transition(request)
+      if (!committed && request.phase === 'provisioning' && request.participantId !== run.worker?.id) {
+        committed = true
+        throw new TeamError('worker provisioning committed before the reply', 'TEAM_CURSOR_CONFLICT')
+      }
+      return result
+    })
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const pool = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 2,
+      }))
+      expect(committed).toBe(true)
+      expect(pool).toMatchObject({ workerCount: 2, activeCount: 2 })
+      const workers = (await ctx.teams.getTeam({ teamId: run.teamId })).participants.filter(participant =>
+        participant.role === 'worker' || participant.role === 'worker-2')
+      expect(workers.map(worker => worker.role)).toEqual(['worker', 'worker-2'])
+      expect(workers.every(worker => worker.phase === 'active')).toBe(true)
+    } finally {
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  })
+
+  it('retries a worker invitation whose provisioning failed before commit without leaving an orphan', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 1, maxWorkerCount: 2 }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Retry an unprovisioned invited worker.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Grow the worker pool.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    const failure = new Error('worker provisioning storage unavailable')
+    const transition = ctx.teams.transitionParticipantPhase.bind(ctx.teams)
+    const fault = vi.spyOn(ctx.teams, 'transitionParticipantPhase').mockImplementation(async (request) => {
+      if (request.phase === 'provisioning' && request.participantId !== run.worker?.id) throw failure
+      return await transition(request)
+    })
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 2,
+      }))).rejects.toBe(failure)
+      const afterFailure = await ctx.teams.getTeam({ teamId: run.teamId })
+      const invited = afterFailure.participants.find(participant => participant.role === 'worker-2')
+      expect(invited?.phase).toBe('invited')
+      if (invited === undefined) throw new Error('Worker invitation was not retained')
+      const route = await ctx.waterfall(ctx.teams, 'team/member-execution-observe',
+        { teamId: run.teamId, participant: invited }, async () => ({}))
+      expect(route.route).toMatchObject({ kind: 'managed', provider: 'in-process', reasons: [] })
+      fault.mockRestore()
+      const retried = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 2,
+      }))
+      expect(retried).toMatchObject({ workerCount: 2, activeCount: 2 })
+      const workers = (await ctx.teams.getTeam({ teamId: run.teamId })).participants.filter(participant =>
+        participant.role === 'worker' || /^worker-\d+$/u.test(participant.role))
+      expect(workers.map(worker => worker.role)).toEqual(['worker', 'worker-2'])
+      expect(workers.every(worker => worker.phase === 'active')).toBe(true)
+    } finally {
+      fault.mockRestore()
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  })
+
+  it('retains a durable worker invitation when provisioning and its recovery read both fail', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 1, maxWorkerCount: 2 }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Recover an invited worker after two provider faults.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Grow the worker pool.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    const writeFailure = new Error('worker provisioning write unavailable')
+    const readFailure = new Error('worker provisioning recovery read unavailable')
+    const transition = ctx.teams.transitionParticipantPhase.bind(ctx.teams)
+    const getTeam = ctx.teams.getTeam.bind(ctx.teams)
+    let failRead = false
+    const writeFault = vi.spyOn(ctx.teams, 'transitionParticipantPhase').mockImplementation(async (request) => {
+      if (request.phase === 'provisioning' && request.participantId !== run.worker?.id) {
+        failRead = true
+        throw writeFailure
+      }
+      return await transition(request)
+    })
+    const readFault = vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async (request) => {
+      if (failRead && request.teamId === run.teamId) {
+        failRead = false
+        throw readFailure
+      }
+      return await getTeam(request)
+    })
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 2,
+      }))).rejects.toMatchObject({ errors: [writeFailure, readFailure] })
+      writeFault.mockRestore()
+      readFault.mockRestore()
+      const retried = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 2,
+      }))
+      expect(retried).toMatchObject({ workerCount: 2, activeCount: 2 })
+      const workers = (await ctx.teams.getTeam({ teamId: run.teamId })).participants.filter(participant =>
+        participant.role === 'worker' || /^worker-\d+$/u.test(participant.role))
+      expect(workers.map(worker => worker.role)).toEqual(['worker', 'worker-2'])
+    } finally {
+      writeFault.mockRestore()
+      readFault.mockRestore()
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  })
+
+  it.each([false, true] as const)(
+    'retries a worker after reporting prompt failure (cleanup fails: %s)', async (cleanupFails) => {
+      const adapter = new CoordinatorGateWorkerReplyAdapter()
+      const ctx = await setup(true, { workerCount: 1, maxWorkerCount: 1 }, adapter)
+      const run = await ctx.teamRuns.create({ objective: 'Retry worker prompt registration.', cwd: process.cwd() })
+      const coordinator = run.coordinatorLease.localAgent
+      if (coordinator === undefined || run.worker === undefined) throw new Error('Team run has no coordinator or worker')
+      coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Activate the worker.' }], source: { kind: 'user' } }))
+      await adapter.coordinatorStarted.promise
+      const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+      const cleanupFailure = new Error('worker lease cleanup failed')
+      let failCleanup = cleanupFails
+      vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+        const lease = await activate(request)
+        if (request.participantId !== run.worker?.id || !failCleanup) return lease
+        failCleanup = false
+        return { binding: lease.binding, localAgent: lease.localAgent,
+          health: () => lease.health(), interrupt: (...args) => { lease.interrupt(...args) },
+          dispose: async () => { await lease.dispose(); throw cleanupFailure },
+        }
+      })
+      const section = ctx.systemPrompt.section.bind(ctx.systemPrompt)
+      const failure = new Error('worker reporting prompt unavailable')
+      const prompt = vi.spyOn(ctx.systemPrompt, 'section').mockImplementation((request) => {
+        if (request.name === 'team-run:worker-task-report') throw failure
+        return section(request)
+      })
+      try {
+        const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+        await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+          targetCount: 1,
+        }))).rejects.toBe(failure)
+        const afterFailure = await ctx.teams.getTeam({ teamId: run.teamId })
+        const workerEpochs = afterFailure.activations.filter(binding => binding.activation.participantId === run.worker?.id)
+        expect(workerEpochs).toHaveLength(1)
+        expect(workerEpochs[0]?.activation.status).toBe('offline')
+        prompt.mockRestore()
+        const retried = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+          targetCount: 1,
+        }))
+        expect(retried).toMatchObject({ workerCount: 1, activeCount: 1 })
+        const current = await ctx.teams.getTeam({ teamId: run.teamId })
+        expect(current.participants.filter(participant => participant.role === 'worker')).toHaveLength(1)
+        expect(current.activations.filter(binding => binding.activation.participantId === run.worker?.id)).toHaveLength(2)
+      } finally {
+        prompt.mockRestore()
+        adapter.releaseCoordinator.resolve(undefined)
+        await ctx.teamRuns.cancel(run.teamId)
+      }
+    })
+
+  it('reuses a worker activation whose durable start committed before its reply failed', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 1, maxWorkerCount: 1 }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Recover a lost worker activation reply.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined || run.worker === undefined) throw new Error('Team run has no coordinator or worker')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Activate the worker.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    const failure = new Error('worker activation reply lost after commit')
+    let originalLease: TeamActivationLease | undefined
+    const fault = vi.spyOn(ctx.teamActivations, 'activate').mockImplementationOnce(async (request) => {
+      originalLease = await activate(request)
+      throw failure
+    })
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 1,
+      }))).rejects.toBe(failure)
+      fault.mockRestore()
+      const retried = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 1,
+      }))
+      expect(retried).toMatchObject({ workerCount: 1, activeCount: 1 })
+      const state = await ctx.teams.getTeam({ teamId: run.teamId })
+      expect(state.participants.filter(participant => participant.role === 'worker')).toHaveLength(1)
+      expect(state.activations.filter(binding => binding.activation.participantId === run.worker?.id)).toHaveLength(1)
+    } finally {
+      fault.mockRestore()
+      adapter.releaseCoordinator.resolve(undefined)
+      await originalLease?.dispose()
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  })
+
+  it('rejects a worker lease without a local Agent and retries the same Session', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 1, maxWorkerCount: 1 }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Require a local worker Agent.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined || run.worker === undefined) throw new Error('Team run has no coordinator or worker')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Activate the worker.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    let omitWorkerAgent = true
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+      const lease = await activate(request)
+      if (request.participantId === run.worker?.id && omitWorkerAgent) return leaseWithoutLocalAgent(lease)
+      return lease
+    })
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 1,
+      }))).rejects.toThrow('did not publish a local default worker Agent')
+      const afterFailure = await ctx.teams.getTeam({ teamId: run.teamId })
+      const prior = afterFailure.activations.find(binding => binding.activation.participantId === run.worker?.id)
+      expect(prior?.activation.status).toBe('offline')
+      omitWorkerAgent = false
+      const retried = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 1,
+      }))
+      expect(retried).toMatchObject({ workerCount: 1, activeCount: 1 })
+      const afterRetry = await ctx.teams.getTeam({ teamId: run.teamId })
+      const epochs = afterRetry.activations.filter(binding => binding.activation.participantId === run.worker?.id)
+      expect(epochs).toHaveLength(2)
+      expect(epochs[1]?.sessionId).toBe(prior?.sessionId)
+    } finally {
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  })
+
+  it('reports worker-pool saturation when the Hub refuses another participant slot', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 1, maxWorkerCount: 3 }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Report temporary worker capacity.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Expand worker capacity.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    const invite = ctx.teams.inviteParticipant.bind(ctx.teams)
+    const fault = vi.spyOn(ctx.teams, 'inviteParticipant').mockImplementation(async (request) => {
+      if (request.role === 'worker-2') throw new TeamError('Team participant capacity reached', 'TEAM_CHANNEL_BACKPRESSURE')
+      return await invite(request)
+    })
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const saturated = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 2,
+      }))
+      expect(saturated).toMatchObject({ requestedCount: 2, targetCount: 2, workerCount: 1, saturated: true })
+      expect((await ctx.teams.getTeam({ teamId: run.teamId })).participants.filter(participant => participant.role === 'worker-2'))
+        .toEqual([])
+      fault.mockRestore()
+      const recovered = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 2,
+      }))
+      expect(recovered).toMatchObject({ workerCount: 2, activeCount: 2, saturated: false })
+    } finally {
+      fault.mockRestore()
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  })
+
+  it('retires a dynamically invited default worker when the pool returns to zero', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 1 }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Scale the default worker down to zero.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Resize the worker pool.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 1,
+      }))).resolves.toMatchObject({ workerCount: 1, activeCount: 1 })
+      const grown = await ctx.teams.getTeam({ teamId: run.teamId })
+      const worker = grown.participants.find(participant => participant.role === 'worker')
+      if (worker === undefined) throw new Error('Pool growth did not invite its worker')
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 0,
+      }))).resolves.toMatchObject({ targetCount: 0, workerCount: 0 })
+      const shrunk = await ctx.teams.getTeam({ teamId: run.teamId })
+      expect(shrunk.participants.find(participant => participant.id === worker.id)?.phase).toBe('left')
+      expect(shrunk.activations.findLast(binding => binding.activation.participantId === worker.id)?.activation.status)
+        .toBe('offline')
+    } finally {
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  })
+
+  it('retains a shrinking worker while its completed attempt still awaits review', async () => {
+    const adapter = new FirstCoordinatorTurnGateAdapter()
+    const ctx = await setupTaskRun(adapter, { workerCount: 0, maxWorkerCount: 1,
+      workerPreset: 'worker', reviewerPreset: 'worker' })
+    const basic = await import('@clocky/clocky-team-channel-basic')
+    await ctx.plugin(basic)
+    const run = await ctx.teamRuns.create({ objective: 'Keep review initiator through pool shrink.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined) throw new Error('Team run has no coordinator')
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+      const { preset: _preset, ...agent } = request.agent
+      return await activate({ ...request, agent })
+    })
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Prepare reviewed work.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const created = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+        idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('review-pool-shrink'),
+        subject: 'Review a change', instructions: 'Produce work for review.',
+        readScopes: ['packages/team'], writeScopes: ['packages/team'],
+      }))
+      let running: TeamTaskSnapshot = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+      await vi.waitFor(async () => {
+        running = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+        expect(running.phase).toBe('running')
+      }, { timeout: 5000 })
+      const reviewing = await settleTaskAttemptAsOwner(ctx, running, {
+        kind: 'completed', result: { summary: 'Work ready for review.' },
+      })
+      expect(reviewing.phase).toBe('review')
+      const workerId = reviewing.attemptHistory.at(-1)?.participantId
+      if (workerId === undefined) throw new Error('Reviewed task has no worker attempt')
+      const shrunk = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 0,
+      }))
+      expect(shrunk).toMatchObject({ targetCount: 0, workerCount: 1 })
+      expect((await ctx.teams.getTeam({ teamId: run.teamId })).participants.find(participant => participant.id === workerId)?.phase)
+        .toBe('active')
+      await vi.waitFor(async () => {
+        const state = await ctx.teams.getTeam({ teamId: run.teamId })
+        const channels = await Promise.all(state.channelIds.map(async channelId => await ctx.teams.getChannel({ channelId })))
+        expect(channels.some(channel => channel.manifest.adapter.type === basic.CONSULT_CHANNEL_TYPE)).toBe(true)
+      }, { timeout: 5000 })
+      const postChannel = ctx.teams.postChannelEnvelope.bind(ctx.teams)
+      let conflicted = false
+      vi.spyOn(ctx.teams, 'postChannelEnvelope').mockImplementation(async (request) => {
+        if (!conflicted && request.draft.kind === basic.CONSULT_RESPONSE_KIND) {
+          conflicted = true
+          throw new TeamError('Reviewer receipt advanced the channel cursor', 'TEAM_CHANNEL_CURSOR_CONFLICT')
+        }
+        return await postChannel(request)
+      })
+      await respondToTaskReview(ctx, reviewing, 'accepted')
+      expect(conflicted).toBe(true)
+      await vi.waitFor(async () => {
+        const state = await ctx.teams.getTeam({ teamId: run.teamId })
+        expect(state.tasks.find(task => task.id === created.id)?.phase).toBe('completed')
+      }, { timeout: 5000 })
+      const released = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 0,
+      }))
+      expect(released).toMatchObject({ targetCount: 0, workerCount: 0 })
+      expect((await ctx.teams.getTeam({ teamId: run.teamId })).participants.find(participant => participant.id === workerId)?.phase)
+        .toBe('left')
+    } finally {
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  }, 15_000)
 
   it('keeps a capped busy pool active and reports queued work instead of blocking', async () => {
     const adapter = new CoordinatorGateWorkerReplyAdapter()
@@ -1959,6 +3152,136 @@ describe('local Team run', () => {
     adapter.releaseCoordinator.resolve(undefined)
     await ctx.teamRuns.cancel(run.teamId)
   }, 30_000)
+
+  it.each(['failed', 'released'] as const)('returns a durable %s attempt from a default-worker task wait', async (outcomeKind) => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setupTaskRun(adapter, { workerTaskMaxAttempts: 1 })
+    const run = await ctx.teamRuns.create({ objective: 'Report a failed worker attempt.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined || run.worker === undefined) throw new Error('Team run has no coordinator or worker')
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async request => request.participantId === run.worker?.id
+      ? await activate({ ...request, agent: { options: request.agent.options,
+        ...request.agent.cwd === undefined ? {} : { cwd: request.agent.cwd } } })
+      : await activate(request))
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Start the worker task.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const created = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+        idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('failed-default-worker-task'),
+        subject: 'Fail one attempt', instructions: 'Report the failure.', readScopes: [], writeScopes: [],
+      }))
+      let running: TeamTaskSnapshot = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+      await vi.waitFor(async () => {
+        running = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+        expect(running.phase).toBe('running')
+      }, { timeout: 5000 })
+      const failure = { code: 'WORKER_TEST_FAILED', message: 'The worker could not finish.' }
+      const outcome: TeamTaskAttemptSettleInput['outcome'] = outcomeKind === 'failed'
+        ? { kind: 'failed', failure }
+        : { kind: 'released' }
+      const failed = await settleTaskAttemptAsOwner(ctx, running, outcome)
+      expect(failed.phase).toBe('failed')
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForDefaultWorkerTask(authority, {
+        taskId: created.id,
+      }))).resolves.toMatchObject({ id: created.id, phase: 'failed', outcome })
+    } finally { adapter.releaseCoordinator.resolve(undefined) }
+  }, 15_000)
+
+  it('contains an automatic worker-pool read failure after task settlement and accepts a later pool request', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setupTaskRun(adapter, { workerCount: 1, maxWorkerCount: 1 })
+    const run = await ctx.teamRuns.create({ objective: 'Recover after automatic pool reconciliation fails.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined || run.worker === undefined) throw new Error('Team run has no coordinator or worker')
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async request => request.participantId === run.worker?.id
+      ? await activate({ ...request, agent: { options: request.agent.options,
+        ...request.agent.cwd === undefined ? {} : { cwd: request.agent.cwd } } })
+      : await activate(request))
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Settle one worker task.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const created = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+        idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('pool-observer-read-failure'),
+        subject: 'Complete one task', instructions: 'Produce a result.', readScopes: [], writeScopes: [],
+      }))
+      let running: TeamTaskSnapshot = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+      await vi.waitFor(async () => {
+        running = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+        expect(running.phase).toBe('running')
+      }, { timeout: 5000 })
+      const getTeam = ctx.teams.getTeam.bind(ctx.teams)
+      const readFailure = new Error('Team projection temporarily unavailable during pool reconciliation')
+      let failObserverRead = false
+      const observe = ctx.on('team/changed', (event) => {
+        if (event.type === 'task/changed' && event.task.id === created.id && event.task.phase === 'completed') {
+          failObserverRead = true
+        }
+      })
+      const serviceContext = (ctx.teamRuns as unknown as { readonly ctx: Context }).ctx
+      const warning = vi.spyOn(serviceContext.logger, 'warn').mockImplementation(() => {})
+      const read = vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async (request) => {
+        if (failObserverRead && request.teamId === run.teamId) {
+          failObserverRead = false
+          throw readFailure
+        }
+        return await getTeam(request)
+      })
+      const settled = await settleTaskAttemptAsOwner(ctx, running, {
+        kind: 'completed', result: { summary: 'Worker task completed.' },
+      })
+      expect(settled.phase).toBe('completed')
+      await vi.waitFor(() => {
+        expect(warning).toHaveBeenCalledWith(expect.stringContaining('automatic worker-pool reconciliation failed'))
+      })
+      expect(failObserverRead).toBe(false)
+      observe()
+      warning.mockRestore()
+      read.mockRestore()
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.setWorkerPoolSize(authority, {
+        targetCount: 1,
+      }))).resolves.toMatchObject({ workerCount: 1, activeCount: 1 })
+    } finally {
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  }, 15_000)
+
+  it('returns a durable deleted task from a default-worker task wait', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerPreset: 'worker' }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Observe a deleted pending worker task.', cwd: process.cwd() })
+    const coordinator = run.coordinatorLease.localAgent
+    if (coordinator === undefined || run.worker === undefined) throw new Error('Team run has no coordinator or worker')
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async request => request.participantId === run.worker?.id
+      ? await activate({ ...request, agent: { options: request.agent.options,
+        ...request.agent.cwd === undefined ? {} : { cwd: request.agent.cwd } } })
+      : await activate(request))
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Create pending work.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+      const created = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+        idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('deleted-default-worker-task'),
+        subject: 'Pending removable work', instructions: 'Wait for coordinator choice.', readScopes: [], writeScopes: [],
+      }))
+      const pending = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+      expect(pending.phase).toBe('pending')
+      const issuer = ctx.teams.openActivationActorProofIssuer()
+      const actor = issuer.issue(run.coordinatorLease.binding)
+      try {
+        await ctx.teams.deleteTask({ actor: actor.proof, teamId: run.teamId, taskId: created.id,
+          expectedRevision: pending.revision })
+      } finally { actor.revoke(); issuer.close() }
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForDefaultWorkerTask(authority, {
+        taskId: created.id,
+      }))).resolves.toMatchObject({ id: created.id, phase: 'deleted' })
+    } finally { adapter.releaseCoordinator.resolve(undefined) }
+  })
 
   it('reads and edits the Team objective through an exact coordinator authority during its human direct turn', async () => {
     const adapter = new CoordinatorGateWorkerReplyAdapter()
@@ -2020,10 +3343,16 @@ describe('local Team run', () => {
       expect(transitionRequest).toMatchObject({ teamId: run.teamId, expectedRevision: 2, phase: 'paused' })
       expect(transitionRequest.actor).not.toBe(updateActor)
       expect(() => JSON.stringify(transitionRequest.actor)).toThrow(/runtime-only/u)
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.transitionCoordinatorGoalPhase(authority, {
+        expectedRevision: 3, phase: 'blocked', blocker: { code: 'AWAIT_INPUT', message: 'Need a human decision.' },
+      }))).resolves.toMatchObject({ phase: 'blocked', revision: 4,
+        blocker: { code: 'AWAIT_INPUT', message: 'Need a human decision.' } })
+      expect(transition.mock.calls[1]?.[0]).toMatchObject({ teamId: run.teamId, expectedRevision: 3, phase: 'blocked',
+        blocker: { code: 'AWAIT_INPUT', message: 'Need a human decision.' } })
       await expect(ctx.teams.transitionTeamGoalPhase({
         teamId: run.teamId,
         actor: transitionRequest.actor,
-        expectedRevision: 3,
+        expectedRevision: 4,
         phase: 'active',
       })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
 
@@ -2218,12 +3547,20 @@ describe('local Team run', () => {
       await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForDefaultWorkerTask(authority, {
         taskId: created.id,
       }))).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_QUIESCENT' })
+      watch.mockResolvedValueOnce({ kind: 'closed' })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForDefaultWorkerTask(authority, {
+        taskId: created.id,
+      }))).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_QUIESCENT' })
       watch.mockResolvedValueOnce({ kind: 'changed', cursor: current.team.cursor })
       await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.watchDefaultWorkerTasks(authority, {
         afterCursor: current.team.cursor,
       }))).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_QUIESCENT' })
       await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.watchDefaultWorkerTasks(authority, {
         afterCursor: current.team.cursor - 1,
+      }))).resolves.toEqual({ cursor: current.team.cursor, tasks: [{ ...noReview, id: created.id, phase: 'pending' }] })
+      watch.mockResolvedValueOnce({ kind: 'closed' })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.watchDefaultWorkerTasks(authority, {
+        afterCursor: current.team.cursor,
       }))).resolves.toEqual({ cursor: current.team.cursor, tasks: [{ ...noReview, id: created.id, phase: 'pending' }] })
       const taskControl = taskControlProofInternals(ctx.teamRuns)
       const proposeTaskOwner = ctx.teams.proposeTaskOwner.bind(ctx.teams)
@@ -2276,11 +3613,13 @@ describe('local Team run', () => {
           },
           taskId: created.id,
           expectedRevision: input.expectedRevision,
+          reason: 'The coordinator no longer needs this task.',
         })
         return await cancelTask(input)
       })
       await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelDefaultWorkerTask(authority, {
         taskId: created.id,
+        reason: 'The coordinator no longer needs this task.',
       }))).resolves.toMatchObject({
         ...noReview, id: created.id, phase: 'cancelled', cancellation: { attemptId: null, expired: false },
       })
@@ -2292,6 +3631,9 @@ describe('local Team run', () => {
       }
       expect(() => JSON.stringify(cancellation.actor)).toThrow(/runtime-only/u)
       await expect(ctx.teams.cancelTask(cancellation)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelDefaultWorkerTask(authority, {
+        taskId: created.id,
+      }))).resolves.toMatchObject({ id: created.id, phase: 'cancelled' })
     } finally {
       adapter.release.resolve(undefined)
     }
@@ -2426,6 +3768,338 @@ describe('local Team run', () => {
     adapter.releaseCoordinator.resolve(undefined)
   })
 
+  it.each([false, true] as const)(
+    'rejects a reviewer lease without a local Agent when its cleanup fails: %s', async (cleanupFails) => {
+      const adapter = new CoordinatorGateWorkerReplyAdapter()
+      const ctx = await setup(true, { workerPreset: 'worker', reviewerPreset: 'worker' }, adapter)
+      const run = await ctx.teamRuns.create({ objective: 'Require a local reviewer Agent.', cwd: process.cwd() })
+      const coordinator = run.coordinatorLease.localAgent
+      if (coordinator === undefined) throw new Error('Team run has no coordinator')
+      coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Create reviewed work.' }], source: { kind: 'user' } }))
+      await adapter.coordinatorStarted.promise
+      const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+      let omitReviewerAgent = true
+      const cleanupFailure = new Error('reviewer lease cleanup failed')
+      vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+        const state = await ctx.teams.getTeam({ teamId: request.teamId })
+        const participant = state.participants.find(candidate => candidate.id === request.participantId)
+        const { preset: _preset, ...agent } = request.agent
+        const lease = await activate({ ...request, agent })
+        if (participant?.role === 'reviewer' && omitReviewerAgent) {
+          const withoutAgent = leaseWithoutLocalAgent(lease)
+          return cleanupFails
+            ? { ...withoutAgent, dispose: async () => { await withoutAgent.dispose(); throw cleanupFailure } }
+            : withoutAgent
+        }
+        return lease
+      })
+      try {
+        const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+        const request = { idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('reviewer-without-local-agent'),
+          subject: 'Review a change', instructions: 'Change the requested files.',
+          readScopes: ['packages/team'], writeScopes: ['packages/team'] }
+        await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, request)))
+          .rejects.toThrow('reviewer activation did not publish a local Agent')
+        const afterFailure = await ctx.teams.getTeam({ teamId: run.teamId })
+        const reviewer = afterFailure.participants.find(participant => participant.role === 'reviewer')
+        if (reviewer === undefined) throw new Error('Reviewer was not retained')
+        expect(afterFailure.tasks).toEqual([])
+        expect(afterFailure.activations.filter(binding => binding.activation.participantId === reviewer.id))
+          .toMatchObject([{ activation: { status: 'offline' } }])
+        omitReviewerAgent = false
+        const created = await ctx.agents.withInitiator(coordinator,
+          async () => await ctx.teamRuns.startDefaultWorkerTask(authority, request))
+        expect(created.reviewPolicy).toMatchObject({ kind: 'participant', reviewerId: reviewer.id })
+        const afterRetry = await ctx.teams.getTeam({ teamId: run.teamId })
+        expect(afterRetry.participants.filter(participant => participant.role === 'reviewer')).toHaveLength(1)
+        expect(afterRetry.activations.filter(binding => binding.activation.participantId === reviewer.id)).toHaveLength(2)
+      } finally { adapter.releaseCoordinator.resolve(undefined) }
+    })
+
+  it.each([false, true] as const)(
+    'releases a reviewer after prompt failure (cleanup fails: %s)', async (cleanupFails) => {
+      const adapter = new CoordinatorGateWorkerReplyAdapter()
+      const ctx = await setup(true, { workerPreset: 'worker', reviewerPreset: 'worker' }, adapter)
+      const run = await ctx.teamRuns.create({ objective: 'Recover reviewer prompt setup.', cwd: process.cwd() })
+      const coordinator = run.coordinatorLease.localAgent
+      if (coordinator === undefined) throw new Error('Team run has no coordinator')
+      coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Create reviewed work.' }], source: { kind: 'user' } }))
+      await adapter.coordinatorStarted.promise
+      const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+      const cleanupFailure = new Error('reviewer cleanup unavailable')
+      let failCleanupOnce = cleanupFails
+      vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+        const state = await ctx.teams.getTeam({ teamId: request.teamId })
+        const participant = state.participants.find(candidate => candidate.id === request.participantId)
+        const { preset: _preset, ...agent } = request.agent
+        const lease = await activate({ ...request, agent })
+        if (participant?.role !== 'reviewer' || !failCleanupOnce) return lease
+        failCleanupOnce = false
+        return { binding: lease.binding, localAgent: lease.localAgent,
+          health: () => lease.health(), interrupt: (...args) => { lease.interrupt(...args) },
+          dispose: async () => { await lease.dispose(); throw cleanupFailure },
+        }
+      })
+      const section = ctx.systemPrompt.section.bind(ctx.systemPrompt)
+      const failure = new Error('reviewer prompt unavailable')
+      const prompt = vi.spyOn(ctx.systemPrompt, 'section').mockImplementation((request) => {
+        if (request.name === 'team-run:reviewer-task') throw failure
+        return section(request)
+      })
+      try {
+        const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+        const request = { idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('reviewer-prompt-retry'),
+          subject: 'Review a change', instructions: 'Make the requested edit.',
+          readScopes: ['packages/team'], writeScopes: ['packages/team'] }
+        const rejected: unknown = await ctx.agents.withInitiator(coordinator,
+          async () => await ctx.teamRuns.startDefaultWorkerTask(authority, request))
+          .then(() => undefined, (error: unknown) => error)
+        if (cleanupFails) expect(rejected).toMatchObject({ errors: [failure, cleanupFailure] })
+        else expect(rejected).toBe(failure)
+        const afterFailure = await ctx.teams.getTeam({ teamId: run.teamId })
+        const reviewer = afterFailure.participants.find(participant => participant.role === 'reviewer')
+        if (reviewer === undefined) throw new Error('Reviewer was not retained')
+        expect(afterFailure.tasks).toEqual([])
+        const prior = afterFailure.activations.find(binding => binding.activation.participantId === reviewer.id)
+        expect(prior?.activation.status).toBe('offline')
+        prompt.mockRestore()
+        const created = await ctx.agents.withInitiator(coordinator,
+          async () => await ctx.teamRuns.startDefaultWorkerTask(authority, request))
+        expect(created.reviewPolicy).toMatchObject({ kind: 'participant', reviewerId: reviewer.id })
+        const epochs = (await ctx.teams.getTeam({ teamId: run.teamId })).activations.filter(binding =>
+          binding.activation.participantId === reviewer.id)
+        expect(epochs).toHaveLength(2)
+        expect(epochs[1]?.sessionId).toBe(prior?.sessionId)
+      } finally {
+        prompt.mockRestore()
+        adapter.releaseCoordinator.resolve(undefined)
+        await ctx.teamRuns.cancel(run.teamId)
+      }
+    })
+
+  it.each(['stopped-accepted', 'stopped-rework', 'errored'] as const)(
+    'reports a %s reviewer turn without a task decision', async (reviewerOutcome) => {
+      const adapter = new FirstCoordinatorTurnGateAdapter(reviewerOutcome === 'errored' ? 'errored' : 'stopped')
+      const ctx = await setupTaskRun(adapter, { workerPreset: 'worker', reviewerPreset: 'worker',
+        ...reviewerOutcome === 'stopped-rework' ? { workerTaskMaxAttempts: 1 } : {} })
+      const basic = await import('@clocky/clocky-team-channel-basic')
+      await ctx.plugin(basic)
+      const run = await ctx.teamRuns.create({ objective: 'Detect an undecided review.', cwd: process.cwd() })
+      const coordinator = run.coordinatorLease.localAgent
+      if (coordinator === undefined || run.worker === undefined) throw new Error('Team run has no local coordinator or worker')
+      const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+      vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+        const { preset: _preset, ...agent } = request.agent
+        return await activate({ ...request, agent })
+      })
+      coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Start reviewed work.' }], source: { kind: 'user' } }))
+      await adapter.coordinatorStarted.promise
+      try {
+        const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+        const created = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+          idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('undecided-review-task'),
+          subject: 'Review a change', instructions: 'Make a change and request review.',
+          readScopes: ['packages/team'], writeScopes: ['packages/team'],
+        }))
+        let task: TeamTaskSnapshot = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+        await vi.waitFor(async () => {
+          task = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+          expect(task.phase).toBe('running')
+        }, { timeout: 5000 })
+        const reviewing = await settleTaskAttemptAsOwner(ctx, task, {
+          kind: 'completed', result: { summary: 'Change ready for review.' },
+        })
+        expect(reviewing.phase).toBe('review')
+        const reviewerId = reviewing.reviewPolicy.kind === 'participant' ? reviewing.reviewPolicy.reviewerId : undefined
+        if (reviewerId === undefined) throw new Error('Reviewed task has no reviewer')
+        await vi.waitFor(async () => {
+          const state = await ctx.teams.getTeam({ teamId: run.teamId })
+          const binding = state.activations.findLast(candidate => candidate.activation.participantId === reviewerId)
+          const reviewer = binding === undefined ? undefined : ctx.agents.get(binding.sessionId)
+          expect(reviewer?.session.events.some(event => event.type === 'turn/end')).toBe(true)
+        }, { timeout: 5000 })
+        const failure: unknown = await ctx.agents.withInitiator(coordinator, async () =>
+          await ctx.teamRuns.waitForDefaultWorkerTask(authority, { taskId: created.id }))
+          .then(() => undefined, (error: unknown) => error)
+        expect(failure).toMatchObject({ code: 'TEAM_RUN_REVIEW_FAILED' })
+        if (reviewerOutcome === 'errored') {
+          if (!(failure instanceof Error)) throw new Error('Review failure did not retain an Error')
+          expect(failure.message).toContain('review model unavailable')
+        }
+        expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })).phase).toBe('review')
+        if (reviewerOutcome !== 'errored') {
+          const decision = reviewerOutcome === 'stopped-rework' ? 'rework' : 'accepted'
+          const phase = decision === 'accepted' ? 'completed' : 'pending'
+          await respondToTaskReview(ctx, reviewing, decision)
+          await vi.waitFor(async () => {
+            expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })).phase).toBe(phase)
+          }, { timeout: 5000 })
+          if (decision === 'accepted') {
+            await expect(ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.waitForDefaultWorkerTask(authority, {
+              taskId: created.id,
+            }))).resolves.toMatchObject({ phase, reviewResult: { decision } })
+          } else {
+            const listed = await ctx.agents.withInitiator(coordinator,
+              async () => await ctx.teamRuns.listDefaultWorkerTasks(authority))
+            expect(listed.tasks.find(task => task.id === created.id))
+              .toMatchObject({ phase, reviewResult: { decision } })
+          }
+        }
+      } finally { adapter.releaseCoordinator.resolve(undefined) }
+    }, 15_000)
+
+  it.each([false, true] as const)(
+    'defers reworked task cleanup until its prior attempt workspace is physically released (release after intent: %s)', async (releaseAfterIntent) => {
+      const adapter = new FirstCoordinatorTurnGateAdapter()
+      const ctx = await setupTaskRun(adapter, { workerPreset: 'worker', reviewerPreset: 'worker', workerTaskMaxAttempts: 1 }, !releaseAfterIntent)
+      const basic = await import('@clocky/clocky-team-channel-basic')
+      await ctx.plugin(basic)
+      const run = await ctx.teamRuns.create({ objective: 'Cancel rework with a retained workspace.', cwd: process.cwd() })
+      const coordinator = run.coordinatorLease.localAgent
+      if (coordinator === undefined) throw new Error('Team run has no coordinator')
+      const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+      vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+        const { preset: _preset, ...agent } = request.agent
+        return await activate({ ...request, agent })
+      })
+      coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Start the reviewed work.' }], source: { kind: 'user' } }))
+      await adapter.coordinatorStarted.promise
+      const scopes = new Map<TeamSystemWorkspaceAllocationProof, TeamSystemWorkspaceAllocationScope>()
+      const unregister = ctx.teams.registerSystemWorkspaceAllocationProofSource({
+        name: 'team-run-review-workspace', resolveWorkspaceAllocationProof: proof => scopes.get(proof),
+      })
+      const issue = (scope: TeamSystemWorkspaceAllocationScope): TeamSystemWorkspaceAllocationProof => {
+        const proof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+        scopes.set(proof, scope)
+        return proof
+      }
+      try {
+        const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+        const created = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+          idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('rework-retained-workspace'),
+          subject: 'Review this attempt', instructions: 'Prepare a result for review.',
+          readScopes: ['packages/team'], writeScopes: ['packages/team'],
+        }))
+        let running: TeamTaskSnapshot = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+        await vi.waitFor(async () => {
+          running = await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })
+          expect(running.phase).toBe('running')
+        }, { timeout: 5000 })
+        const lease = running.lease
+        if (lease?.activationId === undefined) throw new Error('Running attempt has no activation-bound lease')
+        const binding = await ctx.teams.getActivation({ teamId: run.teamId, activationId: lease.activationId })
+        const current = await ctx.teams.getTeam({ teamId: run.teamId })
+        const reserve = teamWorkspaceAllocationReserveInputSchema.parse({
+          teamId: run.teamId, expectedCursor: current.team.cursor, taskId: running.id,
+          expectedTaskRevision: running.revision, attemptId: lease.attemptId,
+          allocation: { id: teamWorkspaceAllocationIdSchema.parse('rework-retained-allocation'),
+            provider: 'team-run-review-workspace', mode: 'shared', assignedRevision: lease.assignedRevision,
+            participantId: lease.participantId, activationId: lease.activationId, sessionId: binding.sessionId },
+        })
+        const reserved = await ctx.teams.reserveWorkspaceAllocation({ actor: issue({ kind: 'workspace-allocation-reserve', ...reserve }), ...reserve })
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          const afterReserve = await ctx.teams.getTeam({ teamId: run.teamId })
+          const allocation = afterReserve.workspaceAllocations.find(item => item.id === reserved.id)
+          if (allocation === undefined) throw new Error('Reserved workspace allocation disappeared')
+          const preserve = teamWorkspaceAllocationPreserveInputSchema.parse({
+            teamId: run.teamId, allocationId: reserved.id, expectedCursor: afterReserve.team.cursor,
+            expectedRevision: allocation.revision,
+            reason: { code: 'PROVIDER_UNAVAILABLE', message: 'The prior attempt workspace awaits physical cleanup.' },
+          })
+          try {
+            await ctx.teams.preserveWorkspaceAllocation({ actor: issue({ kind: 'workspace-allocation-preserve', ...preserve }), ...preserve })
+            break
+          } catch (error: unknown) {
+            if (!(error instanceof TeamError) || error.code !== 'TEAM_CURSOR_CONFLICT' || attempt === 19) throw error
+          }
+        }
+        const reviewing = await settleTaskAttemptAsOwner(ctx, running, {
+          kind: 'completed', result: { summary: 'The first attempt needs rework.' },
+        })
+        expect(reviewing.phase).toBe('review')
+        await vi.waitFor(async () => { await respondToTaskReview(ctx, reviewing, 'rework') }, { timeout: 5000 })
+        await vi.waitFor(async () => {
+          expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })).phase).toBe('pending')
+        }, { timeout: 5000 })
+        const requested = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelDefaultWorkerTask(authority, {
+          taskId: created.id,
+        }))
+        expect(requested.phase).toBe('pending')
+        expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })).cancellation).toBeDefined()
+        const cleanup = vi.spyOn(ctx.teams, 'cancelTeamCancellationTask')
+        const releaseAllocation = async (): Promise<void> => {
+          for (let attempt = 0; attempt < 20; attempt += 1) {
+            const beforeRequest = await ctx.teams.getTeam({ teamId: run.teamId })
+            const allocation = beforeRequest.workspaceAllocations.find(item => item.id === reserved.id)
+            if (allocation === undefined) throw new Error('Retained workspace allocation disappeared')
+            if (allocation.lifecycle === 'released') return
+            try {
+              if (allocation.lifecycle !== 'release-requested') {
+                const releaseRequest = teamWorkspaceAllocationReleaseRequestInputSchema.parse({
+                  teamId: run.teamId, allocationId: allocation.id, expectedCursor: beforeRequest.team.cursor,
+                  expectedRevision: allocation.revision,
+                })
+                await ctx.teams.requestWorkspaceAllocationRelease({
+                  actor: issue({ kind: 'workspace-allocation-release-request', ...releaseRequest }), ...releaseRequest,
+                })
+              }
+              const beforeRelease = await ctx.teams.getTeam({ teamId: run.teamId })
+              const releasing = beforeRelease.workspaceAllocations.find(item => item.id === reserved.id)
+              if (releasing === undefined) throw new Error('Release-requested allocation disappeared')
+              const release = teamWorkspaceAllocationReleaseInputSchema.parse({ teamId: run.teamId,
+                allocationId: releasing.id, expectedCursor: beforeRelease.team.cursor, expectedRevision: releasing.revision })
+              await ctx.teams.confirmWorkspaceAllocationRelease({ actor: issue({ kind: 'workspace-allocation-release', ...release }), ...release })
+              return
+            } catch (error: unknown) {
+              if (!(error instanceof TeamError) || error.code !== 'TEAM_CURSOR_CONFLICT' || attempt === 19) throw error
+            }
+          }
+        }
+        if (releaseAfterIntent) {
+          const cancelTeam = ctx.teams.cancelTeam.bind(ctx.teams)
+          let released = false
+          vi.spyOn(ctx.teams, 'cancelTeam').mockImplementation(async (request) => {
+            try {
+              const result = await cancelTeam(request)
+              if (!released && result.team.cancellation !== undefined) {
+                released = true
+                await releaseAllocation()
+              }
+              return result
+            } catch (error: unknown) {
+              const current = await ctx.teams.getTeam({ teamId: run.teamId })
+              if (!released && current.team.cancellation !== undefined) {
+                released = true
+                await releaseAllocation()
+              }
+              throw error
+            }
+          })
+        }
+        adapter.releaseCoordinator.resolve(undefined)
+        await coordinator.whenIdle()
+        expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })).phase).toBe('pending')
+        const failure: unknown = await ctx.teamRuns.cancel(run.teamId).then(() => undefined, (error: unknown) => error)
+        if (releaseAfterIntent) {
+          expect(cleanup).toHaveBeenCalledWith(expect.objectContaining({ teamId: run.teamId, taskId: created.id }))
+          expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })).phase).toBe('cancelled')
+          expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.phase).toBe('cancelled')
+          expect(failure).toBeUndefined()
+        } else {
+          expect(failure).toBeInstanceOf(Error)
+          expect(cleanup).not.toHaveBeenCalled()
+          expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })).phase).toBe('pending')
+          await releaseAllocation()
+          await ctx.teamRuns.cancel(run.teamId)
+        }
+        expect((await ctx.teams.getTask({ teamId: run.teamId, taskId: created.id })).phase).toBe('cancelled')
+        expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.phase).toBe('cancelled')
+      } finally {
+        unregister()
+        adapter.releaseCoordinator.resolve(undefined)
+      }
+    }, 15_000)
+
   it('gives task creation its own cursor retries after participant preparation succeeds', async () => {
     const adapter = new CoordinatorGateWorkerReplyAdapter()
     const ctx = await setup(true, { workerPreset: 'worker', reviewerPreset: 'worker', receiptRetryAttempts: 3 }, adapter)
@@ -2470,6 +4144,7 @@ describe('local Team run', () => {
 
   it('creates and admits the first human input once for one retry key', async () => {
     const ctx = await setup()
+    const post = vi.spyOn(ctx.teams, 'postChannelEnvelope')
     const request = {
       objective: 'Start one retryable Team task.',
       cwd: process.cwd(),
@@ -2487,6 +4162,9 @@ describe('local Team run', () => {
     expect(Array.isArray((await ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })).items)).toBe(true)
     const records = await ctx.teams.readChannel({ channelId: first.handle.channel.manifest.id, afterCursor: -1 })
     expect(records.records.filter(record => record.type === 'channel/envelope')).toHaveLength(1)
+    const inputPost = post.mock.calls.find(([candidate]) => candidate.draft.channelId === first.handle.channel.manifest.id)?.[0]
+    if (inputPost === undefined) throw new Error('TeamRun did not post the initial human input')
+    expect(() => JSON.stringify(inputPost.actor)).toThrow('runtime-only')
 
     await expect(ctx.teamRuns.start({
       ...request,
@@ -2500,6 +4178,7 @@ describe('local Team run', () => {
     })
     await ctx.teamRuns.cancel(first.handle.teamId)
     await ctx.teamRuns.cancel(other.handle.teamId)
+    await expect(ctx.teams.postChannelEnvelope(inputPost)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
 
     const ownedRequest = {
       ...request,
@@ -2540,6 +4219,24 @@ describe('local Team run', () => {
       prompt.mockRestore(); activation.mockRestore()
       await owned?.dispose()
     }
+  })
+
+  it('removes the first scoped prompt when final-output prompt registration fails', async () => {
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0 }, new ReplyAdapter(), false)
+    const section = ctx.systemPrompt.section.bind(ctx.systemPrompt)
+    const releaseGuidance = vi.fn()
+    const failure = new Error('final-output prompt registration failed')
+    const prompt = vi.spyOn(ctx.systemPrompt, 'section').mockImplementation((options) => {
+      if (options.name === 'team-run:final-output') throw failure
+      const dispose = section(options)
+      if (options.name !== 'team-run:delegation-guidance') return dispose
+      return () => { releaseGuidance(); dispose() }
+    })
+    try {
+      await expect(ctx.teamRuns.create({ objective: 'Reject partial prompt setup.', cwd: process.cwd() }))
+        .rejects.toThrow('final-output prompt registration failed')
+      expect(releaseGuidance).toHaveBeenCalledOnce()
+    } finally { prompt.mockRestore() }
   })
 
   it('releases a start key when topology creation fails before publication', async () => {
@@ -2676,6 +4373,9 @@ describe('local Team run', () => {
         team: { phase: 'stalled', stallReason: { code: 'FINAL_ANSWER_MISSING' } },
       })
     })
+    const interrupt = vi.spyOn(ctx.teams, 'requestParticipantInterrupt')
+    await expect(ctx.teamRuns.requestCoordinatorInterrupt(run.teamId)).resolves.toBeUndefined()
+    expect(interrupt).not.toHaveBeenCalled()
   })
 
   it('keeps the Team active after a successful non-final team message', async () => {
@@ -2720,6 +4420,23 @@ describe('local Team run', () => {
     await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).resolves.toMatchObject({
       text: 'The continuation finished.',
     })
+  })
+
+  it('records a missing final after the coordinator exhausts its output-limit continuations', async () => {
+    const adapter = new MaxTokensAdapter()
+    const ctx = await setup(true, { maxCoordinatorOutputContinuations: 1 }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Stop repeated truncated coordinator turns.', cwd: process.cwd() })
+    const record = vi.spyOn(ctx.teamClosureDriver, 'recordTurnEnd')
+    await ctx.teamRuns.postHumanInput({ teamId: run.teamId, content: [{ type: 'text', text: 'Finish the answer.' }] })
+    await adapter.continuationStarted.promise
+    expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.phase).toBe('active')
+    adapter.releaseContinuation.resolve(undefined)
+    await vi.waitFor(async () => {
+      expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.phase).toBe('stalled')
+    })
+    expect(record.mock.calls.some(([input]) => input.teamId === run.teamId
+      && input.reason.code === 'FINAL_ANSWER_MISSING'
+      && input.outcome === 'missing-final')).toBe(true)
   })
 
   it('retries one trusted human input after a channel cursor conflict', async () => {
@@ -2812,7 +4529,14 @@ describe('local Team run', () => {
         coordinatorName: 'Coordinator',
         workerName: 'Worker',
         workerCount: 2,
+        maxLiveActivations: 3,
+        workerPreset: 'worker-preset',
+        reviewerPreset: 'reviewer-preset',
+        workerTaskMaxAttempts: 2,
+        workerTaskPriority: 3,
         finalPromptOrder: 10,
+        workerPromptOrder: 11,
+        maxCoordinatorOutputContinuations: 4,
         receiptRetryAttempts: 2,
         humanInputRetryAttempts: 2,
       })).not.toThrow()
@@ -2822,6 +4546,8 @@ describe('local Team run', () => {
     for (const [config, message] of [
       [{ maxChildTeams: -1 }, 'maxChildTeams must be a non-negative safe integer'],
       [{ maxChildTeams: 1.5 }, 'maxChildTeams must be a non-negative safe integer'],
+      [{ maxLiveActivations: -1 }, 'maxLiveActivations must be a non-negative safe integer'],
+      [{ maxLiveActivations: 1.5 }, 'maxLiveActivations must be a non-negative safe integer'],
       [{ activationProvider: ' ' }, 'activationProvider must be non-empty'],
       [{ templateVersion: 1.5 }, 'templateVersion must be a positive safe integer'],
       [{ templateVersion: 0 }, 'templateVersion must be a positive safe integer'],
@@ -2830,7 +4556,14 @@ describe('local Team run', () => {
       [{ maxWorkerCount: 1.5 }, 'maxWorkerCount must be a non-negative safe integer'],
       [{ maxWorkerCount: -1 }, 'maxWorkerCount must be a non-negative safe integer'],
       [{ workerCount: 2, maxWorkerCount: 1 }, 'workerCount must not exceed maxWorkerCount'],
+      [{ workerTaskMaxAttempts: 0 }, 'workerTaskMaxAttempts must be a positive safe integer'],
+      [{ workerTaskMaxAttempts: 1.5 }, 'workerTaskMaxAttempts must be a positive safe integer'],
+      [{ workerTaskPriority: -1 }, 'workerTaskPriority must be a non-negative safe integer'],
+      [{ workerTaskPriority: 1.5 }, 'workerTaskPriority must be a non-negative safe integer'],
       [{ finalPromptOrder: Infinity }, 'finalPromptOrder must be finite'],
+      [{ workerPromptOrder: Infinity }, 'workerPromptOrder must be finite'],
+      [{ maxCoordinatorOutputContinuations: 0 }, 'maxCoordinatorOutputContinuations must be a positive safe integer'],
+      [{ maxCoordinatorOutputContinuations: 1.5 }, 'maxCoordinatorOutputContinuations must be a positive safe integer'],
       [{ receiptRetryAttempts: 1.5 }, 'receiptRetryAttempts must be a positive safe integer'],
       [{ receiptRetryAttempts: 0 }, 'receiptRetryAttempts must be a positive safe integer'],
       [{ humanInputRetryAttempts: 1.5 }, 'humanInputRetryAttempts must be a positive safe integer'],
@@ -2880,6 +4613,14 @@ describe('local Team run', () => {
     }
   })
 
+  it.each(['missing', 'non-acknowledging'] as const)('refuses a %s product human endpoint during Team creation', async (mode) => {
+    const ctx = await setup()
+    await expect(ctx.teamRuns.create({ objective: 'Require exact human invitation consent.', cwd: process.cwd(),
+      humanOwner: { kind: 'product-principal', principalId: 'human-owner' as never },
+      ...mode === 'missing' ? {} : { admitHumanChannel: async () => {} },
+    })).rejects.toThrow(mode === 'missing' ? 'admission capability is required' : 'without durable invitation consent')
+  })
+
   it('does not join a pending resume owned by another authenticated human', async () => {
     const ctx = await setup()
     const run = await withPrincipalAdmission(ctx, 'owner-a', async admitHumanChannel => await ctx.teamRuns.create({
@@ -2913,9 +4654,20 @@ describe('local Team run', () => {
     const active = await ctx.teamRuns.create({ objective: 'Cancel while active.', cwd: process.cwd() })
     await ctx.teamRuns.cancel(active.teamId)
     await expect(ctx.teams.getTeam({ teamId: active.teamId })).resolves.toMatchObject({ team: { phase: 'cancelled' } })
+    await expect(ctx.teamRuns.resume({ teamId: active.teamId })).rejects.toThrow('not resumable from phase')
     await expect(ctx.teamRuns.postHumanInput({ teamId: active.teamId, content: [{ type: 'text', text: 'No longer owned.' }] })).rejects.toMatchObject({
       code: 'TEAM_RUN_NOT_FOUND',
     })
+  })
+
+  it('returns the current local handle when its owner resumes an already resident Team', async () => {
+    const ctx = await setup()
+    const run = await ctx.teamRuns.create({ objective: 'Keep the resident coordinator epoch.', cwd: process.cwd() })
+    const activation = run.coordinatorLease.binding.activation.id
+    const resumed = await ctx.teamRuns.resume({ teamId: run.teamId })
+    expect(resumed).toBe(run)
+    expect((await ctx.teams.getTeam({ teamId: run.teamId })).activations.at(-1)?.activation.id).toBe(activation)
+    await ctx.teamRuns.cancel(run.teamId)
   })
 
   it('waits for the parent delegation drive before releasing cancellation ownership', async () => {
@@ -2969,6 +4721,7 @@ describe('local Team run', () => {
     })
     const archived = await ctx.teamRuns.archiveTerminal({ teamId: run.teamId, expectedCursor: terminal.team.cursor })
     expect(archived.team.archivedAt).toBeDefined()
+    await expect(ctx.teamRuns.resume({ teamId: run.teamId })).rejects.toThrow('not resumable from phase')
     if (proof === undefined) throw new Error('Team-run did not submit a terminal archive proof')
     expect(internals.archiveProofs.get(proof)).toBeUndefined()
     expect(internals.terminalArchiveOwners.get(run.teamId)).toEqual({ teamId: run.teamId })
@@ -3053,6 +4806,25 @@ describe('local Team run', () => {
     })
   })
 
+  it('marks the coordinator execution route closing while cancellation drains its owned lease', async () => {
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0 })
+    const run = await ctx.teamRuns.create({ objective: 'Observe cancellation cleanup admission.', cwd: process.cwd() })
+    const dispose = run.coordinatorLease.dispose.bind(run.coordinatorLease)
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    vi.spyOn(run.coordinatorLease, 'dispose').mockImplementationOnce(async () => {
+      entered.resolve(undefined); await release.promise; await dispose()
+    })
+    try {
+      const cancelling = ctx.teamRuns.cancel(run.teamId)
+      await entered.promise
+      const route = await ctx.waterfall(ctx.teams, 'team/member-execution-observe',
+        { teamId: run.teamId, participant: run.coordinator }, async () => ({}))
+      expect(route.route?.reasons).toContain('owner-closing')
+      release.resolve(undefined)
+      await cancelling
+    } finally { release.resolve(undefined) }
+  })
+
   it('retries a concurrent Team cursor advance before releasing the local run', async () => {
     const ctx = await setup(true, {}, new ReplyAdapter(), false)
     const run = await ctx.teamRuns.create({ objective: 'Retry cancellation after a cursor race.', cwd: process.cwd() })
@@ -3103,6 +4875,31 @@ describe('local Team run', () => {
     })).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_FOUND' })
   })
 
+  it('retries cancellation after a cursor conflict even when its recovery read briefly fails', async () => {
+    const ctx = await setup(true, { receiptRetryAttempts: 2 })
+    const run = await ctx.teamRuns.create({ objective: 'Retry after an unavailable cancellation read.', cwd: process.cwd() })
+    const cancelTeam = ctx.teams.cancelTeam.bind(ctx.teams)
+    const getTeam = ctx.teams.getTeam.bind(ctx.teams)
+    const conflict = new TeamError('Team cursor moved before cancellation', 'TEAM_CURSOR_CONFLICT')
+    const readFailure = new Error('Team projection temporarily unavailable')
+    let failRecoveryRead = false
+    const cancel = vi.spyOn(ctx.teams, 'cancelTeam').mockImplementationOnce(async () => {
+      failRecoveryRead = true
+      throw conflict
+    }).mockImplementation(async request => await cancelTeam(request))
+    vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async (request) => {
+      if (failRecoveryRead && request.teamId === run.teamId) {
+        failRecoveryRead = false
+        throw readFailure
+      }
+      return await getTeam(request)
+    })
+    await expect(ctx.teamRuns.cancel(run.teamId)).resolves.toBeUndefined()
+    expect(cancel).toHaveBeenCalledTimes(2)
+    expect(failRecoveryRead).toBe(false)
+    await expect(ctx.teams.getTeam({ teamId: run.teamId })).resolves.toMatchObject({ team: { phase: 'cancelled' } })
+  })
+
   it('retains local ownership when the Hub cannot accept the cancellation intent', async () => {
     const ctx = await setup()
     const run = await ctx.teamRuns.create({ objective: 'Do not release before cancellation admission.', cwd: process.cwd() })
@@ -3139,6 +4936,44 @@ describe('local Team run', () => {
     await ctx.teamRuns.cancel(run.teamId)
     expect(runs.get(run.teamId)).toBeUndefined()
     await expect(ctx.teams.getTeam({ teamId: run.teamId })).resolves.toMatchObject({ team: { phase: 'cancelled' } })
+  })
+
+  it('accepts terminal typed cancellation after a superseded local channel conflict', async () => {
+    const ctx = await setup(true, { receiptRetryAttempts: 1 }, new ReplyAdapter(), false)
+    const run = await ctx.teamRuns.create({ objective: 'Retry cancellation channel cleanup.', cwd: process.cwd() })
+    const close = vi.spyOn(ctx.teams, 'closeTeamCancellationChannel')
+      .mockRejectedValueOnce(new TeamError('channel changed before cancellation cleanup', 'TEAM_CHANNEL_CURSOR_CONFLICT'))
+    await expect(ctx.teamRuns.cancel(run.teamId)).resolves.toBeUndefined()
+    expect(close).toHaveBeenCalledOnce()
+    const cleanup = close.mock.calls[0]?.[0]
+    if (cleanup === undefined) throw new Error('Cancellation did not attempt channel cleanup')
+    expect(() => JSON.stringify(cleanup.actor)).toThrow('runtime-only')
+    await expect(ctx.teams.closeTeamCancellationChannel(cleanup)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    await expect(ctx.teams.getTeam({ teamId: run.teamId })).resolves.toMatchObject({ team: { phase: 'cancelled' } })
+    await expect(ctx.teamRuns.cancel(run.teamId)).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_FOUND' })
+  })
+
+  it('reports a channel storage failure even when typed cancellation reaches terminal', async () => {
+    const ctx = await setup(true, { receiptRetryAttempts: 1 }, new ReplyAdapter(), false)
+    const run = await ctx.teamRuns.create({ objective: 'Preserve cancellation storage errors.', cwd: process.cwd() })
+    const failure = new Error('channel storage unavailable')
+    vi.spyOn(ctx.teams, 'closeTeamCancellationChannel').mockRejectedValueOnce(failure)
+    await expect(ctx.teamRuns.cancel(run.teamId)).rejects.toBe(failure)
+    await expect(ctx.teams.getTeam({ teamId: run.teamId })).resolves.toMatchObject({ team: { phase: 'cancelled' } })
+  })
+
+  it('reports both cancellation cleanup and closure-driver failures after typed cancellation settles', async () => {
+    const ctx = await setup(true, { receiptRetryAttempts: 1 })
+    const run = await ctx.teamRuns.create({ objective: 'Retain cancellation after two cleanup failures.', cwd: process.cwd() })
+    const progress = new TeamError('channel cleanup raced', 'TEAM_CHANNEL_CURSOR_CONFLICT')
+    const driverFailure = new Error('closure driver unavailable')
+    const close = vi.spyOn(ctx.teams, 'closeTeamCancellationChannel').mockRejectedValueOnce(progress)
+    const drive = vi.spyOn(ctx.teamClosureDriver, 'drive').mockRejectedValue(driverFailure)
+    await expect(ctx.teamRuns.cancel(run.teamId)).rejects.toMatchObject({ errors: [progress, driverFailure] })
+    expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.phase).toBe('cancelled')
+    drive.mockRestore()
+    close.mockRestore()
+    await expect(ctx.teamRuns.cancel(run.teamId)).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_FOUND' })
   })
 
   it('stops a final wait when its caller cancels the watch', async () => {
@@ -3186,6 +5021,28 @@ describe('local Team run', () => {
       expect(admit).not.toHaveBeenCalled()
       expect((await ctx.teams.getTeam({ teamId: run.teamId })).team).toMatchObject({ phase: 'active' })
     } finally { ownership.dispose() }
+  })
+
+  it('waits for a declared member workspace settler before admitting the final', async () => {
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: ['build'],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }, new ReplyAdapter(), false)
+    const run = await ctx.teamRuns.create({ objective: 'Settle the member workspace.', cwd: process.cwd() })
+    const state = await ctx.teams.getTeam({ teamId: run.teamId })
+    const binding = state.activations.findLast(candidate => candidate.activation.participantId === run.members[0]?.id)
+    const member = binding === undefined ? undefined : ctx.agents.get(binding.sessionId)
+    if (member === undefined) throw new Error('Template member has no local Agent')
+    const failure = new Error('member workspace settlement unavailable')
+    const settle = vi.fn(async (): Promise<void> => { throw failure })
+    const ownership = openAgentWorkspaceLease(member, { settleForActivationDisposal: settle })
+    const final = await postFinal(ctx, run)
+    try {
+      await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).rejects.toBe(failure)
+      expect(settle).toHaveBeenCalledOnce()
+      expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.closure).toBeUndefined()
+    } finally { ownership.dispose() }
+    await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).resolves.toMatchObject({ envelopeId: final.id })
   })
 
   it('re-reads channel records after a changed watch before accepting a final', async () => {
@@ -3276,6 +5133,60 @@ describe('local Team run', () => {
     expect(disposePrompt).toHaveBeenCalledOnce()
     expect(disposeLease).toHaveBeenCalledOnce()
     await expect(ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })).resolves.toMatchObject({ items: [{ phase: 'failed' }] })
+  })
+
+  it('releases a declared member activation when its reporting prompt cannot mount', async () => {
+    const member: TeamRun.TeamRunMember = { role: 'builder', displayName: 'Builder', kind: 'local-agent',
+      capabilities: ['build'], provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128 }
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [member] })
+    const section = ctx.systemPrompt.section.bind(ctx.systemPrompt)
+    const failure = new Error('member reporting prompt unavailable')
+    vi.spyOn(ctx.systemPrompt, 'section').mockImplementation((request) => {
+      if (request.name === 'team-run:template-task-report') throw failure
+      return section(request)
+    })
+    await expect(ctx.teamRuns.create({ objective: 'Release a failed template member.', cwd: process.cwd() }))
+      .rejects.toBe(failure)
+    const page = await ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })
+    expect(page.items).toHaveLength(1)
+    const team = await ctx.teams.getTeam({ teamId: page.items[0]!.id })
+    expect(team.team.phase).toBe('failed')
+    const builder = team.participants.find(participant => participant.role === member.role)
+    expect(builder).toBeDefined()
+    expect(team.activations.filter(binding => binding.activation.participantId === builder?.id))
+      .toMatchObject([{ activation: { status: 'offline' } }])
+  })
+
+  it.each([false, true] as const)('reports coordinator startup failure after member activation (cleanup fails: %s)', async (cleanupFails) => {
+    const member: TeamRun.TeamRunMember = { role: 'builder', displayName: 'Builder', kind: 'local-agent',
+      capabilities: ['build'], provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128 }
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [member] })
+    const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+    const failure = new Error('coordinator provider failed after member activation')
+    const cleanupFailure = new Error('member lease cleanup failed')
+    vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+      const state = await ctx.teams.getTeam({ teamId: request.teamId })
+      const participant = state.participants.find(candidate => candidate.id === request.participantId)
+      if (participant?.role === 'coordinator') throw failure
+      const lease = await activate(request)
+      if (!cleanupFails || participant?.role !== member.role) return lease
+      return { binding: lease.binding, localAgent: lease.localAgent,
+        health: () => lease.health(), interrupt: (...args) => { lease.interrupt(...args) },
+        dispose: async () => { await lease.dispose(); throw cleanupFailure },
+      }
+    })
+    const result: unknown = await ctx.teamRuns.create({ objective: 'Release an admitted member after coordinator failure.', cwd: process.cwd() })
+      .then(() => undefined, (error: unknown) => error)
+    if (cleanupFails) expect(result).toMatchObject({ errors: [failure, cleanupFailure] })
+    else expect(result).toBe(failure)
+    const page = await ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })
+    expect(page.items).toHaveLength(1)
+    const team = await ctx.teams.getTeam({ teamId: page.items[0]!.id })
+    expect(team.team.phase).toBe('failed')
+    const builder = team.participants.find(participant => participant.role === member.role)
+    expect(builder).toBeDefined()
+    expect(team.activations.filter(binding => binding.activation.participantId === builder?.id))
+      .toMatchObject([{ activation: { status: 'offline' } }])
   })
 
   it('uses one ephemeral Team-run creation-failure proof before a local run exists', async () => {
@@ -3370,7 +5281,7 @@ describe('local Team run', () => {
     vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async (request) => {
       const state = await getTeam(request)
       if (!workerProvisioned) return state
-      workerProvisioned = false
+      // Every projection read exposes the fault; background discovery cannot consume a one-read trigger first.
       return { ...state, participants: state.participants.filter(participant => participant.id !== workerId) }
     })
     await expect(ctx.teamRuns.create({ objective: 'Require worker persistence.', cwd: process.cwd() })).rejects.toMatchObject({
@@ -3389,6 +5300,56 @@ describe('local Team run', () => {
     const result = await ctx.teamRuns.waitForFinal({ teamId: run.teamId })
     expect(result.text).toBe('The review is complete.')
     expect(acknowledge).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries completion intent after a Team cursor conflict before final receipt', async () => {
+    const ctx = await setup(true, { receiptRetryAttempts: 2 })
+    const run = await ctx.teamRuns.create({ objective: 'Retry completion intent.', cwd: process.cwd() })
+    const final = await postFinal(ctx, run)
+    const completeTeam = ctx.teams.completeTeam.bind(ctx.teams)
+    const complete = vi.spyOn(ctx.teams, 'completeTeam')
+      .mockRejectedValueOnce(new TeamError('Team cursor moved before completion', 'TEAM_CURSOR_CONFLICT'))
+      .mockImplementation(async request => await completeTeam(request))
+    await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).resolves.toMatchObject({ envelopeId: final.id })
+    expect(complete).toHaveBeenCalledTimes(2)
+    await expect(ctx.teams.getTeam({ teamId: run.teamId })).resolves.toMatchObject({
+      team: { closure: { kind: 'complete', finalEnvelopeId: final.id } },
+    })
+  })
+
+  it('keeps a final eligible after completion intent exhausts its cursor retry', async () => {
+    const ctx = await setup(true, { receiptRetryAttempts: 1 })
+    const run = await ctx.teamRuns.create({ objective: 'Recover a rejected completion intent.', cwd: process.cwd() })
+    const final = await postFinal(ctx, run)
+    const conflict = new TeamError('Team cursor remains contended', 'TEAM_CURSOR_CONFLICT')
+    const complete = vi.spyOn(ctx.teams, 'completeTeam').mockRejectedValueOnce(conflict)
+    await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).rejects.toBe(conflict)
+    expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.closure).toBeUndefined()
+    complete.mockRestore()
+    await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).resolves.toMatchObject({ envelopeId: final.id })
+    expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.closure).toMatchObject({
+      kind: 'complete', finalEnvelopeId: final.id,
+    })
+  })
+
+  it('rejects a later final without changing the durable completion selection', async () => {
+    const ctx = await setup(true, {}, new ReplyAdapter(), false)
+    const run = await ctx.teamRuns.create({ objective: 'Keep the first admitted final selection.', cwd: process.cwd() })
+    const selected = await postFinal(ctx, run, 'The selected final.', 'selected-final')
+    const later = await postFinal(ctx, run, 'A different later final.', 'later-final')
+    const sinkFailure = new Error('result sink unavailable after completion intent')
+    const admit = vi.spyOn(ctx.teams, 'admitTeamFinalResult').mockRejectedValueOnce(sinkFailure)
+    await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).rejects.toBe(sinkFailure)
+    expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.closure).toMatchObject({
+      kind: 'complete', finalEnvelopeId: selected.id,
+    })
+    admit.mockRestore()
+    await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId, afterCursor: selected.sequence }))
+      .rejects.toMatchObject({ code: 'TEAM_RUN_NOT_QUIESCENT' })
+    expect((await ctx.teams.getTeam({ teamId: run.teamId })).team.closure).toMatchObject({
+      kind: 'complete', finalEnvelopeId: selected.id,
+    })
+    expect(later.id).not.toBe(selected.id)
   })
 
   it('records a final human receipt through the current run private proof', async () => {
@@ -3516,6 +5477,46 @@ describe('local Team run', () => {
         reason: 'parent Team completed',
       },
     ])
+    const firstCleanup = close.mock.calls[0]?.[0]
+    if (firstCleanup === undefined) throw new Error('TeamRun did not close the final channel')
+    expect(() => JSON.stringify(firstCleanup.actor)).toThrow('runtime-only')
+    await expect(ctx.teams.closeTeamFinalizationChannel(firstCleanup))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  })
+
+  it.each(['TEAM_CHANNEL_CURSOR_CONFLICT', 'TEAM_ACTOR_PROOF_INVALID'] as const)(
+    'retries finalization channel cleanup after a transient %s', async (code) => {
+      const ctx = await setup(true, { receiptRetryAttempts: 2 }, new ReplyAdapter(), false)
+      const run = await ctx.teamRuns.create({ objective: 'Retry finalization channel cleanup.', cwd: process.cwd() })
+      const final = await postFinal(ctx, run)
+      const closeChannel = ctx.teams.closeTeamFinalizationChannel.bind(ctx.teams)
+      const close = vi.spyOn(ctx.teams, 'closeTeamFinalizationChannel')
+        .mockRejectedValueOnce(new TeamError('channel cleanup authority changed', code))
+        .mockImplementation(async request => await closeChannel(request))
+
+      await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).resolves.toMatchObject({ envelopeId: final.id })
+      expect(close).toHaveBeenCalledTimes(2)
+      await expect(ctx.teams.getChannel({ channelId: run.channel.manifest.id })).resolves.toMatchObject({ phase: 'closed' })
+      await expect(ctx.teams.getTeam({ teamId: run.teamId })).resolves.toMatchObject({ team: { closure: { kind: 'complete' } } })
+    })
+
+  it('retains completion intent when finalization channel cleanup exhausts its retry limit', async () => {
+    const ctx = await setup(true, { receiptRetryAttempts: 2 }, new ReplyAdapter(), false)
+    const run = await ctx.teamRuns.create({ objective: 'Report finalization cleanup exhaustion.', cwd: process.cwd() })
+    const final = await postFinal(ctx, run)
+    const close = vi.spyOn(ctx.teams, 'closeTeamFinalizationChannel')
+      .mockRejectedValue(new TeamError('channel remains contended', 'TEAM_CHANNEL_CURSOR_CONFLICT'))
+
+    await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId }))
+      .rejects.toMatchObject({ code: 'TEAM_RUN_NOT_QUIESCENT' })
+    expect(close).toHaveBeenCalledTimes(2)
+    await expect(ctx.teams.getTeam({ teamId: run.teamId })).resolves.toMatchObject({
+      team: { closure: { kind: 'complete', finalEnvelopeId: final.id } },
+    })
+    await expect(ctx.teams.getChannel({ channelId: run.channel.manifest.id })).resolves.toMatchObject({ phase: 'active' })
+    close.mockRestore()
+    await expect(ctx.teamRuns.waitForFinal({ teamId: run.teamId })).resolves.toMatchObject({ envelopeId: final.id })
+    await expect(ctx.teams.getChannel({ channelId: run.channel.manifest.id })).resolves.toMatchObject({ phase: 'closed' })
   })
 
   for (const rejection of ['paused', 'blocked', 'unfinished', 'policy-denied'] as const) {
@@ -3865,10 +5866,15 @@ describe('local Team run', () => {
 })
 
 /** Reserve a real child and retain only the parent's scoped startup authority. */
-async function reservedChild(childModel: LlmAdapter = new ReplyAdapter()) {
+async function reservedChild(childModel: LlmAdapter = new ReplyAdapter(), options: {
+  readonly member?: TeamRun.TeamRunMember
+  readonly withClosureDriver?: boolean
+} = {}) {
   const model = new GateAdapter()
   try {
-    const ctx = await setup(true, { templateId: 'fixture', workerCount: 0, maxWorkerCount: 0 }, model, true,
+    const config: TeamRun.Config = { templateId: 'fixture', workerCount: 0, maxWorkerCount: 0,
+      ...options.member === undefined ? {} : { members: [options.member] } }
+    const ctx = await setup(true, config, model, options.withClosureDriver ?? true,
       { maxTeamDepth: 2 })
     const basic = await import('@clocky/clocky-team-channel-basic')
     await ctx.plugin(basic)
@@ -3899,7 +5905,7 @@ async function reservedChild(childModel: LlmAdapter = new ReplyAdapter()) {
       return { teamId: parent.teamId, taskId: task.id, expectedCursor: state.team.cursor,
         expectedRevision: latest.revision, delegationId: task.delegation!.id }
     }
-    ctx.llm.registerAdapter(['child-fixture'], childModel)
+    const childModelRegistration = ctx.llm.registerAdapter(['child-fixture'], childModel)
     const template = ctx.teamRuns.describeChildTemplate('fixture', 1)
     const runtime = jsonObjectSchema.parse(template['childRuntime'])
     const begin = { ...await current(), child: { goal: { objective: task.description, budgets: {} },
@@ -3914,7 +5920,7 @@ async function reservedChild(childModel: LlmAdapter = new ReplyAdapter()) {
     const authorization = await ctx.teams.authorizeChildRun({ ...await current(), operation: 'start', actor })
     const request = { parentTeamId: parent.teamId, parentTaskId: task.id, childTeamId: child.team.id,
       delegationId: task.delegation.id, authorization }
-    return { ctx, child, request, actor, scope, model, proofs, issue, current,
+    return { ctx, parent, child, request, actor, scope, model, proofs, issue, current, config, childModelRegistration,
       cancelParent: () => ctx.agents.withInitiator(coordinator,
         () => ctx.teamRuns.cancelDefaultWorkerTask(authority, { taskId: task.id })) }
   } catch (error: unknown) { model.release.resolve(undefined); throw error }
@@ -3924,6 +5930,7 @@ describe('reserved child runtime ownership', () => {
   it('coalesces concurrent startup and retains one durable endpoint binding', async () => {
     const { ctx, child, request, model } = await reservedChild()
     try {
+      const open = vi.spyOn(ctx.teams, 'openChannel')
       const [first, second] = await Promise.all([ctx.teamRuns.startChild(request), ctx.teamRuns.startChild(request)])
       expect(second).toEqual(first)
       expect(await ctx.teamRuns.startChild(request)).toEqual(first)
@@ -3932,6 +5939,15 @@ describe('reserved child runtime ownership', () => {
       expect(current.participants.map(member => member.role).sort()).toEqual(['coordinator', 'parent-service'])
       expect(current.activations).toHaveLength(1)
       expect(current.channelIds).toEqual([first.channelId])
+      await expect(ctx.teamRuns.postHumanInput({ teamId: child.team.id,
+        content: [{ type: 'text', text: 'A parent service cannot impersonate a human endpoint.' }],
+      })).rejects.toMatchObject({ code: 'TEAM_RUN_NOT_FOUND' })
+      const resultChannel = open.mock.calls.find(([input]) => input.teamId === child.team.id
+        && input.adapter.type === 'consult')?.[0]
+      if (resultChannel === undefined) throw new Error('Child did not open its result channel')
+      expect(() => JSON.stringify(resultChannel.actor)).toThrow('runtime-only')
+      await expect(ctx.teams.openChannel({ ...resultChannel, expectedCursor: current.team.cursor }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
     } finally { model.release.resolve(undefined); request.authorization.close() }
   })
 })
@@ -3976,6 +5992,47 @@ it.each(['missing', 'partial', 'invalid'] as const)('rejects %s frozen child run
     expect(state.channelIds).toEqual([])
     expect((await f.ctx.teamRuns.startChild(f.request)).childTeamId).toBe(f.child.team.id)
   } finally { fault.mockRestore(); f.model.release.resolve(undefined); f.request.authorization.close() }
+})
+
+it('retries child result-channel creation after a provider opening failure', async () => {
+  const f = await reservedChild()
+  const failure = new Error('result channel storage unavailable')
+  const fault = vi.spyOn(f.ctx.teams, 'openChannel').mockImplementationOnce(async () => { throw failure })
+  try {
+    await expect(f.ctx.teamRuns.startChild(f.request)).rejects.toBe(failure)
+    expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).channelIds).toEqual([])
+    fault.mockRestore()
+    const binding = await f.ctx.teamRuns.startChild(f.request)
+    expect(binding.childTeamId).toBe(f.child.team.id)
+    expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).channelIds).toEqual([binding.channelId])
+  } finally {
+    fault.mockRestore()
+    f.model.release.resolve(undefined)
+    f.request.authorization.close()
+  }
+})
+
+it('reuses a child result channel whose durable open committed before the reply failed', async () => {
+  const f = await reservedChild()
+  const open = f.ctx.teams.openChannel.bind(f.ctx.teams)
+  const failure = new Error('result channel reply lost after commit')
+  const fault = vi.spyOn(f.ctx.teams, 'openChannel').mockImplementationOnce(async (request) => {
+    await open(request)
+    throw failure
+  })
+  try {
+    await expect(f.ctx.teamRuns.startChild(f.request)).rejects.toBe(failure)
+    const committed = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+    expect(committed.channelIds).toHaveLength(1)
+    fault.mockRestore()
+    const binding = await f.ctx.teamRuns.startChild(f.request)
+    expect(binding.channelId).toBe(committed.channelIds[0])
+    expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).channelIds).toEqual(committed.channelIds)
+  } finally {
+    fault.mockRestore()
+    f.model.release.resolve(undefined)
+    f.request.authorization.close()
+  }
 })
 
 it('drains cancelled child startup before acknowledging cancellation', async () => {
@@ -4028,6 +6085,73 @@ it('recovers a stopped child with the same participants, channel and Session', a
   } finally { f.model.release.resolve(undefined); f.request.authorization.close() }
 })
 
+it('rebuilds child coordinator task and workflow ownership from durable Team state after plugin remount', async () => {
+  const childModel = new GateAdapter()
+  const member: TeamRun.TeamRunMember = { role: 'builder', displayName: 'Builder', kind: 'local-agent',
+    capabilities: [], provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128 }
+  const f = await reservedChild(childModel, { member, withClosureDriver: false })
+  try {
+    const first = await f.ctx.teamRuns.startChild(f.request)
+    const initial = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+    const coordinatorBinding = initial.activations.findLast(binding => binding.activation.participantId === first.coordinatorId)
+    const coordinator = coordinatorBinding === undefined ? undefined : f.ctx.agents.get(coordinatorBinding.sessionId)
+    if (coordinator === undefined) throw new Error('Child coordinator did not publish a local Agent')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Prepare durable child work.' }], source: { kind: 'user' } }))
+    await childModel.started.promise
+    const authority = f.ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+    const nested = await f.ctx.agents.withInitiator(coordinator, async () => await f.ctx.teamRuns.startDelegatedTask(authority, {
+      idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('cold-child-owned-task'),
+      subject: 'Nested pending work', instructions: 'Retain this task after restart.',
+      readScopes: [], writeScopes: [], budget: {},
+    }))
+    const base = workflowPlan(1, ['builder'])
+    const plan = teamWorkflowPlanSchema.parse({ ...base, tasks: base.tasks.map(task => ({
+      ...task, requiredCapabilities: [],
+    })) })
+    const workflow = await f.ctx.agents.withInitiator(coordinator, async () => await f.ctx.teamRuns.startWorkflowPlan(authority, {
+      idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('cold-child-owned-workflow'), plan,
+    }))
+    childModel.release.resolve(undefined)
+    f.model.release.resolve(undefined)
+    await coordinator.whenIdle()
+    await f.parent.coordinatorLease.localAgent?.whenIdle()
+    const runtime = f.ctx.registry.get(TeamRun)
+    if (runtime === undefined) throw new Error('TeamRun plugin is not mounted')
+    for (const fiber of [...runtime.fibers]) await fiber.dispose()
+    await f.ctx.plugin(TeamRun, f.config)
+    f.childModelRegistration.replace([])
+    const resumedModel = new GateAdapter()
+    f.ctx.llm.registerAdapter(['child-fixture'], resumedModel)
+
+    const recovered = await f.ctx.teamRuns.startChild(f.request)
+    expect(recovered).toEqual(first)
+    const state = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+    expect(state.tasks.filter(task => task.id === nested.id)).toHaveLength(1)
+    expect(state.workflowPlans?.filter(candidate => candidate.id === workflow.id)).toHaveLength(1)
+    expect(state.channelIds.filter(channelId => channelId === first.channelId)).toHaveLength(1)
+    const epochs = state.activations.filter(binding => binding.activation.participantId === first.coordinatorId)
+    expect(epochs).toHaveLength(2)
+    expect(epochs[1]?.sessionId).toBe(epochs[0]?.sessionId)
+    const agent = epochs[1] === undefined ? undefined : f.ctx.agents.get(epochs[1].sessionId)
+    if (agent === undefined) throw new Error('Recovered child has no coordinator Agent')
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Continue the child work.' }], source: { kind: 'user' } }))
+    await resumedModel.started.promise
+    try {
+      const recoveredAuthority = f.ctx.teamRuns.coordinatorTaskAuthority(agent)
+      const tasks = await f.ctx.agents.withInitiator(agent,
+        async () => await f.ctx.teamRuns.listDefaultWorkerTasks(recoveredAuthority))
+      expect(tasks.tasks.map(task => task.id)).toContain(nested.id)
+      await expect(f.ctx.agents.withInitiator(agent, async () => await f.ctx.teamRuns.cancelWorkflowTask(recoveredAuthority, {
+        planId: workflow.id, templateId: plan.tasks[0]!.id,
+      }))).resolves.toMatchObject({ phase: 'cancelled' })
+    } finally { resumedModel.release.resolve(undefined) }
+  } finally {
+    childModel.release.resolve(undefined)
+    f.model.release.resolve(undefined)
+    f.request.authorization.close()
+  }
+}, 15_000)
+
 it('keeps child startup in disposal until admitted activation IO stops', async () => {
   const f = await reservedChild()
   const entered = Promise.withResolvers<undefined>()
@@ -4055,6 +6179,7 @@ it('keeps child startup in disposal until admitted activation IO stops', async (
 
 it.each(['missing-result', 'model-error'] as const)('records a child %s after its coordinator turn ends', async (outcome) => {
   const f = await reservedChild(outcome === 'model-error' ? new FailureAdapter() : new ReplyAdapter())
+  const missing = vi.spyOn(f.ctx.teams, 'recordChildResultMissing')
   try {
     await f.ctx.teamRuns.startChild(f.request)
     const owner = ownedRuns(f.ctx.teamRuns).get(f.child.team.id)!
@@ -4066,7 +6191,76 @@ it.each(['missing-result', 'model-error'] as const)('records a child %s after it
       if (outcome === 'model-error') expect(state.team.closure).toMatchObject({ kind: 'fail', reason: { code: 'SERVER' } })
       else expect(state.team.phase).toBe('stalled')
     })
+    if (outcome === 'missing-result') {
+      const command = missing.mock.calls[0]?.[0]
+      if (command === undefined) throw new Error('Child did not record its missing result')
+      expect(() => JSON.stringify(command.actor)).toThrow('runtime-only')
+      await expect(f.ctx.teams.recordChildResultMissing(command))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    }
   } finally { f.model.release.resolve(undefined); f.request.authorization.close() }
+})
+
+it('reports child cleanup failure after a durable coordinator failure without losing the closure', async () => {
+  const f = await reservedChild(new FailureAdapter())
+  const activate = f.ctx.teamActivations.activate.bind(f.ctx.teamActivations)
+  const cleanupFailure = new Error('child coordinator dispose reply failed')
+  let failedCleanup = false
+  vi.spyOn(f.ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+    const lease = await activate(request)
+    if (request.teamId !== f.child.team.id) return lease
+    return { binding: lease.binding, localAgent: lease.localAgent,
+      health: () => lease.health(), interrupt: (...args) => { lease.interrupt(...args) },
+      dispose: async () => {
+        await lease.dispose()
+        if (!failedCleanup) { failedCleanup = true; throw cleanupFailure }
+      },
+    }
+  })
+  const serviceContext = (f.ctx.teamRuns as unknown as { readonly ctx: Context }).ctx
+  const warning = vi.spyOn(serviceContext.logger, 'warn').mockImplementation(() => {})
+  try {
+    const binding = await f.ctx.teamRuns.startChild(f.request)
+    const state = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+    const coordinatorBinding = state.activations.findLast(candidate => candidate.activation.participantId === binding.coordinatorId)
+    const coordinator = coordinatorBinding === undefined ? undefined : f.ctx.agents.get(coordinatorBinding.sessionId)
+    if (coordinator === undefined) throw new Error('Child coordinator has no local Agent')
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Fail the delegated work.' }], source: { kind: 'user' } }))
+    await coordinator.whenIdle()
+    await vi.waitFor(() => {
+      expect(warning).toHaveBeenCalledWith(expect.stringContaining('child cleanup remains incomplete'))
+    })
+    expect(failedCleanup).toBe(true)
+    expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).team.closure).toMatchObject({
+      kind: 'fail', reason: { code: 'SERVER' },
+    })
+  } finally {
+    warning.mockRestore()
+    f.model.release.resolve(undefined)
+    f.request.authorization.close()
+  }
+})
+
+it('continues a child coordinator after an output-limit turn before declaring its result missing', async () => {
+  const childModel = new MaxTokensAdapter()
+  const f = await reservedChild(childModel)
+  try {
+    await f.ctx.teamRuns.startChild(f.request)
+    const owner = ownedRuns(f.ctx.teamRuns).get(f.child.team.id)!
+    const agent = owner.handle.coordinatorLease.localAgent!
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Complete the delegated objective.' }], source: { kind: 'user' } }))
+    await childModel.continuationStarted.promise
+    expect(agent.session.events.some(event => event.type === 'turn/end' && event.data.reason.kind === 'max-tokens')).toBe(true)
+    expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).team.phase).toBe('active')
+    childModel.releaseContinuation.resolve(undefined)
+    await vi.waitFor(async () => {
+      expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).team.phase).toBe('stalled')
+    })
+  } finally {
+    childModel.releaseContinuation.resolve(undefined)
+    f.model.release.resolve(undefined)
+    f.request.authorization.close()
+  }
 })
 
 it('retries a child failure after a Team cursor conflict with the same durable failure key', async () => {

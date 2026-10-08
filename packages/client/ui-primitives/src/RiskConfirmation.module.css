@@ -20,9 +20,9 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 14px;
-  line-height: 22px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
 }
 
 .warning p {
@@ -32,7 +32,7 @@
 .warningIcon {
   flex: none;
   margin-top: 2px;
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .acknowledgement {
@@ -40,9 +40,9 @@
   align-items: flex-start;
   gap: 10px;
   margin-top: 20px;
-  color: var(--clocky-alias-label-primary);
-  font-size: 14px;
-  line-height: 22px;
+  color: var(--clocky-fg-primary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   cursor: pointer;
 }
 
@@ -51,12 +51,12 @@
   width: 16px;
   height: 16px;
   margin: 3px 0 0;
-  accent-color: var(--clocky-alias-button-primary-fill);
+  accent-color: var(--clocky-accent-bg);
   cursor: pointer;
 }
 
 .acknowledgement input:focus-visible {
-  outline: 2px solid var(--clocky-alias-border-l4);
+  outline: 2px solid var(--clocky-border-strong);
   outline-offset: 2px;
 }
 

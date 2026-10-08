@@ -5,11 +5,15 @@ import WebSocket from 'ws'
 import TeamLinkRegistry from '@clocky/clocky-team-link'
 import {
   activationBindingSnapshotSchema,
+  channelInvitationSnapshotSchema,
+  channelSnapshotSchema,
   channelPostIdempotencyKeySchema,
   channelDeliveryClaimSchema,
   channelReceiptRecordSchema,
   participantInterruptSnapshotSchema,
+  fingerprintChannelManifest,
   teamEnvelopeSchema,
+  teamTaskCancellationSnapshotSchema,
   teamTaskSnapshotSchema,
 } from '@clocky/clocky-team'
 import type {
@@ -152,13 +156,33 @@ const interrupt = participantInterruptSnapshotSchema.parse({
 })
 const interruptDeliveryId = teamLinkDeliveryIdSchema.parse('interrupt-delivery-websocket')
 
+const invitation = channelInvitationSnapshotSchema.parse({
+  participantId: binding.activation.participantId, role: 'recipient', visibility: 'channel', required: true,
+  deadline: 100, endpoint: { kind: 'activation', activationId: binding.activation.id, sessionId: binding.sessionId },
+  revision: 1, manifestFingerprint: fingerprintChannelManifest(claim.channel.manifest), status: 'pending',
+})
+
+const taskCancellation = teamTaskCancellationSnapshotSchema.parse({
+  requestedRevision: 1, requestedBy: binding.activation.participantId, requestedAt: 1,
+  target: { kind: 'attempt', attemptId: task.lease?.attemptId,
+    participantId: binding.activation.participantId, activationId: binding.activation.id },
+})
+
+function invitationFor(channel: typeof claim.channel, overrides: Record<string, unknown> = {}) {
+  return channelInvitationSnapshotSchema.parse({ ...invitation,
+    manifestFingerprint: fingerprintChannelManifest(channel.manifest), ...overrides })
+}
+
 interface LinkInternals {
+  readonly done: Promise<void>
   socket: { readyState: number }
   readonly config: unknown
   readonly provider: string
   readonly binding: ActivationBindingSnapshot
   readonly notifications: Extract<TeamLinkServerFrame, { readonly type: 'notify' }>[]
   readonly listeners: Set<(envelope: TeamEnvelope) => Promise<void>>
+  readonly invitations: Map<string, unknown>
+  readonly taskCancellations: Map<string, unknown>
   readonly interrupts: TeamLinkInterruptNotification[]
   readonly interruptListeners: Set<(notification: TeamLinkInterruptNotification) => Promise<void>>
   readonly interruptDeliveries: Map<TeamLinkDeliveryId, TeamLinkInterruptNotification>
@@ -374,6 +398,34 @@ function responseResult(op: Extract<Awaited<ReturnType<typeof receiveFrame>>, { 
 }
 
 describe('WebSocket Team Link provider', () => {
+  it('holds a dynamic capability in its provider closure and closes later admission', async () => {
+    const remote = await peer()
+    expect(() => TeamLinkWebSocket.createCapabilityWebSocketTeamLinkProvider({ endpoint: remote.endpoint }, ''))
+      .toThrow('capability must be non-empty')
+    expect(TeamLinkWebSocket.createCapabilityWebSocketTeamLinkProvider({ endpoint: remote.endpoint }, 'default-capability').name)
+      .toBe('websocket')
+    const provider = TeamLinkWebSocket.createCapabilityWebSocketTeamLinkProvider({
+      endpoint: remote.endpoint, providerName: 'dynamic-websocket',
+    }, 'activation-local-capability')
+    const connecting = provider.connect({ provider: provider.name, binding })
+    const socket = await remote.accept()
+    const attached = await receiveFrame(socket)
+    if (attached.type !== 'attach') throw new Error('dynamic provider did not attach')
+    expect(attached.capability).toBe('activation-local-capability')
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'attached', id: attached.id, binding: identity() })
+    const subscribed = await receiveFrame(socket)
+    if (subscribed.type !== 'subscribe') throw new Error('dynamic provider did not subscribe')
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'response', id: subscribed.id,
+      ok: true, result: { subscribed: true } })
+    const link = await connecting
+    expect(link.provider).toBe('dynamic-websocket')
+    await link.close()
+    const closable = provider as unknown as { closeAdmission(): void }
+    closable.closeAdmission()
+    await expect(provider.connect({ provider: provider.name, binding }))
+      .rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_PROVIDER_CLOSED' })
+  })
+
   it('attaches the exact binding, subscribes, and multiplexes strict operation responses', async () => {
     const remote = await peer()
     const ctx = await setup(remote, { maxFrameBytes: 4_096 })
@@ -489,6 +541,194 @@ describe('WebSocket Team Link provider', () => {
     await link.close()
   })
 
+  it('replays channel invitations by revision and acknowledges the exact accepted manifest', async () => {
+    const remote = await peer()
+    const ctx = await setup(remote, { maxFrameBytes: 4_096 })
+    const { link, socket } = await connect(ctx, remote)
+    const channel = link.getChannel(claim.channel.manifest.id)
+    const channelRequest = await receiveFrame(socket)
+    if (channelRequest.type !== 'request' || channelRequest.op !== 'channel-get') throw new Error('channel read was not forwarded')
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'response', id: channelRequest.id,
+      ok: true, result: claim.channel as unknown as JsonValue })
+    await expect(channel).resolves.toEqual(claim.channel)
+
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+      notification: { channel: claim.channel, invitation } })
+    await vi.waitFor(() => { expect(internal(link).invitations.size).toBe(1) })
+    const received: number[] = []
+    const dispose = link.onInvitation(async (notification) => { received.push(notification.invitation.revision) })
+    await vi.waitFor(() => { expect(received).toEqual([1]) })
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+      notification: { channel: claim.channel, invitation } })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(received).toEqual([1])
+
+    const revised = channelInvitationSnapshotSchema.parse({ ...invitation, revision: 2 })
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+      notification: { channel: claim.channel, invitation: revised } })
+    await vi.waitFor(() => { expect(received).toEqual([1, 2]) })
+    const acknowledged = channelInvitationSnapshotSchema.parse({ ...revised, status: 'acknowledged', settledAt: 3 })
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+      notification: { channel: claim.channel, invitation: acknowledged } })
+    await vi.waitFor(() => { expect(internal(link).invitations.size).toBe(0) })
+
+    const accepting = link.acknowledgeChannelInvitation({ channelId: claim.channel.manifest.id,
+      revision: revised.revision, manifestFingerprint: revised.manifestFingerprint,
+      idempotencyKey: 'websocket-invitation-ack' as never })
+    const acceptedRequest = await receiveFrame(socket)
+    if (acceptedRequest.type !== 'request' || acceptedRequest.op !== 'invitation-ack') {
+      throw new Error('invitation acknowledgement was not forwarded')
+    }
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'response', id: acceptedRequest.id,
+      ok: true, result: { channel: claim.channel, invitations: [acknowledged] } as unknown as JsonValue })
+    await expect(accepting).resolves.toMatchObject({ invitations: [{ status: 'acknowledged' }] })
+    dispose()
+    dispose()
+    await link.close()
+    const afterClose = link.onInvitation(async () => {})
+    afterClose()
+  })
+
+  it('replays exact task cancellation revisions and clears them after remote acknowledgement', async () => {
+    const remote = await peer()
+    const ctx = await setup(remote, { maxFrameBytes: 4_096 })
+    const { link, socket } = await connect(ctx, remote)
+    const notice = { taskId: task.id, phase: 'running' as const, revision: task.revision,
+      cancellation: taskCancellation }
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'task-cancellation', notification: notice })
+    await vi.waitFor(() => { expect(internal(link).taskCancellations.size).toBe(1) })
+    const received: number[] = []
+    const dispose = link.onTaskCancellation(async (notification) => { received.push(notification.revision) })
+    await vi.waitFor(() => { expect(received).toEqual([task.revision]) })
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'task-cancellation', notification: notice })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(received).toEqual([task.revision])
+    const changed = { ...notice, revision: task.revision + 1 }
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'task-cancellation', notification: changed })
+    await vi.waitFor(() => { expect(received).toEqual([task.revision, task.revision + 1]) })
+    const attemptId = task.lease?.attemptId
+    if (attemptId === undefined) throw new Error('task fixture has no attempt')
+    const acknowledging = link.acknowledgeTaskCancellation({ taskId: task.id, attemptId,
+      expectedRevision: changed.revision })
+    const request = await receiveFrame(socket)
+    if (request.type !== 'request' || request.op !== 'task-cancellation-ack') {
+      throw new Error('task cancellation acknowledgement was not forwarded')
+    }
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'response', id: request.id,
+      ok: true, result: task as unknown as JsonValue })
+    await expect(acknowledging).resolves.toEqual(task)
+    expect(internal(link).taskCancellations.size).toBe(0)
+    dispose()
+    dispose()
+    await link.close()
+    const afterClose = link.onTaskCancellation(async () => {})
+    afterClose()
+  })
+
+  it('forwards heartbeat and a post without an optional observed cursor', async () => {
+    const remote = await peer()
+    const ctx = await setup(remote, { maxFrameBytes: 4_096 })
+    const { link, socket } = await connect(ctx, remote)
+    const attemptId = task.lease?.attemptId
+    if (attemptId === undefined) throw new Error('task fixture has no attempt')
+    const heartbeat = link.heartbeatTaskAttempt({ taskId: task.id, attemptId, expectedRevision: task.revision })
+    const heartbeatFrame = await receiveFrame(socket)
+    if (heartbeatFrame.type !== 'request' || heartbeatFrame.op !== 'task-heartbeat') {
+      throw new Error('heartbeat was not forwarded')
+    }
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'response', id: heartbeatFrame.id,
+      ok: true, result: task as unknown as JsonValue })
+    await expect(heartbeat).resolves.toEqual(task)
+
+    const posted = link.post({ idempotencyKey: POST_IDEMPOTENCY_KEY,
+      draft: { channelId: envelope.channelId, audience: [binding.activation.participantId],
+        kind: 'message', payload: { text: 'Current Hub cursor' }, delivery: 'turn' } })
+    const postFrame = await receiveFrame(socket)
+    if (postFrame.type !== 'request' || postFrame.op !== 'post') throw new Error('post was not forwarded')
+    expect(postFrame.input).not.toHaveProperty('expectedCursor')
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'response', id: postFrame.id,
+      ok: true, result: envelope as unknown as JsonValue })
+    await expect(posted).resolves.toEqual(envelope)
+    await link.close()
+  })
+
+  it.each(['foreign Team', 'foreign recipient', 'missing roster member'] as const)(
+    'rejects a channel invitation for a %s', async (variant) => {
+      const remote = await peer()
+      const ctx = await setup(remote, { maxFrameBytes: 4_096 })
+      const { link, socket } = await connect(ctx, remote)
+      const channel = channelSnapshotSchema.parse({ ...claim.channel, manifest: { ...claim.channel.manifest,
+        teamId: variant === 'foreign Team' ? 'other-team' : claim.channel.manifest.teamId,
+        participants: variant === 'missing roster member'
+          ? [{ id: envelope.senderId, role: 'sender' }]
+          : claim.channel.manifest.participants,
+      } })
+      const selected = invitationFor(channel, variant === 'foreign recipient' ? { participantId: 'other-recipient' } : {})
+      await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+        notification: { channel, invitation: selected } })
+      await expect(link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH' })
+    },
+  )
+
+  it('bounds buffered invitations across different channels before listeners attach', async () => {
+    const remote = await peer()
+    const ctx = await setup(remote, { maxFrameBytes: 4_096, maxBufferedNotifications: 1 })
+    const { link, socket } = await connect(ctx, remote)
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+      notification: { channel: claim.channel, invitation } })
+    await vi.waitFor(() => { expect(internal(link).invitations.size).toBe(1) })
+    const second = channelSnapshotSchema.parse({ ...claim.channel, manifest: { ...claim.channel.manifest, id: 'channel-second' } })
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+      notification: { channel: second, invitation: invitationFor(second) } })
+    await expect(link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_NOTIFICATION_LIMIT' })
+  })
+
+  it('rejects a foreign task cancellation and bounds distinct task cancellation notifications', async () => {
+    const foreignPeer = await peer()
+    const foreignContext = await setup(foreignPeer, { maxFrameBytes: 4_096 })
+    const foreign = await connect(foreignContext, foreignPeer)
+    const changedTarget = teamTaskCancellationSnapshotSchema.parse({ ...taskCancellation,
+      target: { ...taskCancellation.target, activationId: 'other-activation' } })
+    await sendFrame(foreign.socket, { v: TEAM_LINK_FRAME_VERSION, type: 'task-cancellation', notification: {
+      taskId: task.id, phase: 'running', revision: task.revision, cancellation: changedTarget,
+    } })
+    await expect(foreign.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH' })
+
+    const boundedPeer = await peer()
+    const boundedContext = await setup(boundedPeer, { maxFrameBytes: 4_096, maxBufferedNotifications: 1 })
+    const bounded = await connect(boundedContext, boundedPeer)
+    await sendFrame(bounded.socket, { v: TEAM_LINK_FRAME_VERSION, type: 'task-cancellation', notification: {
+      taskId: task.id, phase: 'running', revision: task.revision, cancellation: taskCancellation,
+    } })
+    await vi.waitFor(() => { expect(internal(bounded.link).taskCancellations.size).toBe(1) })
+    await sendFrame(bounded.socket, { v: TEAM_LINK_FRAME_VERSION, type: 'task-cancellation', notification: {
+      taskId: 'task-second' as typeof task.id, phase: 'running', revision: task.revision, cancellation: taskCancellation,
+    } })
+    await expect(bounded.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_NOTIFICATION_LIMIT' })
+  })
+
+  it('delivers a public broadcast from another sender but rejects a self-originating one', async () => {
+    const publicEnvelope = teamEnvelopeSchema.parse({ ...envelope, audience: null })
+    const remote = await peer()
+    const ctx = await setup(remote)
+    const { link, socket } = await connect(ctx, remote)
+    const received = vi.fn(async () => {})
+    link.onNotify(received)
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'notify',
+      deliveryId: deliveryId('public-other-sender'), envelope: publicEnvelope })
+    await vi.waitFor(() => { expect(received).toHaveBeenCalledWith(publicEnvelope) })
+    await link.close()
+
+    const selfPeer = await peer()
+    const selfContext = await setup(selfPeer)
+    const self = await connect(selfContext, selfPeer)
+    const selfEnvelope = teamEnvelopeSchema.parse({ ...publicEnvelope, id: 'public-self-sender',
+      senderId: binding.activation.participantId })
+    await sendFrame(self.socket, { v: TEAM_LINK_FRAME_VERSION, type: 'notify',
+      deliveryId: deliveryId('public-self-sender'), envelope: selfEnvelope })
+    await expect(self.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH' })
+  })
+
   it('rejects a notification before subscription completes', async () => {
     const remote = await peer()
     const ctx = await setup(remote)
@@ -545,6 +785,93 @@ describe('WebSocket Team Link provider', () => {
       message: 'replace this Link',
     })
     await link.close()
+  })
+
+  it('rejects cancellation before subscription and a duplicate while endpoint termination is pending', async () => {
+    const earlyPeer = await peer()
+    const earlyContext = await setup(earlyPeer)
+    const connecting = earlyContext.teamLinks.connect({ provider: 'websocket', binding })
+    const earlySocket = await earlyPeer.accept()
+    const attach = await receiveFrame(earlySocket)
+    if (attach.type !== 'attach') throw new Error('client did not attach')
+    await sendFrame(earlySocket, { v: TEAM_LINK_FRAME_VERSION, type: 'attached', id: attach.id, binding: identity() })
+    const subscribeFrame = await receiveFrame(earlySocket)
+    if (subscribeFrame.type !== 'subscribe') throw new Error('client did not subscribe')
+    await sendFrame(earlySocket, { v: TEAM_LINK_FRAME_VERSION, type: 'cancel', id: 'early-cancel',
+      reason: { code: 'TEAM_LINK_CREDENTIAL_REVOKED', message: 'stop before subscribe' } })
+    await expect(connecting).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_OUT_OF_ORDER_FRAME' })
+
+    const duplicatePeer = await peer()
+    const duplicateContext = await setup(duplicatePeer)
+    const release = Promise.withResolvers<undefined>()
+    const onTerminate = vi.fn(async () => { await release.promise })
+    const { link, socket } = await connect(duplicateContext, duplicatePeer, undefined, onTerminate)
+    const cancel: Extract<TeamLinkServerFrame, { readonly type: 'cancel' }> = {
+      v: TEAM_LINK_FRAME_VERSION, type: 'cancel', id: 'duplicate-cancel',
+      reason: { code: 'TEAM_LINK_CREDENTIAL_REVOKED', message: 'stop once' } }
+    await sendFrame(socket, cancel)
+    await vi.waitFor(() => { expect(onTerminate).toHaveBeenCalledOnce() })
+    await sendFrame(socket, cancel)
+    await expect(link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_UNEXPECTED_FRAME' })
+    release.resolve(undefined)
+  })
+
+  it('rejects a cancellation result when its outbound transport fails', async () => {
+    const remote = await peer()
+    const ctx = await setup(remote)
+    const { link, socket } = await connect(ctx, remote)
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'cancel', id: 'no-handler',
+      reason: { code: 'TEAM_LINK_CREDENTIAL_REVOKED', message: 'stop without a handler' } })
+    await expect(receiveFrame(socket)).resolves.toMatchObject({ type: 'cancelled', id: 'no-handler', accepted: false })
+    const failed = fakeLink(link, new FakeSocket(WebSocket.OPEN, true))
+    Reflect.set(failed, 'subscribed', true)
+    failed.acceptFrame({ v: TEAM_LINK_FRAME_VERSION, type: 'cancel', id: 'failed-transport',
+      reason: { code: 'TEAM_LINK_CREDENTIAL_REVOKED', message: 'send cannot complete' } })
+    await expect(failed.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_TRANSPORT_FAILED' })
+    await link.close()
+  })
+
+  it('skips invitation and task cancellation listeners removed by an earlier callback', async () => {
+    const remote = await peer()
+    const ctx = await setup(remote, { maxFrameBytes: 4_096 })
+    const { link, socket } = await connect(ctx, remote)
+    let removeInvitation = (): void => {}
+    let removeCancellation = (): void => {}
+    const firstInvitation = vi.fn(async () => { removeInvitation() })
+    const skippedInvitation = vi.fn(async () => {})
+    link.onInvitation(firstInvitation)
+    removeInvitation = link.onInvitation(skippedInvitation)
+    const firstCancellation = vi.fn(async () => { removeCancellation() })
+    const skippedCancellation = vi.fn(async () => {})
+    link.onTaskCancellation(firstCancellation)
+    removeCancellation = link.onTaskCancellation(skippedCancellation)
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+      notification: { channel: claim.channel, invitation } })
+    await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'task-cancellation', notification: {
+      taskId: task.id, phase: 'running', revision: task.revision, cancellation: taskCancellation,
+    } })
+    await vi.waitFor(() => { expect(firstInvitation).toHaveBeenCalledOnce(); expect(firstCancellation).toHaveBeenCalledOnce() })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(skippedInvitation).not.toHaveBeenCalled()
+    expect(skippedCancellation).not.toHaveBeenCalled()
+    await link.close()
+  })
+
+  it.each(['invitation', 'task cancellation'] as const)('terminates after a %s callback fails', async (kind) => {
+    const remote = await peer()
+    const ctx = await setup(remote, { maxFrameBytes: 4_096 })
+    const { link, socket } = await connect(ctx, remote)
+    if (kind === 'invitation') {
+      link.onInvitation(async () => { throw new Error('invitation callback failed') })
+      await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'invitation',
+        notification: { channel: claim.channel, invitation } })
+    } else {
+      link.onTaskCancellation(async () => { throw new Error('task cancellation callback failed') })
+      await sendFrame(socket, { v: TEAM_LINK_FRAME_VERSION, type: 'task-cancellation', notification: {
+        taskId: task.id, phase: 'running', revision: task.revision, cancellation: taskCancellation,
+      } })
+    }
+    await expect(link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_TRANSPORT_FAILED' })
   })
 
   it('retains a post-subscription notification until onNotify and sends a retryable nack after listener failure', async () => {

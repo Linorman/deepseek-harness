@@ -36,6 +36,7 @@ interface Harness {
     readonly tryCoordinatorGoalAuthority: ReturnType<typeof vi.fn>
     readonly readCoordinatorGoal: ReturnType<typeof vi.fn>
     readonly updateCoordinatorGoal: ReturnType<typeof vi.fn>
+    readonly transitionCoordinatorGoalPhase: ReturnType<typeof vi.fn>
   }
   setEligible(value: boolean): void
   setStatus(value: AgentStatus): void
@@ -43,6 +44,7 @@ interface Harness {
   emitChannelChanged(): void
   get(callId?: string): Promise<ToolExecutionResult>
   update(args: Record<string, unknown>, callId?: string): Promise<ToolExecutionResult>
+  phase(args: Record<string, unknown>, callId?: string): Promise<ToolExecutionResult>
 }
 
 /** Build a scoped Tool runtime with a fake activation-fenced TeamRun authority. */
@@ -72,9 +74,16 @@ async function harness(options: { readonly initiallyEligible?: boolean } = {}): 
       current = goal({ revision: request.expectedRevision + 1, objective: request.objective })
       return current
     }),
+    transitionCoordinatorGoalPhase: vi.fn(async (
+      _authority: TeamRunCoordinatorGoalAuthority,
+      request: { expectedRevision: number; phase: TeamGoalSnapshot['phase']; blocker?: TeamGoalSnapshot['blocker'] },
+    ) => {
+      current = goal({ revision: request.expectedRevision + 1, phase: request.phase,
+        ...request.blocker === undefined ? {} : { blocker: request.blocker } })
+      return current
+    }),
   }
   ctx.provide('teamRuns', teamRuns as never)
-  const toolFiber = await ctx.plugin(ToolTeamGoal)
 
   const session = ctx.sessions.create(SessionId('tool-team-goal-session'))
   let status: AgentStatus = 'running'
@@ -96,6 +105,7 @@ async function harness(options: { readonly initiallyEligible?: boolean } = {}): 
   } satisfies Partial<Agent>)
   Object.defineProperty(coordinator, 'status', { get: () => status })
   ctx.agents.register(coordinator)
+  const toolFiber = await ctx.plugin(ToolTeamGoal)
 
   return {
     ctx,
@@ -121,6 +131,15 @@ async function harness(options: { readonly initiallyEligible?: boolean } = {}): 
         signal,
         callId: CallId(callId),
         name: 'update_goal',
+        arguments: args,
+        agent: coordinator,
+      }))
+    },
+    async phase(args, callId = 'phase-goal') {
+      return await ctx.agents.withInitiator(coordinator, async () => await ctx.tools.execute({
+        signal,
+        callId: CallId(callId),
+        name: 'team_goal_phase',
         arguments: args,
         agent: coordinator,
       }))
@@ -163,6 +182,21 @@ describe('tool-team-goal', () => {
     expect(mounted.ctx.tools.get('update_goal', mounted.agent)).toBeUndefined()
   })
 
+  it('finds an already live coordinator at plugin startup without duplicate registration', async () => {
+    const mounted = await harness({ initiallyEligible: true })
+    const current = mounted.ctx.tools.get('team_goal_phase', mounted.agent)
+    expect(current).toBeDefined()
+    mounted.emitTeamChanged()
+    expect(mounted.ctx.tools.get('team_goal_phase', mounted.agent)).toBe(current)
+  })
+
+  it('reconciles a newly eligible coordinator from Agent discovery', async () => {
+    const mounted = await harness()
+    mounted.setEligible(true)
+    mounted.ctx.emit('agent/created', { agent: mounted.agent } as never)
+    expect(mounted.ctx.tools.get('team_goal_phase', mounted.agent)).toBeDefined()
+  })
+
   it('removes its scoped registrations when its plugin fiber disposes', async () => {
     const mounted = await harness({ initiallyEligible: true })
     expect(mounted.ctx.tools.get('get_goal', mounted.agent)).toBeDefined()
@@ -192,6 +226,31 @@ describe('tool-team-goal', () => {
       expectedRevision: 1,
       objective: 'Ship Team Goal.',
     })
+  })
+
+  it('transitions the Team objective with an exact blocked reason and then resumes it', async () => {
+    const mounted = await harness({ initiallyEligible: true })
+    expect(mounted.ctx.tools.get('team_goal_phase', mounted.agent)?.presentCall?.({ revision: 1, phase: 'blocked' }))
+      .toMatchObject({ title: 'Edit Team objective', rawInput: 'blocked' })
+    expect(value(await mounted.phase({ revision: 1, phase: 'blocked', blocker_code: 'NEEDS_INPUT',
+      blocker_message: 'Wait for a human decision' }))).toMatchObject({ phase: 'blocked',
+      blocker: { code: 'NEEDS_INPUT', message: 'Wait for a human decision' } })
+    expect(mounted.teamRuns.transitionCoordinatorGoalPhase).toHaveBeenCalledWith(mounted.authority, {
+      expectedRevision: 1, phase: 'blocked', blocker: { code: 'NEEDS_INPUT', message: 'Wait for a human decision' },
+    })
+    expect(value(await mounted.phase({ revision: 2, phase: 'active' }))).toMatchObject({ phase: 'active' })
+  })
+
+  it('refuses invalid phase transitions before touching the durable Team objective', async () => {
+    const mounted = await harness({ initiallyEligible: true })
+    for (const args of [
+      { revision: 0, phase: 'active' },
+      { revision: 1, phase: 'unknown' },
+      { revision: 1, phase: 'blocked' },
+      { revision: 1, phase: 'blocked', blocker_code: '   ', blocker_message: 'Reason' },
+      { revision: 1, phase: 'paused', blocker_code: 'unexpected', blocker_message: 'Reason' },
+    ]) expect((await mounted.phase(args)).error?.info?.code).toBe('INVALID_ARGS')
+    expect(mounted.teamRuns.transitionCoordinatorGoalPhase).not.toHaveBeenCalled()
   })
 
   it('retains a blocked explanation without exposing Team identity', async () => {
@@ -233,6 +292,15 @@ describe('tool-team-goal', () => {
       agent: mounted.agent,
     })
     expect(driverless.error?.info?.code).toBe('TEAM_GOAL_GET_DRIVER_REQUIRED')
+
+    const phaseWithoutDriver = await mounted.ctx.tools.execute({
+      signal,
+      callId: CallId('phase-driverless'),
+      name: 'team_goal_phase',
+      arguments: { revision: 1, phase: 'active' },
+      agent: mounted.agent,
+    })
+    expect(phaseWithoutDriver.error?.info?.code).toBe('TEAM_GOAL_PHASE_DRIVER_REQUIRED')
 
     mounted.setStatus('idle')
     const stale = await mounted.get('stale')

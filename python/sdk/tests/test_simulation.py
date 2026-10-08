@@ -12,7 +12,7 @@ from clocky.simulation import (
     SimulationBrowseInput, SimulationCatalog, SimulationCollectionPage, SimulationCreateInput,
     SimulationInspectInput, SimulationInspection, SimulationListInput, SimulationObjectInput,
     SimulationObjectInspection, SimulationPrepareInput, SimulationRequestInput, SimulationRequestReceipt,
-    SimulationRequestResult,
+    SimulationRequestResult, SimulationScenarioObserved,
 )
 
 SUMMARY = {"id": "run", "name": {"text": "Company", "truncated": False}, "registeredAt": 1, "observation": "not-observed"}
@@ -78,6 +78,7 @@ def test_relationship_and_context_sections_preserve_exact_paged_dtos() -> None:
     with pytest.raises(ValidationError):
         SimulationObjectInput(runId="run", collection="operations", section="context", id="decision")
 CREATE = SimulationCreateInput(commandId="original", templateId="company", templateVersion="1", name="Company",
+                              expectedModel={"provider": "company", "name": "scripted"},
                               parameters={"buyerName": "Buyer", "supplierName": "Supplier", "initialStock": "2"})
 
 
@@ -85,7 +86,7 @@ CREATE = SimulationCreateInput(commandId="original", templateId="company", templ
 def test_catalog_preserves_the_installed_task_execution_mode(execution: str) -> None:
     catalog = SimulationCatalog.model_validate({"items": [{
         "id": "company", "version": "1", "name": {"text": "Company", "truncated": False},
-        "kind": "company-procurement", "model": {"provider": "company", "name": "scripted"},
+        "kind": "company-procurement", "readiness": {"status": "ready", "model": {"provider": "company", "name": "scripted"}},
         "tickUnit": {"text": "minute", "truncated": False}, "execution": execution, "review": "none", "maxStock": "2",
     }]})
     assert catalog.items[0].execution == execution
@@ -527,7 +528,8 @@ def test_preflight_preserves_limits_and_serializes_no_command_through_both_apis(
         "maxTokensPerInterval": 2000, "maxTime": "9007199254740993"}, "budgetInterval": "100",
         **{key: {"text": "1", "truncated": False} for key in ["tickUnit", "rulesVersion", "policyVersion"]},
         "sharedModelLimit": 1}
-    output = {"status": "ready", "configuration": configuration}
+    output = {"status": "ready", "configuration": configuration,
+        "readiness": {"status": "ready", "model": {"provider": "company", "name": "scripted"}}}
     for high in [False, True]:
         client = HarnessClient(HarnessConfig())
         clocky = Clocky(ClockyConfig(credential="test", provider="test", model="test"))
@@ -549,7 +551,8 @@ def test_preflight_preserves_limits_and_serializes_no_command_through_both_apis(
             SimulationPreflightInput.model_validate(unsafe)
     with pytest.raises(ValidationError):
         SimulationPreflightResult.model_validate({"status": "ready", "configuration": {**configuration, "cwd": "/private"}})
-    invalid = SimulationPreflightResult.model_validate({"status": "invalid", "issues": [{"field": "limits.maxEntities",
+    invalid = SimulationPreflightResult.model_validate({"status": "invalid",
+        "readiness": {"status": "needs-model", "reason": "default-model-missing"}, "issues": [{"field": "limits.maxEntities",
         "code": "not-allowed", "message": {"text": "Fixed by deployment", "truncated": False}}]})
     assert invalid.issues[0].field == "limits.maxEntities"
     with pytest.raises(ValidationError):
@@ -566,7 +569,7 @@ def test_catalog_preserves_workflow_scenario_and_deployment_allowances() -> None
         **{key: {"text": "1", "truncated": False} for key in ["tickUnit", "rulesVersion", "policyVersion"]},
         "sharedModelLimit": 1, "editable": ["maxTime", "maxTokensPerInterval"]}
     item = {"id": "writing", "version": "1", "name": {"text": "Writing", "truncated": False},
-        "kind": "task-workflow", "cognition": "deterministic", "model": {"provider": "company", "name": "scripted"},
+        "kind": "task-workflow", "cognition": "deterministic", "readiness": {"status": "ready", "model": {"provider": "company", "name": "scripted"}},
         "tickUnit": {"text": "minute", "truncated": False}, "execution": "automatic-tasks", "review": "participant",
         "maxStock": "2", "configuration": configuration}
     catalog = SimulationCatalog.model_validate({"items": [item]})
@@ -714,3 +717,27 @@ def test_task_cancel_client_preserves_null_and_correlates_both_public_api_result
         monkeypatch.setattr(client, "request", lambda *args, **kwargs: foreign)
         with pytest.raises(SdkProtocolError):
             client.list_simulation_tasks(query)
+
+
+@pytest.mark.parametrize("execution", ["cognition-only", "automatic-tasks"])
+def test_observed_scenario_preserves_the_host_task_execution_mode(execution: str) -> None:
+    payload = {"status": "observed", "templateId": {"text": "company", "truncated": False},
+               "version": "1", "driverVersion": "1", "execution": execution}
+    scenario = SimulationScenarioObserved.model_validate(payload)
+    assert scenario.model_dump() == payload
+    with pytest.raises(ValidationError):
+        SimulationScenarioObserved.model_validate({**payload, "execution": "unsupported"})
+
+@pytest.mark.parametrize("readiness", [
+    {"status": "needs-model", "reason": "default-model-missing"},
+    {"status": "unavailable", "reason": "metadata-unavailable"},
+])
+def test_installed_templates_preserve_bounded_model_readiness_without_a_route(readiness) -> None:
+    item = {"id": "company", "version": "1", "name": {"text": "Company", "truncated": False},
+        "kind": "company-procurement", "readiness": readiness, "tickUnit": {"text": "minute", "truncated": False},
+        "execution": "cognition-only", "review": "none", "maxStock": "2"}
+    assert SimulationCatalog.model_validate({"items": [item]}).items[0].readiness.status == readiness["status"]
+    with pytest.raises(ValidationError):
+        SimulationCatalog.model_validate({"items": [{**item, "readiness": {**readiness, "model": CREATE.expectedModel}}]})
+    with pytest.raises(ValidationError):
+        SimulationCreateInput.model_validate({key: value for key, value in CREATE.model_dump().items() if key != "expectedModel"})

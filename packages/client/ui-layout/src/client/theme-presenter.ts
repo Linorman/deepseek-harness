@@ -12,12 +12,20 @@ import type { ThemeSnapshot } from '@clocky/clocky-client-ui-theme/client'
 /** Body attribute selecting the dark base palette in the token stylesheets. */
 export const DARK_ATTRIBUTE = 'data-ds-dark-theme'
 
+/**
+ * Root attribute that suspends transitions while a snapshot lands, so a theme
+ * switch repaints at once instead of sweeping every colored control.
+ */
+export const SWITCHING_ATTRIBUTE = 'data-clocky-theme-switching'
+
 /** Applies theme snapshots to the document; one instance per plugin fiber. */
 export class ThemePresenter {
   /** Token names this presenter wrote in the last apply (its retraction set). */
   private appliedTokens: string[] = []
   /** The single metadata node this presenter inserts and removes. */
   private readonly themeColorMeta: HTMLMetaElement
+  /** Frame that lifts the transition suspension after the new styles commit. */
+  private settleFrame: number | undefined
 
   /** Create the presenter-owned metadata node before the first snapshot arrives. */
   constructor() {
@@ -36,7 +44,9 @@ export class ThemePresenter {
    */
   apply(snapshot: ThemeSnapshot): void {
     const scheme = snapshot.active.colorScheme
-    document.documentElement.style.colorScheme = scheme
+    const root = document.documentElement
+    root.setAttribute(SWITCHING_ATTRIBUTE, '')
+    root.style.colorScheme = scheme
     const body = document.body
     if (scheme === 'dark') body.setAttribute(DARK_ATTRIBUTE, '')
     else body.removeAttribute(DARK_ATTRIBUTE)
@@ -46,13 +56,22 @@ export class ThemePresenter {
       body.style.setProperty(name, value)
       this.appliedTokens.push(name)
     }
+    // Reading computed style commits the new palette while transitions are off.
     this.themeColorMeta.content = getComputedStyle(body).backgroundColor
     if (!this.themeColorMeta.isConnected) document.head.append(this.themeColorMeta)
+    if (this.settleFrame !== undefined) cancelAnimationFrame(this.settleFrame)
+    this.settleFrame = requestAnimationFrame(() => {
+      this.settleFrame = undefined
+      root.removeAttribute(SWITCHING_ATTRIBUTE)
+    })
   }
 
-  /** Retract root color-scheme, the palette attribute, token variables, and the owned metadata node. */
+  /** Retract root color-scheme, the switching and palette attributes, token variables, and the owned metadata node. */
   dispose(): void {
     document.documentElement.style.removeProperty('color-scheme')
+    if (this.settleFrame !== undefined) cancelAnimationFrame(this.settleFrame)
+    this.settleFrame = undefined
+    document.documentElement.removeAttribute(SWITCHING_ATTRIBUTE)
     const body = document.body
     body.removeAttribute(DARK_ATTRIBUTE)
     for (const name of this.appliedTokens) body.style.removeProperty(name)

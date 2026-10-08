@@ -110,7 +110,7 @@ it.each(['json', 'sqlite'])('recovers durable browser requests after independent
     await page.goto(`${host.ready.baseUrl}/?workspace=simulation`, { waitUntil: 'load' })
     const workspace = page.locator('[data-simulation-workspace-page]')
     await host.arm('accepted-create')
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     const create = page.getByRole('dialog', { name: '新建仿真', exact: true })
     await create.getByRole('radio').check()
     await create.getByLabel('运行名称', { exact: true }).fill('进程重启报告')
@@ -134,14 +134,20 @@ it.each(['json', 'sqlite'])('recovers durable browser requests after independent
     await expect.poll(async () => workspace.getByRole('button', { name: /^(开始|继续)调度$/, exact: true }).isEnabled()).toBe(true)
     await workspace.getByRole('button', { name: /^(开始|继续)调度$/, exact: true }).click()
     await page.getByRole('dialog', { name: /^(开始|继续)调度$/, exact: true }).getByRole('button', { name: /^(开始|继续)调度$/, exact: true }).click()
+    // Model delayed browser interaction without depending on the installed animation style.
+    await page.waitForTimeout(300)
     const reviews = workspace.getByRole('region', { name: '仿真任务审核', exact: true })
     await expect.poll(async () => {
       await reviews.getByRole('button', { name: '刷新审核目标', exact: true }).click()
       return await reviews.getByText('此尝试可以审核。', { exact: true }).count()
     }, { timeout: 20000 }).toBe(1)
+    await page.waitForTimeout(300)
     await workspace.getByRole('button', { name: '暂停调度', exact: true }).click()
     await expect.poll(async () => (await host!.observe()).phase).toBe('paused')
+    // Cross three ordinary scheduler pulses while the native run is paused.
+    await page.waitForTimeout(3500)
     const report = await host.observe()
+    expect({ phase: report.teamPhase, stallCode: report.teamStallCode }).toEqual({ phase: 'active', stallCode: undefined })
     expect(report).toMatchObject({ tasks: 1, reports: 1, transfers: 0, stock: '2', received: '0', requests: 0, entityCount: 3, channelCount: 2 })
     await host.arm('completed-checkpoint')
     await showSimulationMaintenance(workspace)
@@ -152,7 +158,7 @@ it.each(['json', 'sqlite'])('recovers durable browser requests after independent
     expect((await host.observe()).completedCheckpoints).toBe(2)
     await restart()
     await retryOriginal(workspace, checkpoint.commandId)
-    expect(await host.observe()).toMatchObject({ phase: 'paused', tasks: 1, reports: 1, transfers: 0, requests: 0, completedCheckpoints: 2, entityCount: 3, channelCount: 2 })
+    expect(await host.observe()).toMatchObject({ phase: 'paused', teamPhase: 'active', tasks: 1, reports: 1, transfers: 0, requests: 0, completedCheckpoints: 2, entityCount: 3, channelCount: 2 })
     await host.arm('completed-review')
     await expect.poll(async () => {
       await reviews.getByRole('button', { name: '刷新审核目标', exact: true }).click()
@@ -224,7 +230,7 @@ it.each(['json', 'sqlite'])('recovers durable browser requests after independent
       ingressCount: 1, reports: 1, tasks: 1, transfers: 0, stock: '2', received: '0', requests: 0,
       entityCount: 3, channelCount: 2, inFlight: false })
     await workspace.getByRole('button', { name: '刷新', exact: true }).click()
-    await workspace.getByText(`${availableAt} minute`, { exact: true }).waitFor()
+    await workspace.getByTitle(`${availableAt} minute`, { exact: true }).waitFor()
     await workspace.getByRole('button', { name: '继续保留输入', exact: true }).click()
     await input.getByRole('button', { name: '重试原操作', exact: true }).click()
     await input.getByText('响应丢失，请查询或重试原操作。', { exact: true }).waitFor()

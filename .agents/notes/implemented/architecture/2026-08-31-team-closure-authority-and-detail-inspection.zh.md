@@ -16,6 +16,10 @@ Team completion 和 cancellation 可以通过普通 phase write 表示，而 tas
 
 挂载的 `team-closure-driver` Consumer 会在重启后从持久 Team state 恢复已接受的 completion、failure 和 cancellation intent。TeamRun 在 completion intent 后、receipt 与本地 teardown 前持久化独立的 final-result admission。只有 intent 的结果由 driver 通过追加到同一个封闭 sink 来接纳，driver 返回新的 cursor，之后只凭新的 continuation authority 修复 receipt。它还会在 coordinator 的 missing-final、structured turn failure 或 frozen budget exhaustion 返回 caller 前记录该事实。Closure-owned pending delivery 会在 channel 和 Team 的终态 record 提交前收到带明确 reason 的 `channel/delivery-expired`；未确认的 remote termination 会保持 stalled，而不会被报告为已 settle。
 
+TeamRun 的本地 completion 阶段消费这个已接受的准确 intent。它释放本地 lease 后驱动或等待终态结算，不会用新 proof 再次调用 typed `completeTeam()` command，也不会另行生成 finalization phase proof。若重试选了不同的 final channel 或 Envelope，读取保留的 intent 时就会拒绝，不会再接纳 result 或写入 receipt。
+
+未挂载 closure driver 时，finalization channel 关闭可能在本地 lease 释放后耗尽 cursor 重试。同一个本地 `waitForFinal()` 调用随后仍可重试：TeamRun 先核对本地已成功记录的 human receipt 和准确的持久 completion intent，再续接 channel 清理。它不会用已撤销的 proof 再次写入 receipt，也不会把单独的 completion intent 当作 receipt。新进程的持久恢复仍依赖 closure driver。
+
 `team-run-result` sink 记录准确的 Team、channel、Envelope、WAL sequence、canonical content fingerprint、派生的 recipient 与 durable owner，以及 Team-scoped idempotency key。该 journal fact 独立于 closure intent 和 receipt；checkpoint 保留这项事实，channel retention 保留其引用内容。它继续作为 unattended system-owned run 的封闭 result owner。Principal-owned final 改用 `principal-inbox`：Hub 等待 [human inbox Consumer](../../../../packages/team/team-human-client/README.zh.md) 完成追加，再记录带准确 inbox sequence 的 admission。Recovery 使用同一 sink 选择和幂等 Envelope identity。产品 display acknowledgement 是独立的单调 principal cursor，不能证明 channel delivery。Notification 或 model claim 不能重建已接纳结果。
 
 终态恢复根据每个关联 channel 的 WAL 验证所属 Team、终态 phase 与交付结算。Completed Team 还必须具有相互匹配的 closure 选择和独立 final admission、准确的保留 Envelope 及内容 fingerprint，以及对应的 human receipt。Checkpoint 或重放投影对外可见前执行这些检查；不一致的 checkpoint 回退到 source journal，存储错误和实现加载错误继续向调用方报告。Final 查找从保留的 WAL cursor 开始，使合法前缀压缩后仍能恢复 completed 状态。
@@ -24,11 +28,13 @@ Team completion 和 cancellation 可以通过普通 phase write 表示，而 tas
 
 Closure-driver 的启动调用方共享一次初始恢复扫描。每个 Team serializer 拥有所有合并的 observer action，在入队前复制输入，并在某个 pass 失败后继续处理其余 action，再报告累计的失败。这样，失败或重复的通知不会丢弃另一个已接纳的 observation。Dispose 会同步关闭新接纳入口，拒绝 backend pass 尚未开始的排队 observer，将每个已接纳的 proof 保留到对应 backend pass 结算，并在关闭失败时仍注销公开的 driver。
 
-Hub bridge 在生命周期结算前将一次精确 epoch 的恢复委派给 activation controller。Team cursor 改变时结束本次 pass，再用新 authority 继续。已接纳的 completion 不因原 actor 不同而跳过 Team event，因此没有轮询 pulse 的部署也能在 result admission 或资源恢复后继续推进；TeamRun 不再保留另一套 channel-cleanup 窗口。
+Hub bridge 在生命周期结算前将一次精确 epoch 的恢复委派给 activation controller。Team cursor 改变时结束本次 pass，再用新 authority 继续。已接纳的 completion 不因原 actor 不同而跳过 Team event，因此没有轮询 pulse 的部署也能在 result admission 或资源恢复后继续推进；挂载该 driver 时，TeamRun 不再保留另一套 channel-cleanup 窗口。
 
 Controller 的 stall command 区分 proof 载荷无效与并发 Team 写入。Proof cursor 与 command 不符时拒绝其权限；若准确 intent 和 epoch 仍有效，则持久 cursor 推进会返回 `TEAM_CURSOR_CONFLICT`，使 controller 能在配置上限内重新读取并重试。
 
 直接取消和 driver cleanup 会先尝试所有选定 channel 分支，再报告存储失败。单个失败保留原错误，多个失败按执行顺序汇总，durable intent 继续支持重试。前一 policy 等待期间可能撤销 proof，因此每个分支在 policy 前及 append 前都重新验证 authority。重试跳过已关闭 channel，任何分支失败都会阻止 Team 被接纳为终态。
+
+TeamRun 本地 cancellation 清理耗尽重试次数时，保留 Hub 原始的 channel cursor conflict。若 typed cancellation command 随后到达 `cancelled`，这个已被取代的进度冲突不会使已完成的 `cancel()` 调用失败。存储错误和无关清理失败仍会报告；finalization channel 清理保留独立的 `TEAM_RUN_NOT_QUIESCENT` 重试耗尽结果。
 
 Team 与 Participant authority grant 是不可变的 typed subset。Child Team、Participant 和 task request 不能扩大 operation hook、workspace mode、relative read/write scope 或 typed resource ceiling。Task admission 会针对 Team budget 保留声明的 ceiling；assignment 与 usage path 会在接受新的 lease 或 model step 前执行运行时 wall-time、retry、concurrency、token、turn 和 cost limit。Typed cost ceiling 会拒绝 provider pricing 未知的 sample 或 child charge，而不会按 0 计入。Review assignment 携带准确的 completed result、reviewer、initiator 和 review revision；reviewer 从已记录 source 派生 CAS fence，并在 resolve task 前向 initiator 发送幂等 response。
 
@@ -79,6 +85,8 @@ Team state 和 API payload 变宽，当前 Team journal/checkpoint format 为 26
 ## Verification
 
 Audit recovery 测试通过独立 SQLite connection，在原 handle append 前提交 Hub 生成的准确派生 values，验证真实冲突、close 成功/失败，以及后续读取不重复事实。JSON 则分别验证单 owner 锁，以及 append 已提交但返回 EIO 后的恢复；它不构成并发 writer 的 CAS 场景。
+
+Channel source 测试通过公开的 summary 准入拒绝缺失、短读、有间隙或 cursor 不符的 WAL 范围，且不追加 summary。第二条 summary 会验证其 source 范围中先前保留的 summary。JSON 和 SQLite 分页读取在有界 cursor 间保留每条记录、透传存储故障，并在前缀已压缩时报告首条保留记录的 cursor。
 
 [Human-question 示例](../../../../examples/headless-agent/tests/human-question.snapshot.ts) 让 standard worker 的真实 question tool 经过 UserQuestions 和 ApiProxyService。JSON 和 SQLite 保留 source id 与实际 Mux request 对应的 pending human action，再通过公开 TeamRun cancellation 和一次 resolved event 保留该 identity。Session tool-call record 与独立 backend read 共同验证 producer 和持久 outcome。
 

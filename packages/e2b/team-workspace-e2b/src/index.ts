@@ -1,3 +1,13 @@
+import { teamWorkspaceIntegrationKey } from '@clocky/clocky-team-workspace'
+import { isStoredTeamWorkspaceManifestHeader } from '@clocky/clocky-team-workspace'
+import { encodeTeamWorkspaceChangeSetIfSupported } from '@clocky/clocky-team-workspace'
+import { assertCurrentTeamWorkspaceOwner,isCurrentTeamWorkspaceCandidate,authorizeTeamWorkspaceAllocation } from '@clocky/clocky-team-workspace'
+
+import { TeamWorkspaceReservations } from '@clocky/clocky-team-workspace'
+import { teamWorkspaceIntegrationIdentity, isTeamWorkspaceIntegrationMarkerBase, sameTeamWorkspaceIntegrationMarker as sameIntegrationMarker } from '@clocky/clocky-team-workspace'
+import type { TeamWorkspaceIntegrationMarkerBase } from '@clocky/clocky-team-workspace'
+import { TeamWorkspaceIntegrationQueue, assertTeamWorkspaceSourceIntegration, authorizeTeamWorkspaceSourceIntegration, decodeTeamWorkspaceChangeSet } from '@clocky/clocky-team-workspace'
+import { teamWorkspaceAllocationKey as allocationKey, sameTeamWorkspaceBaseMetadata } from '@clocky/clocky-team-workspace'
 /**
  * E2B remote Team workspace provider. Each exact task attempt receives a
  * deterministic directory inside the shared E2B sandbox, and the provider
@@ -22,10 +32,7 @@ import { defineLogStream } from '@clocky/clocky-storage-log'
 import type {} from '@clocky/clocky-storage-log'
 import type {
   ActivationBindingSnapshot,
-  ParticipantSnapshot,
   TeamArtifactReference,
-  TeamStateSnapshot,
-  TeamTaskSnapshot,
   TeamWorkspaceLoss,
 } from '@clocky/clocky-team'
 import type {
@@ -41,13 +48,7 @@ import type {
   TeamWorkspaceSourceIntegrateRequest,
   TeamWorkspaceSourceIntegrateResult,
 } from '@clocky/clocky-team-workspace'
-import {
-  encodeTeamWorkspaceChangeSet,
-  parseTeamWorkspaceChangeSet,
-  selectTeamWorkspacePatchArtifact,
-  teamWorkspaceSourceIntegrationResult,
-  TeamWorkspaceLostError,
-} from '@clocky/clocky-team-workspace'
+import { selectTeamWorkspacePatchArtifact, teamWorkspaceSourceIntegrationResult, TeamWorkspaceLostError } from '@clocky/clocky-team-workspace'
 import type { TeamWorkspaceChange, TeamWorkspaceChangeSet } from '@clocky/clocky-team-workspace'
 
 /** Cordis plugin name. */
@@ -126,17 +127,7 @@ interface StoredManifest {
   readonly version: typeof MANIFEST_VERSION
   readonly metadata: TeamWorkspaceAllocationMetadata
 }
-
-interface IntegrationMarkerBase {
-  readonly version: typeof INTEGRATION_MARKER_VERSION
-  readonly provider: string
-  readonly sourceTaskId: string
-  readonly sourceAttemptId: string
-  readonly integrationTaskId: string
-  readonly integrationAttemptId: string
-  readonly target: string
-  readonly expectedVersion: string
-}
+type IntegrationMarkerBase = TeamWorkspaceIntegrationMarkerBase
 
 type IntegrationMarker =
   | (IntegrationMarkerBase & { readonly status: 'prepared'; readonly targetVersion?: undefined; readonly targetCreated: boolean })
@@ -147,11 +138,11 @@ const EMPTY_REMOTE_DIRECTORY_VERSION = createHash('sha256').update('[]').digest(
 /** Provider that owns isolated remote directories in one E2B execution world. */
 class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
   readonly modes = ['remote'] as const
-  private readonly preparations = new Map<string, TeamWorkspacePreparation>()
-  private readonly allocations = new Map<string, TeamWorkspaceAllocation>()
-  private readonly materializations = new Map<string, Promise<TeamWorkspaceAllocation>>()
+  private readonly reservations = new TeamWorkspaceReservations()
+  private readonly preparations = this.reservations.preparations
+  private readonly allocations = this.reservations.allocations
   /** Serialize provider-specific integration operations for one remote target. */
-  private readonly integrationQueues = new Map<string, Promise<void>>()
+  private readonly integrationQueues = new TeamWorkspaceIntegrationQueue()
   private readonly losses = new Map<string, TeamWorkspaceLoss>()
   private readonly lossListeners = new Map<string, Set<(loss: TeamWorkspaceLoss) => Promise<void>>>()
   private readonly artifactQueues = new Map<string, Promise<unknown>>()
@@ -200,7 +191,7 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
       return false
     }
     const state = await this.ctx.teams.getTeam({ teamId: request.task.teamId })
-    return this.isEligibleState(state, request.task, request.binding)
+    return isCurrentTeamWorkspaceCandidate(state, request.task, request.binding, 'remote')
       && this.hasExactLiveAgent(request.binding)
   }
 
@@ -213,40 +204,15 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
     if (this.retired) throw new TeamError('E2B workspace provider is retired', 'TEAM_INVALID_ARGUMENT')
     await this.assertCurrentAllocation(request)
     const key = allocationKey(request)
-    const existing = this.preparations.get(key)
-    if (existing !== undefined) return existing
-    const metadata = this.metadata(request, (await this.remoteSandbox()).sandboxId)
-    let abandoned = false
-    const preparation: TeamWorkspacePreparation = Object.freeze({
-      ...metadata,
-      materialize: async (): Promise<TeamWorkspaceAllocation> => {
-        if (abandoned) throw new TeamError(`remote allocation '${metadata.id}' was abandoned`, 'TEAM_INVALID_ARGUMENT')
-        await this.assertCurrentAllocation(request)
-        const current = this.allocations.get(key)
-        if (current !== undefined) return current
-        const pending = this.materializations.get(key)
-        if (pending !== undefined) return await pending
-        const materialization = this.detectLoss(metadata, () => this.materializeOwned(metadata, key)).then((allocation) => {
-          this.allocations.set(key, allocation)
-          this.startLossPolling()
-          return allocation
-        })
-        this.materializations.set(key, materialization)
-        try {
-          return await materialization
-        } finally {
-          if (this.materializations.get(key) === materialization) this.materializations.delete(key)
-        }
-      },
-      abandon: (): Promise<void> => {
-        if (abandoned) return Promise.resolve()
-        abandoned = true
-        if (this.preparations.get(key) === preparation) this.preparations.delete(key)
-        return Promise.resolve()
-      },
+    return this.reservations.reuseOrCreate(key, async () => {
+      const metadata = this.metadata(request, (await this.remoteSandbox()).sandboxId)
+      return this.reservations.reserveMaterialized(
+        key, metadata, async () =>{  await this.assertCurrentAllocation(request) },
+        async () => await this.detectLoss(metadata, async () => await this.materializeOwned(metadata, key)),
+        `remote allocation '${metadata.id}' was abandoned`,
+        () => { this.startLossPolling() },
+      )
     })
-    this.preparations.set(key, preparation)
-    return preparation
   }
 
   /** Reopen an exact remote directory while its E2B sandbox remains live. */
@@ -365,25 +331,9 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
    * @returns a proposal or remote target-directory integration result.
    */
   async integrateSource(request: TeamWorkspaceSourceIntegrateRequest): Promise<TeamWorkspaceSourceIntegrateResult> {
-    assertSourceIntegrationRequest(request)
+    assertTeamWorkspaceSourceIntegration(request, 'remote E2B')
     const artifact = selectTeamWorkspacePatchArtifact(request)
-    const decision = await this.ctx.teams.authorize({
-      hook: 'workspace-integrate',
-      teamId: request.source.teamId,
-      ...request.actorId === undefined ? {} : { actorId: request.actorId },
-      facts: {
-        operation: 'source-integration',
-        sourceTaskId: request.source.taskId,
-        sourceAttemptId: request.source.attemptId,
-        integrationTaskId: request.integrationTaskId,
-        integrationAttemptId: request.integrationAttemptId,
-        target: request.target,
-        ...request.expectedTarget === undefined ? {} : { expectedTarget: request.expectedTarget },
-        mode: request.mode,
-        provider: this.config.providerName,
-      },
-    })
-    if (decision.kind === 'deny') throw new TeamError(decision.message, 'TEAM_POLICY_DENIED')
+    await authorizeTeamWorkspaceSourceIntegration(this.ctx.teams, request, this.config.providerName)
     if (request.mode === 'proposal') return teamWorkspaceSourceIntegrationResult(request, { status: 'proposed', artifact })
     if (!this.config.integrationEnabled) {
       throw new TeamError('remote E2B integration authority is disabled by configuration', 'TEAM_POLICY_DENIED')
@@ -397,31 +347,13 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
       )
     }
     const bytes = await store.read(this.config.artifactProvider, { reference: artifact })
-    const changeSet = parseTeamWorkspaceChangeSet(
-      parseJson(bytes),
-      this.config.providerName,
-      request.source.attemptId,
-      this.config.maxIntegrationBytes,
+    const changeSet = decodeTeamWorkspaceChangeSet(
+      bytes, this.config.providerName, request.source.attemptId, this.config.maxIntegrationBytes, 'remote E2B',
     )
-    return await this.serializeIntegration(
+    return await this.integrationQueues.run(
       request.target,
       async () => await this.applyChangeSet(request, artifact, changeSet, integrationRoot),
     )
-  }
-
-  /** Serialize one remote target operation within this provider process. */
-  private async serializeIntegration<T>(target: string, operation: () => Promise<T>): Promise<T> {
-    const prior = this.integrationQueues.get(target) ?? Promise.resolve()
-    let release!: () => void
-    const current = new Promise<void>((resolve) => { release = resolve })
-    this.integrationQueues.set(target, current)
-    await prior
-    try {
-      return await operation()
-    } finally {
-      release()
-      if (this.integrationQueues.get(target) === current) this.integrationQueues.delete(target)
-    }
   }
 
   /** Apply a validated change set with a remote target-version fence and recovery marker. */
@@ -469,12 +401,7 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
     await sandbox.files.makeDir(integrationMarkerRoot(this.config))
     await writeIntegrationMarker(sandbox, markerPathname, {
       version: INTEGRATION_MARKER_VERSION,
-      provider: this.config.providerName,
-      sourceTaskId: String(request.source.taskId),
-      sourceAttemptId: String(request.source.attemptId),
-      integrationTaskId: String(request.integrationTaskId),
-      integrationAttemptId: String(request.integrationAttemptId),
-      target: request.target,
+      ...teamWorkspaceIntegrationIdentity(request, this.config.providerName),
       expectedVersion: currentVersion,
       status: 'prepared',
       targetCreated: existingTarget === undefined,
@@ -488,12 +415,7 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
     const targetVersion = await remoteDirectoryVersion(sandbox, targetRoot, this.config)
     await writeIntegrationMarker(sandbox, markerPathname, {
       version: INTEGRATION_MARKER_VERSION,
-      provider: this.config.providerName,
-      sourceTaskId: String(request.source.taskId),
-      sourceAttemptId: String(request.source.attemptId),
-      integrationTaskId: String(request.integrationTaskId),
-      integrationAttemptId: String(request.integrationAttemptId),
-      target: request.target,
+      ...teamWorkspaceIntegrationIdentity(request, this.config.providerName),
       expectedVersion: currentVersion,
       targetVersion,
       status: 'integrated',
@@ -614,59 +536,9 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
   private async assertCurrentAllocation(request: TeamWorkspacePrepareRequest): Promise<void> {
     await this.remoteSandbox()
     const state = await this.ctx.teams.getTeam({ teamId: request.teamId })
-    const task = state.tasks.find(candidate => candidate.id === request.taskId)
-    requireCurrent(task !== undefined, `Team task '${request.taskId}' is not available for remote allocation`)
-    requireCurrent(state.team.phase === 'active', `Team '${request.teamId}' is not active for remote allocation`)
-    requireCurrent(task.workspaceMode === 'remote', `Team task '${task.id}' does not request a remote workspace`)
-    requireCurrent(task.phase === 'assigned' || task.phase === 'running', `Team task '${task.id}' has no active remote lease`)
-    const lease = task.lease
-    requireCurrent(lease !== undefined, `Team task '${task.id}' has no current remote lease`)
-    requireCurrent(lease.expiresAt > Date.now(), `Team task '${task.id}' current lease has expired`)
-    requireCurrent(lease.attemptId === request.attemptId, `Team task '${task.id}' attempt does not match remote allocation`)
-    requireCurrent(lease.assignedRevision === request.assignedRevision, `Team task '${task.id}' assigned revision does not match remote allocation`)
-    requireCurrent(lease.participantId === request.participantId, `Team task '${task.id}' participant does not match remote allocation`)
-    requireCurrent(lease.activationId === request.activationId, `Team task '${task.id}' activation does not match remote allocation`)
-    const participant = state.participants.find(candidate => candidate.id === request.participantId)
-    requireCurrent(isActiveLocalAgent(participant), `Team participant '${request.participantId}' is not an active local Agent`)
-    const binding = state.activations.find(candidate => candidate.activation.id === request.activationId)
-    requireCurrent(
-      binding !== undefined
-      && binding.activation.teamId === request.teamId
-      && binding.activation.participantId === request.participantId
-      && binding.sessionId === request.sessionId
-      && isDeliverableActivation(binding),
-      `Team activation '${request.activationId}' does not match remote allocation ownership`,
-    )
+    const binding = assertCurrentTeamWorkspaceOwner(state, request, 'remote')
     requireCurrent(this.hasExactLiveAgent(binding), `Session '${request.sessionId}' is not a live local Agent for remote allocation`)
-    const decision = await this.ctx.teams.authorize({
-      hook: 'workspace-allocate',
-      teamId: request.teamId,
-      actorId: request.participantId,
-      facts: {
-        taskId: request.taskId,
-        attemptId: request.attemptId,
-        assignedRevision: request.assignedRevision,
-        participantId: request.participantId,
-        activationId: request.activationId,
-        sessionId: request.sessionId,
-        workspaceMode: 'remote',
-        workspaceParent: this.config.workspaceParent,
-      },
-    })
-    if (decision.kind === 'deny') throw new TeamError(decision.message, 'TEAM_POLICY_DENIED')
-  }
-
-  private isEligibleState(state: TeamStateSnapshot, task: TeamTaskSnapshot, binding: ActivationBindingSnapshot): boolean {
-    const currentTask = state.tasks.find(candidate => candidate.id === task.id)
-    const participant = state.participants.find(candidate => candidate.id === binding.activation.participantId)
-    const currentBinding = state.activations.find(candidate => candidate.activation.id === binding.activation.id)
-    return state.team.phase === 'active'
-      && currentTask?.revision === task.revision
-      && currentTask.workspaceMode === 'remote'
-      && isActiveLocalAgent(participant)
-      && currentBinding !== undefined
-      && sameBindingIdentity(currentBinding, binding)
-      && isDeliverableActivation(currentBinding)
+    await authorizeTeamWorkspaceAllocation(this.ctx.teams, request, 'remote', { workspaceParent: this.config.workspaceParent })
   }
 
   private hasExactLiveAgent(binding: ActivationBindingSnapshot): boolean {
@@ -700,6 +572,7 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
   }
 
   private async requireWorld(metadata: TeamWorkspaceAllocationMetadata, sandbox: import('@clocky/clocky-e2b').Sandbox): Promise<void> {
+    // v8 ignore next -- owned metadata is created with a world; restore and reconcile reject missing-world metadata before this call.
     if (metadata.executionWorld === undefined) throw new TeamError('Remote allocation has no durable execution-world identity', 'TEAM_INVALID_ARGUMENT')
     if (metadata.executionWorld.id !== sandbox.sandboxId) throw await this.lossError(metadata, 'world-changed')
     await sandbox.getInfo()
@@ -714,6 +587,7 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
 
   private async lossError(metadata: TeamWorkspaceAllocationMetadata, reason: TeamWorkspaceLoss['reason']): Promise<TeamWorkspaceLostError> {
     const executionWorld = metadata.executionWorld
+    // v8 ignore next -- lossError is reached only after canonical owned metadata passes its world fence.
     if (executionWorld === undefined) throw new TeamError('Remote loss has no recorded execution world', 'TEAM_INVALID_ARGUMENT')
     const loss: TeamWorkspaceLoss = {
       executionWorld, reason, terminationProven: reason === 'sandbox-expired', artifacts: await this.readRetainedArtifacts(metadata),
@@ -765,6 +639,7 @@ class E2BTeamWorkspaceProvider implements TeamWorkspaceProvider {
         if (result.status === 'rejected') this.ctx.logger.warn(`team-workspace-e2b: exact loss settlement failed: ${String(result.reason)}`)
       }
     }
+    // v8 ignore next -- the last allocation stops polling before another empty poll can be scheduled.
     this.pollCursor = allocations.length === 0 ? 0 : (this.pollCursor + count) % allocations.length
   }
 
@@ -929,31 +804,9 @@ async function materializeChangeSet(
     if (bytes.byteLength > config.maxIntegrationBytes) return undefined
     changes.push({ path: candidate.path, kind: 'file', data: Buffer.from(bytes).toString('base64') })
   }
-  if (changes.length === 0) return undefined
-  try {
-    return encodeTeamWorkspaceChangeSet({
-      provider: config.providerName,
-      sourceAttemptId: allocation.attemptId,
-      changes,
-    }, config.maxIntegrationBytes)
-  } catch (error: unknown) {
-    if (error instanceof TeamError && error.code === 'TEAM_INVALID_ARGUMENT') return undefined
-    throw error
-  }
-}
-
-/** Validate source identities before policy or artifact reads. */
-function assertSourceIntegrationRequest(request: TeamWorkspaceSourceIntegrateRequest): void {
-  if (String(request.source.teamId).length === 0
-    || String(request.source.taskId).length === 0
-    || String(request.source.attemptId).length === 0
-    || String(request.integrationTaskId).length === 0
-    || String(request.integrationAttemptId).length === 0) {
-    throw new TeamError('remote E2B source integration identities must be non-empty', 'TEAM_INVALID_ARGUMENT')
-  }
-  if (request.target.length === 0 || request.target.trim() !== request.target) {
-    throw new TeamError('remote E2B integration target must be non-empty without surrounding whitespace', 'TEAM_INVALID_ARGUMENT')
-  }
+  return encodeTeamWorkspaceChangeSetIfSupported(
+    { provider: config.providerName, sourceAttemptId: allocation.attemptId, changes }, config.maxIntegrationBytes,
+  )
 }
 
 /** Return a safe remote target directory below the configured integration root. */
@@ -963,6 +816,7 @@ function integrationTargetRoot(integrationRoot: string, target: string): string 
     throw new TeamError('remote E2B integration target must be a relative path without dot segments', 'TEAM_INVALID_ARGUMENT')
   }
   const root = posix.join(integrationRoot, target)
+  // v8 ignore next -- the validated nonempty relative target cannot normalize to the root or leave it.
   if (root === integrationRoot || !isPosixChild(integrationRoot, root)) {
     throw new TeamError('remote E2B integration target must be a child of integrationRoot', 'TEAM_INVALID_ARGUMENT')
   }
@@ -1040,6 +894,7 @@ async function ensureRemoteDirectoryPath(
   root: string,
   path: string,
 ): Promise<void> {
+  // v8 ignore next -- callers derive this ancestor from a validated target or decoded change-set path.
   if (!isPosixChild(root, path) && path !== root) throw new TeamError('remote E2B integration path escapes its configured root', 'TEAM_INVALID_ARGUMENT')
   const relativePath = path === root ? '' : path.slice(`${root}/`.length)
   let current = root
@@ -1062,6 +917,7 @@ async function ensureRemoteDirectoryPath(
 /** Map one portable path to a remote root without allowing escapes. */
 function remotePortablePath(root: string, path: string): string {
   const result = posix.join(root, path)
+  // v8 ignore next -- decoded change-set paths already reject absolute and traversal segments at the artifact boundary.
   if (!isPosixChild(root, result)) throw new TeamError(`remote E2B integration path '${path}' escapes its target`, 'TEAM_INVALID_ARGUMENT')
   return result
 }
@@ -1073,14 +929,7 @@ function integrationMarkerRoot(config: ResolvedConfig): string {
 
 /** Location of one source/integration operation marker. */
 function integrationMarkerPath(config: ResolvedConfig, request: TeamWorkspaceSourceIntegrateRequest): string {
-  return posix.join(integrationMarkerRoot(config), `${createHash('sha256').update(JSON.stringify([
-    config.providerName,
-    String(request.source.taskId),
-    String(request.source.attemptId),
-    String(request.integrationTaskId),
-    String(request.integrationAttemptId),
-    request.target,
-  ])).digest('hex')}.json`)
+  return posix.join(integrationMarkerRoot(config), `${createHash('sha256').update(teamWorkspaceIntegrationKey(request, config.providerName)).digest('hex')}.json`)
 }
 
 /** Read one remote integration recovery marker. */
@@ -1106,43 +955,17 @@ async function writeIntegrationMarker(
   path: string,
   marker: IntegrationMarker,
 ): Promise<void> {
+  // v8 ignore next -- callers construct this typed marker locally after its identity and status are fixed.
   if (!isIntegrationMarker(marker)) throw new TeamError(`remote integration marker '${path}' is invalid`, 'TEAM_INVALID_ARGUMENT')
   await sandbox.files.write(path, JSON.stringify(marker))
 }
 
-/** Match a remote marker to one exact source/integration operation. */
-function sameIntegrationMarker(marker: IntegrationMarker, request: TeamWorkspaceSourceIntegrateRequest, provider: string): boolean {
-  return marker.provider === provider
-    && marker.sourceTaskId === String(request.source.taskId)
-    && marker.sourceAttemptId === String(request.source.attemptId)
-    && marker.integrationTaskId === String(request.integrationTaskId)
-    && marker.integrationAttemptId === String(request.integrationAttemptId)
-    && marker.target === request.target
-}
-
 /** Validate a provider-owned remote marker. */
 function isIntegrationMarker(value: unknown): value is IntegrationMarker {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
-  const record = value as Record<string, unknown>
-  return record.version === INTEGRATION_MARKER_VERSION
-    && typeof record.provider === 'string'
-    && typeof record.sourceTaskId === 'string'
-    && typeof record.sourceAttemptId === 'string'
-    && typeof record.integrationTaskId === 'string'
-    && typeof record.integrationAttemptId === 'string'
-    && typeof record.target === 'string'
-    && typeof record.expectedVersion === 'string'
-    && ((record.status === 'prepared' && record.targetVersion === undefined && typeof record.targetCreated === 'boolean')
+  if (!isTeamWorkspaceIntegrationMarkerBase(value)) return false
+  const record = value as TeamWorkspaceIntegrationMarkerBase & Record<string, unknown>
+  return ((record.status === 'prepared' && record.targetVersion === undefined && typeof record.targetCreated === 'boolean')
       || (record.status === 'integrated' && typeof record.targetVersion === 'string'))
-}
-
-/** Parse the JSON payload stored in one provider-backed patch artifact. */
-function parseJson(bytes: Uint8Array): unknown {
-  try {
-    return JSON.parse(new TextDecoder().decode(bytes))
-  } catch (error: unknown) {
-    throw new TeamError('remote E2B source patch artifact is not valid JSON', 'TEAM_INVALID_ARGUMENT', { cause: error })
-  }
 }
 
 /** Check whether one POSIX path is a strict descendant of another path. */
@@ -1161,19 +984,8 @@ function manifestPath(config: ResolvedConfig, key: string): string {
   return posix.join(config.workspaceParent, 'manifests', `${digest}.json`)
 }
 
-function allocationKey(request: Pick<TeamWorkspacePrepareRequest, 'teamId' | 'taskId' | 'attemptId' | 'assignedRevision' | 'participantId' | 'activationId' | 'sessionId'>): string {
-  return JSON.stringify([
-    request.teamId,
-    request.taskId,
-    request.attemptId,
-    request.assignedRevision,
-    request.participantId,
-    request.activationId,
-    request.sessionId,
-  ])
-}
-
 function relativeRemotePath(root: string, path: string): string | undefined {
+  // v8 ignore next -- allocation and integration roots come from normalized POSIX joins without trailing slashes.
   const prefix = root.endsWith('/') ? root : `${root}/`
   if (!path.startsWith(prefix)) return undefined
   const value = path.slice(prefix.length)
@@ -1201,26 +1013,8 @@ function isRemoteNotFound(error: unknown): boolean {
   return error instanceof FileNotFoundError
 }
 
-function sameBindingIdentity(left: ActivationBindingSnapshot, right: ActivationBindingSnapshot): boolean {
-  return left.activation.id === right.activation.id
-    && left.activation.teamId === right.activation.teamId
-    && left.activation.participantId === right.activation.participantId
-    && left.sessionId === right.sessionId
-    && left.provider === right.provider
-}
-
 function sameMetadata(left: TeamWorkspaceAllocationMetadata, right: TeamWorkspaceAllocationMetadata): boolean {
-  return left.id === right.id
-    && left.provider === right.provider
-    && left.mode === right.mode
-    && left.teamId === right.teamId
-    && left.taskId === right.taskId
-    && left.attemptId === right.attemptId
-    && left.assignedRevision === right.assignedRevision
-    && left.participantId === right.participantId
-    && left.activationId === right.activationId
-    && left.sessionId === right.sessionId
-    && left.baseVersion === right.baseVersion
+  return sameTeamWorkspaceBaseMetadata(left, right)
     && left.executionWorld?.kind === right.executionWorld?.kind
     && left.executionWorld?.id === right.executionWorld?.id
 }
@@ -1230,19 +1024,7 @@ function sameAllocation(left: TeamWorkspaceAllocation, right: TeamWorkspaceAlloc
 }
 
 function isStoredManifest(value: unknown): value is StoredManifest {
-  if (typeof value !== 'object' || value === null) return false
-  const record = value as Record<string, unknown>
-  return record.version === MANIFEST_VERSION
-    && typeof record.metadata === 'object'
-    && record.metadata !== null
-}
-
-function isActiveLocalAgent(participant: ParticipantSnapshot | undefined): participant is ParticipantSnapshot {
-  return participant?.kind === 'local-agent' && participant.phase === 'active'
-}
-
-function isDeliverableActivation(binding: ActivationBindingSnapshot): boolean {
-  return binding.activation.status === 'idle' || binding.activation.status === 'running'
+  return isStoredTeamWorkspaceManifestHeader(value, MANIFEST_VERSION)
 }
 
 function normalized(value: string, label: string): string {

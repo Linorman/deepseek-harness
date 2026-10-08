@@ -1,0 +1,434 @@
+/* Role token layer: the one palette and the shared scales.
+ *
+ * Feature CSS consumes these roles, never pixel values or palette steps:
+ * - color: --clocky-bg-*, --clocky-fg-*, --clocky-border-*, --clocky-accent-*
+ * - agent status: --clocky-status-<state>-{fg,bg,border}
+ * - categorical tints: --clocky-tint-<hue>-{fg,bg,border} for role and kind identity
+ * - mode identity: --clocky-mode-{team,simulation}-{fg,bg,subtle,glow,gradient}, chrome only
+ * - live halos and materials: --clocky-glow-<state>, --clocky-surface-glass, --clocky-blur-glass
+ * - visualization: --clocky-viz-{grid,edge,edge-active,edge-ghost,node-ring,halo}
+ * - type: --clocky-type-<role> (font shorthand) and its -size/-line-height/-weight parts
+ * - space, radius, elevation, layer, duration, ease
+ *
+ * Palette steps (--clocky-neutral-*, --clocky-blue-*, ...) exist only so this
+ * sheet and the alias sheet can name colors once; feature CSS never reads them.
+ * Light values sit on `body`, dark overrides on `body[data-ds-dark-theme]`,
+ * matching the cascade every other theme sheet uses. Non-color scales do not
+ * change with the theme and sit on `:root`. */
+
+:root {
+  /* Space: 4px base. */
+  --clocky-space-0: 0;
+  --clocky-space-1: 4px;
+  --clocky-space-2: 8px;
+  --clocky-space-3: 12px;
+  --clocky-space-4: 16px;
+  --clocky-space-5: 20px;
+  --clocky-space-6: 24px;
+  --clocky-space-8: 32px;
+  --clocky-space-10: 40px;
+  --clocky-space-12: 48px;
+
+  /* Radius. */
+  --clocky-radius-xs: 4px;
+  --clocky-radius-sm: 6px;
+  --clocky-radius-md: 8px;
+  --clocky-radius-lg: 12px;
+  --clocky-radius-xl: 16px;
+  --clocky-radius-full: 9999px;
+
+  /* Layers. `local-*` order siblings inside one stacking context and never
+     compete with the page layers; `popover` holds portaled menus and panels
+     that must stay above an open modal. */
+  --clocky-layer-behind: -1;
+  --clocky-layer-base: 0;
+  --clocky-layer-local-1: 1;
+  --clocky-layer-local-2: 2;
+  --clocky-layer-local-3: 3;
+  --clocky-layer-local-4: 4;
+  --clocky-layer-local-5: 5;
+  --clocky-layer-local-6: 6;
+  --clocky-layer-local-7: 7;
+  --clocky-layer-local-8: 8;
+  --clocky-layer-sticky: 10;
+  --clocky-layer-dropdown: 100;
+  --clocky-layer-overlay: 200;
+  --clocky-layer-modal: 300;
+  --clocky-layer-popover: 350;
+  --clocky-layer-toast: 400;
+  --clocky-layer-tooltip: 500;
+
+  /* Motion. Durations for transitions and one-shot animations. */
+  --clocky-duration-instant: 80ms;
+  --clocky-duration-fast: 140ms;
+  --clocky-duration-base: 200ms;
+  --clocky-duration-slow: 280ms;
+  --clocky-duration-deliberate: 400ms;
+  /* Opacity-only fades keep their timing under reduced motion. */
+  --clocky-duration-fade: 140ms;
+  /* Looping indicators. Reduced motion stops them (see below). */
+  --clocky-duration-spin: 1200ms;
+  --clocky-duration-shimmer: 1800ms;
+  --clocky-duration-sweep: 2600ms;
+  /* How long a toast stays before it fades. */
+  --clocky-duration-dwell: 5000ms;
+  --clocky-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --clocky-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --clocky-ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --clocky-ease-linear: linear;
+  /* Backdrop blur behind modal scrims. */
+  --clocky-mask-blur: blur(2px);
+  /* Critically damped settle with a slight overshoot, sampled from a spring. */
+  --clocky-ease-spring: linear(0, 0.063, 0.22 4.6%, 0.588 10.7%, 0.832 15.8%, 0.966 21.3%,
+    1.023 27.1%, 1.034 33%, 1.02 41.1%, 1.003 52.4%, 0.999 66%, 1);
+  /* Expressive motion (visual layer). `orbit` is the L0 ambient period,
+     `flow` one L1 particle flight, `celebrate` the L3 moment ceiling, and
+     `stagger-step` the offset between staggered entrances. */
+  --clocky-duration-orbit: 24000ms;
+  --clocky-duration-flow: 1200ms;
+  --clocky-duration-celebrate: 1200ms;
+  --clocky-ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --clocky-stagger-step: 40ms;
+
+  /* Type roles: size/line-height/weight. Fonts come from base.css. */
+  --clocky-type-display-size: 28px;
+  --clocky-type-display-line-height: 36px;
+  --clocky-type-display-weight: 600;
+  --clocky-type-title-size: 20px;
+  --clocky-type-title-line-height: 28px;
+  --clocky-type-title-weight: 600;
+  --clocky-type-heading-size: 16px;
+  --clocky-type-heading-line-height: 24px;
+  --clocky-type-heading-weight: 600;
+  --clocky-type-body-size: 14px;
+  --clocky-type-body-line-height: 22px;
+  --clocky-type-body-weight: 400;
+  --clocky-type-body-reading-size: 15px;
+  --clocky-type-body-reading-line-height: 26px;
+  --clocky-type-body-reading-weight: 400;
+  --clocky-type-body-strong-size: 14px;
+  --clocky-type-body-strong-line-height: 22px;
+  --clocky-type-body-strong-weight: 500;
+  --clocky-type-body-small-size: 13px;
+  --clocky-type-body-small-line-height: 20px;
+  --clocky-type-body-small-weight: 400;
+  --clocky-type-label-size: 13px;
+  --clocky-type-label-line-height: 20px;
+  --clocky-type-label-weight: 500;
+  --clocky-type-caption-size: 12px;
+  --clocky-type-caption-line-height: 18px;
+  --clocky-type-caption-weight: 400;
+  --clocky-type-micro-size: 11px;
+  --clocky-type-micro-line-height: 14px;
+  --clocky-type-micro-weight: 500;
+  --clocky-type-mono-size: 13px;
+  --clocky-type-mono-line-height: 20px;
+  --clocky-type-mono-weight: 400;
+  --clocky-type-mono-small-size: 12px;
+  --clocky-type-mono-small-line-height: 18px;
+  --clocky-type-mono-small-weight: 400;
+  /* Expressive numerals: banner numbers and gauges. */
+  --clocky-type-hero-size: 40px;
+  --clocky-type-hero-line-height: 48px;
+  --clocky-type-hero-weight: 600;
+  --clocky-type-metric-size: 32px;
+  --clocky-type-metric-line-height: 36px;
+  --clocky-type-metric-weight: 500;
+}
+
+body {
+  --clocky-type-display: var(--clocky-type-display-weight) var(--clocky-type-display-size)/var(--clocky-type-display-line-height) var(--clocky-font-family);
+  --clocky-type-title: var(--clocky-type-title-weight) var(--clocky-type-title-size)/var(--clocky-type-title-line-height) var(--clocky-font-family);
+  --clocky-type-heading: var(--clocky-type-heading-weight) var(--clocky-type-heading-size)/var(--clocky-type-heading-line-height) var(--clocky-font-family);
+  --clocky-type-body: var(--clocky-type-body-weight) var(--clocky-type-body-size)/var(--clocky-type-body-line-height) var(--clocky-font-family);
+  --clocky-type-body-reading: var(--clocky-type-body-reading-weight) var(--clocky-type-body-reading-size)/var(--clocky-type-body-reading-line-height) var(--clocky-font-family);
+  --clocky-type-body-strong: var(--clocky-type-body-strong-weight) var(--clocky-type-body-strong-size)/var(--clocky-type-body-strong-line-height) var(--clocky-font-family);
+  --clocky-type-body-small: var(--clocky-type-body-small-weight) var(--clocky-type-body-small-size)/var(--clocky-type-body-small-line-height) var(--clocky-font-family);
+  --clocky-type-label: var(--clocky-type-label-weight) var(--clocky-type-label-size)/var(--clocky-type-label-line-height) var(--clocky-font-family);
+  --clocky-type-caption: var(--clocky-type-caption-weight) var(--clocky-type-caption-size)/var(--clocky-type-caption-line-height) var(--clocky-font-family);
+  --clocky-type-micro: var(--clocky-type-micro-weight) var(--clocky-type-micro-size)/var(--clocky-type-micro-line-height) var(--clocky-font-family);
+  --clocky-type-mono: var(--clocky-type-mono-weight) var(--clocky-type-mono-size)/var(--clocky-type-mono-line-height) var(--ds-font-family-code);
+  --clocky-type-mono-small: var(--clocky-type-mono-small-weight) var(--clocky-type-mono-small-size)/var(--clocky-type-mono-small-line-height) var(--ds-font-family-code);
+  --clocky-type-hero: var(--clocky-type-hero-weight) var(--clocky-type-hero-size)/var(--clocky-type-hero-line-height) var(--clocky-font-family);
+  --clocky-type-metric: var(--clocky-type-metric-weight) var(--clocky-type-metric-size)/var(--clocky-type-metric-line-height) var(--ds-font-family-code);
+
+  /* Palette steps. */
+  --clocky-neutral-0: #ffffff;
+  --clocky-neutral-25: #fbfcfd;
+  --clocky-neutral-50: #f6f7f9;
+  --clocky-neutral-100: #eef0f3;
+  --clocky-neutral-150: #e6e9ee;
+  --clocky-neutral-200: #dadee5;
+  --clocky-neutral-300: #c3c9d2;
+  --clocky-neutral-400: #9aa2ae;
+  --clocky-neutral-500: #7d8592;
+  --clocky-neutral-600: #5f6876;
+  --clocky-neutral-700: #475060;
+  --clocky-neutral-750: #353c47;
+  --clocky-neutral-800: #2a303a;
+  --clocky-neutral-850: #232831;
+  --clocky-neutral-900: #1b1f26;
+  --clocky-neutral-925: #171b21;
+  --clocky-neutral-950: #14171c;
+  --clocky-neutral-1000: #101317;
+  --clocky-blue-50: #eef3fd;
+  --clocky-blue-100: #dde7fb;
+  --clocky-blue-200: #bccff7;
+  --clocky-blue-300: #8fb0f1;
+  --clocky-blue-400: #6b93ea;
+  --clocky-blue-500: #3d6fdb;
+  --clocky-blue-600: #315fcc;
+  --clocky-blue-700: #2857c0;
+  --clocky-blue-800: #213f85;
+  --clocky-blue-900: #1b2a4a;
+
+  /* Surfaces. */
+  --clocky-bg-canvas: var(--clocky-neutral-50);
+  --clocky-bg-surface: var(--clocky-neutral-0);
+  --clocky-bg-raised: var(--clocky-neutral-0);
+  --clocky-bg-sunken: var(--clocky-neutral-100);
+  --clocky-bg-overlay: var(--clocky-neutral-0);
+  --clocky-bg-sidebar: var(--clocky-neutral-100);
+  /* Fill of floating controls (pills, chips, icon buttons over content). */
+  --clocky-bg-control: var(--clocky-neutral-0);
+  --clocky-bg-hover: rgb(23 27 33 / 5%);
+  --clocky-bg-active: rgb(23 27 33 / 9%);
+  --clocky-bg-scrim: rgb(16 19 23 / 40%);
+  --clocky-bg-scrim-strong: rgb(0 0 0 / 88%);
+  /* Translucent wash over content while a file is dragged onto it. */
+  --clocky-bg-drop: rgb(255 255 255 / 70%);
+  /* Inverse surfaces: tooltips, toasts, hover cards. */
+  --clocky-bg-inverse: var(--clocky-neutral-850);
+  /* Controls floating over images and media; identical in both themes. */
+  --clocky-media-control-bg: rgb(84 85 87 / 50%);
+  --clocky-media-control-bg-hover: rgb(84 85 87 / 60%);
+  --clocky-media-control-bg-subtle: rgb(31 31 31 / 36%);
+  /* Scrollbar thumbs: l1 on base surfaces, l2 on elevated ones (see scrollbar.css). */
+  --clocky-thumb-l1: var(--clocky-neutral-200);
+  --clocky-thumb-l1-hover: var(--clocky-neutral-300);
+  --clocky-thumb-l2: var(--clocky-neutral-200);
+  --clocky-thumb-l2-hover: var(--clocky-neutral-300);
+
+  /* Text and glyphs. */
+  --clocky-fg-primary: var(--clocky-neutral-925);
+  --clocky-fg-secondary: var(--clocky-neutral-700);
+  --clocky-fg-tertiary: var(--clocky-neutral-600);
+  --clocky-fg-disabled: var(--clocky-neutral-400);
+  --clocky-fg-on-accent: var(--clocky-neutral-0);
+  --clocky-fg-inverse: var(--clocky-neutral-0);
+  --clocky-fg-inverse-secondary: var(--clocky-neutral-300);
+
+  /* Lines. `strong` bounds controls and meets 3:1 on every surface. */
+  --clocky-border-subtle: var(--clocky-neutral-150);
+  --clocky-border-default: var(--clocky-neutral-200);
+  --clocky-border-strong: #7d8592;
+  --clocky-border-focus: var(--clocky-blue-500);
+
+  /* Brand accent: one ramp. */
+  --clocky-accent-fg: var(--clocky-blue-700);
+  --clocky-accent-bg: var(--clocky-blue-600);
+  --clocky-accent-bg-hover: var(--clocky-blue-700);
+  --clocky-accent-subtle: var(--clocky-blue-50);
+  --clocky-accent-subtle-border: var(--clocky-blue-200);
+
+  /* Agent states. */
+  --clocky-status-running-fg: var(--clocky-blue-700);
+  --clocky-status-running-bg: var(--clocky-blue-50);
+  --clocky-status-running-border: var(--clocky-blue-200);
+  --clocky-status-waiting-fg: #6941c6;
+  --clocky-status-waiting-bg: #f4f0fd;
+  --clocky-status-waiting-border: #d6cbf6;
+  --clocky-status-needs-you-fg: #9a5800;
+  --clocky-status-needs-you-bg: #fff6e5;
+  --clocky-status-needs-you-border: #f5d394;
+  --clocky-status-blocked-fg: #b0450a;
+  --clocky-status-blocked-bg: #fff1e8;
+  --clocky-status-blocked-border: #f9c9a7;
+  --clocky-status-done-fg: #147638;
+  --clocky-status-done-bg: #ebf8f0;
+  --clocky-status-done-border: #b5e3c6;
+  --clocky-status-failed-fg: #b42318;
+  --clocky-status-failed-bg: #fdeeec;
+  --clocky-status-failed-border: #f5c2bc;
+  --clocky-status-idle-fg: #555e6c;
+  --clocky-status-idle-bg: #f1f3f5;
+  --clocky-status-idle-border: var(--clocky-neutral-200);
+
+  /* Categorical tints: identity of a role or record kind (who or what), never
+     a state. Hues avoid the status hues so a role chip cannot read as a state. */
+  --clocky-tint-teal-fg: #0f6b67;
+  --clocky-tint-teal-bg: #e7f6f4;
+  --clocky-tint-teal-border: #a9dbd5;
+  --clocky-tint-fuchsia-fg: #9b2c7a;
+  --clocky-tint-fuchsia-bg: #fbeef7;
+  --clocky-tint-fuchsia-border: #edbcdf;
+  --clocky-tint-olive-fg: #56650f;
+  --clocky-tint-olive-bg: #f3f6e3;
+  --clocky-tint-olive-border: #d2dba2;
+  --clocky-tint-slate-fg: var(--clocky-neutral-700);
+  --clocky-tint-slate-bg: var(--clocky-neutral-100);
+  --clocky-tint-slate-border: var(--clocky-neutral-200);
+
+  /* Mode identity: chrome only (backdrop, mode switch, header glow), never a
+     mark that carries state. Team runs an electric cyan to cobalt ramp;
+     Simulation runs violet to magenta, kept away from the `waiting` hue. */
+  --clocky-mode-team-fg: #0a6890;
+  --clocky-mode-team-bg: #e4f5fb;
+  --clocky-mode-team-subtle: rgb(8 145 200 / 8%);
+  --clocky-mode-team-glow: 0 0 0 1px rgb(8 145 200 / 28%), 0 0 24px rgb(8 145 200 / 18%);
+  --clocky-mode-team-gradient: linear-gradient(135deg, #0fb5d8 0%, #2457d6 100%);
+  --clocky-mode-simulation-fg: #a3198c;
+  --clocky-mode-simulation-bg: #fcedf8;
+  --clocky-mode-simulation-subtle: rgb(190 40 170 / 7%);
+  --clocky-mode-simulation-glow: 0 0 0 1px rgb(190 40 170 / 26%), 0 0 24px rgb(190 40 170 / 16%);
+  --clocky-mode-simulation-gradient: linear-gradient(135deg, #7c4ddb 0%, #d02aa8 100%);
+
+  /* Glow: live-state halos composed from the status roles. */
+  --clocky-glow-running: 0 0 0 1px var(--clocky-status-running-border), 0 0 14px color-mix(in srgb, var(--clocky-status-running-fg) 30%, transparent);
+  --clocky-glow-needs-you: 0 0 0 1px var(--clocky-status-needs-you-border), 0 0 14px color-mix(in srgb, var(--clocky-status-needs-you-fg) 32%, transparent);
+  --clocky-glow-failed: 0 0 0 1px var(--clocky-status-failed-border), 0 0 14px color-mix(in srgb, var(--clocky-status-failed-fg) 30%, transparent);
+  --clocky-glow-done: 0 0 0 1px var(--clocky-status-done-border), 0 0 14px color-mix(in srgb, var(--clocky-status-done-fg) 26%, transparent);
+
+  /* Material: floating panels and overlays over the visualization canvas. */
+  --clocky-surface-glass: rgb(255 255 255 / 74%);
+  --clocky-blur-glass: blur(14px) saturate(140%);
+
+  /* Visualization: graph grid, edges, ghost references, node rings, halos. */
+  --clocky-viz-grid: rgb(23 27 33 / 9%);
+  --clocky-viz-edge: var(--clocky-neutral-300);
+  --clocky-viz-edge-active: var(--clocky-blue-500);
+  --clocky-viz-edge-ghost: var(--clocky-neutral-300);
+  --clocky-viz-node-ring: var(--clocky-neutral-200);
+  --clocky-viz-halo: rgb(61 111 219 / 18%);
+
+  /* Elevation: 1 is a hairline card, 2 a popover, 3 a dialog or sheet, 4 a toast. */
+  --clocky-elevation-0: none;
+  --clocky-elevation-1: 0 0 0 1px var(--clocky-border-subtle), 0 1px 2px rgb(16 19 23 / 4%);
+  --clocky-elevation-2: 0 0 0 1px var(--clocky-border-subtle), 0 4px 16px rgb(16 19 23 / 10%);
+  --clocky-elevation-3: 0 0 0 1px var(--clocky-border-subtle), 0 16px 48px rgb(16 19 23 / 18%);
+  --clocky-elevation-4: 0 0 0 1px var(--clocky-border-subtle), 0 8px 24px rgb(16 19 23 / 20%);
+}
+
+body[data-ds-dark-theme] {
+  --clocky-bg-canvas: var(--clocky-neutral-950);
+  --clocky-bg-surface: var(--clocky-neutral-900);
+  --clocky-bg-raised: var(--clocky-neutral-850);
+  --clocky-bg-sunken: var(--clocky-neutral-1000);
+  --clocky-bg-overlay: var(--clocky-neutral-850);
+  --clocky-bg-sidebar: var(--clocky-neutral-1000);
+  --clocky-bg-control: var(--clocky-neutral-850);
+  --clocky-bg-hover: rgb(232 236 242 / 6%);
+  --clocky-bg-active: rgb(232 236 242 / 11%);
+  --clocky-bg-scrim: rgb(0 0 0 / 56%);
+  --clocky-bg-inverse: var(--clocky-neutral-750);
+  --clocky-bg-drop: rgb(20 23 28 / 70%);
+  --clocky-thumb-l1: var(--clocky-neutral-750);
+  --clocky-thumb-l1-hover: var(--clocky-neutral-600);
+  --clocky-thumb-l2: var(--clocky-neutral-600);
+  --clocky-thumb-l2-hover: var(--clocky-neutral-500);
+
+  --clocky-fg-primary: #e8ecf2;
+  --clocky-fg-secondary: #b4bcc8;
+  --clocky-fg-tertiary: #959eac;
+  --clocky-fg-disabled: #5f6773;
+  --clocky-fg-on-accent: var(--clocky-neutral-0);
+
+  --clocky-border-subtle: var(--clocky-neutral-850);
+  --clocky-border-default: #2f3540;
+  --clocky-border-strong: #717a88;
+  --clocky-border-focus: var(--clocky-blue-400);
+
+  --clocky-accent-fg: var(--clocky-blue-300);
+  --clocky-accent-bg: var(--clocky-blue-500);
+  --clocky-accent-bg-hover: var(--clocky-blue-400);
+  --clocky-accent-subtle: var(--clocky-blue-900);
+  --clocky-accent-subtle-border: var(--clocky-blue-800);
+
+  --clocky-status-running-fg: var(--clocky-blue-300);
+  --clocky-status-running-bg: var(--clocky-blue-900);
+  --clocky-status-running-border: var(--clocky-blue-800);
+  --clocky-status-waiting-fg: #b9a3f2;
+  --clocky-status-waiting-bg: #2a2245;
+  --clocky-status-waiting-border: #4a3a80;
+  --clocky-status-needs-you-fg: #f5c14d;
+  --clocky-status-needs-you-bg: #3a2c10;
+  --clocky-status-needs-you-border: #6b5017;
+  --clocky-status-blocked-fg: #f7a46b;
+  --clocky-status-blocked-bg: #3b2214;
+  --clocky-status-blocked-border: #6e3b1e;
+  --clocky-status-done-fg: #6dd396;
+  --clocky-status-done-bg: #13301f;
+  --clocky-status-done-border: #22573a;
+  --clocky-status-failed-fg: #ff9b91;
+  --clocky-status-failed-bg: #3d1a17;
+  --clocky-status-failed-border: #6e2b25;
+  --clocky-status-idle-fg: #a3abb7;
+  --clocky-status-idle-bg: #22272f;
+  --clocky-status-idle-border: var(--clocky-neutral-750);
+  --clocky-tint-teal-fg: #6fd3ca;
+  --clocky-tint-teal-bg: #102d2b;
+  --clocky-tint-teal-border: #1f5450;
+  --clocky-tint-fuchsia-fg: #eb9bd5;
+  --clocky-tint-fuchsia-bg: #34192d;
+  --clocky-tint-fuchsia-border: #5d2c50;
+  --clocky-tint-olive-fg: #c6d571;
+  --clocky-tint-olive-bg: #252a10;
+  --clocky-tint-olive-border: #454e1d;
+  --clocky-tint-slate-fg: #b4bcc8;
+  --clocky-tint-slate-bg: var(--clocky-neutral-850);
+  --clocky-tint-slate-border: var(--clocky-neutral-750);
+
+  --clocky-mode-team-fg: #5fd0f0;
+  --clocky-mode-team-bg: #0b2633;
+  --clocky-mode-team-subtle: rgb(56 200 240 / 9%);
+  --clocky-mode-team-glow: 0 0 0 1px rgb(56 200 240 / 30%), 0 0 28px rgb(56 200 240 / 22%);
+  --clocky-mode-team-gradient: linear-gradient(135deg, #22d3ee 0%, #3b6cf6 100%);
+  --clocky-mode-simulation-fg: #f08ad8;
+  --clocky-mode-simulation-bg: #301530;
+  --clocky-mode-simulation-subtle: rgb(232 110 210 / 9%);
+  --clocky-mode-simulation-glow: 0 0 0 1px rgb(232 110 210 / 30%), 0 0 28px rgb(232 110 210 / 22%);
+  --clocky-mode-simulation-gradient: linear-gradient(135deg, #9b6bff 0%, #ec4fc0 100%);
+
+  --clocky-surface-glass: rgb(27 31 38 / 70%);
+  --clocky-blur-glass: blur(16px) saturate(150%);
+
+  --clocky-viz-grid: rgb(232 236 242 / 7%);
+  --clocky-viz-edge: var(--clocky-neutral-700);
+  --clocky-viz-edge-active: var(--clocky-blue-400);
+  --clocky-viz-edge-ghost: var(--clocky-neutral-750);
+  --clocky-viz-node-ring: var(--clocky-neutral-750);
+  --clocky-viz-halo: rgb(107 147 234 / 22%);
+
+  /* Dark elevation reads from surface lightness; shadows stay subtle. */
+  --clocky-elevation-1: 0 0 0 1px var(--clocky-border-subtle);
+  --clocky-elevation-2: 0 0 0 1px var(--clocky-border-default), 0 6px 20px rgb(0 0 0 / 36%);
+  --clocky-elevation-3: 0 0 0 1px var(--clocky-border-default), 0 18px 52px rgb(0 0 0 / 48%);
+  --clocky-elevation-4: 0 0 0 1px var(--clocky-border-default), 0 10px 28px rgb(0 0 0 / 50%);
+}
+
+/* Reduced motion: every movement duration collapses, loops run once and stop,
+   and only opacity fades keep `--clocky-duration-fade`. Component sheets
+   inherit this through the tokens instead of carrying their own blocks. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --clocky-duration-instant: 0.01ms;
+    --clocky-duration-fast: 0.01ms;
+    --clocky-duration-base: 0.01ms;
+    --clocky-duration-slow: 0.01ms;
+    --clocky-duration-deliberate: 0.01ms;
+    --clocky-duration-spin: 0.01ms;
+    --clocky-duration-shimmer: 0.01ms;
+    --clocky-duration-sweep: 0.01ms;
+    --clocky-duration-orbit: 0.01ms;
+    --clocky-duration-flow: 0.01ms;
+    --clocky-duration-celebrate: 0.01ms;
+    --clocky-stagger-step: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

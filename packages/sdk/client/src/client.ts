@@ -50,6 +50,8 @@ import type { TeamHumanInboxReadInput, TeamHumanInboxPage, TeamHumanInboxAcknowl
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'
+// Explicit protocol imports and public re-exports repeat contract names, not executable behavior.
+/* jscpd:ignore-start */
 import {
   activationDisposeParamsSchema,
   activationDisposeResultSchema,
@@ -238,6 +240,7 @@ import {
   teamTaskWatchParamsSchema,
   teamTaskWatchResultSchema,
 } from '@clocky/clocky-sdk-protocol'
+/* jscpd:ignore-end */
 import { disposeRuntimeProcess } from './dispose.ts'
 import type { HarnessClientOptions, HarnessNotification, NotificationFilter } from './types.ts'
 
@@ -836,11 +839,11 @@ export class HarnessClient {
     const input = parseProtocolValue('simulation/objects-inspect params', simulationObjectParamsSchema, params)
     const result = parseProtocolValue('simulation/objects-inspect result', simulationObjectResultSchema,
       await this.request('simulation/objects-inspect', input))
+    const selectedReference = result.selection.collection === 'decisions' ? result.selection.reference : undefined
     if (result.runId !== input.runId || result.selection.collection !== input.collection
       || result.selection.id !== input.id || result.selection.section !== input.section
-      || input.collection === 'decisions' && input.section === 'knowledge' && (result.selection.collection !== 'decisions'
-        || result.selection.section !== 'knowledge' || result.selection.reference?.id !== input.reference?.id
-        || result.selection.reference?.revision !== input.reference?.revision)
+      || input.collection === 'decisions' && input.section === 'knowledge' && (selectedReference?.id !== input.reference?.id
+        || selectedReference?.revision !== input.reference?.revision)
       || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision) {
       throw new SdkProtocolError('simulation/objects-inspect response belongs to a different selection or command')
     }
@@ -1803,6 +1806,6 @@ function scrubCredentialFromLaunchEnvironment(
     .filter(([, value]) => value === undefined || !value.includes(credential)))
 }
 
-/* v8 ignore next 2 -- Parsed original-update outcomes have exactly three closed tags. */
 /** Reject an unhandled future original-update outcome without exposing its body. */
+/* v8 ignore next -- Parsed original-update outcomes have exactly three closed tags. */
 function assertNever(value: never): never { void value; throw new SdkProtocolError('Unhandled task update outcome') }

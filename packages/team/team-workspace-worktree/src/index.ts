@@ -1,3 +1,8 @@
+import { assertCurrentTeamWorkspaceOwner,isCurrentTeamWorkspaceCandidate,authorizeTeamWorkspaceAllocation } from '@clocky/clocky-team-workspace'
+
+import { TeamWorkspaceReservationRegistry } from '@clocky/clocky-team-workspace'
+import { assertTeamWorkspaceSourceIntegration, authorizeTeamWorkspaceSourceIntegration } from '@clocky/clocky-team-workspace'
+import { teamWorkspaceAllocationKey as allocationKey, sameTeamWorkspaceBaseMetadata as sameMetadata } from '@clocky/clocky-team-workspace'
 /**
  * Detached Git-worktree Team workspace provider for exact local-Agent task attempts.
  *
@@ -20,9 +25,6 @@ import type {} from '@clocky/clocky-team-artifact'
 import { TeamError, teamWorkspaceAllocationIdSchema } from '@clocky/clocky-team'
 import type {
   ActivationBindingSnapshot,
-  ParticipantSnapshot,
-  TeamStateSnapshot,
-  TeamTaskSnapshot,
   TeamArtifactReference,
 } from '@clocky/clocky-team'
 import type { SubprocessHandle, SubprocessRuntime } from '@clocky/clocky-subprocess'
@@ -179,7 +181,8 @@ class AttemptOperationQueue {
 class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
   readonly modes = ['worktree'] as const
   /** Root-less provider reservations keyed by exact immutable lease ownership. */
-  private readonly preparations = new Map<string, TeamWorkspacePreparation>()
+  private readonly reservations = new TeamWorkspaceReservationRegistry()
+  private readonly preparations = this.reservations.preparations
   /** In-flight or published allocation per complete lease and activation identity. */
   private readonly allocations = new Map<string, Promise<TeamWorkspaceAllocation>>()
   /** One operation queue per exact attempt identity. */
@@ -223,7 +226,7 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
     if (request.task.workspaceMode !== 'worktree') return false
     if (!(await rootsRemainAvailable(this.config))) return false
     const state = await this.ctx.teams.getTeam({ teamId: request.task.teamId })
-    return this.isEligibleState(state, request.task, request.binding)
+    return isCurrentTeamWorkspaceCandidate(state, request.task, request.binding, 'worktree')
       && this.hasExactLiveAgent(request.binding)
   }
 
@@ -236,25 +239,14 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
     const key = allocationKey(request)
     const root = allocationRoot(this.config.allocationParent, key)
     await this.assertCurrentAllocation(request, root)
-    const existing = this.preparations.get(key)
-    if (existing !== undefined) return existing
-    const metadata = this.metadata(request)
-    let abandoned = false
-    const preparation: TeamWorkspacePreparation = Object.freeze({
-      ...metadata,
-      materialize: async (): Promise<TeamWorkspaceAllocation> => {
-        if (abandoned) throw new TeamError(`worktree allocation '${metadata.id}' was abandoned`, 'TEAM_INVALID_ARGUMENT')
-        return await this.materializePrepared(request, metadata, key, root)
-      },
-      abandon: (): Promise<void> => {
-        if (abandoned) return Promise.resolve()
-        abandoned = true
-        if (this.preparations.get(key) === preparation) this.preparations.delete(key)
-        return Promise.resolve()
-      },
+    return this.reservations.reuseOrCreate(key, () => {
+      const metadata = this.metadata(request)
+      return this.reservations.reserve(
+        key, metadata,
+        async () => await this.materializePrepared(request, metadata, key, root),
+        `worktree allocation '${metadata.id}' was abandoned`,
+      )
     })
-    this.preparations.set(key, preparation)
-    return preparation
   }
 
   /** Reopen a provider-minted worktree only from exact durable metadata. */
@@ -329,7 +321,7 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
    */
   async publish(request: TeamWorkspacePublishRequest): Promise<TeamWorkspacePublishResult> {
     const allocation = await this.ownedAllocation(request.allocation)
-    const diff = await materializeWorktreeDiff(this.ctx.subprocess, this.config, allocation.root, allocation.baseVersion)
+    const diff = await materializeWorktreeDiff(this.ctx.subprocess, this.config, allocation.root, this.config.baseCommit)
     const changedPaths = diff.changedPaths
     const artifactStore = this.ctx.get('teamArtifacts')
     const artifacts = [...await materializeArtifacts(
@@ -419,33 +411,9 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
    * @returns provider-owned source and integration provenance.
    */
   async integrateSource(request: TeamWorkspaceSourceIntegrateRequest): Promise<TeamWorkspaceSourceIntegrateResult> {
-    if (request.source.teamId.length === 0
-      || request.source.taskId.length === 0
-      || request.source.attemptId.length === 0
-      || request.integrationTaskId.length === 0
-      || request.integrationAttemptId.length === 0) {
-      throw new TeamError('worktree source integration identities must be non-empty', 'TEAM_INVALID_ARGUMENT')
-    }
-    if (request.target.length === 0 || request.target.trim() !== request.target) {
-      throw new TeamError('worktree integration target must be non-empty without surrounding whitespace', 'TEAM_INVALID_ARGUMENT')
-    }
+    assertTeamWorkspaceSourceIntegration(request, 'worktree')
     const artifact = selectTeamWorkspacePatchArtifact(request)
-    const decision = await this.ctx.teams.authorize({
-      hook: 'workspace-integrate',
-      teamId: request.source.teamId,
-      ...request.actorId === undefined ? {} : { actorId: request.actorId },
-      facts: {
-        operation: 'source-integration',
-        sourceTaskId: request.source.taskId,
-        sourceAttemptId: request.source.attemptId,
-        integrationTaskId: request.integrationTaskId,
-        integrationAttemptId: request.integrationAttemptId,
-        target: request.target,
-        ...request.expectedTarget === undefined ? {} : { expectedTarget: request.expectedTarget },
-        mode: request.mode,
-      },
-    })
-    if (decision.kind === 'deny') throw new TeamError(decision.message, 'TEAM_POLICY_DENIED')
+    await authorizeTeamWorkspaceSourceIntegration(this.ctx.teams, request)
     if (request.mode === 'proposal') {
       return teamWorkspaceSourceIntegrationResult(request, { status: 'proposed', artifact })
     }
@@ -472,6 +440,45 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
     return await this.integrateSourcePatch(request, artifact, patch)
   }
 
+  /** Observe conflicted paths after a failed apply/merge; an unavailable observation preserves the original failure. */
+  private async integrationConflicts(root: string): Promise<readonly string[]> {
+    return parseNulPaths(await runGit(this.subprocess, this.config, root,
+      ['-C', root, 'diff', '--name-only', '--diff-filter=U', '-z']).catch(() => ''))
+  }
+
+  /** Create an absent private integration root from the exact observed target commit. */
+  private async addIntegrationWorktree(root: string, commit: string): Promise<void> {
+    await assertPathAbsent(root)
+    await runGit(this.subprocess, this.config, this.config.repoRoot,
+      ['-C', this.config.repoRoot, 'worktree', 'add', '--detach', root, commit])
+  }
+
+  /** Read the committed object identity from the provider-owned integration checkout. */
+  private async integrationHead(root: string): Promise<string> {
+    return (await runGit(this.subprocess, this.config, root,
+      ['-C', root, 'rev-parse', '--verify', '--quiet', '--end-of-options', 'HEAD^{commit}'])).trim()
+  }
+
+  /** Settle provider-owned staging cleanup before appending caller-specific temporary-file failures. */
+  private async cleanupIntegrationRoot(root: string, added: boolean, force: boolean): Promise<unknown[]> {
+    const remove = added
+      ? async () => await runGit(this.subprocess, this.config, this.config.repoRoot,
+        ['-C', this.config.repoRoot, 'worktree', 'remove', ...force ? ['--force'] : [], root])
+      : async () => { await rm(root, { recursive: true, force: true }) }
+    try {
+      await remove()
+    } catch (error: unknown) {
+      return [error]
+    }
+    return []
+  }
+
+  /** Disable untrusted hooks and signing while using this provider's explicit integration identity. */
+  private integrationGitIdentity(root: string): readonly string[] {
+    return ['-C', root, '-c', `user.name=${this.config.integrationAuthorName}`,
+      '-c', `user.email=${this.config.integrationAuthorEmail}`, '-c', 'commit.gpgSign=false', '-c', 'core.hooksPath=/dev/null']
+  }
+
   /** Apply one verified source patch in a detached target worktree and CAS the target ref. */
   private async integrateSourcePatch(
     request: TeamWorkspaceSourceIntegrateRequest,
@@ -495,19 +502,14 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
     try {
       await assertPathAbsent(patchPath)
       await writeFile(patchPath, patch, { flag: 'wx', mode: 0o600 })
-      await assertPathAbsent(integrationRoot)
-      await runGit(this.subprocess, this.config, this.config.repoRoot, [
-        '-C', this.config.repoRoot, 'worktree', 'add', '--detach', integrationRoot, targetCommit,
-      ])
+      await this.addIntegrationWorktree(integrationRoot, targetCommit)
       worktreeAdded = true
       try {
         await runGit(this.subprocess, this.config, integrationRoot, [
           '-C', integrationRoot, 'apply', '--3way', '--index', '--whitespace=nowarn', patchPath,
         ])
       } catch (error: unknown) {
-        const conflicts = parseNulPaths(await runGit(this.subprocess, this.config, integrationRoot, [
-          '-C', integrationRoot, 'diff', '--name-only', '--diff-filter=U', '-z',
-        ]).catch(() => ''))
+        const conflicts = await this.integrationConflicts(integrationRoot)
         await runGit(this.subprocess, this.config, integrationRoot, [
           '-C', integrationRoot, 'reset', '--hard', targetCommit,
         ]).catch(() => '')
@@ -515,16 +517,10 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
         throw error
       }
       await runGit(this.subprocess, this.config, integrationRoot, [
-        '-C', integrationRoot,
-        '-c', `user.name=${this.config.integrationAuthorName}`,
-        '-c', `user.email=${this.config.integrationAuthorEmail}`,
-        '-c', 'commit.gpgSign=false',
-        '-c', 'core.hooksPath=/dev/null',
+        ...this.integrationGitIdentity(integrationRoot),
         'commit', '-m', commitMessage,
       ])
-      const integratedCommit = (await runGit(this.subprocess, this.config, integrationRoot, [
-        '-C', integrationRoot, 'rev-parse', '--verify', '--quiet', '--end-of-options', 'HEAD^{commit}',
-      ])).trim()
+      const integratedCommit = await this.integrationHead(integrationRoot)
       try {
         await runGit(this.subprocess, this.config, this.config.repoRoot, [
           '-C', this.config.repoRoot, 'update-ref', targetRef, integratedCommit, targetCommit,
@@ -540,22 +536,7 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
       }
       return teamWorkspaceSourceIntegrationResult(request, { status: 'integrated', targetVersion: integratedCommit, artifact })
     } finally {
-      const failures: unknown[] = []
-      if (worktreeAdded) {
-        try {
-          await runGit(this.subprocess, this.config, this.config.repoRoot, [
-            '-C', this.config.repoRoot, 'worktree', 'remove', '--force', integrationRoot,
-          ])
-        } catch (error: unknown) {
-          failures.push(error)
-        }
-      } else {
-        try {
-          await rm(integrationRoot, { recursive: true, force: true })
-        } catch (error: unknown) {
-          failures.push(error)
-        }
-      }
+      const failures = await this.cleanupIntegrationRoot(integrationRoot, worktreeAdded, true)
       try {
         await rm(patchPath, { force: true })
       } catch (error: unknown) {
@@ -620,7 +601,6 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
           status: 'integrated',
           accepted: true,
           targetVersion: targetCommit.trim(),
-          ...artifact === undefined ? {} : { artifact },
         }
       }
       const sourceCommit = (await runGit(this.subprocess, this.config, allocation.root, [
@@ -634,24 +614,15 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
         GIT_COMMITTER_EMAIL: this.config.integrationAuthorEmail,
       })).trim()
       await assertTargetNotCheckedOut(this.subprocess, this.config, this.config.repoRoot, targetRef)
-      await assertPathAbsent(integrationRoot)
-      await runGit(this.subprocess, this.config, this.config.repoRoot, [
-        '-C', this.config.repoRoot, 'worktree', 'add', '--detach', integrationRoot, targetCommit.trim(),
-      ])
+      await this.addIntegrationWorktree(integrationRoot, targetCommit.trim())
       worktreeAdded = true
       try {
         await runGit(this.subprocess, this.config, integrationRoot, [
-          '-C', integrationRoot,
-          '-c', `user.name=${this.config.integrationAuthorName}`,
-          '-c', `user.email=${this.config.integrationAuthorEmail}`,
-          '-c', 'commit.gpgSign=false',
-          '-c', 'core.hooksPath=/dev/null',
+          ...this.integrationGitIdentity(integrationRoot),
           'merge', '--no-ff', '--no-commit', sourceCommit,
         ])
       } catch (error: unknown) {
-        const conflicts = parseNulPaths(await runGit(this.subprocess, this.config, integrationRoot, [
-          '-C', integrationRoot, 'diff', '--name-only', '--diff-filter=U', '-z',
-        ]).catch(() => ''))
+        const conflicts = await this.integrationConflicts(integrationRoot)
         await runGit(this.subprocess, this.config, integrationRoot, [
           '-C', integrationRoot, 'merge', '--abort',
         ]).catch(() => '')
@@ -660,16 +631,10 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
       }
       const commitMessage = `Integrate Clocky Team task ${String(allocation.taskId)} attempt ${String(allocation.attemptId)}`
       await runGit(this.subprocess, this.config, integrationRoot, [
-        '-C', integrationRoot,
-        '-c', `user.name=${this.config.integrationAuthorName}`,
-        '-c', `user.email=${this.config.integrationAuthorEmail}`,
-        '-c', 'commit.gpgSign=false',
-        '-c', 'core.hooksPath=/dev/null',
+        ...this.integrationGitIdentity(integrationRoot),
         'commit', '--no-edit', '-m', commitMessage,
       ])
-      const integratedCommit = (await runGit(this.subprocess, this.config, integrationRoot, [
-        '-C', integrationRoot, 'rev-parse', '--verify', '--quiet', '--end-of-options', 'HEAD^{commit}',
-      ])).trim()
+      const integratedCommit = await this.integrationHead(integrationRoot)
       try {
         await runGit(this.subprocess, this.config, this.config.repoRoot, [
           '-C', this.config.repoRoot, 'update-ref', targetRef, integratedCommit, targetCommit.trim(),
@@ -694,22 +659,7 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
         ...artifact === undefined ? {} : { artifact },
       }
     } finally {
-      const failures: unknown[] = []
-      if (worktreeAdded) {
-        try {
-          await runGit(this.subprocess, this.config, this.config.repoRoot, [
-            '-C', this.config.repoRoot, 'worktree', 'remove', integrationRoot,
-          ])
-        } catch (error: unknown) {
-          failures.push(error)
-        }
-      } else {
-        try {
-          await rm(integrationRoot, { recursive: true, force: true })
-        } catch (error: unknown) {
-          failures.push(error)
-        }
-      }
+      const failures = await this.cleanupIntegrationRoot(integrationRoot, worktreeAdded, false)
       try {
         await rm(sourceIndex, { force: true })
         await rm(`${sourceIndex}.lock`, { force: true })
@@ -897,86 +847,13 @@ class WorktreeTeamWorkspaceProvider implements TeamWorkspaceProvider {
       throw new TeamError('worktree Team workspace repository root or allocation parent is not an existing directory', 'TEAM_INVALID_ARGUMENT')
     }
     const state = await this.ctx.teams.getTeam({ teamId: request.teamId })
-    const task = state.tasks.find(candidate => candidate.id === request.taskId)
-    requireCurrent(task !== undefined, `Team task '${request.taskId}' is not available for worktree allocation`)
-    requireCurrent(state.team.phase === 'active', `Team '${request.teamId}' is not active for worktree allocation`)
-    requireCurrent(task.workspaceMode === 'worktree', `Team task '${task.id}' does not request a worktree workspace`)
-    requireCurrent(
-      task.phase === 'assigned' || task.phase === 'running',
-      `Team task '${task.id}' does not hold an active worktree lease`,
-    )
-    const lease = task.lease
-    requireCurrent(lease !== undefined, `Team task '${task.id}' has no current worktree lease`)
-    requireCurrent(lease.expiresAt > Date.now(), `Team task '${task.id}' current lease has expired`)
-    requireCurrent(lease.attemptId === request.attemptId, `Team task '${task.id}' attempt does not match worktree allocation`)
-    requireCurrent(
-      lease.assignedRevision === request.assignedRevision,
-      `Team task '${task.id}' assigned revision does not match worktree allocation`,
-    )
-    requireCurrent(
-      lease.participantId === request.participantId,
-      `Team task '${task.id}' participant does not match worktree allocation`,
-    )
-    requireCurrent(
-      lease.activationId === request.activationId,
-      `Team task '${task.id}' activation does not match worktree allocation`,
-    )
-    const participant = state.participants.find(candidate => candidate.id === request.participantId)
-    requireCurrent(
-      isActiveLocalAgent(participant),
-      `Team participant '${request.participantId}' is not an active local Agent`,
-    )
-    const binding = state.activations.find(candidate => candidate.activation.id === request.activationId)
-    requireCurrent(
-      binding !== undefined
-      && binding.activation.teamId === request.teamId
-      && binding.activation.participantId === request.participantId
-      && binding.sessionId === request.sessionId
-      && isDeliverableActivation(binding),
-      `Team activation '${request.activationId}' does not match worktree allocation ownership`,
-    )
+    const binding = assertCurrentTeamWorkspaceOwner(state, request, 'worktree')
     requireCurrent(
       this.hasExactLiveAgent(binding),
       `Session '${request.sessionId}' is not a live local Agent for worktree allocation`,
     )
-    const decision = await this.ctx.teams.authorize({
-      hook: 'workspace-allocate',
-      teamId: request.teamId,
-      actorId: request.participantId,
-      facts: {
-        taskId: request.taskId,
-        attemptId: request.attemptId,
-        assignedRevision: request.assignedRevision,
-        participantId: request.participantId,
-        activationId: request.activationId,
-        sessionId: request.sessionId,
-        workspaceMode: 'worktree',
-        repoRoot: this.config.repoRoot,
-        allocationParent: this.config.allocationParent,
-        root,
-        baseRef: this.config.baseRef,
-        baseCommit: this.config.baseCommit,
-      },
-    })
-    if (decision.kind === 'deny') throw new TeamError(decision.message, 'TEAM_POLICY_DENIED')
-  }
-
-  /** Compare scheduler-observed task/binding facts with the current Team projection. */
-  private isEligibleState(
-    state: TeamStateSnapshot,
-    task: TeamTaskSnapshot,
-    binding: ActivationBindingSnapshot,
-  ): boolean {
-    const currentTask = state.tasks.find(candidate => candidate.id === task.id)
-    const participant = state.participants.find(candidate => candidate.id === binding.activation.participantId)
-    const currentBinding = state.activations.find(candidate => candidate.activation.id === binding.activation.id)
-    return state.team.phase === 'active'
-      && currentTask?.revision === task.revision
-      && currentTask.workspaceMode === 'worktree'
-      && isActiveLocalAgent(participant)
-      && currentBinding !== undefined
-      && sameBindingIdentity(currentBinding, binding)
-      && isDeliverableActivation(currentBinding)
+    await authorizeTeamWorkspaceAllocation(this.ctx.teams, request, 'worktree', { repoRoot: this.config.repoRoot, allocationParent: this.config.allocationParent, root,
+      baseRef: this.config.baseRef, baseCommit: this.config.baseCommit })
   }
 
   /** Require the exact durable Session to remain registered as one live local Agent. */
@@ -1319,34 +1196,6 @@ function allocationRoot(parent: string, key: string): string {
   return join(parent, `clocky-team-worktree-${digest}`)
 }
 
-/** Produce the full identity key that fences retry/reuse to one attempt and one activation binding. */
-function allocationKey(request: TeamWorkspacePrepareRequest): string {
-  return JSON.stringify([
-    request.teamId,
-    request.taskId,
-    request.attemptId,
-    request.assignedRevision,
-    request.participantId,
-    request.activationId,
-    request.sessionId,
-  ])
-}
-
-/** Compare every durable provider field while excluding the live execution root. */
-function sameMetadata(left: TeamWorkspaceAllocationMetadata, right: TeamWorkspaceAllocationMetadata): boolean {
-  return left.id === right.id
-    && left.provider === right.provider
-    && left.mode === right.mode
-    && left.teamId === right.teamId
-    && left.taskId === right.taskId
-    && left.attemptId === right.attemptId
-    && left.assignedRevision === right.assignedRevision
-    && left.participantId === right.participantId
-    && left.activationId === right.activationId
-    && left.sessionId === right.sessionId
-    && left.baseVersion === right.baseVersion
-}
-
 /** Materialize bounded file references for changed worktree paths without copying contents. */
 async function materializeArtifacts(
   allocation: TeamWorkspaceAllocation,
@@ -1402,14 +1251,11 @@ async function materializeWorktreeDiff(
   subprocess: SubprocessRuntime,
   config: Pick<ResolvedConfig, 'gitExecutable' | 'processGraceMs' | 'commandTimeoutMs' | 'outputMaxBytes' | 'allocationParent'>,
   root: string,
-  baseVersion: string | undefined,
+  baseCommit: string,
 ): Promise<{ readonly changedPaths: readonly string[]; readonly patch: string }> {
   const indexPath = join(config.allocationParent, `.clocky-team-publish-index-${randomUUID()}`)
   const indexEnvironment = { GIT_INDEX_FILE: indexPath }
   try {
-    const baseCommit = baseVersion ?? (await runGit(subprocess, config, root, [
-      '-C', root, 'rev-parse', '--verify', '--quiet', '--end-of-options', 'HEAD^{commit}',
-    ])).trim()
     await runGit(subprocess, config, root, [
       '-C', root, 'read-tree', baseCommit,
     ], undefined, indexEnvironment)
@@ -1427,25 +1273,6 @@ async function materializeWorktreeDiff(
     await rm(indexPath, { force: true })
     await rm(`${indexPath}.lock`, { force: true })
   }
-}
-
-/** Return whether one participant is eligible for local worktree ownership. */
-function isActiveLocalAgent(participant: ParticipantSnapshot | undefined): participant is ParticipantSnapshot {
-  return participant?.kind === 'local-agent' && participant.phase === 'active'
-}
-
-/** Return whether one activation is usable for an allocation or delivery-bound attempt. */
-function isDeliverableActivation(binding: ActivationBindingSnapshot): boolean {
-  return binding.activation.status === 'idle' || binding.activation.status === 'running'
-}
-
-/** Compare immutable activation, Session, and placement identity while allowing observed status changes. */
-function sameBindingIdentity(left: ActivationBindingSnapshot, right: ActivationBindingSnapshot): boolean {
-  return left.activation.id === right.activation.id
-    && left.activation.teamId === right.activation.teamId
-    && left.activation.participantId === right.activation.participantId
-    && left.sessionId === right.sessionId
-    && left.provider === right.provider
 }
 
 /** Reject empty or whitespace-padded deployment identifiers before provider publication. */

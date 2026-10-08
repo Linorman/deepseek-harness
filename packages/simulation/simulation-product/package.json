@@ -70,7 +70,8 @@
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-agent-runtime": "workspace:^",
     "@clocky/clocky-agent-runtime-in-process": "workspace:^",
-    "@clocky/clocky-team-human-actor": "workspace:^"
+    "@clocky/clocky-team-human-actor": "workspace:^",
+    "@clocky/clocky-agent-default-model": "workspace:^"
   },
   "devDependencies": {
     "@clocky/cordis": "workspace:^",
@@ -97,6 +98,7 @@
     "@clocky/clocky-agent-runtime": "workspace:^",
     "@clocky/clocky-agent-runtime-in-process": "workspace:^",
     "@clocky/clocky-team-human-actor": "workspace:^",
-    "@clocky/clocky-team-hub": "workspace:^"
+    "@clocky/clocky-team-hub": "workspace:^",
+    "@clocky/clocky-agent-default-model": "workspace:^"
   }
 }

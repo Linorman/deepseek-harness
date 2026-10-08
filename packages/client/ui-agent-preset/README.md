@@ -48,6 +48,8 @@ Setting the default writes the `agent-presets` settings namespace, which the hos
 
 A deployment that composes no presets answers with an empty roster, and the row, label, and section all render nothing — every Team then shares the Host composition, and there is nothing to choose between or manage. A deployment that configures no writable root answers `authorable: false`, and the section stays a read-only browser: the shipped compositions still open in the viewer, but every copy action is disabled with the reason as its tooltip rather than offering a dialog whose create always fails.
 
+Authentication clearing cancels roster and authoring requests and clears copy, viewer and revealed-path drafts. Reads stay suspended until a successful handshake. Cancellation fences late replies even if a different principal has already reconnected.
+
 ## Model Experience
 
 Indirectly, through the preset a later Team coordinator is composed from; [`clocky-agent-presets`](../../preset/agent-presets/README.md) owns what that composition puts in front of the model.

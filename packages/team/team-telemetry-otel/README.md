@@ -10,6 +10,10 @@ The optional `alerts` list is a local rolling policy. Each rule filters the deta
 
 This package is an explicit provider, not part of the default Team bundle. A deployment may register additional `team-telemetry/record` listeners to redact or enrich records before this backend receives them. Export is at-least-once according to the OpenTelemetry SDK's processor semantics; the provider does not claim durable telemetry delivery or exactly-once alerts.
 
+## Shared SDK pipeline
+
+The backend consumes the independent `@clocky/clocky-session-telemetry-otel/pipeline` SDK support subpath. It does not mount the Session backend or adopt its sharing policy. This Team provider retains capture, redaction, severity mapping, alerts, instrumentation scope and bounded shutdown; only SDK construction and record-field mapping are shared. The Host build produces the required compiled subpath.
+
 ## Configuration
 
 ```ts

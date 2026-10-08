@@ -55,6 +55,24 @@ it('returns explicit unavailable for unsafe aggregate token consumption and reje
   } finally { await native.close() }
 })
 
+it('projects a durable scheduler stop without converting it into an operational provider status', async () => {
+  const native = await createBusinessHarness('json')
+  const selected = { ...registration(), spec: native.selection.spec }
+  const h = await fixture('json', { imports: [selected] })
+  try {
+    const { products } = await h.mount()
+    const snapshot = { ...native.run.snapshot(), phase: 'stalled' as const, stall: {
+      code: 'SIM_QUEUE_CAPACITY' as const, capacity: 'events' as const,
+      used: 1, limit: 1, requested: 1, recovery: 'free-or-extend-capacity-and-resume' as const,
+    } }
+    h.inspect.mockResolvedValueOnce({ snapshot, owner: 'unowned' })
+    await expect(products.inspect({ runId: selected.id }, call())).resolves.toMatchObject({
+      world: { phase: 'stalled', schedulerStop: { code: 'SIM_QUEUE_CAPACITY', recovery: 'free-or-extend-capacity-and-resume' } },
+      operational: { status: 'unavailable' },
+    })
+  } finally { await native.close() }
+})
+
 it('bounds distinct identities and the complete batch, and never reads private or unregistered identities', async () => {
   const imports = [registration('a'), registration('b'), registration('private', 'other')]
   const h = await fixture('json', { imports, maxPageSize: 1 })

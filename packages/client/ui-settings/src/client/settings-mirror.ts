@@ -76,6 +76,21 @@ export class SettingsDescribeMirror implements SettingsDescribeFace {
   private inFlight: Promise<void> | undefined
   private rerun = false
   private generation = 0
+  private authorization = new AbortController()
+
+  /** Cancel reads and retire the previous principal's document without starting another read. */
+  clearAuthorization(): void {
+    this.authorization.abort()
+    this.generation += 1
+    this.rerun = false
+    this.store.set({ status: 'unavailable', view: undefined, error: null })
+  }
+
+  /** Admit reads again only after a successful authenticated handshake. */
+  resumeAuthorization(): void {
+    if (!this.authorization.signal.aborted) return
+    this.authorization = new AbortController()
+  }
 
   /**
    * @param api - settings wire face.
@@ -112,7 +127,7 @@ export class SettingsDescribeMirror implements SettingsDescribeFace {
    * @returns settlement after this call's freshness is reflected.
    */
   load(): Promise<void> {
-    if (this.persistence === 'memory') return Promise.resolve()
+    if (this.persistence === 'memory' || this.authorization.signal.aborted) return Promise.resolve()
     if (this.inFlight !== undefined) {
       this.rerun = true
       return this.inFlight
@@ -130,7 +145,7 @@ export class SettingsDescribeMirror implements SettingsDescribeFace {
    * @returns settlement of the current or newly started read, if any.
    */
   ensure(): Promise<void> {
-    if (this.persistence === 'memory') return Promise.resolve()
+    if (this.persistence === 'memory' || this.authorization.signal.aborted) return Promise.resolve()
     if (this.inFlight !== undefined) return this.inFlight
     if (this.getSnapshot().status === 'idle') return this.load()
     return Promise.resolve()
@@ -144,6 +159,7 @@ export class SettingsDescribeMirror implements SettingsDescribeFace {
    * @param view - the namespace view a settings write answered with.
    */
   acceptView(view: SettingsNamespaceView): void {
+    if (this.authorization.signal.aborted) return
     const before = this.store.getSnapshot()
     this.generation += 1
     if (this.inFlight !== undefined) this.rerun = true
@@ -170,6 +186,7 @@ export class SettingsDescribeMirror implements SettingsDescribeFace {
     // that gap would mark a rerun nobody reads, losing the read.
     try {
       do {
+        if (this.authorization.signal.aborted) return
         const before = this.store.getSnapshot()
         if (before.status === 'idle') this.store.set({ ...before, status: 'loading' })
         // Cleared immediately before the wire read goes out: a load() marked
@@ -180,7 +197,7 @@ export class SettingsDescribeMirror implements SettingsDescribeFace {
         const generation = ++this.generation
         let outcome: { view: SettingsDescribeView } | { failure: string }
         try {
-          const response = await this.api.settings.describe({})
+          const response = await this.api.settings.describe({}, this.authorization.signal)
           outcome = response.result.ok
             ? { view: response.result.value }
             : { failure: response.result.error.message }
@@ -208,6 +225,6 @@ export class SettingsDescribeMirror implements SettingsDescribeFace {
   }
 
   private shouldRerun(): boolean {
-    return this.rerun
+    return this.rerun && !this.authorization.signal.aborted
   }
 }

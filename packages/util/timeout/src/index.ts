@@ -188,3 +188,23 @@ export function timeoutOf(x: AbortSignal | { reason?: unknown }, code?: string):
   if (!(reason instanceof TimeoutReason)) return undefined
   return code === undefined || reason.code === code ? reason : undefined
 }
+
+/** Observe an operation against cancellation without taking ownership of its teardown.
+ * @param signal - Caller cancellation, checked before starting the operation.
+ * @param operation - Caller-owned asynchronous startup or read operation.
+ * @param reason - Capability-owned cancellation error constructor preserving its public diagnosis.
+ * @returns the operation result, or cancellation rejection; the caller still stops and drains owned work.
+ */
+export async function raceWithAbort<T>(
+  signal: AbortSignal, operation: () => Promise<T>, reason: (signal: AbortSignal) => Error,
+): Promise<T> {
+  if (signal.aborted) throw reason(signal)
+  const { promise: aborted, reject } = Promise.withResolvers<never>()
+  const onAbort = (): void => { reject(reason(signal)) }
+  signal.addEventListener('abort', onAbort, { once: true })
+  try {
+    return await Promise.race([operation(), aborted])
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
+}

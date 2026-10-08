@@ -9,7 +9,7 @@
   margin: 0;
   border: 0;
   background: transparent;
-  z-index: 1000;
+  z-index: var(--clocky-layer-modal);
   display: grid;
   place-items: center;
   padding: 40px;
@@ -21,7 +21,7 @@
 .mask {
   position: absolute;
   inset: 0;
-  background: var(--clocky-alias-bg-mask-1);
+  background: var(--clocky-bg-scrim);
   backdrop-filter: var(--clocky-mask-blur);
 }
 
@@ -30,24 +30,24 @@
   max-width: min(100%, 1600px);
   max-height: calc(100vh - 80px);
   object-fit: contain;
-  border-radius: 12px;
-  background: var(--clocky-specific-input-major);
-  box-shadow: var(--clocky-shadow-lv3);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-surface);
+  box-shadow: var(--clocky-elevation-3);
 }
 
 .close {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
   display: grid;
   place-items: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
-  border-radius: 999px;
-  background: var(--clocky-specific-input-major);
-  color: var(--clocky-alias-label-primary);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-bg-surface);
+  color: var(--clocky-fg-primary);
   cursor: pointer;
 }
 

@@ -1,0 +1,36 @@
+.popover {
+  position: fixed;
+  z-index: var(--clocky-layer-popover);
+  min-width: 200px;
+  max-width: min(360px, calc(100vw - 16px));
+  padding: var(--clocky-space-3);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-2);
+  color: var(--clocky-fg-primary);
+  font: var(--clocky-type-body-small);
+  /* Inline transform-origin from useAnchoredPosition faces the trigger. */
+  transform-origin: top left;
+  animation: popover-in var(--clocky-duration-fast) var(--clocky-ease-enter);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
+}
+
+.popover:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* Reduced motion: popovers appear in place, without the scale entrance. */
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+}

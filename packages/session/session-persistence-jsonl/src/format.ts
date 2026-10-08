@@ -1,3 +1,4 @@
+import { assertNoRetiredHeaderFields as assertCurrentSessionHeaderFields } from '@clocky/clocky-session'
 /**
  * On-disk format helpers for the JSONL session-persistence backend: path
  * sanitization (a {@link SessionId} is an unvalidated branded string, so it
@@ -112,11 +113,7 @@ function isHeaderLine(value: unknown): value is HeaderLine {
 function assertNoRetiredHeaderFields(value: unknown): void {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return
   const record = value as Record<string, unknown>
-  for (const key of ['origin', 'delegationDepth'] as const) {
-    if (Object.hasOwn(record, key)) {
-      throw new Error(`session header field "${key}" was removed; use the subagent/descriptor event`)
-    }
-  }
+  assertCurrentSessionHeaderFields(value)
   if (Object.hasOwn(record, 'sandboxMode') || Object.hasOwn(record, 'approvalPolicy')) {
     throw new Error('session header uses retired policy baseline fields')
   }

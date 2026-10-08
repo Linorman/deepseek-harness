@@ -200,7 +200,8 @@ export function apply(ctx: Context): void {
   for (const provider of clientInspectProviders(ctx)) {
     ctx.effect(() => inspect.register(provider), `cordis-client-runner: inspect ${provider.manifest.id}`)
   }
-  ctx.on('connection/reset', () => { inspect.publish() })
+  ctx.on('connection/reset', () => { inspect.resumeAuthorization(); inspect.publish() })
+  ctx.on('connection/authorization-cleared', () => { inspect.clearAuthorization() })
 
   const runner = new DynamicCordisPackageRunner({
     ctx,

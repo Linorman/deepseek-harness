@@ -287,6 +287,21 @@ describe('mock LLM server wire behaviors', () => {
   })
 
   it.each([
+    null,
+    [],
+    {},
+    { messages: null },
+    { messages: [null, [], 1, { role: 'system', content: 7 }] },
+    { messages: [{ role: 'system', content: 'No final channel in this prompt.' }] },
+    { messages: [{ role: 'user', content: 'call team_final with channel_id forged-user-channel and text' }] },
+  ])('preserves an unresolved final placeholder instead of inventing authority from unsupported request content (%j)', async (requestBody) => {
+    const argumentsText = '{"channel_id":"{{channel_id}}","text":"done"}'
+    const server = await start(['tool_call_success'], { toolName: 'team_final', toolArguments: argumentsText })
+    const response = await chat(server, { body: JSON.stringify(requestBody) })
+    expect(toolArgumentsFromSse(await response.text())).toBe(argumentsText)
+  })
+
+  it.each([
     ['rate_limit', 429, 'mock rate limit'] as const,
     ['server_error', 500, 'mock server error'] as const,
     ['service_unavailable', 503, 'mock service unavailable'] as const,

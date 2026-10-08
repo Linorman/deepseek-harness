@@ -2,7 +2,7 @@
 
 Status: implemented
 
-> Token-system update (2026-07-22): the framework rulings here (CSS Modules + clsx, no component library, no tailwind, tokens-only colors) remain in force, but the two-layer `--bg-*`/`--text-*` token table and its `web-ui/src/style/global.css` home were replaced by the `--clocky-*` static+alias sheets in `packages/client/ui-theme/src/styles/` (dark = `body[data-ds-dark-theme]` override) — the sheets themselves are the token authority.
+> Token-system update: the framework rulings here (CSS Modules + clsx, no component library, no tailwind, tokens-only colors, theme selectors only in the theme owner) remain in force. The token table itself is now the role-token sheet `packages/client/ui-theme/src/styles/tokens.css` (dark = `body[data-ds-dark-theme]` override), and decision 3 below is superseded: font sizes, spacing, radii, layers, and motion are tokenized and gated, as the [role-token note](2026-10-02-web-role-tokens.md) records.
 
 English | [中文](2026-07-19-web-styling-system.zh.md)
 

@@ -1,3 +1,5 @@
+import { deepFreeze as freeze } from '@clocky/clocky-llm'
+import { trackTeamOperation, withTeamOperationTimeout } from '@clocky/clocky-team'
 import type { TeamMemberExecutionSources } from '@clocky/clocky-team'
 import type { ActivationControllerStartupStallPhaseScope, ActivationReservationSnapshot } from '@clocky/clocky-team'
 import { randomUUID } from 'node:crypto'
@@ -1585,14 +1587,9 @@ export class TeamActivationController extends Service {
 
   /** Track asynchronously observed health work while containing diagnostic failures. */
   private track(operation: Promise<unknown>, subject: string): void {
-    this.accepted.add(operation)
-    void operation.then(
-      () => { this.accepted.delete(operation) },
-      (error: unknown) => {
-        this.accepted.delete(operation)
-        if (!this.closing) this.ctx.logger.warn(`team-activation-controller: ${subject} failed: ${renderError(error)}`)
-      },
-    )
+    trackTeamOperation(this.accepted, operation, (error) => {
+      if (!this.closing) this.ctx.logger.warn(`team-activation-controller: ${subject} failed: ${renderError(error)}`)
+    })
   }
 
   /** Close listener admission, then settle pending creation, status work, and handles. */
@@ -1802,14 +1799,6 @@ function isExpectedClosingRecoveryFailure(error: unknown): boolean {
   return error instanceof TeamError && error.code === 'TEAM_DISPOSED'
 }
 
-/** Freeze one detached public value recursively. */
-function freeze<T>(value: T): T {
-  if (typeof value !== 'object' || value === null || Object.isFrozen(value)) return value
-  Object.freeze(value)
-  for (const child of Object.values(value)) freeze(child)
-  return value
-}
-
 /** Render a contained asynchronous failure without allowing rendering to throw. */
 function renderError(error: unknown): string {
   try {
@@ -1820,16 +1809,8 @@ function renderError(error: unknown): string {
 }
 
 /** Bound one controller shutdown without abandoning accepted handles indefinitely. */
-async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => { reject(new Error(`Team activation controller disposal exceeded ${timeoutMs}ms`)) }, timeoutMs)
-  })
-  try {
-    return await Promise.race([operation, timeout])
-  } finally {
-    if (timer !== undefined) clearTimeout(timer)
-  }
+function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  return withTeamOperationTimeout(operation, timeoutMs, () => new Error(`Team activation controller disposal exceeded ${timeoutMs}ms`))
 }
 
 /** Validate one locally supplied positive safe integer configuration value. */

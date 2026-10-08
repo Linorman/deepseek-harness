@@ -13,10 +13,10 @@ import type {
 import type { MarkdownFileMentions } from '@clocky/clocky-client-ui-primitives'
 import type { MessageId } from '@clocky/clocky-client-connection/client'
 import type {} from '@clocky/clocky-client-ui-layout/client'
-import type { ComposerBlock } from '../input/blocks.ts'
+import type { ComposerBlock } from './composer-blocks.ts'
 import type {
   ComposerKeyboard, DraftAttachmentId, EditSelection, InputActions, InputNotice, InputState,
-} from '../input/contract.ts'
+} from './input.ts'
 import type { createChatStore } from '../stores.ts'
 import type { ComposerSubmitGesture, InputSubmitMode } from './composer-submission.ts'
 import type { ChatNode, ChatNodeKind } from './chat-nodes.ts'
@@ -166,6 +166,13 @@ declare module '@clocky/clocky-client-ui-slots' {
      * package's `conversation` entry; the shell supplies a neutral fallback.
      */
     'conversation.hero.brand.mark': { kind: 'single'; scope: 'root'; owner: HeroBrandMarkOwnerProps }
+    /**
+     * Mode cards above the blank-session composer, one per product workspace
+     * (Team, Simulation). Declared by this package's `conversation` entry;
+     * each feature registers its own card, so this package reads no Team or
+     * Simulation data. Renders only on the unrelated blank hero.
+     */
+    'conversation.hero.modes': { kind: 'list'; scope: 'root'; owner: HeroModesOwnerProps }
     // 'conversation.input.overlay' merges in ui-input-trigger (the dependency
     // direction is the hard constraint — ui-input-trigger cannot import
     // this package, while this package's input contract already imports
@@ -437,6 +444,13 @@ export type ChatStore = ReturnType<typeof createChatStore>
 export interface ConversationInjected {
   /** Framework-bound composer blocker for this session. */
   hooks: { composerBlock: ObservableSnapshot<ComposerBlock | undefined> }
+  /** Empty-state launcher actions over the no-session Team draft. */
+  launcher?: {
+    /** Replace the draft text, for example with a suggested starter. */
+    setDraftText: (text: string) => void
+    /** Choose the draft's working folder through the Host picker; absent without one. */
+    pickFolder?: (() => Promise<void>) | undefined
+  } | undefined
 }
 
 /** Business callbacks injected into the strict Session body seat. */
@@ -586,6 +600,12 @@ export interface HeroBrandMarkOwnerProps {
   className?: string | undefined
 }
 
+/** Owner share for a hero mode card; each card owns its data through its own registration. */
+export interface HeroModesOwnerProps {
+  /** Marker field: the occupant owns its own content. */
+  children?: never
+}
+
 /**
  * Full conversation-slot component props: runtime & child-render (view ring
  * + composer chain/bar + input-region + hero slots) & store & injected
@@ -598,7 +618,7 @@ export type ConversationSlotProps =
     | 'conversation.input.overlay'
     | 'conversation.input.dock' | 'conversation.composer.dock'
     | 'conversation.input.left' | 'conversation.input.right'
-    | 'conversation.hero.brand.mark'
+    | 'conversation.hero.brand.mark' | 'conversation.hero.modes'
   >
   & InjectFace<ConversationInjected>
   & PropsLocale<'conversation'>

@@ -7,14 +7,14 @@
 .modalError,
 .menuStatus {
   margin-top: 8px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .modalError {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .menuStatus {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }

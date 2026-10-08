@@ -1,0 +1,114 @@
+.tabs {
+  display: flex;
+  align-items: stretch;
+  gap: var(--clocky-space-1);
+  min-width: 0;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--clocky-space-2);
+  flex: none;
+  min-height: 32px;
+  padding: 0 var(--clocky-space-3);
+  border: none;
+  background: transparent;
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-label);
+  cursor: pointer;
+  transition: color var(--clocky-duration-fast) var(--clocky-ease-standard),
+    background-color var(--clocky-duration-fast) var(--clocky-ease-standard);
+}
+
+.tab:hover:not(:disabled) {
+  color: var(--clocky-fg-primary);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: -2px;
+  border-radius: var(--clocky-radius-sm);
+}
+
+.tab:disabled {
+  cursor: not-allowed;
+  color: var(--clocky-fg-disabled);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--clocky-fg-primary);
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.count {
+  min-width: 18px;
+  padding: 0 var(--clocky-space-1);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-bg-active);
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-micro);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  line-height: 18px;
+}
+
+.count[data-zero] {
+  color: var(--clocky-fg-tertiary);
+  background: transparent;
+}
+
+.more {
+  gap: var(--clocky-space-1);
+}
+
+/* Underline: page navigation. The indicator scales in from the center, so a
+   switch never shifts layout. */
+.underline {
+  border-bottom: 1px solid var(--clocky-border-subtle);
+}
+
+.underline .tab::after {
+  content: '';
+  position: absolute;
+  left: var(--clocky-space-2);
+  right: var(--clocky-space-2);
+  bottom: -1px;
+  height: 2px;
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-accent-bg);
+  transform: scaleX(0);
+  transition: transform var(--clocky-duration-base) var(--clocky-ease-spring);
+}
+
+.underline .tab[aria-selected='true']::after {
+  transform: scaleX(1);
+}
+
+.underline .tab[aria-selected='true'] .count {
+  background: var(--clocky-accent-subtle);
+  color: var(--clocky-accent-fg);
+}
+
+/* Segmented: view toggles. */
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-sunken);
+}
+
+.segmented .tab {
+  min-height: 28px;
+  border-radius: var(--clocky-radius-sm);
+}
+
+.segmented .tab[aria-selected='true'] {
+  background: var(--clocky-bg-surface);
+  box-shadow: var(--clocky-elevation-1);
+}

@@ -1,11 +1,11 @@
 import type { ContentBlock, ToolSchema } from '@clocky/clocky-llm/types'
 import type {
   AssistantProvenanceView, AssistantRequestConfig,
-} from './conversation.ts'
+} from '../contract/conversation-snapshot.ts'
 
 export type {
   AssistantProvenanceView, AssistantRequestConfig,
-} from './conversation.ts'
+} from '../contract/conversation-snapshot.ts'
 
 /** Complete model-visible request header in force for an ordinary generation. */
 export interface ConversationPromptSnapshot {

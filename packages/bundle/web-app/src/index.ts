@@ -390,8 +390,8 @@ async function openBrowser(
       function onClose(code: number | null): void {
         launcher.off('error', onError)
         if (code !== 0) {
-          const firstLine = redactBrowserLauncherOutput(launcherStderr, bootstrapCredential).trim().split(/\r?\n/u)[0]
-          const reason = firstLine === undefined || firstLine === ''
+          const firstLine = redactBrowserLauncherOutput(launcherStderr, bootstrapCredential).trim().replace(/\r?\n[\s\S]*$/u, '')
+          const reason = firstLine === ''
             ? `browser launcher exited with code ${String(code)}`
             : firstLine.replace(/^(?:[A-Za-z]*Error):\s*/u, '')
           reject(new Error(reason))

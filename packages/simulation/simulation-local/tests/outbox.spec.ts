@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { channelIdSchema, envelopeIdSchema } from '@clocky/clocky-team'
 import { JsonStorageBackend } from '@clocky/clocky-storage-json'
 import { SqliteStorageBackend } from '@clocky/clocky-storage-sqlite'
-import { simTimeSchema, simulationDecisionIdSchema, simulationPostReceiptSchema, simulationOutboxRetryRequestSchema,
+import { simTimeSchema, simulationCheckpointIdSchema, simulationCheckpointRequestSchema,
+  simulationDecisionIdSchema, simulationPostReceiptSchema,
+  simulationOutboxRetryRequestSchema,
   simulationOutboxRetryCapability } from '@clocky/clocky-simulation'
 import type { SimulationOutboundMessage, SimulationTeamTransport } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from './business-harness.ts'
@@ -48,6 +50,18 @@ async function target(root: string, backend: 'json' | 'sqlite', loseResponse: bo
 }
 
 describe.each(['json', 'sqlite'] as const)('%s persistent outbox', (backend) => {
+  it('blocks an unknown-outcome retry grant while a native checkpoint is active', async () => {
+    const { run, root, id } = await setup(backend, { outboxMaxAttempts: 1 })
+    const remote = await target(root, backend, true)
+    await run.drive({ until: simTimeSchema.parse('5') })
+    expect(await run.dispatchOperation(id, remote.transport, () => 100)).toEqual({ status: 'outcome-unknown' })
+    const request = simulationOutboxRetryRequestSchema.parse({ id: 'retry-under-checkpoint', operationId: id,
+      expectedAttemptCount: 1, reason: 'Recover original delivery', authorizedAt: 200 })
+    await run.beginCheckpoint(simulationCheckpointRequestSchema.parse({ id: 'maintenance-cut',
+      implementationVersion: 'test/1', maxDrainRounds: 1, maxAttempts: 1 }))
+    await expect(run.retryOutbox(request)).rejects.toThrow('blocked by native maintenance')
+  })
+
   it('keeps content at the sender until deliverAt, retries the same target key and returns the original receipt after restart', async () => {
     const { run, root, id, sender, recipient, provider, selection, leases } = await setup(backend)
     const remote = await target(root, backend, true)
@@ -92,6 +106,23 @@ describe.each(['json', 'sqlite'] as const)('%s persistent outbox', (backend) => 
     await expect(run.setPhase('running', run.snapshot().revision)).rejects.toThrow(/explicit recovery/)
     expect(await run.dispatchOperation(id, remote.transport, () => 200)).toEqual({ status: 'outcome-unknown' })
     expect(remote.calls).toHaveLength(1)
+    const unknown = run.snapshot(), operation = unknown.operations[id]!
+    expect(simulationOutboxRetryCapability(unknown, id).reason).toBe('ready')
+    expect(simulationOutboxRetryCapability(unknown, 'missing-operation' as never).reason).toBe('not-external')
+    expect(simulationOutboxRetryCapability({ ...unknown, operations: { ...unknown.operations,
+      [id]: { ...operation, outbox: { ...operation.outbox!, ready: false } } } }, id).reason).toBe('not-due')
+    expect(simulationOutboxRetryCapability({ ...unknown, operations: { ...unknown.operations,
+      [id]: { ...operation, dependencies: ['missing-dependency' as never] } } }, id).reason).toBe('not-due')
+    expect(simulationOutboxRetryCapability({ ...unknown, activeWindowId: 'maintenance-window' as never }, id).reason)
+      .toBe('maintenance-in-progress')
+    expect(simulationOutboxRetryCapability({ ...unknown, checkpoints: {
+      [simulationCheckpointIdSchema.parse('unfinished-checkpoint')]: { status: 'in-progress' } as never,
+    } }, id).reason).toBe('maintenance-in-progress')
+    const latest = operation.outbox!.attempts.at(-1)!
+    expect(simulationOutboxRetryCapability({ ...unknown, operations: { ...unknown.operations,
+      [id]: { ...operation, outbox: { ...operation.outbox!,
+        attempts: [...operation.outbox!.attempts.slice(0, -1), { ...latest, outcome: 'in-flight' as const }] } } } }, id).reason)
+      .toBe('ready')
     const request = simulationOutboxRetryRequestSchema.parse({ id: 'reconcile-post', operationId: id,
       expectedAttemptCount: run.snapshot().operations[id]!.outbox!.attempts.length,
       reason: 'Reconcile the exact idempotent Team post', authorizedAt: 200 })

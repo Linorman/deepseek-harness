@@ -1,0 +1,85 @@
+/* Page transitions (View Transitions API). Navigations run inside
+ * `navigateWithTransition` from ui-viz, which sets `data-clocky-transition`
+ * on the root for the duration:
+ * - `page`: a workspace change; the outgoing page settles back and fades
+ *   while the incoming one comes forward.
+ * - `forward` / `back`: a move through ordered modules; the module area
+ *   (`view-transition-name: clocky-module`) slides in the direction of travel.
+ * Elements sharing a `view-transition-name` (a launch tile and its workspace
+ * header, a run card and its run header) morph through the group animation.
+ * Only transform and opacity animate; reduced motion disables all of it. */
+
+::view-transition-group(*) {
+  animation-duration: var(--clocky-duration-instant);
+  animation-timing-function: var(--clocky-ease-emphasized);
+}
+
+/* Visual snapshots never intercept the newly committed controls. */
+::view-transition { pointer-events: none; }
+
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: var(--clocky-duration-instant);
+}
+
+:root[data-clocky-transition="page"]::view-transition-old(root) {
+  animation: clocky-page-out var(--clocky-duration-instant) var(--clocky-ease-exit) both;
+}
+
+:root[data-clocky-transition="page"]::view-transition-new(root) {
+  animation: clocky-page-in var(--clocky-duration-instant) var(--clocky-ease-emphasized) both;
+}
+
+/* The sidebar is the same on both sides of a navigation; it holds still. */
+::view-transition-old(clocky-sidebar),
+::view-transition-new(clocky-sidebar) {
+  animation: none;
+}
+
+:root[data-clocky-transition="forward"]::view-transition-old(clocky-module) {
+  animation: clocky-exit-left var(--clocky-duration-instant) var(--clocky-ease-exit) both;
+}
+
+:root[data-clocky-transition="forward"]::view-transition-new(clocky-module) {
+  animation: clocky-enter-right var(--clocky-duration-instant) var(--clocky-ease-emphasized) both;
+}
+
+:root[data-clocky-transition="back"]::view-transition-old(clocky-module) {
+  animation: clocky-exit-right var(--clocky-duration-instant) var(--clocky-ease-exit) both;
+}
+
+:root[data-clocky-transition="back"]::view-transition-new(clocky-module) {
+  animation: clocky-enter-left var(--clocky-duration-instant) var(--clocky-ease-emphasized) both;
+}
+
+@keyframes clocky-page-out {
+  to { opacity: 0; transform: scale(0.985); }
+}
+
+@keyframes clocky-page-in {
+  from { opacity: 0; transform: scale(1.015); }
+}
+
+@keyframes clocky-exit-left {
+  to { opacity: 0; transform: translateX(-28px); }
+}
+
+@keyframes clocky-exit-right {
+  to { opacity: 0; transform: translateX(28px); }
+}
+
+@keyframes clocky-enter-right {
+  from { opacity: 0; transform: translateX(36px); }
+}
+
+@keyframes clocky-enter-left {
+  from { opacity: 0; transform: translateX(-36px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

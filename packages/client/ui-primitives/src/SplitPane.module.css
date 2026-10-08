@@ -1,0 +1,50 @@
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0 var(--split-secondary);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.primary,
+.secondary {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.secondary {
+  border-left: 1px solid var(--clocky-border-subtle);
+}
+
+.handle {
+  position: relative;
+  z-index: var(--clocky-layer-local-1);
+  width: 9px;
+  margin-left: -4px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.handle::after {
+  content: '';
+  position: absolute;
+  inset: 0 4px;
+  background: transparent;
+  transition: background-color var(--clocky-duration-fast) var(--clocky-ease-standard);
+}
+
+.handle:hover::after,
+.split[data-dragging] .handle::after,
+.handle:focus-visible::after {
+  background: var(--clocky-border-focus);
+}
+
+.handle:focus-visible {
+  outline: none;
+}
+
+.split[data-dragging] {
+  cursor: col-resize;
+  user-select: none;
+}

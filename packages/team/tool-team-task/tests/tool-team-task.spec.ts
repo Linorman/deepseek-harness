@@ -54,6 +54,7 @@ interface Harness {
     readonly proposeDefaultWorkerTaskOwner: ReturnType<typeof vi.fn>
     readonly startWorkflowPlan: ReturnType<typeof vi.fn>
     readonly waitForWorkflowPlan: ReturnType<typeof vi.fn>
+    readonly cancelWorkflowTask: ReturnType<typeof vi.fn>
   }
   setEligible(value: boolean): void
   setStatus(value: AgentStatus): void
@@ -69,10 +70,15 @@ interface Harness {
   proposeOwner(args: Record<string, unknown>, callId?: string): Promise<ToolExecutionResult>
   workflowStart(args: Record<string, unknown>, callId?: string, rootCallId?: string): Promise<ToolExecutionResult>
   workflowWait(args: Record<string, unknown>, callId?: string): Promise<ToolExecutionResult>
+  workflowTaskCancel(args: Record<string, unknown>, callId?: string): Promise<ToolExecutionResult>
 }
 
 /** Build a scoped Tool runtime with a fake TeamRun authority boundary. */
-async function harness(options: { readonly initiallyEligible?: boolean; readonly mountAfterAgent?: boolean } = {}): Promise<Harness> {
+async function harness(options: {
+  readonly initiallyEligible?: boolean
+  readonly mountAfterAgent?: boolean
+  readonly workspace?: boolean
+} = {}): Promise<Harness> {
   const ctx = new Context()
   contexts.add(ctx)
   await ctx.plugin(SystemPrompt)
@@ -123,12 +129,14 @@ async function harness(options: { readonly initiallyEligible?: boolean; readonly
     })),
     startWorkflowPlan: vi.fn(async () => ({ id: planId, phase: 'ready' as const })),
     waitForWorkflowPlan: vi.fn(async () => workflowTerminal),
+    cancelWorkflowTask: vi.fn(async () => ({ ...noReview, planId, templateId: 'first',
+      id: taskId('workflow-first-task'), phase: 'cancelled' as const, blockedByOutcome: null })),
   }
   ctx.provide('teamRuns', teamRuns as never)
   let toolFiber: Awaited<ReturnType<Context['plugin']>> | undefined
   if (options.mountAfterAgent !== true) toolFiber = await ctx.plugin(ToolTeamTask)
 
-  const session = ctx.sessions.create(SessionId('tool-team-task-session'), { meta: { cwd: '/workspace' } })
+  const session = ctx.sessions.create(SessionId('tool-team-task-session'), options.workspace === false ? {} : { meta: { cwd: '/workspace' } })
   let status: AgentStatus = 'running'
   const coordinator = {} as Agent
   const agentCtx = ctx.extend({ agent: coordinator })
@@ -246,6 +254,15 @@ async function harness(options: { readonly initiallyEligible?: boolean; readonly
         signal,
         callId: CallId(callId),
         name: 'team_workflow_wait',
+        arguments: args,
+        agent: coordinator,
+      }))
+    },
+    async workflowTaskCancel(args, callId = 'workflow-task-cancel-call') {
+      return await ctx.agents.withInitiator(coordinator, async () => await ctx.tools.execute({
+        signal,
+        callId: CallId(callId),
+        name: 'team_workflow_task_cancel',
         arguments: args,
         agent: coordinator,
       }))
@@ -379,6 +396,15 @@ describe('tool-team-task', () => {
       templateId: 'research', templateVersion: 2,
     })
     expect(mounted.teamRuns.startDefaultWorkerTask).not.toHaveBeenCalled()
+    expect(mounted.ctx.tools.get('team_task_delegate', mounted.agent)?.presentCall?.({
+      subject: 'Research', instructions: 'Return evidence.', budget: {},
+    }))
+      .toEqual({ card: 'generic', title: 'Delegate to child Team', kind: 'other', rawInput: 'Research' })
+    await mounted.delegate({ subject: 'No template', instructions: 'Use the Team default.', budget: {} }, 'default', 'root')
+    expect(mounted.teamRuns.startDelegatedTask).toHaveBeenLastCalledWith(mounted.authority, {
+      idempotencyKey: '["team_task_delegate","root","default"]', subject: 'No template',
+      instructions: 'Use the Team default.', readScopes: [], writeScopes: [], budget: {},
+    })
   })
 
   it('rejects invalid child ceilings and out-of-workspace scopes before delegation', async () => {
@@ -387,6 +413,38 @@ describe('tool-team-task', () => {
       expect((await mounted.delegate({ subject: 'Research', instructions: 'Return evidence.', ...extra })).isError).toBe(true)
     }
     expect(mounted.teamRuns.startDelegatedTask).not.toHaveBeenCalled()
+  })
+
+  it('rejects blank, traversing, and absolute scopes without a workspace root', async () => {
+    const mounted = await harness({ initiallyEligible: true })
+    for (const scope of ['', 'src/./file', 'src//file', 'src/../file', 'C:\\outside\\file']) {
+      expect((await mounted.start({ subject: 'Invalid scope', instructions: 'Do not start.',
+        read_scopes: [scope] })).isError).toBe(true)
+    }
+    expect(value(await mounted.start({ subject: 'Workspace root', instructions: 'Read current root.',
+      read_scopes: ['./'] }))).toMatchObject({ task_id: 'task-started' })
+    const noWorkspace = await harness({ initiallyEligible: true, workspace: false })
+    expect((await noWorkspace.start({ subject: 'Absolute path', instructions: 'Reject without a root.',
+      read_scopes: ['/workspace/src'] })).error?.message).toContain('no workspace root')
+    expect((await noWorkspace.start({ subject: 'Traversal', instructions: 'Reject outside scope.',
+      read_scopes: ['../outside'] })).error?.message).toContain('the current workspace')
+  })
+
+  it('renders retained cancellation, review, and child result facts without exposing task internals', async () => {
+    const mounted = await harness({ initiallyEligible: true })
+    mounted.teamRuns.startDefaultWorkerTask.mockResolvedValueOnce({
+      id: taskId('reviewed-child'), phase: 'review', childTeamId: 'child-team',
+      delegationResult: { text: 'Child evidence.' },
+      cancellation: { requestedRevision: 2, attemptId: 'attempt-review', expired: false },
+      reviewPolicy: { kind: 'participant', reviewerId: participantIdSchema.parse('reviewer') },
+      reviewResult: { attemptId: 'attempt-review', decision: 'accepted' },
+    })
+    expect(value(await mounted.start({ subject: 'Review child result', instructions: 'Inspect evidence.' })))
+      .toMatchObject({ task_id: 'reviewed-child', phase: 'review', child_team_id: 'child-team',
+        delegation_result: { text: 'Child evidence.' },
+        cancellation: { requested_revision: 2, attempt_id: 'attempt-review', expired: false },
+        review_policy: { kind: 'participant', reviewer_id: 'reviewer' },
+        review_result: { attempt_id: 'attempt-review', decision: 'accepted' } })
   })
 
   it('returns accepted child response evidence through the common task list', async () => {
@@ -578,6 +636,43 @@ describe('tool-team-task', () => {
     expect(mounted.ctx.tools.get('team_workflow_wait', mounted.agent)?.presentCall?.({ plan_id: 'workflow-plan-started' })).toEqual({
       card: 'generic', title: 'Wait for Team workflow', kind: 'other', rawInput: 'workflow-plan-started',
     })
+
+    mounted.teamRuns.waitForWorkflowPlan
+      .mockResolvedValueOnce({ id: 'workflow-plan-started', phase: 'failed',
+        failure: { code: 'WORKFLOW_FAILED', message: 'A task failed.' }, result: { kind: 'task-results', tasks: [] } })
+      .mockResolvedValueOnce({ id: 'workflow-plan-started', phase: 'cancelled',
+        cancellation: { code: 'CANCELLED', message: 'Stopped.' }, result: { kind: 'task-results', tasks: [] } })
+    expect(value(await mounted.workflowWait({ plan_id: 'workflow-plan-started' })))
+      .toMatchObject({ phase: 'failed', result: { kind: 'task-results' } })
+    expect(value(await mounted.workflowWait({ plan_id: 'workflow-plan-started' })))
+      .toMatchObject({ phase: 'cancelled', cancellation: { code: 'CANCELLED' }, result: { kind: 'task-results' } })
+  })
+
+  it('cancels one bound workflow task with optional reason and dependency attribution', async () => {
+    const mounted = await harness({ initiallyEligible: true })
+    const definition = mounted.ctx.tools.get('team_workflow_task_cancel', mounted.agent)
+    expect(definition?.presentCall?.({ plan_id: 'workflow-plan-started', task_template_id: 'first' }))
+      .toEqual({ card: 'generic', title: 'Cancel workflow task', kind: 'other',
+        rawInput: 'workflow-plan-started / first' })
+    expect(value(await mounted.workflowTaskCancel({ plan_id: 'workflow-plan-started', task_template_id: 'first' })))
+      .toEqual({ ...noReviewValue, plan_id: 'workflow-plan-started', task_template_id: 'first',
+        task_id: 'workflow-first-task', phase: 'cancelled', blocked_by_outcome: null })
+    expect(mounted.teamRuns.cancelWorkflowTask).toHaveBeenCalledWith(mounted.authority, {
+      planId: 'workflow-plan-started', templateId: 'first',
+    })
+    mounted.teamRuns.cancelWorkflowTask.mockResolvedValueOnce({ ...noReview,
+      planId: teamWorkflowPlanIdSchema.parse('workflow-plan-started'), templateId: 'first',
+      id: taskId('workflow-first-task'), phase: 'cancelled', blockedByOutcome: {
+        taskId: taskId('workflow-blocker'), revision: 2, phase: 'failed',
+      },
+    })
+    expect(value(await mounted.workflowTaskCancel({ plan_id: 'workflow-plan-started', task_template_id: 'first',
+      reason: 'Dependency failed' }))).toMatchObject({ blocked_by_outcome: {
+      task_id: 'workflow-blocker', revision: 2, phase: 'failed',
+    } })
+    expect(mounted.teamRuns.cancelWorkflowTask).toHaveBeenLastCalledWith(mounted.authority, {
+      planId: 'workflow-plan-started', templateId: 'first', reason: 'Dependency failed',
+    })
   })
 
   it('exposes bounded list/watch/cancel operations only through the coordinator scope', async () => {
@@ -605,6 +700,10 @@ describe('tool-team-task', () => {
     })
     expect(value(await mounted.cancel({ task_id: 'task-started' })))
       .toEqual({ ...noReviewValue, task_id: 'task-started', phase: 'cancelled' })
+    await mounted.cancel({ task_id: 'task-started', reason: 'No longer needed.' }, 'cancel-with-reason')
+    expect(mounted.teamRuns.cancelDefaultWorkerTask).toHaveBeenLastCalledWith(mounted.authority, {
+      taskId: 'task-started', reason: 'No longer needed.',
+    })
     expect(mounted.teamRuns.listDefaultWorkerTasks).toHaveBeenCalledWith(mounted.authority)
     expect(mounted.teamRuns.watchDefaultWorkerTasks).toHaveBeenCalledWith(mounted.authority, {
       afterCursor: 7,
@@ -656,6 +755,7 @@ describe('tool-team-task', () => {
 
     const driverlessCalls: readonly [string, Record<string, unknown>][] = [
       ['team_worker_pool_set', { worker_count: 2 }],
+      ['team_task_delegate', { subject: 'x', instructions: 'y', budget: {} }],
       ['team_task_wait', { task_id: 'task-started' }],
       ['team_task_list', {}],
       ['team_task_watch', {}],
@@ -663,6 +763,7 @@ describe('tool-team-task', () => {
       ['team_task_propose_owner', { task_id: 'task-started' }],
       ['team_workflow_start', { plan: workflowPlan }],
       ['team_workflow_wait', { plan_id: 'workflow-plan-started' }],
+      ['team_workflow_task_cancel', { plan_id: 'workflow-plan-started', task_template_id: 'first' }],
     ]
     for (const [name, args] of driverlessCalls) {
       const result = await mounted.ctx.tools.execute({

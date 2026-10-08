@@ -67,6 +67,19 @@ function activationTarget(overrides: Partial<{
   }
 }
 
+it('validates bounded Team artifact and workflow plan listings at the SDK wire boundary', async () => {
+  const client = new HarnessClient({ command: process.execPath })
+  const request = vi.spyOn(client, 'request').mockResolvedValue({ items: [] })
+  expect(await client.listTeamArtifacts({ teamId: 'team' })).toEqual({ items: [] })
+  expect(await client.listWorkflowPlans({ teamId: 'team', limit: 2 })).toEqual({ items: [] })
+  expect(request).toHaveBeenNthCalledWith(1, 'team/artifact-list', { teamId: 'team' })
+  expect(request).toHaveBeenNthCalledWith(2, 'team/workflow-plan-list', { teamId: 'team', limit: 2 })
+  request.mockResolvedValueOnce({ items: [{ private: 'untrusted' }] })
+  await expect(client.listTeamArtifacts({ teamId: 'team' })).rejects.toBeInstanceOf(SdkProtocolError)
+  request.mockResolvedValueOnce({ items: [{ private: 'untrusted' }] })
+  await expect(client.listWorkflowPlans({ teamId: 'team' })).rejects.toBeInstanceOf(SdkProtocolError)
+})
+
 async function tempDir(prefix: string): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), prefix))
   cleanups.push(() => rm(dir, { recursive: true, force: true }))
@@ -1045,6 +1058,7 @@ describe('HarnessTeam forwarding', () => {
     const start = vi.fn(async () => undefined)
     const client = {
       createTeamTask: vi.fn(async () => ({ value: {} })),
+      getTeamTaskUpdateResult: vi.fn(async () => ({ status: 'not-found', commandId: 'original' })),
       updateTeamTask: vi.fn(async () => ({ value: {} })),
       cancelTeamTask: vi.fn(async () => ({ value: {} })),
       deleteTeamTask: vi.fn(async () => ({ value: {} })),
@@ -1056,17 +1070,19 @@ describe('HarnessTeam forwarding', () => {
       teamId: 'team-untrusted', expectedCursor: 1, idempotencyKey: 'sdk-task-bound-create', subject: 'Task', description: 'Do the task.',
       blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
     } as never)
+    expect(await team.updateResult({ taskId: 'task', commandId: 'original' })).toMatchObject({ status: 'not-found' })
     await team.updateTask({  commandId: 'sdk-client.spec-update-3',teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1, subject: 'Changed' } as never)
     await team.cancelTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1 } as never)
     await team.deleteTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1 } as never)
     await team.reviewTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1, decision: 'accepted', reason: 'Reviewed.' } as never)
 
     expect(client.createTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
+    expect(client.getTeamTaskUpdateResult).toHaveBeenCalledWith({ teamId: 'team-bound', taskId: 'task', commandId: 'original' })
     expect(client.updateTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
     expect(client.cancelTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
     expect(client.deleteTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
     expect(client.reviewTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
-    expect(start).toHaveBeenCalledTimes(5)
+    expect(start).toHaveBeenCalledTimes(6)
   })
 })
 

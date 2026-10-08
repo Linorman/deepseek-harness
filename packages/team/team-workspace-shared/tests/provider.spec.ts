@@ -4,7 +4,7 @@ import type { TeamWorkspaceAllocationMetadata } from '@clocky/clocky-team-worksp
 import { mkdir, mkdtemp, readFile, readlink, readdir, rename, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { createServer } from 'node:net'
-import { join } from 'node:path'
+import { dirname, join, parse as parsePath, relative, sep } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import {
@@ -33,6 +33,41 @@ import type {
 } from '@clocky/clocky-team-workspace'
 import * as SharedWorkspace from '../src/index.ts'
 
+const fsFaults = vi.hoisted(() => ({
+  baselineWrite: undefined as 'EACCES' | 'EEXIST' | undefined,
+  lstatPath: undefined as string | undefined,
+  lstatMode: undefined as 'error' | 'second-error' | 'root-symlink' | undefined,
+  lstatCount: 0,
+  realpathAliasPath: undefined as string | undefined,
+  realpathAliasTarget: undefined as string | undefined,
+}))
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const original = await importOriginal<typeof import('node:fs/promises')>()
+  return { ...original,
+    async writeFile(...args: Parameters<typeof original.writeFile>) {
+      if (fsFaults.baselineWrite !== undefined && typeof args[0] === 'string' && args[0].includes('baseline-')) {
+        throw Object.assign(new Error('provider baseline write failed'), { code: fsFaults.baselineWrite })
+      }
+      await original.writeFile(...args)
+    },
+    async lstat(...args: Parameters<typeof original.lstat>) {
+      if (typeof args[0] !== 'string' || args[0] !== fsFaults.lstatPath) return await original.lstat(...args)
+      fsFaults.lstatCount += 1
+      if (fsFaults.lstatMode === 'error' || (fsFaults.lstatMode === 'second-error' && fsFaults.lstatCount === 2)) {
+        throw Object.assign(new Error('selected metadata lookup failed'), { code: 'EACCES' })
+      }
+      const info = await original.lstat(...args)
+      if (fsFaults.lstatMode === 'root-symlink') Object.assign(info, { uid: 0, isSymbolicLink: () => true })
+      return info
+    },
+    async realpath(...args: Parameters<typeof original.realpath>) {
+      if (typeof args[0] === 'string' && args[0] === fsFaults.realpathAliasPath
+        && fsFaults.realpathAliasTarget !== undefined) return fsFaults.realpathAliasTarget
+      return await original.realpath(...args)
+    },
+  }
+})
+
 type ArtifactSaveInput = {
   readonly kind: TeamArtifactReference['kind']
   readonly sourceAttemptId?: TaskAttemptId
@@ -55,6 +90,12 @@ const roots: string[] = []
 
 afterEach(async () => {
   vi.restoreAllMocks()
+  fsFaults.baselineWrite = undefined
+  fsFaults.lstatPath = undefined
+  fsFaults.lstatMode = undefined
+  fsFaults.lstatCount = 0
+  fsFaults.realpathAliasPath = undefined
+  fsFaults.realpathAliasTarget = undefined
   const failures: unknown[] = []
   for (const ctx of [...contexts]) {
     try {
@@ -226,6 +267,9 @@ async function setup(
     readonly observationStateRoot?: string
     readonly observationPulseIntervalMs?: number
     readonly observationMaxAllocationsPerPulse?: number
+    readonly observationMaxEntries?: number
+    readonly observationMaxPaths?: number
+    readonly observationMaxStateBytes?: number
   } = {},
 ): Promise<FakeHarness & { readonly integrationRoot: string | undefined }> {
   const providerName = typeof options === 'string' ? options : options.providerName
@@ -280,6 +324,7 @@ async function setup(
     },
     async recordWorkspaceObservation(request: TeamWorkspaceObservationRequest) {
       const { actor, ...input } = request
+      expect(() => JSON.stringify(actor)).toThrow('runtime-only')
       const scope = [...observationSources].map(source => source.resolveWorkspaceAllocationProof(actor)).find(value => value !== undefined)
       expect(scope).toEqual({ kind: 'workspace-observe', ...input })
       const allocation = harness.state.workspaceAllocations.find(value => value.id === input.allocationId)
@@ -303,6 +348,9 @@ async function setup(
     ...(typeof options === 'string' || options.observationStateRoot === undefined ? {} : { observationStateRoot: options.observationStateRoot }),
     ...(typeof options === 'string' || options.observationPulseIntervalMs === undefined ? {} : { observationPulseIntervalMs: options.observationPulseIntervalMs }),
     ...(typeof options === 'string' || options.observationMaxAllocationsPerPulse === undefined ? {} : { observationMaxAllocationsPerPulse: options.observationMaxAllocationsPerPulse }),
+    ...(typeof options === 'string' || options.observationMaxEntries === undefined ? {} : { observationMaxEntries: options.observationMaxEntries }),
+    ...(typeof options === 'string' || options.observationMaxPaths === undefined ? {} : { observationMaxPaths: options.observationMaxPaths }),
+    ...(typeof options === 'string' || options.observationMaxStateBytes === undefined ? {} : { observationMaxStateBytes: options.observationMaxStateBytes }),
     ...(typeof options === 'string' || options.allowTeamWorkspacePath === undefined ? {} : { allowTeamWorkspacePath: options.allowTeamWorkspacePath }),
     ...(providerName === undefined ? {} : { providerName }),
     ...(artifact || artifactProvider !== undefined || integration ? { artifactProvider: artifactProvider ?? 'test-artifacts' } : {}),
@@ -319,6 +367,42 @@ async function setup(
 }
 
 describe('shared Team workspace provider', () => {
+  it('preflights only a current shared route with a canonical available workspace', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root, { allowTeamWorkspacePath: true })
+    const provider = harness.provider
+    if (provider.preflight === undefined) throw new Error('shared provider has no preflight')
+    const preflight = provider.preflight.bind(provider)
+    const participant = harness.state.participants[0]
+    if (participant === undefined) throw new Error('shared fixture has no participant')
+    const route = { provider: 'in-process', model: 'test/model', cwd: root }
+    const check = (task = harness.task, candidate = participant, cwd = route.cwd) =>
+      preflight({ task, participant: candidate, route: { ...route, cwd } })
+    expect(await check()).toBe(true)
+    expect(await check({ ...harness.task, workspaceMode: 'sandbox' })).toBe(false)
+    expect(await check(harness.task, { ...participant, teamId: teamIdSchema.parse('other-team') })).toBe(false)
+    expect(await check(harness.task, { ...participant, phase: 'provisioning' })).toBe(false)
+    expect(await check(harness.task, participant, '')).toBe(false)
+    expect(await check(harness.task, participant, join(root, 'missing-cwd'))).toBe(false)
+
+    harness.state = { ...harness.state, rules: { workspacePath: 'relative-workspace' } }
+    expect(await check()).toBe(false)
+    expect(await provider.eligible({ task: harness.task, binding: harness.binding })).toBe(false)
+    await expect(provider.prepare(harness.request)).rejects.toThrow('must be an absolute path')
+    const file = join(root, 'not-a-workspace')
+    await writeFile(file, 'file\n')
+    harness.state = { ...harness.state, rules: { workspacePath: file } }
+    expect(await check()).toBe(false)
+    await expect(provider.prepare(harness.request)).rejects.toThrow('not an existing directory')
+    harness.state = { ...harness.state, rules: { workspacePath: join(root, 'missing-workspace') } }
+    expect(await check()).toBe(false)
+    await expect(provider.prepare(harness.request)).rejects.toThrow('cannot be canonicalized')
+    harness.state = { ...harness.state, rules: { workspacePath: root } }
+    await rm(root, { recursive: true, force: true })
+    expect(await check()).toBe(false)
+    expect(await provider.eligible({ task: harness.task, binding: harness.binding })).toBe(false)
+  })
+
   it('records bounded periodic observations only when the pulse is explicitly configured', async () => {
     const root = await freshRoot()
     const harness = await setup(root, { observationPulseIntervalMs: 1, observationMaxAllocationsPerPulse: 1 })
@@ -331,6 +415,37 @@ describe('shared Team workspace provider', () => {
     }, { timeout: 2_000, interval: 5 })
   })
 
+  it('bounds a periodic observation pass to one allocation even when another is queued', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root, { observationMaxAllocationsPerPulse: 1 })
+    const allocation = await materialize(harness)
+    const internals = harness.provider as unknown as {
+      readonly allocations: Map<string, TeamWorkspaceAllocation>
+      runObservationPulse(): Promise<void>
+    }
+    internals.allocations.set('second-attempt', allocation)
+    const record = vi.spyOn(harness.ctx.teams, 'recordWorkspaceObservation')
+    try {
+      await internals.runObservationPulse()
+      expect(record).toHaveBeenCalledOnce()
+    } finally { internals.allocations.delete('second-attempt') }
+    await allocation.release()
+  })
+
+  it('contains a periodic observation failure even when its first diagnostic write also fails', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root, { observationPulseIntervalMs: 1 })
+    const allocation = await materialize(harness)
+    const warnings = vi.spyOn(harness.ctx.logger, 'warn')
+      .mockImplementationOnce(() => { throw new Error('diagnostic sink failed once') })
+      .mockImplementation(() => {})
+    harness.state = { ...harness.state, workspaceAllocations: [] }
+    await vi.waitFor(() => {
+      expect(warnings.mock.calls.some(([message]) => String(message).includes('periodic observation failed'))).toBe(true)
+    }, { timeout: 2_000, interval: 5 })
+    await allocation.release()
+  })
+
   it('creates a fresh external observation home without a pre-created state directory', async () => {
     const root = await freshRoot()
     const external = await freshRoot()
@@ -340,6 +455,81 @@ describe('shared Team workspace provider', () => {
     if (process.platform !== 'win32') expect((await stat(stateRoot)).mode & 0o777).toBe(0o700)
     expect(await readdir(root)).toEqual([])
     expect(mounted.provider.name).toBe('shared-local')
+  })
+
+  it('accepts an already existing external observation home and rejects a non-directory ancestor', async () => {
+    const root = await freshRoot()
+    const external = await freshRoot()
+    const ready = await setup(root, { observationStateRoot: external })
+    expect(ready.provider.name).toBe('shared-local')
+    const file = join(external, 'not-a-directory')
+    await writeFile(file, 'file\n')
+    await expect(setup(root, { observationStateRoot: join(file, 'child') })).rejects.toThrow('is not a directory')
+  })
+
+  it('propagates an external state ancestor metadata failure without creating a fallback directory', async () => {
+    const root = await freshRoot()
+    const external = await freshRoot()
+    fsFaults.lstatPath = external
+    fsFaults.lstatMode = 'error'
+    try {
+      await expect(setup(root, { observationStateRoot: join(external, 'state') }))
+        .rejects.toMatchObject({ code: 'EACCES' })
+    } finally {
+      fsFaults.lstatPath = undefined
+      fsFaults.lstatMode = undefined
+    }
+    expect(await readdir(external)).toEqual([])
+  })
+
+  it('canonicalizes a root-owned first path alias before accepting external state', async () => {
+    const root = await freshRoot()
+    const external = await freshRoot()
+    const filesystemRoot = parsePath(external).root
+    const first = relative(filesystemRoot, external).split(sep)[0]
+    if (first === undefined) throw new Error('external root has no first path segment')
+    fsFaults.lstatPath = join(filesystemRoot, first)
+    fsFaults.lstatMode = 'root-symlink'
+    try {
+      const harness = await setup(root, { observationStateRoot: external })
+      expect(harness.provider.name).toBe('shared-local')
+    } finally {
+      fsFaults.lstatPath = undefined
+      fsFaults.lstatMode = undefined
+    }
+  })
+
+  it('rejects a post-canonical external alias that resolves to a parent of the shared root', async () => {
+    const root = await freshRoot()
+    const filesystemRoot = parsePath(root).root
+    const first = relative(filesystemRoot, root).split(sep)[0]
+    if (first === undefined) throw new Error('shared root has no first path segment')
+    const firstPath = join(filesystemRoot, first)
+    fsFaults.lstatPath = firstPath
+    fsFaults.lstatMode = 'root-symlink'
+    fsFaults.realpathAliasPath = firstPath
+    fsFaults.realpathAliasTarget = dirname(dirname(root))
+    try {
+      await expect(SharedWorkspace.apply(new Context(), { root,
+        observationStateRoot: join(firstPath, '.tmp') }))
+        .rejects.toThrow('observationStateRoot must not contain the shared root')
+    } finally {
+      fsFaults.lstatPath = undefined
+      fsFaults.lstatMode = undefined
+      fsFaults.realpathAliasPath = undefined
+      fsFaults.realpathAliasTarget = undefined
+    }
+  })
+
+  it('resolves the direct provider default pulse allocation bound before registering', async () => {
+    const root = await freshRoot()
+    const ctx = new Context()
+    contexts.add(ctx)
+    ctx.provide('teams', { registerSystemWorkspaceAllocationProofSource: () => () => {} } as never)
+    ctx.provide('agents', { get: () => undefined } as never)
+    await ctx.plugin(TeamWorkspaceRegistry)
+    await SharedWorkspace.apply(ctx, { root })
+    expect(ctx.teamWorkspaces.getProvider('shared-local')).toBeDefined()
   })
 
   it('refuses an external observation path through a user-controlled ancestor symlink', async () => {
@@ -425,6 +615,140 @@ describe('shared Team workspace provider', () => {
     })
   })
 
+  it('reports modified and deleted baseline files without claiming integration of the source root', async () => {
+    const root = await freshRoot()
+    await writeFile(join(root, 'seed.txt'), 'original\n')
+    const harness = await setup(root, { artifact: true, integration: true })
+    const allocation = await materialize(harness)
+    await writeFile(join(root, 'seed.txt'), 'changed\n')
+    await expect(harness.ctx.teamWorkspaces.publish('shared', { allocation }))
+      .resolves.toMatchObject({ changedPaths: ['seed.txt'], observation: { paths: [{ path: 'seed.txt', change: 'modified' }] },
+        accepted: false })
+    await rm(join(root, 'seed.txt'))
+    await expect(harness.ctx.teamWorkspaces.publish('shared', { allocation }))
+      .resolves.toMatchObject({ changedPaths: ['seed.txt'], observation: { paths: [{ path: 'seed.txt', change: 'deleted' }] },
+        accepted: false })
+    expect((await stat(root)).isDirectory()).toBe(true)
+    await allocation.release()
+  })
+
+  it('uses the configured shared root when a live allocation loses its cached root hint', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root)
+    const allocation = await materialize(harness)
+    const internals = harness.provider as unknown as { readonly roots: Map<string, string> }
+    internals.roots.clear()
+    await writeFile(join(root, 'fallback.txt'), 'fallback root\n')
+    await expect(harness.ctx.teamWorkspaces.publish('shared', { allocation }))
+      .resolves.toMatchObject({ changedPaths: ['fallback.txt'] })
+    await allocation.release()
+  })
+
+  it('refuses publication when an observation has no retained source scan', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root)
+    const allocation = await materialize(harness)
+    const observation = harness.state.workspaceAllocations.find(value => value.id === allocation.id)?.observation
+    if (observation === undefined) throw new Error('shared fixture has no baseline observation')
+    const internals = harness.provider as unknown as {
+      readonly observedScans: Map<string, unknown>
+      observeAllocation(...args: unknown[]): Promise<typeof observation>
+    }
+    internals.observedScans.clear()
+    const observe = vi.spyOn(internals, 'observeAllocation').mockResolvedValueOnce(observation)
+    try {
+      await expect(harness.ctx.teamWorkspaces.publish('shared', { allocation }))
+        .rejects.toThrow('no retained current scan')
+    } finally { observe.mockRestore() }
+    await allocation.release()
+  })
+
+  it('does not claim additions or deletions from the unobserved side of a partial scan', async () => {
+    const root = await freshRoot()
+    await writeFile(join(root, 'z.txt'), 'original\n')
+    const completeBase = await setup(root, { artifact: true, integration: true, observationMaxEntries: 1 })
+    const first = await materialize(completeBase)
+    await rm(join(root, 'z.txt'))
+    await writeFile(join(root, 'a.txt'), 'new\n')
+    await writeFile(join(root, 'b.txt'), 'another new file\n')
+    const partialFinal = await completeBase.ctx.teamWorkspaces.publish('shared', { allocation: first })
+    expect(partialFinal.observation?.truncated).toBe(true)
+    expect(partialFinal.observation?.paths.some(path => path.path === 'z.txt' && path.change === 'deleted')).toBe(false)
+    await first.release()
+
+    const otherRoot = await freshRoot()
+    await writeFile(join(otherRoot, 'a.txt'), 'observed baseline\n')
+    await writeFile(join(otherRoot, 'z.txt'), 'unobserved baseline\n')
+    const partialBase = await setup(otherRoot, { artifact: true, integration: true, observationMaxEntries: 1 })
+    const second = await materialize(partialBase)
+    const stateRoot = join(partialBase.integrationRoot!, '.clocky-team-shared-state')
+    const baselineName = (await readdir(stateRoot)).find(name => name.startsWith('baseline-'))
+    if (baselineName === undefined) throw new Error('partial provider baseline was not retained')
+    const baseline = JSON.parse(await readFile(join(stateRoot, baselineName), 'utf8')) as { baseline: Record<string, unknown> }
+    const selected = Object.keys(baseline.baseline)[0]
+    if (selected === undefined) throw new Error('partial baseline observed no file')
+    const unobserved = selected === 'a.txt' ? 'z.txt' : 'a.txt'
+    await rm(join(otherRoot, selected))
+    const completeFinal = await partialBase.ctx.teamWorkspaces.publish('shared', { allocation: second })
+    expect(completeFinal.observation?.paths.some(path => path.path === unobserved && path.change === 'added')).toBe(false)
+    expect(completeFinal.observation?.paths).toContainEqual(expect.objectContaining({ path: selected, change: 'deleted' }))
+    await second.release()
+  })
+
+  it('requires a durable reservation and reuses a live allocation after reservation recreation', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root)
+    const orphan = await harness.provider.prepare(harness.request)
+    await expect(orphan.materialize()).rejects.toThrow('durable allocation reservation')
+    const allocation = await materialize(harness)
+    const internals = harness.provider as unknown as { readonly preparations: Map<string, unknown> }
+    internals.preparations.clear()
+    const abandoned = await harness.provider.prepare(harness.request)
+    await abandoned.abandon()
+    const recreated = await harness.provider.prepare(harness.request)
+    reserveFixtureAllocation(harness, recreated)
+    expect(await recreated.materialize()).toBe(allocation)
+    await allocation.release()
+  })
+
+  it('retains a bounded incomplete baseline when its sidecar would exceed the state byte limit', async () => {
+    const root = await freshRoot()
+    await writeFile(join(root, 'seed.txt'), 'baseline content\n')
+    const harness = await setup(root, { observationMaxStateBytes: 1 })
+    const allocation = await materialize(harness)
+    const observation = harness.state.workspaceAllocations.find(value => value.id === allocation.id)?.observation
+    expect(observation?.truncated).toBe(true)
+    expect(observation?.final.incompleteReasons).toContain('state-byte-limit')
+    const published = await harness.ctx.teamWorkspaces.publish('shared', { allocation })
+    expect(published.observation?.truncated).toBe(true)
+    await allocation.release()
+  })
+
+  it('recovers a durable observation when the optional provider baseline sidecar has disappeared', async () => {
+    const root = await freshRoot()
+    await writeFile(join(root, 'seed.txt'), 'baseline content\n')
+    const harness = await setup(root, { artifact: true, integration: true })
+    const allocation = await materialize(harness)
+    const stateRoot = join(harness.integrationRoot!, '.clocky-team-shared-state')
+    const name = (await readdir(stateRoot)).find(value => value.startsWith('baseline-'))
+    if (name === undefined) throw new Error('shared provider did not write its baseline')
+    await rm(join(stateRoot, name))
+    const internals = harness.provider as unknown as {
+      readonly allocations: Map<string, unknown>
+      readonly preparations: Map<string, unknown>
+      readonly baselines: Map<string, unknown>
+    }
+    internals.allocations.clear()
+    internals.preparations.clear()
+    internals.baselines.clear()
+    await writeFile(join(root, 'seed.txt'), 'changed after missing sidecar\n')
+    const restored = await harness.provider.restore(harness.request, allocation)
+    expect(restored.root).toBe(root)
+    expect(harness.state.workspaceAllocations.find(value => value.id === allocation.id)?.observation)
+      .toMatchObject({ stage: 'restore', baselineAvailable: false })
+    await restored.release()
+  })
+
   it('follows an explicitly enabled durable Team workspacePath for worker eligibility and allocation', async () => {
     const configuredRoot = await freshRoot()
     const selectedRoot = await freshRoot()
@@ -442,6 +766,24 @@ describe('shared Team workspace provider', () => {
       accepted: false,
     })
     await allocation.release()
+  })
+
+  it('reconciles a vanished selected Team workspacePath without recreating its root', async () => {
+    const configuredRoot = await freshRoot()
+    const selectedRoot = await freshRoot()
+    const harness = await setup(configuredRoot, { allowTeamWorkspacePath: true })
+    harness.state = { ...harness.state, rules: { workspacePath: selectedRoot } }
+    harness.live.set(String(sessionId), { session: { id: sessionId, header: { cwd: selectedRoot } } })
+    const allocation = await materialize(harness)
+    const internals = harness.provider as unknown as {
+      readonly allocations: Map<string, unknown>
+      readonly preparations: Map<string, unknown>
+    }
+    internals.allocations.clear()
+    internals.preparations.clear()
+    await rm(selectedRoot, { recursive: true, force: true })
+    await expect(harness.provider.reconcileRelease(harness.request, allocation)).resolves.toBeUndefined()
+    await expect(stat(selectedRoot)).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
   it('covers report-only fallback artifacts, non-file entries, and ownership fences', async () => {
@@ -728,6 +1070,86 @@ describe('shared Team workspace provider', () => {
     await restored.release()
   })
 
+  it('refuses source integration when durable observation is absent or truncated and when its artifact store is missing', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root, { artifact: true, integration: true })
+    const allocation = await materialize(harness)
+    await writeFile(join(root, 'output.txt'), 'source output\n')
+    const published = await harness.ctx.teamWorkspaces.publish('shared', { allocation })
+    const patch = published.artifacts.find(artifact => artifact.kind === 'patch')
+    if (patch === undefined) throw new Error('source integration fixture did not publish a patch')
+    if (published.observation === undefined) throw new Error('source integration fixture did not observe the allocation')
+    const observation = published.observation
+    const request: TeamWorkspaceSourceIntegrateRequest = {
+      source: { teamId, taskId, attemptId, artifacts: [patch] },
+      integrationTaskId: 'missing-observation-task' as never,
+      integrationAttemptId: 'missing-observation-attempt' as never,
+      target: 'main', mode: 'integrate', actorId: participantId,
+    }
+    const internals = harness.provider as unknown as { readonly allocations: Map<string, unknown> }
+    internals.allocations.clear()
+    harness.state = { ...harness.state, workspaceAllocations: harness.state.workspaceAllocations.map(value =>
+      value.id === allocation.id ? { ...value, observation: undefined } : value) }
+    await expect(harness.ctx.teamWorkspaces.integrateSource('shared-local', request))
+      .rejects.toThrow('complete latest workspace observation')
+    harness.state = { ...harness.state, workspaceAllocations: harness.state.workspaceAllocations.map(value =>
+      value.id === allocation.id ? { ...value, observation: { ...observation, truncated: true } } : value) }
+    await expect(harness.ctx.teamWorkspaces.integrateSource('shared-local', request))
+      .rejects.toThrow('complete latest workspace observation')
+
+    const noStoreRoot = await freshRoot()
+    const noStore = await setup(noStoreRoot, { integration: true })
+    await expect(noStore.ctx.teamWorkspaces.integrateSource('shared-local', request))
+      .rejects.toThrow('configured artifact provider')
+  })
+
+  it('refuses integration when the existing target cannot be completely observed within its byte bound', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root, { artifact: true, integration: true, maxIntegrationBytes: 4096 })
+    const allocation = await materialize(harness)
+    await writeFile(join(root, 'output.txt'), 'small patch\n')
+    const published = await harness.ctx.teamWorkspaces.publish('shared', { allocation })
+    const patch = published.artifacts.find(artifact => artifact.kind === 'patch')
+    if (patch === undefined) throw new Error('bounded target fixture did not publish a patch')
+    const target = join(harness.integrationRoot!, 'bounded-target')
+    await mkdir(target)
+    await writeFile(join(target, 'large.bin'), Buffer.alloc(4097))
+    await expect(harness.ctx.teamWorkspaces.integrateSource('shared-local', {
+      source: { teamId, taskId, attemptId, artifacts: [patch] },
+      integrationTaskId: 'bounded-target-task' as never,
+      integrationAttemptId: 'bounded-target-attempt' as never,
+      target: 'bounded-target', mode: 'integrate', actorId: participantId,
+    })).rejects.toThrow('complete bounded target observation')
+    expect((await stat(target)).isDirectory()).toBe(true)
+  })
+
+  it('reports a target metadata failure after proving that the integration directory exists', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root, { artifact: true, integration: true })
+    const allocation = await materialize(harness)
+    await writeFile(join(root, 'output.txt'), 'small patch\n')
+    const published = await harness.ctx.teamWorkspaces.publish('shared', { allocation })
+    const patch = published.artifacts.find(artifact => artifact.kind === 'patch')
+    if (patch === undefined) throw new Error('target metadata fixture did not publish a patch')
+    const target = join(harness.integrationRoot!, 'metadata-target')
+    await mkdir(target)
+    fsFaults.lstatPath = target
+    fsFaults.lstatMode = 'second-error'
+    try {
+      await expect(harness.ctx.teamWorkspaces.integrateSource('shared-local', {
+        source: { teamId, taskId, attemptId, artifacts: [patch] },
+        integrationTaskId: 'metadata-target-task' as never,
+        integrationAttemptId: 'metadata-target-attempt' as never,
+        target: 'metadata-target', mode: 'integrate', actorId: participantId,
+      })).rejects.toThrow('is unavailable')
+      expect(fsFaults.lstatCount).toBeGreaterThanOrEqual(2)
+    } finally {
+      fsFaults.lstatPath = undefined
+      fsFaults.lstatMode = undefined
+      fsFaults.lstatCount = 0
+    }
+  })
+
   it('fails closed for integration policy, malformed patches, unsafe targets, and disabled authority', async () => {
     const root = await freshRoot()
     const harness = await setup(root, { artifact: true, integration: true })
@@ -914,6 +1336,30 @@ describe('shared Team workspace provider', () => {
     await expect(allocation.release()).resolves.toBeUndefined()
   })
 
+  it('releases logical ownership even when live or recovered observation loses its durable allocation', async () => {
+    const root = await freshRoot()
+    const live = await setup(root)
+    const allocation = await materialize(live)
+    const warnLive = vi.spyOn(live.ctx.logger, 'warn').mockImplementation(() => {})
+    live.state = { ...live.state, workspaceAllocations: [] }
+    await allocation.release()
+    expect(warnLive.mock.calls.some(([message]) => String(message).includes('release observation could not be recorded'))).toBe(true)
+
+    const recoveryRoot = await freshRoot()
+    const recovered = await setup(recoveryRoot)
+    const stale = await materialize(recovered)
+    const internals = recovered.provider as unknown as {
+      readonly allocations: Map<string, unknown>
+      readonly preparations: Map<string, unknown>
+    }
+    internals.allocations.clear()
+    internals.preparations.clear()
+    recovered.state = { ...recovered.state, workspaceAllocations: [] }
+    const warnRecovered = vi.spyOn(recovered.ctx.logger, 'warn').mockImplementation(() => {})
+    await recovered.provider.reconcileRelease(recovered.request, stale)
+    expect(warnRecovered.mock.calls.some(([message]) => String(message).includes('recovery observation could not be recorded'))).toBe(true)
+  })
+
   it('re-reads a concurrently created baseline from another provider instance', async () => {
     const root = await freshRoot()
     const integrationRoot = await freshRoot()
@@ -924,6 +1370,100 @@ describe('shared Team workspace provider', () => {
     expect(secondAllocation.root).toBe(root)
     await firstAllocation.release()
     await secondAllocation.release()
+  })
+
+  it('rejects malformed durable baseline headers, paths, fingerprints, and digests on restore', async () => {
+    const root = await freshRoot()
+    await writeFile(join(root, 'seed.txt'), 'baseline content\n')
+    const harness = await setup(root, { artifact: true, integration: true })
+    const allocation = await materialize(harness)
+    const stateRoot = join(harness.integrationRoot!, '.clocky-team-shared-state')
+    const name = (await readdir(stateRoot)).find(value => value.startsWith('baseline-'))
+    if (name === undefined) throw new Error('shared provider did not write its baseline')
+    const pathname = join(stateRoot, name)
+    const original = JSON.parse(await readFile(pathname, 'utf8')) as Record<string, unknown>
+    const entries = original.baseline as Record<string, Record<string, unknown>>
+    const file = entries['seed.txt']
+    if (file === undefined) throw new Error('seed fingerprint was not retained')
+    const withEntry = (value: unknown, path = 'seed.txt') => ({ ...original, baseline: { [path]: value } })
+    const variants: readonly [string, unknown][] = [
+      ['array', []],
+      ['wrong version', { ...original, version: 1 }],
+      ['missing baseline', { ...original, baseline: null }],
+      ['array baseline', { ...original, baseline: [] }],
+      ['invalid scan', { ...original, scan: {} }],
+      ['empty path', withEntry(file, '')],
+      ['backslash path', withEntry(file, 'bad\\path')],
+      ['NUL path', withEntry(file, 'bad\0path')],
+      ['absolute path', withEntry(file, '/outside')],
+      ['empty segment', withEntry(file, 'bad//path')],
+      ['dot segment', withEntry(file, 'bad/./path')],
+      ['parent segment', withEntry(file, 'bad/../path')],
+      ['null fingerprint', withEntry(null)],
+      ['array fingerprint', withEntry([])],
+      ['symlink wrong target', withEntry({ kind: 'symlink', target: 1 })],
+      ['symlink extra field', withEntry({ kind: 'symlink', target: 'seed.txt', extra: true })],
+      ['other wrong type', withEntry({ kind: 'other', type: 1 })],
+      ['other extra field', withEntry({ kind: 'other', type: 'socket', extra: true })],
+      ['file negative size', withEntry({ ...file, size: -1 })],
+      ['file fractional size', withEntry({ ...file, size: 1.5 })],
+      ['file modified time', withEntry({ ...file, modifiedAt: Number.NaN })],
+      ['file missing digest', withEntry({ ...file, contentHash: undefined })],
+      ['file malformed digest', withEntry({ ...file, contentHash: 'not-a-digest' })],
+      ['file extra field', withEntry({ ...file, extra: true })],
+      ['digest mismatch', withEntry({ ...file, size: Number(file.size) + 1 })],
+    ]
+    const internals = harness.provider as unknown as {
+      readonly allocations: Map<string, unknown>
+      readonly preparations: Map<string, unknown>
+      readonly baselines: Map<string, unknown>
+    }
+    for (const [label, value] of variants) {
+      internals.allocations.clear()
+      internals.preparations.clear()
+      internals.baselines.clear()
+      await writeFile(pathname, JSON.stringify(value))
+      await expect(harness.provider.restore(harness.request, allocation), label)
+        .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    }
+    await writeFile(pathname, '{')
+    internals.allocations.clear()
+    internals.preparations.clear()
+    await expect(harness.provider.restore(harness.request, allocation)).rejects.toThrow('invalid provider baseline')
+  })
+
+  it.each(['EACCES', 'EEXIST'] as const)('fails a baseline %s write without admitting an unowned allocation', async (code) => {
+    const root = await freshRoot()
+    const harness = await setup(root)
+    const preparation = await harness.provider.prepare(harness.request)
+    reserveFixtureAllocation(harness, preparation)
+    fsFaults.baselineWrite = code
+    try {
+      const operation = preparation.materialize()
+      if (code === 'EEXIST') await expect(operation).rejects.toThrow('no provider baseline')
+      else await expect(operation).rejects.toMatchObject({ code: 'EACCES' })
+    } finally { fsFaults.baselineWrite = undefined }
+  })
+
+  it('propagates a non-absence baseline read error during restore', async () => {
+    const root = await freshRoot()
+    const harness = await setup(root, { artifact: true, integration: true })
+    const allocation = await materialize(harness)
+    const stateRoot = join(harness.integrationRoot!, '.clocky-team-shared-state')
+    const name = (await readdir(stateRoot)).find(value => value.startsWith('baseline-'))
+    if (name === undefined) throw new Error('shared baseline was not retained')
+    const pathname = join(stateRoot, name)
+    await rm(pathname)
+    await mkdir(pathname)
+    const internals = harness.provider as unknown as {
+      readonly allocations: Map<string, unknown>
+      readonly preparations: Map<string, unknown>
+      readonly baselines: Map<string, unknown>
+    }
+    internals.allocations.clear()
+    internals.preparations.clear()
+    internals.baselines.clear()
+    await expect(harness.provider.restore(harness.request, allocation)).rejects.toThrow()
   })
 
   it('rejects invalid root and provider-name configuration before registration', async () => {
@@ -956,6 +1496,25 @@ describe('shared Team workspace provider', () => {
       .rejects.toThrow('artifactProvider must be non-empty')
     await expect(SharedWorkspace.apply(new Context(), { root, integrationRoot, maxArtifactBytes: 0 }))
       .rejects.toThrow('maxArtifactBytes must be a positive safe integer')
+    await expect(SharedWorkspace.apply(new Context(), { root, integrationRoot, maxIntegrationBytes: 0 }))
+      .rejects.toThrow('maxIntegrationBytes must be a positive safe integer')
+    for (const field of ['observationMaxEntries', 'observationMaxHashBytes', 'observationMaxFileBytes',
+      'observationMaxPaths', 'observationMaxStateBytes', 'observationMaxAllocationsPerPulse'] as const) {
+      await expect(SharedWorkspace.apply(new Context(), { root, [field]: 0 }))
+        .rejects.toThrow('must be a positive')
+    }
+    await expect(SharedWorkspace.apply(new Context(), { root, observationTimeoutMs: 2_147_483_648 }))
+      .rejects.toThrow('observationTimeoutMs must be a positive bounded integer')
+    await expect(SharedWorkspace.apply(new Context(), { root, observationPulseIntervalMs: 0 }))
+      .rejects.toThrow('observationPulseIntervalMs must be a positive bounded timer delay')
+    await expect(SharedWorkspace.apply(new Context(), { root, observationStateRoot: 'relative-state' }))
+      .rejects.toThrow('observationStateRoot must not contain')
+    await expect(SharedWorkspace.apply(new Context(), { root, observationStateRoot: join(root, '..') }))
+      .rejects.toThrow('observationStateRoot must not contain')
+    await expect(SharedWorkspace.apply(new Context(), { root, integrationRoot: 'relative-integration' }))
+      .rejects.toThrow('integrationRoot must be an absolute path')
+    await expect(SharedWorkspace.apply(new Context(), { root, integrationRoot: file }))
+      .rejects.toThrow('integrationRoot')
 
     const harness = await setup(root, 'custom-shared')
     expect(harness.ctx.teamWorkspaces.getProvider('custom-shared')).toBe(harness.provider)

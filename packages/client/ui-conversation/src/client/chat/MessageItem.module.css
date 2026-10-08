@@ -19,19 +19,19 @@
 .bubble {
   /* 525px cap inside the 736 column; percentage keeps narrow windows sane. */
   max-width: 100%;
-  background: var(--clocky-specific-bubble);
-  border-radius: 22px;
+  background: var(--clocky-accent-subtle);
+  border-radius: var(--clocky-radius-xl);
   /* 44px single-line bubble: 24 line + 10 vertical padding each side. */
   padding: 10px 16px;
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-heading-size);
+  line-height: var(--clocky-type-heading-line-height);
+  color: var(--clocky-fg-primary);
 }
 
 .referenceSummary {
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 .contextRow {
   padding: 2px 0;
@@ -52,7 +52,7 @@
   min-width: 0;
   padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
   background: none;
   color: inherit;
   font: inherit;
@@ -64,7 +64,7 @@
 }
 
 .compactionButton:not(:disabled):hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .compactionLeading {
@@ -74,7 +74,7 @@
   width: 16px;
   height: 16px;
   margin-right: 6px;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .compactionContextIcon,
@@ -101,9 +101,9 @@
 
 .compactionTitle {
   flex: none;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-primary-dimmed);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-primary);
 }
 
 .compactionSep {
@@ -111,32 +111,32 @@
   width: 2px;
   height: 2px;
   margin: 0 8px;
-  border-radius: 1px;
-  background: var(--clocky-alias-label-caption);
+  border-radius: var(--clocky-radius-xs);
+  background: var(--clocky-fg-tertiary);
 }
 
 .compactionSummary {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 14px;
-  line-height: 24px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .compactionBody {
   padding: 4px 0 4px 22px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 14px;
-  line-height: 24px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
 }
 
 .retryRow {
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 13px;
-  line-height: 20px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .retrySummary {
@@ -145,7 +145,7 @@
   width: fit-content;
   padding: 2px 0;
   gap: 7px;
-  border-radius: 3px;
+  border-radius: var(--clocky-radius-xs);
   color: inherit;
   cursor: pointer;
   list-style: none;
@@ -164,15 +164,15 @@
   content: '';
   opacity: 0.8;
   transform: rotate(-45deg);
-  transition: transform 120ms ease;
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .retrySummary:hover {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .retrySummary:focus-visible {
-  outline: 1.5px solid var(--clocky-alias-button-info-fill);
+  outline: 1.5px solid var(--clocky-accent-bg);
   outline-offset: 2px;
 }
 
@@ -184,17 +184,17 @@
   background:
     linear-gradient(
       90deg,
-      var(--clocky-alias-label-tertiary) 0%,
-      var(--clocky-alias-label-tertiary) 40%,
-      var(--clocky-alias-label-secondary) 50%,
-      var(--clocky-alias-label-tertiary) 60%,
-      var(--clocky-alias-label-tertiary) 100%
+      var(--clocky-fg-tertiary) 0%,
+      var(--clocky-fg-tertiary) 40%,
+      var(--clocky-fg-secondary) 50%,
+      var(--clocky-fg-tertiary) 60%,
+      var(--clocky-fg-tertiary) 100%
     );
   background-position: 100% 50%;
   background-size: 200% 100%;
   background-clip: text;
   color: transparent;
-  animation: retry-shimmer 1.6s ease-in-out infinite;
+  animation: retry-shimmer var(--clocky-duration-shimmer) var(--clocky-ease-standard) infinite;
 }
 
 .retryRow[open] .retrySummary::after {
@@ -207,12 +207,12 @@
   margin-top: 3px;
   padding-left: 14px;
   overflow-wrap: anywhere;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .retryDetailLabel {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .turnErrorRow {
@@ -221,8 +221,8 @@
   gap: 8px;
   align-items: start;
   padding: 2px 0;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .turnErrorDot {
@@ -236,22 +236,22 @@
 
 .turnErrorTitle {
   margin-right: 6px;
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
   font-weight: 600;
 }
 
 .turnErrorMessage {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .turnErrorCode {
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   font: var(--clocky-font-markdown-code-block-small);
 }
 
 .maxTokensTitle {
   margin-right: 6px;
-  color: var(--clocky-alias-state-warn-primary);
+  color: var(--clocky-status-needs-you-fg);
   font-weight: 600;
 }
 
@@ -259,22 +259,22 @@
   flex: none;
   align-self: center;
   min-height: 26px;
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 7px;
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-sm);
   padding: 3px 8px;
   background: transparent;
-  color: var(--clocky-alias-state-warn-primary);
+  color: var(--clocky-status-needs-you-fg);
   cursor: pointer;
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .maxTokensContinue:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .maxTokensContinue:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: 2px;
 }
 
@@ -303,7 +303,7 @@
   align-items: center;
   gap: 4px;
   margin: 0 2px;
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
   font-weight: 500;
   white-space: nowrap;
   vertical-align: baseline;
@@ -311,4 +311,14 @@
 
 .refIcon {
   flex: none;
+}
+
+/* Team-delivered input names its sender instead of showing protocol text. */
+.senderChip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-end;
+  gap: var(--clocky-space-1);
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-caption);
 }

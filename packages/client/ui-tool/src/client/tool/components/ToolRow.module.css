@@ -25,10 +25,10 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--clocky-alias-bg-base) 60%, transparent) 55%,
+    color-mix(in srgb, var(--clocky-bg-canvas) 60%, transparent) 55%,
     transparent 100%
   );
-  animation: clocky-tool-row-sweep 2.6s ease-out infinite;
+  animation: clocky-tool-row-sweep var(--clocky-duration-sweep) var(--clocky-ease-enter) infinite;
   pointer-events: none;
 }
 
@@ -45,7 +45,7 @@
    shared product accent and tool-owned action title. */
 .root[data-tool^='cordis_'] .leading,
 .root[data-tool^='cordis_'] .title {
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
 }
 
 .root[data-tool^='cordis_'] .title {
@@ -53,11 +53,11 @@
 }
 
 .root[data-tool^='cordis_'] .sep {
-  background: var(--clocky-alias-state-business-primary);
+  background: var(--clocky-accent-bg);
 }
 
 .chevron {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .title {
@@ -68,9 +68,9 @@
   flex: none;
   width: 2px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: var(--clocky-radius-xs);
   margin: 0 8px;
-  background: var(--clocky-alias-label-caption);
+  background: var(--clocky-fg-tertiary);
 }
 
 .summary {
@@ -79,9 +79,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* Trailing summary fragment kept out of .summary's ellipsis, for a count whose
@@ -93,9 +93,9 @@
   flex: none;
   margin-left: 4px;
   white-space: nowrap;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* File-tool path: same geometry as .summary, with a persistent link affordance. */
@@ -111,23 +111,23 @@
   background: none;
   font: inherit;
   text-align: left;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-secondary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-secondary);
   text-decoration: underline;
-  text-decoration-color: var(--clocky-alias-label-quaternary);
+  text-decoration-color: var(--clocky-fg-tertiary);
   text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .fileLink:hover {
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   text-decoration-color: currentColor;
 }
 
 /* Error row's collapsed summary: the failure's first line in the error color. */
 .errorSummary {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 /* Expanded body + Inspect pill wrapper (sibling of .row: clicks never toggle). */
@@ -147,17 +147,17 @@
   gap: 4px;
   margin: 4px 0 2px 4px;
   padding: 2px 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 999px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-full);
   /* Base background, not bg-overlay: the overlay token is a raised dark
      surface and reads too heavy for a quiet in-flow affordance. */
-  background: var(--clocky-alias-bg-base);
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  background: var(--clocky-bg-canvas);
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .root:hover .inspectButton,
@@ -167,8 +167,8 @@
 
 /* Solid hover fill (a translucent token would let content bleed through). */
 .inspectButton:hover {
-  background: var(--clocky-alias-interactive-bg-hover-solid);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-sunken);
+  color: var(--clocky-fg-primary);
 }
 
 /* Expanded-body scroll wrapper for the run_code CodeBlock; the IN/OUT card
@@ -187,9 +187,9 @@
   display: flex;
   flex-direction: column;
   margin: 4px 0 4px 4px;
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 12px;
-  background: var(--clocky-alias-markdown-code-block);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-sunken);
   font: var(--clocky-font-markdown-code-block-small);
 }
 
@@ -211,7 +211,7 @@
 .ioSection::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   background-clip: padding-box;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 /* Track end-margins keep the thumb's travel out of the rounded corners. */
@@ -228,7 +228,7 @@
   position: sticky;
   top: 0;
   align-self: start;
-  color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* l2 hairline between the IN and OUT sections, spanning the full card width
@@ -236,19 +236,19 @@
 .ioDivider {
   flex: none;
   height: 1px;
-  background: var(--clocky-alias-border-l2);
+  background: var(--clocky-border-default);
 }
 
 .ioText {
   min-width: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 /* A failed call's OUT text shares the collapsed summary's error color. */
 .ioText[data-error] {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 /* The block-shaped expanded bodies: the code variant's run_code program
@@ -275,8 +275,8 @@
   margin: 4px 0 4px 4px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font: var(--clocky-font-xs-13);
-  color: var(--clocky-alias-label-tertiary);
+  font: var(--clocky-type-body-small);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* In-row code renders at the smaller code size (12/18) via each primitive's
@@ -292,7 +292,7 @@
   --dsl-terminal-font: var(--clocky-font-markdown-code-block-small);
   --dsl-terminal-line-height: 18px;
   --dsl-terminal-output-max-height: 224px;
-  border: 1px solid var(--clocky-alias-border-l1);
+  border: 1px solid var(--clocky-border-subtle);
 }
 
 /* Visually hidden run-state label for assistive technology: the StateDot and
@@ -305,4 +305,14 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Settled duration, right-aligned on the summary line. */
+.duration {
+  flex: none;
+  margin-left: auto;
+  padding-left: var(--clocky-space-2);
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-caption);
+  font-variant-numeric: tabular-nums;
 }

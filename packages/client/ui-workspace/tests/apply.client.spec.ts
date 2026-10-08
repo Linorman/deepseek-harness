@@ -4,7 +4,7 @@ import { SlotRegistry } from '@clocky/clocky-client-runtime/client'
 import { LocaleRuntime } from '@clocky/clocky-client-locale/client'
 import { apply, inject } from '@clocky/clocky-client-ui-workspace/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from '@clocky/clocky-client-ui-workspace/client'
-import { WorkspaceBrowser } from '../src/client/WorkspaceBrowser.tsx'
+import { WorkspaceBrowser } from '../src/client/rows/WorkspaceBrowser.tsx'
 import { WorkspacePicker } from '../src/client/WorkspacePicker.tsx'
 
 async function bench() {

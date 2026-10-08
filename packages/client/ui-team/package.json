@@ -36,7 +36,8 @@
         "@clocky/clocky-client-runtime",
         "@clocky/clocky-client-locale",
         "@clocky/clocky-client-ui-sidebar",
-        "@clocky/clocky-client-ui-layout"
+        "@clocky/clocky-client-ui-layout",
+        "@clocky/clocky-client-ui-conversation"
       ],
       "platform": "web",
       "external": [
@@ -53,6 +54,7 @@
     "@clocky/clocky-client-connection": "workspace:^",
     "@clocky/clocky-client-locale": "workspace:^",
     "@clocky/clocky-client-runtime": "workspace:^",
+    "@clocky/clocky-client-ui-conversation": "workspace:^",
     "@clocky/clocky-client-ui-layout": "workspace:^",
     "@clocky/clocky-client-ui-sidebar": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
@@ -63,10 +65,12 @@
     "@clocky/clocky-client-locale": "workspace:^",
     "@clocky/clocky-client-runtime": "workspace:^",
     "@clocky/clocky-client-test-runtime": "workspace:^",
+    "@clocky/clocky-client-ui-conversation": "workspace:^",
     "@clocky/clocky-client-ui-layout": "workspace:^",
     "@clocky/clocky-client-ui-primitives": "workspace:^",
     "@clocky/clocky-client-ui-sidebar": "workspace:^",
     "@clocky/clocky-client-ui-slots": "workspace:^",
+    "@clocky/clocky-client-ui-viz": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/cordis": "workspace:^",
     "@testing-library/react": "^16.1.0",

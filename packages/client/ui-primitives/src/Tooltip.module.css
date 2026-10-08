@@ -7,23 +7,23 @@
 
 .bubble {
   position: fixed;
-  z-index: 100;
+  z-index: var(--clocky-layer-tooltip);
   /* Fixed-position shrink-to-fit measures only the space from `left` to the
      viewport edge, so anchors near the right edge would wrap early;
      max-content sizes by the label alone, capped at half the viewport. */
   width: max-content;
   max-width: 50vw;
   padding: 3px 7px;
-  border-radius: 8px;
-  background: var(--clocky-alias-tooltip-bg);
-  color: var(--clocky-static-neutral-bluish-00);
-  font-size: 13px;
-  line-height: 20px;
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-inverse);
+  color: var(--clocky-fg-inverse);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   white-space: pre-line;
   /* Unbreakable tokens (URLs, paths) must not push past max-width. */
   overflow-wrap: break-word;
   pointer-events: none;
-  animation: tooltip-in 150ms var(--ds-ease-in-out);
+  animation: tooltip-in var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .bubble[data-side='right'] {

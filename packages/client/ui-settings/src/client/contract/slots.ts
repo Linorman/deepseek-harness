@@ -12,6 +12,8 @@
 
 declare module '@clocky/clocky-client-ui-slots' {
   interface SlotMap {
+    /** Model-configuration recovery from a retained workflow; the caller suspends its modal and resumes after Settings closes. */
+    'settings.model-setup': { kind: 'single'; scope: 'root'; owner: SettingsModelSetupOwnerProps }
     /**
      * The sidebar-foot trigger row content: icon + label, supplied as slot
      * content (the accessible name comes from the content — rail state
@@ -87,6 +89,14 @@ declare module '@clocky/clocky-client-ui-slots' {
      */
     'settings.general.item': { kind: 'list'; scope: 'root'; owner: SettingsGeneralItemOwnerProps }
   }
+}
+
+/** Cross-workflow model setup keeps workspace state with the originating owner. */
+export interface SettingsModelSetupOwnerProps {
+  /** Suspend the caller's modal while preserving its draft, before opening Settings. */
+  beforeOpen: () => void
+  /** Restore the caller after an explicit Settings close, if its current authority still permits it. */
+  afterClose: () => void
 }
 /** Owner share of a General preference row (the section supplies nothing). */
 export interface SettingsGeneralItemOwnerProps {

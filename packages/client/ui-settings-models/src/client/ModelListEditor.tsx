@@ -450,8 +450,8 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
         className={styles['fetchDialog'] as string}
         footer={(
           <>
-            <Button variant="outline" onClick={closePicker}>{t('cancel')}</Button>
-            <Button variant="outline" onClick={adoptPicked}>{t('fetchAdopt')}</Button>
+            <Button variant="secondary" onClick={closePicker}>{t('cancel')}</Button>
+            <Button variant="secondary" onClick={adoptPicked}>{t('fetchAdopt')}</Button>
           </>
         )}
       >

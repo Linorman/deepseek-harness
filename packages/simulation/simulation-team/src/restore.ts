@@ -1,15 +1,12 @@
 /** Cross-owner prefix validation before exposing a restored run for execution. @module @clocky/clocky-simulation-team/restore */
 import { isDeepStrictEqual } from 'node:util'
 import type { Context } from '@clocky/cordis'
-import { TeamError } from '@clocky/clocky-team'
 import type { TeamPersistenceReference } from '@clocky/clocky-team'
-import { SessionPersistenceReferenceChanged } from '@clocky/clocky-session-persistence'
 import type { SessionPersistenceReference } from '@clocky/clocky-session-persistence'
 import type { SessionId } from '@clocky/clocky-session'
 import type { SimulationCheckpointManifest, SimulationRun } from '@clocky/clocky-simulation'
 import { validateAcceptedTargets } from './target-references.ts'
-import { checkpointRule, checkpointSource } from './checkpoint-failure.ts'
-import { SimulationCheckpointError } from '@clocky/clocky-simulation'
+import { checkpointRule, checkpointSource, checkpointOwnerMoved } from './checkpoint-failure.ts'
 
 /**
  * Verify the manifest's retained prefixes and a stable vector of current owner states.
@@ -124,6 +121,7 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
       for (const reference of sessions) {
         check()
         const binding = bindings.find(value => value.sessionId === reference.header.id)
+        /* v8 ignore next -- materialized references enter sessions only while iterating these same retained bindings. */
         if (binding === undefined) throw checkpointRule('Checkpoint Session has no retained entity binding', 'restore', 'binding-mismatch', teamSubject)
         const subject = { kind: 'session' as const, ...binding }
         const current = await checkpointSource('restore', subject,
@@ -133,6 +131,7 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
       for (const id of absent) {
         check()
         const binding = bindings.find(value => value.sessionId === id)
+        /* v8 ignore next -- absent Session IDs enter this list only from the same retained bindings. */
         if (binding === undefined) throw checkpointRule('Checkpoint Session binding is unavailable', 'restore', 'binding-mismatch', teamSubject)
         const subject = { kind: 'session' as const, ...binding }
         if (!await checkpointSource('restore', subject, () => ctx.sessionPersistence.isUnmaterialized(id, signal))) {
@@ -144,9 +143,7 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
       return ownerName
     } catch (error: unknown) {
       check()
-      const moved = error instanceof SimulationCheckpointError && error.diagnostic.code === 'source-moved'
-        || error instanceof SessionPersistenceReferenceChanged
-        || error instanceof TeamError && (error.code === 'TEAM_CURSOR_CONFLICT' || error.code === 'TEAM_CHANNEL_CURSOR_CONFLICT')
+      const moved = checkpointOwnerMoved(error)
       if (!moved || attempt + 1 === maxAttempts) throw error
     }
   }

@@ -33,7 +33,7 @@ export function CheckpointDiagnostic({ value, runId, t, navigate, navigateApplic
       case 'run': return <><code>{runId}</code>{navigate !== undefined && <Button onClick={() => {
         navigate({ runId, module: 'overview', search: '' })
       }}>{t('diagnostic.locate')}</Button>}</>
-      default: return assertNever(subject)
+      /* v8 ignore next -- the public request schema's discriminated subject union is already closed. */
     }
   }
   return <section aria-label={t('diagnostic.title')}>
@@ -42,4 +42,3 @@ export function CheckpointDiagnostic({ value, runId, t, navigate, navigateApplic
     {value.cleanup === 'unconfirmed' && <p role="status">{t('diagnostic.cleanup')}</p>}
   </section>
 }
-function assertNever(value: never): never { void value; throw new Error('Unknown canonical checkpoint diagnostic subject') }

@@ -10,7 +10,7 @@ import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
 
 const call: AuthenticatedProductCall = { principal: { id: 'reader' as never, issuer: 'test', subject: 'reader', assurance: 'test',
   credentialGeneration: 1 }, credentialGeneration: 1, signal: new AbortController().signal }
-const create = { commandId: 'original', templateId: 'company', templateVersion: '1', name: 'Company',
+const create = { commandId: 'original', templateId: 'company', templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' }, name: 'Company',
   parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } }
 const selections = [
   ['tasks-list', 'listTasks', { runId: 'run', limit: 1 }],
@@ -22,6 +22,7 @@ const selections = [
   ['task-reviews-list', 'listTaskReviews', { runId: 'run', limit: 1 }],
   ['task-reviews-resolve', 'resolveTaskReview', { runId: 'run', commandId: 'original-review', operationId: 'created-task',
     attemptId: 'attempt', expectedRevision: 3, nextPhase: 'completed', reason: 'Approved' }],
+  ['changes-watch', 'watch', { runId: 'run', waitMs: 1 }],
   ['sources-inspect', 'inspectSource', { runId: 'run', decisionId: 'decision', sourceIndex: 0 }],
   ['records-list', 'readRecords', { runId: 'run', mode: 'original', sequence: 2 }],
   ['catalog', 'catalog', {}], ['runs-list', 'list', {}], ['runs-inspect', 'inspect', { runId: 'run' }],
@@ -45,7 +46,7 @@ it.each(selections)('routes %s to its current optional product owner with the tr
   const ctx = new Context()
   const result = { original: 'receipt' }
   const operation = vi.fn(async () => result)
-  const admin = !['list', 'inspect', 'browse', 'inspectObject', 'readRecords', 'inspectSource'].includes(handler)
+  const admin = !['list', 'inspect', 'browse', 'inspectObject', 'readRecords', 'inspectSource', 'watch'].includes(handler)
   if (admin) ctx.provide('simulationAdministration', { [handler]: operation } as unknown as SimulationAdministration)
   else ctx.provide('simulationProducts', { [handler]: operation } as unknown as SimulationProducts)
   try {
@@ -67,7 +68,7 @@ it('parses empty catalog/list parameters and refuses missing optional owners wit
   } finally { await ctx.fiber.dispose() }
 })
 
-it.each(['SIMULATION_PRODUCT_FORBIDDEN', 'SIMULATION_PRODUCT_INVALID', 'SIMULATION_PRODUCT_UNAVAILABLE', 'SIMULATION_PRODUCT_STALE'] as const)
+it.each(['SIMULATION_PRODUCT_FORBIDDEN', 'SIMULATION_PRODUCT_INVALID', 'SIMULATION_PRODUCT_UNAVAILABLE', 'SIMULATION_PRODUCT_STALE', 'SIMULATION_PRODUCT_MODEL_CHANGED'] as const)
 ('preserves the %s product category', async (code) => {
   const ctx = new Context()
   ctx.provide('simulationProducts', { list: () => { throw new SimulationProductError('Public reason', code) } } as unknown as SimulationProducts)
@@ -106,7 +107,7 @@ it('rejects unauthenticated Simulation requests before product lookup', async ()
   } finally { await server.shutdown(); await ctx.fiber.dispose() }
 })
 
-it.each(selections.filter(([, handler]) => !['list', 'inspect', 'browse', 'inspectObject', 'readRecords', 'inspectSource'].includes(handler)))('validates %s before resolving missing administration', async (method, _handler, input) => {
+it.each(selections.filter(([, handler]) => !['list', 'inspect', 'browse', 'inspectObject', 'readRecords', 'inspectSource', 'watch'].includes(handler)))('validates %s before resolving missing administration', async (method, _handler, input) => {
   const ctx = new Context()
   try {
     await expect(dispatchSimulation(ctx, `simulation/${method}`, { ...input, principalId: 'forged' }, call)).rejects.toMatchObject({ code: -32602 })
@@ -139,5 +140,16 @@ it('refuses a missing nullable cancellation fence and forged Team authority befo
       await expect(dispatchSimulation(ctx, 'simulation/tasks-cancel', invalid, call)).rejects.toMatchObject({ code: -32602 })
     }
     expect(cancelTask).not.toHaveBeenCalled()
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('uses product run-status inspection when administrative operations are not deployed', async () => {
+  const ctx = new Context()
+  const runStatuses = vi.fn(async () => ({ items: [] }))
+  ctx.provide('simulationProducts', { runStatuses } as unknown as SimulationProducts)
+  try {
+    const input = { runIds: ['run'] }
+    await expect(dispatchSimulation(ctx, 'simulation/runs-statuses', input, call)).resolves.toEqual({ items: [] })
+    expect(runStatuses).toHaveBeenCalledWith(input, call)
   } finally { await ctx.fiber.dispose() }
 })

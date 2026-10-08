@@ -1,0 +1,23 @@
+/* L3 moments: one-shot choreography on a live observed transition. Only the
+   overlay's opacity and the content's transform animate. */
+
+.moment {
+  position: relative;
+  isolation: isolate;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  z-index: var(--clocky-layer-local-2);
+}
+
+.moment[data-kind="converge"] .overlay { box-shadow: var(--clocky-glow-done); }
+.moment[data-kind="stall"] .overlay { box-shadow: var(--clocky-glow-needs-you); }
+.moment[data-kind="seal"] .overlay { box-shadow: var(--clocky-glow-done); }
+.moment[data-kind="seal-failed"] .overlay { box-shadow: var(--clocky-glow-failed); }
+.moment[data-kind="assemble"] .overlay { box-shadow: var(--clocky-glow-running); }
+.moment[data-kind="ignite"] .overlay { background: var(--clocky-bg-canvas); }

@@ -19,26 +19,26 @@
   padding: 0 4px 0 8px;
   border: none;
   /* Rounded chip chrome, matching the sibling permission trigger. */
-  border-radius: 24px;
+  border-radius: var(--clocky-radius-xl);
   outline: none;
   background: transparent;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 13px;
-  line-height: 20px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   font-weight: 500;
   cursor: pointer;
 }
 
 .trigger:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .trigger:focus-visible {
-  box-shadow: 0 0 0 2px var(--clocky-alias-border-l3);
+  box-shadow: 0 0 0 2px var(--clocky-border-default);
 }
 
 .trigger:disabled {
-  color: var(--clocky-alias-label-dimmed);
+  color: var(--clocky-fg-disabled);
   cursor: default;
 }
 
@@ -52,13 +52,13 @@
 /* Effort value beside the model name (mock's 'High': same 13/20/500, caption tone). */
 .triggerEffort {
   flex: 0 0 auto;
-  color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
 }
 
 .chevron {
   flex: 0 0 auto;
-  color: var(--clocky-alias-label-caption);
-  transition: transform 120ms ease;
+  color: var(--clocky-fg-tertiary);
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .chevronOpen {
@@ -69,7 +69,7 @@
   position: absolute;
   right: 0;
   bottom: calc(100% + 8px);
-  z-index: 20;
+  z-index: var(--clocky-layer-sticky);
   display: flex;
   flex-direction: column;
   /* Let the visible pane's rows set the card width, but keep pathological ids
@@ -82,26 +82,26 @@
   padding: 4px;
   /* Surface tokens match the Menu primitive card (ui-primitives
    * Menu.module.css) so every dropdown reads as the same material. */
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 12px;
-  background: var(--clocky-specific-menu);
-  box-shadow: var(--clocky-shadow-lv3);
-  color: var(--clocky-alias-label-primary);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
+  color: var(--clocky-fg-primary);
   /* Elevated surface: the scrollbar thumb takes the l2 elevation tokens.
      Declared here rather than on the scrolling `.groups` child so the
      elevation choice sits with the surface; the custom properties inherit
      down to whichever descendant actually scrolls (see ui-theme
      styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .status,
 .empty {
   padding: 10px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 13px;
-  line-height: 20px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .error,
@@ -112,16 +112,16 @@
   gap: 8px;
   margin-bottom: 4px;
   padding: 7px 8px;
-  border-radius: 8px;
-  background: var(--clocky-alias-interactive-bg-hover-danger);
-  color: var(--clocky-alias-state-error-primary);
-  font-size: 12px;
-  line-height: 18px;
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-status-failed-bg);
+  color: var(--clocky-status-failed-fg);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .warning {
-  background: var(--clocky-alias-bg-module-platform);
-  color: var(--clocky-alias-state-warn-label);
+  background: var(--clocky-bg-sunken);
+  color: var(--clocky-status-needs-you-fg);
 }
 
 .retry {
@@ -147,12 +147,12 @@
 .groupTitle {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
   padding: 5px 8px 3px;
-  background: var(--clocky-specific-menu);
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  background: var(--clocky-bg-overlay);
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   font-weight: 500;
 }
 
@@ -166,7 +166,7 @@
   min-height: 38px;
   padding: 6px 8px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--clocky-radius-md);
   outline: none;
   background: transparent;
   color: inherit;
@@ -176,7 +176,7 @@
 
 .option:hover:not(:disabled),
 .option:focus-visible {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 /* Selection marker is the trailing check, not a fill — matches the Menu
@@ -186,7 +186,7 @@
 }
 
 .option:disabled {
-  color: var(--clocky-alias-label-dimmed);
+  color: var(--clocky-fg-disabled);
   cursor: default;
 }
 
@@ -200,8 +200,8 @@
 .modelName {
   overflow: hidden;
   color: inherit;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -209,9 +209,9 @@
 
 .description {
   overflow: hidden;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -220,7 +220,7 @@
   display: grid;
   place-items: center;
   flex: 0 0 18px;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 /* Two-level root cells (figma 496:26454 .Menu_cell): 40px row, 10px side
@@ -236,17 +236,17 @@
   height: 40px;
   padding: 0 10px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--clocky-radius-md);
   background: transparent;
-  color: var(--clocky-alias-label-primary);
-  font-size: 14px;
-  line-height: 22px;
+  color: var(--clocky-fg-primary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   cursor: pointer;
   text-align: left;
 }
 
 .cell:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .cellLabel {
@@ -261,10 +261,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: right;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .cellChevron {
   flex: 0 0 auto;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }

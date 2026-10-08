@@ -7,7 +7,7 @@ import type { Context } from '@clocky/cordis'
 import type { CommandInvocation, CommandResult } from '@clocky/clocky-commands'
 import { GoalError } from '@clocky/clocky-compat-goal'
 import type { GoalPhase, GoalRef, GoalView } from '@clocky/clocky-compat-goal'
-import { createUserMessage } from '@clocky/clocky-llm'
+import { assertNever, createUserMessage } from '@clocky/clocky-llm'
 
 export const name = 'command-goal'
 export const inject = ['commands', 'goals']
@@ -22,13 +22,6 @@ type GoalCommand =
   | { readonly kind: 'pause' }
   | { readonly kind: 'resume' }
   | { readonly kind: 'clear' }
-
-/** Fail loudly if a locally closed union gains an unhandled member. */
-/* v8 ignore start -- closed-union backstop is unreachable without violating the TypeScript contract */
-function assertNever(value: never, label: string): never {
-  throw new TypeError(`unknown ${label}: ${String(value)}`)
-}
-/* v8 ignore stop */
 
 /** Parse only the grammar owned by `/legacy_goal`; arbitrary other input is an objective. */
 function parseGoalCommand(rawInput: string): GoalCommand {

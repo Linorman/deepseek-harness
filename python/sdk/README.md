@@ -112,6 +112,8 @@ Team-list `nextCursor` values are opaque strings; `after_cursor=-1` begins a fre
 
 `list_simulation_tasks()` reads bounded canonical run-owned controls. `cancel_simulation_task()` retains the source operation, task revision, original command and exact attempt; required nullable `expectedAttemptId` preserves explicit `None` as JSON `null`, requiring no active lease. The SDK checks run/command/receipt family and rejects missing fences, actor fields and invalid hints. `get_simulation_request()` exposes original `cancellation` only with its matching `cancel-task` receipt; queries do not retry or infer.
 
+Catalog and preflight DTOs require strict `readiness` variants. Create requires `expectedModel` from the observed `ready.model`; `name` is the provider-owned model ID. Missing model configuration keeps installed templates readable and cannot be passed as a ready route. No client automatically changes routes or retries creation.
+
 ## Single-task cancellation
 
 `HarnessClient.cancel_team_task()` and `Team.cancel_task()` accept `teamId`, `taskId`, `expectedRevision`, and optional `reason` (the Team helper supplies its own Team id). `value.cancellation` retains the exact intent; assigned or running phases mean termination is pending. Observe the task until cancelled while the Team continues. [Cancellation ownership](../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md).

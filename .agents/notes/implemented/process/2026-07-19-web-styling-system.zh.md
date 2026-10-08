@@ -2,7 +2,7 @@
 
 Status: implemented
 
-> token 体系更新（2026-07-22）：本文框架裁决（CSS Modules + clsx、无组件库、无 tailwind、颜色只用 token）仍然生效，但两层 `--bg-*`/`--text-*` token 表及其宿主 `web-ui/src/style/global.css` 已被 `packages/client/ui-theme/src/styles/` 的 `--clocky-*` static+alias 双层表取代（暗色=`body[data-ds-dark-theme]` 覆写）——样式表本身即 token 权威。
+> token 体系更新：本文框架裁决（CSS Modules + clsx、无组件库、无 tailwind、颜色只用 token、主题选择器只属于主题所有方）仍然生效。token 表本身现为角色 token 样式表 `packages/client/ui-theme/src/styles/tokens.css`（暗色=`body[data-ds-dark-theme]` 覆写），下文第 3 条决定已被取代：字号、间距、圆角、图层与动效均已 token 化并受门禁约束，见[角色 token 注记](2026-10-02-web-role-tokens.zh.md)。
 
 [English](2026-07-19-web-styling-system.md) | 中文
 

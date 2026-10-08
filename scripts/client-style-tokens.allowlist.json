@@ -1,0 +1,11 @@
+{
+  "packages/client/ui-primitives/src/markdown/MarkdownText.module.css": {
+    "font-size": 1
+  },
+  "packages/client/ui-sidebar/src/client/SidebarRoot.module.css": {
+    "font-size": 1
+  },
+  "packages/client/ui-trajectory/src/client/TrajectoryTable.module.css": {
+    "font-size": 2
+  }
+}

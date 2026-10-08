@@ -6,7 +6,7 @@ import type { SimulationTaskReviewRequest } from '../src/types.ts'
 import { teamProjectionData, teamProjectionFromData } from '@clocky/clocky-team-hub/src/fold.ts'
 import { teamProjectionDataSchema } from '@clocky/clocky-team-hub/src/schema.ts'
 import type { TeamProjection } from '@clocky/clocky-team-hub/src/types.ts'
-import type { TeamId } from '@clocky/clocky-team'
+import type { TeamId, TeamSystemPhaseProof, TeamSystemPhaseScope } from '@clocky/clocky-team'
 
 async function reviewFixture(backend: 'json' | 'sqlite' = 'json') {
   const h = await taskExecutorFixture(backend)
@@ -42,6 +42,26 @@ it.each(['json', 'sqlite'] as const)('reviews while paused without reviewer resi
       .rejects.toMatchObject({ code: 'TEAM_TASK_IDEMPOTENCY_CONFLICT' })
     await expect(h.connection.reviewTask({ ...h.request, nextPhase: 'pending' }))
       .rejects.toMatchObject({ code: 'TEAM_TASK_IDEMPOTENCY_CONFLICT' })
+  } finally { await h.close() }
+})
+
+it.each(['json', 'sqlite'] as const)('rejects a generic scheduler stall before it can block paused review on %s', async (backend) => {
+  const h = await reviewFixture(backend)
+  try {
+    await h.connection.hibernate(h.buyer)
+    await h.run.setPhase('paused', h.run.snapshot().revision)
+    const before = await h.ctx.teams.getTeam({ teamId: h.task.teamId })
+    const reason = { code: 'TASK_NO_ELIGIBLE_OWNER', message: 'Ready Team tasks have no eligible active participant or workspace.' }
+    const proof = Object.freeze({}) as TeamSystemPhaseProof
+    const scope: TeamSystemPhaseScope = { kind: 'scheduler-stall', teamId: h.task.teamId, phase: 'stalled', reason }
+    const remove = h.ctx.teams.registerSystemPhaseProofSource({ name: 'team-scheduler-dag',
+      resolvePhaseProof: actor => actor === proof ? scope : undefined })
+    try {
+      await expect(h.ctx.teams.transitionTeamPhase({ actor: proof, teamId: h.task.teamId,
+        expectedCursor: before.team.cursor, phase: 'stalled', reason })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      expect(await h.ctx.teams.getTeam({ teamId: h.task.teamId })).toEqual(before)
+      expect((await h.connection.reviewTask(h.request)).phase).toBe('completed')
+    } finally { remove() }
   } finally { await h.close() }
 })
 

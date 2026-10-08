@@ -2,7 +2,7 @@
  * not this 450) — component-level var pinned to the static scale instead. */
 .dot,
 .matrix {
-  --clocky-state-ongoing: var(--clocky-static-accent-450);
+  --clocky-state-ongoing: var(--clocky-status-running-fg);
 }
 
 /* Solid states: same-color halo via a 0.10-opacity outer layer (::before)
@@ -17,7 +17,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
   background: currentColor;
   opacity: 0.1;
 }
@@ -26,20 +26,20 @@
   content: '';
   position: absolute;
   inset: 20%;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
   background: currentColor;
 }
 
 .dot[data-state='done'] {
-  color: var(--clocky-alias-state-success-primary);
+  color: var(--clocky-status-done-fg);
 }
 
 .dot[data-state='warning'] {
-  color: var(--clocky-alias-state-warn-primary);
+  color: var(--clocky-status-needs-you-fg);
 }
 
 .dot[data-state='error'] {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 /* Pixel chase: each outer cell holds a discrete brightness step (flat keyframe
@@ -54,7 +54,7 @@
 .cell {
   fill: currentColor;
   opacity: 0.15;
-  animation: clocky-state-dot-chase 1s infinite;
+  animation: clocky-state-dot-chase var(--clocky-duration-spin) infinite;
 }
 
 @keyframes clocky-state-dot-chase {

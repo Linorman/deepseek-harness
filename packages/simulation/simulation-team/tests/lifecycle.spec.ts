@@ -4920,6 +4920,24 @@ it('persists a non-Error checkpoint failure and releases collection admission', 
   expect(await connection.drive({ until: simTimeSchema.parse('1') }, () => 0)).toMatchObject({ reason: 'until' })
 })
 
+it.each([false, true])('persists a direct non-Error collection failure with cancelled=%s', async (cancelled) => {
+  const { run, connection } = await setup()
+  if (connection === undefined) throw new Error('Fixture connection missing')
+  const { simulationCheckpointRequestSchema } = await import('@clocky/clocky-simulation')
+  const request = simulationCheckpointRequestSchema.parse({ id: cancelled ? 'cancelled-opaque' : 'opaque-collection',
+    implementationVersion: 'fixture-1', maxDrainRounds: 4, maxAttempts: 3 })
+  const controller = new AbortController()
+  const collect = vi.spyOn(connection, 'collectCheckpointCandidate').mockImplementationOnce(async () => {
+    if (cancelled) controller.abort()
+    throw 'Opaque collection failure'
+  })
+  try {
+    expect(await connection.checkpoint(request, controller.signal)).toMatchObject({ status: 'failed',
+      error: 'Opaque collection failure', diagnostic: { stage: 'collect', code: cancelled ? 'cancelled' : 'unavailable' } })
+    expect(run.snapshot().checkpoints?.[request.id]?.status).toBe('failed')
+  } finally { collect.mockRestore() }
+})
+
 it.each(['hibernate', 'close', 'checkpoint', 'lease', 'service-bootstrap'] as const)('retains an auxiliary model and Session until %s cleanup settles', async (mode) => {
   const { ctx, run, connection, entityId, participant, serviceFiber } = await setup()
   if (connection === undefined) throw new Error('fixture connection missing')
@@ -6209,6 +6227,134 @@ it('refuses missing, retired or mismatched task decisions and changed source sel
   await expect(connection.executeTaskDecision(request)).rejects.toThrow(/unfinished original attempt/)
 })
 
+it('refuses task model dispatch when its started attempt changes after prompt assembly', async () => {
+  const { ctx, run, connection, entityId, participant } = await setup()
+  if (connection === undefined) throw new Error('Fixture connection missing')
+  const { simulationDecisionIdSchema, simulationProposalSchema } = await import('@clocky/clocky-simulation')
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  await ctx.plugin(await import('@clocky/clocky-tool-simulation'))
+  const model = new MockAdapter([textResponse('A stale task must never reach this model')])
+  ctx.llm.registerAdapter(['task-stale-model'], model)
+  await connection.bind(entityId, participant.id)
+  const lease = await connection.activate(entityId, { ...placement(),
+    agent: { options: { provider: 'task-stale-model', model: 'fixture' } } })
+  if (lease.localAgent === undefined) throw new Error('Fixture task actor is missing')
+  await run.setPhase('running', run.snapshot().revision)
+  const creationId = simulationDecisionIdSchema.parse('stale-model-task-create')
+  await connection.openDecision(entityId, creationId)
+  const creation = await connection.submitDecision(entityId, creationId, [simulationProposalSchema.parse({ after: [], action: {
+    kind: 'task/create', deliverAt: run.snapshot().time, task: { subject: 'Stale model task', description: 'Never infer after task changed',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',
+      reviewPolicy: { kind: 'none' }, budget: {}, maxAttempts: 1 },
+  } })])
+  const operationId = creation.operationIds[0]!
+  await run.drive({ until: run.snapshot().time })
+  await connection.dispatchOperation(operationId, Date.now)
+  const attemptId = taskAttemptIdSchema.parse('stale-model-attempt')
+  await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  const actualSnapshot = run.snapshot.bind(run)
+  let changed = false
+  const read = vi.spyOn(run, 'snapshot').mockImplementation(() => {
+    const state = actualSnapshot(), execution = state.taskExecutions?.[attemptId]
+    if (!changed || execution?.task === undefined) return state
+    return { ...state, taskExecutions: { ...state.taskExecutions,
+      [attemptId]: { ...execution, task: { ...execution.task, phase: 'pending' as const } } } }
+  })
+  const stop = ctx.on('system-prompt/assemble', async (_assembly, context, next) => {
+    const assembled = await next()
+    if (context.scope === lease.localAgent) changed = true
+    return assembled
+  })
+  try {
+    await expect(connection.executeTaskDecision({ attemptId,
+      decisionId: simulationDecisionIdSchema.parse('stale-model-task-work'), predecessor: null,
+      reason: 'Verify the current task before inference', context: contextRequest() }))
+      .rejects.toThrow('Simulation model turn ended without submitting its identified decision')
+    await lease.localAgent.whenIdle()
+    expect(changed).toBe(true)
+    expect(model.requests).toHaveLength(0)
+    expect(lease.localAgent.session.events.findLast(event => event.type === 'turn/end')?.data)
+      .toMatchObject({ reason: { kind: 'error', error: { message: 'Simulation model request requires its started task and recorded input' } } })
+  } finally { stop(); read.mockRestore() }
+})
+
+it('refuses a task decision already opened in a different native window', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationDecisionIdSchema } = await import('@clocky/clocky-simulation')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const attemptId = taskAttemptIdSchema.parse('wrong-window-attempt')
+  const execution = await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  const task = await ctx.teams.getTask({ teamId: execution.request.teamId, taskId: execution.request.taskId })
+  const decisionId = simulationDecisionIdSchema.parse('wrong-window-decision')
+  const request = { attemptId, decisionId, predecessor: null, reason: 'Perform work', context: contextRequest() }
+  await run.associateTaskDecision({ attemptId, decisionId, predecessor: null, reason: request.reason,
+    task: { revision: task.revision, subject: task.subject, description: task.description } })
+  await connection.openDecision(entityId, decisionId)
+  await expect(connection.executeTaskDecision(request)).rejects.toThrow('changed its exact ordered window')
+})
+
+it('returns the submitted task decision when its run pauses during the decision await', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationDecisionIdSchema, simulationPolicyRefSchema, simulationWindowIdSchema } = await import('@clocky/clocky-simulation')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const attemptId = taskAttemptIdSchema.parse('pause-during-task-decision')
+  await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  const decisionId = simulationDecisionIdSchema.parse('pause-task-decision')
+  const policy = simulationPolicyRefSchema.parse({ id: 'pause-task-policy', version: '1' })
+  const remove = ctx.simulationTeams.registerDeterministicPolicy({ ...policy, decide: () => [] })
+  const native = connection.executeDeterministicDecision.bind(connection)
+  vi.spyOn(connection, 'executeDeterministicDecision').mockImplementationOnce(async (...args) => {
+    const result = await native(...args)
+    await run.commitWindow(simulationWindowIdSchema.parse(`task-window/1/${decisionId}`))
+    await run.setPhase('paused', run.snapshot().revision)
+    return result
+  })
+  try {
+    const result = await connection.executeTaskDecision({ attemptId, decisionId, predecessor: null,
+      reason: 'Pause after durable input', policy, context: contextRequest() })
+    expect(result.status).toBe('submitted')
+    expect(run.snapshot().phase).toBe('paused')
+  } finally { remove() }
+})
+
+it.each(['same-view', 'stale-view'] as const)('requires durable deterministic task input before start and accepts the same decision after storage recovers (%s)', async (variant) => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationDecisionIdSchema, simulationPolicyRefSchema } = await import('@clocky/clocky-simulation')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const attemptId = taskAttemptIdSchema.parse('flush-task-decision')
+  await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  const policy = simulationPolicyRefSchema.parse({ id: 'flush-task-policy', version: '1' })
+  const remove = ctx.simulationTeams.registerDeterministicPolicy({ ...policy, decide: () => [] })
+  const request = { attemptId, decisionId: simulationDecisionIdSchema.parse('flush-task-decision'),
+    predecessor: null, reason: 'Persist task instructions', policy, context: contextRequest() }
+  const flush = vi.spyOn(ctx.sessions, 'flush').mockResolvedValueOnce(false)
+  try {
+    await expect(connection.executeTaskDecision(request)).rejects.toThrow('requires durable Session storage')
+    flush.mockRestore()
+    const execution = run.snapshot().taskExecutions?.[attemptId]
+    if (execution === undefined) throw new Error('Task retry lost its original attempt')
+    const actor = ctx.agents.get(execution.request.sessionId)
+    if (actor === undefined) throw new Error('Task retry lost its Session actor')
+    const view = actor.session.surface.nodes.map(seq => actor.session.events[seq])
+      .find(event => event?.type === 'simulation/context-view')
+    if (view?.type !== 'simulation/context-view') throw new Error('Task retry has no first recorded view')
+    if (variant === 'stale-view') actor.session.append('simulation/context-view', { ...view.data,
+      versions: { ...view.data.versions, rules: 'stale-view' } },
+    { surfaceOp: { op: 'replace', start: view.seq, end: view.seq }, sourceEventSeqs: [view.seq] })
+    expect((await connection.executeTaskDecision(request)).status).toBe('accepted')
+    const current = actor.session.surface.nodes.map(seq => actor.session.events[seq])
+      .filter(event => event?.type === 'simulation/context-view')
+    expect(current).toHaveLength(1)
+    expect(current[0]?.data.versions.rules).not.toBe('stale-view')
+  } finally { flush.mockRestore(); remove() }
+})
+
 it('requires actual task input persistence and revokes start authority during the policy await', async () => {
   const { ctx, run, connection, operationId } = await preparedTask()
   const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
@@ -6287,6 +6433,43 @@ it('coalesces one completion assessment and refuses a changed in-flight policy b
   expect((await first).status).toBe('waiting')
   expect(evaluate).toHaveBeenCalledTimes(1)
   held.mockRestore(); dispose()
+})
+
+it('drains an accepted task completion before checkpoint collection and refuses its late evaluation', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationPolicyRefSchema } = await import('@clocky/clocky-simulation')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const attemptId = taskAttemptIdSchema.parse('checkpoint-completion')
+  await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  const policy = simulationPolicyRefSchema.parse({ id: 'checkpoint-completion', version: '1' })
+  const evaluate = vi.fn(() => ({ status: 'waiting' as const, reason: 'Still assigned' }))
+  const dispose = ctx.simulationTeams.registerTaskCompletionPolicy({ ...policy, evaluate })
+  const select = run.selectTaskCompletionPolicy.bind(run)
+  const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+  const held = vi.spyOn(run, 'selectTaskCompletionPolicy').mockImplementationOnce(async (...args) => {
+    const selected = await select(...args)
+    entered.resolve(undefined)
+    await release.promise
+    return selected
+  })
+  try {
+    const completion = connection.completeTask({ attemptId, policy })
+    const denied = expect(completion).rejects.toThrow(/checkpoint collection blocks/)
+    await entered.promise
+    let collectionSettled = false
+    const collection = connection.collectCheckpointCandidate(4, 2).then(
+      (candidate) => { collectionSettled = true; candidate.release(); return 'ready' },
+      (error: unknown) => { collectionSettled = true; return error },
+    )
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(collectionSettled).toBe(false)
+    release.resolve(undefined)
+    await denied
+    expect(await collection).toBe('ready')
+    expect(evaluate).not.toHaveBeenCalled()
+  } finally { release.resolve(undefined); held.mockRestore(); dispose() }
 })
 
 async function linkedTaskFixture(kind: 'explicit' | 'transfer' | 'task-completed' = 'task-completed', review = false) {

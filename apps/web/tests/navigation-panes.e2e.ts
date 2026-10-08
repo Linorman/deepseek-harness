@@ -283,9 +283,30 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     }))
     expect(assistantTimingStyle.background).toContain('linear-gradient')
     expect(assistantTimingStyle.ttft).toMatch(/%$/)
-    const snapshot = (await captureStableAria(page, '[class*="viewArea"]', scaffold.workspaceCwd))
-      .split(SEED_ID).join('{{seededId}}')
-    await compareOrRefreshGolden(TRAJECTORY_EXPECTED, snapshot, MODE)
+    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await page.getByRole('dialog', { name: 'Settings' }).getByRole('button', { name: 'English' }).click()
+    await page.getByRole('menuitem', { name: '中文' }).click()
+    await page.getByRole('dialog', { name: '设置' }).waitFor({ timeout: 10_000 })
+    await page.keyboard.press('Escape')
+    try {
+      const localizedDetails = page.getByRole('complementary', { name: '事件详情' })
+      await localizedDetails.waitFor({ timeout: 10_000 })
+      expect(await localizedDetails.getByRole('tab', { name: '结果' }).getAttribute('aria-selected'))
+        .toBe('true')
+      expect(await page.getByRole('row', { name: /^工具，bash / }).getAttribute('aria-selected'))
+        .toBe('true')
+      await assistantSpan.hover()
+      await expect.poll(() => timingTooltip.textContent(), { timeout: 5_000 }).toMatch(/助手.*TTFT .* 解码/s)
+      const snapshot = (await captureStableAria(page, '[class*="viewArea"]', scaffold.workspaceCwd))
+        .split(SEED_ID).join('{{seededId}}')
+      await compareOrRefreshGolden(TRAJECTORY_EXPECTED, snapshot, MODE)
+    } finally {
+      await page.getByRole('button', { name: '设置', exact: true }).click()
+      await page.getByRole('dialog', { name: '设置' }).getByRole('button', { name: '中文' }).click()
+      await page.getByRole('menuitem', { name: 'English' }).click()
+      await page.getByRole('dialog', { name: 'Settings' }).waitFor({ timeout: 10_000 })
+      await page.keyboard.press('Escape')
+    }
     await details.getByRole('button', { name: 'Close details' }).click()
   }, 60_000)
 
@@ -465,7 +486,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     const dot = await card.locator('[class*="_runState_"][data-state]').first().evaluate((node) => {
       // The token lives on body, so the probe must sit in the same cascade.
       const probe = document.createElement('span')
-      probe.style.color = 'var(--clocky-alias-state-success-primary)'
+      probe.style.color = 'var(--clocky-status-done-fg)'
       document.body.appendChild(probe)
       const success = getComputedStyle(probe).color
       probe.remove()

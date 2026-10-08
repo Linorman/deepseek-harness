@@ -238,7 +238,9 @@ interface FakeTeams {
   readonly getActivation: ReturnType<typeof vi.fn>
   readonly getTeam: ReturnType<typeof vi.fn>
   readonly getChannel: ReturnType<typeof vi.fn>
+  readonly getChannelForActor: ReturnType<typeof vi.fn>
   readonly getChannelAdmission: ReturnType<typeof vi.fn>
+  readonly acknowledgeChannelInvitation: ReturnType<typeof vi.fn>
   readonly postChannelEnvelope: ReturnType<typeof vi.fn>
   readonly postChannelFinalEnvelope: ReturnType<typeof vi.fn>
   readonly claimChannelDelivery: ReturnType<typeof vi.fn>
@@ -304,6 +306,7 @@ interface LocalLinkInternals {
   closing: boolean
   startChannels(state: TeamStateSnapshot, signal: AbortSignal): void
   watchChannel(channelId: ChannelSnapshot['manifest']['id'], signal: AbortSignal): Promise<void>
+  watchTaskCancellations(signal: AbortSignal): Promise<void>
   watchInterrupts(signal: AbortSignal): Promise<void>
   replayInterrupts(signal: AbortSignal): Promise<void>
   notify(envelope: TeamEnvelope, signal: AbortSignal): Promise<void>
@@ -364,7 +367,9 @@ function setup(config: TeamLinkLocal.Config = {
     getActivation: vi.fn(async () => binding()),
     getTeam: vi.fn(async () => teamState()),
     getChannel: vi.fn(async () => channel()),
+    getChannelForActor: vi.fn(async () => channel()),
     getChannelAdmission: vi.fn(async () => ({ channel: channel(), invitations: [] })),
+    acknowledgeChannelInvitation: vi.fn(async () => ({ channel: channel(), invitations: [] })),
     postChannelEnvelope: vi.fn(async () => envelope()),
     postChannelFinalEnvelope: vi.fn(async () => envelope({
       senderId: participantId,
@@ -424,6 +429,180 @@ function abortError(signal: AbortSignal | undefined): Error {
 }
 
 describe('local Team Link provider', () => {
+  it('uses its private proof for channel reads, invitation consent, and a cursor-free post', async () => {
+    const harness = setup()
+    const link = await harness.provider.connect(request())
+    const lease = harness.actorProofIssuer.leases.at(-1)
+    if (lease === undefined) throw new Error('local Link did not issue an actor proof')
+    expect(await link.getChannel(channelId)).toEqual(channel())
+    expect(harness.teams.getChannelForActor).toHaveBeenCalledWith({ actor: lease.proof, channelId })
+    const consent = { channelId, revision: 1,
+      manifestFingerprint: `sha256:${'a'.repeat(64)}` as never, idempotencyKey: 'local-consent' as never }
+    await expect(link.acknowledgeChannelInvitation(consent)).resolves.toMatchObject({ channel: { phase: 'active' } })
+    expect(harness.teams.acknowledgeChannelInvitation).toHaveBeenCalledWith({ actor: lease.proof, ...consent })
+    await link.post({ idempotencyKey: postIdempotencyKey,
+      draft: { channelId, audience: [senderId], kind: 'message', payload: { text: 'Cursor from Hub.' }, delivery: 'turn' } })
+    expect(harness.teams.postChannelEnvelope).toHaveBeenCalledWith(expect.objectContaining({
+      actor: lease.proof, expectedCursor: channel().cursor,
+    }))
+    await link.close()
+    expect(() => link.getChannel(channelId)).toThrow(/closed/)
+  })
+
+  it('stops invitation and cancellation watches when their subscribers leave or the Link closes', async () => {
+    const harness = setup()
+    const link = await harness.provider.connect(request())
+    const first = link.onInvitation(async () => {})
+    const second = link.onInvitation(async () => {})
+    const cancellation = link.onTaskCancellation(async () => {})
+    const remaining = link.onTaskCancellation(async () => {})
+    first()
+    cancellation()
+    await settleWork()
+    expect(harness.teams.watchTeam).toHaveBeenCalled()
+    await link.close()
+    second()
+    remaining()
+    const noOp = link.onInvitation(async () => { throw new Error('closed listener ran') })
+    noOp()
+  })
+
+  it('replays a pending invitation and suppresses duplicate cancellation revisions', async () => {
+    const invitations = setup()
+    invitations.teams.getTeam.mockResolvedValue(teamState([channelId]))
+    invitations.teams.getChannelAdmission.mockResolvedValue({ channel: channel(), invitations: [{
+      participantId, role: 'recipient', visibility: 'channel', required: true, deadline: 100,
+      endpoint: { kind: 'activation' }, revision: 1, manifestFingerprint: `sha256:${'a'.repeat(64)}`,
+      status: 'pending',
+    }] })
+    const firstLink = await invitations.provider.connect(request())
+    const observedInvitations: unknown[] = []
+    const unsubscribe = firstLink.onInvitation(async (notification) => { observedInvitations.push(notification) })
+    await vi.waitFor(() => { expect(observedInvitations).toHaveLength(1) })
+    expect(observedInvitations[0]).toMatchObject({ invitation: { participantId, revision: 1, status: 'pending' } })
+    unsubscribe()
+    await firstLink.close()
+
+    const cancellations = setup()
+    const cancelling = runningTask({ cancellation: { requestedRevision: 1, requestedBy: senderId,
+      requestedAt: 3, target: { kind: 'attempt', attemptId, participantId,
+        activationId: binding().activation.id } } })
+    cancellations.teams.getTeam.mockResolvedValue({ ...teamState(), tasks: [cancelling] })
+    cancellations.teams.watchTeam.mockResolvedValueOnce({ kind: 'changed', cursor: 5 })
+      .mockResolvedValueOnce({ kind: 'closed' })
+    const secondLink = await cancellations.provider.connect(request())
+    const observedCancellations: unknown[] = []
+    secondLink.onTaskCancellation(async (notification) => { observedCancellations.push(notification) })
+    await vi.waitFor(() => { expect(observedCancellations).toHaveLength(1) })
+    expect(observedCancellations[0]).toMatchObject({ taskId, revision: cancelling.revision })
+    await secondLink.close()
+  })
+
+  it('stops non-active channel watches and drains every row of a closing delivery page', async () => {
+    const terminal = setup()
+    const terminalLink = await terminal.provider.connect(request())
+    terminal.teams.getChannel.mockResolvedValue(channel({ phase: 'expired' }))
+    terminal.teams.watchChannel.mockResolvedValue({ kind: 'closed' })
+    await expect((terminalLink as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).resolves.toBeUndefined()
+    expect(terminal.teams.listChannelPendingDeliveries).not.toHaveBeenCalled()
+    terminal.teams.watchChannel.mockRejectedValueOnce(new Error('terminal watch failed'))
+    await expect((terminalLink as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).rejects.toThrow('terminal watch failed')
+    await terminalLink.close()
+
+    const closing = setup()
+    const closingLink = await closing.provider.connect(request())
+    closing.teams.watchChannel.mockResolvedValueOnce({ kind: 'changed', cursor: 3 })
+      .mockResolvedValueOnce({ kind: 'closed' })
+    closing.teams.listChannelPendingDeliveries
+      .mockResolvedValueOnce(pendingPage([], { channel: channel({ phase: 'closed', cursor: 4 }), nextCursor: 2 }))
+      .mockResolvedValueOnce(pendingPage([], { channel: channel({ phase: 'closed', cursor: 4 }), nextCursor: 4 }))
+    await expect((closingLink as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).resolves.toBeUndefined()
+    expect(closing.teams.listChannelPendingDeliveries).toHaveBeenCalledTimes(2)
+    await closingLink.close()
+  })
+
+  it('settles pending channels and inactive Teams without reading their pending deliveries', async () => {
+    const pending = setup()
+    const pendingLink = await pending.provider.connect(request())
+    pending.teams.getChannel.mockResolvedValue(channel({ phase: 'pending' }))
+    pending.teams.watchChannel.mockResolvedValue({ kind: 'closed' })
+    await expect((pendingLink as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).resolves.toBeUndefined()
+    expect(pending.teams.listChannelPendingDeliveries).not.toHaveBeenCalled()
+    pending.teams.watchChannel.mockRejectedValueOnce(new Error('pending watch failed'))
+    await expect((pendingLink as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).rejects.toThrow('pending watch failed')
+    await pendingLink.close()
+
+    const activating = setup()
+    const activatingLink = await activating.provider.connect(request())
+    activating.teams.getChannel.mockResolvedValueOnce(channel({ phase: 'pending' })).mockResolvedValue(channel())
+    activating.teams.watchChannel.mockResolvedValueOnce({ kind: 'changed', cursor: 3 })
+      .mockResolvedValueOnce({ kind: 'closed' })
+    await expect((activatingLink as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).resolves.toBeUndefined()
+    expect(activating.teams.listChannelPendingDeliveries).toHaveBeenCalledOnce()
+    await activatingLink.close()
+
+    const inactive = setup()
+    const inactiveLink = await inactive.provider.connect(request())
+    inactive.teams.getTeam.mockResolvedValue({ ...teamState(), team: { ...teamState().team, phase: 'stalled' } })
+    inactive.teams.watchChannel.mockResolvedValue({ kind: 'closed' })
+    await expect((inactiveLink as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).resolves.toBeUndefined()
+    expect(inactive.teams.listChannelPendingDeliveries).not.toHaveBeenCalled()
+    inactive.teams.watchChannel.mockRejectedValueOnce(new Error('inactive watch failed'))
+    await expect((inactiveLink as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).rejects.toThrow('inactive watch failed')
+    await inactiveLink.close()
+  })
+
+  it('stops cancellation replay when its Team watch is cancelled before the visit', async () => {
+    const harness = setup()
+    const link = await harness.provider.connect(request())
+    const cancellation = new AbortController()
+    harness.teams.getTeam.mockResolvedValue({ ...teamState(), tasks: [runningTask()] })
+    // oxlint-disable-next-line typescript/no-misused-promises -- mocked Team watch settles after aborting the selected replay cycle.
+    harness.teams.watchTeam.mockImplementationOnce(async () => {
+      cancellation.abort()
+      return { kind: 'closed' }
+    })
+    await expect((link as unknown as LocalLinkInternals).watchTaskCancellations(cancellation.signal))
+      .resolves.toBeUndefined()
+    await link.close()
+  })
+
+  it('contains a pending-page failure when the channel closes during its reread', async () => {
+    const harness = setup()
+    const link = await harness.provider.connect(request())
+    harness.teams.getChannel.mockResolvedValueOnce(channel())
+      .mockResolvedValueOnce(channel({ phase: 'closed' }))
+    harness.teams.listChannelPendingDeliveries.mockRejectedValueOnce(new Error('page read failed'))
+    harness.teams.watchChannel.mockResolvedValue({ kind: 'closed' })
+    await expect((link as unknown as LocalLinkInternals).watchChannel(channelId,
+      new AbortController().signal)).resolves.toBeUndefined()
+    expect(harness.teams.getChannel).toHaveBeenCalledTimes(2)
+    await link.close()
+  })
+
+  it('rejects invalid integration verification before invoking a workspace provider', async () => {
+    const harness = setup()
+    const link = await harness.provider.connect(request())
+    const contextGet = Reflect.get(harness.ctx, 'get') as ReturnType<typeof vi.fn>
+    contextGet.mockReturnValue({ integrateSource: vi.fn() })
+    await expect(link.integrateTask({ taskId, attemptId, expectedRevision: 2, verification: '  ' }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await link.close()
+  })
+
+
+
+
+
+
   it('registers its configured provider name and closes only future connection admission on plugin disposal', async () => {
     const harness = setup({ providerName: 'configured-local', pageSize: 2, disposalTimeoutMs: 100, notificationRetryDelayMs: 1 })
     expect(harness.provider.name).toBe('configured-local')

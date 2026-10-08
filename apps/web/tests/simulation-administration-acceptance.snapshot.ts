@@ -24,7 +24,7 @@ it.each(['json', 'sqlite'] as const)('keeps initial-checkpoint and maintenance a
     if (entry.name === './model.ts') entry.name = join(process.cwd(), 'examples/headless-agent/tests/fixtures/simulation/simulation-administration/model.ts')
   }
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(patches))
-  const scaffold = await launchWebScaffold({ tempRoot: directory, extraOverlayPath: overlay, productPrincipalId: 'simulation-browser-user',
+  const scaffold = await launchWebScaffold({ tempRoot: directory, disableDefaultSimulation: true, extraOverlayPath: overlay, productPrincipalId: 'simulation-browser-user',
     agentPresets: { default: 'simulation', roots: [{ path: join(process.cwd(), 'examples/simulation-company/presets'), trust: 'system' }] } })
   const { context, setNativeZoom } = await createNativeZoomContext(root, { viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const page = await context.newPage(), errors = watchConsole(page), probe = scaffold.ctx.simulationBrowserProbe
@@ -62,7 +62,7 @@ it.each(['json', 'sqlite'] as const)('keeps initial-checkpoint and maintenance a
     await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '仿真', exact: true }).click()
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     let creation = page.getByRole('dialog', { name: '新建仿真', exact: true })
     await creation.getByRole('radio').check()
     await creation.getByLabel('运行名称', { exact: true }).fill('完整行政验收')
@@ -75,10 +75,10 @@ it.each(['json', 'sqlite'] as const)('keeps initial-checkpoint and maintenance a
     await composedName.dispatchEvent('compositionend')
     await page.keyboard.press('Escape')
     await adminDialogMatrix(page, root, 'creation-draft', async () => {
-      await workspace.getByRole('button', { name: /^(新建仿真|Create simulation)$/, exact: true }).click()
+      await workspace.locator('header').getByRole('button', { name: /^(新建仿真|Create simulation)$/, exact: true }).click()
       return page.getByRole('dialog', { name: /^(新建仿真|Create simulation)$/, exact: true })
     }, setNativeZoom)
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     creation = page.getByRole('dialog', { name: '新建仿真', exact: true })
     expect(await creation.getByLabel('运行名称', { exact: true }).inputValue()).toBe('完整行政验收')
     await creation.getByRole('button', { name: '创建暂停的运行', exact: true }).click()
@@ -289,7 +289,7 @@ it.each(['json', 'sqlite'] as const)('shows real paused deadlines, unconfirmed m
     if (entry.name === './model.ts') entry.name = join(process.cwd(), 'examples/headless-agent/tests/fixtures/simulation/simulation-administration/model.ts')
   }
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(patches))
-  const scaffold = await launchWebScaffold({ tempRoot: directory, extraOverlayPath: overlay, productPrincipalId: 'budget-browser-user',
+  const scaffold = await launchWebScaffold({ tempRoot: directory, disableDefaultSimulation: true, extraOverlayPath: overlay, productPrincipalId: 'budget-browser-user',
     agentPresets: { default: 'simulation', roots: [{ path: join(process.cwd(), 'examples/simulation-company/presets'), trust: 'system' }] } })
   const { context, setNativeZoom } = await createNativeZoomContext(root, { viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const page = await context.newPage(), errors = watchConsole(page), probe = scaffold.ctx.simulationBrowserProbe
@@ -310,7 +310,7 @@ it.each(['json', 'sqlite'] as const)('shows real paused deadlines, unconfirmed m
   try {
     await scaffold.authenticateBrowserPage(page); await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '仿真', exact: true }).click()
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     const creation = page.getByRole('dialog', { name: '新建仿真', exact: true })
     await creation.getByRole('radio').check()
     for (const [label, text] of [['运行名称', '暂停后的真实时限'], ['采购方名称', '采购方'], ['供应方名称', '供应方'], ['初始库存', '2']] as const) {

@@ -6,6 +6,8 @@ import type { ITeamTasks, ParticipantId, TeamId, TeamMemberDetailState } from '@
 import css from './TeamBrowser.module.css'
 import type { TeamKey } from './locales.ts'
 type Read = NonNullable<ITeamTasks['readMemberDetail']>
+// This class is a fixed local export of the imported TeamBrowser stylesheet.
+const memberDetailClass = css.memberDetail as string
 
 /** Display exact member metadata and replace capability pages only after successful reads.
  * @param props - Exact selection, runtime reader, localized labels and close action.
@@ -34,7 +36,7 @@ export function MemberDetail({ teamId, participantId, read, closeDetail, detail,
     void read(teamId, participantId, 'first')
     return closeDetail
   }, [teamId, participantId, read, closeDetail])
-  return <Modal open title={t('memberDetail.title')} closeLabel={t('cancel')} onClose={onClose} bodyClassName={css.memberDetail ?? ''}
+  return <Modal open title={t('memberDetail.title')} closeLabel={t('cancel')} onClose={onClose} bodyClassName={memberDetailClass}
     footer={<div className={css.memberPages}>
       <Button disabled={unavailable} onClick={() => { void read(teamId, participantId, 'refresh') }}>{t('memberDetail.refresh')}</Button>
       {value !== undefined && value.startCursor >= 0 && <Button disabled={unavailable} onClick={() => { void read(teamId, participantId, 'first') }}>{t('detail.firstPage')}</Button>}

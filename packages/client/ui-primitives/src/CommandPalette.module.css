@@ -1,0 +1,149 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--clocky-layer-modal);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--clocky-bg-scrim);
+}
+
+.palette {
+  position: fixed;
+  top: 12vh;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(560px, 76vh);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
+  color: var(--clocky-fg-primary);
+  transform: translateX(-50%);
+  animation: palette-in var(--clocky-duration-base) var(--clocky-ease-enter);
+  overflow: hidden;
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
+}
+
+.palette::backdrop {
+  background: transparent;
+}
+
+.input {
+  flex: none;
+  height: 52px;
+  padding: 0 var(--clocky-space-5);
+  border: none;
+  border-bottom: 1px solid var(--clocky-border-subtle);
+  background: transparent;
+  color: var(--clocky-fg-primary);
+  font: var(--clocky-type-body-reading);
+  outline: none;
+}
+
+.content {
+  display: flex;
+  min-height: 0;
+}
+
+.list {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: var(--clocky-space-2);
+}
+
+.group + .group {
+  margin-top: var(--clocky-space-2);
+}
+
+.groupLabel {
+  padding: var(--clocky-space-1) var(--clocky-space-3);
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-micro);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--clocky-space-3);
+  min-height: 36px;
+  padding: 0 var(--clocky-space-3);
+  border-radius: var(--clocky-radius-md);
+  cursor: pointer;
+  font: var(--clocky-type-body);
+}
+
+.option[aria-selected='true'] {
+  background: var(--clocky-bg-active);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--clocky-fg-tertiary);
+}
+
+.optionLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hint {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shortcut {
+  margin-left: auto;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--clocky-space-6) var(--clocky-space-3);
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-body-small);
+  text-align: center;
+}
+
+.preview {
+  flex: none;
+  width: 260px;
+  overflow: auto;
+  padding: var(--clocky-space-4);
+  border-left: 1px solid var(--clocky-border-subtle);
+  background: var(--clocky-bg-sunken);
+  font: var(--clocky-type-body-small);
+}
+
+@media (max-width: 640px) {
+  .preview {
+    display: none;
+  }
+}
+
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+
+/* Reduced motion: the palette appears in place; only the scrim keeps its fade. */
+@media (prefers-reduced-motion: reduce) {
+  .palette {
+    animation: none;
+  }
+}

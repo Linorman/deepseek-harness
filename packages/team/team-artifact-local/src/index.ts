@@ -1,3 +1,4 @@
+import { withTeamOperationTimeout } from '@clocky/clocky-team'
 import type { TeamListPageRequest } from '@clocky/clocky-team'
 /**
  * Content-addressed local provider for Team artifact bytes. It owns only the
@@ -479,6 +480,7 @@ function toBytes(data: Uint8Array | string): Uint8Array {
 function objectPath(root: string, digest: string): string {
   const path = join(root, digest.slice(0, 2), digest.slice(2))
   const child = relative(root, path)
+  // v8 ignore next -- root is canonical and every caller supplies a SHA-256 or validated 64-hex digest.
   if (child.length === 0 || child === '..' || child.startsWith(`..${sep}`) || isAbsolute(child)) {
     throw new TeamArtifactError('artifact object path escaped its configured root', 'TEAM_ARTIFACT_INVALID')
   }
@@ -562,14 +564,6 @@ function localObjectId(reference: TeamArtifactReference, provider: string): stri
   return digest === undefined ? undefined : `${provider}:${digest}`
 }
 
-async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer!: ReturnType<typeof setTimeout>
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => { reject(new Error(`team-artifact-local: retention disposal exceeded ${String(timeoutMs)}ms`)) }, timeoutMs)
-  })
-  try {
-    return await Promise.race([operation, timeout])
-  } finally {
-    clearTimeout(timer)
-  }
+function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  return withTeamOperationTimeout(operation, timeoutMs, () => new Error(`team-artifact-local: retention disposal exceeded ${String(timeoutMs)}ms`))
 }

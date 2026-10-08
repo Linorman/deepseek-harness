@@ -23,11 +23,16 @@
       "default": "./lib/invariant.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./pipeline": {
+      "types": "./lib/types/pipeline.d.ts",
+      "default": "./lib/pipeline.js"
+    }
   },
   "files": [
     "lib/index.js",
     "lib/invariant.js",
+    "lib/pipeline.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",

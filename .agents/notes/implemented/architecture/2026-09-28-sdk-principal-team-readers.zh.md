@@ -31,3 +31,5 @@ SDK Team 目录使用 Hub 主体 reader、安全产品摘要与加密续页。`t
 ## 验证
 
 真实 Hub 测试覆盖按主体过滤目录、直接 selection、跨主体正文拒绝，以及权限撤销后扣留成功／失败结果。SDK 转发、媒体、client／schema 与 Python 回归覆盖协议变化。真实 JSON-RPC Team-final keyless 场景读取安全目录和授权 selection，不新增模型请求。
+
+SDK Server 测试还覆盖规范父 Team 的只读 selection、证明与读取之间的 provider 退役、频道与产物 owner 缺失、产物校验失败及字节上限，以及有界分页默认值。Direct 频道媒体测试覆盖 owner 撤销、无重试键的普通文本、旧 Direct 版本拒绝和无图像存储时的文本入场。Activation 测试覆盖 JSON-RPC 路由及 Link／Agent 清理同时失败。

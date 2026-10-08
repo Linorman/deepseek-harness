@@ -16,18 +16,18 @@
   padding: 0 10px 0 8px;
   box-sizing: border-box;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--clocky-radius-lg);
   background: transparent;
   cursor: pointer;
   overflow: hidden;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   font-family: inherit;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
 }
 
 .trigger:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 /* Rail trigger: the same 36x36 circle box as the other rail controls. */
@@ -38,7 +38,7 @@
   justify-content: center;
   gap: 0;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
 }
 
 .triggerLabel {
@@ -46,48 +46,32 @@
   white-space: nowrap;
 }
 
-/* Full-viewport layer (figma Mask 501:29946 #000@24%): mask tokens match the
-   Modal primitive (--clocky-alias-bg-mask-1 + --clocky-mask-blur). */
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mask {
-  position: absolute;
-  inset: 0;
-  background: var(--clocky-alias-bg-mask-1);
-  backdrop-filter: var(--clocky-mask-blur);
-}
-
 /* Panel (figma Settings 501:29947): r24, white, lv3 shadow (figma effects
-   match --clocky-shadow-lv3 exactly); figma's 1080x700 is shrunk to 800 wide.
+   match --clocky-elevation-3 exactly); figma's 1080x700 is shrunk to 800 wide.
    One height for every section, taken from the viewport rather than the
    content: sections differ by hundreds of pixels (a settings list against the
    composition editor), and a content-sized panel would resize under the
    pointer on every nav click. Whatever does not fit scrolls in `.options`. */
 .panel {
-  position: relative;
-  z-index: 1;
   display: flex;
+  flex-direction: row;
+  gap: 0;
+  padding: 0;
+  box-sizing: border-box;
   width: 800px;
-  height: min(800px, calc(100vh - 48px));
+  height: min(800px, calc(100dvh - 48px));
   max-width: calc(100vw - 48px);
-  border-radius: 24px;
+  border-radius: var(--clocky-radius-xl);
   overflow: hidden;
-  background: var(--clocky-alias-bg-layer-2);
-  box-shadow: var(--clocky-shadow-lv3);
+  background: var(--clocky-bg-raised);
+  box-shadow: var(--clocky-elevation-3);
   /* Elevated surface: the scrollbar thumb takes the l2 elevation tokens.
      Declared on the panel rather than the scrolling `.options` child so the
      elevation choice sits with the surface; the custom properties inherit
      down to whichever descendant scrolls (see ui-theme
      styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 /* Nav rail (figma .Setting-nav 501:29958): 188 wide, pad (12,22,12,0),
@@ -105,10 +89,10 @@
 /* Title row (figma 501:29959): 16/500 lh24, 12px side padding. */
 .navTitle {
   padding: 0 12px;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: var(--clocky-type-heading-size);
+  line-height: var(--clocky-type-heading-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 /* Cell stack (figma 501:29961): gap 4. */
@@ -128,23 +112,23 @@
   padding: 9px 16px 9px 12px;
   box-sizing: border-box;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--clocky-radius-lg);
   background: transparent;
   cursor: pointer;
   font-family: inherit;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   font-weight: 400;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   text-align: left;
 }
 
 .navCell:hover {
-  background: var(--clocky-specific-sidebar-nav-item-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .navCell.active {
-  background: var(--clocky-specific-sidebar-nav-item-active);
+  background: var(--clocky-bg-active);
 }
 
 .navIcon {
@@ -163,6 +147,7 @@
 .content {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -190,6 +175,7 @@
 
 /* Close button (figma .Icon_container 501:29982): 28x28, r28, 14px glyph. */
 .close {
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -197,14 +183,14 @@
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 28px;
+  border-radius: var(--clocky-radius-xl);
   background: transparent;
   cursor: pointer;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .close:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 /* Options area (figma Options 501:29983): pad (24,0,24,24), scrolls. */
@@ -213,6 +199,49 @@
   min-height: 0;
   padding: 0 24px 24px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* The platform picker owns the narrow-screen popup and its keyboard behavior. */
+.sectionSelect { display: none; }
+
+@media (max-width: 719px) {
+  .panel {
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    flex-direction: column;
+  }
+  .nav { width: 100%; padding: 16px 60px 8px 16px; gap: 8px; }
+  .navTitle { padding: 0; }
+  .navList { display: none; }
+  .sectionSelect {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    padding: 4px 8px;
+    font: var(--clocky-type-body);
+    color: var(--clocky-fg-primary);
+    background: var(--clocky-bg-control);
+    border: 1px solid var(--clocky-border-strong);
+    border-radius: var(--clocky-radius-md);
+    cursor: pointer;
+  }
+  .header { height: auto; padding: 8px 16px; }
+  .close { position: absolute; top: 16px; right: 16px; }
+  .options { padding: 0 16px 16px; }
+}
+
+@media (max-height: 420px) {
+  .panel { display: block; overflow: auto; }
+  .nav { width: 100%; }
+  .navList { flex-direction: row; flex-wrap: wrap; }
+  .content { display: block; }
+  .options { overflow: visible; }
+  .header { position: sticky; top: 0; background: var(--clocky-bg-raised); z-index: var(--clocky-layer-local-1); }
 }
 
 /* Visually-hidden text seat (close button accessible name from slot content). */

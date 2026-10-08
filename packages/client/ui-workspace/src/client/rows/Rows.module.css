@@ -8,20 +8,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
   padding: 0 8px;
   cursor: pointer;
   user-select: none;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .projectRow:hover,
 .sessionRow:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .sessionRow.selected {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .searchResultRow {
@@ -32,20 +32,20 @@
   min-height: 48px;
   box-sizing: border-box;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
   padding: 4px 8px;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .searchResultRow:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .searchResultRow.selected {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .searchResultHeading {
@@ -60,8 +60,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
 }
 
 .searchResultMeta {
@@ -77,20 +77,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  line-height: 17px;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .searchResultWorkspace {
   flex: none;
   max-width: 40%;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .searchResultSnippet {
   flex: 1;
   min-width: 0;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 /* Compact one-line Workspace row after removing the session-count subtitle. */
@@ -110,7 +110,7 @@
   gap: 0;
   /* Mount fade: session rows appear by unfolding a group (or the tree
      mounting). Stable row keys keep already-visible rows from replaying it. */
-  animation: row-in 150ms var(--ds-ease-in-out);
+  animation: row-in var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .sessionRow .title {
@@ -132,7 +132,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .visuallyHidden {
@@ -145,7 +145,7 @@
 }
 
 .folderActive {
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
 }
 
 
@@ -156,7 +156,7 @@
 
 /* Expand arrow (filled triangle): points right closed, rotates to point down open. */
 .arrow {
-  transition: transform 150ms var(--ds-ease-in-out);
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .arrowOpen {
@@ -176,18 +176,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
 }
 
 .renameInput {
   min-width: 0;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   padding: 0 2px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 4px;
-  background: var(--clocky-alias-button-elevated-fill);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-xs);
+  background: var(--clocky-bg-control);
   color: inherit;
   outline: none;
 }
@@ -200,16 +200,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .time {
   flex: none;
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .dot {
@@ -241,7 +241,7 @@
    hover fill while its dropdown is up). */
 .projectRow.menuOpen,
 .sessionRow.menuOpen {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 /* Session drag insert marker: a leading chevron and 2px rule between rows,
@@ -255,7 +255,7 @@
 .sessionRow.dropAfter::after {
   content: '';
   position: absolute;
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
   left: 0;
   right: 4px;
   height: 12px;
@@ -263,17 +263,17 @@
     linear-gradient(
       55deg,
       transparent calc(50% - 1px),
-      var(--clocky-alias-state-business-primary) calc(50% - 1px) calc(50% + 1px),
+      var(--clocky-accent-bg) calc(50% - 1px) calc(50% + 1px),
       transparent calc(50% + 1px)
     ) 0 0 / 5px 7px no-repeat,
     linear-gradient(
       125deg,
       transparent calc(50% - 1px),
-      var(--clocky-alias-state-business-primary) calc(50% - 1px) calc(50% + 1px),
+      var(--clocky-accent-bg) calc(50% - 1px) calc(50% + 1px),
       transparent calc(50% + 1px)
     ) 0 5px / 5px 7px no-repeat,
     linear-gradient(
-      var(--clocky-alias-state-business-primary) 0 0
+      var(--clocky-accent-bg) 0 0
     ) 4px 5px / calc(100% - 4px) 2px no-repeat;
   pointer-events: none;
 }
@@ -294,32 +294,32 @@
 }
 
 .hoverTitle {
-  font-size: 14px;
-  line-height: 20px;
-  color: #FFFFFF;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-inverse);
   overflow-wrap: break-word;
 }
 
 .hoverPath {
-  font-size: 12px;
-  line-height: 16px;
-  color: #CFD3D6;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-inverse-secondary);
   word-break: break-all;
 }
 
 .hoverTime {
-  font-size: 12px;
-  line-height: 16px;
-  color: #CFD3D6;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-inverse-secondary);
 }
 
 .hoverStatus {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  line-height: 20px;
-  color: #ADB2B8;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-inverse-secondary);
 }
 
 .iconButton {
@@ -330,21 +330,21 @@
   width: 16px;
   height: 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--clocky-radius-xs);
   padding: 0;
   background: transparent;
   cursor: pointer;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .iconButton:hover {
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 /* Chevrons ride the caption grey (#ADB2B8); the folder glyph stays one step
    darker (tertiary, #81858C) per the cell spec. */
 .chevron {
-  color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
 }
 
 @media (prefers-reduced-motion: reduce) {

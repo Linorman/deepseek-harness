@@ -89,7 +89,9 @@ export class NameScanner {
         position: 0, touched: performance.now() }
       this.scans.set(scan.id, scan)
     } else {
-      const selected = this.scans.get(request.afterCursor.split(':')[0] ?? '')
+      const separator = request.afterCursor.indexOf(':')
+      const id = separator < 0 ? request.afterCursor : request.afterCursor.slice(0, separator)
+      const selected = this.scans.get(id)
       if (selected === undefined || selected.closing !== undefined) throw new StorageLogError('scan-expired', 'stream-name cursor expired; restart discovery')
       scan = selected
       if (scan.prefix !== request.prefix) throw new StorageLogError('scan-invalid', 'stream-name cursor belongs to another prefix')

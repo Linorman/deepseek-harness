@@ -14,6 +14,8 @@ Status: implemented
 
 [Agent Client](../../../../packages/team/team-agent-client/README.zh.md) 将 workspace proof source、lease 和 release promise 保留到已接纳工作结算。关闭会立即停止新 delivery，并拒绝 pending pre-step barrier。Timeout 表示关闭尚未完成，最终 cleanup 仍附着在 settlement promise 上。Allocation 的终态 record 会移除 root exposure，但不会结算尚未完成的 provider operation。Preparation、reservation、materialization、restoration 或 activation 在关闭后才返回时，会完成 abandon/release，而不会发布新的 Agent root。
 
+Agent Client 与 activation controller 通过共享 Team operation tracker 保留每个原始 accepted promise，在诊断前移除它，并各自抑制关闭期间的警告。诊断 callback 失败会被包含，不能恢复已结束的所有权或产生未观察的 rejection。header 标识对解析与 scoped Team 工具共享；返回的引用不提供活动 binding authority，所有已有 current-connection 与 await 后检查仍由消费者负责。
+
 若 restoration 已返回 handle，但 activation 或 root publication 失败，client 会执行 unpublished-allocation cleanup：记录 release intent、释放准确 handle、确认 release。物理 release 失败时记录 preservation；确认失败时保留 release intent。原始失败和 cleanup 失败都会保持可观察。
 
 物化在输入准入前丢失执行环境时，故障处理复用当前投递操作已持有的 Agent 串行队列，不能再次排到自身之后。已确认终止时释放预留；未确认时保留 unavailable 责任并将 Team 置为 stalled。两条路径都不会发起工作者模型请求。

@@ -27,7 +27,7 @@ export function CommandRecord({ value, connected, query, retry, t, navigate, nav
   const kind = value.command.kind === 'retry-request' && result?.kind === 'request' ? result.value.kind : value.command.kind
   const observation = value.requestObservation
   const authoritativeTerminal = observation !== undefined && observation.status !== 'accepted'
-  const retryBlocked = value.requestObservationUnavailable || authoritativeTerminal || observation?.comparison === 'conflict'
+  const retryBlocked = value.notAccepted || value.requestObservationUnavailable || authoritativeTerminal || observation?.comparison === 'conflict'
   const unresolved = value.requestObservationUnavailable || value.unknown || result === undefined || result.value.status === 'accepted' || result.value.status === 'in-progress'
     || observation?.comparison === 'conflict'
     || result.kind === 'ingress' && (result.value.status === 'pending' || result.value.status === 'claimed')
@@ -39,7 +39,8 @@ export function CommandRecord({ value, connected, query, retry, t, navigate, nav
       runId={result.value.runId} t={t} navigate={navigate} navigateApplication={navigateApplication} />}
     {result.kind === 'request' && result.value.failure !== undefined && <p>{t(`requestFailure.${result.value.failure}`)}</p>}
   </>
-  return <section className={css.command} aria-label={t('originalCommand')}>
+  const outcomeUnknown = value.unknown && !authoritativeTerminal
+  return <section className={css.command} aria-label={t('originalCommand')} data-outcome-unknown={outcomeUnknown || undefined}>
     <h3>{t(`command.${kind}`)}</h3>
     <code>{id}</code>{value.command.kind === 'restore' && <p>{t('checkpointId')}: <code>{value.command.input.checkpointId}</code></p>}
     {value.command.kind === 'retry-operation' && <p><code>{value.command.input.operationId}</code> · {t('operationRetry.fence')}: {value.command.input.expectedAttemptCount}</p>}
@@ -66,9 +67,9 @@ export function CommandRecord({ value, connected, query, retry, t, navigate, nav
         ? <details><summary>{t(value.requestObservationUnavailable || observation?.comparison === 'conflict' ? 'requests.localReceipt' : 'requests.earlierReceipt')}</summary>{receiptContent}</details>
         : receiptContent}
     </div>
-    {unresolved && <div className={css.actions}>
+    {unresolved && !value.notAccepted && <div className={css.actions}>
       <Button disabled={!connected || value.pending} aria-busy={value.pending} onClick={() => { void query() }}>{t('queryOriginal')}</Button>
-      {!retryBlocked && <Button variant="outline" disabled={!connected || value.pending} aria-busy={value.pending} onClick={() => { void retry() }}>{t('retryOriginal')}</Button>}
+      {!retryBlocked && <Button variant="secondary" disabled={!connected || value.pending} aria-busy={value.pending} onClick={() => { void retry() }}>{t('retryOriginal')}</Button>}
     </div>}
     {!unresolved && (alwaysQuery || result.kind === 'request' && result.value.diagnostic !== undefined) && <Button disabled={!connected || value.pending} aria-busy={value.pending}
       onClick={() => { void query() }}>{t('queryOriginal')}</Button>}

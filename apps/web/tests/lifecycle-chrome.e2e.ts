@@ -90,6 +90,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     await launcher.click()
     const menu = commandPage.getByRole('listbox', { name: 'Trigger suggestions' })
     await menu.waitFor({ timeout: 10_000 })
+    await menu.getByRole('option').first().waitFor({ timeout: 10_000 })
     const snapshot = await captureStableAria(commandPage, '[role="listbox"]', commandScaffold.workspaceCwd)
     await compareOrRefreshGolden(COMMAND_MENU_EXPECTED, snapshot, MODE)
     expect(snapshot).toContain('text: Commands')
@@ -145,6 +146,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       await activePage.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
       const planButton = activePage.getByRole('button', { name: 'Plan mode on, press to turn off' })
       await planButton.waitFor({ timeout: 10_000 })
+      await activePage.getByRole('button', { name: 'Select model, current Test Model', exact: true }).waitFor()
       // The golden encodes an empty composer, and the button arriving does not
       // mean the submitted text is gone yet: under load the capture can catch
       // a textbox still holding `/plan`.
@@ -152,8 +154,8 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       await compareOrRefreshGolden(PLAN_ACTIVE_EXPECTED, planSnapshot, MODE)
       const planStyle = await planButton.evaluate((element) => {
         const probe = document.createElement('span')
-        probe.style.color = 'var(--clocky-alias-state-warn-label)'
-        probe.style.backgroundColor = 'var(--clocky-alias-state-warn-tertiary)'
+        probe.style.color = 'var(--clocky-status-needs-you-fg)'
+        probe.style.backgroundColor = 'var(--clocky-status-needs-you-bg)'
         document.body.append(probe)
         const actual = getComputedStyle(element)
         const reference = getComputedStyle(probe)
@@ -170,7 +172,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       })
       expect(planStyle.color).toBe(planStyle.referenceColor)
       expect(planStyle.backgroundColor).toBe(planStyle.referenceBackgroundColor)
-      expect(planStyle.borderRadius).toBe('999px')
+      expect(planStyle.borderRadius).toBe('9999px')
       expect(planStyle.fontSize).toBe('13px')
       await planButton.click()
       await expect.poll(() => planButton.count()).toBe(0)
@@ -230,11 +232,17 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
   it.skipIf(MODE === 'record')('materialized a Team and coordinator Session over the wire', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-lifecycle-materialize'))
     await expect.poll(
-      () => page.locator('section[aria-label="Team directory"] button').filter({ hasText: PROMPT }).count(),
+      // Rows show a short title; the full objective is the row's tooltip and accessible name.
+      () => page.locator('section[aria-label="Team directory"] button').and(page.getByTitle(PROMPT, { exact: true })).count(),
       { timeout: 15_000 },
     ).toBe(1)
     await expect.poll(() => page.getByText('LIGHTHOUSE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
+    // Cache share lives in the statistics popover; only turn and step counts stay inline.
+    const statistics = page.getByRole('button', { name: 'Session statistics' })
+    await statistics.waitFor({ timeout: 15_000 })
+    await statistics.click()
     await expect.poll(() => page.getByText('Cache hit 99.5%', { exact: true }).count(), { timeout: 15_000 }).toBe(1)
+    await page.keyboard.press('Escape')
     // Host: the Team owns one coordinator Session whose cwd is the scaffold
     // execution root; no Workspace/Session browser is part of the shipped
     // product roster.
@@ -257,7 +265,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     // Select the completed coordinator record explicitly before testing route restoration.
     await openCoordinatorConversation(page)
     const warningStart = tripwire.warnings.length
-    const beforeReload = { url: page.url(), open: await page.locator('dialog[data-inspecting][open]').count() }
+    const beforeReload = { url: page.url(), open: await page.locator('[data-conversation-pane]').count() }
     await page.reload({ waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
@@ -266,7 +274,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     const [persisted] = await scaffold.ctx.sessionPersistence.list()
     if (persisted === undefined) throw new Error('The coordinator was not persisted')
     await expect.poll(() => new URL(page.url()).searchParams.get('session'), { message: JSON.stringify(beforeReload) }).toBe(persisted.id)
-    await page.locator('dialog[data-inspecting][open]').waitFor({ timeout: 15000 })
+    await page.locator('[data-conversation-pane]').waitFor({ timeout: 15000 })
     expect(sessionEvents.filter(event => event.type === 'turn/start')).toHaveLength(1)
     await expect.poll(() => page.getByText('LIGHTHOUSE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
     // Golden of the recovered conversation region: rebuilt from the log, it
@@ -287,7 +295,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       await page.evaluate(() => {
         const sidebar = document.querySelector('[class*="sidebar"], [class*="rail"]') ?? document.body
         return {
-          token: getComputedStyle(document.body).getPropertyValue('--clocky-alias-bg-base').trim(),
+          token: getComputedStyle(document.body).getPropertyValue('--clocky-bg-canvas').trim(),
           sidebarBg: getComputedStyle(sidebar).backgroundColor,
           bodyBg: getComputedStyle(document.body).backgroundColor,
         }

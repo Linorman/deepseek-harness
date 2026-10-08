@@ -2,7 +2,7 @@ import { WorkspaceNavigationError } from './navigation-error.ts'
 /** Shareable Team view parameters; Host authorization still owns every referenced object. */
 import type { ChannelId, ParticipantId, SessionId, TeamId, TeamTaskId } from '@clocky/clocky-client-runtime/client'
 import type { TeamTaskDialogTarget } from './task-draft.ts'
-import type { TeamViewState, TeamWorkspaceView } from './workspace-store.ts'
+import type { TeamOverviewViz, TeamViewState, TeamWorkspaceView } from './workspace-store.ts'
 import { TEAM_ROUTE_KEYS } from '@clocky/clocky-client-ui-layout/client'
 
 /** JSON-only navigation state, excluding drafts and authorization material. */
@@ -18,9 +18,12 @@ export interface WorkspaceRoute {
   readonly participantId?: ParticipantId | undefined
   readonly search: string
   readonly phase: TeamViewState['taskPhase']
+  /** Overview visualization; absent means the default topology. */
+  readonly viz?: TeamOverviewViz | undefined
 }
 
 const views: readonly string[] = ['overview', 'tasks', 'channels', 'members', 'artifacts', 'workflows', 'audit', 'attention']
+const vizModes: readonly string[] = ['topology', 'flow', 'lanes', 'list']
 const phases: readonly string[] = ['all', 'pending', 'assigned', 'running', 'review', 'completed', 'failed', 'cancelled']
 
 /**
@@ -36,6 +39,8 @@ export function readWorkspaceRoute(href: string): WorkspaceRoute | undefined {
   const view = query.get('view') ?? 'overview'
   const phase = query.get('status') ?? 'all'
   if (!views.includes(view) || !phases.includes(phase)) throw new WorkspaceNavigationError('invalid', 'This workspace view is not available')
+  const viz = query.get('viz')
+  if (viz !== null && !vizModes.includes(viz)) throw new WorkspaceNavigationError('invalid', 'This visualization is not available')
   const form = query.get('form')
   const formTask = query.get('formTask')
   let taskForm: TeamTaskDialogTarget | undefined
@@ -59,6 +64,7 @@ export function readWorkspaceRoute(href: string): WorkspaceRoute | undefined {
     sessionId: (query.get('session') || undefined) as SessionId | undefined,
     participantId: (query.get('participant') || undefined) as ParticipantId | undefined,
     search: query.get('q') ?? '',
+    ...viz === null ? {} : { viz: viz as TeamOverviewViz },
   }
 }
 
@@ -74,6 +80,7 @@ export function workspaceRouteUrl(href: string, route: WorkspaceRoute | undefine
   if (route !== undefined) {
     url.searchParams.set('team', route.teamId)
     url.searchParams.set('view', route.view)
+    if (route.viz !== undefined && route.viz !== 'topology') url.searchParams.set('viz', route.viz)
     if (route.taskForm !== undefined) {
       url.searchParams.set('form', route.taskForm.kind)
       if ('taskId' in route.taskForm) url.searchParams.set('formTask', route.taskForm.taskId)

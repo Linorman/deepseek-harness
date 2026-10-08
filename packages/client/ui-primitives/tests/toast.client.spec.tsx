@@ -6,22 +6,24 @@ import { Toast } from '../src/Toast.tsx'
 
 afterEach(cleanup)
 
+/** jsdom has no AnimationEvent; name the ended keyframes as a scoped CSS module would. */
+function endAnimation(element: Element, animationName: string): void {
+  const event = new Event('animationend', { bubbles: true })
+  Object.defineProperty(event, 'animationName', { value: animationName })
+  element.dispatchEvent(event)
+}
+
 describe('Toast', () => {
-  it('announces its text and reports done after the hold-and-fade lifetime', () => {
-    vi.useFakeTimers()
-    try {
-      const onDone = vi.fn()
-      const view = render(<Toast text="最多添加 50 张图片" icon={<svg data-testid="icon" />} onDone={onDone} />)
-      const banner = view.getByRole('alert')
-      expect(banner.textContent).toContain('最多添加 50 张图片')
-      expect(view.getByTestId('icon')).toBeTruthy()
-      vi.advanceTimersByTime(3999)
-      expect(onDone).not.toHaveBeenCalled()
-      vi.advanceTimersByTime(1)
-      expect(onDone).toHaveBeenCalledTimes(1)
-    } finally {
-      vi.useRealTimers()
-    }
+  it('announces its text and reports done only when the exit fade ends', () => {
+    const onDone = vi.fn()
+    const view = render(<Toast text="最多添加 50 张图片" icon={<svg data-testid="icon" />} onDone={onDone} />)
+    const banner = view.getByRole('alert')
+    expect(banner.textContent).toContain('最多添加 50 张图片')
+    expect(view.getByTestId('icon')).toBeTruthy()
+    endAnimation(banner, '_clocky-toast-in_x1')
+    expect(onDone).not.toHaveBeenCalled()
+    endAnimation(banner, '_clocky-toast-fade_x1')
+    expect(onDone).toHaveBeenCalledTimes(1)
   })
 
   it('centers over its anchor and re-measures on window resize', () => {
@@ -41,17 +43,8 @@ describe('Toast', () => {
     }
   })
 
-  it('renders without an icon and cancels its timer on unmount', () => {
-    vi.useFakeTimers()
-    try {
-      const onDone = vi.fn()
-      const view = render(<Toast text="plain" onDone={onDone} />)
-      expect(view.getByRole('alert').querySelector('[aria-hidden]')).toBeNull()
-      view.unmount()
-      vi.advanceTimersByTime(10_000)
-      expect(onDone).not.toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
+  it('renders without an icon', () => {
+    const view = render(<Toast text="plain" onDone={vi.fn()} />)
+    expect(view.getByRole('alert').querySelector('[aria-hidden]')).toBeNull()
   })
 })

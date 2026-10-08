@@ -35,3 +35,13 @@ export function checkpointRule(message: string, stage: SimulationCheckpointDiagn
   code: SimulationCheckpointDiagnostic['code'], subject: SimulationCheckpointSubject): SimulationCheckpointError {
   return new SimulationCheckpointError(message, { stage, code, subject })
 }
+
+/** Classify only owner movement failures that permit another bounded collection or recovery attempt.
+ * @param error - Current owner-read failure, before the caller decides whether its retry allowance remains.
+ * @returns whether the failed observation moved rather than violating ownership or availability.
+ */
+export function checkpointOwnerMoved(error: unknown): boolean {
+  return error instanceof SimulationCheckpointError && error.diagnostic.code === 'source-moved'
+    || error instanceof SessionPersistenceReferenceChanged
+    || error instanceof TeamError && (error.code === 'TEAM_CURSOR_CONFLICT' || error.code === 'TEAM_CHANNEL_CURSOR_CONFLICT')
+}

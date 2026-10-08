@@ -10,6 +10,10 @@ Team telemetry seam 的 OpenTelemetry Service Provider。仅应在拥有 OTLP/HT
 
 本包是显式 provider，不属于默认 Team bundle。Deployment 可以额外注册 `team-telemetry/record` listener，在本 backend 接收前 redaction 或 enrichment record。Export 遵循 OpenTelemetry SDK processor 的 at-least-once 语义；provider 不宣称 telemetry durable delivery 或 alert exactly-once。
 
+## 共享 SDK pipeline
+
+本 backend 使用独立的 `@clocky/clocky-session-telemetry-otel/pipeline` SDK 支撑 subpath，不挂载 Session backend，也不采用其共享 policy。Team provider 保留 capture、redaction、severity 映射、alert、instrumentation scope 及有界 shutdown；只共享 SDK 构造与 record 字段映射。Host build 生成所需的编译 subpath。
+
 ## 配置
 
 ```ts

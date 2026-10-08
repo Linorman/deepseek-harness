@@ -131,10 +131,12 @@ describe('the General-settings row', () => {
     expect(screen.getByRole('button')).toHaveProperty('disabled', true)
   })
 
-  it('shows a failure in place of the description', () => {
-    renderRow({ error: 'roster unavailable' })
+  it('shows a product-worded failure in place of the description and keeps the raw cause on hover', () => {
+    renderRow({ error: 'transport failure for /api/agentPreset.list: HTTP 401' })
 
-    expect(screen.getByRole('alert').textContent).toBe('roster unavailable')
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toBe(en.error)
+    expect(alert.getAttribute('title')).toBe('transport failure for /api/agentPreset.list: HTTP 401')
   })
 
   it('renders nothing when the deployment composes no presets', () => {

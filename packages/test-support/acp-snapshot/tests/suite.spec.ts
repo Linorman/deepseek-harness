@@ -821,6 +821,20 @@ describe('stabilizeFixtureMessageIds', () => {
     expect(stabilizeFixtureMessageIds([fresh], [''])).toEqual([fresh])
   })
 
+  it('reconstructs versioned Simulation sections while preserving their already stable identities', () => {
+    const data = {
+      version: 1, runId: 'run-view', entityId: 'entity-view', windowId: 'window-view',
+      slot: '0', epoch: '1', time: '0', inputId: 'input-view',
+      projections: { run: 0, entity: 0, team: 0 },
+      versions: { rules: 'rules', policy: 'policy', persona: 'persona', model: 'model' },
+      sources: [], content: [{ kind: 'identity', blocks: [{ type: 'text', text: 'stored Simulation view' }] }],
+    }
+    const record = JSON.stringify({ type: 'simulation/context-view', data }) + '\n'
+    expect(stabilizeFixtureMessageIds([record], [record])).toEqual([record])
+    const malformed = JSON.stringify({ type: 'simulation/context-view', data: { ...data, epoch: '0' } }) + '\n'
+    expect(() => stabilizeFixtureMessageIds([malformed], [record])).toThrow('acp-snapshot: invalid Simulation context')
+  })
+
   it('reconstructs Team channel views and accepts their stable non-UUID message ids', () => {
     const view = {
       type: 'team/channel-view',

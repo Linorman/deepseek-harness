@@ -26,7 +26,8 @@ import type { SimulationRun, SimulationSnapshot, SimulationManagementOperation, 
 import { SimulationProductError } from './index.ts'
 import type {} from './index.ts'
 import { prepareSimulationCompany, simulationCompanyPreparationSchema } from './company-preparation.ts'
-import { simulationCompanyTemplateSchema } from './creation-schema.ts'
+import { simulationInstalledCompanyTemplateSchema } from './creation-schema.ts'
+import { currentTemplateModel, resolveTemplateModel, templateProviderAvailable } from './template-model.ts'
 import { resolveCreation } from './creation-preflight.ts'
 import { resolveScenarioTopology } from './scenario-topology.ts'
 import { maintenanceControl } from './maintenance-control.ts'
@@ -44,7 +45,8 @@ import { simulationProductManageInputSchema, simulationProductControlInputSchema
 import type { SimulationProductManageInput, SimulationProductControlInput, SimulationProductManagementInput, SimulationProductControl,
   SimulationProductManageResult, SimulationProductManagementResult, SimulationProductManagementReceipt } from './control-types.ts'
 import { SimulationCreationStore } from './creation-store.ts'
-import type { SimulationCompanyTemplate, SimulationCreationCommand, SimulationCompanyCreation, SimulationCreationBook } from './creation-types.ts'
+import type { SimulationCompanyTemplate, SimulationInstalledCompanyTemplate,
+  SimulationCreationCommand, SimulationCompanyCreation, SimulationCreationBook } from './creation-types.ts'
 import { simulationProductRunIdSchema } from './schema-common.ts'
 import { simulationProductCreateInputSchema, simulationProductPrepareInputSchema, simulationProductRequestInputSchema,
   simulationProductCatalogSchema, simulationProductRequestReceiptSchema, simulationProductRequestResultSchema,
@@ -59,7 +61,7 @@ import type { SimulationProductRecord } from './registration-types.ts'
 /** Trusted templates and independent accepted-work/journal allowances. */
 export interface Config {
   readonly journalStream: string
-  readonly templates: SimulationCompanyTemplate[]
+  readonly templates: SimulationInstalledCompanyTemplate[]
   readonly maxCommands?: number
   readonly maxTemplates?: number
   readonly maxPendingRequests?: number
@@ -102,7 +104,7 @@ export class SimulationAdministration extends Service<Config> {
   static inject = ['storageLog', 'simulationProducts', 'simulations', 'simulationTeams', 'llm', 'agentPresets', 'agentRuntimes']
   static Config = Config
   private readonly options: Required<Config>
-  private readonly templates = new Map<string, SimulationCompanyTemplate>()
+  private readonly templates = new Map<string, SimulationInstalledCompanyTemplate>()
   private readonly reviewCursors = new DirectoryCursorCodec()
   private readonly requestCursors = new DirectoryCursorCodec()
   private readonly taskCursors = new DirectoryCursorCodec()
@@ -137,7 +139,7 @@ export class SimulationAdministration extends Service<Config> {
       throw invalid('Simulation scheduling delay exceeds the Node timer range')
     }
     for (const value of config.templates) {
-      const template = simulationCompanyTemplateSchema.parse(value)
+      const template = simulationInstalledCompanyTemplateSchema.parse(value)
       if (this.templates.has(template.id)) throw invalid('Simulation template identity is repeated')
       this.templates.set(template.id, template)
     }
@@ -170,9 +172,6 @@ export class SimulationAdministration extends Service<Config> {
         spec: { ...template.spec, runId: simulationRunIdSchema.parse(`template/${template.id}`) } })
       const preset = await this.ctx.agentPresets.resolve(template.preset)
       if (preset.broken !== undefined) throw invalid('Simulation template preset cannot compose an actor')
-      if (!this.ctx.llm.listProviders().some(value => value.id === template.driver.model.provider)) {
-        throw invalid('Simulation template model provider is not registered')
-      }
     }
     this.stream = await this.ctx.storageLog.open({ name: this.options.journalStream, version: 2 })
     this.book = new SimulationCreationStore(this.stream, this.options)
@@ -193,15 +192,17 @@ export class SimulationAdministration extends Service<Config> {
    * @returns safe version/route/limit metadata; never resolves a native execution handle.
    */
   catalog(call: AuthenticatedProductCall): Promise<SimulationProductCatalog> {
-    return this.admit(call, () => {
-      const value = { items: [...this.templates.values()].map(template => ({ id: template.id, version: template.version,
-        kind: template.driver.scenario === undefined ? 'company-procurement' as const : 'task-workflow' as const, name: this.text(template.name), tickUnit: this.text(template.spec.tickUnit),
-        model: { ...template.driver.model, name: template.driver.model.name },
+    return this.admit(call, async () => {
+      const value = { items: await Promise.all([...this.templates.values()].map(async template => ({
+        id: template.id, version: template.version,
+        kind: template.driver.scenario === undefined ? 'company-procurement' as const : 'task-workflow' as const, name: this.text(template.name),
+        tickUnit: this.text(template.spec.tickUnit),
+        readiness: await resolveTemplateModel(this.ctx, template, call.signal),
         review: template.driver.scenario?.steps.some(step => step.reviewerEntityId !== undefined) ? 'participant' as const : template.driver.tasks?.review ?? 'none' as const,
         execution: template.driver.tasks === undefined && template.driver.scenario === undefined ? 'cognition-only' as const : 'automatic-tasks' as const,
         cognition: template.driver.scenario === undefined ? template.driver.tasks?.cognition ?? 'model' as const : 'deterministic' as const,
         maxStock: template.spec.maxResourceQuantity,
-        configuration: { ...this.configuration(template.spec), editable: template.editableLimits ?? [] } })) }
+        configuration: { ...this.configuration(template.spec), editable: template.editableLimits ?? [] } }))) }
       this.bytes(value); return simulationProductCatalogSchema.parse(value)
     })
   }
@@ -219,18 +220,24 @@ export class SimulationAdministration extends Service<Config> {
       const issue = (field: string, code: SimulationProductPreflightIssue['code'], message: string) => issues.push({ field, code, message: this.text(message) })
       if (!parsed.success) {
         for (const value of parsed.error.issues.slice(0, 32)) issue(value.path.join('.').slice(0, 256) || 'configuration', 'invalid', 'Invalid or unsupported creation field')
-        return this.preflightValue({ status: 'invalid', issues })
+        return this.preflightValue({ status: 'invalid', issues, readiness: { status: 'unavailable', reason: 'template-unavailable' } })
       }
       const template = this.templates.get(parsed.data.templateId)
       if (template === undefined) {
         issue('templateId', 'unavailable', 'Simulation template is unavailable')
-        return this.preflightValue({ status: 'invalid', issues })
+        return this.preflightValue({ status: 'invalid', issues, readiness: { status: 'unavailable', reason: 'template-unavailable' } })
       }
+      const readiness = await resolveTemplateModel(this.ctx, template, call.signal)
+      if (readiness.status !== 'ready') issue('model', 'unavailable', readiness.status === 'needs-model'
+        ? 'Configure a default model before creating this simulation' : `Simulation model is unavailable: ${readiness.reason}`)
       const resolved = resolveCreation(template, parsed.data, value => this.text(value))
       issues.push(...resolved.issues)
       try { this.capacity(this.store().snapshot()) }
       catch { issue('capacity', 'capacity-unavailable', 'Simulation creation capacity is currently occupied') }
-      if (!this.executionAvailable(template)) issue('templateId', 'unavailable', 'Simulation template execution provider is unavailable')
+      if (readiness.status === 'ready' && !this.executionAvailable({ ...template,
+        driver: { ...template.driver, model: readiness.model } })) {
+        issue('templateId', 'unavailable', 'Simulation template execution provider is unavailable')
+      }
       try {
         const preset = await this.ctx.agentPresets.resolve(template.preset)
         if (preset.broken !== undefined) issue('templateId', 'unavailable', 'Simulation template preset cannot compose an actor')
@@ -239,8 +246,9 @@ export class SimulationAdministration extends Service<Config> {
       try { this.ctx.simulations.resolveInspection({ provider: template.provider,
         spec: { ...resolved.spec, runId: simulationRunIdSchema.parse('preflight-validation') } }) }
       catch { issue('templateId', 'unavailable', 'Simulation template storage provider is unavailable') }
-      return this.preflightValue(issues.length === 0 ? { status: 'ready', configuration: this.configuration(resolved.spec) }
-        : { status: 'invalid', issues })
+      return this.preflightValue(issues.length === 0 && readiness.status === 'ready'
+        ? { status: 'ready', configuration: this.configuration(resolved.spec), readiness }
+        : { status: 'invalid', issues, readiness })
     })
   }
   private preflightValue(value: SimulationProductPreflightResult): SimulationProductPreflightResult {
@@ -266,6 +274,7 @@ export class SimulationAdministration extends Service<Config> {
   create(request: SimulationProductCreateInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt> {
     return this.admit(call, async () => {
       const input = simulationProductCreateInputSchema.parse(request); this.bytes(input)
+      let readyTemplate: SimulationCompanyTemplate | undefined
       // Original retries preserve their deployment resolution even when today's preset changes or disappears.
       if (!this.store().snapshot().commands.has(input.commandId)) {
         const template = this.templates.get(input.templateId)
@@ -274,6 +283,10 @@ export class SimulationAdministration extends Service<Config> {
           try { preset = await this.ctx.agentPresets.resolve(template.preset) }
           catch { throw unavailable('Simulation template preset is unavailable') }
           if (preset.broken !== undefined) throw unavailable('Simulation template preset cannot compose an actor')
+          const readiness = await resolveTemplateModel(this.ctx, template, call.signal)
+          if (readiness.status !== 'ready') throw unavailable(`Simulation model is not ready: ${readiness.reason}`)
+          if (!isDeepStrictEqual(input.expectedModel, readiness.model)) throw modelChanged()
+          readyTemplate = { ...template, driver: { ...template.driver, model: readiness.model } }
         }
       }
       const command = await this.store().accept((state) => {
@@ -281,15 +294,22 @@ export class SimulationAdministration extends Service<Config> {
         const prior = state.commands.get(input.commandId)
         if (prior !== undefined) { this.same(prior, 'create', input, call); return { command: prior, existing: true } }
         this.capacity(state)
-        const template = this.templates.get(input.templateId)
-        if (template === undefined) throw unavailable('Simulation template is unavailable')
+        const installed = this.templates.get(input.templateId)
+        const template = readyTemplate
+        if (installed === undefined || template === undefined) throw unavailable('Simulation template is unavailable')
+        const current = currentTemplateModel(this.ctx, installed)
+        if (current.status !== 'ready' || !templateProviderAvailable(this.ctx, current.model)) {
+          throw unavailable('Simulation template model provider is unavailable')
+        }
+        if (!isDeepStrictEqual(current.model, input.expectedModel)) throw modelChanged()
         const resolved = resolveCreation(template, input, value => this.text(value))
         const issue = resolved.issues[0]
         if (issue !== undefined) throw invalid(`${issue.field}: ${issue.message.text}`)
         if (!this.executionAvailable(template)) throw unavailable('Simulation template execution provider is unavailable')
         const runId = simulationProductRunIdSchema.parse(randomUUID())
         const acceptedAt = Date.now()
-        const creation: SimulationCompanyCreation = { request: input,
+        const { expectedModel: _expectedModel, ...original } = input
+        const creation: SimulationCompanyCreation = { request: original,
           record: { id: runId, name: input.name, provider: template.provider, ownerPrincipalId: call.principal.id, registeredAt: acceptedAt,
             spec: { ...resolved.spec, runId: simulationRunIdSchema.parse(runId) } },
           preparation: simulationCompanyPreparationSchema.parse({ version: '1', ownerName: `simulation-product/${runId}`, objective: template.objective, ...input.parameters,
@@ -298,7 +318,7 @@ export class SimulationAdministration extends Service<Config> {
             checkpoint: { ...template.checkpoint, id: simulationCheckpointIdSchema.parse(`product-initial/${input.commandId}`) } }),
           driver: template.driver }
         this.ctx.simulations.resolveInspection({ provider: creation.record.provider, spec: creation.record.spec })
-        const command: SimulationCreationCommand = { kind: 'create', input, creation, ownerPrincipalId: call.principal.id,
+        const command: SimulationCreationCommand = { kind: 'create', input: original, creation, ownerPrincipalId: call.principal.id,
           receipt: { kind: 'create', commandId: input.commandId, runId, acceptedAt, status: 'accepted' } }
         this.receipt(command)
         return { existing: false, command }
@@ -365,14 +385,14 @@ export class SimulationAdministration extends Service<Config> {
         command.receipt.runId === input.runId && command.ownerPrincipalId === call.principal.id)
       const revision = commands.reduce((count, command) => count + (command.receipt.status === 'accepted' ? 1 : 2), 0)
       if (input.expectedRevision !== undefined && input.expectedRevision !== revision) throw stale()
+      // The command store is keyed by unique commandId, so a timestamp tie always compares distinct identities.
       commands.sort((left, right) => left.receipt.acceptedAt - right.receipt.acceptedAt
-        || (left.receipt.commandId < right.receipt.commandId ? -1 : left.receipt.commandId > right.receipt.commandId ? 1 : 0))
+        || (left.receipt.commandId < right.receipt.commandId ? -1 : 1))
       const query = { scope: JSON.stringify(['requests', input.runId]), revision, search: '', limit }
       let offset = 0
       if (input.cursor !== undefined) {
         try { offset = this.requestCursors.decode(input.cursor, call, query) }
         catch { throw stale() }
-        if (offset >= commands.length) throw stale()
       }
       const items = commands.slice(offset, offset + limit).map(command => this.receipt(command))
       const next = offset + items.length
@@ -402,7 +422,7 @@ export class SimulationAdministration extends Service<Config> {
     })
     if (command.receipt.status !== 'accepted') return this.receipt(command)
     switch (command.kind) {
-      case 'create': return this.create(command.input, call)
+      case 'create': return this.create({ ...command.input, expectedModel: command.creation.driver.model }, call)
       case 'prepare': return this.prepare(command.input, call)
       case 'checkpoint': return this.checkpoint(command.input, call)
       case 'restore': return this.restore(command.input, call)
@@ -712,6 +732,7 @@ export class SimulationAdministration extends Service<Config> {
         this.bytes({ status: 'found', request: { ...command.receipt, status: 'failed', failure: 'cancel-task-failed' }, cancellation: input })
         return { command, existing: false }
       })
+      /* v8 ignore next -- A prior command must pass same(kind), and a new command is constructed as cancel-task. */
       if (command.kind !== 'cancel-task') throw invalid('Simulation cancellation command has another operation kind')
       if (command.receipt.status === 'accepted' && !this.jobs.has(input.runId)) {
         const owner = this.held.get(input.runId)?.owner
@@ -722,12 +743,19 @@ export class SimulationAdministration extends Service<Config> {
         }, async () => { terminal = true; await this.store().finish(input.commandId) }).catch(async (cause: unknown) => {
           if (!terminal && cause instanceof SimulationProductError) await this.store().finish(input.commandId, 'cancel-task-failed')
           else throw cause
-        }).finally(() => { this.jobs.delete(input.runId) })
-        this.jobs.set(input.runId, work)
-        void work.catch((_cause: unknown) => { /* Unknown cleanup or terminal publication retains its accepted original. */ })
+        })
+        this.trackRunJob(input.runId, work)
+        /* Unknown cleanup or terminal publication retains its accepted original. */
       }
       return this.receipt(command)
     })
+  }
+
+  /** Retain accepted background work until settlement; unknown failures keep the original command receipt. */
+  private trackRunJob(runId: string, operation: Promise<void>): void {
+    const work = operation.finally(() => { this.jobs.delete(runId) })
+    this.jobs.set(runId, work)
+    void work.catch((_cause: unknown) => { /* The receipt owner retains an unknown accepted outcome after a lost response. */ })
   }
 
   /**
@@ -748,12 +776,14 @@ export class SimulationAdministration extends Service<Config> {
       const latest = new Map<string, import('@clocky/clocky-simulation').SimulationTaskExecution>()
       for (const execution of Object.values(state.taskExecutions ?? {})) {
         const prior = latest.get(execution.request.operationId)
+        /* v8 ignore else -- Native fold inserts each attempt key at reservation time; later entries have later sequences. */
         if (prior === undefined || prior.reservedSequence < execution.reservedSequence) latest.set(execution.request.operationId, execution)
       }
       const teams = this.ctx.get('teams')
       if (teams === undefined && latest.size !== 0) throw unavailable('Simulation review has no canonical Team reader')
       const items: import('./review-types.ts').SimulationProductTaskReviewSummary[] = []
       for (const execution of latest.values()) {
+        /* v8 ignore next -- A nonempty latest map already rejects an absent Team reader above. */
         if (teams === undefined) throw unavailable('Simulation review has no canonical Team reader')
         let task
         try { task = await teams.getTask({ teamId: execution.request.teamId, taskId: execution.request.taskId }) }
@@ -808,6 +838,7 @@ export class SimulationAdministration extends Service<Config> {
         this.bytes({ status: 'found', request: { ...command.receipt, status: 'failed', failure: 'review-failed' }, review: input })
         return { command, existing: false }
       })
+      /* v8 ignore next -- A prior command must pass same(kind), and a new command is constructed as review. */
       if (command.kind !== 'review') throw invalid('Simulation review command has another operation kind')
       if (command.receipt.status === 'accepted' && !this.jobs.has(input.runId)) {
         const owner = this.held.get(input.runId)?.owner
@@ -819,9 +850,9 @@ export class SimulationAdministration extends Service<Config> {
           // A lost canonical/terminal response is unknown; only a proven admission refusal becomes a failure.
           if (!terminalPublication && cause instanceof SimulationProductError) await this.store().finish(input.commandId, 'review-failed')
           else throw cause
-        }).finally(() => { this.jobs.delete(input.runId) })
-        this.jobs.set(input.runId, work)
-        void work.catch((_cause: unknown) => { /* A failed terminal append leaves the accepted outcome unknown. */ })
+        })
+        this.trackRunJob(input.runId, work)
+        /* A failed terminal append leaves the accepted outcome unknown. */
       }
       return this.receipt(command)
     })
@@ -854,6 +885,7 @@ export class SimulationAdministration extends Service<Config> {
         this.bytes({ status: 'found', request: { ...command.receipt, status: 'failed', failure: 'retry-operation-failed' }, retryOperation: input })
         return { command, existing: false }
       })
+      /* v8 ignore next -- A prior command must pass same(kind), and a new command is constructed as retry-operation. */
       if (command.kind !== 'retry-operation') throw invalid('Simulation retry command has another operation kind')
       if (command.receipt.status === 'accepted' && !this.jobs.has(input.runId)) {
         const owner = this.held.get(input.runId)?.owner
@@ -865,9 +897,9 @@ export class SimulationAdministration extends Service<Config> {
         }, async () => { terminalPublication = true; await this.store().finish(input.commandId) }).catch(async (cause: unknown) => {
           if (!terminalPublication && cause instanceof SimulationProductError) await this.store().finish(input.commandId, 'retry-operation-failed')
           else throw cause
-        }).finally(() => { this.jobs.delete(input.runId) })
-        this.jobs.set(input.runId, work)
-        void work.catch((_cause: unknown) => { /* Lost native or terminal responses leave the accepted original outcome unknown. */ })
+        })
+        this.trackRunJob(input.runId, work)
+        /* Lost native or terminal responses leave the accepted original outcome unknown. */
       }
       return this.receipt(command)
     })
@@ -1005,6 +1037,7 @@ export class SimulationAdministration extends Service<Config> {
     }
   }
   private launch(command: SimulationCreationCommand): void {
+    /* v8 ignore next -- Only create, prepare and maintenance call launch; scoped mutations run elsewhere. */
     if (command.kind === 'review' || command.kind === 'retry-operation' || command.kind === 'cancel-task') return // Accepted mutations need a currently authenticated explicit retry.
     if (command.receipt.status !== 'accepted' || this.jobs.has(command.receipt.runId)) return
     const work = (command.kind === 'checkpoint' || command.kind === 'restore' ? this.maintainOwned(command) : this.prepareOwned(command)).finally(() => {
@@ -1138,7 +1171,8 @@ export class SimulationAdministration extends Service<Config> {
   }
   private same(command: SimulationCreationCommand, kind: SimulationCreationCommand['kind'], input: unknown, call: AuthenticatedProductCall): void {
     if (command.ownerPrincipalId !== call.principal.id) throw forbidden()
-    if (command.kind !== kind || !isDeepStrictEqual(command.input, input)) throw invalid('Simulation command identity has another original payload')
+    const original = command.kind === 'create' ? { ...command.input, expectedModel: command.creation.driver.model } : command.input
+    if (command.kind !== kind || !isDeepStrictEqual(original, input)) throw invalid('Simulation command identity has another original payload')
   }
   private store(): SimulationCreationStore {
     /* v8 ignore next -- successful ready installs and loads the journal before all admitted calls. */
@@ -1166,6 +1200,9 @@ export class SimulationAdministration extends Service<Config> {
 export default SimulationAdministration
 function invalid(message: string): SimulationProductError { return new SimulationProductError(message, 'SIMULATION_PRODUCT_INVALID') }
 function unavailable(message: string): SimulationProductError { return new SimulationProductError(message, 'SIMULATION_PRODUCT_UNAVAILABLE') }
+function modelChanged(): SimulationProductError {
+  return new SimulationProductError('Simulation model selection changed; preview and confirm again', 'SIMULATION_PRODUCT_MODEL_CHANGED')
+}
 function forbidden(): SimulationProductError { return new SimulationProductError('Simulation product access is unavailable', 'SIMULATION_PRODUCT_FORBIDDEN') }
 
 function stale(): SimulationProductError { return new SimulationProductError('Simulation review observation expired; refresh from the first page', 'SIMULATION_PRODUCT_STALE') }

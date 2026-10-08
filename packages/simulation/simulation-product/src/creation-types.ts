@@ -7,8 +7,8 @@ import type { ProductPrincipalId } from '@clocky/clocky-product-principal'
 import type { SimulationRunSpec } from '@clocky/clocky-simulation'
 import type { SimulationCompanyPreparation } from './company-preparation.ts'
 import type { SimulationCompanyDriverConfig } from './company-driver.ts'
-import type { SimulationProductCreateInput, SimulationProductPrepareInput, SimulationProductRequestReceipt,
-  SimulationProductTemplateId, SimulationProductLimits } from './administration-types.ts'
+import type { SimulationProductPrepareInput, SimulationProductRequestReceipt,
+  SimulationProductTemplateId, SimulationProductLimits, SimulationProductOriginalCreateInput } from './administration-types.ts'
 import type { SimulationProductRecord } from './registration-types.ts'
 
 /** Trusted installed template; native run identity is allocated separately by the product owner. */
@@ -25,10 +25,16 @@ export interface SimulationCompanyTemplate {
   /** Explicit deployment allowlist; omitted fields retain the installed immutable specification. */
   readonly editableLimits?: readonly (keyof SimulationProductLimits)[] | undefined
 }
+/** Deployment-only late binding; this selector never enters a durable driver or native specification. */
+export interface SimulationInstalledCompanyTemplate extends Omit<SimulationCompanyTemplate, 'driver'> {
+  readonly driver: Omit<SimulationCompanyDriverConfig, 'model'> & {
+    readonly model: SimulationCompanyDriverConfig['model'] | { readonly source: 'agent-default' }
+  }
+}
 /** Exact original deployment resolution stored before any native creation IO. */
 export interface SimulationCompanyCreation {
   readonly record: SimulationProductRecord
-  readonly request: SimulationProductCreateInput
+  readonly request: SimulationProductOriginalCreateInput
   readonly preparation: SimulationCompanyPreparation
   readonly driver: SimulationCompanyDriverConfig
 }
@@ -37,7 +43,7 @@ export type SimulationCreationCommand = {
   readonly ownerPrincipalId: ProductPrincipalId
   readonly receipt: SimulationProductRequestReceipt
 } & (
-  | { readonly kind: 'create'; readonly input: SimulationProductCreateInput; readonly creation: SimulationCompanyCreation }
+  | { readonly kind: 'create'; readonly input: SimulationProductOriginalCreateInput; readonly creation: SimulationCompanyCreation }
   | { readonly kind: 'prepare'; readonly input: SimulationProductPrepareInput }
   | { readonly kind: 'checkpoint'; readonly input: SimulationProductCheckpointInput }
   | { readonly kind: 'restore'; readonly input: SimulationProductRestoreInput }

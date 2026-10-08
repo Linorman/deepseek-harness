@@ -1,0 +1,102 @@
+.glyph {
+  flex: none;
+  color: var(--status-fg);
+  transition: color var(--clocky-duration-base) var(--clocky-ease-standard);
+}
+
+.badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--clocky-space-1);
+  height: 22px;
+  padding: 0 var(--clocky-space-2) 0 var(--clocky-space-1);
+  border: 1px solid var(--status-border);
+  border-radius: var(--clocky-radius-full);
+  background: var(--status-bg);
+  color: var(--status-fg);
+  font: var(--clocky-type-caption);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color var(--clocky-duration-base) var(--clocky-ease-standard),
+    border-color var(--clocky-duration-base) var(--clocky-ease-standard),
+    color var(--clocky-duration-base) var(--clocky-ease-standard);
+}
+
+/* Needs-you announces itself once: a ring swells and fades when the badge
+   enters that state (or mounts in it), then stays still. */
+.badge[data-status='needs-you']::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--status-border);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  animation: needs-you-pulse var(--clocky-duration-deliberate) var(--clocky-ease-exit) 1;
+}
+
+@keyframes needs-you-pulse {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.25); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge[data-status='needs-you']::after {
+    animation: none;
+  }
+}
+
+[data-status='running'] { --status-fg: var(--clocky-status-running-fg); --status-bg: var(--clocky-status-running-bg); --status-border: var(--clocky-status-running-border); }
+[data-status='waiting'] { --status-fg: var(--clocky-status-waiting-fg); --status-bg: var(--clocky-status-waiting-bg); --status-border: var(--clocky-status-waiting-border); }
+[data-status='needs-you'] { --status-fg: var(--clocky-status-needs-you-fg); --status-bg: var(--clocky-status-needs-you-bg); --status-border: var(--clocky-status-needs-you-border); }
+[data-status='blocked'] { --status-fg: var(--clocky-status-blocked-fg); --status-bg: var(--clocky-status-blocked-bg); --status-border: var(--clocky-status-blocked-border); }
+[data-status='done'] { --status-fg: var(--clocky-status-done-fg); --status-bg: var(--clocky-status-done-bg); --status-border: var(--clocky-status-done-border); }
+[data-status='failed'] { --status-fg: var(--clocky-status-failed-fg); --status-bg: var(--clocky-status-failed-bg); --status-border: var(--clocky-status-failed-border); }
+[data-status='idle'] { --status-fg: var(--clocky-status-idle-fg); --status-bg: var(--clocky-status-idle-bg); --status-border: var(--clocky-status-idle-border); }
+
+.track {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  opacity: 0.25;
+}
+
+.arc {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  transform-origin: 8px 8px;
+  animation: status-spin var(--clocky-duration-spin) var(--clocky-ease-linear) infinite;
+}
+
+.ring,
+.stroke {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fill {
+  fill: currentColor;
+}
+
+.inverse {
+  fill: none;
+  stroke: var(--clocky-bg-surface);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.inverseFill {
+  fill: var(--clocky-bg-surface);
+}
+
+@keyframes status-spin {
+  to { transform: rotate(360deg); }
+}

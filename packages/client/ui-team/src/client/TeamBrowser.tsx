@@ -1,7 +1,9 @@
 /** Team list presentation for the sidebar's Team task seat. */
 
-import { useState } from 'react'
-import { IconFolderClose16, IconGoalOutline16, IconPlusOutline16 } from '@clocky/clocky-client-ui-primitives'
+import { useEffect, useState } from 'react'
+import {
+  IconFolderClose16, IconGoalOutline16, IconPlusOutline16, IconQueueOutline14, StatusGlyph, Tooltip,
+} from '@clocky/clocky-client-ui-primitives'
 import type {
   ChannelId,
   ChannelReadPageResult,
@@ -22,6 +24,17 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@clocky/clocky-clien
 import css from './TeamBrowser.module.css'
 import { teamPhaseKey } from './locales.ts'
 import { TeamInboxDialog, type TeamInboxControls } from './TeamInboxDialog.tsx'
+import { deriveShortTitle, relativeTime, sortTeams, teamStatus } from './team-row.ts'
+
+/** Re-render once a minute so relative times stay current without a store. */
+function useMinuteClock(): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => { setNow(Date.now()) }, 60_000)
+    return () => { clearInterval(timer) }
+  }, [])
+  return now
+}
 
 /** Browser-private actions and observable Team product state. */
 export interface TeamBrowserInjected extends Partial<TeamInboxControls> {
@@ -115,6 +128,11 @@ export type TeamBrowserProps =
   & InjectFace<TeamBrowserInjected>
   & PropsLocale<'team'>
 
+/** AbortController and host pickers may reject with DOMException instead of Error. */
+function isAbortError(reason: unknown): boolean {
+  return (reason instanceof DOMException || reason instanceof Error) && reason.name === 'AbortError'
+}
+
 /**
  * Render the Team task list and route Team selection through the injected owner.
  * @param props - Framework-composed Team browser props.
@@ -147,9 +165,37 @@ export function TeamBrowser({
   const [error, setError] = useState<string | undefined>()
   const [mutating, setMutating] = useState<TeamId | undefined>()
   const [workspacePicking, setWorkspacePicking] = useState(false)
-  const visibleError = error ?? state.error?.message
+  const now = useMinuteClock()
+  // Access refusals are explained once by the shell's connection banner; the
+  // list never repeats transport text. Other list failures show product words
+  // and keep the Host message on hover.
+  const listError = state.error === null || state.error.code === 'PRODUCT_AUTH_INVALID' || state.error.code === 'PRODUCT_AUTH_REQUIRED'
+    ? undefined : state.error.message
+  const visibleError = error ?? (listError === undefined ? undefined : t('list.loadFailed'))
+  const errorDetail = error ?? listError
+  const inbox = state.inbox
+  const unread = inbox === undefined ? 0 : inbox.items.filter(item => item.sequence > inbox.displayCursor).length
+  const inboxAvailable = inboxControls !== undefined && state.inbox !== undefined
+  const inboxDialog = inboxOpen && inboxControls !== undefined && state.inbox !== undefined && <TeamInboxDialog
+    state={state.inbox} teams={state.items} translate={t} openTeam={openTeam} onClose={() => { setInboxOpen(false) }} {...inboxControls}
+  />
+  const inboxLabel = unread > 0 ? `${t('inbox.title')}，${t('inbox.unreadCount', { count: unread })}` : t('inbox.title')
 
-  if (!wide) return null
+  if (!wide) {
+    // The collapsed rail keeps only the Inbox, as an icon with its count.
+    if (!inboxAvailable) return null
+    return (
+      <>
+        <Tooltip label={inboxLabel} delayMs={500}>
+          <button type="button" className={css.railInbox} aria-label={inboxLabel} onClick={() => { setInboxOpen(true) }}>
+            <IconQueueOutline14 size={18} />
+            {unread > 0 && <span className={css.railBadge} aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
+          </button>
+        </Tooltip>
+        {inboxDialog}
+      </>
+    )
+  }
 
   const select = async (teamId: TeamId): Promise<void> => {
     setOpening(teamId)
@@ -157,9 +203,12 @@ export function TeamBrowser({
     try {
       await openTeam(teamId)
     } catch (reason: unknown) {
-      if (!(reason instanceof Error && reason.name === 'AbortError')) setError(String(reason))
+      if (!isAbortError(reason)) setError(String(reason))
     } finally {
-      setOpening(current => current === teamId ? undefined : current)
+      setOpening((current) => {
+        /* v8 ignore next -- All Team rows are disabled while one selection is opening. */
+        return current === teamId ? undefined : current
+      })
     }
   }
 
@@ -179,6 +228,7 @@ export function TeamBrowser({
     teamId: TeamId,
     action: ((id: TeamId) => Promise<void | TeamTaskSelection | TeamTaskListState['items'][number]['phase']>) | undefined,
   ): Promise<void> => {
+    /* v8 ignore next -- Mutation buttons render only when their operation callback is installed. */
     if (action === undefined) return
     setMutating(teamId)
     setError(undefined)
@@ -192,14 +242,16 @@ export function TeamBrowser({
   }
 
   const chooseWorkspace = (): void => {
+    /* v8 ignore next -- The folder button is omitted without a picker and disabled while a pick is pending. */
     if (pickDirectory === undefined || workspacePicking) return
     setWorkspacePicking(true)
     void pickDirectory().catch((reason: unknown) => {
-      if (!(reason instanceof Error && reason.name === 'AbortError')) setError(String(reason))
+      if (!isAbortError(reason)) setError(String(reason))
     }).finally(() => { setWorkspacePicking(false) })
   }
 
-  type SidebarTeam = Pick<TeamTaskListState['items'][number], 'id' | 'phase' | 'workspacePath' | 'objectiveTruncated' | 'readAccess' | 'executionManagement'>
+  type SidebarTeam = Pick<TeamTaskListState['items'][number],
+    'id' | 'phase' | 'workspacePath' | 'objectiveTruncated' | 'readAccess' | 'executionManagement' | 'updatedAt'>
     & { readonly goal: { readonly objective: string } }
   const selected = state.selected?.teamId === state.current ? state.selected : undefined
   const selectedRow: SidebarTeam | undefined = selected === undefined ? undefined : {
@@ -209,47 +261,64 @@ export function TeamBrowser({
     readAccess: selected.state.readAccess,
     executionManagement: selected.state.executionManagement,
   }
-  const rows: readonly SidebarTeam[] = selectedRow === undefined || state.items.some(item => item.id === selectedRow.id)
-    ? state.items : [selectedRow, ...state.items]
-  const renderTeamRow = (team: SidebarTeam) => (
-    <div key={team.id} className={css.item} role="listitem">
-      <button
-        type="button"
-        className={`${css.row}${team.id === state.current ? ` ${css.selected}` : ''}`}
-        aria-current={team.id === state.current ? 'page' : undefined}
-        disabled={opening !== undefined || archiving !== undefined || mutating !== undefined}
-        title={`${team.goal.objective}${team.objectiveTruncated ? '…' : ''}`}
-        onClick={() => { void select(team.id) }}
-      >
-        <span className={css.objective}>{team.goal.objective}{team.objectiveTruncated ? '…' : ''}</span>
-        <span className={css.phase}>{t(teamPhaseKey[team.phase])}</span>
-      </button>
-      {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && (team.phase === 'completed' || team.phase === 'failed' || team.phase === 'cancelled') && (
+  const rows: readonly SidebarTeam[] = sortTeams(selectedRow === undefined || state.items.some(item => item.id === selectedRow.id)
+    ? state.items : [selectedRow, ...state.items])
+  const renderTeamRow = (team: SidebarTeam) => {
+    const objective = `${team.goal.objective}${team.objectiveTruncated ? '…' : ''}`
+    const time = relativeTime(team.updatedAt, now)
+    const short = deriveShortTitle(team.goal.objective)
+    return (
+      <div key={team.id} className={css.item} role="listitem" data-status={teamStatus(team.phase)}>
         <button
           type="button"
-          className={css.archive}
-          aria-label={`${t('archive')} ${team.goal.objective}`}
-          title={t('archive')}
-          disabled={opening !== undefined || archiving !== undefined}
-          onClick={() => { void archive(team.id) }}
+          className={`${css.row}${team.id === state.current ? ` ${css.selected}` : ''}`}
+          aria-current={team.id === state.current ? 'page' : undefined}
+          disabled={opening !== undefined || archiving !== undefined || mutating !== undefined}
+          title={objective}
+          // A stable name: the full objective and phase; relative time is visual.
+          aria-label={`${objective} ${t(teamPhaseKey[team.phase])}`}
+          onClick={() => { void select(team.id) }}
         >
-          <span aria-hidden="true">×</span>
+          <StatusGlyph status={teamStatus(team.phase)} className={css.glyph} />
+          {/* The row's aria-label names it; the short title and relative time are visual. */}
+          <span className={css.rowText} aria-hidden="true">
+            <span className={css.objective}>{short}</span>
+            <span className={css.meta}>
+              <span className={css.phase}>{t(teamPhaseKey[team.phase])}</span>
+              <span aria-hidden="true">·</span>
+              <span data-relative-time>{t(time.key, { count: time.count })}</span>
+            </span>
+          </span>
         </button>
-      )}
-      {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && team.phase === 'stalled' && resumeTeam !== undefined && (
-        <button type="button" className={css.archive} aria-label={`${t('resume')} ${team.goal.objective}`} title={t('resume')}
-          disabled={mutating !== undefined} onClick={() => { void mutate(team.id, resumeTeam) }}>
-          <span aria-hidden="true">↻</span>
-        </button>
-      )}
-      {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && (team.phase === 'active' || team.phase === 'quiescing' || team.phase === 'stalled') && cancelTeam !== undefined && (
-        <button type="button" className={css.archive} aria-label={`${t('cancel')} ${team.goal.objective}`} title={t('cancel')}
-          disabled={mutating !== undefined} onClick={() => { void mutate(team.id, cancelTeam) }}>
-          <span aria-hidden="true">×</span>
-        </button>
-      )}
-    </div>
-  )
+        <div className={css.rowActions}>
+          {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && (team.phase === 'completed' || team.phase === 'failed' || team.phase === 'cancelled') && (
+            <button
+              type="button"
+              className={css.archive}
+              aria-label={`${t('archive')} ${team.goal.objective}`}
+              title={t('archive')}
+              disabled={opening !== undefined || archiving !== undefined}
+              onClick={() => { void archive(team.id) }}
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          )}
+          {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && team.phase === 'stalled' && resumeTeam !== undefined && (
+            <button type="button" className={css.archive} aria-label={`${t('resume')} ${team.goal.objective}`} title={t('resume')}
+              disabled={mutating !== undefined} onClick={() => { void mutate(team.id, resumeTeam) }}>
+              <span aria-hidden="true">↻</span>
+            </button>
+          )}
+          {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && (team.phase === 'active' || team.phase === 'quiescing' || team.phase === 'stalled') && cancelTeam !== undefined && (
+            <button type="button" className={css.archive} aria-label={`${t('cancel')} ${team.goal.objective}`} title={t('cancel')}
+              disabled={mutating !== undefined} onClick={() => { void mutate(team.id, cancelTeam) }}>
+              <span aria-hidden="true">×</span>
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const renderTaskGroups = () => {
     if (workspaces.length === 0) {
@@ -306,8 +375,14 @@ export function TeamBrowser({
   return (
     <section className={css.root} aria-label={t('section.title')}>
       <div className={css.header}><IconGoalOutline16 size={14} />{t('section.title')}</div>
-      {inboxControls !== undefined && state.inbox !== undefined && <div className={css.actions}><button type="button" onClick={() => { setInboxOpen(true) }}>{t('inbox.title')}</button></div>}
-      {visibleError !== undefined && <div className={css.error} role="alert">{visibleError}</div>}
+      {inboxAvailable && (
+        <button type="button" className={css.inboxRow} aria-label={inboxLabel} onClick={() => { setInboxOpen(true) }}>
+          <IconQueueOutline14 size={14} />
+          <span className={css.inboxLabel}>{t('inbox.title')}</span>
+          {unread > 0 && <span className={css.inboxBadge} aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
+        </button>
+      )}
+      {visibleError !== undefined && <div className={css.error} role="alert" title={errorDetail}>{visibleError}</div>}
       {pickDirectory !== undefined && (
         <div className={css.workspaceToolbar}>
           <span>{t('workspace.title')}</span>
@@ -328,9 +403,7 @@ export function TeamBrowser({
           disabled={state.loadingMore === true || state.state === 'loading'} onClick={() => { void loadMoreTeams() }}>{t('detail.loadMore')}</button>}
         {state.loadingMore === true && <p className={css.muted} role="status">{t('empty.loading')}</p>}
       </div>}
-      {inboxOpen && inboxControls !== undefined && state.inbox !== undefined && <TeamInboxDialog
-        state={state.inbox} teams={state.items} translate={t} openTeam={openTeam} onClose={() => { setInboxOpen(false) }} {...inboxControls}
-      />}
+      {inboxDialog}
     </section>
   )
 }

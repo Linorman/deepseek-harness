@@ -2,6 +2,12 @@
 import { expect, it } from 'vitest'
 import { readWorkspaceRoute, workspaceRouteIdentity, workspaceRouteUrl } from '../src/client/workspace-navigation.ts'
 
+it('preserves an exact channel destination and keeps the empty first-input route distinct', () => {
+  const route = readWorkspaceRoute('http://localhost/?team=team&view=channels&channel=channel')!
+  expect(readWorkspaceRoute(workspaceRouteUrl('http://localhost/', route))?.channelId).toBe('channel')
+  expect(workspaceRouteIdentity(undefined)).toBe('')
+})
+
 it('round-trips opaque identifiers and Unicode search while preserving unrelated parameters', () => {
   const route = readWorkspaceRoute('http://localhost/?team=team-1&view=tasks&task=task-2&session=session-3&participant=worker-4&q=%E6%8E%A5%E5%8F%A3&status=review')!
   const url = workspaceRouteUrl('http://localhost/?theme=dark&team=older&view=overview', route)

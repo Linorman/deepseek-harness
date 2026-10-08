@@ -1,0 +1,9 @@
+{
+  "scenario": "review-rework-preserved-cancel",
+  "firstCancellationDeferred": true,
+  "firstReview": "pending",
+  "attemptCount": 1,
+  "workspace": "released",
+  "task": "cancelled",
+  "team": "cancelled"
+}

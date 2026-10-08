@@ -1,8 +1,18 @@
+export { sameActivationBinding } from './lifecycle.ts'
+export { parseTeamParticipantHeader } from './header-reference.ts'
+export { taskCreateHumanProofInput, taskRevisionHumanProofInput, taskReviewHumanProofInput } from './human-actor.ts'
+export { emptyTeamMetricsSnapshot } from './metrics.ts'
+export { channelOpenHumanProofInput, channelCloseHumanProofInput } from './human-actor.ts'
 export { teamTaskUpdateCommandIdSchema, teamTaskUpdateCommandReceiptSchema, teamTaskUpdateReceiptSchema,
   teamTaskDetailsUpdateResultSchema, teamTaskUpdateLookupInputSchema, teamTaskUpdateLookupSchema,
   teamTaskUpdateCommandRejectionSchema, teamTaskUpdateCommandSchema, teamTaskUpdateRejectionSchema,
   teamTaskUpdateRejectionReasonSchema } from './schema.ts'
 export { TeamTaskUpdateRejectedError } from './task-update.ts'
+export { withTeamOperationTimeout } from './operation-timeout.ts'
+export { trackTeamOperation } from './operation-lifecycle.ts'
+export { teamEventOwnerId } from './event-owner.ts'
+export { channelEnvelopeMessages, channelAudienceDeliveryIntents } from './channel-projection.ts'
+export { assertChannelJsonKeys, isChannelJsonObject, requireChannelJsonText } from './channel-json.ts'
 export { teamTaskReferencesInputSchema, teamTaskReferencesPageSchema } from './schema.ts'
 export { teamIdentityResolveInputSchema, teamIdentityResolvePageSchema } from './schema.ts'
 export { teamAttentionReadInputSchema, teamAttentionPageSchema, teamAttentionCursorSchema, teamAttentionCountsSchema } from './schema.ts'

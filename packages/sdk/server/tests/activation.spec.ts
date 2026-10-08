@@ -1,4 +1,4 @@
-import type { Context } from '@clocky/cordis'
+import { FiberState, type Context } from '@clocky/cordis'
 import type { Agent, AgentHandle } from '@clocky/clocky-agent'
 import type { Session } from '@clocky/clocky-session'
 import type { JsonRpcTransportPeer, SdkActivationTarget } from '@clocky/clocky-sdk-protocol'
@@ -46,6 +46,11 @@ class FakeRuntime {
   disposeFailure: Error | undefined
   publishCreates = true
   missingSetupAgent = false
+  links: {
+    registerProvider: ReturnType<typeof vi.fn>
+    registerBoundLinkBorrower: ReturnType<typeof vi.fn>
+    connect: ReturnType<typeof vi.fn>
+  } | undefined
   readonly ctx: Context
 
   constructor() {
@@ -74,6 +79,7 @@ class FakeRuntime {
       return this.handle(agent)
     })
     this.ctx = {
+      fiber: { state: FiberState.ACTIVE },
       on: (name: string, listener: (...payload: unknown[]) => void) => { // The harness exposes only emit-style listeners here.
         const listeners = this.listeners.get(name) ?? []
         listeners.push(listener)
@@ -89,6 +95,7 @@ class FakeRuntime {
         if (name === 'sessionPersistence') return this.persistenceAvailable
           ? { materializeHeader: this.materializeHeader }
           : undefined
+        if (name === 'teamLinks') return this.links
         return undefined
       },
       agents: {
@@ -97,6 +104,18 @@ class FakeRuntime {
         get: (id: string) => this.live.get(id),
       },
     } as unknown as Context
+  }
+
+  /** Supply only the registry boundary; connection refusal keeps protocol tests offline. */
+  enableLinks() {
+    const unregisters: Array<ReturnType<typeof vi.fn>> = []
+    this.links = {
+      registerProvider: vi.fn(() => { const unregister = vi.fn(); unregisters.push(unregister); return unregister }),
+      registerBoundLinkBorrower: vi.fn(() => vi.fn()),
+      connect: vi.fn(async () => { throw new Error('test Link transport is offline') }),
+    }
+    Object.assign(this.ctx, { teamLinks: this.links })
+    return { links: this.links, unregisters }
   }
 
   /** Build a server and select a route that the fake LLM registry owns. */
@@ -237,7 +256,9 @@ describe('SDK remote activation lifecycle', () => {
     if (agent === undefined) throw new Error('fresh activation did not publish its Agent')
     runtime.emitStatus(agent, 'running')
     expect(server.activationStatus({ target: first }).state).toMatchObject({ status: 'running', statusSequence: 2 })
-    server.interruptActivation({ target: first, cause: { kind: 'hook', reason: 'operator request' } })
+    await expect(server.handleRequest('activation/status', { target: first }))
+      .resolves.toMatchObject({ state: { status: 'running', statusSequence: 2 } })
+    await server.handleRequest('activation/interrupt', { target: first, cause: { kind: 'hook', reason: 'operator request' } })
     expect(runtime.cancels.get(first.sessionId)).toHaveBeenCalledWith(
       { kind: 'hook', reason: 'operator request' },
       { keepInbox: true },
@@ -344,6 +365,86 @@ describe('SDK remote activation lifecycle', () => {
       binding: { ...first, provider: 'sdk' },
       enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'opaque' },
     }), 'SDK_ACTIVATION_LINK_UNAVAILABLE')
+    await server.shutdown()
+  })
+
+  it('pins a remote activation Link enrollment and rotates only its current credential', async () => {
+    const runtime = new FakeRuntime()
+    const server = await runtime.server()
+    const { links, unregisters } = runtime.enableLinks()
+    const selected = target({ activationId: 'activation-link-rotation', sessionId: 'session-link-rotation' })
+    await server.handleRequest('activation/open', { target: selected, seed: { kind: 'fresh' } })
+    const binding = { ...selected, provider: 'sdk' }
+    const request = { target: selected, binding,
+      enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'first-capability' } }
+    await expect(server.handleRequest('activation/link-enroll', request)).resolves.toEqual({})
+    expect(links.registerProvider).toHaveBeenCalledOnce()
+    expect(links.registerBoundLinkBorrower).toHaveBeenCalledOnce()
+    await expect(server.enrollActivationLink(request)).resolves.toEqual({})
+    expect(links.registerProvider).toHaveBeenCalledOnce()
+    await expectActivationError(server.enrollActivationLink({ ...request,
+      binding: { ...binding, participantId: 'another-participant' } }), 'SDK_ACTIVATION_LINK_MISMATCH')
+    await expectActivationError(server.enrollActivationLink({ ...request,
+      binding: { ...binding, provider: 'another-runtime' } }), 'SDK_ACTIVATION_LINK_MISMATCH')
+    const rotated = { ...request, enrollment: { ...request.enrollment, capability: 'rotated-capability' } }
+    await expect(server.enrollActivationLink(rotated)).resolves.toEqual({})
+    expect(links.registerProvider).toHaveBeenCalledTimes(2)
+    expect(unregisters[0]).toHaveBeenCalledOnce()
+    await server.handleRequest('activation/dispose', { target: selected })
+    expect(unregisters[1]).toHaveBeenCalledOnce()
+    await server.shutdown()
+  })
+
+  it('rolls back a Link provider when child delivery startup fails and permits an exact retry', async () => {
+    const runtime = new FakeRuntime()
+    const server = await runtime.server()
+    const { links, unregisters } = runtime.enableLinks()
+    const selected = target({ activationId: 'activation-link-startup-failure', sessionId: 'session-link-startup-failure' })
+    await server.openActivation({ target: selected, seed: { kind: 'fresh' } })
+    const request = { target: selected, binding: { ...selected, provider: 'sdk' },
+      enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'recoverable-capability' } }
+    links.registerBoundLinkBorrower.mockImplementationOnce(() => { throw new Error('binding borrower install failed') })
+    await expect(server.enrollActivationLink(request)).rejects.toThrow('binding borrower install failed')
+    expect(unregisters[0]).toHaveBeenCalledOnce()
+    await expect(server.enrollActivationLink(request)).resolves.toEqual({})
+    expect(links.registerProvider).toHaveBeenCalledTimes(2)
+    await server.disposeActivation({ target: selected })
+    expect(unregisters[1]).toHaveBeenCalledOnce()
+    await server.shutdown()
+  })
+
+  it('normalizes an untyped Link registry failure without retaining the attempted credential', async () => {
+    const runtime = new FakeRuntime()
+    const server = await runtime.server()
+    const { links } = runtime.enableLinks()
+    const selected = target({ activationId: 'activation-link-registry-failure', sessionId: 'session-link-registry-failure' })
+    await server.openActivation({ target: selected, seed: { kind: 'fresh' } })
+    links.registerProvider.mockImplementationOnce(() => { throw 'untyped registry failure' })
+    const request = { target: selected, binding: { ...selected, provider: 'sdk' },
+      enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'never-retained' } }
+    await expect(server.enrollActivationLink(request)).rejects.toMatchObject({
+      message: 'SDK activation Link enrollment failed', cause: 'untyped registry failure',
+    })
+    expect(links.registerBoundLinkBorrower).not.toHaveBeenCalled()
+    await expect(server.enrollActivationLink(request)).resolves.toEqual({})
+    await server.shutdown()
+  })
+
+  it('contains Link cleanup failure after an external Agent disposal ends the activation', async () => {
+    const runtime = new FakeRuntime()
+    const server = await runtime.server()
+    const { unregisters } = runtime.enableLinks()
+    const selected = target({ activationId: 'activation-link-external-disposal', sessionId: 'session-link-external-disposal' })
+    await server.openActivation({ target: selected, seed: { kind: 'fresh' } })
+    await server.enrollActivationLink({ target: selected, binding: { ...selected, provider: 'sdk' },
+      enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'external-disposal' } })
+    const agent = runtime.live.get(selected.sessionId)
+    if (agent === undefined || unregisters[0] === undefined) throw new Error('fixture activation or Link is missing')
+    unregisters[0].mockImplementationOnce(() => { throw new Error('Link registry cleanup failed') })
+    runtime.live.delete(selected.sessionId)
+    runtime.emit('agent/disposed', { agent })
+    await vi.waitFor(() => { expect(unregisters[0]).toHaveBeenCalledOnce() })
+    expect(server.activationStatus({ target: selected }).state.status).toBe('offline')
     await server.shutdown()
   })
 
@@ -494,5 +595,55 @@ describe('SDK remote activation lifecycle', () => {
     failingRuntime.disposeFailure = new Error('activation dispose failed')
     await expect(failing.disposeActivation({ target: first })).rejects.toThrow('activation dispose failed')
     await expect(failing.shutdown()).rejects.toThrow('activation dispose failed')
+  })
+
+  it('reports both Link cleanup failures and Agent disposal failure after attempting every release', async () => {
+    const runtime = new FakeRuntime()
+    const server = await runtime.server()
+    runtime.enableLinks()
+    const selected = target({ activationId: 'activation-release-faults', sessionId: 'session-release-faults' })
+    await server.openActivation({ target: selected, seed: { kind: 'fresh' } })
+    await server.enrollActivationLink({ target: selected, binding: { ...selected, provider: 'sdk' },
+      enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'release-faults' } })
+    const internal = server as unknown as { activations: Map<string, { linkDelivery?: {
+      delivery: { close: () => Promise<void> }
+      unregister: () => void
+    } }> }
+    const link = internal.activations.get(selected.activationId)?.linkDelivery
+    if (link === undefined) throw new Error('Test activation has no enrolled Link')
+    const closeFailure = new Error('Link delivery close failed')
+    const unregisterFailure = new Error('Link registry unregister failed')
+    const agentFailure = new Error('Agent disposal failed')
+    const close = vi.spyOn(link.delivery, 'close').mockRejectedValue(closeFailure)
+    const unregister = vi.fn(() => { throw unregisterFailure })
+    link.unregister = unregister
+    runtime.disposeFailure = agentFailure
+    await expect(server.disposeActivation({ target: selected })).rejects.toMatchObject({
+      errors: [{ errors: [closeFailure, unregisterFailure] }, agentFailure],
+    })
+    expect(close).toHaveBeenCalledOnce()
+    expect(unregister).toHaveBeenCalledOnce()
+    await expect(server.shutdown()).rejects.toThrow('release failed')
+  })
+
+  it('surfaces one Link unregister failure after still disposing its Agent', async () => {
+    const runtime = new FakeRuntime()
+    const server = await runtime.server()
+    const { unregisters } = runtime.enableLinks()
+    const selected = target({ activationId: 'activation-unregister-fault', sessionId: 'session-unregister-fault' })
+    await server.openActivation({ target: selected, seed: { kind: 'fresh' } })
+    await server.enrollActivationLink({ target: selected, binding: { ...selected, provider: 'sdk' },
+      enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'unregister-fault' } })
+    const internal = server as unknown as { activations: Map<string, { linkDelivery?: { delivery: { close: () => Promise<void> } } }> }
+    const delivery = internal.activations.get(selected.activationId)?.linkDelivery?.delivery
+    if (delivery === undefined) throw new Error('Test activation has no Link delivery')
+    vi.spyOn(delivery, 'close').mockResolvedValue(undefined)
+    const unregister = unregisters[0]
+    if (unregister === undefined) throw new Error('Test activation has no Link registration')
+    const failure = new Error('Link unregister failed')
+    unregister.mockImplementationOnce(() => { throw failure })
+    await expect(server.disposeActivation({ target: selected })).rejects.toBe(failure)
+    expect(runtime.live.has(selected.sessionId)).toBe(false)
+    await expect(server.shutdown()).resolves.toEqual({})
   })
 })

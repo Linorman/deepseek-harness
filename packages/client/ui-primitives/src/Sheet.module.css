@@ -1,0 +1,116 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--clocky-layer-modal);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--clocky-bg-scrim);
+  animation: sheet-fade var(--clocky-duration-base) var(--clocky-ease-standard);
+}
+
+.sheet {
+  position: fixed;
+  inset: 0 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
+  color: var(--clocky-fg-primary);
+  animation: sheet-in var(--clocky-duration-base) var(--clocky-ease-enter);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
+}
+
+.sheet::backdrop {
+  background: transparent;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--clocky-space-2);
+  padding: var(--clocky-space-3) var(--clocky-space-4);
+  border-bottom: 1px solid var(--clocky-border-subtle);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: var(--clocky-type-heading);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--clocky-radius-md);
+  background: transparent;
+  color: var(--clocky-fg-secondary);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--clocky-bg-hover);
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--clocky-space-4);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--clocky-space-2);
+  padding: var(--clocky-space-3) var(--clocky-space-4);
+  border-top: 1px solid var(--clocky-border-subtle);
+  background: var(--clocky-bg-overlay);
+}
+
+@media (max-width: 640px) {
+  .sheet {
+    width: 100vw;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
+@keyframes sheet-fade {
+  from { opacity: 0; }
+}
+
+/* Reduced motion: the sheet appears in place; only the scrim keeps its fade. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}

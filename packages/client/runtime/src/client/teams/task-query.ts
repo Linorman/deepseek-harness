@@ -1,3 +1,5 @@
+import { disconnectedRead, ReadPageRevision } from './read-state.ts'
+import { ReadRequest } from './read-request.ts'
 import { isTeamAuthorizationError } from './access.ts'
 /** One independent, bounded task-query window for a table or dependency editor. */
 import type { IApiClient, TeamId } from '@clocky/clocky-client-connection/client'
@@ -6,9 +8,8 @@ import type { TeamTaskQuery, TeamTaskQueryState } from '../contract/team-tasks.t
 /** Own cancellation, continuation and reconnect for one query consumer. */
 export class TaskQuery {
   private state: TeamTaskQueryState | undefined
-  private request: AbortController | undefined
-  private generation = 0
-  private minimumCursor = 0
+  private readonly requests = new ReadRequest()
+  private readonly pageRevision = new ReadPageRevision()
 
   /**
    * @param api - Shared Host transport.
@@ -20,25 +21,25 @@ export class TaskQuery {
 
   /** Release the current query; pending responses cannot recreate it. */
   close(): void {
-    const generation = this.cancel()
-    if (generation !== this.generation) return
-    this.minimumCursor = 0
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
+    this.pageRevision.minimumCursor = 0
     this.state = undefined
     this.publish(undefined)
   }
 
   /** Cancel the view's pending read while retaining its page and filters for navigation. */
   pause(): void {
-    const generation = this.cancel()
-    if (generation !== this.generation) return
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
     if (this.state?.loading) this.set({ ...this.state, loading: false })
   }
 
   /** Preserve the last page as stale after losing the transport. */
   disconnect(): void {
-    const generation = this.cancel()
-    if (generation !== this.generation) return
-    if (this.state !== undefined) this.set({ ...this.state, loading: false, disconnected: true, hasNewer: true })
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
+    if (this.state !== undefined) this.set(disconnectedRead(this.state))
   }
 
   /** Refresh the first page of the retained query after reconnect, without executing tasks. */
@@ -51,9 +52,8 @@ export class TaskQuery {
    * @param cursor - Observed journal watermark.
    */
   changed(teamId: TeamId, cursor: number): void {
-    if (this.state?.teamId !== teamId) return
-    this.minimumCursor = Math.max(this.minimumCursor, cursor)
-    if (cursor > (this.state.page?.teamCursor ?? cursor)) this.set({ ...this.state, hasNewer: true })
+    const next = this.pageRevision.changed(this.state, teamId, cursor)
+    if (next !== undefined && next !== this.state) this.set(next)
   }
 
   /** Read a new query or its exact successor; errors retain the prior page but never the wrong query's rows.
@@ -68,19 +68,19 @@ export class TaskQuery {
     if (mode === 'next' && (!same || previous.loading || previous.hasNewer || previous.disconnected
       || previous.error !== undefined || previous.page?.nextQueryCursor === undefined)) return
     const cursor = mode === 'next' ? previous?.page?.nextQueryCursor : undefined
-    const generation = this.cancel()
-    if (generation !== this.generation) return
-    if (previous?.teamId !== teamId) this.minimumCursor = 0
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
+    if (previous?.teamId !== teamId) this.pageRevision.minimumCursor = 0
     const controller = new AbortController()
-    this.request = controller
+    this.requests.begin(controller)
     this.set({ teamId, query, startCursor: same ? previous.startCursor : undefined,
       page: same ? previous.page : undefined, loading: true, error: undefined,
       hasNewer: same && previous.hasNewer, disconnected: false })
     try {
-      if (!this.current(generation, controller)) return
+      if (!this.requests.current(generation, controller)) return
       const response = await this.api.teams.browse({ teamId, kind: 'tasks', query,
         ...cursor === undefined ? {} : { queryCursor: cursor }, limit: this.limit }, controller.signal)
-      if (!this.current(generation, controller)) return
+      if (!this.requests.current(generation, controller)) return
       if (!response.result.ok) {
         const error = response.result.error
         const forbidden = isTeamAuthorizationError(error)
@@ -91,32 +91,20 @@ export class TaskQuery {
       const page = response.result.value
       if (page.kind !== 'tasks' || page.teamId !== teamId || page.query?.search !== query.search
         || page.query.phase !== query.phase || page.query.excludeTaskId !== query.excludeTaskId
-        || page.items.length > this.limit || page.teamCursor < this.minimumCursor) {
+        || page.items.length > this.limit || page.teamCursor < this.pageRevision.minimumCursor) {
         throw new Error('Task query response does not match the current selection; refresh the query')
       }
-      this.minimumCursor = page.teamCursor
+      this.pageRevision.minimumCursor = page.teamCursor
       this.set({ teamId, query, startCursor: cursor, page, loading: false, hasNewer: false, disconnected: false })
     } catch (error: unknown) {
-      if (!this.current(generation, controller)) return
+      if (!this.requests.current(generation, controller)) return
       this.set({ ...this.active(), loading: false, error: error instanceof Error ? error.message : String(error) })
     } finally {
-      if (this.request === controller) this.request = undefined
+      if (this.requests.request === controller) this.requests.finish(controller)
     }
   }
 
-  /** Test the mutable request generation after callbacks and asynchronous transport work. */
-  private current(generation: number, controller: AbortController): boolean {
-    return generation === this.generation && !controller.signal.aborted
-  }
 
-  /** Fence publication before abort listeners run. */
-  private cancel(): number {
-    const generation = ++this.generation
-    const request = this.request
-    this.request = undefined
-    request?.abort()
-    return generation
-  }
 
   /** A current request retains its query until its generation is cancelled. */
   private active(): TeamTaskQueryState {

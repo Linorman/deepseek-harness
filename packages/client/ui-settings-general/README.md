@@ -6,11 +6,15 @@ Settings shell and ownerless copy. It occupies `sidebar.settings` with the trigg
 
 The shell ships no onboarding copy of its own — all text arrives from registrants. Nav labels may be locale-following thunks, so the nav projection resolves them through `resolveSlotLabel` and re-renders on the section ledger bump or the locale revision (an optional `ctx.get('locale')` read; no hard locale dependency). The onboarding ledger projects in ascending order and mounts exactly one step at a time. Visible steps own their dialog chrome and app-root `inert` lifecycle; a mounted step still resolving private facts renders null, so nothing paints or blocks while it decides. The active registrant receives its id, `complete()`, and an `openSection(id)` callback; completing or skipping transfers ownership to the next entry. Registrants own durable completion, capability readiness, copy, mutations, and their visible wrapper, so independently registered flows cannot stack and the shell does not become a second configuration fact source.
 
+When the layout service is present, the command palette lists **Open settings** and each registered section; choosing one sends an external open request that only seeds the panel's local open state and active section, so the panel stays component-owned viewing state.
+
 A loopback browser loads the provider's `hasDocument` capability through `settings.describe` and renders **Open configuration file** only when the Host confirms that a provider-owned local document can be prepared. The action sends the pathless, loopback-only `settings.openDocument` request; the Host resolves the provider path again, materializes an absent document, and hands it to a native text editor (`open -t` on macOS, bypassing a browser file association; the desktop file association on Linux and Windows; Windows association after `wslpath -w` translation on WSL). Open failures keep the action available and render a localized error. Reopening the dialog or reconnecting refreshes availability after a transient read failure or Host topology change. Remote browsers never register the action and never issue the privileged settings read.
 
 The browser half declares the `settings.onboarding` slot. Deployment plugins contribute optional steps through that slot; the shell itself owns only sequencing, completion, and layout, and carries no provider or product policy.
 
 The compact Settings trigger retains localized, visually hidden text so it remains named for keyboard and screen-reader navigation.
+
+The settings panel uses the shared body-portaled native `Modal`: its top layer owns focus containment and background inertness, and closing restores the opener or the stable Settings trigger. Slot-provided headings name the dialog. Below 720px, a labeled native section picker replaces the sidebar rail; the platform owns its popup and keyboard behavior. The panel keeps a stable viewport-bounded height, scrolls long content independently, and lets the whole card scroll at heights of 420px or less.
 
 ## Model Experience
 

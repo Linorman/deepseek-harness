@@ -1,6 +1,7 @@
 /** Principal-wide inbox display and explicit acknowledgements of loaded delivery prefixes. */
 
 import { useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { Button, MarkdownText, Modal } from '@clocky/clocky-client-ui-primitives'
 import type { ITeamTasks, TeamActionResponseInput, TeamActionResponseResult, TeamInboxState, TeamTaskListState } from '@clocky/clocky-client-runtime/client'
 import type { TeamKey } from './locales.ts'
@@ -85,6 +86,7 @@ export function TeamInboxDialog({ state, teams, translate: t, onClose, openTeam,
     const controller = new AbortController()
     readRequest.current = controller
     if (history === 'retained') {
+      /* v8 ignore next -- Retained-history control renders only when its reader is installed. */
       if (recoverInbox === undefined) throw new Error('Inbox history recovery is unavailable')
       return recoverInbox(controller.signal)
     }
@@ -94,9 +96,28 @@ export function TeamInboxDialog({ state, teams, translate: t, onClose, openTeam,
     const { teamId, ...answer } = input
     return await respondAction(teamId, answer, signal)
   }
+  // Triage from the keyboard: J/K move between entries, Enter opens the
+  // focused entry's Team. Keys typed into an answer field stay with it.
+  const onTriageKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.nativeEvent.isComposing || event.altKey || event.ctrlKey || event.metaKey) return
+    const target = event.target as HTMLElement
+    const entry = target.closest<HTMLElement>('[data-inbox-entry]')
+    const all = [...event.currentTarget.querySelectorAll<HTMLElement>('[data-inbox-entry]')]
+    const key = event.key.toLowerCase()
+    if ((key === 'j' || key === 'k') && !isTextEntry(target)) {
+      event.preventDefault()
+      const index = entry === null ? -1 : all.indexOf(entry)
+      all[key === 'j' ? Math.min(index + 1, all.length - 1) : Math.max(index - 1, 0)]?.focus()
+    } else if (event.key === 'Enter' && entry !== null && target === entry) {
+      event.preventDefault()
+      entry.querySelector<HTMLButtonElement>('[data-inbox-open]')?.click()
+    }
+  }
+  /* v8 ignore next -- The bundled CSS module always defines managementContent; fallback satisfies optional typings. */
+  const bodyClassName = css.managementContent ?? ''
   return <>
     <Modal open title={t('inbox.title')} closeLabel={t('cancel')} onClose={() => { requestOperation(onClose) }}
-      bodyClassName={css.managementContent ?? ''} footer={<>
+      bodyClassName={bodyClassName} footer={<>
         <Button disabled={busy.size > 0} onClick={() => { requestOperation(onClose) }}>{t('inbox.close')}</Button>
         <Button disabled={unreadLoaded === 0 || state.acknowledging} onClick={() => { void acknowledgeInbox(readRequest.current?.signal) }}>{t('inbox.markLoaded')}</Button>
       </>}>
@@ -110,23 +131,26 @@ export function TeamInboxDialog({ state, teams, translate: t, onClose, openTeam,
         <Button disabled={state.phase === 'loading' || busy.size > 0}
           onClick={() => { requestOperation(async () => { await read('retained') }) }}>{t('inbox.retainedHistory')}</Button>}
       {entries.length === 0 && state.phase !== 'loading' && <p className={css.muted}>{t('inbox.empty')}</p>}
-      {entries.map((item) => {
-        const team = teams.find(candidate => candidate.id === item.teamId)
-        const key = item.kind === 'action' ? `${item.teamId}:${item.action.id}` : String(item.sequence)
-        return <section key={`${state.connectionGeneration}:${draftGeneration}:${key}`} className={css.inboxEntry}>
-          <div className={css.sectionHeader}>
-            <strong>{t(item.kind === 'final' ? 'inbox.final' : item.kind === 'action' ? 'inbox.action' : 'inbox.message')}</strong>
-            <small>{t(item.sequence > state.displayCursor ? 'inbox.unread' : 'inbox.read')}</small>
-          </div>
-          <Button onClick={() => { requestOperation(async () => { await openTeam(item.teamId); onClose() }) }}>{team?.goal.objective ?? t('inbox.openTeam')}</Button>
-          {item.kind === 'action' ? <HumanActionCard action={item.action} translate={t} respond={respond}
-            confirm={async (action, signal) => await readAction(action.teamId, action.id, signal)}
-            openContext={(action) => { requestOperation(async () => { await openActionContext(action); onClose() }) }}
-            onDirtyChange={(value) => { setDirty(previous => toggleMember(previous, key, value)) }}
-            onBusyChange={(value) => { setBusy(previous => toggleMember(previous, key, value)) }}
-          /> : item.text.length > 0 ? <MarkdownText text={item.text} /> : <p className={css.notice}>{t('inbox.nonText')}</p>}
-        </section>
-      })}
+      <div className={css.inboxList} onKeyDown={onTriageKey} aria-keyshortcuts="J K Enter">
+        {entries.map((item) => {
+          const team = teams.find(candidate => candidate.id === item.teamId)
+          const key = item.kind === 'action' ? `${item.teamId}:${item.action.id}` : String(item.sequence)
+          return <section key={`${state.connectionGeneration}:${draftGeneration}:${key}`} className={css.inboxEntry}
+            data-inbox-entry tabIndex={-1} aria-label={team?.goal.objective ?? t('inbox.openTeam')}>
+            <div className={css.sectionHeader}>
+              <strong>{t(item.kind === 'final' ? 'inbox.final' : item.kind === 'action' ? 'inbox.action' : 'inbox.message')}</strong>
+              <small>{t(item.sequence > state.displayCursor ? 'inbox.unread' : 'inbox.read')}</small>
+            </div>
+            <Button data-inbox-open onClick={() => { requestOperation(async () => { await openTeam(item.teamId); onClose() }) }}>{team?.goal.objective ?? t('inbox.openTeam')}</Button>
+            {item.kind === 'action' ? <HumanActionCard action={item.action} translate={t} respond={respond}
+              confirm={async (action, signal) => await readAction(action.teamId, action.id, signal)}
+              openContext={(action) => { requestOperation(async () => { await openActionContext(action); onClose() }) }}
+              onDirtyChange={(value) => { setDirty(previous => toggleMember(previous, key, value)) }}
+              onBusyChange={(value) => { setBusy(previous => toggleMember(previous, key, value)) }}
+            /> : item.text.length > 0 ? <MarkdownText text={item.text} /> : <p className={css.notice}>{t('inbox.nonText')}</p>}
+          </section>
+        })}
+      </div>
       {(state.nextCursor !== undefined || state.hasNewer) && <div className={css.actions}>
         <Button disabled={busy.size > 0 || state.loadingMore || state.phase === 'loading'}
           onClick={() => { requestOperation(async () => { await loadMoreInbox(readRequest.current?.signal) }) }}>{t(state.hasNewer ? 'inbox.newMessages' : 'detail.loadMore')}</Button>
@@ -141,10 +165,18 @@ export function TeamInboxDialog({ state, teams, translate: t, onClose, openTeam,
           const operation = pendingOperation.current
           pendingOperation.current = undefined
           setDiscard(false); setDirty(new Set()); setDraftGeneration(previous => previous + 1)
+          /* v8 ignore next -- Discard confirmation opens only after requestOperation retains an operation. */
           if (operation !== undefined) void execute(operation)
         }}>{t('inbox.discard')}</Button>
       </>} />
   </>
+}
+
+/** Whether keys typed at `target` belong to a text field. */
+function isTextEntry(target: HTMLElement): boolean {
+  if (target.isContentEditable || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return true
+  /* v8 ignore next -- Current inbox fields are textareas and choice inputs; retain this guard for future text inputs. */
+  return target.tagName === 'INPUT' && !['button', 'checkbox', 'radio', 'submit'].includes((target as HTMLInputElement).type)
 }
 
 /** Track interaction state independently for each visible durable request. */

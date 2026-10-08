@@ -17,17 +17,17 @@
   overflow: hidden;
   width: 100%;
   max-width: var(--clocky-chat-content-width);
-  border: 1px solid var(--clocky-alias-state-warn-secondary);
-  border-radius: 20px;
-  background: var(--clocky-specific-input-major);
-  box-shadow: var(--clocky-shadow-lv2);
+  border: 1px solid var(--clocky-status-needs-you-border);
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-surface);
+  box-shadow: var(--clocky-elevation-2);
   /* Elevated surface in dark, same as the menus: `.body` inside scrolls once
      the justification or command passes the cap, so the thumb takes the l2
      pair. Declared on the card because the elevation belongs to the surface,
      and the custom properties inherit down to the region that actually
      scrolls (see ui-theme styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 /* Tinted full-width header band. */
@@ -36,17 +36,17 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: var(--clocky-alias-state-warn-tertiary);
-  color: var(--clocky-alias-state-warn-primary);
-  font-size: 13px;
-  line-height: 18px;
+  background: var(--clocky-status-needs-you-bg);
+  color: var(--clocky-status-needs-you-fg);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: var(--clocky-alias-state-warn-primary);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-status-needs-you-fg);
 }
 
 /* Scroll region: an agent's justification and its command are unbounded model
@@ -69,17 +69,17 @@
 
 /* The model's justification is the panel's message, not a footnote. */
 .headline {
-  color: var(--clocky-alias-label-primary);
-  font-size: 15px;
+  color: var(--clocky-fg-primary);
+  font-size: var(--clocky-type-body-reading-size);
   font-weight: 500;
-  line-height: 24px;
+  line-height: var(--clocky-type-body-reading-line-height);
 }
 
 .command {
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   font-family: var(--ds-font-family-code);
-  font-size: 13px;
-  line-height: 20px;
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   word-break: break-all;
 }
 
@@ -97,7 +97,7 @@
 }
 
 .reject:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
-  color: var(--clocky-alias-state-error-primary);
+  background: var(--clocky-status-failed-bg);
+  color: var(--clocky-status-failed-fg);
   border-color: transparent;
 }

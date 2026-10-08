@@ -1,3 +1,4 @@
+import { emptyTeamMetricsSnapshot } from '@clocky/clocky-team/selection'
 import { projectMemberInspection } from '@clocky/clocky-team/selection'
 import { projectWorkflowInspection, projectHumanAction, projectTeamProductSummary, projectTeamSelection, projectMemberSession, projectTeamBrowse, projectTaskInspection } from '@clocky/clocky-team/selection'
 // FixtureApi: standalone UI development without a server. Real contract shape: unary takes
@@ -39,7 +40,7 @@ import type {
   ToolCallView, ToolEventView, ToolResultView, WorkspaceId, WorkspaceView,
 } from './api.ts'
 import type { RequestPayload, ResponseValue, RpcMethodMap } from '@clocky/clocky-host-apiproxy/api'
-import { AbstractApiClient, emptyTeamLatencyHistogram, RpcId, SESSION_SEARCH_RESULT_LIMIT } from './api.ts'
+import { AbstractApiClient, RpcId, SESSION_SEARCH_RESULT_LIMIT } from './api.ts'
 import { randomUuid } from './random-uuid.ts'
 import type { ClientConnectionRpc } from '../rpc.ts'
 
@@ -2664,32 +2665,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         activeWorkspaceAllocationIds: state.workspaceAllocations.filter(allocation => allocation.lifecycle !== 'released').map(allocation => allocation.id),
         openChannelIds: state.channelIds,
       })),
-      metrics: request => ok(request, {
-        activeAdmissions: 0,
-        pendingDeliveries: 0,
-        activeActivations: 0,
-        activeTasks: 0,
-        stalledTeams: 0,
-        replayLag: 0,
-        lastTaskLatencyMs: 0,
-        lastReceiptLatencyMs: 0,
-        taskLatency: emptyTeamLatencyHistogram(),
-        receiptLatency: emptyTeamLatencyHistogram(),
-        workspaceConflicts: 0,
-        teamEvents: 0,
-        channelEvents: 0,
-        policyDenials: 0,
-        adapterFailures: 0,
-        deliveryClaims: 0,
-        taskAssignments: 0,
-        taskRetries: 0,
-        teamCompactions: 0,
-        channelCompactions: 0,
-        checkpointFailures: 0,
-        auditProjectionRepairs: 0,
-        auditProjectionFailures: 0,
-        updatedAt: 0,
-      }),
+      metrics: request => ok(request, emptyTeamMetricsSnapshot(0)),
       auditRead: request => withFixtureTeam(request, request.payload.teamId, state => ({
         teamId: state.team.id,
         ...request.payload.channelId === undefined ? {} : { channelId: request.payload.channelId },

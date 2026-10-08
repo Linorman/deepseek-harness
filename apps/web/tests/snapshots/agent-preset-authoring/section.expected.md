@@ -61,6 +61,16 @@
       - 'button "复制: 创造模式"':
         - img
         - text: 复制
+    - listitem:
+      - 'button "设为默认: 仿真采购角色 / Simulation procurement actor"':
+        - text: 仿真采购角色 / Simulation procurement actor 内置 仅使用原生仿真上下文、意图与场景任务能力；不提供编码、Shell 或文件系统工具。
+        - code: simulation-company
+      - 'button "查看: 仿真采购角色 / Simulation procurement actor"':
+        - img
+        - text: 查看
+      - 'button "复制: 仿真采购角色 / Simulation procurement actor"':
+        - img
+        - text: 复制
   - heading "自定义" [level=3]
   - button "用「创造模式」创作自定义预设":
     - img

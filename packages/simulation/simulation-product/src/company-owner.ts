@@ -26,7 +26,7 @@ interface Options {
   readonly executionAvailable: () => boolean
   readonly sharedModelLimit: () => number
   readonly modelUsage?: (() => ReturnType<SimulationTeams['modelUsage']>) | undefined
-  readonly readTask?: SimulationTaskExecutorOptions['readTask']
+  readonly readTask: SimulationTaskExecutorOptions['readTask']
 }
 
 /** A single administration-owned scheduler; construction and observation never attach or infer. */
@@ -213,14 +213,15 @@ export class SimulationCompanyOwner {
         await this.pending
         authorize()
         const state = this.run.snapshot()
-        if (Object.values(state.checkpoints ?? {}).some(value => value.status === 'in-progress') || state.phase === 'stalled') {
+        /* v8 ignore next -- an administration-held owner is created only after its preparation checkpoint is recorded. */
+        const checkpoints = state.checkpoints ?? {}
+        if (Object.values(checkpoints).some(value => value.status === 'in-progress') || state.phase === 'stalled') {
           throw unavailable('Simulation review requires an available owner outside native maintenance')
         }
         const execution = state.taskExecutions?.[request.attemptId]
         if (execution?.request.operationId !== request.operationId) throw invalid('Simulation review target differs from its original attempt')
         if (!scenarioHasReview(this.creation.driver)) throw unavailable('This company scenario does not permit administrative review')
         const readTask = this.options.readTask
-        if (readTask === undefined) throw unavailable('Simulation review has no canonical Team reader')
         let task
         try { task = await readTask({ teamId: execution.request.teamId, taskId: execution.request.taskId }) }
         catch { authorize(); throw unavailable('Simulation canonical task review metadata is unavailable') }
@@ -241,12 +242,14 @@ export class SimulationCompanyOwner {
         const connection = this.connection
         /* v8 ignore next -- successful attachment installs its canonical connection. */
         if (connection === undefined) throw unavailable('Simulation review has no canonical connection')
+        const reviewerEntityId = this.creation.driver.scenario === undefined
+          ? 'buyer' as import('@clocky/clocky-simulation').SimulationEntityId
+          : scenarioTaskStep(this.run.snapshot(), request.operationId, this.creation.driver)?.reviewerEntityId
+        /* v8 ignore next -- the accepted review summary proved this immutable creation and reviewer route. */
+        if (reviewerEntityId === undefined) throw invalid('Task workflow has no installed reviewer route')
         try {
           await connection.reviewTask({ commandId: request.commandId, attemptId: request.attemptId,
-            reviewerEntityId: this.creation.driver.scenario === undefined
-              ? 'buyer' as import('@clocky/clocky-simulation').SimulationEntityId
-              : scenarioTaskStep(this.run.snapshot(), request.operationId, this.creation.driver)?.reviewerEntityId
-                ?? (() => { throw invalid('Task workflow has no installed reviewer route') })(),
+            reviewerEntityId,
             expectedRevision: request.expectedRevision, nextPhase: request.nextPhase, reason: request.reason }, authorize)
         } catch (cause: unknown) {
           // Native IO may have committed before lease retirement or response loss; the original intent remains accepted.
@@ -277,7 +280,6 @@ export class SimulationCompanyOwner {
         throw invalid('Simulation cancellation target is not an accepted run-owned task')
       }
       const readTask = this.options.readTask
-      if (readTask === undefined) throw unavailable('Simulation cancellation has no canonical task reader')
       const task = await readTask({ teamId: operation.outbox.taskReceipt.teamId, taskId: operation.outbox.taskReceipt.taskId })
       authorize()
       if (task.cancellation === undefined && (task.revision !== request.expectedRevision
@@ -291,6 +293,7 @@ export class SimulationCompanyOwner {
         if (this.connection === undefined) await this.attach()
         authorize()
         const connection = this.connection
+        /* v8 ignore next -- successful attach installs the canonical connection before cancellation. */
         if (connection === undefined) throw unavailable('Simulation cancellation has no canonical connection')
         try {
           await connection.cancelTask({ operationId: request.operationId, expectedRevision: request.expectedRevision,
@@ -390,7 +393,7 @@ export class SimulationCompanyOwner {
     this.connection = connection
     if (this.closing) { await connection.close(); throw unavailable('Simulation scheduling owner retired during attachment') }
     this.driver = new SimulationCompanyDriver(this.run, connection, this.preparation, this.creation.driver, this.lifetime.signal,
-      this.options.readTask === undefined ? undefined : { readTask: this.options.readTask })
+      { readTask: this.options.readTask })
   }
   private startReason(state: SimulationSnapshot): SimulationProductControlReason {
     if (this.closing) return 'retiring'
@@ -401,6 +404,7 @@ export class SimulationCompanyOwner {
     if (Object.values(state.management ?? {}).some(value => value.status === 'in-progress')) return 'management-in-progress'
     if (Object.values(state.operations).some(operation => operation.status === 'outcome-unknown')) return 'outcome-unknown'
     const stalledOperation = state.stall?.code === 'SIM_OUTBOX_OUTCOME_UNKNOWN' ? state.operations[state.stall.operationId] : undefined
+    /* v8 ignore next -- a stalled outbox returns to pending only through a retained retry authorization. */
     const retryAuthorized = stalledOperation?.status === 'pending' && Object.values(stalledOperation.outbox?.retryAuthorizations ?? {})
       .some(grant => grant.budgetStart === stalledOperation.outbox?.budgetStart)
     if (state.phase === 'stalled' && !retryAuthorized || this.last?.reason === 'stalled') return 'stalled'

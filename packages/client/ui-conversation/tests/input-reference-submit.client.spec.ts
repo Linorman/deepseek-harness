@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ClientContext } from '@clocky/clocky-client-runtime/client'
 import type { InputTriggerController, SubmitOutcome } from '@clocky/clocky-client-ui-input-trigger/client'
 import { SessionInputShell } from '../src/client/input/facade.ts'
-import type { DraftAttachmentId } from '../src/client/input/contract.ts'
+import type { DraftAttachmentId } from '../src/client/contract/input.ts'
 
 const mention = '@[Research](clocky-session:InNvdXJjZSI)'
 const spacedMention = '@[Research notes](clocky-session:InNvdXJjZSI)'

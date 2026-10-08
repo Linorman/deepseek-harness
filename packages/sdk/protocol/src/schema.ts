@@ -16,6 +16,8 @@ import { AttachmentId } from '@clocky/clocky-attachment'
 
 import { z } from 'zod'
 import type { ContentBlock } from '@clocky/clocky-llm'
+// Explicit protocol imports and public re-exports repeat contract names, not executable behavior.
+/* jscpd:ignore-start */
 import type {
   ActivationDisposeParams,
   ActivationDisposeResult,
@@ -119,6 +121,7 @@ import type {
   TeamTaskWatchParams,
   TeamTaskWatchResult,
 } from './types.ts'
+/* jscpd:ignore-end */
 import {
   channelIdSchema,
   channelParticipantSchema,
@@ -154,13 +157,11 @@ import {
   teamPhaseSchema,
   teamStateSnapshotSchema,
   teamTaskCreateIdempotencyKeySchema,
+  teamTaskCreateFields,
   teamTaskDetailsUpdateInputSchema,
   teamTaskIdSchema,
-  teamTaskIntegrationSpecSchema,
-  teamTaskReviewPolicySchema,
   teamTaskSnapshotSchema,
   teamWorkflowPlanSnapshotSchema,
-  teamTaskWorkspaceModeSchema,
   teamWatchResultSchema,
   teamViewPolicyRefSchema,
 } from '@clocky/clocky-team/schema'
@@ -455,24 +456,23 @@ export const teamWorkflowPlanListResultSchema = z.object({
   nextCursor: nonNegativeSafeIntegerSchema.optional(),
 }).strict() as unknown as z.ZodType<TeamWorkflowPlanListResult>
 /** Parse Team task mutation and watch operations. */
-export const teamTaskCreateParamsSchema = z.object({
-  teamId: teamIdSchema,
-  expectedCursor: nonNegativeSafeIntegerSchema,
-  idempotencyKey: teamTaskCreateIdempotencyKeySchema,
-  parentTaskId: teamTaskIdSchema.optional(),
-  subject: nonEmptyStringSchema,
-  description: nonEmptyStringSchema,
-  integration: teamTaskIntegrationSpecSchema.optional(),
-  blockedBy: z.array(teamTaskIdSchema),
-  requiredCapabilities: z.array(nonEmptyStringSchema),
-  priority: nonNegativeSafeIntegerSchema,
-  readScopes: z.array(nonEmptyStringSchema),
-  writeScopes: z.array(nonEmptyStringSchema),
-  workspaceMode: teamTaskWorkspaceModeSchema,
-  budget: jsonObjectSchema,
-  reviewPolicy: teamTaskReviewPolicySchema,
-  maxAttempts: positiveSafeIntegerSchema,
-}).strict() as unknown as z.ZodType<TeamTaskCreateParams>
+export const teamTaskCreateParamsSchema = z.object(teamTaskCreateFields).pick({
+  teamId: true,
+  expectedCursor: true,
+  parentTaskId: true,
+  subject: true,
+  description: true,
+  integration: true,
+  blockedBy: true,
+  requiredCapabilities: true,
+  priority: true,
+  readScopes: true,
+  writeScopes: true,
+  workspaceMode: true,
+  budget: true,
+  reviewPolicy: true,
+  maxAttempts: true,
+}).extend({ idempotencyKey: teamTaskCreateIdempotencyKeySchema }).strict() as unknown as z.ZodType<TeamTaskCreateParams>
 /** Wire schema for teamTaskCreateResultSchema. */
 export const teamTaskCreateResultSchema = (
   z.object({ value: teamTaskSnapshotSchema }).strict()

@@ -10,7 +10,7 @@ import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import TeamHub from '@clocky/clocky-team-hub'
 import { activationIdSchema, fingerprintTeamHumanActorPayload, jsonObjectSchema, matchesTaskPlacement, teamTaskCreateIdempotencyKeySchema, teamTaskPlacementSchema } from '@clocky/clocky-team'
-import type { ParticipantInviteInput, TeamActorProof, TeamHumanActorProof, TeamHumanActorScope, TeamId, TeamTaskId, TeamTaskPlacement, TeamSystemTaskLeaseProof, TeamSystemTaskLeaseScope } from '@clocky/clocky-team'
+import type { ParticipantInviteInput, TeamActorProof, TeamExecutionProfileChoice, TeamHumanActorProof, TeamHumanActorScope, TeamId, TeamTaskId, TeamTaskPlacement, TeamSystemTaskLeaseProof, TeamSystemTaskLeaseScope } from '@clocky/clocky-team'
 import * as Controller from '@clocky/clocky-team-activation-controller'
 import WorkspaceRegistry from '@clocky/clocky-team-workspace'
 import type { TeamWorkspaceProvider } from '@clocky/clocky-team-workspace'
@@ -95,10 +95,16 @@ async function harness(
   const config: Placement.Config = { routes: [{ provider: 'placement-test', roles: ['builder', 'second-builder'],
     model: 'test/model', modelProvider: 'test', modelId: 'model', preset: 'worker', cwd: root, maxTokens: 1000 }],
   maxActivationsPerDrive, maxCursorRetries: 3 }
+  const profileAvailability: Array<() => TeamExecutionProfileChoice['reasons']> = []
+  const registerProfile = ctx.teams.registerExecutionProfile.bind(ctx.teams)
+  vi.spyOn(ctx.teams, 'registerExecutionProfile').mockImplementation((entry) => {
+    profileAvailability.push(entry.availability)
+    return registerProfile(entry)
+  })
   const placementScope = await ctx.plugin(Placement, { routes: configure?.(config.routes) ?? config.routes,
     maxActivationsPerDrive: config.maxActivationsPerDrive, maxCursorRetries: config.maxCursorRetries })
   cleanups.push(async () => { await placementScope.dispose() })
-  return { ctx, teamId, invite, requests, disposed, actor: issued.proof, config, placementScope }
+  return { ctx, teamId, invite, requests, disposed, actor: issued.proof, config, placementScope, profileAvailability }
 }
 
 async function createTask(ctx: Context, teamId: TeamId, actor: TeamActorProof, key: string,
@@ -112,6 +118,74 @@ async function createTask(ctx: Context, teamId: TeamId, actor: TeamActorProof, k
 }
 
 describe('task-driven placement', () => {
+  it('projects only one configured member route and reports owner shutdown', async () => {
+    const { ctx, teamId, invite } = await harness()
+    const builder = await invite('builder')
+    const unconfigured = await invite('unconfigured')
+    const service = await invite('service', [], 'service')
+    const observe = async (participant: typeof builder) => await ctx.waterfall(ctx.teams,
+      'team/member-execution-observe', { teamId, participant }, async () => ({}))
+    expect(await observe(service)).toEqual({})
+    expect(await observe(unconfigured)).toEqual({})
+    expect(await observe(builder)).toMatchObject({ route: { kind: 'configured', provider: 'placement-test', reasons: [] } })
+
+    const managed = ctx.on('team/member-execution-observe', async () => ({ route: {
+      kind: 'managed' as const, provider: 'managed', configuration: 'test', reasons: [] as const,
+    } }))
+    expect(await observe(builder)).toMatchObject({ route: { kind: 'managed' } })
+    managed()
+    const duplicate = ctx.on('team/member-execution-observe', async () => ({ route: {
+      kind: 'configured' as const, provider: 'other', configuration: 'test', reasons: [] as const,
+    } }))
+    await expect(observe(builder)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    duplicate()
+
+    await ctx.teamPlacement.close()
+    expect(await observe(builder)).toMatchObject({ route: { reasons: ['owner-closing'] } })
+  })
+
+  it('rechecks live provider availability for registered profiles and routed members', async () => {
+    const { ctx, teamId, invite, actor, profileAvailability, requests } = await harness()
+    expect(profileAvailability).toHaveLength(4)
+    expect(profileAvailability[0]?.()).toEqual([])
+    const builder = await invite('builder', ['code'], 'remote-agent')
+    await createTask(ctx, teamId, actor, 'runtime-kind-unavailable', { roles: ['builder'] })
+    const getProvider = ctx.agentRuntimes.getProvider.bind(ctx.agentRuntimes)
+    const runtime = getProvider('placement-test')
+    if (runtime === undefined) throw new Error('placement runtime was not registered')
+    const provider = vi.spyOn(ctx.agentRuntimes, 'getProvider').mockImplementation(name => name === 'placement-test'
+      ? { ...runtime, participantKinds: ['local-agent'] }
+      : getProvider(name))
+    try {
+      expect(profileAvailability[1]?.()).toEqual(['participant-kind-unsupported'])
+      await expect(ctx.teamPlacement.prepareRoles(teamId, [builder.role]))
+        .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+      expect(await ctx.teamPlacement.prepare(teamId)).toBe(0)
+      expect(requests).toHaveLength(1)
+      provider.mockReturnValueOnce(undefined)
+      expect(profileAvailability[0]?.()).toEqual(['provider-unavailable'])
+    } finally { provider.mockRestore() }
+    await ctx.teamPlacement.close()
+    expect(profileAvailability[0]?.()).toEqual(['owner-closing'])
+  })
+
+  it('does not place a workflow-owned task without a ready plan in the observed Team state', async () => {
+    const { ctx, teamId, invite, actor, requests } = await harness()
+    await invite('builder')
+    const created = await createTask(ctx, teamId, actor, 'orphan-workflow-task', { roles: ['builder'] })
+    const getTeam = ctx.teams.getTeam.bind(ctx.teams)
+    const read = vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async (input) => {
+      const state = await getTeam(input)
+      const { workflowPlans: _plans, ...withoutPlans } = state
+      return { ...withoutPlans,
+        tasks: state.tasks.map(task => task.id === created.id ? { ...task, workflowPlanId: 'missing-plan' as never } : task) }
+    })
+    try {
+      expect(await ctx.teamPlacement.prepare(teamId)).toBe(0)
+      expect(requests).toHaveLength(1)
+    } finally { read.mockRestore() }
+  })
+
   it.each([
     ['model mismatch', (routes: Placement.PlacementRoute[]) => routes.map(route => ({ ...route, modelId: 'different' })),
       'Placement model must equal modelProvider/modelId'],

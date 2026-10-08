@@ -30,6 +30,7 @@ async function mount(): Promise<Bench> {
   const api = new FakeApiClient()
   const bench: Bench = { ctx, api, sinks: undefined, stopped: 0 }
   const handle: ConnectionHandle = {
+    retryAuthorization: () => {},
     api,
     isLoopback: true,
     hostDescription: {
@@ -179,5 +180,22 @@ it('retires Session, Team and Workspace state after an explicit access refusal',
     expect(workspaces.list.getSnapshot().items).toEqual([])
     expect(teams.list.getSnapshot()).toMatchObject({ items: [], current: undefined, draft: undefined,
       error: { code: 'PRODUCT_AUTH_INVALID' } })
+  } finally { await bench.ctx.fiber.dispose() }
+})
+
+it('reserves connection reset for successful handshakes and clears replaced principals before restoration', async () => {
+  const bench = await mount()
+  const order: string[] = []
+  bench.ctx.on('connection/reset', () => { order.push('reset') })
+  bench.ctx.on('connection/authorization-cleared', () => { order.push('clear') })
+  const description = { version: '0', cwd: '/f', attachedSessions: 0, home: '/h', canOpenPath: true }
+  try {
+    bench.sinks?.onConnected?.({ ...description, authorizationScope: 'a'.repeat(64) as never })
+    bench.sinks?.onConnected?.({ ...description, authorizationScope: 'b'.repeat(64) as never })
+    bench.sinks?.onAuthorizationLost?.()
+    expect(order).toEqual(['reset', 'clear', 'reset', 'clear'])
+    bench.sinks?.onConnected?.({ ...description, authorizationScope: 'c'.repeat(64) as never })
+    expect(order.at(-1)).toBe('reset')
+    expect(order.filter(event => event === 'clear')).toHaveLength(2)
   } finally { await bench.ctx.fiber.dispose() }
 })

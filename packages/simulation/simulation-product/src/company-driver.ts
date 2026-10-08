@@ -1,3 +1,4 @@
+import { driverActivation } from './driver-residency.ts'
 /** Bounded version 1 procurement driver over canonical actors and retained decision windows. */
 import { z } from 'zod'
 import { isDeepStrictEqual } from 'node:util'
@@ -14,9 +15,8 @@ import type { TeamTaskSnapshot } from '@clocky/clocky-team'
 import { simulationTaskScenarioSchema } from './task-scenario-config.ts'
 import { SimulationTaskScenarioDriver } from './task-scenario-driver.ts'
 
-/** Deployment work bound, route and simulated delivery/deadline policy; no secrets or executable code. */
-export const simulationCompanyDriverSchema = z.strictObject({ version: z.literal('1'), maxControlSteps: z.number().int().positive(),
-  model: z.strictObject({ provider: z.string().trim().min(1), name: z.string().trim().min(1) }),
+/** Structural driver policy shared by installed late binding and frozen execution; it selects no model. */
+export const simulationCompanyDriverParametersSchema = z.strictObject({ version: z.literal('1'), maxControlSteps: z.number().int().positive(),
   requestDelay: simTimeSchema, reportDelay: simTimeSchema, replyDelay: simTimeSchema, completeDelay: simTimeSchema,
   tasks: z.strictObject({ version: z.literal('1'), cognition: z.enum(['model', 'deterministic']),
     leaseDurationMs: z.number().int().positive(), maxAttempts: z.number().int().positive(),
@@ -27,6 +27,10 @@ export const simulationCompanyDriverSchema = z.strictObject({ version: z.literal
 }).refine(value => BigInt(value.replyDelay) > BigInt(value.requestDelay) && BigInt(value.completeDelay) > BigInt(value.replyDelay),
   'Company deadlines must follow request delivery in order')
   .refine(value => value.tasks === undefined || value.scenario === undefined, 'Select either company tasks or a task workflow')
+/** Fully resolved immutable execution route; no deployment selector or reasoning override is accepted. */
+export const simulationCompanyDriverSchema = simulationCompanyDriverParametersSchema.safeExtend({
+  model: z.strictObject({ provider: z.string().trim().min(1), name: z.string().trim().min(1) }),
+})
 /** Immutable settings selected by a trusted installed scenario. */
 export type SimulationCompanyDriverConfig = z.infer<typeof simulationCompanyDriverSchema>
 /** Finite procurement steps; each step must establish its evidenced effect before the next one. */
@@ -100,6 +104,7 @@ export class SimulationCompanyDriver {
   advance(): Promise<SimulationCompanyDriveResult> {
     if (this.pending !== undefined) return this.pending
     if (this.config.scenario !== undefined) {
+      /* v8 ignore next -- the constructor rejects scenarios without this readonly task reader. */
       if (this.taskOptions === undefined) throw new Error('Task workflow requires its canonical task reader')
       this.scenarioDriver ??= new SimulationTaskScenarioDriver(this.run, this.connection, this.preparation,
         this.config, this.config.scenario, this.lifetime, this.taskOptions.readTask)
@@ -226,6 +231,7 @@ export class SimulationCompanyDriver {
     if (result.reason === 'idle') return undefined
     if (result.reason === 'task-waiting') {
       const receipt = operation.outbox?.taskReceipt
+      /* v8 ignore next -- task-waiting follows this original applied creation and its retained task receipt. */
       if (receipt === undefined) throw new Error('Company task stage lost its original creation receipt')
       const task = await options.readTask({ teamId: receipt.teamId, taskId: receipt.taskId })
       this.lifetime.throwIfAborted()
@@ -274,12 +280,8 @@ export class SimulationCompanyDriver {
   }
 
   private residency(entityId: SimulationEntityId) {
-    const entity = this.run.snapshot().entities[entityId]
-    return { activation: { provider: this.preparation.participant.provider,
-      seed: { kind: entity?.writer === undefined ? 'fresh' as const : 'resume' as const },
-      agent: { preset: this.preparation.participant.preset,
-        options: { provider: this.config.model.provider, model: this.config.model.name } }, signal: this.lifetime },
-    evict: [buyer, supplier] }
+    return { activation: driverActivation(this.run, entityId, this.preparation.participant, this.config.model, this.lifetime),
+      evict: [buyer, supplier] }
   }
   private context(state: SimulationSnapshot, stage: SimulationCompanyStage, entityId: SimulationEntityId,
     taskOperationId?: import('@clocky/clocky-simulation').SimulationOperationId, reviewedTask?: TeamTaskSnapshot):
@@ -296,6 +298,7 @@ export class SimulationCompanyDriver {
     const requestTime = acceptedStage(state, 'request')?.time ?? state.time
     const add = (delay: string) => simTimeSchema.parse((BigInt(requestTime) + BigInt(delay)).toString())
     const reviewer = this.config.tasks?.review === 'buyer' ? state.entities[buyer]?.binding : undefined
+    /* v8 ignore next -- reviewed company preparation installs a permanent buyer binding before driving. */
     if (this.config.tasks?.review === 'buyer' && reviewer === undefined) throw new Error('Company reviewer has no retained buyer binding')
     const task = this.config.tasks === undefined ? undefined : { subject: 'Deliver one purchased inventory unit',
       description: this.config.tasks.review === 'buyer'

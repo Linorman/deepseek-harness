@@ -21,6 +21,9 @@
 - button "Bad response":
   - img
 - text: 7/25 {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Worked for {{duration}} · 3 steps" [expanded]:
+  - img
+  - text: Worked for {{duration}} · 3 steps
 - button "Read a.txt":
   - img
   - img
@@ -54,4 +57,5 @@
   - text: Test Model
   - img
 - button "Send message" [disabled]
-- text: 2 turns · 3 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 98% Input 7.8K tok · Output 103 tok
+- text: 2 turns · 3 steps
+- button "Session statistics": ⓘ

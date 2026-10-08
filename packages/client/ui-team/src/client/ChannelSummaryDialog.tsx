@@ -67,7 +67,10 @@ export function ChannelSummaryDialog({ page, capabilities, readCatalog, translat
       if (!controller.signal.aborted) onClose()
     } catch (cause: unknown) {
       if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause))
-    } finally { if (request.current === controller) { request.current = undefined; setBusy(false) } }
+    } finally {
+      request.current = undefined
+      if (!controller.signal.aborted) setBusy(false)
+    }
   }
   const close = () => { if (!busy) onClose() }
   return <Modal open onClose={close} title={t('channel.summarize')} closeLabel={t('cancel')} footer={<div className={css.actions}>

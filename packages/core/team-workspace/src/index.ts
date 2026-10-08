@@ -1,3 +1,13 @@
+export { teamWorkspaceIntegrationKey } from './provider-support.ts'
+export { isStoredTeamWorkspaceManifestHeader } from './provider-support.ts'
+export { encodeTeamWorkspaceChangeSetIfSupported } from './change-set.ts'
+export { assertCurrentTeamWorkspaceOwner,isCurrentTeamWorkspaceCandidate,authorizeTeamWorkspaceAllocation } from './provider-support.ts'
+export { TeamWorkspaceReservationRegistry, TeamWorkspaceReservations } from './provider-support.ts'
+export { teamWorkspaceIntegrationIdentity, isTeamWorkspaceIntegrationMarkerBase, sameTeamWorkspaceIntegrationMarker } from './provider-support.ts'
+export type { TeamWorkspaceIntegrationIdentity, TeamWorkspaceIntegrationMarkerBase } from './provider-support.ts'
+export { TeamWorkspaceIntegrationQueue, assertTeamWorkspaceSourceIntegration, authorizeTeamWorkspaceSourceIntegration, decodeTeamWorkspaceChangeSet } from './provider-support.ts'
+import { sameTeamWorkspaceBaseMetadata } from './provider-support.ts'
+export { teamWorkspaceAllocationKey, isActiveWorkspaceLocalAgent, isWorkspaceActivationDeliverable, sameTeamWorkspaceBaseMetadata } from './provider-support.ts'
 /**
  * Team Workspace Service Definition: a named provider registry at
  * `ctx.teamWorkspaces`, independent of Team persistence and Agent delivery.
@@ -113,7 +123,8 @@ export class TeamWorkspaceRegistry extends Service {
     return this.ctx.effect(function* (this: TeamWorkspaceRegistry) {
       if (this.allocationPublishers.has(owner)) throw new TeamWorkspaceError('Workspace owner already has a publisher', 'TEAM_WORKSPACE_ALLOCATION_MISMATCH')
       this.allocationPublishers.set(owner, publisher)
-      yield () => { if (this.allocationPublishers.get(owner) === publisher) this.allocationPublishers.delete(owner) }
+      // The synchronous unique-owner registration remains ours until its Cordis effect retires once.
+      yield () => { this.allocationPublishers.delete(owner) }
     }.bind(this), 'teamWorkspaces.registerAllocationPublisher()')
   }
 
@@ -430,17 +441,7 @@ function metadataMatchesRequest(
 
 /** Compare immutable provider metadata after materialization or recovery. */
 function sameMetadata(left: TeamWorkspaceAllocationMetadata, right: TeamWorkspaceAllocationMetadata): boolean {
-  return left.id === right.id
-    && left.provider === right.provider
-    && left.mode === right.mode
-    && left.teamId === right.teamId
-    && left.taskId === right.taskId
-    && left.attemptId === right.attemptId
-    && left.assignedRevision === right.assignedRevision
-    && left.participantId === right.participantId
-    && left.activationId === right.activationId
-    && left.sessionId === right.sessionId
-    && left.baseVersion === right.baseVersion
+  return sameTeamWorkspaceBaseMetadata(left, right)
     && left.executionWorld?.kind === right.executionWorld?.kind
     && left.executionWorld?.id === right.executionWorld?.id
 }

@@ -12,6 +12,8 @@ task-assignment delivery 会启动 lease-backed attempt 并记录 model-visible 
 
 `@clocky/clocky-tool-team`只会在 Session header 命名 Team 与 Participant 的 Agent scope 中安装 `team_task_report`。工具接受 task id、attempt id 和一种 worker-owned outcome：带 summary 的 completed、带 code 和 message 的 failed，或 released。它解析恰好一条持久化 `team-task-assignment` `user/message` source，要求其 Team、task、attempt、activation、wake channel 和 post-start `runningRevision` 匹配当前 running lease，并验证 activation binding 匹配调用 Session 与 Participant。
 
+Team reporting 与 coordinator task 工具共享 tools 所有者提供的精确 scoped-Agent／active-driver 守卫及按序注册释放。共享守卫保留原有的工具专属错误词汇；所有已有 operation authority 与 await 后重验仍由消费者负责。紧凑的 report、integration、heartbeat 与 review schema 共享按序 task identity 字段，并各自保留精确 phase 约束，因此模型可见 schema 与结果字段顺序保持不变。
+
 有本地 Team authority 时，工具保留短生命周期的已配置 `TeamLink`。远程 child 只能通过 owner-scoped callback 借用其精确 Agent-owned 固定 Link；它不能读取 credential 或打开第二条连接。`settleTaskAttempt()`从 Link binding 导出 Team、Participant 和 activation fact，然后 Hub 应用 owner fence 与 `task-mutate` policy。模型不能提供 revision、recipient、activation、Session、next phase、review decision、cancellation 或 lease-expiry outcome。Hub 仍会把 completed work 映射到 review，并按 task 冻结的 attempt limit 将 released 或 failed work 映射到 retry 或 terminal failure。
 
 在 settlement 前以及 Link settlement failure 后，工具都会检查不可变 attempt history。Hub 还会为相同 binding、attempt 与 outcome 的重试返回原 task snapshot；不同结果、expired attempt 或 replaced lease 会被拒绝。普通 `tool/call` 和 `tool/result` record 会保留请求 report 与返回 task state，因此不需要新的 Session event。

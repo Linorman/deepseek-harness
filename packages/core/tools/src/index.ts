@@ -105,6 +105,7 @@ export { CodeRunFailedError, RUN_CODE_NAME } from './code-mode.ts'
 export { jsonSchemaToTs, renderToolsSdk } from './ts-types.ts'
 export { jsonSchemaToPy, renderToolsSdkPy } from './py-types.ts'
 export { defineContentToolFixture, type ContentToolFixtureOptions } from './testing.ts'
+export { bindAgentToolDisposal, requireScopedToolAgent, type ScopedToolAgentFailure } from './scoped-agent.ts'
 
 // The render-intent vocabulary a tool declares via `presentCall`/`presentResult`
 // lives in its own UI-facing module; re-export it so `@clocky/clocky-tools`

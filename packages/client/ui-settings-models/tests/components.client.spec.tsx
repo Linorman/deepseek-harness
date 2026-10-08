@@ -94,6 +94,7 @@ function scriptedFace(overrides: {
   const unset = overrides.unset ?? vi.fn(() => Promise.resolve(ok({})))
   const face = {
     llm: {
+      models: vi.fn(() => Promise.resolve(ok({ groups: [], failures: [] }))),
       providers: vi.fn(() => Promise.resolve(ok({ providers: [
         { provider: 'openai', displayName: overrides.providerDisplayNames?.openai ?? 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], active: true },
         { provider: 'anthropic', displayName: overrides.providerDisplayNames?.anthropic ?? 'anthropic', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'anthropic'], active: false },
@@ -145,6 +146,19 @@ async function mount(overrides: Parameters<typeof scriptedFace>[0] = {}) {
 }
 
 describe('ModelsSection', () => {
+  it('keeps an accepted provider deletion dialog open while its write remains pending', async () => {
+    let resolve!: (value: RpcResponse<SettingsNamespaceView>) => void
+    const mutate = vi.fn(() => new Promise<RpcResponse<SettingsNamespaceView>>((done) => { resolve = done }))
+    await mount({ mutate })
+    fireEvent.click(screen.getByRole('button', { name: 'Delete zombie' }))
+    const dialog = screen.getByRole('dialog', { name: 'Delete zombie?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete zombie' }))
+    await waitFor(() => { expect(mutate).toHaveBeenCalledOnce() })
+    fireEvent(dialog, new Event('cancel', { cancelable: true }))
+    expect(screen.getByRole('dialog', { name: 'Delete zombie?' })).toBe(dialog)
+    resolve(fail('Deletion refused'))
+    expect(await screen.findByText('Deletion refused')).toBeDefined()
+  })
   it('renders nothing before the slot injects its dependencies', () => {
     render(<ModelsSection />)
     expect(document.body.textContent).toBe('')

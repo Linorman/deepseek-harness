@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-Simulation 行政任务审核保留不可变的 Participant review policy。Hub 在 task-mutate 策略 IO 前后核对精确的原生 task/create 来源、原完成结果、当前有效的配置 reviewer、任务 revision、最新 attempt、lease 与取消状态。受理决定保留 `simulationCommand` 来源；运行内相同 command 复用其他载荷会拒绝。相同载荷且权限仍有效的重试即使已有后续 attempt，也仅保留历史决定，不重复策略或修改。Team journal 与 projection checkpoint format 40 拒绝旧格式。参见[审核权限决策](../../../.agents/notes/implemented/architecture/2026-10-01-simulation-task-review-authority.zh.md)。
+带有 `rules.simulationRunId` 的 Team 拒绝普通 `scheduler-stall` 阶段 proof；其调度和休眠审核实体的可用性由 Simulation 管理。Simulation 行政任务审核保留不可变的 Participant review policy。Hub 在 task-mutate 策略 IO 前后核对精确的原生 task/create 来源、原完成结果、当前有效的配置 reviewer、任务 revision、最新 attempt、lease 与取消状态。受理决定保留 `simulationCommand` 来源；运行内相同 command 复用其他载荷会拒绝。相同载荷且权限仍有效的重试即使已有后续 attempt，也仅保留历史决定，不重复策略或修改。Team journal 与 projection checkpoint format 40 拒绝旧格式。参见[审核权限决策](../../../.agents/notes/implemented/architecture/2026-10-01-simulation-task-review-authority.zh.md)。
 
 `cancelRuntimeTask()` 在目标查找前、Team 队列内和 policy IO 后重新解析可撤销的 `simulation-task-cancel` proof。规范创建、creator、run／operation、生命周期所有者、幂等身份及精确可为空的 attempt fence 必须匹配。现有取消所有者保留最初原因／目标、live lease 和物理清理责任；pending／review 取消及相同重试复用同一机制。普通 human 与 TeamRun task-control proof 不能使用该入口。
 

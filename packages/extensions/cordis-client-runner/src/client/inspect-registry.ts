@@ -41,6 +41,19 @@ export class ClientCordisInspectRegistry {
   private readonly active = new Map<CordisInspectRequestId, AbortController>()
   private publishQueued = false
   private syncChain = Promise.resolve()
+  private authorization = new AbortController()
+
+  /** Retire queries and queued publications without another protected RPC. */
+  clearAuthorization(): void {
+    this.authorization.abort()
+    for (const controller of this.active.values()) controller.abort()
+    this.active.clear()
+  }
+
+  /** Allow publication and queries again after a successful authenticated handshake. */
+  resumeAuthorization(): void {
+    if (this.authorization.signal.aborted) this.authorization = new AbortController()
+  }
 
   /** @param host - folded manifest and query result transport. */
   constructor(private readonly host: ClientCordisInspectHost) {}
@@ -74,14 +87,18 @@ export class ClientCordisInspectRegistry {
 
   /** Publish the current complete manifest, including after reconnect. */
   publish(): void {
-    if (this.publishQueued) return
+    if (this.publishQueued || this.authorization.signal.aborted) return
+    const signal = this.authorization.signal
     this.publishQueued = true
     queueMicrotask(() => {
       this.publishQueued = false
+      if (signal.aborted) return
       const manifests = [...this.providers.values()].map(provider => provider.manifest)
       this.syncChain = this.syncChain.then(async () => {
+        if (signal.aborted) return
         await this.host.sync(manifests)
       }).catch((error: unknown) => {
+        if (signal.aborted) return
         console.error('[cordis-client-runner] syncing inspect providers failed:', error)
       })
     })
@@ -93,7 +110,7 @@ export class ClientCordisInspectRegistry {
    * @returns after the first local result has been sent back to Host.
    */
   async query(request: CordisInspectQueryRequest): Promise<void> {
-    if (this.active.has(request.requestId)) return
+    if (this.authorization.signal.aborted || this.active.has(request.requestId)) return
     const controller = new AbortController()
     this.active.set(request.requestId, controller)
     let resolution: CordisInspectQueryResolution
@@ -117,7 +134,7 @@ export class ClientCordisInspectRegistry {
         ? { ok: false, reason: 'cancelled', message: 'Client inspect query was cancelled' }
         : { ok: false, reason: 'provider-error', message: error instanceof Error ? error.message : String(error) }
     } finally {
-      this.active.delete(request.requestId)
+      if (this.active.get(request.requestId) === controller) this.active.delete(request.requestId)
     }
     if (controller.signal.aborted) return
     await this.host.resolve(request.agentId, request.requestId, resolution)

@@ -9,8 +9,8 @@
   min-height: 0;
   width: 100%;
   box-sizing: border-box;
-  color: var(--clocky-alias-label-primary);
-  background: var(--clocky-alias-bg-layer-1);
+  color: var(--clocky-fg-primary);
+  background: var(--clocky-bg-surface);
 }
 
 .ledger {

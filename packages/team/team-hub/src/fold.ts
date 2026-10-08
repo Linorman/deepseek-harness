@@ -1,3 +1,5 @@
+import { sameUsageChargeProvenance } from './usage-provenance.ts'
+import { deepFreeze as freeze } from '@clocky/clocky-llm'
 import { assertTaskUpdateReceiptOwner, foldTaskUpdateCommand } from './task-update.ts'
 import { liveActivationCapacity, liveActivationLimit } from '@clocky/clocky-team'
 import { projectWorkspaceObservation, assertWorkspaceObservationSnapshot } from './workspace-observation.ts'
@@ -1589,20 +1591,6 @@ function assertCheckpointUsageCharge(
   if (charges.has(charge.id)) throw malformedTeam(`Team checkpoint repeats child usage charge '${charge.id}'`)
 }
 
-/** Compare charge provenance while allowing provider chunks to replace usage. */
-function sameUsageChargeProvenance(left: TeamUsageCharge, right: TeamUsageCharge): boolean {
-  return left.id === right.id
-    && left.sourceTeamId === right.sourceTeamId
-    && left.parentTaskId === right.parentTaskId
-    && left.originTeamId === right.originTeamId
-    && left.sourceSampleId === right.sourceSampleId
-    && left.participantId === right.participantId
-    && left.sessionId === right.sessionId
-    && left.provider === right.provider
-    && left.model === right.model
-    && left.turn === right.turn
-    && left.step === right.step
-}
 
 /** Validate optional task/attempt provenance retained with a durable usage sample. */
 function assertUsageTaskRelation(projection: TeamProjection, sample: TeamUsageSample): void {
@@ -3092,14 +3080,6 @@ function clonePostIdempotency(
 function immutable<T>(value: T): T {
   const copy = structuredClone(value)
   return freeze(copy)
-}
-
-/** Recursively freeze one detached value. */
-function freeze<T>(value: T): T {
-  if (typeof value !== 'object' || value === null || Object.isFrozen(value)) return value
-  Object.freeze(value)
-  for (const child of Object.values(value)) freeze(child)
-  return value
 }
 
 /** Convert unexpected adapter failures into a durable-WAL diagnosis. */

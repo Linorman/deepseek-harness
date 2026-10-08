@@ -8,22 +8,22 @@
   height: 38px;
   padding: 0 8px 0 20px;
   gap: 24px;
-  border-radius: 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  background: var(--clocky-alias-bg-layer-3);
+  border-radius: var(--clocky-radius-md);
+  border: 1px solid var(--clocky-border-default);
+  background: var(--clocky-bg-overlay);
   min-width: 0;
 }
 
 .selected {
   border-color: transparent;
-  box-shadow: inset 0 0 0 2px var(--clocky-alias-brand-primary-new-colorprimary-new-color);
+  box-shadow: inset 0 0 0 2px var(--clocky-accent-bg);
 }
 
 .index {
   flex: none;
   width: 24px;
-  font: var(--clocky-font-xs-13);
-  color: var(--clocky-alias-label-tertiary);
+  font: var(--clocky-type-body-small);
+  color: var(--clocky-fg-tertiary);
 }
 
 .tagSlot {
@@ -41,50 +41,50 @@
   height: 22px;
   max-width: 100%;
   padding: 0 4px;
-  border-radius: 6px;
-  font: var(--clocky-font-xs-strong-13);
+  border-radius: var(--clocky-radius-sm);
+  font: var(--clocky-type-label);
   white-space: nowrap;
 }
 
 .tagSystem {
-  color: var(--clocky-alias-label-secondary);
-  background: var(--clocky-alias-bg-module-platform);
+  color: var(--clocky-fg-secondary);
+  background: var(--clocky-bg-sunken);
 }
 
 .tagUser {
-  color: var(--clocky-alias-state-success-primary);
-  background: var(--clocky-alias-state-success-tertiary);
+  color: var(--clocky-status-done-fg);
+  background: var(--clocky-status-done-bg);
 }
 
 .tagContext {
   color: color-mix(
     in srgb,
-    var(--clocky-alias-state-success-primary) 68%,
-    var(--clocky-alias-label-secondary)
+    var(--clocky-status-done-fg) 68%,
+    var(--clocky-fg-secondary)
   );
-  background: var(--clocky-alias-state-success-tertiary);
+  background: var(--clocky-status-done-bg);
 }
 
 .tagMessage {
   color: color-mix(
     in srgb,
-    var(--clocky-alias-brand-primary-new-colorprimary-new-color) 60%,
-    var(--clocky-alias-state-error-secondary)
+    var(--clocky-accent-fg) 60%,
+    var(--clocky-status-failed-fg)
   );
   background: color-mix(
     in srgb,
     color-mix(
       in srgb,
-      var(--clocky-alias-brand-primary-new-colorprimary-new-color) 55%,
-      var(--clocky-alias-state-error-secondary)
+      var(--clocky-accent-bg) 55%,
+      var(--clocky-status-failed-fg)
     ) 15%,
-    var(--clocky-alias-bg-layer-1)
+    var(--clocky-bg-surface)
   );
 }
 
 .tagTool {
-  color: var(--clocky-alias-state-warn-label);
-  background: var(--clocky-alias-state-warn-tertiary);
+  color: var(--clocky-status-needs-you-fg);
+  background: var(--clocky-status-needs-you-bg);
 }
 
 /* run_code sub-dispatch cells: the business tint plus an indent so the
@@ -92,13 +92,13 @@
 .tagSubtool {
   color: color-mix(
     in srgb,
-    var(--clocky-alias-state-warn-label) 62%,
-    var(--clocky-alias-label-tertiary)
+    var(--clocky-status-needs-you-fg) 62%,
+    var(--clocky-fg-tertiary)
   );
   background: color-mix(
     in srgb,
-    var(--clocky-alias-state-warn-tertiary) 58%,
-    var(--clocky-alias-bg-layer-1)
+    var(--clocky-status-needs-you-bg) 58%,
+    var(--clocky-bg-surface)
   );
 }
 
@@ -112,8 +112,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: var(--clocky-font-xs-13);
-  color: var(--clocky-alias-label-primary);
+  font: var(--clocky-type-body-small);
+  color: var(--clocky-fg-primary);
 }
 
 /* Same column geometry as TrajectoryTurnHeader: 4×71 + 3×12 = 320. */
@@ -132,7 +132,7 @@
   flex: none;
   width: 71px;
   text-align: left;
-  font: var(--clocky-font-xs-13);
-  color: var(--clocky-alias-label-tertiary);
+  font: var(--clocky-type-body-small);
+  color: var(--clocky-fg-tertiary);
   white-space: nowrap;
 }

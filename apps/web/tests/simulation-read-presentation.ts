@@ -54,11 +54,11 @@ export async function simulationReadPresentation(page: Page, output: string, ide
         expect(zoom.width).toBeCloseTo(viewport.width / factor, 0)
         await expect.poll(async () => workspace.evaluate(element => element.getBoundingClientRect().width))
           .toBeGreaterThan(viewport.width / factor / 2)
-        await page.evaluate(async () => {
-          await Promise.allSettled(document.getAnimations()
-            .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
-            .map(animation => animation.finished))
-        })
+        // Chromium can retain an unresolved finished promise after a short CSS
+        // transition already reports finished. Observe rendering state instead.
+        await expect.poll(() => page.evaluate(() => document.getAnimations().some(animation =>
+          animation.effect?.getComputedTiming().iterations !== Infinity
+          && (animation.playState === 'running' || animation.pending)))).toBe(false)
         await workspace.getByRole('heading', { level: 1 }).waitFor()
         expect(await page.locator('vite-error-overlay').count()).toBe(0)
         expect(page.url()).toBe(initial)
@@ -71,9 +71,21 @@ export async function simulationReadPresentation(page: Page, output: string, ide
           expect(bounds !== null && bounds.y >= 0 && bounds.y + bounds.height <= zoom.height).toBe(true)
         }
         const measurements = await workspace.evaluate((element) => {
+          const canvas = document.createElement('canvas')
+          canvas.width = canvas.height = 1
+          const context = canvas.getContext('2d', { willReadFrequently: true })
+          if (context === null) throw new Error('Rendered contrast requires the browser color compositor')
+          const colors = new Map<string, number[]>()
           const color = (raw: string) => {
-            const components = raw.match(/[\d.]+/g)?.map(Number) ?? []
-            return [components[0] ?? 0, components[1] ?? 0, components[2] ?? 0, components[3] ?? 1]
+            const retained = colors.get(raw)
+            if (retained !== undefined) return retained
+            context.clearRect(0, 0, 1, 1)
+            context.fillStyle = raw
+            context.fillRect(0, 0, 1, 1)
+            const pixel = context.getImageData(0, 0, 1, 1).data
+            const value = [pixel[0]!, pixel[1]!, pixel[2]!, pixel[3]! / 255]
+            colors.set(raw, value)
+            return value
           }
           const blend = (front: number[], back: number[]) => front.slice(0, 3)
             .map((value, index) => value * front[3]! + back[index]! * (1 - front[3]!)).concat(1)
@@ -110,6 +122,10 @@ export async function simulationReadPresentation(page: Page, output: string, ide
   }
   await page.emulateMedia({ reducedMotion: 'reduce' })
   expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true)
+  // A changed media query retires existing finite CSS transitions at the next
+  // animation checkpoint; inspect the settled reduced-motion presentation.
+  await workspace.evaluate(async (element) => { await Promise.allSettled(element.getAnimations({ subtree: true })
+    .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished)) })
   const animations = await workspace.evaluate(element => element.getAnimations({ subtree: true })
     .map(animation => animation.effect?.getComputedTiming().duration))
   expect(animations.filter(duration => typeof duration === 'number' && duration > 0)).toEqual([])

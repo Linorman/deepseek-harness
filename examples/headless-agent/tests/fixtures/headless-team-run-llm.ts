@@ -26,6 +26,10 @@ const MULTI_WORKFLOW_TASK_SUMMARY = 'HEADLESS_TEAM_MULTI_WORKFLOW_TASK_SUMMARY'
 const MULTI_WORKFLOW_FINAL_TEXT = 'HEADLESS_TEAM_MULTI_WORKFLOW_FINAL'
 const OWNER_PROPOSAL_TASK = 'Propose one deterministic owner hint.'
 const OWNER_PROPOSAL_FINAL_TEXT = 'HEADLESS_TEAM_OWNER_PROPOSAL_FINAL'
+const WORKER_POOL_RETRY_TASK = 'Recover an invited worker after its first provisioning fails.'
+const WORKER_POOL_RETRY_FINAL_TEXT = 'HEADLESS_TEAM_WORKER_POOL_RECOVERED'
+const WORKER_POOL_FIRST_CALL = 'headless-team-worker-pool-first'
+const WORKER_POOL_RETRY_CALL = 'headless-team-worker-pool-retry'
 
 const WORKFLOW_PLAN = {
   version: 1,
@@ -198,6 +202,11 @@ function isOwnerProposalRequest(messages: GenerateOptions['messages']): boolean 
     && message.content.some(block => block.type === 'text' && block.text === OWNER_PROPOSAL_TASK))
 }
 
+function isWorkerPoolRetryRequest(messages: GenerateOptions['messages']): boolean {
+  return messages.some(message => message.role === 'user'
+    && message.content.some(block => block.type === 'text' && block.text === WORKER_POOL_RETRY_TASK))
+}
+
 function goalRevision(messages: GenerateOptions['messages'], callId: string): number {
   const result = toolResultText(messages, callId)
   if (result === undefined) throw new Error('headless-team-run-llm: Team goal read has no result')
@@ -320,6 +329,33 @@ class HeadlessTeamTaskAdapter extends LlmAdapter {
         })
       } else {
         chunks = textChunks(isWorkflowAssignment(options.messages) ? WORKFLOW_TASK_SUMMARY : TASK_SUMMARY)
+      }
+    } else if (isWorkerPoolRetryRequest(options.messages)) {
+      const first = toolCall(options.messages, 'team_worker_pool_set')
+      if (first === undefined) {
+        chunks = toolChunks(WORKER_POOL_FIRST_CALL, 'team_worker_pool_set', { worker_count: 2 })
+      } else if (toolResultText(options.messages, WORKER_POOL_FIRST_CALL) === undefined) {
+        throw new Error('headless-team-run-llm: first worker-pool request has no result')
+      } else if (first.id === WORKER_POOL_FIRST_CALL) {
+        if (!toolResultText(options.messages, WORKER_POOL_FIRST_CALL)?.includes('The invited worker could not provision yet.')) {
+          throw new Error(`headless-team-run-llm: first worker-pool request did not hit the provisioning fault: ${String(toolResultText(options.messages, WORKER_POOL_FIRST_CALL))}`)
+        }
+        chunks = toolChunks(WORKER_POOL_RETRY_CALL, 'team_worker_pool_set', { worker_count: 2 })
+      } else if (toolResultText(options.messages, WORKER_POOL_RETRY_CALL) === undefined) {
+        throw new Error('headless-team-run-llm: worker-pool retry has no result')
+      } else if (toolCall(options.messages, 'team_final') === undefined) {
+        const result = JSON.parse(toolResultText(options.messages, WORKER_POOL_RETRY_CALL)!) as {
+          worker_count?: unknown
+          active_workers?: unknown
+        }
+        if (result.worker_count !== 2 || result.active_workers !== 2) {
+          throw new Error(`headless-team-run-llm: worker-pool retry left the wrong roster: ${JSON.stringify(result)}`)
+        }
+        chunks = toolChunks('headless-team-worker-pool-final', 'team_final', {
+          channel_id: finalChannelId(options.system), text: WORKER_POOL_RETRY_FINAL_TEXT,
+        })
+      } else {
+        chunks = textChunks(WORKER_POOL_RETRY_FINAL_TEXT)
       }
     } else if (isWorkflowRequest(options.messages)) {
       const start = toolCall(options.messages, 'team_workflow_start')

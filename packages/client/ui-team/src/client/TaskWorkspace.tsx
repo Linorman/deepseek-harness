@@ -66,6 +66,7 @@ export function TaskWorkspace({ state, identities, inspectMember, searchScope = 
   updateViewRef.current = updateView
   useLayoutEffect(() => {
     const element = tableScroll.current
+    /* v8 ignore next -- The table viewport ref is attached before this layout effect runs. */
     if (element !== null) element.scrollTop = tablePosition.current
     return () => { updateViewRef.current({ taskListScroll: tablePosition.current }) }
   }, [])
@@ -81,6 +82,7 @@ export function TaskWorkspace({ state, identities, inspectMember, searchScope = 
     if (previousFilters.current === filterIdentity) return
     previousFilters.current = filterIdentity
     tablePosition.current = 0
+    /* v8 ignore next -- Filtering never unmounts the table viewport. */
     if (tableScroll.current !== null) tableScroll.current.scrollTop = 0
   }, [filterIdentity])
   const commitSearch = (search: string, phase = viewState.taskPhase) => {
@@ -111,6 +113,7 @@ export function TaskWorkspace({ state, identities, inspectMember, searchScope = 
     const previous = previousSelection.current
     if (viewState.taskId === undefined && previous !== undefined) {
       const element = tableScroll.current
+      /* v8 ignore next -- Closing the inspector retains the table viewport. */
       if (element !== null) element.scrollTop = tablePosition.current
       const target = document.getElementById(`team-task-${previous}`)?.querySelector('button')
         ?? element?.parentElement?.querySelector('input')
@@ -140,6 +143,7 @@ export function TaskWorkspace({ state, identities, inspectMember, searchScope = 
     if (onStop !== undefined && selected.cancellation === undefined && (selected.phase === 'running' || selected.phase === 'assigned')) menu.push({ id: 'stop', label: t('detail.task.stop'), danger: true, disabled: busy || !ready })
     if (onDelete !== undefined && selected.lease === undefined && selected.phase !== 'review') menu.push({ id: 'delete', label: t('detail.task.delete'), danger: true, disabled: busy || !ready })
   }
+  const selectedTaskId = viewState.taskId
   return <div className={css.layout} data-task-workspace>
     <div className={css.list}>
       <form noValidate className={css.filters} onSubmit={(event) => {
@@ -200,7 +204,7 @@ export function TaskWorkspace({ state, identities, inspectMember, searchScope = 
       {searchScope === 'loaded' ? <p className={css.count}>{t('taskView.loaded', { count: tasks.length })}</p>
         : queryState?.page !== undefined && <p className={css.count}>{t('taskView.queryCount', { count: tasks.length, total: queryState.page.total })}</p>}
     </div>
-    {viewState.taskId !== undefined && <aside data-task-inspector className={css.inspector} aria-label={t('taskView.summary')}>
+    {selectedTaskId !== undefined && <aside data-task-inspector className={css.inspector} aria-label={t('taskView.summary')}>
       <div className={css.inspectorHeader}><strong>{t('taskView.summary')}</strong><Button data-task-close size="sm" aria-label={t('taskView.close')} onClick={() => {
         select(undefined)
       }}><IconCloseOutline16 /></Button></div>
@@ -211,7 +215,7 @@ export function TaskWorkspace({ state, identities, inspectMember, searchScope = 
       {currentDetail?.disconnected && <p role="status">{t('taskView.disconnected')}</p>}
       {current?.phase === 'deleted' && <p>{t('taskView.deleted')}</p>}
       <Button size="sm" disabled={currentDetail?.record.loading || currentDetail?.latest.loading || readDetail === undefined}
-        onClick={() => { if (viewState.taskId !== undefined) void readDetail?.(state.team.id, viewState.taskId) }}>{t('taskView.refresh')}</Button>
+        onClick={() => { void readDetail?.(state.team.id, selectedTaskId) }}>{t('taskView.refresh')}</Button>
       {hasEditDraft && <Button size="sm" disabled={busy}
         onClick={() => { onForm(editDraftTarget) }}>{t('taskForm.openDraft')}</Button>}
       {selected !== undefined && currentDetail !== undefined && <TaskSummary key={selected.id} task={selected} detail={currentDetail}
@@ -226,7 +230,8 @@ export function TaskWorkspace({ state, identities, inspectMember, searchScope = 
           setMenuOpen(false)
           if (id === 'stop') onStop?.(selected)
           else if (id === 'delete') onDelete?.(selected)
-          else if (id === 'taskUpdate' || id === 'taskReview' || id === 'taskIntegrate') onForm({ kind: id, taskId: selected.id })
+          // The Menu returns only IDs from the entries assembled above.
+          else onForm({ kind: id as 'taskUpdate' | 'taskReview' | 'taskIntegrate', taskId: selected.id })
         }} />}
       {error !== undefined && <p className={css.error} role="alert">{error}</p>}
     </aside>}
@@ -254,6 +259,7 @@ function TaskSummary({ task, detail, readDetail, state, translate: t, owner, pha
   const latest = detail.latest.value
   const attempt = task.lease ?? latest
   const result = latest?.outcome.kind === 'completed' ? latest.outcome.result : undefined
+  const childTeamId = task.delegation?.childTeamId
   const artifacts = [...new Map([
     ...(result?.artifacts ?? []), ...(result?.integration?.artifacts ?? []),
     ...(result?.integration?.proposalArtifact === undefined ? [] : [result.integration.proposalArtifact]),
@@ -274,19 +280,18 @@ function TaskSummary({ task, detail, readDetail, state, translate: t, owner, pha
       <h3>{t('detail.task.child')} · {t(`detail.task.childPhase.${task.delegation.phase}`)}</h3>
       {task.delegation.failure !== undefined && <p className={css.error}>{task.delegation.failure.message}</p>}
       {task.delegation.result !== undefined && <p>{task.delegation.result.text}</p>}
-      {task.delegation.childTeamId !== undefined && openTeam !== undefined && <Button onClick={() => {
-        const id = task.delegation?.childTeamId
-        if (id !== undefined) run(async () =>{  await openTeam(id) })
+      {childTeamId !== undefined && openTeam !== undefined && <Button onClick={() => {
+        run(async () => { await openTeam(childTeamId) })
       }}>{t('detail.task.openChild')}</Button>}
     </section>}
     {artifacts.length > 0 && <section className={css.result}><h3>{t('overview.artifacts')}</h3>
       <ul className={css.artifacts}>{artifacts.slice(0, 3).map(artifact => <li key={artifact.id}>
         <button type="button" className={css.link} disabled={openArtifact === undefined || artifact.provider === undefined}
-          onClick={() => { openArtifact?.(artifact) }}>{artifact.uri.split('/').at(-1) || artifact.id}</button>
+          onClick={openArtifact === undefined ? undefined : () => { openArtifact(artifact) }}>{artifact.uri.split('/').at(-1) || artifact.id}</button>
       </li>)}</ul>
     </section>}
     {attempt?.activationId !== undefined && openParticipantSession !== undefined
-      ? <Button variant="outline" className={css.openSession} onClick={() => {
+      ? <Button variant="secondary" className={css.openSession} onClick={() => {
         run(async () => { await openParticipantSession(attempt.participantId) })
       }}>{t('taskView.openSession')}</Button>
       : task.execution.kind === 'participant' && <p className={css.count}>{t('taskView.noSession')}</p>}

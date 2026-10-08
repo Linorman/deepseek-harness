@@ -1,3 +1,4 @@
+import { teamTaskCreateFields } from '@clocky/clocky-team/schema'
 import { teamTaskDetailsUpdateResultSchema, teamTaskUpdateLookupSchema } from '@clocky/clocky-team/schema'
 export { teamTaskUpdateLookupInputSchema } from '@clocky/clocky-team/schema'
 import { teamTaskReferencesPageSchema } from '@clocky/clocky-team/schema'
@@ -70,17 +71,12 @@ import {
   teamGoalPhaseTransitionInputSchema as coreTeamGoalPhaseTransitionInputSchema,
   teamGoalUpdateInputSchema as coreTeamGoalUpdateInputSchema,
   teamTaskCreateIdempotencyKeySchema,
-  teamTaskExecutionSchema,
-  teamTaskPlacementSchema,
   teamTaskDeleteInputSchema as coreTeamTaskDeleteInputSchema,
   teamTaskGetRequestSchema as coreTeamTaskGetRequestSchema,
   teamTaskIdSchema,
-  teamTaskIntegrationSpecSchema,
   teamTaskListPageSchema as coreTeamTaskListPageSchema,
-  teamTaskReviewPolicySchema,
   teamViewPolicyRefSchema,
   teamTaskSnapshotSchema,
-  teamTaskWorkspaceModeSchema,
   teamWatchResultSchema,
   teamProductDirectoryPageSchema as coreTeamListPageSchema,
   teamMemberListPageSchema as coreTeamMemberListPageSchema,
@@ -457,26 +453,12 @@ export const teamChannelWatchRequestSchema = z.object({
 export const teamChannelWatchValueSchema = channelWatchResultSchema as unknown as z.ZodType<Wire<ResponseValue<'team.channel.watch'>>>
 
 /** team.task.create request payload. */
-export const teamTaskCreateRequestSchema = z.object({
-  teamId: teamIdSchema,
-  expectedCursor: z.number().int().nonnegative(),
-  idempotencyKey: teamTaskCreateIdempotencyKeySchema,
-  parentTaskId: teamTaskIdSchema.optional(),
-  execution: teamTaskExecutionSchema.optional(),
-  placement: teamTaskPlacementSchema.optional(),
-  subject: z.string().min(1),
-  description: z.string().min(1),
-  integration: teamTaskIntegrationSpecSchema.optional(),
-  blockedBy: z.array(teamTaskIdSchema),
-  requiredCapabilities: z.array(z.string().min(1)),
-  priority: z.number().int().nonnegative(),
-  readScopes: z.array(z.string().min(1)),
-  writeScopes: z.array(z.string().min(1)),
-  workspaceMode: teamTaskWorkspaceModeSchema,
-  budget: jsonObjectSchema,
-  reviewPolicy: teamTaskReviewPolicySchema,
-  maxAttempts: z.number().int().positive(),
-}).strict() as unknown as z.ZodType<Wire<RequestPayload<'team.task.create'>>>
+export const teamTaskCreateRequestSchema = z.object(teamTaskCreateFields).pick({
+  teamId: true, expectedCursor: true, parentTaskId: true, execution: true, placement: true,
+  subject: true, description: true, integration: true, blockedBy: true, requiredCapabilities: true,
+  priority: true, readScopes: true, writeScopes: true, workspaceMode: true, budget: true, reviewPolicy: true, maxAttempts: true,
+}).extend({ idempotencyKey: teamTaskCreateIdempotencyKeySchema }).strict() as unknown as z.ZodType<Wire<RequestPayload<'team.task.create'>>>
+
 
 /** team.task.create response value. */
 export const teamTaskCreateValueSchema = teamTaskSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.task.create'>>>

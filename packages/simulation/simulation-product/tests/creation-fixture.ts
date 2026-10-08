@@ -1,13 +1,13 @@
 /** Retained original creation used by journal recovery tests. */
 import { simulationCompanyCreationSchema } from '../src/creation-schema.ts'
 import { simulationCreationEntrySchema } from '../src/creation-book.ts'
-import { simulationProductCreateInputSchema } from '../src/administration-schema.ts'
+import { simulationProductOriginalCreateInputSchema } from '../src/administration-schema.ts'
 import { registration } from './fixtures.ts'
 import { companyConfig } from './company-driver-fixture.ts'
 
 export function accepted() {
   const native = registration('allocated')
-  const input = simulationProductCreateInputSchema.parse({ commandId: 'create', templateId: 'company', templateVersion: '1',
+  const input = simulationProductOriginalCreateInputSchema.parse({ commandId: 'create', templateId: 'company', templateVersion: '1',
     name: 'Company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
   const creation = simulationCompanyCreationSchema.parse({ request: input,
     record: { ...native, name: input.name, spec: { ...native.spec, runId: native.id }, registeredAt: 1 }, driver: companyConfig,

@@ -24,7 +24,7 @@ The following findings come from the shipped source under [packages/client](../.
 
 ### Visual system
 
-- **Two parallel palettes.** [design-platform.css](../../../../packages/client/ui-theme/src/styles/design-platform.css) defines `--clocky-workspace-*` for Team pages and `--clocky-alias-*` for everything else. A `[data-team-workspace-page]` scope remaps aliases, so a Team page and a Session page use different canvas, ink, border, and accent values. The brand accent exists as `#315fcc`, `accent-500` (`rgb(65,118,230)`), and `blue-600`.
+- **Two parallel palettes.** `design-platform.css` defines `--clocky-workspace-*` for Team pages and `--clocky-alias-*` for everything else. A `[data-team-workspace-page]` scope remaps aliases, so a Team page and a Session page use different canvas, ink, border, and accent values. The brand accent exists as `#315fcc`, `accent-500` (`rgb(65,118,230)`), and `blue-600`.
 - **The sidebar is a separate product.** `[data-clocky-navigation]` keeps graphite navigation in light mode. Against a white canvas, the hard edge makes the app look like two products.
 - **Tokens are partly dead weight.** The dark block repeats the static palette verbatim, and names such as `brand-primary-new-colorprimary-new-color` or `accent-700-delete` are export residue. There are no spacing, radius, elevation, or z-index scales.
 - **Feature CSS bypasses tokens.** Across 99 CSS Modules: 361 literal `font-size` declarations versus 89 typography-token uses, 442 literal paddings, eight different literal radii (1–999px), and z-index values ranging from 0 to 1100.
@@ -54,7 +54,7 @@ The following findings come from the shipped source under [packages/client](../.
 
 ## Proposal
 
-Redesign the Web client in eleven stacked phases. Each phase ships independently, keeps the slot and props discipline in [packages/client/AGENTS.md](../../../../packages/client/AGENTS.md), uses CSS Modules and semantic tokens per [web-styling.md](../../../../docs/web-styling.md), and adds no component library or Tailwind. Product copy stays Chinese-first with the existing English locale.
+Redesign the Web client in eleven stacked phases. Each phase ships independently, keeps the slot and props discipline in [packages/client/AGENTS.md](../../../../packages/client/AGENTS.md), uses CSS Modules and semantic tokens per [web-styling.md](../../../../docs/web-styling.md), and adds no component library or Tailwind. Product copy stays Chinese-first with the existing English locale. The [development plan](../../../plans/2026-10-02-web-ui-redesign/development-plan.md) owns work packages, ordering, verification, and status, and its [checklist](../../../plans/2026-10-02-web-ui-redesign/checklist.md) tracks per-item completion.
 
 ### Design principles
 

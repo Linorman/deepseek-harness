@@ -1,7 +1,17 @@
 /** Durable reference collection uses owner cursors, not guessed stream metadata. @module */
 import { describe, expect, it, vi } from 'vitest'
+import { channelIdSchema, channelManifestSchema, jsonValueSchema } from '@clocky/clocky-team'
+import type { TeamChannelAdapter } from '@clocky/clocky-team'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
-import { createdTeam, teamId, teamPhase } from './fixtures.ts'
+import { channelAdmissionPrefix } from './durable-channel-fixtures.ts'
+import { createdTeam, participant, participantChanged, teamId, teamPhase } from './fixtures.ts'
+
+const referenceAdapter: TeamChannelAdapter = {
+  type: 'reference-test', version: 1,
+  validateCreate() {}, initialState() { return null }, validateSend() {}, fold(state) { return state },
+  afterAccept() { return [] }, expectedNext() { return { kind: 'none' } },
+  deliveryPlan() { return [] }, projectView() { return {} },
+}
 
 for (const backend of ['json', 'sqlite'] as const) {
   describe(`${backend} persistence references`, () => {
@@ -73,6 +83,66 @@ for (const backend of ['json', 'sqlite'] as const) {
       expect(await restored.teams.getPersistenceReference({ kind: 'team', teamId, expectedCursor: state.team.cursor })).toEqual(reference)
       await expect(live.teams.getPersistenceReference({ kind: 'team', teamId, expectedCursor: state.team.cursor - 1 }))
         .rejects.toMatchObject({ code: 'TEAM_CURSOR_CONFLICT' })
+    })
+
+    it('returns a bounded channel prefix and rejects a physical WAL tail that passed its owner cursor', async () => {
+      const channelId = channelIdSchema.parse('reference-channel')
+      const member = participant({ id: 'reference-member', role: 'member' })
+      const rows = [createdTeam(), teamPhase(),
+        ...(['invited', 'provisioning', 'active'] as const).map((phase, index) =>
+          participantChanged({ participant: { ...member, phase }, createdAt: 12 + index })),
+        { type: 'channel/attached', channelId, createdAt: 15 }]
+      const manifest = channelManifestSchema.parse({ id: channelId, teamId,
+        adapter: { type: referenceAdapter.type, version: referenceAdapter.version },
+        participants: [{ id: member.id, role: 'member' }], limits: {} })
+      const wal = channelAdmissionPrefix(manifest, 16, 30)
+      const ctx = await recover(backend, rows, undefined, teamId, [{ id: channelId, records: wal }])
+      ctx.teams.registerAdapter(referenceAdapter)
+      const open = ctx.storageLog.open.bind(ctx.storageLog)
+      let stream: import('@clocky/clocky-storage').LogStream | undefined
+      const observe = vi.spyOn(ctx.storageLog, 'open').mockImplementation(async (descriptor) => {
+        const opened = await open(descriptor)
+        if (descriptor.name === `channel/${channelId}`) stream = opened
+        return opened
+      })
+      try {
+        const current = await ctx.teams.getPersistenceReference({ kind: 'channel', channelId, expectedCursor: wal.length - 1 })
+        const prefix = await ctx.teams.getPersistenceReference({ kind: 'channel', channelId,
+          expectedCursor: wal.length - 1, prefixCursor: 0 })
+        expect(current.owner).toEqual({ kind: 'channel', channelId })
+        expect(current.retention).toBe('compactable')
+        expect(prefix.cursor).toBe(0)
+        expect(prefix.fingerprint).not.toBe(current.fingerprint)
+        await expect(ctx.teams.getPersistenceReference({ kind: 'channel', channelId, expectedCursor: 0 }))
+          .rejects.toMatchObject({ code: 'TEAM_CHANNEL_CURSOR_CONFLICT' })
+        if (stream === undefined) throw new Error('Fixture channel stream was not opened')
+        const firstRow = (await stream.read(-1, 1))[0]
+        if (firstRow === undefined) throw new Error('Fixture channel has no opening row')
+        const sourceRead = vi.spyOn(stream, 'read')
+        const auditInput = { teamId, channelId, afterCursor: -1, limit: 16 }
+        sourceRead.mockResolvedValueOnce([])
+        await expect(ctx.teams.readAudit(auditInput)).rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' })
+        sourceRead.mockResolvedValueOnce([{ ...firstRow, sequence: firstRow.sequence + 1 }])
+        await expect(ctx.teams.readAudit(auditInput)).rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' })
+        sourceRead.mockRestore()
+        const audit = ctx.storageLog.get(`audit/${teamId}/channel/${channelId}`)
+        if (audit === undefined) throw new Error('Fixture channel audit was not opened')
+        const appendAudit = audit.append.bind(audit)
+        const wrongTail = vi.spyOn(audit, 'append').mockImplementationOnce(async (cursor, values) => {
+          const accepted = await appendAudit(cursor, values)
+          return { ...accepted, tailSequence: accepted.tailSequence + 1 }
+        })
+        try { await expect(ctx.teams.readAudit(auditInput)).rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' }) }
+        finally { wrongTail.mockRestore() }
+        expect((await ctx.teams.readAudit(auditInput)).items).toHaveLength(wal.length)
+        const ahead = vi.spyOn(audit, 'tailSequence', 'get').mockReturnValue(stream.tailSequence + 1)
+        try { await expect(ctx.teams.readAudit(auditInput)).rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' }) }
+        finally { ahead.mockRestore() }
+        await stream.append(stream.tailSequence, [jsonValueSchema.parse({ type: 'channel/phase',
+          sequence: wal.length, phase: 'closing', createdAt: 31 })])
+        await expect(ctx.teams.getPersistenceReference({ kind: 'channel', channelId, expectedCursor: wal.length - 1 }))
+          .rejects.toMatchObject({ code: 'TEAM_CHANNEL_CURSOR_CONFLICT' })
+      } finally { observe.mockRestore() }
     })
   })
 }

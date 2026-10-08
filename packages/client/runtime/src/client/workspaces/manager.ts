@@ -4,7 +4,7 @@ import type {
   HostFrame, IApiClient, RpcError, RpcRequest, RpcResult, SessionId, WorkspaceId, WorkspaceView,
 } from '@clocky/clocky-api-remotes/client'
 import { transportError } from '@clocky/clocky-host-apiproxy/api'
-import { Notifier } from '../sessions/notifier.ts'
+import { Notifier } from '../contract/notifier.ts'
 import { Workspace, type WorkspaceCreateInput } from './workspace.ts'
 
 /** Monotone workspace-list arrival lifecycle. */

@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-08-bounded-channel-retry-and-child-runtime-admission.md
-2026-09-08-bounded-channel-retry-and-child-runtime-admission.md: 5c7ecafe1630967286f528b89f82cd84a6b434ed
-2026-09-08-bounded-channel-retry-and-child-runtime-admission.zh.md: f3951914f2c3b254d2a04a348954d3bb81cdd358
+2026-09-08-bounded-channel-retry-and-child-runtime-admission.md: 23ef64fa7e3dfba22ef4eefb32732697d63fb185
+2026-09-08-bounded-channel-retry-and-child-runtime-admission.zh.md: 5e1a0a6a261a7d5d78be678683d85684ab6f87d6

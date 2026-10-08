@@ -14,7 +14,7 @@ Status: implemented
 
 `@clocky/clocky-storage` 在 `kv` 旁公开可选的 `log` 分面。`LogStream` 只会在调用方预期尾序列匹配持久尾序列时追加非空批次，读取有界的有序页面，并保存不晚于该尾序列的单调检查点。每个值都作为分离的 JSON 快照跨越持久化边界。`@clocky/clocky-storage-log` 挂载 `ctx.storage.log` 和 `ctx.storageLog`，按不透明名称路由每个调用方拥有的流句柄，只列出仍归其配置路由所有的流，并在 dispose 时关闭准入后排空已接受的 open 和句柄。
 
-JSON 后端把每个日志流存入编码后的文件名下，并为所有日志操作持有一个根目录范围的所有者记录。存活的同主机或异主机所有者会拒绝另一个 Hub；已证实死亡的同主机所有者会在恢复前被原子地隔离。SQLite 后端在其 schema 中保存流元数据、条目和检查点。`BEGIN IMMEDIATE` 覆盖尾序列比较、完整批次插入、尾序列推进和提交，因此独立打开的 SQLite 后端不能同时接受同一个预期尾序列。其物理 schema 版本为 `2`；预发布数据库标记为其他版本时会明确失败。
+JSON 后端把每个日志流存入编码后的文件名下，并为所有日志操作持有一个根目录范围的所有者记录。存活的同主机或异主机所有者会拒绝另一个 Hub；已证实死亡的同主机所有者会在恢复前被原子地隔离。 排他创建和存活 PID 记录构成所有权围栏，因此记录同步后关闭取得记录时使用的文件句柄。退休尚未确认时保留所有者记录，不会保留原生文件句柄。SQLite 后端在其 schema 中保存流元数据、条目和检查点。`BEGIN IMMEDIATE` 覆盖尾序列比较、完整批次插入、尾序列推进和提交，因此独立打开的 SQLite 后端不能同时接受同一个预期尾序列。其物理 schema 版本为 `2`；预发布数据库标记为其他版本时会明确失败。
 
 `@clocky/clocky-team` 定义独立的带品牌 Team 身份、持久和协议记录的解析器、带纯转换检查的封闭生命周期词汇、带版本的 channel 适配器注册、Team 策略 waterfall，以及 `ctx.teams` 上受包含的提交后观察者。channel manifest 冻结适配器配置，而 WAL 单独记录生命周期边。它不导入 AgentLoop 或实验性 Team runtime。它是抽象 Service Definition。[`@clocky/clocky-team-hub`](../../../../packages/team/team-hub/README.zh.md)是其本地提供方，负责 Team journal、channel WAL、投影、恢复、成员／任务变更和游标 watch；投递、调度、Agent placement 和产品操作仍是独立工作。
 

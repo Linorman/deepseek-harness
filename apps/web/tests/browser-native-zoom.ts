@@ -33,14 +33,19 @@ export async function createNativeZoomContext(root: string, options: {
   await writeFile(join(extension, 'manifest.json'), JSON.stringify({ manifest_version: 3,
     name: 'Native browser acceptance zoom', version: '1.0', permissions: ['tabs'], background: { service_worker: 'worker.js' } }))
   await writeFile(join(extension, 'worker.js'), 'chrome.runtime.onInstalled.addListener(() => {});\n')
+  await writeFile(join(extension, 'controller.html'), '<!doctype html><title>Native zoom controller</title>\n')
   const context = await chromium.launchPersistentContext(join(directory, 'profile'), { ...options, channel: 'chromium',
     headless: true, ignoreDefaultArgs: ['--disable-extensions'],
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`] })
   try {
     const worker = context.serviceWorkers()[0] ?? await context.waitForEvent('serviceworker', { timeout: 15000 })
+    // MV3 may stop its worker without removing Playwright's Worker object. A
+    // context-owned extension document keeps the tabs API execution realm live.
+    const controller = await context.newPage()
+    await controller.goto(new URL('controller.html', worker.url()).href)
     return { context, async setNativeZoom(page, factor) {
       const url = page.url()
-      const actual = await worker.evaluate(async ({ url, factor }) => {
+      const actual = await controller.evaluate(async ({ url, factor }) => {
         const tabs = (globalThis as unknown as { chrome: { tabs: ChromeTabs } }).chrome.tabs
         const selected = (await tabs.query({})).find(tab => tab.url === url)
         if (selected?.id === undefined) throw new Error('Native zoom target is not the selected acceptance page')

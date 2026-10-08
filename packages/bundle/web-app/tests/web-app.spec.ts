@@ -8,6 +8,8 @@
 import { EventEmitter } from 'node:events'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { open as openFile, rm as removeDirectory } from 'node:fs/promises'
+import type { FileHandle } from 'node:fs/promises'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { fileURLToPath } from 'node:url'
@@ -16,12 +18,17 @@ import { Context } from '@clocky/cordis'
 import { createLaunchEnvironmentSnapshot, CLOCKY_LAUNCH_ENVIRONMENT_KEY } from '@clocky/clocky-launch-environment'
 import SystemPrompt from '@clocky/clocky-system-prompt'
 import type { WebServer } from '@clocky/clocky-host-webserver'
-import { apply, BrowserHandoffManager, Config, internals } from '../src/index.ts'
+import { apply, BrowserHandoffManager, Config, internals, resolveLanTrust } from '../src/index.ts'
 
 vi.mock('node:child_process', async importOriginal => ({
   ...await importOriginal<typeof import('node:child_process')>(),
   spawn: vi.fn(),
 }))
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return { ...actual, open: vi.fn(actual.open), rm: vi.fn(actual.rm) }
+})
 
 vi.mock('node:os', async importOriginal => ({
   ...await importOriginal<typeof import('node:os')>(),
@@ -42,6 +49,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks()
   vi.mocked(spawn).mockReset()
+  vi.mocked(removeDirectory).mockClear()
+  vi.mocked(openFile).mockClear()
   vi.unstubAllEnvs()
   internals.resolveDistIndex = originalResolve
   internals.openBrowser = originalOpenBrowser
@@ -53,6 +62,117 @@ const originalResolve = internals.resolveDistIndex
 const originalOpenBrowser = internals.openBrowser
 const TEST_BOOTSTRAP_CREDENTIAL = 'test-browser-bootstrap-credential'
 const TEST_TEMP_ROOT = join(process.cwd(), '.tmp', 'p0-security-audit')
+
+it.each(['', ' provider '])('refuses a noncanonical bootstrap principal provider (%j)', (provider) => {
+  expect(() => resolveLanTrust('127.0.0.1', [], provider)).toThrow('productPrincipalProvider must be non-empty')
+})
+
+it('refuses remote or encrypted file handoff destinations and requires an explicit private manager for credentials', async () => {
+  const root = temporaryDirectory('clocky-web-rejected-handoff-')
+  const manager = new BrowserHandoffManager({ directory: root, ttlMs: 60000 })
+  for (const url of ['http://remote.test:4567', 'https://127.0.0.1:4567']) {
+    await expect(manager.create(url, TEST_BOOTSTRAP_CREDENTIAL)).rejects.toThrow('requires a loopback HTTP URL')
+  }
+  expect(readdirSync(root)).toEqual([])
+  await expect(originalOpenBrowser('http://127.0.0.1:4567', TEST_BOOTSTRAP_CREDENTIAL))
+    .rejects.toThrow('requires an owner-only handoff manager')
+  await manager.close()
+})
+
+it('retires private artifact and manager ownership idempotently and rejects later publication', async () => {
+  const root = temporaryDirectory('clocky-web-retired-handoff-')
+  const manager = new BrowserHandoffManager({ directory: root, ttlMs: 60000 })
+  const artifact = await manager.create('http://127.0.0.1:4567', TEST_BOOTSTRAP_CREDENTIAL)
+  await artifact.close(); await artifact.close()
+  await manager.consume(artifact.id)
+  await manager.close(); await manager.close()
+  expect(readdirSync(root)).toEqual([])
+  await expect(manager.create('http://127.0.0.1:4567', TEST_BOOTSTRAP_CREDENTIAL)).rejects.toThrow('manager is closed')
+})
+
+it('contains failed timed cleanup and still removes the private document during owner teardown', async () => {
+  const root = temporaryDirectory('clocky-web-expiring-handoff-')
+  const manager = new BrowserHandoffManager({ directory: root, ttlMs: 1000 })
+  const artifact = await manager.create('http://127.0.0.1:4567', TEST_BOOTSTRAP_CREDENTIAL)
+  const expiry = Promise.withResolvers<undefined>()
+  const close = vi.spyOn(artifact, 'close').mockImplementationOnce(async () => {
+    expiry.resolve(undefined)
+    throw new Error('Temporary cleanup failure')
+  })
+  await expiry.promise
+  expect(close).toHaveBeenCalledOnce()
+  close.mockRestore()
+  await manager.close()
+  expect(readdirSync(root)).toEqual([])
+})
+
+it('retains the publication failure when closing its real file handle also reports a failure', async () => {
+  const root = temporaryDirectory('clocky-web-failed-write-handoff-')
+  const actualOpen = vi.mocked(openFile).getMockImplementation()
+  if (actualOpen === undefined) throw new Error('Native file open implementation not installed')
+  let opened: FileHandle | undefined
+  vi.mocked(openFile).mockImplementationOnce(async (...args) => {
+    const handle = await actualOpen(...args)
+    opened = handle
+    vi.spyOn(handle, 'writeFile').mockRejectedValueOnce(new Error('Primary handoff write failure'))
+    const close = handle.close.bind(handle)
+    vi.spyOn(handle, 'close').mockImplementationOnce(async () => {
+      await close()
+      throw new Error('Secondary handoff close failure')
+    })
+    return handle
+  })
+  const manager = new BrowserHandoffManager({ directory: root, ttlMs: 60000 })
+  vi.mocked(removeDirectory).mockRejectedValueOnce(new Error('Secondary handoff directory cleanup failure'))
+  await expect(manager.create('http://127.0.0.1:4567', TEST_BOOTSTRAP_CREDENTIAL)).rejects.toThrow('Primary handoff write failure')
+  expect(readdirSync(root)).toHaveLength(1)
+  expect(removeDirectory).toHaveBeenCalledOnce()
+  expect(opened?.fd).toBe(-1)
+  await manager.close()
+})
+
+it('preserves an opaque browser-launch callback failure rather than inventing a successful handoff', async () => {
+  const child = launcher()
+  vi.mocked(spawn).mockReturnValueOnce(child)
+  const opening = originalOpenBrowser('http://127.0.0.1:4567')
+  const rejected = expect(opening).rejects.toBe('Opaque launcher failure')
+  child.emit('error', 'Opaque launcher failure')
+  await rejected
+})
+
+it('reports consumed-handoff cleanup failure without withdrawing the listening server', async () => {
+  stageDist()
+  const ctx = new Context()
+  ctx.provide('webServer', fakeHttpServer().server)
+  provideProductPrincipal(ctx)
+  const warning = vi.spyOn(ctx.logger, 'warn')
+  internals.openBrowser = async (_url, _credential, manager) => {
+    if (manager === undefined) throw new Error('Browser handoff manager not provided')
+    vi.spyOn(manager, 'consume').mockRejectedValueOnce(new Error('Cleanup unavailable'))
+  }
+  await ctx.plugin({ name: 'web-app', inject: ['webServer'], Config, apply },
+    new Config({ openBrowser: true, printUrl: false, surfaceContext: false, trustedHosts: [] }))
+  ctx.emit('product-auth/browser-handoff-consumed', 'consumed-handoff')
+  await vi.waitFor(() => { expect(warning).toHaveBeenCalledWith('web-app: browser handoff cleanup failed') })
+  expect(ctx.get('webServer')).toBeDefined()
+  await ctx.fiber.dispose()
+})
+
+it.each(['absent', 'unavailable'] as const)('keeps the listening server available when the browser bootstrap provider is %s', async (mode) => {
+  stageDist()
+  const ctx = new Context()
+  ctx.provide('webServer', fakeHttpServer().server)
+  if (mode === 'unavailable') ctx.provide('productPrincipals', { bootstrapCredential() { throw new Error('Private provider unavailable') } } as never)
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const openBrowser = vi.fn(async () => {})
+  internals.openBrowser = openBrowser
+  await ctx.plugin({ name: 'web-app', inject: ['webServer'], Config, apply },
+    new Config({ openBrowser: true, printUrl: false, surfaceContext: false, trustedHosts: [] }))
+  expect(error).toHaveBeenCalledWith('web-app: browser handoff requires the configured product-principal provider')
+  expect(openBrowser).not.toHaveBeenCalled()
+  expect(ctx.get('webServer')).toBeDefined()
+  await ctx.fiber.dispose()
+})
 
 type BrowserLauncher = ChildProcess & { stderr: PassThrough; stdin: PassThrough }
 

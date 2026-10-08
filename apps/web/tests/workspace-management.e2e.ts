@@ -58,6 +58,24 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
     return dialog
   }
 
+  it('keeps the directory chooser open when Escape dismisses its editor and nested folder dialog', async () => {
+    const parent = await browseTo(scaffold.workspaceCwd)
+    await parent.getByRole('button', { name: 'Edit path', exact: true }).click()
+    await parent.locator('input[aria-label="Edit path"]').press('Escape')
+    expect(await parent.isVisible()).toBe(true)
+    await parent.getByRole('button', { name: 'New folder', exact: true }).click()
+    const child = page.getByRole('dialog', { name: 'New folder', exact: true })
+    await child.waitFor()
+    await page.keyboard.press('Escape')
+    await child.waitFor({ state: 'hidden' })
+    expect(await parent.isVisible()).toBe(true)
+    await page.keyboard.press('Escape')
+    await parent.waitFor({ state: 'hidden' })
+    await expect.poll(() => page.getByLabel('Add workspace', { exact: true })
+      .evaluate(element => element === document.activeElement)).toBe(true)
+    expect(tripwire.pageErrors).toEqual([])
+  })
+
   /**
    * Create a folder inside `parent` through the dialog and adopt it — the
    * product's only route to a brand-new workspace directory.

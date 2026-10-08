@@ -5,7 +5,16 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { RpcId, resultOf, transportError } from '../src/client/api.ts'
+import { RpcId, emptyTeamLatencyHistogram, resultOf, transportError } from '../src/client/api.ts'
+
+it('creates a complete zero-sample Team latency histogram for wire fixtures', () => {
+  const histogram = emptyTeamLatencyHistogram()
+  expect(histogram).toMatchObject({ count: 0, sumMs: 0 })
+  expect(histogram.buckets).toHaveLength(16)
+  expect(histogram.buckets[0]).toEqual({ upperBoundMs: 1, count: 0 })
+  expect(histogram.buckets.at(-1)).toEqual({ upperBoundMs: null, count: 0 })
+  expect(histogram.buckets.every(bucket => bucket.count === 0)).toBe(true)
+})
 
 describe('transportError', () => {
   it('folds an Error to internal keeping the message, and stringifies non-Errors', () => {

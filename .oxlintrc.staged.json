@@ -5,6 +5,8 @@
     "typeAware": false
   },
   "ignorePatterns": [
+    "**/.tmp/**",
+    "**/.tmp-*/**",
     "**/lib/**",
     "**/node_modules/**",
     "**/.sessions/**",

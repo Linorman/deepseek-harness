@@ -55,6 +55,9 @@
     },
     {
       "path": "../../team/team-human-actor"
+    },
+    {
+      "path": "../../core/agent-default-model"
     }
   ]
 }

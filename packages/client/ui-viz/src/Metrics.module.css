@@ -1,0 +1,117 @@
+/* Odometer, RadialProgress, Sparkline. Numerals use tabular figures so a
+   rolling digit never shifts its neighbours. */
+
+.odometer {
+  display: inline-flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.digit {
+  position: relative;
+  display: inline-block;
+  height: 1lh;
+  overflow: hidden;
+  text-align: center;
+  vertical-align: bottom;
+}
+
+/* The settled digit is real text (so copy, search, and textContent read the
+   value); the rolling reel is a pseudo-element that only paints. */
+.digit > span {
+  visibility: hidden;
+}
+
+.digit::after {
+  content: '0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9';
+  position: absolute;
+  inset: 0 0 auto;
+  white-space: pre;
+  transform: translateY(calc(var(--digit) * -1lh));
+}
+
+.odometer[data-live] .digit::after {
+  transition: transform var(--clocky-duration-deliberate) var(--clocky-ease-spring);
+}
+
+.literal {
+  display: inline-block;
+}
+
+.radial {
+  display: inline-grid;
+  place-items: center;
+  position: relative;
+  flex: none;
+}
+
+.radial svg {
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.radialTrack {
+  fill: none;
+  stroke: var(--clocky-border-subtle);
+}
+
+.radialSegment {
+  fill: none;
+  stroke-linecap: butt;
+  stroke: var(--clocky-status-idle-fg);
+  transform-origin: 50% 50%;
+}
+
+.radial[data-live] .radialSegment {
+  transition: stroke-dashoffset var(--clocky-duration-deliberate) var(--clocky-ease-spring),
+    transform var(--clocky-duration-deliberate) var(--clocky-ease-spring);
+}
+
+.radialSegment[data-state="running"] { stroke: var(--clocky-status-running-fg); }
+.radialSegment[data-state="waiting"] { stroke: var(--clocky-status-waiting-fg); }
+.radialSegment[data-state="needs-you"] { stroke: var(--clocky-status-needs-you-fg); }
+.radialSegment[data-state="blocked"] { stroke: var(--clocky-status-blocked-fg); }
+.radialSegment[data-state="done"] { stroke: var(--clocky-status-done-fg); }
+.radialSegment[data-state="failed"] { stroke: var(--clocky-status-failed-fg); }
+.radialSegment[data-state="idle"] { stroke: var(--clocky-status-idle-border); }
+
+.radialCenter {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sparkline {
+  display: inline-block;
+  vertical-align: middle;
+  color: var(--clocky-accent-fg);
+}
+
+.sparkline polyline {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.sparkArea {
+  fill: currentcolor;
+  opacity: 0.12;
+}
+
+.sparkDot {
+  fill: currentcolor;
+}
+
+.sparkUnavailable {
+  display: inline-block;
+  vertical-align: middle;
+  border: 1px dashed var(--clocky-border-default);
+  border-radius: var(--clocky-radius-xs);
+}

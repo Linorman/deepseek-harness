@@ -19,6 +19,22 @@
     - text: 关闭
   - heading "模型" [level=2]
   - paragraph: 填入各提供方的 API 密钥即可使用其模型。
+  - region "默认模型":
+    - heading "默认模型" [level=3]
+    - paragraph: 选择新任务与仿真模板使用的路由。仿真支持提供方默认推理行为。
+    - text: 提供方
+    - combobox "提供方":
+      - option "选择提供方"
+      - option "Test Provider" [selected]
+      - option "minimax-cn"
+    - text: 模型
+    - combobox "模型":
+      - option "选择模型"
+      - option "Test Model" [selected]
+    - text: 推理强度
+    - combobox "推理强度":
+      - option "提供方默认" [selected]
+    - button "保存默认模型"
   - status: 已保存 minimax-cn。
   - list:
     - listitem:

@@ -51,3 +51,67 @@ it('keeps failed or stale detail readable and requires refresh before continuati
   fireEvent.click(view.getByRole('button', { name: 'Refresh workflow details' }))
   expect(read).toHaveBeenCalledWith(id, 'refresh')
 })
+
+it('shows retained workflow state during loading and disconnection without offering a conflicting read', () => {
+  const read = vi.fn(async () => {})
+  const close = vi.fn()
+  const view = render(<WorkflowWorkspace plans={[summary]} detail={{ ...detail(), loading: true, disconnected: true }}
+    read={read} close={close} openTask={vi.fn()} translate={makeTranslate(en)} />)
+  expect(view.getByText('Reading workflow plans…')).toBeTruthy()
+  expect(view.getByText('Disconnected. Keeping the current workflow details.')).toBeTruthy()
+  expect(view.getByRole('button', { name: 'Plan' }).hasAttribute('disabled')).toBe(true)
+  expect(view.getByRole('button', { name: 'Refresh workflow details' }).hasAttribute('disabled')).toBe(true)
+  expect(view.getByRole('button', { name: 'Next page' }).hasAttribute('disabled')).toBe(true)
+  fireEvent.click(view.getByRole('button', { name: 'Close workflow details' }))
+  expect(close).toHaveBeenCalledOnce()
+  expect(read).not.toHaveBeenCalled()
+})
+
+it('navigates bound tasks and dependencies on a prior workflow page and displays terminal outcomes', () => {
+  const read = vi.fn(async () => {})
+  const openTask = vi.fn()
+  const current = detail()
+  const value = current.value!
+  const inspected: TeamWorkflowDetailState = { ...current, value: { ...value, startCursor: 1,
+    record: { ...value.record, phase: 'failed', failure: { code: 'FAILED', message: 'Compilation failed' },
+      cancellation: { code: 'CANCELLED', message: 'Stopped by owner' }, resultTaskCount: 1 },
+    items: [{ templateId: 'first' as never, taskId: 'bound-task' as never,
+      subject: { text: 'Bound task', truncated: false }, blockedBy: [
+        { templateId: 'first-dependency' as never, subject: { text: 'Unbound dependency', truncated: false } },
+        { templateId: 'second-dependency' as never, taskId: 'bound-dependency' as never,
+          subject: { text: 'Bound dependency', truncated: false } },
+      ] }, { templateId: 'unnamed-bound' as never, taskId: 'bound-unnamed' as never,
+      subject: { text: '', truncated: false }, blockedBy: [] }],
+  } }
+  const view = render(<WorkflowWorkspace plans={[]} detail={inspected} read={read} close={vi.fn()}
+    openTask={openTask} translate={makeTranslate(en)} />)
+  expect(view.getByText('Unbound dependency')).toBeTruthy()
+  expect(view.getByRole('link', { name: 'unnamed-bound' })).toBeTruthy()
+  expect(view.getByText(/Compilation failed/)).toBeTruthy()
+  expect(view.getByText(/Stopped by owner/)).toBeTruthy()
+  expect(view.getByText(/Result tasks: 1/)).toBeTruthy()
+  fireEvent.click(view.getByRole('link', { name: 'Bound task' }))
+  fireEvent.click(view.getByRole('link', { name: 'Bound dependency' }))
+  expect(openTask).toHaveBeenCalledWith(expect.anything(), 'bound-task')
+  expect(openTask).toHaveBeenCalledWith(expect.anything(), 'bound-dependency')
+  fireEvent.click(view.getByRole('button', { name: 'First page' }))
+  expect(read).toHaveBeenCalledWith(id, 'first')
+})
+
+it('falls back to workflow and template identifiers when names are absent', () => {
+  const unnamed = { ...summary, name: { text: '', truncated: false } }
+  const current = detail()
+  const view = render(<WorkflowWorkspace plans={[unnamed]} detail={{ ...current, value: undefined }}
+    close={undefined} openTask={vi.fn()} translate={makeTranslate(en)} />)
+  expect(view.getByRole('button', { name: 'plan' }).hasAttribute('disabled')).toBe(true)
+  expect(view.getByRole('heading', { name: '' })).toBeTruthy()
+  expect(view.getByRole('button', { name: 'Close workflow details' }).hasAttribute('disabled')).toBe(true)
+  expect(view.getByRole('button', { name: 'Refresh workflow details' }).hasAttribute('disabled')).toBe(true)
+  view.rerender(<WorkflowWorkspace plans={[]} detail={{ ...current, value: undefined }}
+    openTask={vi.fn()} translate={makeTranslate(en)} />)
+  expect(view.getByRole('heading', { name: 'plan' })).toBeTruthy()
+  view.rerender(<WorkflowWorkspace plans={[]} detail={{ ...current, value: { ...current.value!,
+    items: [{ templateId: 'unnamed-task' as never, subject: { text: '', truncated: false }, blockedBy: [] }] } }}
+  openTask={vi.fn()} translate={makeTranslate(en)} />)
+  expect(view.getByText('unnamed-task')).toBeTruthy()
+})

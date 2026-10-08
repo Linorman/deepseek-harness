@@ -10,7 +10,7 @@ import {
 } from '@clocky/clocky-team'
 import type { TeamActorProof } from '@clocky/clocky-team'
 import {
-  DIRECT_CHANNEL_ADAPTER_V3,
+  DIRECT_CHANNEL_ADAPTER_V4,
   DIRECT_CHANNEL_FINAL_ENVELOPE_KIND,
 } from '@clocky/clocky-team-channel-direct'
 
@@ -42,8 +42,8 @@ async function synthesizeFinal(ctx: Context, input: TeamInput, text: string): Pr
     const channel = await ctx.teams.getChannel({ channelId: input.channelId })
     if (channel.phase !== 'active'
       || channel.manifest.teamId !== input.teamId
-      || channel.manifest.adapter.type !== DIRECT_CHANNEL_ADAPTER_V3.type
-      || channel.manifest.adapter.version !== DIRECT_CHANNEL_ADAPTER_V3.version
+      || channel.manifest.adapter.type !== DIRECT_CHANNEL_ADAPTER_V4.type
+      || channel.manifest.adapter.version !== DIRECT_CHANNEL_ADAPTER_V4.version
       || await hasFinal(ctx, channel.manifest.id, input.participantId, input.humanId)) return
     try {
       await ctx.teams.postChannelEnvelope({
@@ -64,7 +64,7 @@ async function synthesizeFinal(ctx: Context, input: TeamInput, text: string): Pr
   }
 }
 
-/** Resolve the exact direct-v3 human input that woke the coordinator. */
+/** Resolve the exact direct human input that woke the coordinator. */
 function currentTeamInput(agent: Agent): TeamInput | undefined {
   const teamId = teamIdSchema.safeParse(agent.session.header.teamId)
   const participantId = participantIdSchema.safeParse(agent.session.header.participantId)

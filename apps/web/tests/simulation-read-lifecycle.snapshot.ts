@@ -32,7 +32,7 @@ it.each(['json', 'sqlite'] as const)('waits for the deep-link handshake, discard
   const configured = join(directory, 'overlay.json')
   await writeFile(configured, JSON.stringify(overlay))
   await step('booting real scaffold')
-  const scaffold = await launchWebScaffold({ extraOverlayPath: configured, tempRoot: directory, productPrincipalId: 'simulation-browser-user' })
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: configured, tempRoot: directory, productPrincipalId: 'simulation-browser-user' })
   await step('launching Chromium')
   const browser = await chromium.launch()
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })

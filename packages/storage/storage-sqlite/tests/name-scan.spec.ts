@@ -54,3 +54,29 @@ it('rejects malformed or oversized summary cells without exposing journal bodies
   db.prepare('UPDATE log_streams SET summary = ? WHERE name = ?').run('bad JSON', descriptor.name)
   await expect(backend.log.readSummary!(descriptor, 256)).rejects.toMatchObject({ code: 'malformed-medium' })
 })
+
+it('uses exact Unicode prefix bounds and rejects malformed or oversized indexed names', async () => {
+  await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
+  const root = await mkdtemp(join(process.cwd(), '.tmp/sqlite-prefix-bounds-'))
+  const path = join(root, 'storage.db')
+  const backend = new SqliteStorageBackend({ path })
+  cleanups.push(async () => { await backend.close(); await rm(root, { recursive: true, force: true }) })
+  for (const name of ['team/one', 'team/too-long', '\ud7ff/end', '\ue000/next', '\u{10ffff}/last']) {
+    const stream = await backend.log.open({ name, version: 1 })
+    await stream.append(-1, [{}]); await stream.close()
+  }
+  async function names(prefix: string, maxNameBytes = 1024) {
+    const found: Array<string | undefined> = []
+    for await (const name of backend.log.scanNames!(prefix, maxNameBytes)) found.push(name)
+    return found
+  }
+  expect(await names('\ud7ff')).toEqual(['\ud7ff/end'])
+  expect(await names('\u{10ffff}')).toEqual(['\u{10ffff}/last'])
+  expect(await names('')).toHaveLength(5)
+  await expect(names('team/', 8)).rejects.toMatchObject({ code: 'invalid-value' })
+  const db = new DatabaseSync(path)
+  cleanups.push(async () => { db.close() })
+  db.prepare('DELETE FROM log_entries WHERE stream = ?').run('team/one')
+  db.prepare('UPDATE log_streams SET name = ? WHERE name = ?').run('', 'team/one')
+  await expect(names('')).rejects.toMatchObject({ code: 'malformed-medium' })
+})

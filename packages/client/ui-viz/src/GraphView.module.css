@@ -1,0 +1,396 @@
+/* Graph renderer. Node state maps to exactly one status role through
+   `data-state`; ghosts, stale observations, and emphasis are separate
+   attributes so each visual encoding names one domain fact. */
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  height: var(--graph-height, 360px);
+  border-radius: var(--clocky-radius-lg);
+  background-color: var(--clocky-bg-sunken);
+  background-image: radial-gradient(var(--clocky-viz-grid) 1px, transparent 1.4px);
+  background-size: 20px 20px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.frame[data-panning] {
+  cursor: grabbing;
+}
+
+.frame:focus-within {
+  outline: none;
+}
+
+.surface {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.cluster {
+  fill: var(--clocky-bg-surface);
+  fill-opacity: 0.55;
+  stroke: var(--clocky-border-default);
+  stroke-dasharray: 4 4;
+}
+
+.clusterLabel {
+  font: var(--clocky-type-micro);
+  fill: var(--clocky-fg-tertiary);
+  text-anchor: middle;
+}
+
+.edge {
+  fill: none;
+  stroke: var(--clocky-viz-edge);
+  stroke-width: 1.25;
+}
+
+.edge[data-variant="dashed"] {
+  stroke-dasharray: 5 4;
+}
+
+.edge[data-variant="ghost"] {
+  stroke: var(--clocky-viz-edge-ghost);
+  stroke-dasharray: 2 4;
+}
+
+.edge[data-active] {
+  stroke: var(--clocky-viz-edge-active);
+  stroke-width: 1.75;
+}
+
+.edge[data-emphasis] {
+  stroke: var(--clocky-accent-fg);
+  stroke-width: 2.5;
+}
+
+/* Edge draw-in (L3 assemble): the documented ui-viz stroke-dashoffset exception. */
+.edge[data-draw-in] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw var(--clocky-duration-celebrate) var(--clocky-ease-emphasized) forwards;
+  animation-delay: calc(var(--stagger, 0) * var(--clocky-stagger-step));
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.arrow {
+  fill: var(--clocky-viz-edge);
+}
+
+.node {
+  --node-fg: var(--clocky-status-idle-fg);
+  --node-bg: var(--clocky-status-idle-bg);
+  --node-border: var(--clocky-status-idle-border);
+}
+
+.node[data-state="running"] { --node-fg: var(--clocky-status-running-fg); --node-bg: var(--clocky-status-running-bg); --node-border: var(--clocky-status-running-border); }
+.node[data-state="waiting"] { --node-fg: var(--clocky-status-waiting-fg); --node-bg: var(--clocky-status-waiting-bg); --node-border: var(--clocky-status-waiting-border); }
+.node[data-state="needs-you"] { --node-fg: var(--clocky-status-needs-you-fg); --node-bg: var(--clocky-status-needs-you-bg); --node-border: var(--clocky-status-needs-you-border); }
+.node[data-state="blocked"] { --node-fg: var(--clocky-status-blocked-fg); --node-bg: var(--clocky-status-blocked-bg); --node-border: var(--clocky-status-blocked-border); }
+.node[data-state="done"] { --node-fg: var(--clocky-status-done-fg); --node-bg: var(--clocky-status-done-bg); --node-border: var(--clocky-status-done-border); }
+.node[data-state="failed"] { --node-fg: var(--clocky-status-failed-fg); --node-bg: var(--clocky-status-failed-bg); --node-border: var(--clocky-status-failed-border); }
+
+.nodeBody {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.nodeDisc {
+  fill: var(--node-bg);
+  stroke: var(--node-border);
+  stroke-width: 1.5;
+}
+
+.nodeRing {
+  fill: none;
+  stroke: var(--node-fg);
+  stroke-width: 2.5;
+}
+
+.node[data-state="idle"] .nodeRing {
+  stroke: var(--clocky-viz-node-ring);
+}
+
+.node[data-ghost] .nodeDisc {
+  fill: none;
+  stroke: var(--clocky-viz-edge-ghost);
+  stroke-dasharray: 3 3;
+}
+
+.node[data-ghost] .nodeRing {
+  display: none;
+}
+
+.node[data-ghost] .nodeInitials,
+.node[data-ghost] .nodeLabel {
+  fill: var(--clocky-fg-tertiary);
+}
+
+.node[data-stale] {
+  filter: saturate(0.25);
+  opacity: 0.7;
+}
+
+.node[data-selected] .nodeDisc {
+  stroke: var(--clocky-border-focus);
+  stroke-width: 2.5;
+}
+
+.node[data-emphasis] .nodeRing {
+  stroke-width: 3.5;
+}
+
+.nodeHalo {
+  fill: var(--node-fg);
+  opacity: 0;
+}
+
+/* Running halo: a slow breathe on running nodes only (L1). Reduced motion
+   leaves it static through the global iteration and duration collapse. */
+.node[data-state="running"]:not([data-ghost]) .nodeHalo {
+  opacity: 0.14;
+  animation: breathe var(--clocky-duration-sweep) var(--clocky-ease-standard) infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.frame[data-paused] .nodeHalo {
+  animation-play-state: paused;
+}
+
+/* Cognition glow: a static identity halo, not a state. */
+.node[data-glow] .nodeHalo {
+  fill: var(--clocky-tint-fuchsia-fg);
+  opacity: 0.18;
+}
+
+@keyframes breathe {
+  from { transform: scale(1); opacity: 0.08; }
+  to { transform: scale(1.28); opacity: 0.2; }
+}
+
+.nodeInitials {
+  font: var(--clocky-type-label);
+  fill: var(--node-fg);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.nodeLabel {
+  font: var(--clocky-type-caption);
+  fill: var(--clocky-fg-secondary);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.nodeBadge {
+  font: var(--clocky-type-micro);
+  fill: var(--clocky-fg-tertiary);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.node[data-entering] .nodeBody {
+  animation: enter var(--clocky-duration-slow) var(--clocky-ease-spring) backwards;
+  animation-delay: calc(var(--stagger, 0) * var(--clocky-stagger-step));
+}
+
+@keyframes enter {
+  from { transform: scale(0.4); opacity: 0; }
+}
+
+/* Focus proxies: one keyboard target per mark, identical in SVG and canvas mode. */
+.focusLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.proxy {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--clocky-radius-full);
+  background: transparent;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.proxy:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 3px;
+}
+
+.particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+
+.particle {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-viz-edge-active);
+  box-shadow: 0 0 8px var(--clocky-viz-edge-active);
+}
+
+.pulse {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: var(--clocky-radius-full);
+  border: 2px solid var(--clocky-viz-edge-active);
+  opacity: 0;
+}
+
+.overflow {
+  position: absolute;
+  padding: 0 var(--clocky-space-1);
+  border-radius: var(--clocky-radius-full);
+  font: var(--clocky-type-micro);
+  color: var(--clocky-fg-on-accent);
+  background: var(--clocky-accent-bg);
+  transform: translate(-50%, -180%);
+  opacity: 0;
+}
+
+.controls {
+  position: absolute;
+  right: var(--clocky-space-2);
+  bottom: var(--clocky-space-2);
+  display: flex;
+  gap: var(--clocky-space-1);
+  padding: var(--clocky-space-1);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-surface-glass);
+  backdrop-filter: var(--clocky-blur-glass);
+  box-shadow: var(--clocky-elevation-1);
+  cursor: default;
+}
+
+.controls button {
+  min-width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--clocky-radius-sm);
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
+}
+
+.controls button:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+}
+
+.legend {
+  position: absolute;
+  left: var(--clocky-space-2);
+  bottom: var(--clocky-space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--clocky-space-2);
+  max-width: calc(100% - 140px);
+  padding: var(--clocky-space-1) var(--clocky-space-2);
+  border-radius: var(--clocky-radius-md);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-secondary);
+  background: var(--clocky-surface-glass);
+  backdrop-filter: var(--clocky-blur-glass);
+  box-shadow: var(--clocky-elevation-1);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge[data-draw-in] { animation: none; stroke-dashoffset: 0; }
+  .node[data-entering] .nodeBody { animation: fade var(--clocky-duration-fade) linear backwards; }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+}
+
+/* Viewport: zoom buttons, keys, and fit glide; drags and wheel follow the hand. */
+.viewport,
+.particles {
+  transform-origin: 0 0;
+}
+
+.viewport[data-glide],
+.particles[data-glide] {
+  transition: transform var(--clocky-duration-slow) var(--clocky-ease-standard);
+}
+
+/* Spotlight: hovering or keyboard-focusing a node keeps it and its direct
+   neighbours at full strength and lets everything else recede. */
+.node,
+.edgeGroup {
+  transition: opacity var(--clocky-duration-fast) var(--clocky-ease-standard);
+}
+
+.frame[data-spotlight] .node:not([data-lit]),
+.frame[data-spotlight] .edgeGroup:not([data-lit]) {
+  opacity: 0.28;
+}
+
+.frame[data-spotlight] .edgeGroup[data-lit] .edge {
+  stroke: var(--clocky-viz-edge-active);
+}
+
+.nodeBody {
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-enter);
+}
+
+.node[data-spot] .nodeBody {
+  transform: scale(1.1);
+}
+
+.frame[data-spotlight]:not([data-panning]) {
+  cursor: pointer;
+}
+
+/* Running work flows along its edge (L1): a dotted overlay drifting from
+   source to target on top of the solid base edge. */
+.edgeFlow {
+  fill: none;
+  stroke: var(--clocky-viz-edge-active);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1 11;
+  opacity: 0.85;
+  pointer-events: none;
+  animation: flow var(--clocky-duration-sweep) linear infinite;
+}
+
+.frame[data-paused] .edgeFlow {
+  animation-play-state: paused;
+}
+
+@keyframes flow {
+  to { stroke-dashoffset: -48; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edgeFlow { display: none; }
+  .viewport[data-glide], .particles[data-glide] { transition: none; }
+}

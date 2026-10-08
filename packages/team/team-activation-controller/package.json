@@ -42,7 +42,8 @@
     "@clocky/clocky-session": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
     "@clocky/clocky-team-workspace": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-activation-supervisor": "workspace:^",

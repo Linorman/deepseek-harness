@@ -1,0 +1,21 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: var(--clocky-radius-full);
+  border: 1px solid var(--avatar-border);
+  background: var(--avatar-bg);
+  color: var(--avatar-fg);
+  font: var(--clocky-type-micro);
+  user-select: none;
+}
+
+.s20 { width: 20px; height: 20px; font-size: var(--clocky-type-micro-size); }
+.s24 { width: 24px; height: 24px; }
+.s32 { width: 32px; height: 32px; font: var(--clocky-type-label); }
+
+[data-tone='teal'] { --avatar-fg: var(--clocky-tint-teal-fg); --avatar-bg: var(--clocky-tint-teal-bg); --avatar-border: var(--clocky-tint-teal-border); }
+[data-tone='fuchsia'] { --avatar-fg: var(--clocky-tint-fuchsia-fg); --avatar-bg: var(--clocky-tint-fuchsia-bg); --avatar-border: var(--clocky-tint-fuchsia-border); }
+[data-tone='olive'] { --avatar-fg: var(--clocky-tint-olive-fg); --avatar-bg: var(--clocky-tint-olive-bg); --avatar-border: var(--clocky-tint-olive-border); }
+[data-tone='slate'] { --avatar-fg: var(--clocky-tint-slate-fg); --avatar-bg: var(--clocky-tint-slate-bg); --avatar-border: var(--clocky-tint-slate-border); }

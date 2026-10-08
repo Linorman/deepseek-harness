@@ -88,3 +88,20 @@ it('keeps replacement selection installed by an old request abort callback', asy
     expect(h.runtime.state.getSnapshot().source.value?.decisionId).toBe('replacement')
   } finally { await h.ctx.fiber.dispose() }
 })
+
+it('dismisses a deep-linked source and rejects a late original body', async () => {
+  const h = setup()
+  try {
+    const pending = deferred<Awaited<ReturnType<typeof h.api.simulations.inspectSource>>>()
+    h.read.mockReturnValueOnce(pending.promise)
+    const stop = h.runtime.watchSource(input, 10000)
+    expect(h.read).toHaveBeenCalledOnce()
+    h.runtime.closeSource()
+    expect(h.read.mock.calls[0]?.[1]?.aborted).toBe(true)
+    pending.resolve(ok(value))
+    await new Promise<void>((resolve) => { setImmediate(resolve) })
+    expect(h.runtime.state.getSnapshot().source.value).toBeUndefined()
+    expect(h.runtime.state.getSnapshot().source.loading).toBe(false)
+    stop()
+  } finally { await h.ctx.fiber.dispose() }
+})

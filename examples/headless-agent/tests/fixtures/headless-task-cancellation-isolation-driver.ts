@@ -1,4 +1,5 @@
 /** Real same-binding task cancellation with independent pending filesystem approvals. */
+import { createFixtureTeam, withFixturePrincipal } from './authenticated-host.ts'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { appendFileSync } from 'node:fs'
@@ -145,12 +146,13 @@ async function run(ctx: Context, model: IsolationApprovalModel): Promise<Record<
   }
   let client: TeamAgentClient | undefined
   try {
-    const handle = await ctx.teamRuns.create({ objective: 'Cancel one task while another waits for approval.', cwd: process.cwd(),
+    // The coordinator must acknowledge its own invitation before Team creation can finish.
+    client = new TeamAgentClient(ctx, { consumeWorkspace: true, linkProvider: 'isolation-local' })
+    client.start()
+    const handle = await createFixtureTeam(ctx, { objective: 'Cancel one task while another waits for approval.', cwd: process.cwd(),
       selection: { provider: MODEL, model: MODEL } })
     const coordinator = handle.coordinatorLease.localAgent
     assert(coordinator !== undefined)
-    client = new TeamAgentClient(ctx, { consumeWorkspace: true, linkProvider: 'isolation-local' })
-    client.start()
     await ctx.teamRuns.postHumanInput({ teamId: handle.teamId, idempotencyKey: channelPostIdempotencyKeySchema.parse('isolation-input'),
       content: [{ type: 'text', text: 'ISOLATION_COORDINATOR' }] })
     await model.coordinatorStarted.promise
@@ -270,7 +272,7 @@ export function apply(ctx: Context): void {
     if (!text.includes('human-action')) return
     appendFileSync(join(process.cwd(), 'task-cancellation-host-diagnostics.jsonl'), `${JSON.stringify({ type: record.type, text })}\n`)
   } })
-  void Promise.race([run(ctx, model), failure.promise]).then((output) => {
+  void Promise.race([withFixturePrincipal(ctx, () => run(ctx, model)), failure.promise]).then((output) => {
     process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
     exit(0)
   }, (error: unknown) => { process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`); exit(1) })

@@ -1,6 +1,6 @@
 import { projectHumanAction } from '@clocky/clocky-team/selection'
-import { fingerprintTeamHumanActorPayload, jsonObjectSchema } from '@clocky/clocky-team'
-import type { TeamHumanActorProof, TeamHumanActorScope } from '@clocky/clocky-team'
+import { fingerprintTeamHumanActorPayload, jsonObjectSchema, teamSystemHumanActionScopeSchema, teamHumanActionResponseInputSchema } from '@clocky/clocky-team'
+import type { TeamHumanActorProof, TeamHumanActorScope, TeamSystemHumanActionProof, TeamSystemHumanActionScope } from '@clocky/clocky-team'
 import { teamHumanActionIdSchema, teamHumanActionSnapshotSchema, teamHumanActionReadRequestSchema } from '@clocky/clocky-team/schema'
 /** Human-action admission and late settlement across durable Team closure. @module */
 
@@ -9,7 +9,7 @@ import { retainedFinalAdapter, retainedFinalFixture } from './durable-final-fixt
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
 import type { DurableChannelFixture } from './durable-replay-fixtures.ts'
 import { createdTeam, goal, goalChanged, participant, participantChanged, taskCreatorActivationId, taskCreatorId,
-  taskCreatorSessionId, teamId, teamPhase } from './fixtures.ts'
+  taskCreatorSessionId, teamId, teamPhase, task, taskChanged, taskLease, seedTeamPhase } from './fixtures.ts'
 
 function action(createdAt = 16) {
   return { id: 'question-a', teamId, kind: 'question', phase: 'pending', participantId: taskCreatorId,
@@ -191,4 +191,240 @@ it.each(['json', 'sqlite'] as const)('inspects retained request handling under e
   const releaseLarge = ctx.teams.registerHumanActorProofSource({ name: 'request-detail-large', resolveHumanActorProof: actor => scopes.get(actor) })
   await expect(inspect()).rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
   releaseLarge()
+})
+
+
+/** Real active membership and serialized question; the Host seam selects the complete accepted answer. */
+async function responseFixture(taskState?: 'active' | 'settled') {
+  const human = participant({ id: 'answer-human', kind: 'human', owner: { kind: 'product-principal', principalId: 'answer-principal' },
+    authorityGrant: { operations: ['human-action'], workspaceModes: ['shared'], readScopes: [], writeScopes: [], budgets: {} } })
+  const member = participant({ id: taskCreatorId, role: 'coordinator' })
+  const pending = { ...action(taskState === undefined ? 19 : 23),
+    ...taskState === undefined ? {} : { taskId: 'human-response-task', attemptId: 'human-response-attempt' } }
+  const rows: unknown[] = [createdTeam(), teamPhase(), ...[member, human].flatMap((value, index) =>
+    (['invited', 'provisioning', 'active'] as const).map((phase, offset) => participantChanged({
+      participant: { ...value, phase }, createdAt: 12 + index * 3 + offset,
+    }))),
+  { type: 'activation/changed', binding: { activation: { id: taskCreatorActivationId, teamId, participantId: taskCreatorId, status: 'idle' },
+    sessionId: taskCreatorSessionId, provider: 'in-process' }, createdAt: 18 }]
+  if (taskState !== undefined) {
+    const initial = task({ id: 'human-response-task', createdAt: 20 })
+    const lease = taskLease({ attemptId: 'human-response-attempt', activationId: taskCreatorActivationId, participantId: taskCreatorId,
+      assignedAt: 21, renewedAt: 21, expiresAt: 10021, durationMs: 10000 })
+    const assigned = task({ ...initial, phase: 'assigned', revision: 2, lease, attemptCount: 1 })
+    const running = task({ ...assigned, phase: 'running', revision: 3, lease: { ...lease, startedAt: 22 } })
+    rows.push(taskChanged({ task: initial, createdAt: 20 }), taskChanged({ task: assigned, createdAt: 21 }),
+      taskChanged({ task: running, createdAt: 22 }), actionRecord(pending, 23))
+    if (taskState === 'settled') rows.push(taskChanged({ task: task({ ...running, phase: 'completed', revision: 4, lease: undefined,
+      attemptHistory: [{ id: lease.attemptId, teamId, taskId: initial.id, ordinal: lease.ordinal, participantId: taskCreatorId,
+        activationId: taskCreatorActivationId, assignedAt: 21, startedAt: 22, leaseExpiresAt: lease.expiresAt, settledAt: 24,
+        outcome: { kind: 'completed', result: { summary: 'Task completed' } } }] }), createdAt: 24 }))
+  } else rows.push(actionRecord(pending, 19))
+  const ctx = await recover('json', rows)
+  const proofs = new Map<TeamSystemHumanActionProof, TeamSystemHumanActionScope>()
+  const stop = ctx.teams.registerSystemHumanActionProofSource({ name: 'host-api-proxy', resolveHumanActionProof: value => proofs.get(value) })
+  async function respond(patch: Record<string, unknown> = {}, scopePatch: Record<string, unknown> = {}) {
+    const state = await ctx.teams.getTeam({ teamId })
+    const input = teamHumanActionResponseInputSchema.parse({ teamId, actionId: pending.id, expectedUpdatedAt: pending.updatedAt,
+      idempotencyKey: 'answer-once', answer: { kind: 'question', answers: [] }, ...patch })
+    const actor = Object.freeze({ toJSON(): never { throw new Error('Runtime-only proof') } }) as unknown as TeamSystemHumanActionProof
+    proofs.set(actor, teamSystemHumanActionScopeSchema.parse({ kind: 'host-human-action-response-accept', teamId,
+      expectedCursor: state.team.cursor, action: { ...pending, createdAt: 0, updatedAt: 0 }, input,
+      principalId: 'answer-principal', humanId: human.id, ...scopePatch }))
+    try { return await ctx.teams.acceptHumanActionResponse({ actor, teamId, expectedCursor: state.team.cursor }) }
+    finally { proofs.delete(actor) }
+  }
+  async function resolve(phase: 'resolved' | 'cancelled', outcome: Record<string, unknown>, actionPatch: Record<string, unknown> = {}) {
+    const state = await ctx.teams.getTeam({ teamId })
+    const actor = Object.freeze({ toJSON(): never { throw new Error('Runtime-only proof') } }) as unknown as TeamSystemHumanActionProof
+    proofs.set(actor, teamSystemHumanActionScopeSchema.parse({ kind: 'host-human-action-resolve', teamId,
+      expectedCursor: state.team.cursor, action: { ...pending, createdAt: 0, updatedAt: 0, ...actionPatch }, phase, outcome }))
+    try { return await ctx.teams.resolveHumanAction({ actor, teamId, expectedCursor: state.team.cursor }) }
+    finally { proofs.delete(actor) }
+  }
+  async function unavailable(actionPatch: Record<string, unknown> = {}, scopePatch: Record<string, unknown> = {}) {
+    const state = await ctx.teams.getTeam({ teamId })
+    const actor = Object.freeze({ toJSON(): never { throw new Error('Runtime-only proof') } }) as unknown as TeamSystemHumanActionProof
+    proofs.set(actor, teamSystemHumanActionScopeSchema.parse({ kind: 'host-human-action-unavailable', teamId,
+      expectedCursor: state.team.cursor, action: { ...pending, ...actionPatch }, ...scopePatch }))
+    try { return await ctx.teams.unavailableHumanAction({ actor, teamId, expectedCursor: state.team.cursor }) }
+    finally { proofs.delete(actor) }
+  }
+  return { ctx, pending, human, respond, resolve, unavailable, stop,
+    replaceResolutionOutcome(outcome: Record<string, unknown>) {
+      for (const [proof, scope] of proofs) if (scope.kind === 'host-human-action-resolve') {
+        proofs.set(proof, teamSystemHumanActionScopeSchema.parse({ ...scope, outcome }))
+      }
+    } }
+
+}
+
+it('stalls a live Team after the Host proves a pending human continuation cannot be recovered', async () => {
+  const f = await responseFixture()
+  const before = await f.ctx.teams.getTeam({ teamId })
+  await expect(f.unavailable({}, { kind: 'host-human-action-resolve', phase: 'cancelled',
+    action: { ...f.pending, createdAt: 0, updatedAt: 0 },
+    outcome: { code: 'WRONG_OPERATION' } })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  await expect(f.unavailable({ details: { questionRpcId: 'other-request', questions: [] } }))
+    .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  expect(await f.ctx.teams.getTeam({ teamId })).toEqual(before)
+  const cancelled = await f.unavailable()
+  expect(cancelled).toMatchObject({ phase: 'cancelled', outcome: {
+    kind: 'unavailable', code: 'HUMAN_ACTION_CONTINUATION_UNAVAILABLE',
+  } })
+  const stalled = await f.ctx.teams.getTeam({ teamId })
+  expect(stalled.team.phase).toBe('stalled')
+  expect(stalled.team.stallReason?.code).toBe('HUMAN_ACTION_CONTINUATION_UNAVAILABLE')
+  expect(stalled.humanActions).toContainEqual(cancelled)
+  await expect(f.unavailable()).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+})
+
+it('cancels an unavailable human continuation without replacing an earlier Team stall reason', async () => {
+  const f = await responseFixture()
+  await f.ctx.teams.getTeam({ teamId })
+  await seedTeamPhase(f.ctx, teamId, 'stalled', { code: 'MODEL_UNAVAILABLE', message: 'Waiting for model recovery.' })
+  const cancelled = await f.unavailable()
+  expect(cancelled.phase).toBe('cancelled')
+  const team = await f.ctx.teams.getTeam({ teamId })
+  expect(team.team.phase).toBe('stalled')
+  expect(team.team.stallReason).toEqual({ code: 'MODEL_UNAVAILABLE', message: 'Waiting for model recovery.' })
+})
+
+it('retains the first exact accepted human answer across retries without claiming tool completion', async () => {
+  const f = await responseFixture()
+  try {
+    const accepted = await f.respond()
+    expect(accepted.phase).toBe('pending')
+    expect(accepted.response).toMatchObject({ idempotencyKey: 'answer-once', respondedBy: f.human.id,
+      expectedUpdatedAt: f.pending.updatedAt, answer: { kind: 'question', answers: [] } })
+    const before = await f.ctx.teams.getTeam({ teamId })
+    expect(await f.respond()).toEqual(accepted)
+    expect(await f.ctx.teams.getTeam({ teamId })).toEqual(before)
+    await expect(f.respond({ idempotencyKey: 'different-answer' })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(f.respond({ answer: { kind: 'question', answers: [{ id: 'q', selected: [], custom: 'Different' }] } }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+it.each([
+  ['old request revision', { expectedUpdatedAt: 18 }],
+  ['different answer kind', { answer: { kind: 'approval', outcome: 'rejected' } }],
+] as const)('refuses a human response with %s before changing the pending request', async (_name, patch) => {
+  const f = await responseFixture()
+  try {
+    const before = await f.ctx.teams.getTeam({ teamId })
+    await expect(f.respond(patch)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    expect(await f.ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+it.each(['principalId', 'humanId'] as const)('refuses a response proof that binds another %s', async (field) => {
+  const f = await responseFixture()
+  try { await expect(f.respond({}, { [field]: 'foreign' })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' }) }
+  finally { await f.ctx.fiber.dispose() }
+})
+
+it('revalidates response proof lifetime after policy admission yields', async () => {
+  const f = await responseFixture()
+  f.ctx.teams.registerPolicy('human-action', { name: 'retire-response-source', async apply(_request, next) {
+    f.stop(); return await next()
+  } })
+  try {
+    const before = await f.ctx.teams.getTeam({ teamId })
+    await expect(f.respond()).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    expect(await f.ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+
+it('accepts only the pending response tied to the currently retained task attempt and Session', async () => {
+  const live = await responseFixture('active')
+  try {
+    expect((await live.respond()).response?.expectedUpdatedAt).toBe(23)
+  } finally { await live.ctx.fiber.dispose() }
+  const settled = await responseFixture('settled')
+  try {
+    await expect(settled.respond()).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  } finally { await settled.ctx.fiber.dispose() }
+})
+
+it('refuses a captured pending request that disagrees with the durable action details', async () => {
+  const f = await responseFixture()
+  try {
+    await expect(f.respond({}, { action: { ...f.pending, createdAt: 0, updatedAt: 0, details: { questionRpcId: 'changed' } } }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+it('refuses a proof selecting an unknown action instead of answering another retained request', async () => {
+  const f = await responseFixture()
+  try {
+    await expect(f.respond({ actionId: 'missing' }, { action: { ...f.pending, id: 'missing', createdAt: 0, updatedAt: 0 } }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+it('refuses a proof whose payload action identity disagrees with its captured request', async () => {
+  const f = await responseFixture()
+  try {
+    await expect(f.respond({ actionId: 'different-action' })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+
+it.each(['resolved', 'cancelled'] as const)('retains exact Host %s settlements and refuses a different terminal outcome', async (phase) => {
+  const f = await responseFixture()
+  const outcome = phase === 'resolved' ? { answers: [] } : { kind: 'cancelled', reason: 'Host request cancelled' }
+  try {
+    const settled = await f.resolve(phase, outcome)
+    expect(settled.phase).toBe(phase)
+    const before = await f.ctx.teams.getTeam({ teamId })
+    expect(await f.resolve(phase, outcome)).toEqual(settled)
+    expect(await f.ctx.teams.getTeam({ teamId })).toEqual(before)
+    await expect(f.resolve(phase, { ...outcome, different: true })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+it('revalidates the exact Host resolution source after policy work rather than committing a retired outcome', async () => {
+  const f = await responseFixture()
+  f.ctx.teams.registerPolicy('human-action', { name: 'retire-resolution', async apply(_request, next) {
+    f.stop(); return await next()
+  } })
+  try {
+    const before = await f.ctx.teams.getTeam({ teamId })
+    await expect(f.resolve('resolved', { answers: [] })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    expect(await f.ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+
+it('refuses missing or changed Host resolution identities without settling another action', async () => {
+  const f = await responseFixture()
+  try {
+    await expect(f.resolve('resolved', { answers: [] }, { id: 'missing-action' })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(f.resolve('resolved', { answers: [] }, { details: { questionRpcId: 'changed-request' } }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+it('retains the original task-cancelled reason when the Host continuation later acknowledges generic cancellation', async () => {
+  const f = await responseFixture('active')
+  try {
+    const original = await f.resolve('cancelled', { kind: 'task-cancelled', taskId: f.pending.taskId, reason: 'Task stop admitted' })
+    const before = await f.ctx.teams.getTeam({ teamId })
+    expect(await f.resolve('cancelled', { kind: 'cancelled' })).toEqual(original)
+    expect(await f.ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await f.ctx.fiber.dispose() }
+})
+
+it('refuses changed resolution facts from a still-registered Host source after policy work', async () => {
+  const f = await responseFixture()
+  f.ctx.teams.registerPolicy('human-action', { name: 'change-resolution', async apply(_request, next) {
+    f.replaceResolutionOutcome({ changed: true }); return await next()
+  } })
+  try {
+    const before = await f.ctx.teams.getTeam({ teamId })
+    await expect(f.resolve('resolved', { answers: [] })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    expect(await f.ctx.teams.getTeam({ teamId })).toEqual(before)
+  } finally { await f.ctx.fiber.dispose() }
 })

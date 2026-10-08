@@ -21,7 +21,7 @@ import type {
 import { FakeApiClient, fakeRemote, ok } from '../../runtime/tests/fake-api.client.ts'
 import { makeTranslate } from '@clocky/clocky-client-test-runtime'
 import { zh as commonZh } from '@clocky/clocky-client-locale/src/locales/zh.ts'
-import type { DraftAttachmentId, InputNotice, InputState } from '../src/client/input/contract.ts'
+import type { DraftAttachmentId, InputNotice, InputState } from '../src/client/contract/input.ts'
 import { SessionInputShell } from '../src/client/input/facade.ts'
 import { InputBar } from '../src/client/skeleton/InputBar.tsx'
 import type { InputBarProps } from '../src/client/skeleton/InputBar.tsx'

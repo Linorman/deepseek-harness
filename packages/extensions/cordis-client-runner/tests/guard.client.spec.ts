@@ -210,7 +210,7 @@ describe('theme seat', () => {
   it('pins the override source to the package id whatever the caller passes', async () => {
     const bench = await boot(['theme'])
     const theme = bench.facade.theme as { overrideTokens(source: unknown, tokens: unknown): () => void }
-    const tokens = { '--clocky-alias-x': { light: '#fff', dark: '#000' } }
+    const tokens = { '--clocky-accent-bg': { light: '#fff', dark: '#000' } }
     theme.overrideTokens('pretend-to-be-someone-else', tokens)
     expect(bench.overrideTokens).toHaveBeenCalledWith('dyn-1.pkg-1', tokens)
   })

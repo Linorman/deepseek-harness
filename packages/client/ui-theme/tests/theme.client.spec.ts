@@ -74,10 +74,10 @@ describe('ThemeRuntime', () => {
 
   it('registered themes join the snapshot; disposing the active one resets to default', () => {
     const { theme, events, host } = make()
-    const dispose = theme.register({ id: 'sepia', colorScheme: 'light', tokens: { '--clocky-alias-bg-base': 'red' } })
+    const dispose = theme.register({ id: 'sepia', colorScheme: 'light', tokens: { '--clocky-bg-canvas': 'red' } })
     expect(theme.getTheme().themes.map(t => t.id)).toEqual(['light', 'dark', 'sepia'])
     theme.setTheme('sepia')
-    expect(theme.getTheme().active.tokens['--clocky-alias-bg-base']).toBe('red')
+    expect(theme.getTheme().active.tokens['--clocky-bg-canvas']).toBe('red')
     dispose()
     expect(theme.getTheme().preference).toBe('system')
     expect(theme.getTheme().themes.map(t => t.id)).toEqual(['light', 'dark'])
@@ -157,7 +157,7 @@ describe('ThemeRuntime', () => {
       id: 'custom',
       colorScheme: 'light',
       tokens: {
-        '--clocky-alias-bg-base': 'duplicate-built-in',
+        '--clocky-bg-canvas': 'duplicate-built-in',
         '--registered': 'registered',
       },
     })
@@ -175,7 +175,7 @@ describe('ThemeRuntime', () => {
     const semantic = tokens.find(token => token.name === 'semanticAccent')
     expect(semantic).toMatchObject({ valueType: 'CSS value' })
     expect(semantic).not.toHaveProperty('cssVariable')
-    expect(tokens.filter(token => token.name === '--clocky-alias-bg-base')).toHaveLength(1)
+    expect(tokens.filter(token => token.name === '--clocky-bg-canvas')).toHaveLength(1)
 
     tokens[0]!.description = 'caller mutation'
     expect(theme.exportInspectTokens()[0]!.description).not.toBe('caller mutation')

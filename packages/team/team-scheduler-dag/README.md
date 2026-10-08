@@ -20,6 +20,8 @@ The effect-owned `team/task-scheduling-modes` listener exposes the scheduler’s
 
 An active human named by the review policy keeps its task in progress without an Agent activation. Waiting for that human does not start a model or trigger TASK_NO_ELIGIBLE_OWNER; the review response still requires the existing participant, permission and revision checks.
 
+Teams with `rules.simulationRunId` belong exclusively to the Simulation scheduler. Ordinary DAG drives skip them before placement, expiry, review dispatch, retention or stall diagnosis, including while the native run is paused or its reviewers are dormant. The Hub independently rejects scheduler-stall proofs for these Teams.
+
 ## Scheduling and expiry
 
 Each drive checks frozen consumption/time ceilings, expires due assigned or running leases, then selects ready `pending` tasks in descending priority and durable task-creation order. It considers only active `local-agent` and `remote-agent` participants that declare every required capability, have an exact `idle` activation, and hold fewer than `maxActiveAttemptsPerParticipant` active attempts. Before ranking those candidates, it calls `ctx.teamWorkspaces.eligible(task.workspaceMode, { task, binding })` and skips a `false` result; an unavailable provider rejects the drive. The scheduler never calls `allocate()`. It calls `assignTask()` with the task revision and configured `leaseDurationMs`; the Team provider remains the final authority for membership, capabilities, activation identity, task phase, revision, and lease validity. Discovery uses bounded `listTeamsPage()` calls with the configured `teamPageSize`; a pulse never requests the full Team collection.

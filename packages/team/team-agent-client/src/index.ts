@@ -1,3 +1,5 @@
+import { channelViewReviewMatches } from '@clocky/clocky-team/selection'
+import { parseTeamParticipantHeader, trackTeamOperation, withTeamOperationTimeout } from '@clocky/clocky-team'
 /**
  * Exact Team Link delivery consumer plus local durable-binding discovery
  * wrapper. It admits direct and task-assignment input without importing a
@@ -63,9 +65,7 @@ import {
   channelInvitationIdempotencyKeySchema,
   fingerprintChannelManifest,
   TeamError,
-  participantIdSchema,
   teamUsageSampleIdSchema,
-  teamIdSchema,
 } from '@clocky/clocky-team'
 import type { SessionEvent, TeamChannelViewEventData, TeamChannelViewMessageSource } from '@clocky/clocky-session'
 import type {
@@ -799,14 +799,9 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
 
   /** Track one accepted local operation and contain its asynchronous diagnostic. */
   private track(operation: Promise<void>, subject: string): void {
-    this.accepted.add(operation)
-    void operation.then(
-      () => { this.accepted.delete(operation) },
-      (error: unknown) => {
-        this.accepted.delete(operation)
-        if (!this.closing) this.ctx.logger.warn(`team-agent-client: ${subject} failed: ${renderError(error)}`)
-      },
-    )
+    trackTeamOperation(this.accepted, operation, (error) => {
+      if (!this.closing) this.ctx.logger.warn(`team-agent-client: ${subject} failed: ${renderError(error)}`)
+    })
   }
 
   /** Serialize Team Envelope inbox admission for one local Agent. */
@@ -988,13 +983,20 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     if (!claimMatchesDelivery(binding, envelope, claim)) return
     const assignment = parseTaskAssignmentEnvelope(claim.channel.manifest, envelope)
     if (!assignmentMatchesBinding(assignment, binding)) return
-    const task = await link.claimTaskAttemptStart({
-      taskId: assignment.taskId,
-      attemptId: assignment.attemptId,
-      assignedRevision: assignment.assignedRevision,
-      channelId: assignment.channelId,
-      envelopeId: assignment.envelopeId,
-    })
+    let task: TeamTaskSnapshot
+    try {
+      task = await link.claimTaskAttemptStart({
+        taskId: assignment.taskId,
+        attemptId: assignment.attemptId,
+        assignedRevision: assignment.assignedRevision,
+        channelId: assignment.channelId,
+        envelopeId: assignment.envelopeId,
+      })
+    } catch (error: unknown) {
+      // A retired Link may reject after the earlier Envelope claim; it owns no admitted Session input yet.
+      if (!this.isCurrentConnection(connection)) return
+      throw error
+    }
     if (!this.isCurrentConnection(connection)
       || connection.link !== link
       || this.ctx.agents.get(binding.agent.id) !== binding.agent
@@ -2256,9 +2258,7 @@ function bindingKey(teamId: TeamId, participantId: ParticipantId): string {
 
 /** Read a complete Team participant pair from one local Agent's Session header. */
 function agentProvenance(agent: Agent): { readonly teamId: TeamId; readonly participantId: ParticipantId } | undefined {
-  const teamId = teamIdSchema.safeParse(agent.session.header.teamId)
-  const participantId = participantIdSchema.safeParse(agent.session.header.participantId)
-  return teamId.success && participantId.success ? { teamId: teamId.data, participantId: participantId.data } : undefined
+  return parseTeamParticipantHeader(agent.session.header)
 }
 
 /** Return whether one durable residency state can still receive local channel input. */
@@ -2336,13 +2336,7 @@ function claimViewMatchesDelivery(
   if (view.teamId !== envelope.teamId || view.channelId !== envelope.channelId) return false
   if (view.taskId !== envelope.taskId || view.causationId !== envelope.causationId) return false
   if (envelope.kind === 'review-request') {
-    const payload = envelope.payload as Record<string, unknown>
-    const review = view.review
-    if (review === undefined
-      || review.attemptId !== payload['attemptId']
-      || review.reviewRevision !== payload['reviewRevision']
-      || review.reviewerId !== payload['reviewerId']
-      || review.initiatorId !== payload['initiatorId']) return false
+    if (!channelViewReviewMatches(view.review, envelope)) return false
   } else if (view.review !== undefined) {
     return false
   }
@@ -2735,18 +2729,8 @@ function linkProviderName(value: string): string {
 }
 
 /** Bound local delivery disposal without retaining a timer after normal settlement. */
-async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer!: ReturnType<typeof setTimeout>
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      reject(new Error(`team-agent-client: disposal exceeded ${timeoutMs}ms`))
-    }, timeoutMs)
-  })
-  try {
-    return await Promise.race([operation, timeout])
-  } finally {
-    clearTimeout(timer)
-  }
+function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  return withTeamOperationTimeout(operation, timeoutMs, () => new Error(`team-agent-client: disposal exceeded ${timeoutMs}ms`))
 }
 
 /** Render a contained delivery failure without letting diagnostics throw. */

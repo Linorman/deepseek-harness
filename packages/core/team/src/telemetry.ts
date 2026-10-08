@@ -125,13 +125,9 @@ function teamSeverity(event: TeamEvent): TeamTelemetrySeverity {
   return event.type === 'policy/denied' ? 'warn' : 'info'
 }
 
-/** Map a channel record's explicit failure marker to telemetry severity. */
+/** Map a channel WAL's authoritative failed terminal phase to telemetry severity. */
 function channelSeverity(event: ChannelEvent): TeamTelemetrySeverity {
-  const record = event.record as unknown as { type?: unknown; reason?: unknown }
-  return record.type === 'channel/closed' && typeof record.reason === 'object' && record.reason !== null
-    && (record.reason as { kind?: unknown }).kind === 'failed'
-    ? 'error'
-    : 'info'
+  return event.record.type === 'channel/closed' && event.record.phase === 'failed' ? 'error' : 'info'
 }
 
 /** Map Session outcomes to an alerting severity without interpreting plugin events. */
@@ -194,7 +190,7 @@ function teamRecord(event: TeamEvent): TeamTelemetryRecord {
 
 /** Render one post-commit channel-WAL notification for export. */
 function channelRecord(event: ChannelEvent): TeamTelemetryRecord {
-  const attributes = correlationAttributes(event)
+  const attributes = correlationAttributes(event.record)
   attributes['channel.id'] = String(event.channelId)
   attributes['event.type'] = event.record.type
   const cursor = event.record.type === 'channel/envelope' ? event.record.envelope.sequence : event.record.sequence

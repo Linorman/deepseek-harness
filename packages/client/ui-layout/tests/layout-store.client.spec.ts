@@ -8,7 +8,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createLayoutStore } from '@clocky/clocky-client-ui-layout/src/client/stores.ts'
 import {
-  DETAILS_DEFAULT, DETAILS_MAX, DETAILS_MIN,
+  DETAILS_DEFAULT, DETAILS_MAX, DETAILS_MIN, PANE_DEFAULT, PANE_MAX, PANE_MIN,
   SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN,
 } from '@clocky/clocky-client-ui-layout/src/client/columns.ts'
 
@@ -19,7 +19,7 @@ beforeEach(() => { localStorage.clear() })
 describe('createLayoutStore', () => {
   it('initializes the sidebar at its default width, details closed, wide viewport assumed', () => {
     const { store } = createLayoutStore().create()
-    expect(store.getSnapshot()).toEqual({ workspace: 'team', sidebar: SIDEBAR_DEFAULT, details: 0, narrow: false, narrowExpanded: false })
+    expect(store.getSnapshot()).toEqual({ workspace: 'team', sidebar: SIDEBAR_DEFAULT, details: 0, narrow: false, narrowExpanded: false, pane: PANE_DEFAULT, paneExpanded: false, overlay: 'none' })
   })
 
   it('each create() is an independent instance (factory is not a singleton)', () => {
@@ -55,7 +55,7 @@ describe('createLayoutStore', () => {
     actions.setSidebar(400)
     actions.setNarrow(true)
     actions.toggleSidebar()
-    expect(store.getSnapshot()).toEqual({ workspace: 'team', sidebar: 400, details: 0, narrow: true, narrowExpanded: true })
+    expect(store.getSnapshot()).toEqual({ workspace: 'team', sidebar: 400, details: 0, narrow: true, narrowExpanded: true, pane: PANE_DEFAULT, paneExpanded: false, overlay: 'none' })
     actions.toggleSidebar()
     expect(store.getSnapshot().narrowExpanded).toBe(false)
     expect(store.getSnapshot().sidebar).toBe(400)
@@ -99,6 +99,21 @@ describe('createLayoutStore', () => {
       details: 0,
       narrow: false,
       narrowExpanded: false,
+      pane: PANE_DEFAULT,
+      paneExpanded: false,
+      overlay: 'none',
     })
+  })
+
+  it('clamps the conversation pane and forgets expansion when the pane closes', () => {
+    const { store, actions } = createLayoutStore().create()
+    actions.setPane(10)
+    expect(store.getSnapshot().pane).toBe(PANE_MIN)
+    actions.setPane(5000)
+    expect(store.getSnapshot().pane).toBe(PANE_MAX)
+    actions.togglePaneExpanded()
+    expect(store.getSnapshot().paneExpanded).toBe(true)
+    actions.restorePane()
+    expect(store.getSnapshot().paneExpanded).toBe(false)
   })
 })

@@ -3,7 +3,7 @@ import type {
   ContextMessageNode, ConversationNodeDefinition, SteeringMessageNode, UserMessageNode,
 } from '@clocky/clocky-client-runtime/client'
 import {
-  contextForm, contextProvenance, isAppendSurfaceEvent, isReplacementSurfaceEvent,
+  contextForm, contextProvenance, deriveEventMessage, isAppendSurfaceEvent, isReplacementSurfaceEvent,
 } from '@clocky/clocky-client-runtime/client'
 import type { InboxState } from './inbox.ts'
 import { chatNode } from './common.ts'
@@ -19,24 +19,6 @@ interface ReferencedSteeringMessageNode extends SteeringMessageNode {
 }
 
 type MessageNode = ReferencedUserMessageNode | ReferencedSteeringMessageNode | ContextMessageNode
-
-/** Build the UI source projection for one persisted Team channel view. */
-function teamChannelViewSource(event: Extract<Parameters<ConversationNodeDefinition['match']>[0], { type: 'team/channel-view' }>): UserMessageNode['source'] {
-  const data = event.data
-  return {
-    kind: 'team-channel-view',
-    teamId: data.teamId,
-    channelId: data.channelId,
-    adapter: data.adapter,
-    viewPolicy: data.viewPolicy,
-    triggeringEnvelopeId: data.triggeringEnvelopeId,
-    sourceEnvelopeIds: data.sourceEnvelopeIds,
-    delivery: data.delivery,
-    ...data.causationId === undefined ? {} : { causationId: data.causationId },
-    ...data.taskId === undefined ? {} : { taskId: data.taskId },
-    ...data.review === undefined ? {} : { review: data.review },
-  }
-}
 
 declare module '@clocky/clocky-client-ui-conversation/client' {
   interface ChatNodeDataMap {
@@ -88,7 +70,7 @@ export const messageDefinition: ConversationNodeDefinition<MessageNode> = {
         seq: match.event.seq,
         time: match.event.time,
         content: match.event.data.content,
-        source: teamChannelViewSource(match.event),
+        source: deriveEventMessage(match.event)?.source,
       }
     }
     if (match.event.type !== 'user/message') throw new Error('input-message start requires user/message')

@@ -1,4 +1,7 @@
+import { channelAudienceDeliveryIntents } from '@clocky/clocky-team'
+import { assertChannelJsonKeys as exactKeys, isChannelJsonObject as isObject, requireChannelJsonText as requireIdentifier } from '@clocky/clocky-team'
 /** Consult and discussion channel adapters with bounded pure replay state. */
+import { channelEnvelopeMessages } from '@clocky/clocky-team'
 
 import type {
   ChannelAdapterRecordDraft,
@@ -310,14 +313,7 @@ export const consultChannelAdapter: TeamChannelAdapter = {
       phase: current.phase,
       ...current.requestId === undefined ? {} : { requestId: current.requestId },
       ...current.responseId === undefined ? {} : { responseId: current.responseId },
-      messages: Object.freeze(records.flatMap(record => record.type === 'channel/envelope'
-        ? [{
-          id: record.envelope.id,
-          senderId: record.envelope.senderId,
-          kind: record.envelope.kind,
-          payload: record.envelope.payload,
-        }]
-        : [])),
+      messages: channelEnvelopeMessages(records),
     })
   },
 }
@@ -388,14 +384,7 @@ export const discussionChannelAdapter: TeamChannelAdapter = {
     const current = parseDiscussionState(state)
     assertDiscussionStateMatchesManifest(current, parsed)
     assertDiscussionEnvelope(current, envelope, 'after')
-    const audience = envelope.audience === null
-      ? parsed.participantIds.filter(participantId => participantId !== envelope.senderId)
-      : [...envelope.audience]
-    return Object.freeze(audience.map(participantId => Object.freeze({
-      participantId,
-      envelopeId: envelope.id,
-      delivery: envelope.delivery,
-    } satisfies DeliveryIntent)))
+    return channelAudienceDeliveryIntents(envelope, parsed.participantIds)
   },
 
   projectView({ manifest, state, records }) {
@@ -409,14 +398,7 @@ export const discussionChannelAdapter: TeamChannelAdapter = {
       expectedNext: current.turnCount >= current.maxTurns || current.speakerPolicy === 'free-form'
         ? null
         : nextRoundRobinParticipant(parsed.participantIds, current.lastSenderId),
-      messages: Object.freeze(records.flatMap(record => record.type === 'channel/envelope'
-        ? [{
-          id: record.envelope.id,
-          senderId: record.envelope.senderId,
-          kind: record.envelope.kind,
-          payload: record.envelope.payload,
-        }]
-        : [])),
+      messages: channelEnvelopeMessages(records),
     })
   },
 }
@@ -717,21 +699,4 @@ function participantWithRole(
   const matches = participants.filter(participant => participant.role === role)
   if (matches.length !== 1) throw new Error(`consult channel requires exactly one ${label} participant`)
   return matches[0] as ChannelParticipant
-}
-
-/** Require an exact object-key set before reading protocol JSON. */
-function exactKeys(value: JsonObject, keys: readonly string[], subject: string): void {
-  const actual = Object.keys(value)
-  if (actual.length !== keys.length || actual.some(key => !keys.includes(key))) throw new Error(`${subject} has unsupported fields`)
-}
-
-/** Recognize a JSON object. */
-function isObject(value: JsonValue): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/** Require one opaque identifier in adapter-owned state. */
-function requireIdentifier(value: JsonValue | undefined, subject: string): string {
-  if (typeof value !== 'string' || value.length === 0) throw new Error(`${subject} must be a nonempty string`)
-  return value
 }

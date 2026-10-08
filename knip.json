@@ -28,6 +28,9 @@
     ],
     "**/subagent-clocky-sdk-team-snapshot/team-final-llm.ts": [
       "exports"
+    ],
+    "examples/headless-agent/tests/fixtures/simulation/operation-retry-fault.ts": [
+      "exports"
     ]
   },
   "workspaces": {
@@ -175,7 +178,12 @@
         "headless-agent/tests/fixtures/human-inbox-question-driver.ts",
         "headless-agent/tests/fixtures/headless-channel-summary-llm.ts",
         "jsonrpc-agent/tests/fixtures/human-invitations/invitation-llm.ts",
-        "simulation-company/tests/idle-scenario.ts"
+        "simulation-company/tests/idle-scenario.ts",
+        "simulation-company/tests/fixtures/sdk-execution/fault.ts",
+        "simulation-company/tests/fixtures/sdk-operation-retry/server.ts",
+        "simulation-company/tests/fixtures/sdk-operation-retry/target-fault.ts",
+        "simulation-company/tests/fixtures/sdk-review/server.ts",
+        "simulation-company/tests/task-workflow-fault-scenario.ts"
       ],
       "project": [
         "**/*.ts"

@@ -119,6 +119,7 @@ describe('single-task cancellation through the formal Host gateway', () => {
           await mkdir(target, { recursive: true })
           await writeFile(join(target, driver), await readFile(join(fixtures, driver)))
           await writeFile(join(target, 'headless-human-approval-driver.ts'), await readFile(join(fixtures, 'headless-human-approval-driver.ts')))
+          await writeFile(join(target, 'authenticated-host.ts'), await readFile(join(fixtures, 'authenticated-host.ts')))
           await writeFile(join(target, 'package.json'), '{"type":"module"}\n')
           const launch = resolveExampleLaunch({ srcBin: join(repository, 'apps/cli/src/bin.ts'),
             configArgs: ['--profile', 'headless', '--patch', configPath, '--patch', cancellationConfig], tsconfigPath: join(repository, 'tsconfig.json'),

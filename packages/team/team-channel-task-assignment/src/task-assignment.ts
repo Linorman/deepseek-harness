@@ -1,3 +1,4 @@
+import { assertChannelJsonKeys as assertExactKeys, isChannelJsonObject as isObject, requireChannelJsonText as requireIdentifier } from '@clocky/clocky-team'
 /**
  * Stateless version-one task-assignment channel protocol and its recovery
  * parsers. The manifest freezes the intended Agent binding before a task
@@ -409,28 +410,8 @@ function assertStateMatchesManifest(state: TaskAssignmentState, manifest: TaskAs
   }
 }
 
-/** Require an exact own-key set without accepting extra recovery data. */
-function assertExactKeys(
-  value: JsonObject,
-  keys: readonly string[],
-  subject: string,
-): void {
-  const actual = Object.keys(value)
-  if (actual.length !== keys.length || actual.some(key => !keys.includes(key))) {
-    throw new Error(`${subject} has unsupported fields`)
-  }
-}
 
-/** Identify a JSON object before reading strict adapter-owned fields. */
-function isObject(value: JsonValue): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
-/** Require one opaque durable or wire identifier. */
-function requireIdentifier(value: JsonValue | undefined, subject: string): string {
-  if (typeof value !== 'string' || value.length === 0) throw new Error(`${subject} must be a nonempty string`)
-  return value
-}
 
 /** Require a positive JSON-safe integer used as the assigned task revision. */
 function requirePositiveSafeInteger(value: JsonValue | undefined, subject: string): number {

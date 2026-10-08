@@ -33,7 +33,21 @@ export interface SimulationProductConfiguration {
   readonly sharedModelLimit: number
 }
 /** Creation semantics without a durable command; inspecting them creates no run, Team or actor. */
-export type SimulationProductPreflightInput = Omit<SimulationProductCreateInput, 'commandId'>
+export type SimulationProductPreflightInput = Omit<SimulationProductCreateInput, 'commandId' | 'expectedModel'>
+/** Exact route shown for confirmation; `name` is the provider-owned model ID, not a display label. */
+export interface SimulationProductModelRoute {
+  readonly provider: string
+  readonly name: string
+}
+/** Installed-template readiness is independent of form validity and never performs inference. */
+export type SimulationProductModelReadiness =
+  | { readonly status: 'ready'
+    readonly model: SimulationProductModelRoute }
+  | { readonly status: 'needs-model'
+    readonly reason: 'default-model-missing' }
+  | { readonly status: 'unavailable'
+    readonly reason: 'provider-unavailable' | 'metadata-unavailable'
+    | 'reasoning-unsupported' | 'execution-unavailable' | 'template-unavailable' }
 /** Bounded field rejection, including deployment readiness; private provider diagnostics are withheld. */
 export interface SimulationProductPreflightIssue {
   readonly field: string
@@ -41,17 +55,25 @@ export interface SimulationProductPreflightIssue {
   readonly message: SimulationProductText
 }
 /** Ready describes the current observation; create independently rechecks before durable acceptance. */
-export type SimulationProductPreflightResult = { readonly status: 'ready'; readonly configuration: SimulationProductConfiguration }
-  | { readonly status: 'invalid'; readonly issues: readonly SimulationProductPreflightIssue[] }
+export type SimulationProductPreflightResult = { readonly status: 'ready'
+  readonly configuration: SimulationProductConfiguration
+  readonly readiness: Extract<SimulationProductModelReadiness, { readonly status: 'ready' }> }
+  | { readonly status: 'invalid'
+    readonly issues: readonly SimulationProductPreflightIssue[]
+    readonly readiness: SimulationProductModelReadiness }
 /** Create allocates one original run identity before preparation; credentials/provider/spec are server-derived. */
 export interface SimulationProductCreateInput {
   readonly commandId: SimulationProductCommandId
   readonly templateId: SimulationProductTemplateId
   readonly templateVersion: '1'
+  /** Optimistic confirmation only; the Host resolves and freezes the actual route. */
+  readonly expectedModel: SimulationProductModelRoute
   readonly name: string
   readonly parameters: SimulationCompanyParameters
   readonly limits?: { readonly [Key in keyof SimulationProductLimits]?: SimulationProductLimits[Key] | undefined } | undefined
 }
+/** Durable semantic input; the confirmed route is retained by the existing immutable creation driver. */
+export type SimulationProductOriginalCreateInput = Omit<SimulationProductCreateInput, 'expectedModel'>
 /** Explicit reconciliation attempt on the original allocated run. */
 export interface SimulationProductPrepareInput {
   readonly runId: SimulationProductRunId
@@ -107,7 +129,7 @@ export interface SimulationProductTemplateSummary {
   readonly version: '1'
   readonly name: SimulationProductText
   readonly kind: 'company-procurement' | 'task-workflow'
-  readonly model: { readonly provider: string; readonly name: string }
+  readonly readiness: SimulationProductModelReadiness
   readonly tickUnit: SimulationProductText
   readonly execution: 'cognition-only' | 'automatic-tasks'
   /** Actual installed execution strategy; deterministic workflow steps make no model requests. */

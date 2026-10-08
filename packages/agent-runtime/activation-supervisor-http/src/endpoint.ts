@@ -1,3 +1,4 @@
+import { supervisorIdentityConfig } from './identity-config.ts'
 /** Execution-host supervisor endpoint backed by durable ownership and exact SDK process-tree fencing. */
 
 import { createHash, timingSafeEqual } from 'node:crypto'
@@ -40,8 +41,7 @@ export interface Config {
 
 /** Validate all listener and resource limits at load. */
 export const Config: z<Config> = z.object({
-  name: z.string().min(1).required(), version: z.number().step(1).min(1).required(),
-  hostId: z.string().min(1).required(), endpointId: z.string().min(1).required(),
+  ...supervisorIdentityConfig,
   runtimeProvider: z.string().min(1).required(), profile: z.string().min(1).required(),
   bindHost: z.string().min(1).required(), port: z.number().step(1).min(0).max(65535).required(),
   credentialEnv: z.string().min(1).required(), fenceGraceMs: z.number().step(1).min(1).max(2147483647).required(),
@@ -203,6 +203,7 @@ export async function listenSupervisorEndpoint(provider: ActivationSupervisorPro
         const observation = await provider[input.operation](input.binding, new AbortController().signal)
         const body = JSON.stringify(observation)
         if (Buffer.byteLength(body) > config.maxPayloadBytes) throw new Error('Supervisor response exceeds its byte limit')
+        // v8 ignore next -- Node can retain destroyed=false after a caller disconnects; the close race is exercised by the HTTP tests.
         if (!response.destroyed) response.writeHead(200, { 'content-type': 'application/json' }).end(body)
       } catch (error: unknown) {
         // Input, ownership, storage, and process failures refuse the request without exposing credentials or execution paths.
@@ -221,6 +222,7 @@ export async function listenSupervisorEndpoint(provider: ActivationSupervisorPro
     server.listen(config.port, config.bindHost, () => { server.off('error', reject); resolve() })
   })
   const address = server.address()
+  // v8 ignore next -- a successful TCP listen callback always has a SocketAddress; retain a guard for a broken host API.
   if (address === null || typeof address === 'string') throw new Error('Supervisor listener has no TCP address')
   return {
     port: address.port,

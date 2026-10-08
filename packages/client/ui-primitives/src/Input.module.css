@@ -4,13 +4,13 @@
   gap: 6px;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 8px;
-  background: var(--clocky-alias-bg-layer-1);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-surface);
 }
 
 .wrap:focus-within {
-  border-color: var(--clocky-alias-brand-primary);
+  border-color: var(--clocky-accent-bg);
 }
 
 .icon {
@@ -19,7 +19,7 @@
   height: 16px;
   align-items: center;
   justify-content: center;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .input {
@@ -28,11 +28,11 @@
   border: none;
   outline: none;
   background: transparent;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-primary);
 }
 
 .input::placeholder {
-  color: var(--clocky-alias-label-dimmed);
+  color: var(--clocky-fg-disabled);
 }

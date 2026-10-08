@@ -1,6 +1,6 @@
 /** Read-only run observations preserve phase, writers and authoritative durable history. */
 import { createHash } from 'node:crypto'
-import { readFile, readdir, stat, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { Context } from '@clocky/cordis'
 import { expect, it, vi } from 'vitest'
@@ -21,6 +21,10 @@ it.each(['json', 'sqlite'] as const)('observes the same history while owned loca
       cognition: 'none', profile: { name: 'Observed' } }), h.run.snapshot().revision)
     const before = h.run.snapshot()
     expect(await h.provider.inspect(input)).toEqual({ snapshot: before, owner: 'this-provider' })
+    const withRecords = await h.provider.inspect({ ...input, includeRecords: true })
+    expect(withRecords?.snapshot).toEqual(before)
+    expect(withRecords?.records?.[0]?.value).toMatchObject({ kind: 'run/created' })
+    expect(withRecords?.records?.at(-1)?.sequence).toBe(before.revision)
     expect(await ctx.simulations.inspect(input)).toEqual({ snapshot: before, owner: 'other-owner' })
     expect(h.run.snapshot()).toEqual(before)
     await expect(reader.open({ ...h.selection, mode: 'open' })).rejects.toThrow(/coordinator/)
@@ -80,4 +84,15 @@ it('rejects unsupported registry inspection and closes admission without silentl
     await h.provider.close()
     await expect(h.provider.inspect({ provider: 'local', spec: h.selection.spec })).rejects.toThrow(/closed/)
   } finally { await ctx.fiber.dispose(); await h.close() }
+})
+
+it('propagates a non-directory run path instead of treating it as an absent journal', async () => {
+  const h = await createBusinessHarness('json')
+  const root = await mkdtemp(join(process.cwd(), '.tmp', 'simulation-inspection-path-'))
+  const path = join(root, createHash('sha256').update(h.selection.spec.runId).digest('hex'))
+  await writeFile(path, 'not a run directory')
+  const observer = new LocalSimulationProvider({ name: 'local', root, backend: 'json', replayPageSize: 1 }, () => {})
+  try {
+    await expect(observer.inspect({ provider: 'local', spec: h.selection.spec })).rejects.toMatchObject({ code: 'ENOTDIR' })
+  } finally { await observer.close(); await h.close(); await rm(root, { recursive: true, force: true }) }
 })

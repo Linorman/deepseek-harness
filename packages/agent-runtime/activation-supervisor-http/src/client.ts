@@ -1,3 +1,4 @@
+import { supervisorIdentityConfig } from './identity-config.ts'
 /** Authenticated remote supervisor provider; transport loss remains unreachable, never terminated. */
 
 import type { Context } from '@clocky/cordis'
@@ -27,8 +28,7 @@ export interface Config {
 
 /** Validate deployment settings before any remote request. */
 export const Config: z<Config> = z.object({
-  name: z.string().min(1).required(), version: z.number().step(1).min(1).required(),
-  hostId: z.string().min(1).required(), endpointId: z.string().min(1).required(),
+  ...supervisorIdentityConfig,
   url: z.string().min(1).required(), credentialEnv: z.string().min(1).required(),
   timeoutMs: z.number().step(1).min(1).max(2147483647).required(),
   maxPayloadBytes: z.number().step(1).min(1).required(), allowInsecureHttp: z.boolean().default(false),

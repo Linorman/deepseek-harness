@@ -20,7 +20,7 @@ it.each(['json', 'sqlite'])('reads and prepares company runs over the authentica
   const initialize = (client: HarnessClient) => client.initialize({ credential: 'sdk-company-test-credential',
     cwd: process.cwd(), provider: 'company', model: 'scripted' })
   let sdk = open()
-  const input: SimulationCreateParams = { commandId: 'sdk-original', templateId: 'company', templateVersion: '1', name: 'SDK company',
+  const input: SimulationCreateParams = { commandId: 'sdk-original', templateId: 'company', templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' }, name: 'SDK company',
     parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } }
   const settled = async (commandId: string) => {
     for (let round = 0; round < 200; round++) {

@@ -1,3 +1,4 @@
+import { retainActivationPublication,subscribeActivationStatus } from '@clocky/clocky-agent-runtime'
 /**
  * In-process AgentRuntime provider. It activates one Team-resolved Participant
  * through the public Agent factory without inheriting parent Agent authority.
@@ -100,9 +101,7 @@ class InProcessActivationHandle implements ActivationHandle {
 
   /** Subscribe to subsequent local residency transitions for this exact epoch. */
   onStatus(listener: (activation: ActivationSnapshot) => void): () => void {
-    if (this.offline) return () => {}
-    this.statusListeners.add(listener)
-    return () => { this.statusListeners.delete(listener) }
+    return subscribeActivationStatus(this.statusListeners, listener, this.offline)
   }
 
   /**
@@ -242,13 +241,7 @@ class InProcessAgentRuntimeProvider implements AgentRuntimeProvider {
         entry.handle = handle
       },
     )
-    entry.operation = operation
-    this.activations.set(key, entry)
-    void operation.catch(() => {
-      /* v8 ignore next -- no replacement can enter while this unpublished operation still owns the slot. */
-      if (this.activations.get(key) === entry) this.activations.delete(key)
-    })
-    return await operation
+    return await retainActivationPublication(this.activations, key, entry, operation)
   }
 
   /** Create or resume the local Agent and transfer its lifecycle into one activation handle. */

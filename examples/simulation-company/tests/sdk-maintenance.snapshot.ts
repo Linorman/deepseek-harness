@@ -29,7 +29,7 @@ it.each(['json', 'sqlite'])('controls, checkpoints and restores company runs thr
   }
   try {
     await initialize(sdk)
-    const created = await sdk.createSimulation({ commandId: 'sdk-maintained', templateId: 'company', templateVersion: '1',
+    const created = await sdk.createSimulation({ commandId: 'sdk-maintained', templateId: 'company', templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' },
       name: 'Maintained SDK company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
     const runId = created.runId
     expect((await settled(created.commandId)).status).toBe('completed')

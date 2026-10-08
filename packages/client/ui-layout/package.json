@@ -49,17 +49,21 @@
     "@clocky/clocky-client-ui-theme": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/cordis": "workspace:^",
-    "@clocky/clocky-client-locale": "workspace:^"
+    "@clocky/clocky-client-locale": "workspace:^",
+    "@clocky/clocky-client-connection": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-client-locale": "workspace:^",
     "@clocky/clocky-client-runtime": "workspace:^",
+    "@clocky/clocky-client-ui-primitives": "workspace:^",
     "@clocky/clocky-client-ui-slots": "workspace:^",
     "@clocky/clocky-client-ui-theme": "workspace:^",
+    "@clocky/clocky-client-ui-viz": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
-    "@types/react": "~18.3.1",
     "@clocky/cordis": "workspace:^",
-    "react": "^18.2.0"
+    "@types/react": "~18.3.1",
+    "react": "^18.2.0",
+    "@clocky/clocky-client-connection": "workspace:^"
   },
   "files": [
     "lib/index.js",

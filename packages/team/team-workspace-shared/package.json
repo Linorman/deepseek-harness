@@ -40,7 +40,8 @@
     "@clocky/clocky-team": "workspace:^",
     "@clocky/clocky-team-artifact": "workspace:^",
     "@clocky/clocky-team-workspace": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-team-workspace-local-files": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-agent": "workspace:^",
@@ -53,6 +54,7 @@
     "@clocky/clocky-team-artifact": "workspace:^",
     "@clocky/clocky-team-hub": "workspace:^",
     "@clocky/clocky-team-workspace": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-team-workspace-local-files": "workspace:^"
   }
 }

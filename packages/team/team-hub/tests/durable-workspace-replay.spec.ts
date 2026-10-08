@@ -1,9 +1,14 @@
 /** Workspace allocation ownership and lifecycle validation from durable records. @module */
 
 import { describe, expect, it } from 'vitest'
+import { teamWorkspaceAllocationActivateInputSchema, teamWorkspaceAllocationLossInputSchema,
+  teamWorkspaceAllocationPreserveInputSchema, teamWorkspaceAllocationReleaseInputSchema,
+  teamWorkspaceAllocationReleaseRequestInputSchema, teamWorkspaceAllocationReserveInputSchema,
+  teamWorkspaceObservationInputSchema } from '@clocky/clocky-team'
 import { teamProjectionFromData } from '../src/fold.ts'
 import { teamProjectionDataSchema } from '../src/schema.ts'
-import type { TeamTaskSnapshot } from '@clocky/clocky-team'
+import type { TeamTaskSnapshot, TeamWorkspaceAllocationSnapshot, TeamWorkspaceObservationInput, TeamSystemWorkspaceAllocationProof,
+  TeamSystemWorkspaceAllocationScope } from '@clocky/clocky-team'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
 import { createdTeam, otherTaskId, participant, participantChanged, task as baseTask, taskChanged, taskCreatorActivationId, taskCreatorId,
   taskCreatorSessionId, taskId, taskLease, teamId, teamPhase } from './fixtures.ts'
@@ -346,6 +351,186 @@ function baselineObservation(allocation: ReturnType<typeof runningTaskPrefix>['a
       scannedEntries: 0, hashedBytes: 0, knownOmittedEntries: 0, incompleteReasons: [] },
     paths: [], omittedPaths: 0, taskId, attemptId: allocation.attemptId, truncated: false, observedAt: 20 }
 }
+
+it.each(['json', 'sqlite'] as const)('records a provider baseline and classifies one later scan from the retained attempt (%s)', async (backend) => {
+  const { records, allocation } = runningTaskPrefix()
+  const ctx = await recover(backend, [...records, changed(allocation, 19)])
+  const scopes = new Map<TeamSystemWorkspaceAllocationProof, TeamSystemWorkspaceAllocationScope>()
+  ctx.teams.registerSystemWorkspaceAllocationProofSource({ name: 'team-workspace-observation/workspace-local',
+    resolveWorkspaceAllocationProof: proof => scopes.get(proof) })
+  const observe = async (input: TeamWorkspaceObservationInput) => {
+    const proof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+    scopes.set(proof, { kind: 'workspace-observe', ...input })
+    try { return await ctx.teams.recordWorkspaceObservation({ ...input, actor: proof }) }
+    finally { scopes.delete(proof) }
+  }
+  const { taskId: _task, attemptId: _attempt, truncated: _truncated, observedAt: _at, ...raw } = baselineObservation(allocation)
+  const baselineInput = teamWorkspaceObservationInputSchema.parse(raw)
+  const baseline = await observe(baselineInput)
+  expect(baseline).toMatchObject({ id: 'scan', taskId, attemptId: allocation.attemptId,
+    stage: 'baseline', paths: [], truncated: false })
+  const beforeRetry = await ctx.teams.getTeam({ teamId })
+  expect(await observe(baselineInput)).toEqual(baseline)
+  expect(await ctx.teams.getTeam({ teamId })).toEqual(beforeRetry)
+
+  const periodicInput = teamWorkspaceObservationInputSchema.parse({ ...baselineInput, id: 'scan-2',
+    previousObservationId: baseline.id, stage: 'periodic', base: baseline.final,
+    final: { ...baseline.final, startedAt: 21, finishedAt: 22 }, paths: [
+      { path: 'packages/team/result.txt', change: 'modified' },
+      { path: 'unowned.txt', change: 'modified' },
+    ] })
+  const periodic = await observe(periodicInput)
+  expect(periodic.paths).toEqual([
+    { path: 'packages/team/result.txt', change: 'modified', classification: 'declared' },
+    { path: 'unowned.txt', change: 'modified', classification: 'undeclared' },
+  ])
+  expect((await ctx.teams.getTeam({ teamId })).workspaceAllocations[0]?.observation).toEqual(periodic)
+  await expect(observe({ ...periodicInput, paths: [{ path: 'other.txt', change: 'modified' }] }))
+    .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+})
+
+it.each(['sandbox-expired', 'manifest-missing'] as const)(
+  'retains an exact %s execution-world loss and stalls only when termination is unconfirmed', async (reason) => {
+    const { records, allocation } = runningTaskPrefix()
+    const executionWorld = { kind: 'e2b', id: 'sandbox-world' }
+    const reserved = { ...allocation, executionWorld }
+    const ctx = await recover('json', [...records, changed(reserved, 19)])
+    const scopes = new Map<TeamSystemWorkspaceAllocationProof, TeamSystemWorkspaceAllocationScope>()
+    ctx.teams.registerSystemWorkspaceAllocationProofSource({ name: 'team-agent-client-workspace-local',
+      resolveWorkspaceAllocationProof: proof => scopes.get(proof) })
+    const state = await ctx.teams.getTeam({ teamId })
+    const input = teamWorkspaceAllocationLossInputSchema.parse({ teamId, allocationId: reserved.id,
+      expectedCursor: state.team.cursor, expectedRevision: reserved.revision,
+      loss: { executionWorld, reason, terminationProven: reason === 'sandbox-expired',
+        artifacts: [{ id: 'retained-log', provider: 'workspace-local', kind: 'log', uri: 'log:retained',
+          sourceAttemptId: allocation.attemptId, visibility: 'team' }] } })
+    const foreignProof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+    ctx.teams.registerSystemWorkspaceAllocationProofSource({ name: 'unrelated-workspace-owner',
+      resolveWorkspaceAllocationProof: proof => proof === foreignProof
+        ? { kind: 'workspace-allocation-loss', ...input } : undefined })
+    await expect(ctx.teams.recordWorkspaceAllocationLoss({ ...input, actor: foreignProof }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    for (const artifact of [
+      { id: 'no-provider', kind: 'log', uri: 'log:missing-provider', sourceAttemptId: allocation.attemptId, visibility: 'team' },
+      { id: 'wrong-attempt', provider: 'workspace-local', kind: 'log', uri: 'log:wrong-attempt',
+        sourceAttemptId: 'different-attempt', visibility: 'team' },
+    ]) {
+      const rejected = teamWorkspaceAllocationLossInputSchema.parse({ ...input,
+        loss: { ...input.loss, artifacts: [artifact] } })
+      const invalidProof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+      scopes.set(invalidProof, { kind: 'workspace-allocation-loss', ...rejected })
+      await expect(ctx.teams.recordWorkspaceAllocationLoss({ ...rejected, actor: invalidProof }))
+        .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    }
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(state)
+    const proof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+    scopes.set(proof, { kind: 'workspace-allocation-loss', ...input })
+    const unavailable = await ctx.teams.recordWorkspaceAllocationLoss({ ...input, actor: proof })
+    expect(unavailable).toMatchObject({ lifecycle: 'unavailable', loss: input.loss })
+    expect((await ctx.teams.getTeam({ teamId })).team.phase).toBe(reason === 'sandbox-expired' ? 'active' : 'stalled')
+    const beforeRetry = await ctx.teams.getTeam({ teamId })
+    expect(await ctx.teams.recordWorkspaceAllocationLoss({ ...input, actor: proof })).toEqual(unavailable)
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(beforeRetry)
+    const changedLoss = teamWorkspaceAllocationLossInputSchema.parse({ ...input,
+      expectedCursor: beforeRetry.team.cursor, expectedRevision: unavailable.revision,
+      loss: { ...input.loss, artifacts: [] } })
+    const changedProof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+    scopes.set(changedProof, { kind: 'workspace-allocation-loss', ...changedLoss })
+    await expect(ctx.teams.recordWorkspaceAllocationLoss({ ...changedLoss, actor: changedProof }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    expect((await ctx.teams.getTeam({ teamId })).workspaceAllocations[0]?.loss?.artifacts)
+      .toEqual(input.loss.artifacts)
+    scopes.delete(proof)
+    await expect(ctx.teams.recordWorkspaceAllocationLoss({ ...input, actor: proof }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  },
+)
+
+it('admits recovery-owned execution-world loss only after a durable release request', async () => {
+  const { records, allocation } = runningTaskPrefix()
+  const executionWorld = { kind: 'e2b', id: 'recovery-world' }
+  const reserved = { ...allocation, executionWorld }
+  const active = { ...reserved, revision: 2, lifecycle: 'active', activatedAt: 20, updatedAt: 20 }
+  const releasing = { ...active, revision: 3, lifecycle: 'release-requested', releaseRequestedAt: 21, updatedAt: 21 }
+  const ctx = await recover('json', [...records, changed(reserved, 19), changed(active, 20), changed(releasing, 21)])
+  const state = await ctx.teams.getTeam({ teamId })
+  const input = teamWorkspaceAllocationLossInputSchema.parse({ teamId, allocationId: reserved.id,
+    expectedCursor: state.team.cursor, expectedRevision: releasing.revision,
+    loss: { executionWorld, reason: 'manifest-missing', terminationProven: false, artifacts: [] } })
+  const proof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+  ctx.teams.registerSystemWorkspaceAllocationProofSource({ name: 'team-workspace-recovery',
+    resolveWorkspaceAllocationProof: candidate => candidate === proof
+      ? { kind: 'workspace-allocation-loss', ...input } : undefined })
+  const unavailable = await ctx.teams.recordWorkspaceAllocationLoss({ ...input, actor: proof })
+  expect(unavailable).toMatchObject({ lifecycle: 'unavailable', loss: input.loss })
+  expect((await ctx.teams.getTeam({ teamId })).team).toMatchObject({ phase: 'stalled',
+    stallReason: { code: 'WORKSPACE_LOSS_UNCONFIRMED' } })
+})
+
+it.each(['json', 'sqlite'] as const)('replays only the original workspace reservation metadata (%s)', async (backend) => {
+  const { records, allocation, running } = runningTaskPrefix()
+  const ctx = await recover(backend, [...records, changed(allocation, 19)])
+  const scopes = new Map<TeamSystemWorkspaceAllocationProof, TeamSystemWorkspaceAllocationScope>()
+  ctx.teams.registerSystemWorkspaceAllocationProofSource({ name: 'team-workspace-shared',
+    resolveWorkspaceAllocationProof: proof => scopes.get(proof) })
+  const state = await ctx.teams.getTeam({ teamId })
+  const input = teamWorkspaceAllocationReserveInputSchema.parse({ teamId, expectedCursor: state.team.cursor,
+    taskId: running.id, expectedTaskRevision: running.revision, attemptId: allocation.attemptId,
+    allocation: { id: allocation.id, provider: allocation.provider, mode: allocation.mode,
+      assignedRevision: allocation.assignedRevision, participantId: allocation.participantId,
+      activationId: allocation.activationId, sessionId: allocation.sessionId, baseVersion: allocation.baseVersion } })
+  const proof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+  scopes.set(proof, { kind: 'workspace-allocation-reserve', ...input })
+  expect(await ctx.teams.reserveWorkspaceAllocation({ ...input, actor: proof })).toEqual(allocation)
+  expect(await ctx.teams.getTeam({ teamId })).toEqual(state)
+  const changedInput = teamWorkspaceAllocationReserveInputSchema.parse({ ...input,
+    allocation: { ...input.allocation, baseVersion: 'different-base' } })
+  const changedProof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+  scopes.set(changedProof, { kind: 'workspace-allocation-reserve', ...changedInput })
+  await expect(ctx.teams.reserveWorkspaceAllocation({ ...changedInput, actor: changedProof }))
+    .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+})
+
+it.each(['json', 'sqlite'] as const)('replays each exact workspace allocation lifecycle transition without another write (%s)', async (backend) => {
+  const { records, allocation } = runningTaskPrefix()
+  const ctx = await recover(backend, [...records, changed(allocation, 19)])
+  const scopes = new Map<TeamSystemWorkspaceAllocationProof, TeamSystemWorkspaceAllocationScope>()
+  ctx.teams.registerSystemWorkspaceAllocationProofSource({ name: 'team-workspace-shared',
+    resolveWorkspaceAllocationProof: proof => scopes.get(proof) })
+  const replay = async (scope: TeamSystemWorkspaceAllocationScope,
+    run: (actor: TeamSystemWorkspaceAllocationProof) => Promise<TeamWorkspaceAllocationSnapshot>) => {
+    const proof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+    scopes.set(proof, scope)
+    const first = await run(proof)
+    const state = await ctx.teams.getTeam({ teamId })
+    expect(await run(proof)).toEqual(first)
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(state)
+    scopes.delete(proof)
+    return first
+  }
+  let state = await ctx.teams.getTeam({ teamId })
+  const activate = teamWorkspaceAllocationActivateInputSchema.parse({ teamId, allocationId: allocation.id,
+    expectedCursor: state.team.cursor, expectedRevision: allocation.revision })
+  const active = await replay({ kind: 'workspace-allocation-activate', ...activate }, async actor =>
+    await ctx.teams.activateWorkspaceAllocation({ actor, ...activate }))
+  state = await ctx.teams.getTeam({ teamId })
+  const preserve = teamWorkspaceAllocationPreserveInputSchema.parse({ teamId, allocationId: allocation.id,
+    expectedCursor: state.team.cursor, expectedRevision: active.revision,
+    reason: { code: 'PROVIDER_UNAVAILABLE', message: 'Physical cleanup is not confirmed.' } })
+  const preserved = await replay({ kind: 'workspace-allocation-preserve', ...preserve }, async actor =>
+    await ctx.teams.preserveWorkspaceAllocation({ actor, ...preserve }))
+  state = await ctx.teams.getTeam({ teamId })
+  const request = teamWorkspaceAllocationReleaseRequestInputSchema.parse({ teamId, allocationId: allocation.id,
+    expectedCursor: state.team.cursor, expectedRevision: preserved.revision })
+  const releasing = await replay({ kind: 'workspace-allocation-release-request', ...request }, async actor =>
+    await ctx.teams.requestWorkspaceAllocationRelease({ actor, ...request }))
+  state = await ctx.teams.getTeam({ teamId })
+  const release = teamWorkspaceAllocationReleaseInputSchema.parse({ teamId, allocationId: allocation.id,
+    expectedCursor: state.team.cursor, expectedRevision: releasing.revision })
+  const released = await replay({ kind: 'workspace-allocation-release', ...release }, async actor =>
+    await ctx.teams.confirmWorkspaceAllocationRelease({ actor, ...release }))
+  expect(released).toMatchObject({ lifecycle: 'released', revision: allocation.revision + 4 })
+})
 
 it.each(['json', 'sqlite'] as const)('admits only release observations during closure and preserves observation identity (%s)', async (backend) => {
   const { records, allocation } = runningTaskPrefix()

@@ -20,6 +20,8 @@ const WORKFLOW_FINAL_TEXT = 'HEADLESS_TEAM_WORKFLOW_FINAL'
 const WORKFLOW_TASK_SUMMARY = 'HEADLESS_TEAM_WORKFLOW_TASK_SUMMARY'
 const MULTI_WORKFLOW_TASK = 'Compile one deterministic multi-worker workflow.'
 const MULTI_WORKFLOW_FINAL_TEXT = 'HEADLESS_TEAM_MULTI_WORKFLOW_FINAL'
+const WORKER_POOL_RETRY_TASK = 'Recover an invited worker after its first provisioning fails.'
+const WORKER_POOL_RETRY_FINAL_TEXT = 'HEADLESS_TEAM_WORKER_POOL_RECOVERED'
 const OWNER_PROPOSAL_TASK = 'Propose one deterministic owner hint.'
 const OWNER_PROPOSAL_FINAL_TEXT = 'HEADLESS_TEAM_OWNER_PROPOSAL_FINAL'
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
@@ -28,8 +30,10 @@ const teamTaskOverlayPath = join(fixturesDir, 'headless-team-task.cordis.yml')
 const teamWorkflowOverlayPath = join(fixturesDir, 'headless-team-workflow.cordis.yml')
 const teamTemplateOverlayPath = join(fixturesDir, 'headless-team-template.cordis.yml')
 const teamMultiWorkerOverlayPath = join(fixturesDir, 'headless-team-multi-worker.cordis.yml')
+const teamWorkerPoolRetryOverlayPath = join(fixturesDir, 'headless-team-worker-pool-retry.cordis.yml')
 const teamOwnerProposalOverlayPath = join(fixturesDir, 'headless-team-owner-proposal.cordis.yml')
 const teamRunLlmPluginPath = join(fixturesDir, 'headless-team-run-llm.ts')
+const workerProvisionPluginPath = join(fixturesDir, 'headless-worker-provision-once.ts')
 const clockyBinScript = fileURLToPath(new URL('../../../apps/cli/src/bin.ts', import.meta.url))
 const tsconfigPath = fileURLToPath(new URL('../../../tsconfig.json', import.meta.url))
 
@@ -194,6 +198,10 @@ async function prepareTeamRunFixture(cwd: string): Promise<void> {
     writeFile(join(fixtureDir, 'headless-team-run-llm.mjs'), ts.transpileModule(await readFile(teamRunLlmPluginPath, 'utf8'), {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
       fileName: teamRunLlmPluginPath,
+    }).outputText),
+    writeFile(join(fixtureDir, 'headless-worker-provision-once.mjs'), ts.transpileModule(await readFile(workerProvisionPluginPath, 'utf8'), {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+      fileName: workerProvisionPluginPath,
     }).outputText),
     writeFile(join(fixtureDir, 'package.json'), '{"type":"module"}\n'),
   ])
@@ -691,6 +699,55 @@ describe('headless TeamRun snapshot', () => {
     expect(result.stdout).toBe(`${MULTI_WORKFLOW_FINAL_TEXT}\n`)
     expect(result.stderr).toBe('')
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
+
+  it('retries one failed worker provisioning without leaving an invited orphan', async () => {
+    const result = await runLoaderSmoke({
+      label: 'headless Team worker-pool provisioning retry snapshot',
+      tempDirPrefix: 'headless-team-worker-pool-retry-profile-',
+      binScript: clockyBinScript,
+      configPath: teamWorkerPoolRetryOverlayPath,
+      binArgs: ['--profile', 'headless', '--patch', teamWorkerPoolRetryOverlayPath, WORKER_POOL_RETRY_TASK],
+      tsconfigPath,
+      env: {
+        CLOCKY_TELEMETRY_DISABLED: '1',
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
+      },
+      prepare: prepareTeamRunFixture,
+      inspect: async (cwd) => {
+        const logs = await storedLogs(cwd)
+        const team = logs.find(log => log.stream.name.startsWith('team/'))
+        if (team === undefined) throw new Error('Worker-pool retry did not persist a Team journal')
+        const teamId = team.stream.name.slice('team/'.length)
+        const records = team.entries.map(entry => entry.value)
+        const workerChanges = records.filter(record => record['type'] === 'participant/changed')
+          .map(record => valueRecord(record['participant'], 'worker participant'))
+          .filter(value => typeof value['role'] === 'string' && value['role'].startsWith('worker'))
+        expect(new Set(workerChanges.map(value => valueString(value['id'], 'worker id')))).toHaveLength(2)
+        expect(new Set(workerChanges.map(value => valueString(value['role'], 'worker role'))))
+          .toEqual(new Set(['worker', 'worker-2']))
+        expect(participant(records, 'worker-2')['phase']).toBe('active')
+
+        const sessions = await persistedSessionLogs(cwd)
+        const coordinatorId = valueString(participant(records, 'coordinator')['id'], 'coordinator participant id')
+        const coordinator = sessions.find(session => session.header['teamId'] === teamId
+          && session.header['participantId'] === coordinatorId)
+        if (coordinator === undefined) throw new Error('Worker-pool retry has no coordinator Session')
+        const calls = coordinator.records.filter(record => record['type'] === 'tool/call'
+          && valueRecord(record['data'], 'worker-pool call')['name'] === 'team_worker_pool_set')
+          .map(record => valueRecord(record['data'], 'worker-pool call'))
+        expect(calls).toHaveLength(2)
+        expect(sessionToolResultText(coordinator, valueString(calls[0]?.['callId'], 'first pool call')))
+          .toContain('The invited worker could not provision yet.')
+        expect(JSON.parse(sessionToolResultText(coordinator, valueString(calls[1]?.['callId'], 'retry pool call'))))
+          .toMatchObject({ worker_count: 2, active_workers: 2 })
+        expect(envelope(channelLog(logs, 'direct').entries.map(entry => entry.value), 'final'))
+          .toMatchObject({ payload: { text: WORKER_POOL_RETRY_FINAL_TEXT } })
+      },
+    })
+    expect(result.stdout).toBe(`${WORKER_POOL_RETRY_FINAL_TEXT}\n`)
+    expect(result.stderr).toBe('')
+  }, LOADER_SMOKE_TEST_TIMEOUT_MS)
+
 
   it('exercises the coordinator owner-proposal and pending-cancellation tools through a keyless custom composition', async () => {
     const result = await runLoaderSmoke({

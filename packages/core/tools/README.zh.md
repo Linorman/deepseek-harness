@@ -26,6 +26,8 @@ tools:
 - `ctx.tools.execute(exec)`：以无损方式快照并冻结参数，分配不透明 token，运行完整的策略／分发／结果流水线，然后在最终观测前独立快照权威结果。无效参数会进入同一结果路径，但不会到达策略或工具主体。环绕包装层只能替换 `signal`；注册表会在进入工具主体之前，立即将调用方的原始信号重新合并到当前信号中。
 - `ctx.tools.executionMode(exec)`：返回 `parallel` 的唯一条件是可见定义的 `isConcurrencySafe(exec.arguments)` 分类器恰好返回 `true`；未知、隐藏、未声明、无效或抛出异常的分类结果均为独占。
 
+`requireScopedToolAgent(registry, execution, expected, toolName, failure)` 验证调用 Agent、精确安装 scope、注册表驻留、running 状态与活动 initiator。消费者提供稳定的拒绝码，并继续负责自身 operation authority 检查。`bindAgentToolDisposal(ctx, registrations, label)` 将消费者按序保存的安装映射绑定到 Agent 退役与插件卸载；安装资格仍由消费者负责。
+
 ### 注入的服务
 
 `SystemPrompt`：注册表通过 `ctx.systemPrompt.tools()` 自动将工具 schema 送入系统提示词组装。审批 seam 则在可用时使用（`ctx.get('approval')`，无静态注入）：未部署该 seam 时仍会将询问退化为拒绝，而无论是否存在该 seam，注册表都会保持活动。

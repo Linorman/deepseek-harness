@@ -23,8 +23,8 @@
      container that clips it. Owning the reservation here keeps the invariant
      with the component that depends on it. */
   padding-left: var(--dsl-terminal-gutter);
-  color: var(--clocky-alias-label-primary);
-  background: var(--clocky-alias-markdown-code-block);
+  color: var(--clocky-fg-primary);
+  background: var(--clocky-bg-sunken);
   border-radius: var(--dsl-terminal-radius);
   /* Clip the banner to the card's own radius: when a consumer adds a border,
      the banner's equal corner radius no longer nests inside it and leaves a
@@ -57,7 +57,7 @@
 .header::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   background-clip: padding-box;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 .header::-webkit-scrollbar-track {
@@ -68,7 +68,7 @@
    divider the IN/OUT card draws between its sections. A running card is
    banner-only, so it draws none. */
 .block:not([data-running]) .header {
-  border-bottom: 1px solid var(--clocky-alias-border-l2);
+  border-bottom: 1px solid var(--clocky-border-default);
 }
 
 /* One row per command line. The prompt column is the only element allowed to
@@ -113,7 +113,7 @@
 
 .cwd {
   flex: none;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* `pre`, not `nowrap`: the prompt row renders the command verbatim, and
@@ -121,7 +121,7 @@
    continuation. Both hold the single row and the ellipsis. */
 .command {
   min-width: 0;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: pre;
@@ -136,7 +136,7 @@
   position: sticky;
   top: 0;
   height: var(--dsl-terminal-line-height);
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .copyButton {
@@ -145,13 +145,13 @@
   top: 0;
   /* Card surface, not transparent: the control is sticky over the banner's
      own scroll, so scrolled command text must not bleed through it. */
-  background-color: var(--clocky-alias-markdown-code-block);
+  background-color: var(--clocky-bg-sunken);
   border: none;
   padding: 0;
   margin: 0;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   cursor: pointer;
-  font: var(--clocky-font-xs-13);
+  font: var(--clocky-type-body-small);
   line-height: var(--dsl-terminal-line-height);
 }
 
@@ -173,7 +173,7 @@
 .output::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   background-clip: padding-box;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 /* Track end-margins keep the thumb's travel out of the card's rounded
@@ -194,18 +194,18 @@
   padding: 0;
   border: none;
   background-color: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
   font: inherit;
   text-align: left;
 }
 
 .expand:hover {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .empty {
   padding: 12px 14px 12px 0;
   font: var(--dsl-terminal-font);
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }

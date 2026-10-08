@@ -2,6 +2,14 @@
 
 English | [中文](README.zh.md)
 
+`withTeamOperationTimeout()` bounds a provider wait and removes its timer on either outcome. It preserves the provider-supplied error and does not cancel or drain the underlying operation; the caller keeps that ownership.
+
+`parseTeamParticipantHeader()` returns a complete validated Team/Participant header pair or no reference. It does not establish a current activation, Link connection or operation authority; consumers retain those live checks.
+
+`trackTeamOperation()` observes each original accepted promise once and removes it from the provider’s set before rejection diagnostics. Diagnostic failures are contained; the operation’s result stays unchanged. Consumers retain cancellation, shutdown draining and close-time warning policy.
+
+`channelEnvelopeMessages()` returns a frozen ordered message list with the original Envelope payloads. Adapter state validation and record visibility remain with the caller.
+
 `resolveSimulationTaskReview()` accepts only a live `simulation-team` proof selecting an original completed native result and its configured participant reviewer. It takes no caller-selected actor and requires no reviewer activation. `TeamTaskReviewDecision.simulationCommand` retains the run-wide command identity, original task/create operation and selected task revision. Identical authorized retries return the current task retaining that historical decision; changed payloads reject and cannot review a later attempt. See the [review authority decision](../../../.agents/notes/implemented/architecture/2026-10-01-simulation-task-review-authority.md).
 
 Task-detail updates require a caller-owned `commandId`. `TeamTaskDetailsUpdateResult` separates original acceptance from the current task. After committing a semantic refusal, the provider throws `TeamTaskUpdateRejectedError`; parser, authority, capacity or storage failure alone does not prove refusal. `getTaskUpdateResult()` returns `applied`, `rejected` or `not-found`. Native readers own authorization; absence cannot settle a delayed request. See the [update identity decision](../../../.agents/notes/implemented/architecture/2026-09-29-task-update-command-admission.md).
@@ -28,7 +36,7 @@ Service Definition for the Team work system. It provides independent Team, revis
 
 Channel creation may freeze an agent invitation to an explicit `sessionId`. The Simulation invitation scope additionally binds run, lifecycle owner, Team, participant and Session; only the registered `simulation-team` owner can confirm that exact direct-v4 endpoint without a resident activation.
 
-`TeamRuntime` is abstract. Load the local [`@clocky/clocky-team-hub`](../../team/team-hub/README.md) provider rather than this package by itself. The Hub implements durable Team journals, channel WALs, recovery, roster and task mutations, cursor watches, quiescence diagnostics, and terminal-Team archival without deleting its state; delivery, scheduling, and Agent placement remain separate provider work. This package imports no Hub, delivery, scheduling, or storage implementation. Its optional `TeamTelemetryCoordinator` observes the typed Team/channel feeds and Session events without owning any Agent loop.
+`TeamRuntime` is abstract. Load the local [`@clocky/clocky-team-hub`](../../team/team-hub/README.md) provider rather than this package by itself. The Hub implements durable Team journals, channel WALs, recovery, roster and task mutations, cursor watches, quiescence diagnostics, and terminal-Team archival without deleting its state; delivery, scheduling, and Agent placement remain separate provider work. This package imports no Hub, delivery, scheduling, or storage implementation. Its optional `TeamTelemetryCoordinator` observes the typed Team/channel feeds and Session events without owning any Agent loop. Failed `channel/closed` phases export with error severity; channel WAL records supply Envelope and receipt correlations, while the event carrier supplies the channel identity.
 
 Browser-safe consumers import record types from `@clocky/clocky-team/types` and runtime parsers from `@clocky/clocky-team/schema`; the package root additionally loads the `ctx.teams` Service Definition.
 

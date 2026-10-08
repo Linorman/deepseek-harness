@@ -75,3 +75,69 @@ it('localizes controls and advances only a current available continuation', () =
   fireEvent.click(view.getByRole('button', { name: '刷新并返回首页' }))
   expect(h.read).toHaveBeenCalledWith('first')
 })
+
+it('opens a recoverable task and keeps a readable preview while a request is pending', async () => {
+  const h = props()
+  let finish!: () => void
+  const openAction = vi.fn(() => new Promise<void>((resolve) => { finish = resolve }))
+  const items: TeamAttentionItem[] = [
+    { kind: 'task-recovery', id: 'recoverable-task' as never, createdAt: 1, revision: 1, delegationId: 'delegation' as never,
+      subject: { text: 'Recover this task', truncated: false }, reason: { code: 'stalled', message: { text: 'Worker stopped', truncated: false } },
+      handling: { kind: 'actionable' } },
+    { kind: 'human-action', id: 'approval' as never, createdAt: 2, updatedAt: 2,
+      actionKind: 'approval', handling: { kind: 'actionable' } },
+  ]
+  const view = render(<TeamAttention {...h} preview state={state(items)} counts={counts}
+    openAction={openAction} viewAll={vi.fn()} />)
+  expect(view.getByText('Worker stopped')).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: 'Recover this task' }))
+  expect(h.openTask).toHaveBeenCalledWith('recoverable-task')
+  fireEvent.click(view.getByRole('button', { name: 'Approval' }))
+  expect(openAction).toHaveBeenCalledWith('approval')
+  const pendingButton = view.getByRole('button', { name: 'Approval' }) as HTMLButtonElement
+  expect(pendingButton.disabled).toBe(true)
+  // A stale click must not submit the same human request twice, even if another script clears disabled.
+  pendingButton.disabled = false
+  fireEvent.click(pendingButton)
+  expect(openAction).toHaveBeenCalledOnce()
+  expect(view.queryByRole('button', { name: 'Refresh preview' })).toBeNull()
+  finish()
+  await waitFor(() => { expect(view.getByRole('button', { name: 'Approval' }).hasAttribute('disabled')).toBe(false) })
+})
+
+it('shows a non-Error refresh failure and can retry from the first pending page', async () => {
+  const h = props()
+  h.read.mockRejectedValueOnce('Transient failure')
+  const view = render(<TeamAttention {...h} state={state()} counts={counts} />)
+  fireEvent.click(view.getByRole('button', { name: 'Refresh from first page' }))
+  await waitFor(() => { expect(view.getByRole('alert').textContent).toBe('Transient failure') })
+  fireEvent.click(view.getByRole('button', { name: 'Refresh from first page' }))
+  await waitFor(() => { expect(view.queryByRole('alert')).toBeNull() })
+  expect(h.read).toHaveBeenNthCalledWith(2, 'first')
+})
+
+it('marks an empty preview and explains when pending data cannot be read', () => {
+  const h = props()
+  const empty = { recovery: 0, humanActions: 0, reviews: 0, total: 0 }
+  const view = render(<TeamAttention {...h} preview state={{ ...state(), page: { ...state().page!, counts: empty } }}
+    counts={empty} read={undefined} />)
+  expect(view.getByRole('region', { name: 'Needs your attention' }).getAttribute('data-empty')).toBe('true')
+  expect(view.getByText('Nothing needs your attention')).toBeTruthy()
+  expect(view.getByText('This deployment cannot read pending items.')).toBeTruthy()
+  expect(view.queryByRole('button', { name: 'Refresh preview' })).toBeNull()
+})
+
+it('rejects an unknown responsibility kind instead of silently omitting its navigation', () => {
+  const h = props()
+  const invalid = { kind: 'unrecognized', id: 'unknown', createdAt: 1,
+    handling: { kind: 'actionable' } } as unknown as TeamAttentionItem
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const expectedError = (event: ErrorEvent) => { if (event.message.includes('Unhandled pending responsibility')) event.preventDefault() }
+  window.addEventListener('error', expectedError)
+  try {
+    expect(() => render(<TeamAttention {...h} state={state([invalid])} />)).toThrow('Unhandled pending responsibility')
+  } finally {
+    window.removeEventListener('error', expectedError)
+    consoleError.mockRestore()
+  }
+})

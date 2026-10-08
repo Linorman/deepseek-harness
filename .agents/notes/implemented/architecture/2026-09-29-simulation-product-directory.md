@@ -10,6 +10,8 @@ Native Simulation snapshots contain private world facts and require provider ide
 
 ## Decision
 
+Standard Web installs the product through its named Simulation group; [default deployment and model readiness](2026-10-07-web-runtime-stability-and-default-simulation.md) own that composition. Custom and headless deployments still select their own plugins.
+
 The opt-in [product plugin](../../../../packages/simulation/simulation-product/README.md) owns a Storage Log directory, format 1, independent of world history. Trusted imports bind opaque product identities to immutable provider/run specs and one owning authenticated principal. Exact retry and restart reuse registrations and timestamps; duplicate product or provider/run identities, changed imports and incomplete/corrupt history reject. Removing an import does not delete retained identity or transfer authority.
 
 Discovery reads only directory metadata. Provider activation is independent of registration; actual inspection resolves support and explicitly refuses unavailable providers. Loader activation follows dependencies, so textual configuration order cannot establish provider readiness for registration construction.
@@ -65,3 +67,5 @@ JSON/SQLite directory tests cover recovery, exact retry, ownership duplication, 
 The [context/relationship regressions](../../../../packages/simulation/simulation-product/tests/context-and-relations.spec.ts) inspect real JSON/SQLite frozen views, verify Unicode part reconstruction, independent body grants and unload/credential fences, and keep world snapshots unchanged. Web scenarios inspect production actor contexts and exact relationship paging; the SDK maintenance scenario reads both sections over real stdio, including cold lifecycle checks. Neither body grants nor references authorize other source content.
 
 Watch regressions cover native JSON/SQLite changes, independent policy retirement, credential/unload cancellation, metadata-only unavailable states and old response fences. The real browser maintenance composition unloads and remounts the policy plugin while preserving the same directory, run snapshot, model count and later input draft. The stdio SDK scenario resets a prior watch cursor after process restart.
+
+Additional reader tests cover a recorded scheduler stop, absent native source history, a disclosure-policy change during source lookup, a closed or already-aborted watch, and unexpected inspection failure propagation. Registrar tests check process-local serialization refusal, exclusive retry-reader ownership, idempotent disposal and registration refusal after unload.

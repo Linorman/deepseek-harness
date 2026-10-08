@@ -12,6 +12,8 @@ Team telemetry seam 已经能够关联权威的 Team/channel fact 与 Participan
 
 仓库现在提供显式的 `@clocky/clocky-team-telemetry-otel` provider，供需要通过 OTLP/HTTP 导出 Team telemetry 的 deployment 使用。它组合 OpenTelemetry JS logger pipeline（`LoggerProvider`、`BatchLogRecordProcessor` 和 `OTLPLogExporter`），消费 `TeamTelemetryCoordinator` 发出的 detached record。Provider 默认是 `DISABLED`；`FULL` 要求 HTTP(S) logs endpoint，并在创建 SDK state 前校验外层 shutdown deadline。
 
+Channel severity 来自权威的 `channel/closed` phase：`failed` 导出为 `error`，`closed` 和 `expired` 保持 `info`。可选解释文本不决定失败。Correlation 遍历 channel WAL record 本身，使已接受的 Envelope 和 receipt 身份进入 exporter；event carrier 仍提供精确 channel 身份，cursor 和时间来自 WAL。Capture 测试使用经过解析的 record 和真实 Session event，backend 失败仍受到承接。
+
 Alerting 属于 provider-owned concern。配置的 rule 可以按 record channel、精确的 `event.type` 和最低 severity 匹配，并在 rolling `windowMillis` 内计数。达到 `threshold` 时 provider 发出一条 `ops` alert record；只有窗口内数量低于 threshold 后 rule 才会重新 armed。这样 alert policy 保持 deployment-configurable，不会成为 Team authority 或 durable business state。
 
 OpenTelemetry SDK 仍拥有 batching、retry、queueing、export timeout 和 transport loss。Team Hub commit 与 Team telemetry coordinator 不会受到 exporter failure 影响；shutdown 受 provider 外层 deadline 限制，SDK 的延后 rejection 仍会被观察。本包是显式 provider，不加入默认产品 bundle。
@@ -33,5 +35,6 @@ OpenTelemetry SDK 仍拥有 batching、retry、queueing、export timeout 和 tra
 
 ## 证据
 
+- `packages/core/team/tests/telemetry.spec.ts`
 - `packages/team/team-telemetry-otel/tests/alerts.spec.ts`
 - `packages/team/team-telemetry-otel/tests/otel.spec.ts`

@@ -22,6 +22,15 @@
   // this client-registered project must not also hold them (one program
   // cannot see both sides of the cordis Context merges).
   "exclude": [
+    "tests/runtime-default.perf.ts",
+    "tests/runtime-reading-scale.e2e.ts",
+    "tests/default-simulation-restart.e2e.ts",
+    "tests/default-simulation-lifecycle.e2e.ts",
+    "tests/simulation-model-setup.e2e.ts",
+    "tests/default-simulation.e2e.ts",
+    "tests/authentication-lifetime.e2e.ts",
+    "tests/runtime-idle.perf.ts",
+    "tests/runtime-stability.e2e.ts",
     "tests/simulation-operation-retry.snapshot.ts",
     "tests/simulation-browser-controls.ts",
     "tests/simulation-task-review.snapshot.ts",
@@ -34,6 +43,7 @@
     "tests/simulation-administration.snapshot.ts",
     "tests/simulation-maintenance.snapshot.ts",
     "tests/browser-native-zoom.ts",
+    "tests/browser-native-zoom.e2e.ts",
     "tests/team-acceptance.snapshot.ts",
     "tests/team-acceptance-support.ts",
     "tests/simulation-read-presentation.ts",
@@ -119,7 +129,9 @@
     "tests/chat-continuous-conversation.e2e.ts",
     "tests/composer-tab-geometry.e2e.ts",
     "tests/complex-history.perf.ts",
-    "tests/pwsh-terminal.e2e.ts"
+    "tests/pwsh-terminal.e2e.ts",
+    "tests/ui-baseline.snapshot.ts",
+    "tests/shell-navigation.snapshot.ts"
   ],
   "references": [
 

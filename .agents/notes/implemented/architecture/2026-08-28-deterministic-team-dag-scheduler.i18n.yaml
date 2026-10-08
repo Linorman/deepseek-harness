@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-28-deterministic-team-dag-scheduler.md
-2026-08-28-deterministic-team-dag-scheduler.md: a0d565955c339fc4177145d5a211c22d8b2d9d83
-2026-08-28-deterministic-team-dag-scheduler.zh.md: b08c8b4fafa837c4eb671d287d3d7d5baf22faa3
+2026-08-28-deterministic-team-dag-scheduler.md: f5c73eb92786b5f69ef1b4376b1bec65399aa46a
+2026-08-28-deterministic-team-dag-scheduler.zh.md: e2c741cf9026bc0b400ab29088a3e792c3264cd2

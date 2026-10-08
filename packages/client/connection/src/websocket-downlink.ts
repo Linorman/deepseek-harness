@@ -113,9 +113,7 @@ export class WebSocketDownlinks {
     productSignal: AbortSignal | undefined,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
-      let accepted = false
       const abortBeforeUpgrade = (): void => {
-        if (accepted) return
         socket.destroy()
         resolve()
       }
@@ -126,7 +124,6 @@ export class WebSocketDownlinks {
       productSignal?.addEventListener('abort', abortBeforeUpgrade, { once: true })
       try {
         this.server.handleUpgrade(req, socket, head, (websocket) => {
-          accepted = true
           productSignal?.removeEventListener('abort', abortBeforeUpgrade)
           if (productSignal?.aborted === true) {
             websocket.terminate()

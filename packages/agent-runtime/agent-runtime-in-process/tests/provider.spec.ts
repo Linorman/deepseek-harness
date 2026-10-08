@@ -240,6 +240,9 @@ describe('in-process AgentRuntime provider', () => {
 
   it('rejects non-local Participants before allocating an Agent', async () => {
     const ctx = await setup()
+    const selected = ctx.agentRuntimes.getProvider('in-process')!
+    expect(InProcessRuntime.isInProcessAgentRuntimeProvider(selected)).toBe(true)
+    expect(InProcessRuntime.isInProcessAgentRuntimeProvider({ ...selected, activate: selected.activate.bind(selected) })).toBe(false)
     const human = participantSnapshotSchema.parse({
       ...participant,
       id: 'human-in-process',
@@ -249,6 +252,9 @@ describe('in-process AgentRuntime provider', () => {
     await expect(ctx.agentRuntimes.activate(request(SessionId('activation-human'), {
       participant: human,
     }))).rejects.toMatchObject({ code: 'AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED' })
+    await expect(ctx.agentRuntimes.getProvider('in-process')!.activate(request(SessionId('direct-activation-human'), {
+      participant: human,
+    }))).rejects.toMatchObject({ code: 'AGENT_RUNTIME_IN_PROCESS_PARTICIPANT_UNSUPPORTED' })
     expect(ctx.agents.list()).toEqual([])
   })
 

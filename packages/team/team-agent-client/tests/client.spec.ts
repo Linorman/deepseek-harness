@@ -2334,6 +2334,58 @@ describe('Team Agent Client', () => {
     replacement.dispose()
   })
 
+  it.each([true, false])('keeps an assignment replayable when its task-start claim rejects after Link retirement=%s', async (retire) => {
+    const ctx = await setup(false)
+    const input = await directChannel(ctx)
+    const receiver = await ctx.agents.create({ sessionId: SessionId('task-start-retirement-recipient'),
+      meta: { teamId: input.team.id, participantId: input.recipient.id }, agentOptions: { provider: 'mock', model: 'mock' } })
+    const binding = await bindRecipient(ctx, input, receiver.agent.session.id)
+    const entered = Promise.withResolvers<undefined>()
+    const proceed = Promise.withResolvers<undefined>()
+    let startAttempts = 0
+    const connect = ctx.teamLinks.connect.bind(ctx.teamLinks)
+    vi.spyOn(ctx.teamLinks, 'connect').mockImplementationOnce(async (request) => {
+      const link = await connect(request)
+      const start = link.claimTaskAttemptStart.bind(link)
+      vi.spyOn(link, 'claimTaskAttemptStart').mockImplementation(async (input) => {
+        if (startAttempts++ === 0) {
+          entered.resolve(undefined)
+          await proceed.promise
+          if (!retire) throw new Error('active task-start claim temporarily unavailable')
+        }
+        return await start(input)
+      })
+      return link
+    })
+    const delivery = new TeamAgentClientPlugin.FixedBindingTeamAgentLinkDelivery(ctx, { agent: receiver.agent, binding },
+      { disposalTimeoutMs: 1_000 })
+    delivery.start()
+    const assignment = await assignTask(ctx, input, binding)
+    await entered.promise
+    const admissions = () => receiver.agent.session.events.filter(event => event.type === 'user/message'
+      && event.data.source.kind === 'team-task-assignment' && event.data.source.envelopeId === assignment.envelope.id).length
+    if (!retire) {
+      proceed.resolve(undefined)
+      try {
+        await expectReceipt(ctx, assignment.envelope, input.recipient.id)
+        expect(startAttempts).toBeGreaterThanOrEqual(2)
+        expect(admissions()).toBe(1)
+      } finally { await delivery.close() }
+      return
+    }
+    const closing = delivery.close()
+    proceed.resolve(undefined)
+    await expect(closing).resolves.toBeUndefined()
+    expect(admissions()).toBe(0)
+    const replay = new TeamAgentClientPlugin.FixedBindingTeamAgentLinkDelivery(ctx, { agent: receiver.agent, binding },
+      { disposalTimeoutMs: 1_000 })
+    try {
+      replay.start()
+      await expectReceipt(ctx, assignment.envelope, input.recipient.id)
+      expect(admissions()).toBe(1)
+    } finally { await replay.close() }
+  })
+
   it.each([true, false])('replays a rejected in-flight claim when its Link retires=%s', async (retire) => {
     const ctx = await setup(false)
     const input = await directChannel(ctx)
@@ -2746,10 +2798,13 @@ describe('Team Agent Client', () => {
       await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
       await waitWorkspaceTurn(mounted)
       const getTeam = mounted.ctx.teams.getTeam.bind(mounted.ctx.teams)
-      vi.spyOn(mounted.ctx.teams, 'getTeam').mockImplementationOnce(async request => ({ ...await getTeam(request), workspaceAllocations: [] }))
-      await expect(settleAgentWorkspaceLease(mounted.receiver.agent)).rejects.toSatisfy((error: unknown) =>
-        error instanceof AggregateError && error.errors.some((cause: unknown) => cause instanceof Error && cause.message.includes('no longer durable')),
-      )
+      const getTeamSpy = vi.spyOn(mounted.ctx.teams, 'getTeam')
+        .mockImplementation(async request => ({ ...await getTeam(request), workspaceAllocations: [] }))
+      try {
+        await expect(settleAgentWorkspaceLease(mounted.receiver.agent)).rejects.toSatisfy((error: unknown) =>
+          error instanceof AggregateError && error.errors.some((cause: unknown) => cause instanceof Error && cause.message.includes('no longer durable')),
+        )
+      } finally { getTeamSpy.mockRestore() }
     } finally { await mounted.delivery.close() }
   })
 

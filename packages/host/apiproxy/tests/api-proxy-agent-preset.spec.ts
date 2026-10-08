@@ -157,6 +157,47 @@ async function harness(
  */
 describe('a capability the session\'s preset mounts', () => {
 
+  it('lists a detached persisted Session catalog under its recorded preset without attaching an Agent', async () => {
+    const meta = { id: SessionId('cold-skills'), createdAt: 1, cwd: '/workspace/cold-skills', agentPreset: 'standard' }
+    const { api, ctx } = await harness(['standard', 'minimal'], {
+      list: () => Promise.resolve([meta]),
+      inspect: () => Promise.resolve({ meta, events: [
+        { type: 'agent-preset/selected', seq: 1, time: 0, data: { agentPreset: 'minimal' } },
+      ] }),
+    })
+    const seen: unknown[] = []
+    ctx.provide('skills', { list: (options: unknown) => {
+      seen.push(options)
+      return Promise.resolve([{ name: 'cold-skill', description: 'Cold catalog', invocation: { modelInvocable: false, userInvocable: true } }])
+    } } as never)
+    expect(ctx.sessions.get(meta.id)).toBeUndefined()
+    expect(ctx.agents.get(meta.id)).toBeUndefined()
+    const response = await api.skills.list(request({ sessionId: meta.id }))
+    expect(response.result).toMatchObject({ ok: true, value: { skills: [{ name: 'cold-skill', modelInvocable: false }] } })
+    expect(seen).toEqual([{ cwd: meta.cwd, scope: standingKeys.get('minimal') }])
+    expect(ctx.sessions.get(meta.id)).toBeUndefined()
+    expect(ctx.agents.get(meta.id)).toBeUndefined()
+  })
+
+  it('retains session-not-found for a catalog whose durable Session is absent', async () => {
+    const { api } = await harness(['standard'])
+    const response = await api.skills.list(request({ sessionId: SessionId('missing-skills') }))
+    expect(response.result).toMatchObject({ ok: false, error: { code: 'session-not-found' } })
+  })
+
+  it('refuses a cold Team Session catalog before reading its private composition without authentication', async () => {
+    const meta = { id: SessionId('private-cold-skills'), createdAt: 1, cwd: '/workspace/private',
+      teamId: 'private-team', participantId: 'private-participant' }
+    let inspected = false
+    const { api } = await harness(['standard'], {
+      list: () => Promise.resolve([meta]),
+      inspect: () => { inspected = true; return Promise.resolve({ meta, events: [] }) },
+    })
+    const response = await api.skills.list(request({ sessionId: meta.id }))
+    expect(response.result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+    expect(inspected).toBe(false)
+  })
+
   it('serves the skill catalog from the session\'s own registry', async () => {
     const { api, createAgent } = await harness(['standard'])
     await createAgent(SessionId('k1'), 'standard')

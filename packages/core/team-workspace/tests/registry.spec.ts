@@ -2,12 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import {
   activationBindingSnapshotSchema,
+  participantSnapshotSchema,
   taskAttemptIdSchema,
   teamWorkspaceAllocationIdSchema,
   teamTaskIdSchema,
   teamTaskSnapshotSchema,
 } from '@clocky/clocky-team'
-import TeamWorkspaceRegistry, { TeamWorkspaceError } from '../src/index.ts'
+import TeamWorkspaceRegistry, { TeamWorkspaceError, TeamWorkspaceReservations, isStoredTeamWorkspaceManifestHeader, isTeamWorkspaceIntegrationMarkerBase } from '../src/index.ts'
 import type {
   TeamWorkspaceAllocation,
   TeamWorkspaceAllocationMetadata,
@@ -402,4 +403,191 @@ describe('TeamWorkspaceRegistry service definition', () => {
     await fiber.dispose()
     await ctx.fiber.dispose()
   })
+})
+
+
+it.each([undefined, null, [], 1, 'invalid'])('refuses a non-object durable integration marker %j', (value) => {
+  expect(isTeamWorkspaceIntegrationMarkerBase(value)).toBe(false)
+  expect(isStoredTeamWorkspaceManifestHeader(value, 1)).toBe(false)
+})
+
+it('retains a replacement physical creation when late cleanup of a terminated earlier attempt runs', async () => {
+  const reservations = new TeamWorkspaceReservations()
+  const retired = Promise.withResolvers<TeamWorkspaceAllocation>()
+  const current = Promise.withResolvers<TeamWorkspaceAllocation>()
+  const allocation: TeamWorkspaceAllocation = { id: teamWorkspaceAllocationIdSchema.parse('generation'), provider: 'shared-local',
+    mode: 'shared', ...request, root: process.cwd(), async release() {} }
+  const failure = new Error('Physical creation terminated')
+  const first = reservations.materialize('key', () => retired.promise)
+  const rejected = expect(first).rejects.toBe(failure)
+  retired.reject(failure)
+  // The owning provider withdraws a known-terminated operation before its Promise cleanup is scheduled.
+  reservations.materializations.delete('key')
+  const second = reservations.materialize('key', () => current.promise)
+  await rejected
+  expect(reservations.materializations.has('key')).toBe(true)
+  current.resolve(allocation)
+  await expect(second).resolves.toBe(allocation)
+  expect(reservations.materializations.has('key')).toBe(false)
+})
+
+
+it('refuses duplicate live allocation publishers and leaves a replacement live after repeated old retirement', async () => {
+  const { ctx } = await setup()
+  const owner = {}
+  const publisher = { publish: vi.fn(async () => undefined) }
+  const input = { taskId: task.id, attemptId: request.attemptId, allocationId: teamWorkspaceAllocationIdSchema.parse('allocation'),
+    expectedRevision: 1, signal: new AbortController().signal }
+  try {
+    const retire = ctx.teamWorkspaces.registerAllocationPublisher(owner, publisher)
+    expect(() => ctx.teamWorkspaces.registerAllocationPublisher(owner, publisher))
+      .toThrow(expect.objectContaining({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' }))
+    retire()
+    const replacement = { publish: vi.fn(async () => undefined) }
+    ctx.teamWorkspaces.registerAllocationPublisher(owner, replacement)
+    retire()
+    await expect(ctx.teamWorkspaces.publishForOwner(owner, input)).resolves.toBeUndefined()
+    expect(replacement.publish).toHaveBeenCalledWith(input)
+    expect(publisher.publish).not.toHaveBeenCalled()
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('accepts a provider without preflight while preserving an explicit route and participant request', async () => {
+  const { ctx } = await setup()
+  try {
+    ctx.teamWorkspaces.registerProvider(provider())
+    const participant = participantSnapshotSchema.parse({ id: request.participantId, teamId: task.teamId, kind: 'local-agent',
+      displayName: 'Worker', role: 'worker', capabilities: [], phase: 'active' })
+    await expect(ctx.teamWorkspaces.preflight('shared', { task, participant,
+      route: { provider: 'test', model: 'model', cwd: process.cwd() } })).resolves.toBe(true)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('observes abandonment failure together with the original invalid preparation identity', async () => {
+  const { ctx } = await setup()
+  const abandonFailure = new Error('Abandonment failed')
+  const valid = await provider().prepare(request)
+  try {
+    ctx.teamWorkspaces.registerProvider(provider({ prepare: async () => ({ ...valid, provider: 'foreign',
+      abandon: async () => { throw abandonFailure } }) }))
+    await expect(ctx.teamWorkspaces.prepare('shared', request)).rejects.toMatchObject({ errors: [
+      expect.objectContaining({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' }), abandonFailure,
+    ] })
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('refuses mismatched reservation metadata before invoking physical materialization', async () => {
+  const { ctx } = await setup()
+  const valid = await provider().prepare(request)
+  const materialize = vi.fn(async () => await valid.materialize())
+  try {
+    ctx.teamWorkspaces.registerProvider(provider())
+    await expect(ctx.teamWorkspaces.materialize('shared', request, { ...valid, provider: 'foreign', materialize }))
+      .rejects.toMatchObject({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' })
+    expect(materialize).not.toHaveBeenCalled()
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('refuses foreign recovery metadata before restore, then releases a foreign restored allocation', async () => {
+  const { ctx } = await setup()
+  const valid = await provider().prepare(request)
+  const allocation = await valid.materialize()
+  const releaseFailure = new Error('Restore cleanup failed')
+  const release = vi.fn(async () => {})
+  const restore = vi.fn(async () => ({ ...allocation, provider: 'foreign', release }))
+  try {
+    ctx.teamWorkspaces.registerProvider(provider({ restore }))
+    await expect(ctx.teamWorkspaces.restore('shared', request, { ...valid, provider: 'foreign' }))
+      .rejects.toMatchObject({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' })
+    expect(restore).not.toHaveBeenCalled()
+    await expect(ctx.teamWorkspaces.restore('shared', request, valid)).rejects.toMatchObject({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' })
+    expect(release).toHaveBeenCalledOnce()
+    release.mockRejectedValueOnce(releaseFailure)
+    await expect(ctx.teamWorkspaces.restore('shared', request, valid)).rejects.toMatchObject({ errors: [
+      expect.objectContaining({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' }), releaseFailure,
+    ] })
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('refuses unavailable publication and integration capabilities rather than implying successful effects', async () => {
+  const { ctx } = await setup()
+  const allocation = await (await provider().prepare(request)).materialize()
+  try {
+    ctx.teamWorkspaces.registerProvider(provider())
+    await expect(ctx.teamWorkspaces.publish('shared', { allocation })).rejects.toMatchObject({ code: 'TEAM_WORKSPACE_MODE_UNAVAILABLE' })
+    await expect(ctx.teamWorkspaces.integrate('shared', { allocation, target: 'main', mode: 'proposal' }))
+      .rejects.toMatchObject({ code: 'TEAM_WORKSPACE_MODE_UNAVAILABLE' })
+    await expect(ctx.teamWorkspaces.integrateSource('shared-local', { source: { teamId: task.teamId, taskId: task.id,
+      attemptId: request.attemptId, artifacts: [] }, integrationTaskId: task.id, integrationAttemptId: request.attemptId,
+    target: 'main', mode: 'proposal' })).rejects.toMatchObject({ code: 'TEAM_WORKSPACE_MODE_UNAVAILABLE' })
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('requires integrated allocation results to preserve their exact owner tuple and target', async () => {
+  const { ctx } = await setup()
+  const allocation = await (await provider().prepare(request)).materialize()
+  const result = { teamId: task.teamId, taskId: task.id, attemptId: request.attemptId, target: 'main',
+    status: 'proposed' as const, accepted: true }
+  const integrate = vi.fn(async () => result)
+  try {
+    ctx.teamWorkspaces.registerProvider(provider({ integrate }))
+    const input = { allocation, target: 'main', mode: 'proposal' as const }
+    await expect(ctx.teamWorkspaces.integrate('shared', input)).resolves.toBe(result)
+    integrate.mockResolvedValueOnce({ ...result, target: 'foreign' })
+    await expect(ctx.teamWorkspaces.integrate('shared', input)).rejects.toMatchObject({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' })
+  } finally { await ctx.fiber.dispose() }
+})
+
+
+it('releases a mismatched physical allocation successfully before retaining its primary refusal', async () => {
+  const { ctx } = await setup()
+  const valid = await provider().prepare(request)
+  const allocation = await valid.materialize()
+  const release = vi.fn(async () => {})
+  const malformed = { ...allocation, taskId: teamTaskIdSchema.parse('foreign-task'), release }
+  try {
+    ctx.teamWorkspaces.registerProvider(provider())
+    await expect(ctx.teamWorkspaces.materialize('shared', request, { ...valid, materialize: async () => malformed }))
+      .rejects.toMatchObject({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' })
+    expect(release).toHaveBeenCalledOnce()
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('restores the exact retained allocation rather than generating another physical root', async () => {
+  const { ctx } = await setup()
+  const valid = await provider().prepare(request)
+  const allocation = await valid.materialize()
+  const restore = vi.fn(async () => allocation)
+  try {
+    ctx.teamWorkspaces.registerProvider(provider({ restore }))
+    await expect(ctx.teamWorkspaces.restore('shared', request, valid)).resolves.toBe(allocation)
+    expect(restore).toHaveBeenCalledWith(request, valid)
+  } finally { await ctx.fiber.dispose() }
+})
+
+
+it('refuses an unregistered owner object even when its public identity matches another live owner', async () => {
+  const { ctx } = await setup()
+  const owner = { id: 'same-agent' }
+  const publisher = { publish: vi.fn(async () => undefined) }
+  try {
+    ctx.teamWorkspaces.registerAllocationPublisher(owner, publisher)
+    await expect(ctx.teamWorkspaces.publishForOwner({ id: owner.id }, { taskId: task.id, attemptId: request.attemptId,
+      allocationId: teamWorkspaceAllocationIdSchema.parse('allocation'), expectedRevision: 1, signal: new AbortController().signal }))
+      .rejects.toMatchObject({ code: 'TEAM_WORKSPACE_ALLOCATION_MISMATCH' })
+    expect(publisher.publish).not.toHaveBeenCalled()
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('delegates explicit preflight refusals rather than replacing them with the default compatibility result', async () => {
+  const { ctx } = await setup()
+  const preflight = vi.fn(async () => false)
+  try {
+    ctx.teamWorkspaces.registerProvider(provider({ preflight }))
+    const input = { task, participant: participantSnapshotSchema.parse({ id: request.participantId, teamId: task.teamId,
+      kind: 'local-agent', displayName: 'Worker', role: 'worker', capabilities: [], phase: 'active' }),
+    route: { provider: 'test', model: 'model', cwd: process.cwd() } }
+    await expect(ctx.teamWorkspaces.preflight('shared', input)).resolves.toBe(false)
+    expect(preflight).toHaveBeenCalledWith(input)
+  } finally { await ctx.fiber.dispose() }
 })

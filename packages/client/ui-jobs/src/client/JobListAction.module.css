@@ -9,21 +9,21 @@
   min-height: 28px;
   padding: 3px 2px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   cursor: pointer;
 }
 
 .trigger:hover,
 .trigger:focus-visible {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .trigger svg {
-  transition: transform 120ms ease;
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .triggerOpen {
@@ -42,7 +42,7 @@
   position: absolute;
   top: calc(100% + 5px);
   left: 0;
-  z-index: 100;
+  z-index: var(--clocky-layer-dropdown);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -54,12 +54,12 @@
   padding: 4px;
   overflow: auto;
   list-style: none;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 12px;
-  background: var(--clocky-specific-menu);
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
-  box-shadow: var(--clocky-shadow-lv3);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
+  box-shadow: var(--clocky-elevation-3);
 }
 
 .row {
@@ -70,14 +70,14 @@
   width: 100%;
   min-height: 32px;
   padding: 6px 8px;
-  border-radius: 8px;
-  color: var(--clocky-alias-label-primary);
-  font-size: 13px;
-  line-height: 18px;
+  border-radius: var(--clocky-radius-md);
+  color: var(--clocky-fg-primary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .rowSettled {
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .rowDot {
@@ -87,18 +87,18 @@
 .kind {
   flex: none;
   padding: 0 6px;
-  border-radius: 5px;
-  background: var(--clocky-alias-fill-l2);
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 18px;
+  border-radius: var(--clocky-radius-xs);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-family: var(--clocky-font-mono);
+  font-family: var(--ds-font-family-code);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -106,9 +106,9 @@
 .status,
 .duration {
   flex: none;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 11px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 /* A failed job's detail is the producer's raw error text, so it has no bound;

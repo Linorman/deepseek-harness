@@ -92,7 +92,7 @@ describe('gate graph validation', () => {
     expect(ids).toEqual([
       'source-outputs', 'rescope-vendor', 'knip', 'publint', 'constraints', 'clocky-package-licenses',
       'package-invariants', 'direct-session-entrypoints', 'built-package-invariants', 'node-next-types',
-      'optional-dependency-imports', 'client-packages', 'cordis-config',
+      'optional-dependency-imports', 'client-packages', 'client-style-tokens', 'cordis-config',
       'runtime-closure', 'vendored-links',
     ])
     expect(defaultConcurrency('hygiene', ids.length, 8)).toEqual({

@@ -1,18 +1,20 @@
 import type { Context } from '@clocky/cordis'
 import base from '../styles/base.css?inline'
-import designPlatform from '../styles/design-platform.css?inline'
+import tokens from '../styles/tokens.css?inline'
 import scrollbar from '../styles/scrollbar.css?inline'
-import gradientShadowText from '../styles/gradient-shadow-text.css?inline'
+import markdownType from '../styles/markdown-type.css?inline'
 import shiki from '../styles/shiki.css?inline'
+import transitions from '../styles/transitions.css?inline'
 
 const PLUGIN_ID = '@clocky/clocky-client-ui-theme'
 
 const STYLES = [
   ['base.css', base],
-  ['design-platform.css', designPlatform],
+  ['tokens.css', tokens],
   ['scrollbar.css', scrollbar],
-  ['gradient-shadow-text.css', gradientShadowText],
+  ['markdown-type.css', markdownType],
   ['shiki.css', shiki],
+  ['transitions.css', transitions],
 ] as const
 
 /**

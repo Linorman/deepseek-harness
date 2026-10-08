@@ -1,3 +1,4 @@
+import { createOtelPipeline,emitOtelRecord } from '@clocky/clocky-session-telemetry-otel/pipeline'
 /**
  * OpenTelemetry Service Provider for the Team telemetry capability.
  *
@@ -20,21 +21,17 @@ import {
   type TeamTelemetrySeverity,
   type TeamTelemetrySink,
 } from '@clocky/clocky-team'
-import { APP_IDENTITY } from '@clocky/clocky-llm'
 import {
   TeamTelemetryAlertPolicy,
   type TeamTelemetryAlert,
   type TeamTelemetryAlertRule,
 } from './alerts.ts'
 import {
-  BatchLogRecordProcessor,
-  LoggerProvider,
+  type LoggerProvider,
   type BatchLogRecordProcessorOptions,
 } from '@opentelemetry/sdk-logs'
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http'
 import type { OTLPExporterNodeConfigBase } from '@opentelemetry/otlp-exporter-base'
 import { SeverityNumber, type AnyValue, type Logger } from '@opentelemetry/api-logs'
-import { resourceFromAttributes } from '@opentelemetry/resources'
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string }
 
@@ -179,29 +176,12 @@ export class OpenTelemetryTeamBackend extends TeamTelemetryBackend {
     }
     this.shutdownTimeoutMillis = shutdownTimeoutMillis
     const alertPolicy = new TeamTelemetryAlertPolicy(config.alerts)
-    this.provider = new LoggerProvider({
-      resource: resourceFromAttributes({
-        'service.name': APP_IDENTITY.product,
-        'service.version': APP_IDENTITY.version,
-      }),
-      processors: [
-        new BatchLogRecordProcessor({
-          ...config.processor,
-          exporter: new OTLPLogExporter(config.exporter),
-        }),
-      ],
-    })
+    this.provider = createOtelPipeline(config.exporter, config.processor)
     const ledger = this.provider.getLogger('@clocky/clocky-team-telemetry-otel', version)
     const ops = this.provider.getLogger('@clocky/clocky-team-telemetry-otel/ops', version)
     const enqueue: TeamTelemetrySink['emit'] = (record) => {
       const logger: Logger = record.channel === 'ops' ? ops : ledger
-      logger.emit({
-        timestamp: record.time,
-        observedTimestamp: record.time,
-        ...SEVERITY[record.severity],
-        body: record.body as AnyValue,
-        attributes: record.attributes,
-      })
+      emitOtelRecord(logger, { time: record.time, body: record.body as AnyValue, attributes: record.attributes }, SEVERITY[record.severity])
       if (record.channel === 'ops' && record.attributes['telemetry.op'] === 'alert') return
       for (const alert of alertPolicy.observe(record)) {
         const emitted = alertRecord(alert)

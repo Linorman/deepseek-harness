@@ -142,7 +142,13 @@
     "@clocky/clocky-team-channel-admission": "workspace:^",
     "@clocky/clocky-team-human-client": "workspace:^",
     "@clocky/clocky-team-placement-default": "workspace:^",
-    "@clocky/clocky-team-delegation": "workspace:^"
+    "@clocky/clocky-team-delegation": "workspace:^",
+    "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-local": "workspace:^",
+    "@clocky/clocky-simulation-team": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^",
+    "@clocky/clocky-tool-simulation": "workspace:^",
+    "@clocky/clocky-client-ui-simulation": "workspace:^"
   },
   "peerDependencies": {
     "@clocky/cordis-plugin-loader": "workspace:^",

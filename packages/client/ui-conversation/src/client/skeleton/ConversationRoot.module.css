@@ -8,7 +8,7 @@
   flex-direction: column;
   height: 100%;
   min-width: 0;
-  background: var(--clocky-alias-bg-base);
+  background: var(--clocky-bg-canvas);
 
   /* Shared width axis for the whole column: one content width W
      (--clocky-chat-content-width) for the transcript, the dock cards
@@ -40,7 +40,7 @@
   left: 0;
   z-index: 0;
   height: 1px;
-  background: var(--clocky-alias-border-l2);
+  background: var(--clocky-border-default);
   pointer-events: none;
 }
 
@@ -69,11 +69,11 @@
   max-width: 220px;
   overflow: hidden;
   padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: var(--clocky-radius-lg);
+  font-size: var(--clocky-type-body-size);
   font-weight: 500;
-  line-height: 20px;
-  color: var(--clocky-alias-label-primary);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -100,7 +100,7 @@
 /* figma Tab_Group 34:11441: 35px strip, gap 36, pad-left 8, tabs bottom-aligned. */
 .tabs {
   position: relative;
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
   display: flex;
   gap: 36px;
   margin-top: 4px;
@@ -113,10 +113,10 @@
   padding: 0 0 11px;
   border: none;
   background: transparent;
-  font-size: 13px;
-  line-height: 16px;
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
@@ -127,7 +127,7 @@
   bottom: 1px;
   left: 0;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--clocky-radius-xs);
   background: transparent;
 }
 
@@ -135,11 +135,11 @@
    this token sheet, so the selected state rides the business blue — the
    nearest semantic token that stays blue in both themes. */
 .tabActive {
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
 }
 
 .tabActive::after {
-  background: var(--clocky-alias-state-business-primary);
+  background: var(--clocky-accent-bg);
 }
 
 .viewArea {
@@ -218,7 +218,7 @@
   bottom: 0;
   /* Above markdown CodeBlock sticky banners (z-index 6) so the footer never
      paints under a sticking code header while scrolling. */
-  z-index: 7;
+  z-index: var(--clocky-layer-local-7);
   /* Input mask (figma 1205:27463): transcript fades out under a FIXED 36px
      band at the seat's top (the figma 24% of the resting ~150px composer),
      solid below — px stops, not %, so a growing draft only widens the solid
@@ -227,8 +227,8 @@
      fade from their own base. */
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--clocky-alias-bg-base) 0%, transparent) 0px,
-    var(--clocky-alias-bg-base) 36px
+    color-mix(in srgb, var(--clocky-bg-canvas) 0%, transparent) 0px,
+    var(--clocky-bg-canvas) 36px
   );
 }
 
@@ -283,7 +283,7 @@
   /* Card cap + both clearances: the hero input card lands at exactly the same
      width as the docked composer at every viewport. */
   width: min(calc(var(--clocky-composer-card-max-width) + 2 * var(--clocky-composer-side-clearance)), 100%);
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
 }
 
 /* Blue backdrop ellipse (figma 313:14109), centered on the input card: the
@@ -295,7 +295,7 @@
   position: absolute;
   left: 50%;
   bottom: 92px;
-  z-index: -1;
+  z-index: var(--clocky-layer-behind);
   width: calc(100% * 1051 / 776);
   aspect-ratio: 1051 / 468;
   transform: translate(-50%, 50%);
@@ -315,6 +315,52 @@
   visibility: hidden;
 }
 
+/* Mode cards (one per product workspace) above the hero composer. An empty
+   list collapses so compositions without registrants keep today's hero. */
+.heroModes {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--clocky-space-3);
+  width: 100%;
+  /* Same side clearance as the composer card below. */
+  padding-inline: var(--clocky-composer-side-clearance);
+}
+
+.heroModes:empty {
+  display: none;
+}
+
 .contextualEmpty { max-width: 640px; padding: 24px; text-align: center; overflow-wrap: anywhere; }
-.contextualEmpty h2 { font-size: 22px; line-height: 30px; margin: 0 0 12px; color: var(--clocky-alias-label-primary); }
-.contextualEmpty p { font-size: 14px; line-height: 22px; color: var(--clocky-alias-label-secondary); margin: 8px 0; }
+.contextualEmpty h2 { font-size: var(--clocky-type-title-size); line-height: var(--clocky-type-title-line-height); margin: 0 0 12px; color: var(--clocky-fg-primary); }
+.contextualEmpty p { font-size: var(--clocky-type-body-size); line-height: var(--clocky-type-body-line-height); color: var(--clocky-fg-secondary); margin: 8px 0; }
+
+/* Hero entrance: the launch screen assembles top to bottom with a short
+   stagger, so the eye lands on the headline, then the workspaces, then the
+   composer. Chrome only; it carries no data change. */
+.composerHero > * {
+  animation: hero-rise var(--clocky-duration-slow) var(--clocky-ease-emphasized) both;
+}
+
+.composerHero > :nth-child(2) { animation-delay: calc(var(--clocky-stagger-step) * 1); }
+.composerHero > :nth-child(3) { animation-delay: calc(var(--clocky-stagger-step) * 2.5); }
+.composerHero > :nth-child(4) { animation-delay: calc(var(--clocky-stagger-step) * 4); }
+.composerHero > :nth-child(5) { animation-delay: calc(var(--clocky-stagger-step) * 5.5); }
+.composerHero > :nth-child(n + 6) { animation-delay: calc(var(--clocky-stagger-step) * 7); }
+
+/* The glow is positioned by transform; it only fades. */
+.composerHero > .heroGlow {
+  animation-name: hero-fade;
+}
+
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+@keyframes hero-fade {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composerHero > * { animation-name: hero-fade; }
+}

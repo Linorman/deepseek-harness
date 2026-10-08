@@ -4,6 +4,7 @@ import { ownerFixture } from './company-owner-fixture.ts'
 import { call } from './fixtures.ts'
 import { observeModelPool } from '../src/model-pool.ts'
 import { simulationProductScenarioVersionSchema, simulationProductModelPoolObservationSchema } from '../src/control-schema.ts'
+import type { SimulationCompanyOwner } from '../src/company-owner.ts'
 
 it('reports missing/failed pool observations as unavailable and rejects forged occupancy or private fields', () => {
   expect(observeModelPool()).toMatchObject({ status: 'unavailable', clock: 'real' })
@@ -23,6 +24,13 @@ it.each(['json', 'sqlite'] as const)('observes real held and cold company metada
     const runId = await h.create(), service = h.ctx.simulationAdministration
     const start = await service.control({ runId }, call())
     expect(start.modelPool).toMatchObject({ status: 'observed', clock: 'real', active: 0, queued: 0, limit: 2 })
+    const owner = (service as unknown as { held: Map<string, { owner?: SimulationCompanyOwner }> }).held.get(runId)?.owner
+    if (owner === undefined) throw new Error('Mounted administration lost the prepared owner')
+    const observe = owner.observe.bind(owner)
+    const retry = vi.spyOn(owner, 'observe').mockImplementation(() => ({ ...observe(), stop: 'retry', nextAttemptAt: 1234 }))
+    expect((await service.runStatuses({ runIds: [runId] }, call())).items[0]?.operational)
+      .toMatchObject({ status: 'observed', stop: 'retry', nextAttemptAt: 1234 })
+    retry.mockRestore()
     expect(start.versions).toMatchObject({ rulesVersion: { text: '1' }, policyVersion: { text: '1' }, tickUnit: { text: 'minute' },
       scenario: { status: 'observed', templateId: { text: 'company' }, version: '1', driverVersion: '1', execution: 'cognition-only' } })
     // oxlint-disable-next-line typescript/unbound-method -- The fixture's mock implementation is called with its adapter receiver below.
@@ -44,6 +52,10 @@ it.each(['json', 'sqlite'] as const)('observes real held and cold company metada
     await vi.waitFor(async () => {
       expect((await service.control({ runId }, call())).modelPool).toMatchObject({ active: 0 })
     })
+    await vi.waitFor(async () => {
+      expect((await service.runStatuses({ runIds: [runId] }, call())).items[0]?.operational)
+        .toMatchObject({ status: 'observed', stop: 'paused' })
+    }, { timeout: 5000, interval: 5 })
     const requests = h.requests.length
     const native = await h.ctx.simulationProducts.runStatuses({ runIds: [runId] }, call())
     expect(native.items[0]?.operational).toMatchObject({ status: 'unavailable', scenario: { status: 'unavailable' } })

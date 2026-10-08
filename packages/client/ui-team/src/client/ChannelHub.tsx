@@ -97,6 +97,7 @@ export function ChannelHub({ openMember, identities, maxDraftBytes, state, trans
     try { await readChannel(channelId, afterCursor, controller.signal) }
     catch (reason: unknown) { if (!controller.signal.aborted) report(reason) }
   }
+  /* v8 ignore next -- Refresh is exposed only while a channel is selected or its inline composer is mounted. */
   const refresh = async () => { if (selectedId !== undefined) await load(selectedId) }
   useEffect(() => {
     if (readChannels !== undefined) void readChannels(team.id).catch(report)
@@ -114,6 +115,7 @@ export function ChannelHub({ openMember, identities, maxDraftBytes, state, trans
   }, [selectedId, readChannel, loading, page, channelState?.error])
   useLayoutEffect(() => {
     const element = messageScroll.current
+    /* v8 ignore next -- The message viewport ref is attached before this layout effect runs. */
     if (element === null) return
     if (scrollChannel.current !== selectedId) {
       scrollChannel.current = selectedId
@@ -192,7 +194,7 @@ export function ChannelHub({ openMember, identities, maxDraftBytes, state, trans
         {invitation?.invitation.status === 'pending' && <div className={css.invitation}>
           <p>{t('channel.invitationPending')}</p>
           <p>{invitation.channel.manifest.participants.map(endpoint => name(endpoint.id)).join(' · ')}</p>
-          {acknowledgeChannel !== undefined && selectedId !== undefined && <Button variant="outline"
+          {acknowledgeChannel !== undefined && selectedId !== undefined && <Button variant="secondary"
             disabled={channelState?.acknowledging || authorityPending} aria-busy={channelState?.acknowledging}
             onClick={() => { void acknowledgeChannel(selectedId).catch(report) }}>{t('channel.acceptInvitation')}</Button>}
         </div>}
@@ -229,7 +231,9 @@ export function ChannelHub({ openMember, identities, maxDraftBytes, state, trans
             draft)
         } }}
         state={state} channel={channel} senderId={invitation?.invitation.participantId} channelPending={sendBlocked}
-        admission={admission} translate={t} manage={manage} refreshChannel={refresh} onClose={() => { setManagementTarget(undefined) }} />}
+        admission={admission} translate={t} manage={manage} refreshChannel={refresh}
+        /* v8 ignore next -- The inline composer has no close action; the shared dialog contract requires this callback. */
+        onClose={() => { setManagementTarget(undefined) }} />}
     </div>
     {detailsOpen && <aside className={css.details} aria-label={t('channelHub.details')}>
       {channel !== undefined && <><h4>{t('detail.participants')}</h4><ul>

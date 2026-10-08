@@ -1,10 +1,9 @@
-/* Scrollbar skin: the sole consumer of the four --clocky-alias-scrollbar-*
+/* Scrollbar skin: the sole consumer of the four --clocky-scrollbar-l{1,2}*
  * tokens. Without it every scrolling region renders the UA scrollbar, which
  * ignores the theme — a light native bar over the dark palette.
  *
- * The rules sit on `body`, not `html`: design-platform.css declares the
- * --clocky-alias-* tokens on `body` (and the dark overrides on
- * `body[data-ds-dark-theme]`), and custom properties only inherit downward,
+ * The rules sit on `body`, not `html`: tokens.css declares the color
+ * tokens on `body` (and the dark overrides on `body[data-ds-dark-theme]`), and custom properties only inherit downward,
  * so an `html` rule resolves them to the guaranteed-invalid value and
  * `scrollbar-color` falls back to `auto`.
  *
@@ -15,8 +14,8 @@
  * path the engine took. */
 
 body {
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l1);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l1);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l1);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l1-hover);
   /* The WebKit bar's layout width, mirrored by the ::-webkit-scrollbar rule
      below. A surface that must align itself beside a space-consuming bar
      (ConversationRoot's overlay composer seat) reads this instead of

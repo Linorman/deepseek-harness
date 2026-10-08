@@ -4,7 +4,7 @@ import type { AttachmentIdType } from '@clocky/clocky-attachment'
 import { createScope, scopeOf, SessionProvideChannel } from '@clocky/clocky-client-runtime/client'
 import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
 import type {
-  AgentContext, ConversationSnapshot, ISessions, ObservableSnapshot, ProjectionsFace, SessionFace, SessionId,
+  AgentContext, ConnectionStatus, ConversationSnapshot, ISessions, ObservableSnapshot, ProjectionsFace, SessionFace, SessionId,
   SessionListState, SessionProvideDescriptor, SessionSearchResultItem, SessionSummary, SnapshotStore,
 } from '@clocky/clocky-client-runtime/client'
 // The double reports the wire schema's own search bound, like the production
@@ -170,6 +170,8 @@ export interface TestSessionBinding {
 export class TestSessions implements ISessions {
   /** The useSessions standard feed (list rows + current selection). */
   readonly list: SnapshotStore<SessionListState>
+  /** The useConnection standard feed; benches start connected. */
+  readonly connection: SnapshotStore<ConnectionStatus> = createSnapshotStore<ConnectionStatus>({ state: 'connected' })
   /**
    * Atomic current-session provide projection (production SessionRuntime
    * mirror): selection changes and provider-roster changes publish through

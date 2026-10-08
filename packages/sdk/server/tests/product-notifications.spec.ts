@@ -23,7 +23,7 @@ import type { SdkNotificationOptions } from '../src/server.ts'
 const cleanup: (() => Promise<void>)[] = []
 afterEach(async () => { for (const dispose of cleanup.splice(0).reverse()) await dispose() })
 
-async function fixture(options: SdkNotificationOptions = {}) {
+async function fixture(options: SdkNotificationOptions = {}, revokeFails = false) {
   const directory = join(process.cwd(), '.tmp')
   await mkdir(directory, { recursive: true })
   const root = await mkdtemp(join(directory, 'sdk-notifications-'))
@@ -50,14 +50,21 @@ async function fixture(options: SdkNotificationOptions = {}) {
     const controller = new AbortController()
     controllers.set(owner, [...controllers.get(owner) ?? [], controller])
     return { principal: { id: productPrincipalId(owner), issuer: 'local', subject: owner,
-      assurance: 'test', credentialGeneration: 1 }, signal: controller.signal, revoke: () => { controller.abort() } }
+      assurance: 'test', credentialGeneration: 1 }, signal: controller.signal, revoke: () => {
+      controller.abort()
+      if (revokeFails) throw new Error('credential provider revoke failed')
+    } }
   } })
   ctx.provide('llm', { listProviders: () => [{ id: 'test', name: 'test' }] } as never)
   const connect = async (owner: string) => {
     const frames: { method: string; params?: object }[] = []
-    const server = new HarnessSdkJsonRpcServer(ctx, { notify: (method: string, params?: object) => {
-      frames.push(params === undefined ? { method } : { method, params })
-    } } as JsonRpcTransportPeer, 'local', options)
+    let server!: HarnessSdkJsonRpcServer
+    // The serving plugin has no Session injection; ancestry uses the optional service store.
+    await ctx.plugin(Object.assign((injected: Context) => {
+      server = new HarnessSdkJsonRpcServer(injected, { notify: (method: string, params?: object) => {
+        frames.push(params === undefined ? { method } : { method, params })
+      } } as JsonRpcTransportPeer, 'local', options)
+    }, { inject: ['agents', 'productPrincipals'] }))
     servers.push(server)
     await server.initialize({ credential: owner, provider: 'test', model: 'test', cwd: root })
     return { server, frames }
@@ -149,6 +156,39 @@ it('rechecks membership after queued IO and drops the backlog after human withdr
   read.mockRestore()
 })
 
+it.each(['TEAM_HUMAN_ACTOR_FORBIDDEN', 'TEAM_HUMAN_ACTOR_NOT_FOUND', 'TEAM_HUMAN_ACTOR_AMBIGUOUS',
+  'TEAM_ACTOR_PROOF_INVALID', 'TEAM_NOT_FOUND', 'TEAM_CHANNEL_NOT_FOUND'])(
+  'drops a notification when the authority service reports %s without failing the SDK stream', async (code) => {
+    const failure = vi.fn()
+    const { ctx, connect, team } = await fixture({ onFailure: failure })
+    const own = await team('alice')
+    const alice = await connect('alice')
+    const authority = vi.spyOn(ctx.teams, 'resolveIdentities').mockRejectedValueOnce(Object.assign(new Error('Private authority detail'), { code }))
+    ctx.emit('team/changed', { type: 'team/changed', team: (await ctx.teams.getTeam({ teamId: own.teamId })).team })
+    await alice.server.drainNotifications()
+    expect(alice.frames).toEqual([])
+    expect(failure).not.toHaveBeenCalled()
+    expect(authority).toHaveBeenCalled()
+    authority.mockRestore()
+  },
+)
+
+it('fails the notification stream when an unexpected Team authority error escapes publication', async () => {
+  const failure = vi.fn()
+  const { ctx, connect, team } = await fixture({ onFailure: failure })
+  const own = await team('alice')
+  const alice = await connect('alice')
+  const authority = vi.spyOn(ctx.teams, 'resolveIdentities')
+    .mockRejectedValueOnce(new Error('private Team reader failure'))
+  ctx.emit('team/changed', { type: 'team/changed', team: (await ctx.teams.getTeam({ teamId: own.teamId })).team })
+  await alice.server.drainNotifications()
+  expect(authority).toHaveBeenCalled()
+  expect(failure).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'SDK notification publication failed' }))
+  expect(alice.frames).toEqual([])
+  await expect(alice.server.listTeams({})).rejects.toMatchObject({ data: { code: 'SDK_NOTIFICATION_UNAVAILABLE' } })
+  authority.mockRestore()
+})
+
 it('retires idle connections and waiting publishers when the credential or provider is withdrawn', async () => {
   const failure = vi.fn()
   const { ctx, connect, team, controllers, retireProvider } = await fixture({ onFailure: failure })
@@ -177,6 +217,30 @@ it('retires idle connections and waiting publishers when the credential or provi
   await active.server.drainNotifications()
   await retirement
   expect(active.frames).toEqual([])
+})
+
+it('contains a transport-owner callback failure after credential retirement', async () => {
+  const failure = vi.fn(() => { throw new Error('notification owner failed') })
+  const { connect, controllers } = await fixture({ onFailure: failure })
+  const alice = await connect('alice')
+  controllers.get('alice')![0]!.abort()
+  expect(failure).toHaveBeenCalledOnce()
+  await expect(alice.server.handleRequest('team/metrics', {})).rejects.toMatchObject({
+    data: { code: 'PRODUCT_AUTH_REQUIRED' },
+  })
+  expect(alice.frames).toEqual([])
+})
+
+it('contains an issuer revoke failure after the credential has already retired', async () => {
+  const failure = vi.fn()
+  const { connect, controllers } = await fixture({ onFailure: failure }, true)
+  const alice = await connect('alice')
+  controllers.get('alice')![0]!.abort()
+  await expect(alice.server.handleRequest('team/metrics', {})).rejects.toMatchObject({
+    data: { code: 'PRODUCT_AUTH_REQUIRED' },
+  })
+  expect(failure).toHaveBeenCalledOnce()
+  expect(alice.frames).toEqual([])
 })
 
 it('withholds an old generation after another principal initializes the same connection', async () => {

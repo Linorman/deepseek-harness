@@ -57,13 +57,15 @@ export function AgentPresetRow({ load, select, useAgentPreset, t }: AgentPresetR
   const chosen = state.options.find(option => option.id === state.currentValue)
   const chosenText = chosen === undefined ? undefined : presetDisplayText(chosen, t)
   const label = state.currentValue === '' ? t('loading') : (chosenText?.name ?? state.currentValue)
-  const description: string = state.error ?? t('description')
+  // A failed read names the problem in product words; the raw transport or
+  // Host message stays available on hover instead of in the row text.
+  const description: string = state.error === null ? t('description') : t('error')
 
   return (
     <div className={css.row}>
       <div className={css.rowText}>
         <div className={css.title}>{t('title')}</div>
-        <div className={css.desc} role={state.error === null ? undefined : 'alert'}>{description}</div>
+        <div className={css.desc} role={state.error === null ? undefined : 'alert'} title={state.error ?? undefined}>{description}</div>
       </div>
       <PresetMenu
         options={state.options}

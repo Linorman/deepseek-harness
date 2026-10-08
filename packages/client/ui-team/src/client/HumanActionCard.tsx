@@ -72,6 +72,7 @@ export function HumanActionCard({ action, translate: t, respond, confirm, openCo
   }
   const updateBusy = (value: boolean): void => { setBusy(value); onBusyChange?.(value) }
   const confirmCurrent = async (): Promise<void> => {
+    /* v8 ignore next -- Check-current is omitted without a reader and disabled during an active read. */
     if (confirm === undefined || request.current !== undefined) return
     const controller = new AbortController()
     request.current = controller; updateBusy(true); setError(undefined)
@@ -79,9 +80,13 @@ export function HumanActionCard({ action, translate: t, respond, confirm, openCo
       const current = await confirm(action, controller.signal)
       if (!controller.signal.aborted) setConfirmedAt(current.updatedAt)
     } catch (cause: unknown) { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause)) }
-    finally { if (request.current === controller) { request.current = undefined; updateBusy(false) } }
+    finally {
+      /* v8 ignore next -- An active read cannot be replaced before its finally block retires it. */
+      if (request.current === controller) { request.current = undefined; updateBusy(false) }
+    }
   }
   const answer = async (value: TeamActionResponseInput['answer']): Promise<void> => {
+    /* v8 ignore next -- Answer controls are hidden or disabled unless all four admission checks pass. */
     if (!available || !verified || disabled || request.current !== undefined) return
     const fingerprint = JSON.stringify({ updatedAt: action.updatedAt, answer: value })
     const retry = draft.retry?.fingerprint === fingerprint ? draft.retry
@@ -98,9 +103,13 @@ export function HumanActionCard({ action, translate: t, respond, confirm, openCo
       if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause))
       setConfirmedAt(undefined)
     }
-    finally { if (request.current === controller) { request.current = undefined; updateBusy(false) } }
+    finally {
+      /* v8 ignore next -- No second answer can replace this active request before it settles. */
+      if (request.current === controller) { request.current = undefined; updateBusy(false) }
+    }
   }
   const submitQuestions = async (): Promise<void> => {
+    /* v8 ignore next -- Submit answers renders only after a supported question list is decoded. */
     if (questions === undefined) return
     const answers = []
     for (const question of questions) {

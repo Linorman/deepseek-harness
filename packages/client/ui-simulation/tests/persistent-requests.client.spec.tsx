@@ -39,7 +39,7 @@ it('discovers after a fresh authorization and queries a cold selector without al
 it('uses an already retained full original for an explicit retry and disables unknown/stale-page retry', async () => {
   const base = props()
   const original: SimulationCommandState = { command: { kind: 'create', input: { commandId: page.items[0]!.commandId,
-    templateId: 'company' as never, templateVersion: '1', name: 'Private original',
+    templateId: 'company' as never, templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' }, name: 'Private original',
     parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } } },
   pending: false, unknown: true, notFound: false }
   const view = render(<PersistentRequests {...base} commands={{ [key]: original }} />)
@@ -60,7 +60,22 @@ it('does not replace a newly selected run with the result of a retry after this 
   pending.resolve({ command: selector, pending: false, unknown: false, notFound: false,
     receipt: { kind: 'request', value: { ...page.items[0]!, status: 'completed' } } })
   await pending.promise
+  await Promise.resolve()
+  await Promise.resolve()
   expect(base.refreshRun).not.toHaveBeenCalled(); expect(base.read).not.toHaveBeenCalled()
+})
+
+it('contains a late original lookup failure after its request panel leaves', async () => {
+  const base = props(), pending = Promise.withResolvers<SimulationCommandState | undefined>()
+  const query = vi.fn(() => pending.promise)
+  const view = render(<PersistentRequests {...base} query={query} />)
+  fireEvent.click(view.getByRole('button', { name: en['requests.query'] }))
+  expect(query).toHaveBeenCalledWith(key)
+  view.unmount()
+  pending.reject(new Error('Late lookup failed'))
+  await expect(pending.promise).rejects.toThrow('Late lookup failed')
+  await Promise.resolve()
+  expect(base.read).not.toHaveBeenCalled()
 })
 
 it('keeps terminal original lookup, metadata and failure feedback without offering another retry', () => {
@@ -124,4 +139,77 @@ it('shows each warm original once and keeps off-page originals independently rec
     commands={{ [key]: onPage }} originals={[onPage, offPage]} renderOriginal={renderOriginal} />)
   expect(view.getAllByRole('button', { name: key })).toHaveLength(1)
   expect(view.getByRole('region', { name: en['requests.local'] })).toBeDefined()
+})
+
+it('renders unresolved ingress and maintenance originals without leaking their private input', () => {
+  const query = vi.fn(async () => undefined)
+  const ingress: SimulationCommandState = { command: { kind: 'ingress', input: { runId: page.runId,
+    ingressId: 'ingress' as never, entityId: 'entity' as never, text: 'PRIVATE INGRESS', availableAt: '2' as never } },
+  pending: true, unknown: false, notFound: false, receipt: { kind: 'ingress', value: { runId: page.runId,
+    ingressId: 'ingress' as never, entityId: 'entity' as never, eventId: 'event' as never, availableAt: '2' as never,
+    assignedAt: '3' as never, sequence: 1, status: 'pending', decisionId: 'decision' as never } } }
+  const restore: SimulationCommandState = { command: { kind: 'restore', input: { runId: page.runId,
+    commandId: 'restore' as never, checkpointId: 'checkpoint' as never } }, pending: false, unknown: false, notFound: false,
+  receipt: { kind: 'request', value: { runId: page.runId, commandId: 'restore' as never, kind: 'restore', acceptedAt: 1,
+    status: 'failed', failure: 'recovery-required', checkpointId: 'checkpoint' as never,
+    diagnostic: { stage: 'restore', code: 'history-incomplete', subject: { kind: 'run' } } } } }
+  const view = render(<>{[ingress, restore].map(record => <CommandRecord key={simulationCommandKey(record.command)}
+    value={record} connected query={query} retry={async () => undefined} t={key => en[key]} />)}</>)
+  expect(view.getByText(en.commandPending)).toBeDefined()
+  expect(view.getByText('decision')).toBeDefined()
+  expect(view.getAllByText(`${en.checkpointId}:`)).toHaveLength(2)
+  expect(view.container.textContent).not.toContain('PRIVATE INGRESS')
+  fireEvent.click(view.getAllByRole('button', { name: en.queryOriginal }).at(-1)!)
+  expect(query).toHaveBeenCalledOnce()
+})
+
+it('renders empty, loading and stale persistent-request pages distinctly', () => {
+  const base = props()
+  const empty: SimulationProductRequestsPage = { runId: page.runId, snapshotRevision: 1, total: 0, items: [] }
+  const view = render(<PersistentRequests {...base} value={{ value: empty, loading: true, stale: false }} />)
+  expect(view.getByRole('status').textContent).toBe(en.loading)
+  view.rerender(<PersistentRequests {...base} value={{ value: empty, loading: false, stale: true }} />)
+  expect(view.getByText(en.stale)).toBeDefined()
+  expect(view.getByText(en['requests.empty'])).toBeDefined()
+})
+
+it('paginates to a next page and refreshes with an exact first-page selector', () => {
+  const base = props(), read = vi.fn(async () => {})
+  const next: SimulationProductRequestsPage = { runId: page.runId, snapshotRevision: 2, total: 2,
+    items: page.items, nextCursor: 'next' as never }
+  const view = render(<PersistentRequests {...base} value={{ value: next, loading: false, stale: false }} read={read} />)
+  fireEvent.click(view.getByRole('button', { name: en.next }))
+  expect(read).toHaveBeenLastCalledWith({ runId: page.runId, limit: 1, cursor: 'next', expectedRevision: 2 })
+  fireEvent.click(view.getByRole('button', { name: en['requests.refresh'] }))
+  expect(read).toHaveBeenLastCalledWith({ runId: page.runId, limit: 1 })
+})
+
+it('labels a checkpoint receipt and disables query and retry while disconnected', () => {
+  const base = props()
+  const checkpoint: SimulationProductRequestsPage = { runId: page.runId, snapshotRevision: 1, total: 1,
+    items: [{ runId: page.runId, commandId: 'checkpoint' as never, kind: 'checkpoint', acceptedAt: 1,
+      status: 'accepted', checkpointId: 'checkpoint' as never }] }
+  const view = render(<PersistentRequests {...base} value={{ value: checkpoint, loading: false, stale: false }} connected={false} />)
+  expect(view.getByText(`${en.checkpointId}:`)).toBeDefined()
+  expect((view.getByRole('button', { name: en['requests.query'] }) as HTMLButtonElement).disabled).toBe(true)
+})
+
+it('ignores a page from a different run and triggers refreshRun only after a retry receipt completes', async () => {
+  const base = props()
+  const other: SimulationProductRequestsPage = { ...page, runId: 'other' as never }
+  const view = render(<PersistentRequests {...base} value={{ value: other, loading: false, stale: false }} />)
+  expect(view.queryByText(en['requests.empty'])).toBeNull()
+  view.rerender(<PersistentRequests {...base} />)
+  const submit = vi.fn(async () => ({ command: selector, pending: false, unknown: false, notFound: false,
+    receipt: { kind: 'request', value: { ...page.items[0]!, status: 'completed' } } })) as never
+  view.rerender(<PersistentRequests {...base} submit={submit} />)
+  fireEvent.click(view.getByRole('button', { name: en['requests.retry'] }))
+  await waitFor(() => { expect(base.refreshRun).toHaveBeenCalledOnce() })
+})
+
+it('reports a command capacity error when retry retain throws', async () => {
+  const base = props()
+  const view = render(<PersistentRequests {...base} retain={vi.fn(() => { throw new Error('No capacity') })} />)
+  fireEvent.click(view.getByRole('button', { name: en['requests.retry'] }))
+  await view.findByText(en.commandCapacity)
 })

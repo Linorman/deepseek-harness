@@ -1,6 +1,7 @@
 /** Frame-wide dynamic Plugin inventory, approvals, versions, and lifecycle actions. */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import {
   IconCheckOutline16, IconCloseOutline16, IconCordisPluginOutline14, IconPlayOutline16,
@@ -120,6 +121,7 @@ export function CordisPanel({
   const [actionErrors, setActionErrors] = useState<ReadonlyMap<CordisDynamicPluginId, string>>(new Map())
   const visibleRequests = useRef<Set<ApprovalRequestId>>(new Set())
   const rootRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
   const [anchor, setAnchor] = useState<{ left: number; bottom: number }>()
 
   // The panel is position: fixed (the sidebar clips overflow), so it hugs the
@@ -137,7 +139,7 @@ export function CordisPanel({
     return () => { window.removeEventListener('resize', place) }
   }, [open])
 
-  useDismissOnOutsidePointer(rootRef, open, setOpen)
+  useDismissOnOutsidePointer(rootRef, open, setOpen, panelRef)
 
   useEffect(() => {
     const now = new Set<ApprovalRequestId>()
@@ -440,8 +442,8 @@ export function CordisPanel({
 
   return (
     <div ref={rootRef} className={wide ? css.layer : `${css.layer} ${css.rail}`}>
-      {open && anchor !== undefined && (
-        <section className={css.panel} style={anchor} data-cordis-panel aria-label={t('panel.title')}>
+      {open && anchor !== undefined && createPortal((
+        <section ref={panelRef} className={css.panel} style={anchor} data-cordis-panel aria-label={t('panel.title')}>
           <header className={css.header}>
             <span className={css.title}>{t('panel.title')}</span>
           </header>
@@ -465,7 +467,7 @@ export function CordisPanel({
             )}
           </div>
         </section>
-      )}
+      ), rootRef.current?.closest('dialog[open]') ?? document.body)}
       <div className={css.footerButtons}>
         <button
           type="button"

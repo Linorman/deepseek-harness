@@ -45,7 +45,9 @@ describe('channel message media slot', () => {
     let signal: AbortSignal | undefined
     const load: TeamChannelMessageProps['loadAttachment'] = async (_id, inputSignal) => {
       signal = inputSignal
-      return await new Promise((_resolve, reject) => { inputSignal?.addEventListener('abort', () => { reject(inputSignal.reason) }, { once: true }) })
+      return await new Promise((_resolve, reject) => {
+        inputSignal?.addEventListener('abort', () => { reject(new Error('Image fetch cancelled', { cause: inputSignal.reason })) }, { once: true })
+      })
     }
     const view = render(<ChannelMessage {...props(load)} />)
     await waitFor(() => { expect(signal).toBeDefined() })

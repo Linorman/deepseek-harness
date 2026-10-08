@@ -13,7 +13,7 @@ import type { ToolSchema } from '@clocky/clocky-llm'
 import AgentRegistry from '@clocky/clocky-agent'
 import type { Agent } from '@clocky/clocky-agent'
 import { createScope } from '@clocky/clocky-scope'
-import SessionStore, { SessionId } from '@clocky/clocky-session'
+import SessionStore, { SessionId, type Session } from '@clocky/clocky-session'
 import SqliteSessionQueryEngine from '@clocky/clocky-session-query-sqlite'
 import SystemPrompt from '@clocky/clocky-system-prompt'
 import ToolRuntime, { type Config as ToolsConfig } from '@clocky/clocky-tools'
@@ -107,6 +107,22 @@ async function mountCatalogChildScope(
     mountScoped(createScope(inner, key).ctx)
   }, { inject }))
   catalogChildScopes.set(ctx, key)
+}
+
+/** Install the registered synthetic Agent needed by scoped Team schema harvest.
+ * @param ctx - Catalog context with Agent and Session services.
+ * @param session - Synthetic Session whose metadata selects the tool scope.
+ * @param inject - Services required before registration.
+ * @returns the registered synthetic Agent.
+ */
+async function registerCatalogAgent(ctx: Context, session: Session, inject: string[] = ['tools', 'agents']): Promise<Agent> {
+  let agent!: Agent
+  await ctx.plugin(Object.assign((inner: Context) => {
+    agent = { id: session.id, session, options: {}, status: 'idle' } as unknown as Agent
+    Object.assign(agent, { ctx: createScope(inner, agent).ctx })
+    inner.agents.register(agent)
+  }, { inject }))
+  return agent
 }
 
 /**
@@ -434,17 +450,7 @@ const TOOL_PACKAGES: ToolPackage[] = [
       const session = ctx.sessions.create(SessionId('tool-catalog-team-task-agent'), {
         meta: { teamId: 'team-tool-catalog', participantId: 'participant-tool-catalog' },
       })
-      let agent!: Agent
-      await ctx.plugin(Object.assign((inner: Context) => {
-        agent = {
-          id: session.id,
-          session,
-          options: {},
-          status: 'idle',
-        } as unknown as Agent
-        Object.assign(agent, { ctx: createScope(inner, agent).ctx })
-        inner.agents.register(agent)
-      }, { inject: ['tools', 'agents', 'teams', 'teamLinks'] }))
+      const agent = await registerCatalogAgent(ctx, session, ['tools', 'agents', 'teams', 'teamLinks'])
       await ctx.plugin(NativeToolTeam)
       catalogChildScopes.set(ctx, agent)
     },
@@ -462,17 +468,7 @@ const TOOL_PACKAGES: ToolPackage[] = [
       await ctx.plugin(AgentRegistry)
       await ctx.plugin(SessionStore)
       const session = ctx.sessions.create(SessionId('tool-catalog-channel-summary-coordinator'))
-      let agent!: Agent
-      await ctx.plugin(Object.assign((inner: Context) => {
-        agent = {
-          id: session.id,
-          session,
-          options: {},
-          status: 'idle',
-        } as unknown as Agent
-        Object.assign(agent, { ctx: createScope(inner, agent).ctx })
-        inner.agents.register(agent)
-      }, { inject: ['tools', 'agents'] }))
+      const agent = await registerCatalogAgent(ctx, session)
       ctx.provide('teamRuns', {
         tryCoordinatorGoalAuthority: () => ({}),
       } as never)
@@ -495,17 +491,7 @@ const TOOL_PACKAGES: ToolPackage[] = [
       await ctx.plugin(AgentRegistry)
       await ctx.plugin(SessionStore)
       const session = ctx.sessions.create(SessionId('tool-catalog-team-goal-coordinator'))
-      let agent!: Agent
-      await ctx.plugin(Object.assign((inner: Context) => {
-        agent = {
-          id: session.id,
-          session,
-          options: {},
-          status: 'idle',
-        } as unknown as Agent
-        Object.assign(agent, { ctx: createScope(inner, agent).ctx })
-        inner.agents.register(agent)
-      }, { inject: ['tools', 'agents'] }))
+      const agent = await registerCatalogAgent(ctx, session)
       ctx.provide('teamRuns', {
         tryCoordinatorGoalAuthority: () => ({}),
       } as never)
@@ -526,17 +512,7 @@ const TOOL_PACKAGES: ToolPackage[] = [
       await ctx.plugin(AgentRegistry)
       await ctx.plugin(SessionStore)
       const session = ctx.sessions.create(SessionId('tool-catalog-team-run-coordinator'))
-      let agent!: Agent
-      await ctx.plugin(Object.assign((inner: Context) => {
-        agent = {
-          id: session.id,
-          session,
-          options: {},
-          status: 'idle',
-        } as unknown as Agent
-        Object.assign(agent, { ctx: createScope(inner, agent).ctx })
-        inner.agents.register(agent)
-      }, { inject: ['tools', 'agents'] }))
+      const agent = await registerCatalogAgent(ctx, session)
       ctx.provide('teamRuns', {
         coordinatorTaskAuthority: () => ({}),
       } as never)

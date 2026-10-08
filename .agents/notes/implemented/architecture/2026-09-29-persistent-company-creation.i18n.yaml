@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-29-persistent-company-creation.md
-2026-09-29-persistent-company-creation.md: 6758fad0b8d5f237de91218676d1474cc53d8fbf
-2026-09-29-persistent-company-creation.zh.md: 1f8e1ca20cf0f124792b5da75bf6f5b84d46d1d4
+2026-09-29-persistent-company-creation.md: af4a21de7f5855206e6bb783640d41a609ac0c0c
+2026-09-29-persistent-company-creation.zh.md: 7cbcddf68b7683ee97e4bf5a57babb8817f9e3fb

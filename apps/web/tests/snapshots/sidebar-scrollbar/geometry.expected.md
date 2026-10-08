@@ -9,8 +9,8 @@
 - scrollbar-width: auto
 - scrollbar-color: auto
 - ::-webkit-scrollbar-thumb:hover declarations: var(--clocky-scrollbar-thumb-hover)
-- --clocky-scrollbar-thumb, pointer over the list: rgb(229, 229, 229)
-- --clocky-scrollbar-thumb-hover, pointer over the list: rgb(212, 212, 212)
+- --clocky-scrollbar-thumb, pointer over the list: rgb(218, 222, 229)
+- --clocky-scrollbar-thumb-hover, pointer over the list: rgb(195, 201, 210)
 - list overflows: true
 - reserved band: 8px
 - scrollbar inset from the sidebar edge: 2px
@@ -28,8 +28,8 @@
 - scrollbar-width: auto
 - scrollbar-color: auto
 - ::-webkit-scrollbar-thumb:hover declarations: var(--clocky-scrollbar-thumb-hover)
-- --clocky-scrollbar-thumb, pointer over the list: rgb(84, 85, 87)
-- --clocky-scrollbar-thumb-hover, pointer over the list: rgb(101, 103, 107)
+- --clocky-scrollbar-thumb, pointer over the list: rgb(95, 104, 118)
+- --clocky-scrollbar-thumb-hover, pointer over the list: rgb(125, 133, 146)
 - list overflows: true
 - reserved band: 8px
 - scrollbar inset from the sidebar edge: 2px

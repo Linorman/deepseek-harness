@@ -30,16 +30,16 @@
   overflow: hidden;
   width: 100%;
   padding: 2px 0;
-  border-radius: 12px 12px 0 0;
-  background: var(--clocky-specific-tip);
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  border-radius: var(--clocky-radius-lg) var(--clocky-radius-lg) 0 0;
+  background: var(--clocky-bg-sunken);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .panel::after {
   position: absolute;
   inset: 0;
-  border: 1px solid var(--clocky-alias-border-l1);
+  border: 1px solid var(--clocky-border-subtle);
   /* The input card's own top border closes the shape below. */
   border-bottom: none;
   border-radius: inherit;
@@ -58,15 +58,15 @@
      header's chevron (12px body padding there). */
   padding: 4px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
   background: transparent;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   text-align: left;
   cursor: pointer;
 }
 
 .header:focus-visible {
-  outline: 2px solid var(--clocky-alias-label-tertiary);
+  outline: 2px solid var(--clocky-fg-tertiary);
   outline-offset: -2px;
 }
 
@@ -78,16 +78,16 @@
   display: grid;
   flex: none;
   place-items: center;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .count {
   flex: 1 1 auto;
   min-width: 0;
   font-family: Inter, var(--clocky-font-family);
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
   font-weight: 500;
-  line-height: 24px;
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .chevron {
@@ -96,7 +96,7 @@
   place-items: center;
   width: 14px;
   height: 14px;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .list {
@@ -115,24 +115,24 @@
   width: 100%;
   height: 36px;
   padding: 4px 5px 4px 12px;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
 }
 
 .row + .row {
-  box-shadow: inset 0 1px 0 var(--clocky-alias-border-l1);
+  box-shadow: inset 0 1px 0 var(--clocky-border-subtle);
 }
 
 .preview,
 .editor {
   flex: 1 1 auto;
   min-width: 0;
-  font: var(--clocky-font-xs-13);
+  font: var(--clocky-type-body-small);
   font-family: Inter, var(--clocky-font-family);
 }
 
 .preview {
   overflow: hidden;
-  color: var(--clocky-alias-label-primary-dimmed);
+  color: var(--clocky-fg-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
   word-break: break-word;
@@ -142,15 +142,15 @@
   box-sizing: border-box;
   height: 28px;
   padding: 0 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 6px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-sm);
   outline: none;
-  background: var(--clocky-alias-bg-base);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-canvas);
+  color: var(--clocky-fg-primary);
 }
 
 .editor:focus {
-  border-color: var(--clocky-alias-state-business-primary);
+  border-color: var(--clocky-accent-bg);
 }
 
 .actions {
@@ -168,18 +168,18 @@
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
 .action:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .action:focus-visible {
-  outline: 2px solid var(--clocky-alias-label-tertiary);
+  outline: 2px solid var(--clocky-fg-tertiary);
   outline-offset: -2px;
 }
 

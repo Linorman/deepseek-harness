@@ -1,0 +1,41 @@
+.list {
+  margin: 0;
+  min-width: 0;
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: minmax(96px, max-content) minmax(0, 1fr);
+  column-gap: var(--clocky-space-4);
+  row-gap: var(--clocky-space-2);
+}
+
+.rows .item {
+  display: contents;
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--clocky-space-2) var(--clocky-space-5);
+}
+
+.inline .item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--clocky-space-2);
+  min-width: 0;
+}
+
+.label {
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-caption);
+}
+
+.value {
+  margin: 0;
+  min-width: 0;
+  color: var(--clocky-fg-primary);
+  font: var(--clocky-type-body-small);
+  overflow-wrap: anywhere;
+}

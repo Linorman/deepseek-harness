@@ -68,6 +68,26 @@ it('clears retired bodies, ignores held responses and rejects obsolete read vers
   } finally { await h.ctx.fiber.dispose() }
 })
 
+it('rejects an original journal page from an older observed read policy', async () => {
+  const h = await fixture()
+  try {
+    h.watch.mockResolvedValueOnce(ok(hint('current')))
+    h.runtime.state.set({ ...h.runtime.state.getSnapshot(), run: {
+      scope: JSON.stringify(['run', runId]), loading: false, stale: false,
+    } })
+    const stop = h.runtime.observe(runId, { waitMs: 10, retryMs: 1 })
+    await vi.waitFor(() => { expect(h.runtime.state.getSnapshot().observation.value?.readVersion).toBe('current') })
+    vi.spyOn(h.api.simulations, 'records').mockResolvedValueOnce(ok({ runId, mode: 'original',
+      selection: { sequence: 2 }, snapshotRevision: 1, readVersion: 'retired', observedAt: 1,
+      bodyAccess: 'allowed', totalRecords: 0, items: [],
+    } as never))
+    await h.runtime.readRecords({ runId, mode: 'original', sequence: 2 })
+    expect(h.runtime.state.getSnapshot().record.value).toBeUndefined()
+    expect(h.runtime.state.getSnapshot().record.error).toBe('stale')
+    stop()
+  } finally { await h.ctx.fiber.dispose() }
+})
+
 it('marks later world observations stale without clearing permitted historical text or moving its page', async () => {
   const h = await fixture()
   try {
@@ -109,7 +129,7 @@ it('retires knowledge bodies on later audience revisions even when historical co
     const changed = Promise.withResolvers<ReturnType<typeof ok<SimulationProductWatchResult>>>()
     h.watch.mockResolvedValueOnce(ok(hint())).mockReturnValueOnce(changed.promise)
     h.runtime.observe(runId, { waitMs: 10, retryMs: 1 })
-    await vi.waitFor(() => expect(h.watch).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() =>{  expect(h.watch).toHaveBeenCalledTimes(2) })
     const value: SimulationProductObjectInspection = { runId, snapshotRevision: 1, observedAt: 1,
       selection: { collection: 'entities', id: 'actor' as never, section: 'knowledge' }, status: 'found', value: {
         collection: 'entities', id: 'actor' as never, section: 'knowledge', readVersion: 'v1' as never, bodyAccess: 'allowed',
@@ -124,7 +144,7 @@ it('retires knowledge bodies on later audience revisions even when historical co
     await h.runtime.inspectObject(selected)
     expect(h.runtime.state.getSnapshot().object.value).toEqual(value)
     changed.resolve(ok(hint('v1', 'changed', 2)))
-    await vi.waitFor(() => expect(h.runtime.state.getSnapshot().object.value).toBeUndefined())
+    await vi.waitFor(() =>{  expect(h.runtime.state.getSnapshot().object.value).toBeUndefined() })
     read.mockResolvedValueOnce(ok(value))
     await h.runtime.inspectObject(selected)
     expect(h.runtime.state.getSnapshot().object.value).toBeUndefined()

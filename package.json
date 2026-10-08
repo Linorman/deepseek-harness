@@ -106,6 +106,7 @@
     "verify-runtime-closure": "tsx scripts/verify-runtime-closure.ts",
     "verify-legacy-cutover": "tsx scripts/verify-legacy-cutover.ts",
     "verify-client-packages": "tsx scripts/verify-client-packages.ts",
+    "verify-client-style-tokens": "tsx scripts/verify-client-style-tokens.ts",
     "verify-vendored-links": "tsx scripts/verify-vendored-links.ts",
     "verify-cordis-config": "tsx scripts/verify-cordis-config.ts",
     "rescope-vendor": "tsx scripts/rescope-vendor.ts",

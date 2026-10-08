@@ -12,6 +12,8 @@
     "builtin": true
   },
   "ignorePatterns": [
+    "**/.tmp/**",
+    "**/.tmp-*/**",
     "**/lib/**",
     "**/node_modules/**",
     "**/.sessions/**",

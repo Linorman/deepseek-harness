@@ -51,7 +51,7 @@ import type {
   TeamId,
   TeamViewPolicy,
 } from '@clocky/clocky-team'
-import { activationIdSchema, channelInvitationIdempotencyKeySchema, channelSummaryIdempotencyKeySchema, fingerprintChannelManifest, fingerprintTeamHumanActorPayload, jsonObjectSchema, participantIdSchema, teamAuthorityGrantSchema, teamClosureIdempotencyKeySchema, teamHumanActionIdSchema, teamHumanActionSourceIdSchema, teamTaskCreateIdempotencyKeySchema, teamUsageSampleIdSchema, teamWorkspaceAllocationIdSchema, teamWorkflowPlanIdempotencyKeySchema, teamWorkflowPlanSchema } from '@clocky/clocky-team'
+import { activationIdSchema, channelInvitationIdempotencyKeySchema, channelSummaryIdempotencyKeySchema, fingerprintChannelManifest, fingerprintTeamHumanActorPayload, jsonObjectSchema, participantIdSchema, taskAttemptIdSchema, teamAuthorityGrantSchema, teamClosureIdempotencyKeySchema, teamHumanActionIdSchema, teamHumanActionSourceIdSchema, teamTaskCreateIdempotencyKeySchema, teamUsageSampleIdSchema, teamWorkspaceAllocationIdSchema, teamWorkflowPlanIdempotencyKeySchema, teamWorkflowPlanSchema } from '@clocky/clocky-team'
 import { SessionId } from '@clocky/clocky-session'
 import TeamHub, {
   AUDIT_PROJECTION_FORMAT_VERSION,
@@ -798,6 +798,42 @@ describe('authenticated human goal authority', () => {
       await expect(harness.ctx.teams.updateTeamGoal({ actor: proof, ...changed })).rejects.toMatchObject({
         code: 'TEAM_ACTOR_PROOF_INVALID',
       })
+      const budgetInput = { teamId: created.team.id,
+        expectedRevision: (await harness.ctx.teams.getTeam({ teamId: created.team.id })).goal.revision,
+        budgets: { maxCostUnits: 5 } }
+      const budgetBound = { teamId: budgetInput.teamId, operation: 'goal-mutate' as const,
+        fence: { kind: 'revision' as const, revision: budgetInput.expectedRevision },
+        payload: jsonObjectSchema.parse(structuredClone(budgetInput)) }
+      const budgetProof = Object.freeze({}) as TeamHumanActorProof
+      proofs.set(budgetProof, { teamId: budgetInput.teamId, participantId: human.id,
+        operation: budgetBound.operation, payloadFingerprint: fingerprintTeamHumanActorPayload(budgetBound),
+        fence: budgetBound.fence })
+      await expect(harness.ctx.teams.updateTeamGoal({ actor: budgetProof, ...budgetInput }))
+        .resolves.toMatchObject({ goal: { budgets: budgetInput.budgets } })
+      const blockedInput = { teamId: created.team.id,
+        expectedRevision: (await harness.ctx.teams.getTeam({ teamId: created.team.id })).goal.revision,
+        phase: 'blocked' as const, blocker: { code: 'WAITING', message: 'Awaiting human review.' } }
+      const blockedBound = { teamId: blockedInput.teamId, operation: 'goal-mutate' as const,
+        fence: { kind: 'revision' as const, revision: blockedInput.expectedRevision },
+        payload: jsonObjectSchema.parse(structuredClone(blockedInput)) }
+      const blockedProof = Object.freeze({}) as TeamHumanActorProof
+      proofs.set(blockedProof, { teamId: blockedInput.teamId, participantId: human.id,
+        operation: blockedBound.operation, payloadFingerprint: fingerprintTeamHumanActorPayload(blockedBound),
+        fence: blockedBound.fence })
+      await expect(harness.ctx.teams.transitionTeamGoalPhase({ actor: blockedProof, ...blockedInput }))
+        .resolves.toMatchObject({ goal: { phase: 'blocked', blocker: blockedInput.blocker } })
+      const resumeInput = { teamId: created.team.id,
+        expectedRevision: (await harness.ctx.teams.getTeam({ teamId: created.team.id })).goal.revision,
+        phase: 'active' as const }
+      const resumeBound = { teamId: resumeInput.teamId, operation: 'goal-mutate' as const,
+        fence: { kind: 'revision' as const, revision: resumeInput.expectedRevision },
+        payload: jsonObjectSchema.parse(structuredClone(resumeInput)) }
+      const resumeProof = Object.freeze({}) as TeamHumanActorProof
+      proofs.set(resumeProof, { teamId: resumeInput.teamId, participantId: human.id,
+        operation: resumeBound.operation, payloadFingerprint: fingerprintTeamHumanActorPayload(resumeBound),
+        fence: resumeBound.fence })
+      await expect(harness.ctx.teams.transitionTeamGoalPhase({ actor: resumeProof, ...resumeInput }))
+        .resolves.toMatchObject({ goal: { phase: 'active' } })
       const terminalInput = {
         teamId: created.team.id,
         expectedRevision: (await harness.ctx.teams.getTeam({ teamId: created.team.id })).goal.revision,
@@ -2031,6 +2067,8 @@ for (const backend of ['json', 'sqlite'] as const) {
       await stream.close()
       await rawBackend.close()
       const second = await setup(backend, root)
+      await expect(second.ctx.teams.resolveHumanReadAuthority({ teamId: created.team.id,
+        principalId: 'durable-owner' as never })).rejects.toMatchObject({ code: 'TEAM_JOURNAL_MALFORMED' })
       await expect(second.ctx.teams.getTeam({ teamId: created.team.id }))
         .rejects.toMatchObject({ code: 'TEAM_JOURNAL_MALFORMED' })
       await second.dispose()
@@ -2547,10 +2585,26 @@ for (const backend of ['json', 'sqlite'] as const) {
         })
         channel = await first.ctx.teams.getChannel({ channelId: channel.manifest.id })
       }
+      await expect(first.ctx.teams.compactChannel({
+        teamId: seeded.team.team.id,
+        channelId: channel.manifest.id,
+        expectedCursor: channel.cursor,
+        throughSequence: 1,
+        actor: maintenance.issue({ kind: 'scheduler-channel-compaction', teamId: seeded.team.team.id,
+          channelId: channel.manifest.id, expectedCursor: channel.cursor, throughSequence: 1 }),
+      })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
       const closed = await closeTestChannel(first.ctx, {
         channelId: channel.manifest.id,
         expectedCursor: channel.cursor,
       })
+      await expect(first.ctx.teams.compactChannel({
+        teamId: seeded.team.team.id,
+        channelId: closed.manifest.id,
+        expectedCursor: closed.cursor,
+        throughSequence: closed.cursor,
+        actor: maintenance.issue({ kind: 'scheduler-channel-compaction', teamId: seeded.team.team.id,
+          channelId: closed.manifest.id, expectedCursor: closed.cursor, throughSequence: closed.cursor }),
+      })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
       const compacted = await first.ctx.teams.compactChannel({
         teamId: seeded.team.team.id,
         channelId: closed.manifest.id,
@@ -2587,6 +2641,22 @@ for (const backend of ['json', 'sqlite'] as const) {
       expect(auditSuffix.firstCursor).toBe(8)
       expect(auditSuffix.items.map(item => item.cursor)).toEqual([8, 9])
       const terminalTeam = await completeDurableFixture(first.ctx, seeded.team.team.id)
+      const finalChannelId = terminalTeam.channelIds.find(id => id !== closed.manifest.id)
+      if (finalChannelId === undefined) throw new Error('Completed Team did not retain its final channel')
+      const finalChannel = await first.ctx.teams.getChannel({ channelId: finalChannelId })
+      expect(finalChannel.phase).toBe('closed')
+      const finalRecords = await first.ctx.teams.readChannel({ channelId: finalChannelId, afterCursor: -1 })
+      const finalEnvelope = finalRecords.records.find(record => record.type === 'channel/envelope' && record.envelope.kind === 'final')
+      if (finalEnvelope?.type !== 'channel/envelope') throw new Error('Completed Team lost its admitted final Envelope')
+      await expect(first.ctx.teams.compactChannel({
+        teamId: seeded.team.team.id,
+        channelId: finalChannelId,
+        expectedCursor: finalChannel.cursor,
+        throughSequence: finalEnvelope.envelope.sequence,
+        actor: maintenance.issue({ kind: 'scheduler-channel-compaction', teamId: seeded.team.team.id,
+          channelId: finalChannelId, expectedCursor: finalChannel.cursor,
+          throughSequence: finalEnvelope.envelope.sequence }),
+      })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
       const compactedTeam = await first.ctx.teams.compactTeam({
         teamId: terminalTeam.team.id,
         expectedCursor: terminalTeam.team.cursor,
@@ -2646,6 +2716,41 @@ for (const backend of ['json', 'sqlite'] as const) {
       } finally {
         await second.dispose()
       }
+    })
+    it('retains a closed channel WAL while turn delivery is pending', async () => {
+      const harness = await setup(backend)
+      harness.ctx.teams.registerAdapter(pendingDirectV3Adapter)
+      const maintenance = schedulerMaintenanceAuthority(harness.ctx)
+      try {
+        const seeded = await populated(harness.ctx)
+        const opened = await openActiveTestChannel(harness.ctx, {
+          teamId: seeded.team.team.id,
+          expectedCursor: seeded.team.team.cursor,
+          adapter: { type: pendingDirectV3Adapter.type, version: pendingDirectV3Adapter.version },
+          participants: [{ id: seeded.participant.id, role: 'worker' }],
+          limits: {},
+        }, [seeded.participant.id])
+        const envelope = await harness.ctx.teams.postChannelEnvelope({
+          actor: await postActor(harness.ctx, seeded.team.team.id, seeded.participant.id),
+          expectedCursor: opened.cursor,
+          draft: { channelId: opened.manifest.id, audience: [seeded.participant.id], kind: 'message',
+            payload: { text: 'Retain this pending delivery.' }, delivery: 'turn' },
+        })
+        const closed = await closeTestChannel(harness.ctx, {
+          channelId: opened.manifest.id, expectedCursor: envelope.sequence,
+        })
+        await expect(harness.ctx.teams.compactChannel({
+          teamId: seeded.team.team.id,
+          channelId: closed.manifest.id,
+          expectedCursor: closed.cursor,
+          throughSequence: 0,
+          actor: maintenance.issue({ kind: 'scheduler-channel-compaction', teamId: seeded.team.team.id,
+            channelId: closed.manifest.id, expectedCursor: closed.cursor, throughSequence: 0 }),
+        })).rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+        const replay = await harness.ctx.teams.readChannel({ channelId: closed.manifest.id, afterCursor: -1 })
+        expect(replay.records.find(record => record.type === 'channel/envelope')).toMatchObject({ envelope: { id: envelope.id } })
+        expect(harness.ctx.teams.getMetrics()).toMatchObject({ channelCompactions: 0 })
+      } finally { maintenance.dispose(); await harness.dispose() }
     })
     it('revalidates a scheduler compaction proof after close policy before destructive maintenance', async () => {
       const harness = await setup(backend)
@@ -2968,6 +3073,32 @@ for (const backend of ['json', 'sqlite'] as const) {
       })
       await expect(summarizeTestChannel(second.ctx, { ...request,
         requester: await postActor(second.ctx, seeded.team.team.id, coordinator.id) })).resolves.toEqual(summary)
+      for (const envelope of [firstEnvelope, secondEnvelope]) {
+        for (const recipient of [seeded.participant.id, coordinator.id]) {
+          const pending = await second.ctx.teams.getChannel({ channelId: channel.manifest.id })
+          await second.ctx.teams.ackChannelEnvelope({
+            actor: await postActor(second.ctx, seeded.team.team.id, recipient),
+            channelId: channel.manifest.id, envelopeId: envelope.id, expectedCursor: pending.cursor,
+          })
+        }
+      }
+      const current = await second.ctx.teams.getChannel({ channelId: channel.manifest.id })
+      const closed = await closeTestChannel(second.ctx, {
+        channelId: current.manifest.id, expectedCursor: current.cursor,
+      })
+      const maintenance = schedulerMaintenanceAuthority(second.ctx)
+      try {
+        await expect(second.ctx.teams.compactChannel({
+          teamId: seeded.team.team.id,
+          channelId: closed.manifest.id,
+          expectedCursor: closed.cursor,
+          throughSequence: firstEnvelope.sequence,
+          actor: maintenance.issue({ kind: 'scheduler-channel-compaction', teamId: seeded.team.team.id,
+            channelId: closed.manifest.id, expectedCursor: closed.cursor, throughSequence: firstEnvelope.sequence }),
+        })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+        const replay = await second.ctx.teams.readChannel({ channelId: closed.manifest.id, afterCursor: -1 })
+        expect(replay.records.find(record => record.type === 'channel/summary')).toEqual(summary)
+      } finally { maintenance.dispose() }
       await second.dispose()
     })
     it('keeps Team, member, task, and channel product reads bounded across restart', async () => {
@@ -3014,12 +3145,16 @@ for (const backend of ['json', 'sqlite'] as const) {
       const members3 = await first.ctx.teams.listParticipantsPage({ teamId: state.team.id, afterCursor: members2.nextCursor!, limit: 1 })
       expect(members3.items).toHaveLength(1)
       expect(members3.nextCursor).toBeUndefined()
+      expect(await first.ctx.teams.listParticipantsPage({ teamId: state.team.id, afterCursor: 99, limit: 1 }))
+        .toEqual({ items: [] })
       const tasks1 = await first.ctx.teams.listTasksPage({ teamId: state.team.id, afterCursor: -1, limit: 1 })
       expect(tasks1.items).toHaveLength(1)
       expect(tasks1.nextCursor).toBe(0)
       const tasks2 = await first.ctx.teams.listTasksPage({ teamId: state.team.id, afterCursor: tasks1.nextCursor!, limit: 1 })
       expect(tasks2.items).toHaveLength(1)
       expect(tasks2.nextCursor).toBeUndefined()
+      expect(await first.ctx.teams.listTasksPage({ teamId: state.team.id, afterCursor: 99, limit: 1 }))
+        .toEqual({ items: [] })
       const channel1 = await first.ctx.teams.readChannelPage({ channelId: channel.manifest.id, afterCursor: -1, limit: 1 })
       expect(channel1.records).toHaveLength(1)
       expect(channel1.nextCursor).toBe(0)
@@ -4321,17 +4456,28 @@ describe('TeamHub commands', () => {
         uri: 'artifact://hub-visible-artifact', visibility: 'team' as const,
         sourceAttemptId: lease.attemptId,
       }
+      const secondArtifact = { ...artifact, id: 'hub-second-artifact', uri: 'artifact://hub-second-artifact' }
+      const privateArtifact = { ...artifact, id: 'hub-private-artifact', visibility: 'private' as const }
       await harness.ctx.teams.settleTaskAttempt({
         actor,
         taskId: running.id,
         expectedRevision: running.revision,
         attemptId: lease.attemptId,
-        outcome: { kind: 'completed', result: { summary: 'Published one artifact.', artifacts: [artifact] } },
+        outcome: { kind: 'completed', result: { summary: 'Published visible artifacts.',
+          artifacts: [artifact, secondArtifact, privateArtifact] } },
       })
       await expect(harness.ctx.teams.getArtifact({ teamId: seeded.team.team.id, artifactId: artifact.id }))
         .resolves.toEqual(artifact)
       await expect(harness.ctx.teams.getArtifact({ teamId: seeded.team.team.id, artifactId: 'missing-artifact' }))
         .resolves.toBeUndefined()
+      await expect(harness.ctx.teams.getArtifact({ teamId: seeded.team.team.id, artifactId: privateArtifact.id }))
+        .resolves.toBeUndefined()
+      const firstPage = await harness.ctx.teams.listArtifactsPage({ teamId: seeded.team.team.id, afterCursor: -1, limit: 1 })
+      expect(firstPage).toEqual({ items: [artifact], nextCursor: 0 })
+      expect(await harness.ctx.teams.listArtifactsPage({ teamId: seeded.team.team.id,
+        afterCursor: firstPage.nextCursor ?? -1, limit: 1 })).toEqual({ items: [secondArtifact] })
+      expect(await harness.ctx.teams.listArtifactsPage({ teamId: seeded.team.team.id, afterCursor: 99, limit: 1 }))
+        .toEqual({ items: [] })
     } finally {
       await harness.dispose()
     }
@@ -5393,6 +5539,14 @@ describe('TeamHub commands', () => {
       expectedRevision: assigned.revision,
       attemptId: assigned.lease.attemptId,
     })
+    const beforeSource = await harness.ctx.teams.getTeam({ teamId: seeded.team.team.id })
+    await expect(harness.ctx.teams.settleTaskAttempt({
+      actor: owner, taskId: running.id, expectedRevision: running.revision,
+      attemptId: assigned.lease.attemptId,
+      outcome: { kind: 'completed', result: { summary: 'Ordinary work must not claim integration.',
+        integration: { target: 'main', expectedTarget: 'base-commit', status: 'integrated', targetVersion: 'invented' } } },
+    })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    expect((await harness.ctx.teams.getTeam({ teamId: seeded.team.team.id })).team.cursor).toBe(beforeSource.team.cursor)
     const source = await harness.ctx.teams.settleTaskAttempt({
       actor: owner,
       taskId: running.id,
@@ -5405,6 +5559,37 @@ describe('TeamHub commands', () => {
       throw new Error('integration source fixture did not retain a completed result')
     }
     let state = await harness.ctx.teams.getTeam({ teamId: source.teamId })
+    const proposal = await createTestCoordinatorTask(harness.ctx, {
+      teamId: source.teamId, expectedCursor: state.team.cursor,
+      subject: 'Propose integration of the source change',
+      description: 'Retain a proposal rather than claim the target was updated.',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [],
+      workspaceMode: 'worktree', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+      integration: { sourceTaskId: source.id, sourceAttemptId: sourceAttempt.id,
+        provider: 'worktree', target: 'main', expectedTarget: 'base-commit', mode: 'proposal' },
+    })
+    const assignedProposal = await assignTestTask(harness.ctx, { teamId: source.teamId,
+      taskId: proposal.id, expectedRevision: proposal.revision, participantId: seeded.participant.id,
+      activationId, leaseDurationMs: 10_000 })
+    if (assignedProposal.lease === undefined) throw new Error('proposal task fixture requires an assigned lease')
+    owner = await postActor(harness.ctx, source.teamId, seeded.participant.id)
+    const runningProposal = await harness.ctx.teams.startTaskAttempt({ actor: owner,
+      taskId: assignedProposal.id, expectedRevision: assignedProposal.revision,
+      attemptId: assignedProposal.lease.attemptId })
+    const beforeProposal = await harness.ctx.teams.getTeam({ teamId: source.teamId })
+    await expect(harness.ctx.teams.settleTaskAttempt({ actor: owner, taskId: runningProposal.id,
+      expectedRevision: runningProposal.revision, attemptId: assignedProposal.lease.attemptId,
+      outcome: { kind: 'completed', result: { summary: 'A proposal cannot claim target integration.',
+        integration: { target: 'main', expectedTarget: 'base-commit', status: 'integrated', targetVersion: 'invented' } } },
+    })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    expect((await harness.ctx.teams.getTeam({ teamId: source.teamId })).team.cursor).toBe(beforeProposal.team.cursor)
+    await expect(harness.ctx.teams.settleTaskAttempt({ actor: owner, taskId: runningProposal.id,
+      expectedRevision: runningProposal.revision, attemptId: assignedProposal.lease.attemptId,
+      outcome: { kind: 'completed', result: { summary: 'Proposal retained for review.',
+        integration: { target: 'main', expectedTarget: 'base-commit', status: 'proposed' } } },
+    })).resolves.toMatchObject({ phase: 'completed', attemptHistory: [{ outcome: { kind: 'completed',
+      result: { integration: { status: 'proposed' } } } }] })
+    state = await harness.ctx.teams.getTeam({ teamId: source.teamId })
     const integration = await createTestCoordinatorTask(harness.ctx, {
       teamId: source.teamId,
       expectedCursor: state.team.cursor,
@@ -5466,7 +5651,12 @@ describe('TeamHub commands', () => {
             status: 'integrated',
             targetVersion: 'merged-commit',
             verification: 'integration tests passed',
-            artifacts: [],
+            artifacts: [
+              { id: 'integration-source-artifact', provider: 'worktree', kind: 'report',
+                uri: 'artifact://integration-source', visibility: 'team', sourceAttemptId: sourceAttempt.id },
+              { id: 'integration-current-artifact', provider: 'worktree', kind: 'report',
+                uri: 'artifact://integration-current', visibility: 'team', sourceAttemptId: assignedIntegration.lease.attemptId },
+            ],
           },
         },
       },
@@ -5516,6 +5706,23 @@ describe('TeamHub commands', () => {
       attemptId: assignedInvalid.lease.attemptId,
     })
     const beforeInvalid = await harness.ctx.teams.getTeam({ teamId: source.teamId })
+    const invalidResults = [
+      { summary: 'Missing provider integration result.' },
+      { summary: 'An integration task cannot report only a proposal.', integration: {
+        target: 'main', expectedTarget: 'base-commit', status: 'proposed' as const } },
+      { summary: 'The integration result names unrelated attempt evidence.', integration: {
+        target: 'main', expectedTarget: 'base-commit', status: 'integrated' as const, targetVersion: 'merged-commit',
+        artifacts: [{ id: 'foreign-integration-artifact', provider: 'worktree', kind: 'report' as const,
+          uri: 'artifact://foreign-integration-artifact', visibility: 'team' as const,
+          sourceAttemptId: taskAttemptIdSchema.parse('unrelated-integration-attempt') }],
+      } },
+    ]
+    for (const result of invalidResults) {
+      await expect(harness.ctx.teams.settleTaskAttempt({ actor: owner, taskId: runningInvalid.id,
+        expectedRevision: runningInvalid.revision, attemptId: assignedInvalid.lease.attemptId,
+        outcome: { kind: 'completed', result } })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+      expect((await harness.ctx.teams.getTeam({ teamId: source.teamId })).team.cursor).toBe(beforeInvalid.team.cursor)
+    }
     await expect(harness.ctx.teams.settleTaskAttempt({
       actor: owner,
       taskId: runningInvalid.id,
@@ -5557,6 +5764,28 @@ describe('TeamHub commands', () => {
         },
       },
     })).resolves.toMatchObject({ phase: 'completed' })
+    state = await harness.ctx.teams.getTeam({ teamId: source.teamId })
+    const failedIntegration = await createTestCoordinatorTask(harness.ctx, {
+      teamId: source.teamId, expectedCursor: state.team.cursor,
+      subject: 'Retain a failed integration attempt',
+      description: 'A provider failure has no integration result to claim.',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [],
+      workspaceMode: 'worktree', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+      integration: { sourceTaskId: source.id, sourceAttemptId: sourceAttempt.id,
+        provider: 'worktree', target: 'main', expectedTarget: 'base-commit', mode: 'integrate' },
+    })
+    const assignedFailure = await assignTestTask(harness.ctx, { teamId: source.teamId,
+      taskId: failedIntegration.id, expectedRevision: failedIntegration.revision,
+      participantId: seeded.participant.id, activationId, leaseDurationMs: 10_000 })
+    if (assignedFailure.lease === undefined) throw new Error('failed integration fixture requires an assigned lease')
+    owner = await postActor(harness.ctx, source.teamId, seeded.participant.id)
+    const runningFailure = await harness.ctx.teams.startTaskAttempt({ actor: owner,
+      taskId: assignedFailure.id, expectedRevision: assignedFailure.revision,
+      attemptId: assignedFailure.lease.attemptId })
+    await expect(harness.ctx.teams.settleTaskAttempt({ actor: owner, taskId: runningFailure.id,
+      expectedRevision: runningFailure.revision, attemptId: assignedFailure.lease.attemptId,
+      outcome: { kind: 'failed', failure: { code: 'INTEGRATION_PROVIDER_FAILED', message: 'Target unavailable.' } },
+    })).resolves.toMatchObject({ phase: 'failed', attemptHistory: [{ outcome: { kind: 'failed' } }] })
     const root = harness.root
     await harness.dispose()
     const restarted = await setup('json', root)

@@ -65,7 +65,19 @@ export interface TeamLoadedContext {
 }
 
 /** Controls and projection supplied by the host-facing Team page owner. */
-export interface TeamPageProps {
+/** Shared task inspection and authority controls used by the workspace and task dialog. */
+export interface TaskInspectionProps {
+  readonly taskCapabilities?: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesState | undefined
+  readonly watchTaskCapabilities?: ((input: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesInput) => () => void) | undefined
+  readonly refreshTaskCapabilities?: ITeamTasks['refreshTaskCapabilities']
+  readonly lookupTaskUpdate?: ITeamTasks['lookupTaskUpdate']
+  readonly taskReferences?: import('@clocky/clocky-client-runtime/client').TaskReferencesState | undefined
+  readonly watchTaskReferences?: import('./TeamBrowser.tsx').TeamBrowserInjected['watchTaskReferences']
+  readonly refreshTaskReferences?: (() => Promise<void>) | undefined
+  readonly dependencyQuery?: import('@clocky/clocky-client-runtime/client').TeamTaskQueryState | undefined
+}
+
+export interface TeamPageProps extends TaskInspectionProps {
   readonly attentionPreview?: import('@clocky/clocky-client-runtime/client').TeamAttentionState | undefined
   readonly attention?: import('@clocky/clocky-client-runtime/client').TeamAttentionState | undefined
   readonly watchAttention?: ((teamId: TeamId) => () => void) | undefined
@@ -92,14 +104,6 @@ export interface TeamPageProps {
   readonly memberReadiness?: import('@clocky/clocky-client-runtime/client').TeamMemberReadinessState | undefined
   readonly watchMemberReadiness?: ((input: import('@clocky/clocky-client-runtime/client').TeamMemberReadinessInput) => () => void) | undefined
   readonly refreshMemberReadiness?: ITeamTasks['refreshMemberReadiness']
-  readonly taskCapabilities?: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesState | undefined
-  readonly watchTaskCapabilities?: ((input: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesInput) => () => void) | undefined
-  readonly refreshTaskCapabilities?: ITeamTasks['refreshTaskCapabilities']
-  readonly lookupTaskUpdate?: ITeamTasks['lookupTaskUpdate']
-  readonly taskReferences?: import('@clocky/clocky-client-runtime/client').TaskReferencesState | undefined
-  readonly watchTaskReferences?: import('./TeamBrowser.tsx').TeamBrowserInjected['watchTaskReferences']
-  readonly refreshTaskReferences?: (() => Promise<void>) | undefined
-  readonly dependencyQuery?: import('@clocky/clocky-client-runtime/client').TeamTaskQueryState | undefined
   readonly taskQuery?: import('@clocky/clocky-client-runtime/client').TeamTaskQueryState | undefined
   readonly readTaskQuery?: ITeamTasks['readTaskQuery']
   readonly pauseTaskQuery?: ITeamTasks['pauseTaskQuery']
@@ -233,8 +237,6 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
   }
   const [localTaskView, setLocalTaskView] = useState(DEFAULT_TEAM_VIEW)
   const taskPreferences = taskView ?? localTaskView
-  const taskPreferencesRef = useRef(taskPreferences)
-  taskPreferencesRef.current = taskPreferences
   const view = controlledView ?? taskPreferences.view
   useEffect(() => {
     if (view === 'overview') return watchAttention?.(team.id)
@@ -368,6 +370,7 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
     }
   }, [team.id])
   const loadAudit = async (afterCursor = -1): Promise<void> => {
+    /* v8 ignore next -- Audit controls and activity entries are unavailable without a reader. */
     if (readAudit === undefined) return
     auditRequest.current?.abort()
     const controller = new AbortController()
@@ -386,6 +389,7 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
   }
 
   const loadArtifact = async (reference: TeamArtifactReference): Promise<void> => {
+    /* v8 ignore next -- Artifact actions are disabled without an opener or provider. */
     if (readArtifact !== undefined && reference.provider !== undefined) await readArtifact(reference.id)
   }
 
@@ -396,6 +400,7 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
   }
 
   const confirmDeleteTask = (): void => {
+    /* v8 ignore next -- Confirmation exists only for a target and is disabled during a pending delete. */
     if (deleteTask === undefined || deleteTarget === undefined || deletingTaskId !== undefined) return
     const target = deleteTarget
     const controller = new AbortController()
@@ -407,7 +412,6 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
       if (controller.signal.aborted) return
       setDeleteTarget(undefined)
       setDeletedTaskId(target.id)
-      if (taskPreferencesRef.current.taskId === target.id) updateTaskView({ taskId: undefined })
       updateTaskView({ taskId: undefined })
     }, (error: unknown) => {
       if (!controller.signal.aborted) setDeleteTaskError(error instanceof Error ? error.message : String(error))
@@ -424,6 +428,7 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
   }
 
   const confirmCancelTask = (): void => {
+    /* v8 ignore next -- Confirmation exists only for a target and is disabled during a pending stop. */
     if (cancelTask === undefined || cancelTarget === undefined || cancellingTaskId !== undefined) return
     const target = cancelTarget
     const controller = new AbortController()
@@ -444,7 +449,7 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
 
   return (
     <main ref={pageRoot} className={css.page} aria-label={translate('detail.title')} data-team-id={String(team.id)} title={String(team.id)}>
-      <TeamHeader state={state} view={view} translate={translate}
+      <TeamHeader state={state} view={view} translate={translate} artifactCount={artifacts.length}
         {...onViewChange === undefined ? {} : { onViewChange }}
         {...openCoordinator === undefined ? {} : { openCoordinator }}
         {...onCancel === undefined ? {} : { onCancel }}
@@ -454,280 +459,288 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
       {identityState?.error !== undefined && <p role="alert" className={css.error}>{identityState.error}
         {refreshIdentities !== undefined && <Button onClick={() => { void refreshIdentities() }}>{translate('identity.retry')}</Button>}
       </p>}
-      {view === 'overview' && <TeamOverview openMember={readMemberDetail === undefined ? undefined : setMemberDetailId} identities={identityState} memberReadiness={readiness} state={state} collections={collections} attentionPreview={attentionPreview} refreshAttentionPreview={refreshAttentionPreview} openPendingAction={openPendingAction} translate={translate} artifacts={artifacts}
-        navigate={(next) => { updateTaskView({ view: next }); onViewChange?.(next) }}
-        openTask={(taskId) => { updateTaskView({ taskId, view: 'tasks', taskSearch: '', taskPhase: 'all' }); onViewChange?.('tasks') }}
-        inspectActivity={(cursor) => { updateTaskView({ view: 'audit' }); onViewChange?.('audit'); setAudit(undefined); void loadAudit(Math.max(-1, cursor - 1)) }}
-        {...readArtifact === undefined ? {} : { openArtifact: (reference: TeamArtifactReference) => { updateTaskView({ view: 'artifacts' }); onViewChange?.('artifacts'); void loadArtifact(reference) } }}
-        {...openParticipantSession === undefined ? {} : { openParticipantSession }}
-        {...readAudit === undefined ? {} : { readAudit }} /> }
-      {memberDetailId !== undefined && readMemberDetail !== undefined && closeMemberDetail !== undefined && <MemberDetail key={`${team.id}:${memberDetailId}`}
-        teamId={team.id} participantId={memberDetailId} read={readMemberDetail} closeDetail={closeMemberDetail}
-        detail={memberDetail} translate={translate}
-        readiness={readiness?.value?.items.find(item => item.participantId === memberDetailId)}
-        readinessStale={readinessStale}
-        onClose={() => { setMemberDetailId(undefined) }} />}
-      {view === 'attention' && <TeamAttention
-        state={attention?.teamId === team.id ? attention : undefined}
-        counts={attention?.page !== undefined && attention.page.teamCursor >= team.cursor ? attention.page.counts : state.attentionCounts}
-        translate={translate} read={readAttention === undefined ? undefined : async (mode) => { await readAttention(team.id, mode) }}
-        openTask={(id) => { updateTaskView({ view: 'tasks', taskId: id }); onViewChange?.('tasks') }}
-        openRecovery={() => { updateTaskView({ view: 'audit' }); onViewChange?.('audit') }}
-        openAction={openPendingAction === undefined ? undefined : async (id) => { await openPendingAction(team.id, id) }} />}
-      {view === 'members' && <>
-        <section className={css.section} aria-label={translate('detail.participants')}>
-          <div className={css.sectionHeader}>
-            <h2>{translate('detail.participants')}</h2>
-            {canManage && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberInvite' }) }}>{translate('manage.memberInvite')}</button>}
-            <small>{activeWorkers} {translate(activeWorkers === 1 ? 'detail.workerActive.one' : 'detail.workerActive.other')} · {workingTasks} {translate(workingTasks === 1 ? 'detail.activeTask.one' : 'detail.activeTask.other')}</small>
-            {collections?.members.startCursor !== undefined && collections.members.startCursor >= 0 && readCollections !== undefined && <button type="button"
-              disabled={collections.members.loading || collections.members.loadingMore} onClick={() => { void readCollections('members', 'first') }}>
-              {translate('detail.firstPage')}
-            </button>}
-            {collections?.members.nextCursor !== undefined && readCollections !== undefined && <button type="button"
-              disabled={collections.members.loading || collections.members.loadingMore} onClick={() => { void readCollections('members', 'next') }}>
-              {translate('detail.loadMembers')}
-            </button>}
-            {readCollections !== undefined && <button type="button"
-              disabled={collections?.members.loading || collections?.members.loadingMore} onClick={() => { void readCollections('members') }}>
-              {translate('detail.refreshMembers')}
-            </button>}
-          </div>
-          {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
-          {collections?.members.loading && <p className={css.muted} role="status">{translate('detail.membersLoading')}</p>}
-          {collections?.members.error !== undefined && <p className={css.error} role="alert">{collections.members.error}</p>}
-          <div className={css.actions}>
-            {refreshMemberReadiness !== undefined && <Button aria-busy={readiness?.loading} disabled={readiness?.disconnected}
-              onClick={() => { void refreshMemberReadiness() }}>{translate('readiness.refresh')}</Button>}
-            {readiness?.loading && readiness.value === undefined && <span role="status">{translate('readiness.loading')}</span>}
-            {readiness?.disconnected && <span role="status">{translate('readiness.disconnected')}</span>}
-          </div>
-          {readiness?.error !== undefined && <p className={css.error} role="alert">{readiness.error}</p>}
-          <p className={css.muted}>{translate('readiness.advisory')}</p>
-
-          <ul className={css.list}>
-            {participants.map((participant) => {
-              const canOpen = openParticipantSession !== undefined && participant.kind !== 'human'
-              const participantTasks = tasks.filter(task => task.phase === 'review' ? task.reviewerId === participant.id
-                : task.ownerId === participant.id && (task.phase === 'assigned' || task.phase === 'running'))
-              const execution = readiness?.value?.items.find(item => item.participantId === participant.id)
-              const participation = execution?.participation ?? participant.phase
-              const statusLabel = translate(`detail.participant.phase.${participation}`)
-              const roleLabel = translate(participantRoleKey[participant.role]
-              ?? (isWorkerRole(participant.role) ? 'detail.participant.role.worker' : 'detail.participant.role.other'))
-              return (
-                <li key={participant.id} className={css.participant}>
-                  <div>
-                    <strong>{participant.displayName}</strong>
-                    <small>{roleLabel} · {translate('readiness.participation')}: {statusLabel}</small>
-                    <MemberReadiness value={execution} stale={readinessStale} translate={translate} />
-                    {participantTasks.length > 0 && <span className={css.participantTasks}>{participantTasks.map(task => task.subject).join(' · ')}</span>}
-                  </div>
-                  {canManage && participant.kind !== 'human' && <div className={css.actions}>
-                    {(participation === 'invited' || participation === 'provisioning') && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberActivate', participantId: participant.id }) }}>{translate('manage.memberActivate')}</button>}
-                    {participation === 'active' && <>
-                      {<button type="button" onClick={() => { setManagementTarget({ kind: 'memberInterrupt', participantId: participant.id }) }}>{translate('manage.memberInterrupt')}</button>}
-                      {participant.role !== 'coordinator' && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberRemove', participantId: participant.id }) }}>{translate('manage.memberRemove')}</button>}
-                    </>}
-                  </div>}
-                  {readMemberDetail !== undefined && <button type="button" onClick={() => { setMemberDetailId(participant.id) }}>
-                    {translate('memberDetail.open')}
-                  </button>}
-                  {canOpen ? (
-                    <button type="button" onClick={() => { void openParticipantSession(participant.id) }}>
-                      {translate('detail.openSession')}
-                    </button>
-                  ) : null}
-                </li>
-              )
-            })}
-          </ul>
-        </section>
-
-      </>}
-
-      {view === 'audit' && metadata !== undefined && (Object.keys(metadata.budgets).length > 0 || metadata.usage !== undefined) && (
-        <section className={css.section} aria-label={translate('detail.budget')}>
-          <div className={css.sectionHeader}>
-            <h2>{translate('detail.budget')}</h2>
-            {metadata.usage !== undefined && <small data-team-usage>
-              {metadata.usage.inputTokens + metadata.usage.outputTokens} tokens · {metadata.usage.turns} turns · {' '}
-              {metadata.usage.costUnits} cost units
-            </small>}
-          </div>
-          {Object.keys(metadata.budgets).length > 0 && (
-            <details className={css.details}>
-              <summary>{translate('detail.budgetLimits')} <IconChevronDownOutline14 /></summary>
-              <pre className={css.json} data-team-budget>{JSON.stringify(metadata.budgets, null, 2)}</pre>
-            </details>
-          )}
-        </section>
-      )}
-
-      {view === 'workflows' && <>
-        <section className={css.section} aria-label={translate('detail.workflowPlans')}>
-          <div className={css.sectionHeader}><h2>{translate('detail.workflowPlans')}</h2>
-            {workflowCollection?.startCursor !== undefined && workflowCollection.startCursor >= 0 && readCollections !== undefined && <button type="button"
-              disabled={workflowCollection.loading || workflowCollection.loadingMore} onClick={() => { void readCollections('workflowPlans', 'first') }}>
-              {translate('detail.firstPage')}
-            </button>}
-            {workflowCollection?.nextCursor !== undefined && readCollections !== undefined && <button type="button"
-              disabled={workflowCollection.loading || workflowCollection.loadingMore} onClick={() => { void readCollections('workflowPlans', 'next') }}>
-              {translate('detail.loadWorkflowPlans')}
-            </button>}
-            {readCollections !== undefined && <button type="button"
-              disabled={workflowCollection?.loading || workflowCollection?.loadingMore} onClick={() => { void readCollections('workflowPlans') }}>
-              {translate('detail.refreshWorkflowPlans')}
-            </button>}
-          </div>
-          {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
-          {workflowCollection?.loading && <p className={css.muted} role="status">{translate('detail.workflowLoading')}</p>}
-          {workflowCollection?.error !== undefined && <p className={css.error} role="alert">{workflowCollection.error}</p>}
-          {workflowPlans.length === 0 && !workflowCollection?.loading && workflowCollection?.error === undefined
-            && <p className={css.muted} role="status">{translate('detail.workflowsEmpty')}</p>}
-          <WorkflowWorkspace plans={workflowPlans} detail={workflowDetail?.teamId === team.id ? workflowDetail : undefined}
-            read={readWorkflowDetail === undefined ? undefined : async (id, mode) => {
-              updateTaskView({ workflowPlanId: id }); await readWorkflowDetail(id, mode)
-            }}
-            close={closeWorkflowDetail === undefined ? undefined : () => {
-              updateTaskView({ workflowPlanId: undefined }); closeWorkflowDetail()
-            }} translate={translate} openTask={focusTask} />
-        </section>
-
-      </>}
-
-      {view === 'tasks' && <>
-        <section className={css.section} aria-label={translate('detail.tasks')}>
-          <div className={css.sectionHeader}><h2>{translate('detail.tasks')}</h2>
-            {canManage && <button type="button" onClick={() => { setTaskDialogTarget({ kind: 'taskCreate' }) }}>{translate('taskForm.taskCreate')}</button>}
-            {readTaskQuery !== undefined ? <>
-              {tableQuery?.startCursor !== undefined && <button type="button" disabled={tableQuery.loading}
-                onClick={() => { void readTable('first') }}>{translate('detail.firstPage')}</button>}
-              {tableQuery?.page?.nextQueryCursor !== undefined && <button type="button"
-                disabled={tableQuery.loading || tableQuery.hasNewer || tableQuery.disconnected || tableQuery.error !== undefined}
-                onClick={() => { void readTable('next') }}>{translate('detail.loadTasks')}</button>}
-              <button type="button" disabled={tableQuery?.loading} onClick={() => { void readTable('first') }}>{translate('taskView.refreshQuery')}</button>
-            </> : <>
-              {collections?.tasks.startCursor !== undefined && collections.tasks.startCursor >= 0 && readCollections !== undefined && <button type="button"
-                disabled={collections.tasks.loading || collections.tasks.loadingMore} onClick={() => { void readCollections('tasks', 'first') }}>
+      {/* The module area slides between modules during a view transition. */}
+      <div className={css.moduleArea} style={{ viewTransitionName: 'clocky-module' }}>
+        {view === 'overview' && <TeamOverview openMember={readMemberDetail === undefined ? undefined : setMemberDetailId} identities={identityState} memberReadiness={readiness} state={state} collections={collections} attentionPreview={attentionPreview} refreshAttentionPreview={refreshAttentionPreview} openPendingAction={openPendingAction} translate={translate} artifacts={artifacts}
+          navigate={(next) => { updateTaskView({ view: next }); onViewChange?.(next) }}
+          openTask={(taskId) => { updateTaskView({ taskId, view: 'tasks', taskSearch: '', taskPhase: 'all' }); onViewChange?.('tasks') }}
+          inspectActivity={(cursor) => { updateTaskView({ view: 'audit' }); onViewChange?.('audit'); setAudit(undefined); void loadAudit(Math.max(-1, cursor - 1)) }}
+          {...readArtifact === undefined ? {} : { openArtifact: (reference: TeamArtifactReference) => { updateTaskView({ view: 'artifacts' }); onViewChange?.('artifacts'); void loadArtifact(reference) } }}
+          {...openParticipantSession === undefined ? {} : { openParticipantSession }}
+          {...readAudit === undefined ? {} : { readAudit }}
+          channelListState={channelListState} channelState={channelState}
+          workflowDetail={workflowDetail} readWorkflowDetail={readWorkflowDetail}
+          viz={taskPreferences.overviewViz} onVizChange={(overviewViz) => { updateTaskView({ overviewViz }) }}
+          swarmPositions={taskPreferences.swarmPositions} onSwarmPositions={(swarmPositions) => { updateTaskView({ swarmPositions }) }} /> }
+        {memberDetailId !== undefined && readMemberDetail !== undefined && closeMemberDetail !== undefined && <MemberDetail key={`${team.id}:${memberDetailId}`}
+          teamId={team.id} participantId={memberDetailId} read={readMemberDetail} closeDetail={closeMemberDetail}
+          detail={memberDetail} translate={translate}
+          readiness={readiness?.value?.items.find(item => item.participantId === memberDetailId)}
+          readinessStale={readinessStale}
+          onClose={() => { setMemberDetailId(undefined) }} />}
+        {view === 'attention' && <TeamAttention
+          state={attention?.teamId === team.id ? attention : undefined}
+          counts={attention?.page !== undefined && attention.page.teamCursor >= team.cursor ? attention.page.counts : state.attentionCounts}
+          translate={translate} read={readAttention === undefined ? undefined : async (mode) => { await readAttention(team.id, mode) }}
+          openTask={(id) => { updateTaskView({ view: 'tasks', taskId: id }); onViewChange?.('tasks') }}
+          openRecovery={() => { updateTaskView({ view: 'audit' }); onViewChange?.('audit') }}
+          openAction={openPendingAction === undefined ? undefined : async (id) => { await openPendingAction(team.id, id) }} />}
+        {view === 'members' && <>
+          <section className={css.section} aria-label={translate('detail.participants')}>
+            <div className={css.sectionHeader}>
+              <h2>{translate('detail.participants')}</h2>
+              {canManage && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberInvite' }) }}>{translate('manage.memberInvite')}</button>}
+              <small>{activeWorkers} {translate(activeWorkers === 1 ? 'detail.workerActive.one' : 'detail.workerActive.other')} · {workingTasks} {translate(workingTasks === 1 ? 'detail.activeTask.one' : 'detail.activeTask.other')}</small>
+              {collections?.members.startCursor !== undefined && collections.members.startCursor >= 0 && readCollections !== undefined && <button type="button"
+                disabled={collections.members.loading || collections.members.loadingMore} onClick={() => { void readCollections('members', 'first') }}>
                 {translate('detail.firstPage')}
               </button>}
-              {collections?.tasks.nextCursor !== undefined && readCollections !== undefined && <button type="button"
-                disabled={collections.tasks.loading || collections.tasks.loadingMore} onClick={() => { void readCollections('tasks', 'next') }}>
-                {translate('detail.loadTasks')}
+              {collections?.members.nextCursor !== undefined && readCollections !== undefined && <button type="button"
+                disabled={collections.members.loading || collections.members.loadingMore} onClick={() => { void readCollections('members', 'next') }}>
+                {translate('detail.loadMembers')}
               </button>}
               {readCollections !== undefined && <button type="button"
-                disabled={collections?.tasks.loading || collections?.tasks.loadingMore} onClick={() => { void readCollections('tasks') }}>
-                {translate('detail.refreshTasks')}
+                disabled={collections?.members.loading || collections?.members.loadingMore} onClick={() => { void readCollections('members') }}>
+                {translate('detail.refreshMembers')}
               </button>}
-            </>}
-          </div>
-          {readTaskQuery !== undefined ? <>
-            {tableQuery?.loading && <p role="status">{translate('detail.tasksLoading')}</p>}
-            {tableQuery?.hasNewer && <p role="status">{translate('taskView.queryChanged')}</p>}
-            {tableQuery?.disconnected && <p role="status">{translate('taskView.queryDisconnected')}</p>}
-            {tableQuery?.error !== undefined && <p role="alert" className={css.error}>{tableQuery.error}</p>}
-          </> : <>
-            {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
-            {collections?.tasks.loading && <p role="status">{translate('detail.tasksLoading')}</p>}
-            {collections?.tasks.error !== undefined && <p className={css.error} role="alert">{collections.tasks.error}</p>}
-          </>}
-          <TaskWorkspace inspectMember={readMemberDetail === undefined ? undefined : setMemberDetailId}
-            searchScope={readTaskQuery === undefined ? 'loaded' : 'team'} queryState={tableQuery}
-            refreshSearch={readTaskQuery === undefined ? undefined : () => { void readTable('first') }}
-            identities={identityState} state={loadedContext} tasks={visibleTasks}
-            detail={taskDetail} readDetail={readTaskDetail} closeDetail={closeTaskDetail}
-            viewState={taskPreferences} updateView={updateTaskView}
-            translate={translate} canManage={canManage} busy={deletingTaskId !== undefined || cancellingTaskId !== undefined}
-            onForm={setTaskDialogTarget}
-            {...readArtifact === undefined ? {} : { openArtifact: (reference: TeamArtifactReference) => { updateTaskView({ view: 'artifacts' }); onViewChange?.('artifacts'); void loadArtifact(reference) } }}
-
-            {...deleteTask === undefined ? {} : { onDelete: (task: TeamTaskRecord) => {
-              setDeleteTarget(task)
-              setDeleteTaskError(undefined)
-            } }}
-
-            {...cancelTask === undefined ? {} : { onStop: (task: TeamTaskRecord) => {
-              setCancelTarget(task)
-              setCancelTaskError(undefined)
-            } }}
-            {...openParticipantSession === undefined ? {} : { openParticipantSession }}
-            {...openTeam === undefined ? {} : { openTeam }} />
-        </section>
-
-      </>}
-
-      {view === 'channels' && <ChannelHub openMember={readMemberDetail === undefined ? undefined : setMemberDetailId} identities={identityState} maxDraftBytes={maxDraftBytes} state={loadedContext} translate={translate}
-        viewState={taskPreferences}
-        updateView={updateTaskView}
-        {...onChannelDraftChange === undefined ? {} : { onDraftChange: onChannelDraftChange }}
-        {...onChannelDraftDiscard === undefined ? {} : { onDraftDiscard: onChannelDraftDiscard }}
-        {...channelState === undefined ? {} : { channelState }}
-        {...channelListState === undefined ? {} : { channelListState }}
-        {...readChannels === undefined ? {} : { readChannels }}
-        {...readChannel === undefined ? {} : { readChannel }}
-        {...manage === undefined ? {} : { manage }}
-        {...readChannelAttachment === undefined ? {} : { readChannelAttachment }}
-        {...renderSlot === undefined ? {} : { renderSlot }}
-        {...channelCatalog === undefined ? {} : { channelCatalog }}
-        {...readChannelCatalog === undefined ? {} : { readChannelCatalog }}
-        {...acknowledgeChannel === undefined ? {} : { acknowledgeChannel }}
-        {...closeChannelView === undefined ? {} : { closeChannelView }} />}
-
-      {view === 'artifacts' && <ArtifactsWorkspace artifacts={artifacts} collections={collections}
-        detail={artifactDetail?.teamId === team.id ? artifactDetail : undefined}
-        read={readArtifact} readCollections={readCollections} t={translate} />}
-
-      {view === 'audit' && hasAuditSection && (
-        <section className={css.section} aria-label={translate('detail.audit')}>
-          <div className={css.sectionHeader}>
-            <h2>{translate('detail.audit')}</h2>
-            {readAudit !== undefined && <button type="button" disabled={auditLoading} onClick={() => { void loadAudit() }}>{translate('detail.audit')}</button>}
-          </div>
-          {auditLoading && <p className={css.muted} role="status">{translate('detail.auditLoading')}</p>}
-          {auditError !== undefined && <p className={css.error} role="alert">{auditError}</p>}
-          {readAudit !== undefined && <div className={css.actions}>
-            {audit?.nextCursor !== undefined && <button type="button" disabled={auditLoading} onClick={() => { void loadAudit(audit.nextCursor) }}>{translate('detail.loadMore')}</button>}
-            {auditLoading && <button type="button" onClick={() => { auditRequest.current?.abort(); setAuditLoading(false) }}>{translate('detail.cancelRead')}</button>}
-          </div>}
-          {audit !== undefined && (audit.items.length === 0 ? <p className={css.muted}>{translate('detail.auditEmpty')}</p> : (
-            <div className={css.audit}>
-              <p className={css.muted}>{audit.items.length} {translate('detail.auditRecords')}</p>
-              {audit.items.map(entry => <details key={`${entry.stream}:${entry.channelId ?? ''}:${entry.cursor}`} className={css.record}>
-                <summary><strong>{entry.type}</strong> <IconChevronDownOutline14 /></summary>
-                <small>{entry.stream} · {translate('detail.cursor')} {entry.cursor}</small>
-                <pre className={css.json}>{JSON.stringify(entry.facts, null, 2)}</pre>
-              </details>)}
             </div>
-          ))}
-        </section>
-      )}
-      {taskDialogTarget !== undefined && (manage !== undefined
+            {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
+            {collections?.members.loading && <p className={css.muted} role="status">{translate('detail.membersLoading')}</p>}
+            {collections?.members.error !== undefined && <p className={css.error} role="alert">{collections.members.error}</p>}
+            <div className={css.actions}>
+              {refreshMemberReadiness !== undefined && <Button aria-busy={readiness?.loading} disabled={readiness?.disconnected}
+                onClick={() => { void refreshMemberReadiness() }}>{translate('readiness.refresh')}</Button>}
+              {readiness?.loading && readiness.value === undefined && <span role="status">{translate('readiness.loading')}</span>}
+              {readiness?.disconnected && <span role="status">{translate('readiness.disconnected')}</span>}
+            </div>
+            {readiness?.error !== undefined && <p className={css.error} role="alert">{readiness.error}</p>}
+            <p className={css.muted}>{translate('readiness.advisory')}</p>
+
+            <ul className={css.list}>
+              {participants.map((participant) => {
+                const canOpen = openParticipantSession !== undefined && participant.kind !== 'human'
+                const participantTasks = tasks.filter(task => task.phase === 'review' ? task.reviewerId === participant.id
+                  : task.ownerId === participant.id && (task.phase === 'assigned' || task.phase === 'running'))
+                const execution = readiness?.value?.items.find(item => item.participantId === participant.id)
+                const participation = execution?.participation ?? participant.phase
+                const statusLabel = translate(`detail.participant.phase.${participation}`)
+                const roleLabel = translate(participantRoleKey[participant.role]
+              ?? (isWorkerRole(participant.role) ? 'detail.participant.role.worker' : 'detail.participant.role.other'))
+                return (
+                  <li key={participant.id} className={css.participant}>
+                    <div>
+                      <strong>{participant.displayName}</strong>
+                      <small>{roleLabel} · {translate('readiness.participation')}: {statusLabel}</small>
+                      <MemberReadiness value={execution} stale={readinessStale} translate={translate} />
+                      {participantTasks.length > 0 && <span className={css.participantTasks}>{participantTasks.map(task => task.subject).join(' · ')}</span>}
+                    </div>
+                    {canManage && participant.kind !== 'human' && <div className={css.actions}>
+                      {(participation === 'invited' || participation === 'provisioning') && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberActivate', participantId: participant.id }) }}>{translate('manage.memberActivate')}</button>}
+                      {participation === 'active' && <>
+                        {<button type="button" onClick={() => { setManagementTarget({ kind: 'memberInterrupt', participantId: participant.id }) }}>{translate('manage.memberInterrupt')}</button>}
+                        {participant.role !== 'coordinator' && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberRemove', participantId: participant.id }) }}>{translate('manage.memberRemove')}</button>}
+                      </>}
+                    </div>}
+                    {readMemberDetail !== undefined && <button type="button" onClick={() => { setMemberDetailId(participant.id) }}>
+                      {translate('memberDetail.open')}
+                    </button>}
+                    {canOpen ? (
+                      <button type="button" onClick={() => { void openParticipantSession(participant.id) }}>
+                        {translate('detail.openSession')}
+                      </button>
+                    ) : null}
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+
+        </>}
+
+        {view === 'audit' && metadata !== undefined && (Object.keys(metadata.budgets).length > 0 || metadata.usage !== undefined) && (
+          <section className={css.section} aria-label={translate('detail.budget')}>
+            <div className={css.sectionHeader}>
+              <h2>{translate('detail.budget')}</h2>
+              {metadata.usage !== undefined && <small data-team-usage>
+                {metadata.usage.inputTokens + metadata.usage.outputTokens} tokens · {metadata.usage.turns} turns · {' '}
+                {metadata.usage.costUnits} cost units
+              </small>}
+            </div>
+            {Object.keys(metadata.budgets).length > 0 && (
+              <details className={css.details}>
+                <summary>{translate('detail.budgetLimits')} <IconChevronDownOutline14 /></summary>
+                <pre className={css.json} data-team-budget>{JSON.stringify(metadata.budgets, null, 2)}</pre>
+              </details>
+            )}
+          </section>
+        )}
+
+        {view === 'workflows' && <>
+          <section className={css.section} aria-label={translate('detail.workflowPlans')}>
+            <div className={css.sectionHeader}><h2>{translate('detail.workflowPlans')}</h2>
+              {workflowCollection?.startCursor !== undefined && workflowCollection.startCursor >= 0 && readCollections !== undefined && <button type="button"
+                disabled={workflowCollection.loading || workflowCollection.loadingMore} onClick={() => { void readCollections('workflowPlans', 'first') }}>
+                {translate('detail.firstPage')}
+              </button>}
+              {workflowCollection?.nextCursor !== undefined && readCollections !== undefined && <button type="button"
+                disabled={workflowCollection.loading || workflowCollection.loadingMore} onClick={() => { void readCollections('workflowPlans', 'next') }}>
+                {translate('detail.loadWorkflowPlans')}
+              </button>}
+              {readCollections !== undefined && <button type="button"
+                disabled={workflowCollection?.loading || workflowCollection?.loadingMore} onClick={() => { void readCollections('workflowPlans') }}>
+                {translate('detail.refreshWorkflowPlans')}
+              </button>}
+            </div>
+            {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
+            {workflowCollection?.loading && <p className={css.muted} role="status">{translate('detail.workflowLoading')}</p>}
+            {workflowCollection?.error !== undefined && <p className={css.error} role="alert">{workflowCollection.error}</p>}
+            {workflowPlans.length === 0 && !workflowCollection?.loading && workflowCollection?.error === undefined
+            && <p className={css.muted} role="status">{translate('detail.workflowsEmpty')}</p>}
+            <WorkflowWorkspace plans={workflowPlans} detail={workflowDetail?.teamId === team.id ? workflowDetail : undefined}
+              read={readWorkflowDetail === undefined ? undefined : async (id, mode) => {
+                updateTaskView({ workflowPlanId: id }); await readWorkflowDetail(id, mode)
+              }}
+              close={closeWorkflowDetail === undefined ? undefined : () => {
+                updateTaskView({ workflowPlanId: undefined }); closeWorkflowDetail()
+              }} translate={translate} openTask={focusTask} />
+          </section>
+
+        </>}
+
+        {view === 'tasks' && <>
+          <section className={css.section} aria-label={translate('detail.tasks')}>
+            <div className={css.sectionHeader}><h2>{translate('detail.tasks')}</h2>
+              {canManage && <button type="button" onClick={() => { setTaskDialogTarget({ kind: 'taskCreate' }) }}>{translate('taskForm.taskCreate')}</button>}
+              {readTaskQuery !== undefined ? <>
+                {tableQuery?.startCursor !== undefined && <button type="button" disabled={tableQuery.loading}
+                  onClick={() => { void readTable('first') }}>{translate('detail.firstPage')}</button>}
+                {tableQuery?.page?.nextQueryCursor !== undefined && <button type="button"
+                  disabled={tableQuery.loading || tableQuery.hasNewer || tableQuery.disconnected || tableQuery.error !== undefined}
+                  onClick={() => { void readTable('next') }}>{translate('detail.loadTasks')}</button>}
+                <button type="button" disabled={tableQuery?.loading} onClick={() => { void readTable('first') }}>{translate('taskView.refreshQuery')}</button>
+              </> : <>
+                {collections?.tasks.startCursor !== undefined && collections.tasks.startCursor >= 0 && readCollections !== undefined && <button type="button"
+                  disabled={collections.tasks.loading || collections.tasks.loadingMore} onClick={() => { void readCollections('tasks', 'first') }}>
+                  {translate('detail.firstPage')}
+                </button>}
+                {collections?.tasks.nextCursor !== undefined && readCollections !== undefined && <button type="button"
+                  disabled={collections.tasks.loading || collections.tasks.loadingMore} onClick={() => { void readCollections('tasks', 'next') }}>
+                  {translate('detail.loadTasks')}
+                </button>}
+                {readCollections !== undefined && <button type="button"
+                  disabled={collections?.tasks.loading || collections?.tasks.loadingMore} onClick={() => { void readCollections('tasks') }}>
+                  {translate('detail.refreshTasks')}
+                </button>}
+              </>}
+            </div>
+            {readTaskQuery !== undefined ? <>
+              {tableQuery?.loading && <p role="status">{translate('detail.tasksLoading')}</p>}
+              {tableQuery?.hasNewer && <p role="status">{translate('taskView.queryChanged')}</p>}
+              {tableQuery?.disconnected && <p role="status">{translate('taskView.queryDisconnected')}</p>}
+              {tableQuery?.error !== undefined && <p role="alert" className={css.error}>{tableQuery.error}</p>}
+            </> : <>
+              {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
+              {collections?.tasks.loading && <p role="status">{translate('detail.tasksLoading')}</p>}
+              {collections?.tasks.error !== undefined && <p className={css.error} role="alert">{collections.tasks.error}</p>}
+            </>}
+            <TaskWorkspace inspectMember={readMemberDetail === undefined ? undefined : setMemberDetailId}
+              searchScope={readTaskQuery === undefined ? 'loaded' : 'team'} queryState={tableQuery}
+              refreshSearch={readTaskQuery === undefined ? undefined : () => { void readTable('first') }}
+              identities={identityState} state={loadedContext} tasks={visibleTasks}
+              detail={taskDetail} readDetail={readTaskDetail} closeDetail={closeTaskDetail}
+              viewState={taskPreferences} updateView={updateTaskView}
+              translate={translate} canManage={canManage} busy={deletingTaskId !== undefined || cancellingTaskId !== undefined}
+              onForm={setTaskDialogTarget}
+              {...readArtifact === undefined ? {} : { openArtifact: (reference: TeamArtifactReference) => { updateTaskView({ view: 'artifacts' }); onViewChange?.('artifacts'); void loadArtifact(reference) } }}
+
+              {...deleteTask === undefined ? {} : { onDelete: (task: TeamTaskRecord) => {
+                setDeleteTarget(task)
+                setDeleteTaskError(undefined)
+              } }}
+
+              {...cancelTask === undefined ? {} : { onStop: (task: TeamTaskRecord) => {
+                setCancelTarget(task)
+                setCancelTaskError(undefined)
+              } }}
+              {...openParticipantSession === undefined ? {} : { openParticipantSession }}
+              {...openTeam === undefined ? {} : { openTeam }} />
+          </section>
+
+        </>}
+
+        {view === 'channels' && <ChannelHub openMember={readMemberDetail === undefined ? undefined : setMemberDetailId} identities={identityState} maxDraftBytes={maxDraftBytes} state={loadedContext} translate={translate}
+          viewState={taskPreferences}
+          updateView={updateTaskView}
+          {...onChannelDraftChange === undefined ? {} : { onDraftChange: onChannelDraftChange }}
+          {...onChannelDraftDiscard === undefined ? {} : { onDraftDiscard: onChannelDraftDiscard }}
+          {...channelState === undefined ? {} : { channelState }}
+          {...channelListState === undefined ? {} : { channelListState }}
+          {...readChannels === undefined ? {} : { readChannels }}
+          {...readChannel === undefined ? {} : { readChannel }}
+          {...manage === undefined ? {} : { manage }}
+          {...readChannelAttachment === undefined ? {} : { readChannelAttachment }}
+          {...renderSlot === undefined ? {} : { renderSlot }}
+          {...channelCatalog === undefined ? {} : { channelCatalog }}
+          {...readChannelCatalog === undefined ? {} : { readChannelCatalog }}
+          {...acknowledgeChannel === undefined ? {} : { acknowledgeChannel }}
+          {...closeChannelView === undefined ? {} : { closeChannelView }} />}
+
+        {view === 'artifacts' && <ArtifactsWorkspace artifacts={artifacts} collections={collections}
+          detail={artifactDetail?.teamId === team.id ? artifactDetail : undefined}
+          read={readArtifact} readCollections={readCollections} t={translate} />}
+
+        {view === 'audit' && hasAuditSection && (
+          <section className={css.section} aria-label={translate('detail.audit')}>
+            <div className={css.sectionHeader}>
+              <h2>{translate('detail.audit')}</h2>
+              {readAudit !== undefined && <button type="button" disabled={auditLoading} onClick={() => { void loadAudit() }}>{translate('detail.audit')}</button>}
+            </div>
+            {auditLoading && <p className={css.muted} role="status">{translate('detail.auditLoading')}</p>}
+            {auditError !== undefined && <p className={css.error} role="alert">{auditError}</p>}
+            {readAudit !== undefined && <div className={css.actions}>
+              {audit?.nextCursor !== undefined && <button type="button" disabled={auditLoading} onClick={() => { void loadAudit(audit.nextCursor) }}>{translate('detail.loadMore')}</button>}
+              {auditLoading && <button type="button" onClick={() => { auditRequest.current?.abort(); setAuditLoading(false) }}>{translate('detail.cancelRead')}</button>}
+            </div>}
+            {audit !== undefined && (audit.items.length === 0 ? <p className={css.muted}>{translate('detail.auditEmpty')}</p> : (
+              <div className={css.audit}>
+                <p className={css.muted}>{audit.items.length} {translate('detail.auditRecords')}</p>
+                {audit.items.map(entry => <details key={`${entry.stream}:${entry.channelId ?? ''}:${entry.cursor}`} className={css.record}>
+                  <summary><strong>{entry.type}</strong> <IconChevronDownOutline14 /></summary>
+                  <small>{entry.stream} · {translate('detail.cursor')} {entry.cursor}</small>
+                  <pre className={css.json}>{JSON.stringify(entry.facts, null, 2)}</pre>
+                </details>)}
+              </div>
+            ))}
+          </section>
+        )}
+        {taskDialogTarget !== undefined && (manage !== undefined
         || hasTaskDraftInput(taskPreferences.taskDrafts[taskDraftKey(taskDialogTarget)])) && <TeamTaskDialog
-        key={`${team.id}:${taskDialogTarget.kind}:${'taskId' in taskDialogTarget ? taskDialogTarget.taskId : ''}`}
-        draft={taskPreferences.taskDrafts[taskDraftKey(taskDialogTarget)]}
-        {...onTaskDraftChange === undefined ? {} : { onDraftChange: (draft) => { onTaskDraftChange(taskDialogTarget, draft) } }}
-        {...onTaskDraftDiscard === undefined ? {} : { onDraftDiscard: () => { onTaskDraftDiscard(taskDialogTarget) } }}
-        target={taskDialogTarget} state={loadedContext} translate={translate} manage={manage} canSubmit={canManage}
-        inspection={taskDetail} readTaskDetail={readTaskDetail}
-        taskCapabilities={taskCapabilities} watchTaskCapabilities={watchTaskCapabilities} refreshTaskCapabilities={refreshTaskCapabilities}
-        taskReferences={taskReferences} watchTaskReferences={watchTaskReferences}
-        refreshTaskReferences={refreshTaskReferences} lookupTaskUpdate={lookupTaskUpdate}
-        dependencyQuery={dependencyQuery} readDependencies={readDependencies} closeDependencies={closeDependencies}
-        onClose={() => { setTaskDialogTarget(undefined) }}
-      />}
-      {managementTarget !== undefined && manage !== undefined && <TeamManagementDialog
-        key={`${team.id}:${managementTarget.kind}:${'participantId' in managementTarget ? managementTarget.participantId : 'channelId' in managementTarget ? managementTarget.channelId : ''}`}
-        executionProfiles={executionProfiles}
-        watchExecutionProfiles={watchExecutionProfiles} refreshExecutionProfiles={refreshExecutionProfiles}
-        target={managementTarget}
-        maxDraftBytes={maxDraftBytes}
-        state={loadedContext}
-        translate={translate}
-        channel={undefined}
-        manage={manage}
-        onClose={() => { setManagementTarget(undefined) }}
-      />}
+          key={`${team.id}:${taskDialogTarget.kind}:${'taskId' in taskDialogTarget ? taskDialogTarget.taskId : ''}`}
+          draft={taskPreferences.taskDrafts[taskDraftKey(taskDialogTarget)]}
+          {...onTaskDraftChange === undefined ? {} : { onDraftChange: (draft) => { onTaskDraftChange(taskDialogTarget, draft) } }}
+          {...onTaskDraftDiscard === undefined ? {} : { onDraftDiscard: () => { onTaskDraftDiscard(taskDialogTarget) } }}
+          target={taskDialogTarget} state={loadedContext} translate={translate} manage={manage} canSubmit={canManage}
+          inspection={taskDetail} readTaskDetail={readTaskDetail}
+          taskCapabilities={taskCapabilities} watchTaskCapabilities={watchTaskCapabilities}
+          refreshTaskCapabilities={refreshTaskCapabilities}
+          taskReferences={taskReferences} watchTaskReferences={watchTaskReferences}
+          refreshTaskReferences={refreshTaskReferences} lookupTaskUpdate={lookupTaskUpdate}
+          dependencyQuery={dependencyQuery} readDependencies={readDependencies} closeDependencies={closeDependencies}
+          onClose={() => { setTaskDialogTarget(undefined) }}
+        />}
+        {managementTarget !== undefined && manage !== undefined && <TeamManagementDialog
+          key={`${team.id}:${managementTarget.kind}:${'participantId' in managementTarget ? managementTarget.participantId : ''}`}
+          executionProfiles={executionProfiles}
+          watchExecutionProfiles={watchExecutionProfiles} refreshExecutionProfiles={refreshExecutionProfiles}
+          target={managementTarget}
+          maxDraftBytes={maxDraftBytes}
+          state={loadedContext}
+          translate={translate}
+          channel={undefined}
+          manage={manage}
+          onClose={() => { setManagementTarget(undefined) }}
+        />}
+      </div>
       <Modal
         open={deleteTarget !== undefined}
         onClose={closeDeleteTask}
@@ -736,11 +749,11 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
         {...deleteTarget === undefined ? {} : { description: translate('detail.task.deleteDescription', { subject: deleteTarget.subject }) }}
         footer={(
           <>
-            <Button variant="outline" disabled={deletingTaskId !== undefined} onClick={closeDeleteTask}>
+            <Button variant="secondary" disabled={deletingTaskId !== undefined} onClick={closeDeleteTask}>
               {translate('detail.task.deleteCancel')}
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               className={css.taskDeleteConfirm}
               disabled={deletingTaskId !== undefined}
               onClick={confirmDeleteTask}
@@ -761,11 +774,11 @@ export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes,
         {...cancelTarget === undefined ? {} : { description: translate('detail.task.stopDescription', { subject: cancelTarget.subject }) }}
         footer={(
           <>
-            <Button variant="outline" disabled={cancellingTaskId !== undefined} onClick={closeCancelTask}>
+            <Button variant="secondary" disabled={cancellingTaskId !== undefined} onClick={closeCancelTask}>
               {translate('detail.task.stopCancel')}
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               className={css.taskStopConfirm}
               disabled={cancellingTaskId !== undefined}
               onClick={confirmCancelTask}

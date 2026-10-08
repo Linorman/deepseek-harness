@@ -56,8 +56,8 @@ describe('ModelsSection theme styles', () => {
     // `bg-layer-3` and `bg-module-platform` both resolve to neutral-bluish-800
     // under the dark theme, so filling the row with either erases the nested
     // editor's boundary. The row is outlined; the fill is the editor's alone.
-    expect(block('.editor')).toContain('background: var(--clocky-alias-bg-module-platform)')
-    expect(block('.rowCard')).toContain('border: 1px solid var(--clocky-alias-border-l2)')
+    expect(block('.editor')).toContain('background: var(--clocky-bg-sunken)')
+    expect(block('.rowCard')).toContain('border: 1px solid var(--clocky-border-default)')
     expect(block('.rowCard')).not.toMatch(/\bbackground\s*:/)
   })
 

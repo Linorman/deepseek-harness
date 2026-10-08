@@ -145,13 +145,13 @@ export function conversationContextKey(kind: string, id: string): string {
 /**
  * Enter the current Team's explicitly requested conversation after the first composer send.
  * @param page - Authenticated page with the newly selected Team; opening does not start another turn.
- * @returns after the existing Session inspection becomes visible.
+ * @returns after the conversation pane becomes visible.
  */
 export async function openCoordinatorConversation(page: Page): Promise<void> {
-  const dialog = page.locator('dialog[data-inspecting][open]')
-  if (await dialog.isVisible()) return
+  const pane = page.locator('[data-conversation-pane]')
+  if (await pane.isVisible()) return
   await page.locator('[data-team-workspace-page]').getByRole('button', {
     name: /^(Talk to coordinator|View coordinator record|与协调者沟通|查看协调者记录)$/,
   }).click()
-  await dialog.waitFor({ state: 'visible' })
+  await pane.waitFor({ state: 'visible' })
 }

@@ -241,8 +241,8 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     if (this.drive !== undefined) return this.drive
     const operation = this.track(this.driveCycle())
     this.drive = operation
-    void operation.then(() => { if (this.drive === operation) this.drive = undefined },
-      () => { if (this.drive === operation) this.drive = undefined })
+    void operation.then(() => { this.drive = undefined },
+      () => { this.drive = undefined })
     return operation
   }
 
@@ -292,7 +292,6 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
         let sequence = stream.firstSequence
         let deferred = false
         for await (const record of this.records(stream, principalId, sequence - 1, Math.min(remainingRecords, through - sequence + 1))) {
-          if (sequence > through) break
           const sourceBytes = Buffer.byteLength(JSON.stringify(record), 'utf8')
           const bytes = record.kind === 'display' || sourceBytes > limits.maxBytesPerDrive
             ? sourceBytes : Math.max(sourceBytes, inboxAdmissionBytes(record))

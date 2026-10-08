@@ -1,6 +1,6 @@
 /** Ordered cognition and canonical reviewer decisions retain distinct task responsibilities. */
 import { expect, it, vi } from 'vitest'
-import { simulationEntityIdSchema } from '@clocky/clocky-simulation'
+import { simulationEntityIdSchema, simulationOperationSchema } from '@clocky/clocky-simulation'
 import { SimulationTaskExecutor } from '../src/task-executor.ts'
 import type { SimulationTaskExecutorOptions } from '../src/task-executor.ts'
 import { taskExecutorFixture } from './task-executor-fixture.ts'
@@ -72,6 +72,31 @@ it.each(['associate', 'execute'] as const)('reuses the recorded second decision 
   } finally { await h.close() }
 })
 
+it.each(['decision', 'waiting', 'blocked', 'limit'] as const)
+('reuses the original attempt after a lost waiting response before %s continuation', async (kind) => {
+  const h = await twoStepFixture('json', kind === 'limit' ? 1 : 2)
+  try {
+    const complete = h.connection.completeTask.bind(h.connection)
+    const lost = vi.spyOn(h.connection, 'completeTask').mockImplementationOnce(async (request) => {
+      const result = await complete(request)
+      expect(result.status).toBe('waiting')
+      throw new Error('Waiting completion response was lost')
+    })
+    await expect(h.executor.advance()).rejects.toThrow('response was lost')
+    const interrupted = h.run.snapshot(), original = Object.values(interrupted.taskExecutions ?? {})[0]
+    expect(original?.decisions).toHaveLength(1)
+    expect(original?.result).toBeUndefined()
+    lost.mockRestore()
+    if (kind === 'waiting' || kind === 'blocked') h.nextDecision.mockReturnValue({ kind })
+    expect((await h.executor.advance()).reason).toBe(kind === 'decision' ? 'idle' : kind === 'waiting' ? 'task-waiting' : 'task-blocked')
+    if (kind === 'decision') expect((await h.executor.advance()).reason).toBe('idle')
+    const settled = Object.values(h.run.snapshot().taskExecutions ?? {})
+    expect(settled).toHaveLength(1)
+    expect(settled[0]?.decisions).toHaveLength(kind === 'decision' ? 2 : 1)
+    expect(h.nextDecision).toHaveBeenCalledOnce()
+  } finally { await h.close() }
+})
+
 it.each(['waiting', 'blocked', 'limit'] as const)('keeps %s from admitting additional cognition', async (kind) => {
   const h = await twoStepFixture('json', kind === 'limit' ? 1 : 2)
   try {
@@ -82,6 +107,84 @@ it.each(['waiting', 'blocked', 'limit'] as const)('keeps %s from admitting addit
     expect(state.resources['received' as never]?.quantity).toBe('1')
     await h.executor.advance()
     expect(h.run.snapshot()).toEqual(state)
+  } finally { await h.close() }
+})
+
+it.each(['unpersisted-effect', 'unacknowledged-delivery'] as const)(
+  'waits for %s before selecting another cognition step', async (mode) => {
+    const h = await twoStepFixture()
+    try {
+      const snapshot = h.run.snapshot.bind(h.run)
+      const complete = h.connection.completeTask.bind(h.connection)
+      let effectPending = false
+      const read = vi.spyOn(h.run, 'snapshot').mockImplementation(() => {
+        const state = snapshot()
+        if (!effectPending) return state
+        const execution = Object.values(state.taskExecutions ?? {})[0]
+        const decisionId = execution?.decisions?.[0]?.request.decisionId
+        const operationId = decisionId === undefined ? undefined : state.decisions[decisionId]?.operationIds[0]
+        const effect = operationId === undefined ? undefined : state.operations[operationId]
+        if (operationId === undefined || effect === undefined) return state
+        if (mode === 'unpersisted-effect') {
+          const { result: _result, ...unsettled } = effect
+          return { ...state, operations: { ...state.operations, [operationId]: unsettled } }
+        }
+        const action = simulationOperationSchema.parse({ kind: 'communication/post', recipient: 'buyer',
+          channelId: 'pending-delivery', text: 'Delivery receipt is pending', deliverAt: state.time })
+        const { delivery: _delivery, ...withoutReceipt } = effect
+        return { ...state, operations: { ...state.operations, [operationId]: { ...withoutReceipt, action } } }
+      })
+      const completion = vi.spyOn(h.connection, 'completeTask').mockImplementationOnce(async (request) => {
+        const result = await complete(request)
+        if (result.status === 'waiting') effectPending = true
+        return result
+      })
+      expect((await h.executor.advance()).reason).toBe('task-waiting')
+      expect(h.nextDecision).not.toHaveBeenCalled()
+      effectPending = false
+      read.mockRestore()
+      completion.mockRestore()
+      expect((await h.executor.advance()).reason).toBe('idle')
+      expect(h.nextDecision).toHaveBeenCalledOnce()
+    } finally { await h.close() }
+  },
+)
+
+it('keeps a retained accepted decision waiting while its effect is not yet visible', async () => {
+  const h = await twoStepFixture()
+  try {
+    const complete = h.connection.completeTask.bind(h.connection)
+    const lost = vi.spyOn(h.connection, 'completeTask').mockImplementationOnce(async (request) => {
+      const result = await complete(request)
+      expect(result.status).toBe('waiting')
+      throw new Error('Waiting response was lost')
+    })
+    await expect(h.executor.advance()).rejects.toThrow('Waiting response was lost')
+    lost.mockRestore()
+    let replayed: Awaited<ReturnType<typeof complete>> | undefined
+    const replayCompletion = vi.spyOn(h.connection, 'completeTask').mockImplementation(async (request) => {
+      replayed = await complete(request)
+      return replayed
+    })
+    const snapshot = h.run.snapshot.bind(h.run)
+    const read = vi.spyOn(h.run, 'snapshot').mockImplementation(() => {
+      const state = snapshot()
+      const execution = Object.values(state.taskExecutions ?? {})[0]
+      const decisionId = execution?.decisions?.[0]?.request.decisionId
+      const operationId = decisionId === undefined ? undefined : state.decisions[decisionId]?.operationIds[0]
+      const effect = operationId === undefined ? undefined : state.operations[operationId]
+      if (operationId === undefined || effect === undefined) return state
+      const { result: _result, ...unsettled } = effect
+      return { ...state, operations: { ...state.operations, [operationId]: unsettled } }
+    })
+    expect((await h.executor.advance()).reason).toBe('task-waiting')
+    expect(replayCompletion).toHaveBeenCalledOnce()
+    expect(replayed).toMatchObject({ status: 'waiting', execution: { task: { phase: 'running' } } })
+    expect(replayed?.execution.result).toBeUndefined()
+    expect(h.nextDecision).not.toHaveBeenCalled()
+    read.mockRestore()
+    expect((await h.executor.advance()).reason).toBe('idle')
+    expect(h.nextDecision).toHaveBeenCalledOnce()
   } finally { await h.close() }
 })
 

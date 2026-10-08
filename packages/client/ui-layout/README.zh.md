@@ -8,13 +8,17 @@
 
 来源返回在浏览器历史中保存一条同文档路由，仅含允许的视图参数及其精确 Team 目标。来源 owner 重新校验后，Back 或返回动作恢复发起链接的焦点，找不到链接时回到标题。隐藏工作区不能消耗该焦点标记。请求 Team 路由时，在明确选择 Session 之前隐藏初始会话界面，目标读取失败时也保持错误页可操作。
 
-工作台外壳插件：`AppFrame` 注册到 `root`，并声明 `sidebar`、`team.workspace`、`conversation`、`details` 和 `shell.overlay`。Team 内容与 Session 选择相互独立。稳定的原生 dialog 容器在 Team 创建前以具名内联区域呈现会话，在 Team 检查期间作为页内模态子页面呈现；返回操作只清除查看选择，不取消执行。Session 来源、展开、键盘关闭和焦点恢复由外壳负责。收起的工具详情子树保持挂载，但从键盘及辅助技术导航中隐藏。
+工作台外壳插件：`AppFrame` 注册到 `root`，并声明 `sidebar`、`team.workspace`、`conversation`、`details` 和 `shell.overlay`。Team 内容与 Session 选择相互独立。稳定的会话区域在 Team 创建前以内联方式呈现 Session，在 Team 检查期间作为 Team 页面旁的非模态面板呈现，使对话所针对的页面保持可见。面板可通过指针或键盘分隔条调整宽度，可展开占满中栏；当 Team 页面与最小面板无法并排时改为全屏 sheet；关闭操作（亦可按 Escape）只清除查看选择，不取消执行；在面板内打开的 portal 图层（如图片预览）中按 Escape 只关闭该图层。Session 来源、展开、键盘关闭和焦点恢复由外壳负责。`shell.overlay` 图层还承载连接横幅：报告重连状态，并在 Host 拒绝浏览器的产品凭据后说明如何从终端重新打开，而不是让各功能打印传输错误。收起的工具详情子树保持挂载，但从键盘及辅助技术导航中隐藏。
 
-瞬时布局 store 以 224px 侧边栏和关闭的详情栏启动。侧边栏可在 208px 至 420px 之间拖拽调整，并收起为 56px 轨道。会话与工具详情占用者在 Session 容器中保持固定组件位置。详情栏宽度仍是偏好值：没有 Session 或 Session 为空时渲染宽度为零，切换到另一个非空 Session 时在绘制前关闭详情。让步求解器先收缩详情栏，再减少会话可用宽度。
+外壳持有唯一的全局按键监听。功能插件通过 `ctx.layout.registerShortcut(spec)` 和 `ctx.layout.registerCommands(provider)` 贡献快捷键与命令，二者都返回供 `ctx.effect()` 使用的释放函数。规范化后相同的组合键再次注册时抛出 `ShortcutConflictError`，并指明双方所有者。输入法组字期间不触发快捷键；焦点位于文本框时只触发以 `allowInInput` 注册的快捷键。`⌘K`/`Ctrl+K` 打开命令面板：面板打开时读取各提供者的当前条目，并在关闭后执行所选命令。`?` 打开快捷键浮层，按所有者分组并显示平台对应的按键。
 
-主题呈现器消费解析后的 `ctx.theme` 快照，更新原生配色方案、body 主题属性、别名及其拥有的 theme-color 元数据，并在释放时移除这些写入。业务值通过标准框架 hook 和占用者自己的注入回调传递。AppFrame、SessionStage、布局 store 和列求解器保持包内私有；公开客户端接口包含加载入口、布局服务和 owner-share 类型。
+瞬时布局 store 以 224px 侧边栏和关闭的详情栏启动。侧边栏可在 208px 至 420px 之间拖拽调整，并收起为 56px 轨道。会话与工具详情占用者在 Session 容器中保持固定组件位置。详情栏宽度仍是偏好值：没有 Session 或 Session 为空时渲染宽度为零，切换到另一个非空 Session 时在绘制前关闭详情。让步求解器先收缩详情栏，再减少会话可用宽度。在 Team 页面旁，面板优先 480px（范围 380–880px），同时 Team 页面至少保留 480px；之后面板收缩到下限，再不足时改为 sheet。此时详情栏位于面板内部，并在会话正文低于 360px 前关闭。
+
+主题呈现器消费解析后的 `ctx.theme` 快照，更新原生配色方案、body 主题属性、角色 token 覆盖及其拥有的 theme-color 元数据。快照落地期间，它在根元素上设置 `data-clocky-theme-switching` 一帧，使主题切换立即重绘，而不是逐个运行控件的颜色过渡。释放时移除这些写入。业务值通过标准框架 hook 和占用者自己的注入回调传递。AppFrame、SessionStage、布局 store 和列求解器保持包内私有；公开客户端接口包含加载入口、布局服务和 owner-share 类型。
 
 侧栏 owner share 包含当前产品工作区。Session 标题区分经授权的当前协调者沟通与执行记录检查；worker、历史会话和仿真管理视图不会因呈现方式获得写入权限。
+
+每个工作区 stage 隔离自己的层叠上下文，并渲染一个来自 [ui-viz](../ui-viz/README.zh.md) 的环境背景，按模式着色；隐藏的 stage 不渲染背景。Team 路由键包含 `viz`，Simulation 路由键包含 `simulationDisplay`，因此导航清理会与其他工作区参数一起保留或清除它们。
 
 ## 模型体验
 

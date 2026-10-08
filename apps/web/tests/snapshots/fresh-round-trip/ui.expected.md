@@ -1,16 +1,18 @@
-- banner:
-  - text: {{workspace}}
+- text: {{workspace}}
+- img
+- text: Standard mode
+- button "Session log":
+  - text: Session log
   - img
-  - text: Standard mode
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
-- text: "Direct message from participant-{{uuid}}: Use the bash tool to run exactly: echo WEB_E2E_OK. Then reply with the single word DONE and stop. {{clock}}"
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
+- text: "From a Team member Use the bash tool to run exactly: echo WEB_E2E_OK. Then reply with the single word DONE and stop. {{clock}}"
 - button "Copy":
   - img
+- button "Worked for {{duration}} · 3 steps" [expanded]:
+  - img
+  - text: Worked for {{duration}} · 3 steps
 - button "Context injection @clocky/clocky-system-prompt":
   - img
   - img
@@ -43,4 +45,5 @@
   - img
 - button "6% of context used"
 - button "Send message" [disabled]
-- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 99% Input 15.7K tok · Output 111 tok
+- text: 1 turns · 2 steps
+- button "Session statistics": ⓘ

@@ -6,23 +6,23 @@
   height: 32px;
   padding: 6px 12px;
   gap: 4px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 18px;
-  color: var(--clocky-alias-label-primary);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-xl);
+  color: var(--clocky-fg-primary);
   background: transparent;
   font-family: var(--clocky-font-family);
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
   font-weight: 400;
-  line-height: 20px;
+  line-height: var(--clocky-type-label-line-height);
   cursor: pointer;
 }
 
 .sessionLogButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .sessionLogButton:disabled {
-  color: var(--clocky-alias-label-dimmed);
+  color: var(--clocky-fg-disabled);
   cursor: wait;
 }
 

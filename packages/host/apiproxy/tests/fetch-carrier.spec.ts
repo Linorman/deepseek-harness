@@ -246,6 +246,57 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
   }
 }
 
+it.each([
+  ['simulation.checkpoints.create', { runId: 'run', commandId: 'cut' }, 500],
+  ['simulation.runs.restore', { runId: 'run', commandId: 'restore', checkpointId: 'cut' }, 500],
+  ['simulation.tasks.list', { runId: 'run' }, 500],
+  ['simulation.tasks.cancel', { runId: 'run', commandId: 'cancel', operationId: 'operation', expectedRevision: 1,
+    expectedAttemptId: null, reason: 'Cancel' }, 500],
+  ['simulation.tasks.review.list', { runId: 'run' }, 500],
+  ['simulation.tasks.review.resolve', { runId: 'run', commandId: 'review', operationId: 'operation', attemptId: 'attempt',
+    expectedRevision: 1, nextPhase: 'completed', reason: 'Approved' }, 500],
+  ['simulation.ingress.create', { runId: 'run', ingressId: 'input', entityId: 'entity', text: 'Input', availableAt: '0' }, 500],
+  ['simulation.ingress.get', { runId: 'run', ingressId: 'input' }, 500],
+  ['simulation.runs.control', { runId: 'run' }, 500],
+  ['simulation.runs.manage', { runId: 'run', managementId: 'pause', phase: 'paused' }, 500],
+  ['simulation.management.get', { runId: 'run', managementId: 'pause' }, 500],
+  ['simulation.sources.inspect', { runId: 'run', decisionId: 'decision', sourceIndex: 0 }, 200],
+  ['simulation.records.list', { runId: 'run', mode: 'metadata' }, 200],
+  ['simulation.changes.watch', { runId: 'run' }, 200],
+  ['simulation.catalog', {}, 200],
+  ['simulation.runs.preflight', { templateId: 'company', templateVersion: '1', name: 'Company',
+    parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '1' } }, 200],
+  ['simulation.runs.create', { commandId: 'create', templateId: 'company', templateVersion: '1', name: 'Company',
+    parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '1' } }, 200],
+  ['simulation.runs.prepare', { runId: 'run', commandId: 'prepare' }, 200],
+  ['simulation.requests.list', { runId: 'run' }, 200],
+  ['simulation.requests.retry', { runId: 'run', commandId: 'original' }, 200],
+  ['simulation.requests.get', { commandId: 'original' }, 200],
+  ['simulation.operation.retry', { runId: 'run', commandId: 'retry', operationId: 'operation', expectedAttemptCount: 1, reason: 'Retry' }, 500],
+  ['simulation.runs.statuses', { runIds: ['run'] }, 500],
+] as const)('refuses %s when the optional Simulation API is absent', async (method, payload, status) => {
+  const handler = toFetchHandler(fakeApi())
+  const response = await handler.fetch(new Request(`http://x/api/${method}`, { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'client-request', rpcId: 'absent', method, payload }) }))
+  expect(response.status).toBe(status)
+  if (status === 200) expect(await response.json()).toMatchObject({ rpcId: 'absent', result: {
+    ok: false, error: { code: 'simulation-product-unavailable', details: {} },
+  } })
+})
+
+it.each([
+  ['team.inbox.watch', {}, 'inboxWatch', { items: [], displayCursor: -1, cursor: -1 }],
+  ['team.inbox.acknowledge', { throughCursor: 0 }, 'inboxAcknowledge', { displayCursor: 0 }],
+] as const)('routes %s through the configured Team API', async (method, payload, member, value) => {
+  const invoke = vi.fn(async (request: RpcRequest<unknown>) => ({ rpcId: request.rpcId, result: { ok: true, value } }))
+  const api = { ...fakeApi(), teams: { [member]: invoke } } as unknown as ApiProxy
+  const response = await toFetchHandler(api).fetch(new Request(`http://x/api/${method}`, { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'client-request', rpcId: 'inbox', method, payload }) }))
+  expect(response.status).toBe(200)
+  expect(await response.json()).toMatchObject({ rpcId: 'inbox', result: { ok: true, value } })
+  expect(invoke).toHaveBeenCalledWith({ rpcId: 'inbox', payload })
+})
+
 function client(api: ApiProxy = fakeApi(), timeoutMs?: number): InProcessApiClient {
   return new InProcessApiClient(toFetchHandler(api), timeoutMs)
 }

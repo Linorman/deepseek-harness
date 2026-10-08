@@ -41,7 +41,7 @@ it.each(['json', 'sqlite'])('reviews and restores company attempts through produ
   try {
     await initialize(sdk)
     expect((await sdk.simulationCatalog()).items[0]).toMatchObject({ review: 'buyer', execution: 'automatic-tasks' })
-    const created = await sdk.createSimulation({ commandId: 'sdk-review-create', templateId: 'company', templateVersion: '1',
+    const created = await sdk.createSimulation({ commandId: 'sdk-review-create', templateId: 'company', templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' },
       name: 'SDK reviewed company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
     const runId = created.runId
     expect((await settled(created.commandId)).request.status).toBe('completed')

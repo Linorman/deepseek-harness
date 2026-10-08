@@ -171,6 +171,8 @@ export interface SlotRendererHost {
      * undefined while no current session resolves.
      */
     provideInfo: HostObservable<SessionMaybeProvideInfo>
+    /** Coarse connection source backing the useConnection standard hook. */
+    connection?: HostObservable<unknown>
   }
   /** Workspace-side standard-kit sources. */
   workspaces: {

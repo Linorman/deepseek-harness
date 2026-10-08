@@ -80,6 +80,7 @@ describe('pending human question through the formal Host gateway', () => {
         const target = join(root, '.clocky/profiles/headless/snapshot-fixtures')
         await mkdir(target, { recursive: true })
         await writeFile(join(target, driver), await readFile(join(fixtures, driver)))
+        await writeFile(join(target, 'authenticated-host.ts'), await readFile(join(fixtures, 'authenticated-host.ts')))
         await writeFile(join(target, 'package.json'), '{"type":"module"}\n')
         const launch = resolveExampleLaunch({ srcBin: join(repository, 'apps/cli/src/bin.ts'),
           configArgs: ['--profile', 'headless', '--patch', configPath], tsconfigPath: join(repository, 'tsconfig.json'),

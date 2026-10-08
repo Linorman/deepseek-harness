@@ -1,0 +1,264 @@
+/* Simulation visual views. State marks read status roles; the Simulation
+   identity ramp appears only on chrome. */
+
+.visual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-3);
+  min-width: 0;
+}
+
+.note {
+  margin: 0;
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-tertiary);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--clocky-space-2);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-secondary);
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: var(--clocky-space-2);
+  overflow-x: auto;
+}
+
+.side {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--clocky-space-2);
+}
+
+.lane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-2);
+  min-width: 0;
+  padding: var(--clocky-space-2);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-sunken);
+}
+
+.lane h3 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-secondary);
+}
+
+.lane ol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--clocky-space-2);
+  border: 1px solid var(--clocky-border-subtle);
+  border-left: 3px solid var(--clocky-status-idle-border);
+  border-radius: var(--clocky-radius-sm);
+  font: var(--clocky-type-body-small);
+  text-align: start;
+  color: var(--clocky-fg-primary);
+  background: var(--clocky-bg-surface);
+  cursor: pointer;
+}
+
+.card small {
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+}
+
+.card[data-state="running"] { border-left-color: var(--clocky-status-running-fg); }
+.card[data-state="waiting"] { border-left-color: var(--clocky-status-waiting-fg); }
+.card[data-state="done"] { border-left-color: var(--clocky-status-done-fg); }
+.card[data-state="failed"] { border-left-color: var(--clocky-status-failed-fg); }
+.card[data-state="blocked"] { border-left-color: var(--clocky-status-blocked-fg); }
+
+/* Outcome unknown: hatched amber, never a solid failure. */
+.card[data-state="needs-you"] {
+  border-left-color: var(--clocky-status-needs-you-fg);
+  background-image: repeating-linear-gradient(135deg, var(--clocky-status-needs-you-bg) 0 6px, transparent 6px 12px);
+}
+
+.footnote {
+  margin: 0;
+  padding: var(--clocky-space-2) var(--clocky-space-3);
+  border-left: 3px solid var(--clocky-border-strong);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-secondary);
+}
+
+.rail {
+  position: relative;
+  display: flex;
+  gap: var(--clocky-space-4);
+  margin: 0;
+  padding: var(--clocky-space-6) var(--clocky-space-2) var(--clocky-space-2);
+  list-style: none;
+  overflow-x: auto;
+}
+
+.rail::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--clocky-space-6) + 9px);
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--clocky-viz-edge);
+}
+
+.stop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--clocky-space-1);
+  min-width: 112px;
+  border: 0;
+  background: transparent;
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-secondary);
+  cursor: pointer;
+}
+
+.stop:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  border-radius: var(--clocky-radius-sm);
+}
+
+.marker {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--clocky-radius-full);
+  border: 2px solid var(--clocky-status-idle-border);
+  background: var(--clocky-bg-surface);
+}
+
+.stop[data-state="running"] .marker { border-color: var(--clocky-status-running-fg); border-style: dashed; }
+.stop[data-state="done"] .marker { border-color: var(--clocky-status-done-fg); background: var(--clocky-status-done-bg); }
+.stop[data-state="failed"] .marker {
+  border-color: var(--clocky-status-failed-fg);
+  background: linear-gradient(135deg, transparent 45%, var(--clocky-status-failed-fg) 45% 55%, transparent 55%), var(--clocky-status-failed-bg);
+}
+
+.stop[data-latest] .marker {
+  box-shadow: var(--clocky-glow-done);
+}
+
+.stop strong {
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-primary);
+}
+
+.seats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-2);
+}
+
+.seatGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 16px);
+  gap: var(--clocky-space-1);
+}
+
+.seat {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--clocky-radius-xs);
+  border: 1px solid var(--clocky-border-default);
+  background: transparent;
+}
+
+.seat[data-seat="active"] { border-color: var(--clocky-status-running-border); background: var(--clocky-status-running-fg); }
+.seat[data-seat="awaiting"] { border: 2px solid var(--clocky-status-needs-you-fg); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--clocky-space-3);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-secondary);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--clocky-space-1);
+}
+
+.driverRing {
+  display: inline-block;
+  vertical-align: middle;
+  margin-inline-end: var(--clocky-space-1);
+}
+
+.driverRing circle {
+  fill: none;
+  stroke-width: 2.5;
+  stroke: var(--clocky-status-idle-border);
+}
+
+.driverRing[data-active] circle {
+  stroke: var(--clocky-status-running-fg);
+  stroke-dasharray: 10 5;
+  transform-origin: center;
+  animation: orbit var(--clocky-duration-spin) linear infinite;
+}
+
+.driverRing[data-paused] circle {
+  animation-play-state: paused;
+}
+
+@keyframes orbit {
+  to { transform: rotate(360deg); }
+}
+
+.consoleMoment {
+  border-radius: var(--clocky-radius-md);
+}
+
+/* Feedback on cards and rail stops: gated hover lift, press settle. */
+.card {
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-enter), border-color var(--clocky-duration-fast) var(--clocky-ease-standard);
+}
+
+.card:active { transform: scale(0.985); }
+
+.marker {
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-enter);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { transform: translateY(-1px); border-color: var(--clocky-border-default); }
+  .stop:hover .marker { transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card:hover, .card:active, .stop:hover .marker { transform: none; }
+}

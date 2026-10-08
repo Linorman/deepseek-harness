@@ -2,7 +2,7 @@ import type { SessionEvent } from '@clocky/clocky-session/types'
 import type {} from '@clocky/clocky-tools/types'
 import type {
   ConversationNode, RunningToolCall, ToolCallBlock, ToolResultNode,
-} from './conversation.ts'
+} from '../contract/conversation-snapshot.ts'
 
 interface ProjectedBlock {
   source: ToolCallBlock

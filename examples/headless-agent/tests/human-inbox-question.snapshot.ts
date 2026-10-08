@@ -20,6 +20,7 @@ describe('principal human question through the real Loader', () => {
         for (const file of ['human-inbox-question-driver.ts', 'headless-human-question-driver.ts']) {
           await writeFile(join(target, file), await readFile(join(fixtures, file)))
         }
+        await writeFile(join(target, 'authenticated-host.ts'), await readFile(join(fixtures, 'authenticated-host.ts')))
         await writeFile(join(target, 'package.json'), '{"type":"module"}\n')
         const launch = resolveExampleLaunch({ srcBin: join(repository, 'apps/cli/src/bin.ts'),
           configArgs: ['--profile', 'headless', '--patch', join(fixtures, 'human-inbox-question.cordis.yml')],

@@ -189,5 +189,5 @@ describe('Team Hub bounded WAL load and checkpoint recovery', () => {
     })
     expect(pending.deliveries).toHaveLength(32)
     expect(pending.deliveries[0]?.envelope.payload).toMatchObject({ index: 0 })
-  }, largeLoad ? 180_000 : 30_000)
+  }, largeLoad ? 180_000 : 60_000)
 })

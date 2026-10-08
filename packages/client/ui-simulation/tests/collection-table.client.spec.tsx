@@ -4,8 +4,33 @@ import { cleanup, fireEvent, render } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { CollectionTable } from '../src/client/CollectionTable.tsx'
 import { en, zh } from '../src/client/locales.ts'
+import type { SimulationProductCollectionPage } from '@clocky/clocky-client-runtime/client'
 afterEach(cleanup)
 const base = { runId: 'run' as never, snapshotRevision: 2, observedAt: 1, total: 1 }
+it('labels unnamed entities with exact ids and keeps operation publication separate from delivery', () => {
+  const props = { open: vi.fn(), t: (key: keyof typeof en) => en[key], date: String }
+  const ui = render(<CollectionTable {...props} page={{ ...base, collection: 'entities', items: [{ id: 'entity' as never,
+    kind: { text: 'external', truncated: false }, cognition: 'none', phase: 'inactive', writer: 'released' }] }} />)
+  expect(ui.getByRole('button', { name: `${en.view}: entity` })).toBeDefined()
+  ui.rerender(<CollectionTable {...props} page={{ ...base, collection: 'operations', items: [{ id: 'operation' as never,
+    entityId: 'entity' as never, decisionId: 'decision' as never, index: 0, status: 'outcome-unknown', publication: 'published',
+    delivery: 'not-applicable', task: 'not-applicable', kind: { text: 'Communication', truncated: false } }] }} />)
+  expect(ui.getByText(en['outcome-unknown'])).toBeDefined()
+  expect(ui.getByText(en.published)).toBeDefined()
+  expect(ui.getByText(en['not-applicable'])).toBeDefined()
+  ui.rerender(<CollectionTable {...props} page={{ ...base, collection: 'checkpoints', items: [{ id: 'checkpoint' as never,
+    status: 'completed', startedSequence: 1, latestSuccessful: false, sourceValidation: 'not-performed', time: '3' as never,
+    publishedAt: 4 }] }} />)
+  expect(ui.getByText('4')).toBeDefined()
+  expect(ui.queryByText(en.latest)).toBeNull()
+})
+it('rejects unsupported public collection kinds instead of choosing misleading columns', () => {
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+  try {
+    expect(() => render(<CollectionTable page={{ collection: 'future' } as unknown as SimulationProductCollectionPage}
+      open={vi.fn()} t={key => en[key]} date={String} />)).toThrow('Unknown Simulation collection')
+  } finally { error.mockRestore() }
+})
 it.each([en, zh])('names entity actions from existing summaries and preserves the exact selection identity', (locale) => {
   const open = vi.fn()
   const view = render(<CollectionTable page={{ ...base, collection: 'entities', items: [{ id: 'opaque' as never,

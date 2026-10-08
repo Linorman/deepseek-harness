@@ -20,10 +20,17 @@ import { SessionInputShell } from '../src/client/input/facade.ts'
 import type {
   ComposerAttachment, ComposerAttachmentsOwnerProps,
 } from '../src/client/contract/slots.ts'
-import type { DraftAttachmentId, InputNotice, InputState } from '../src/client/input/contract.ts'
+import type { DraftAttachmentId, InputNotice, InputState } from '../src/client/contract/input.ts'
 import { InputBar } from '../src/client/skeleton/InputBar.tsx'
 import type { InputBarProps } from '../src/client/skeleton/InputBar.tsx'
 import { zh } from '../src/client/locales.ts'
+
+/** jsdom has no AnimationEvent: end the toast's exit fade, which ends its lifetime. */
+function endToastFade(element: Element): void {
+  const event = new Event('animationend', { bubbles: true })
+  Object.defineProperty(event, 'animationName', { value: 'clocky-toast-fade' })
+  act(() => { element.dispatchEvent(event) })
+}
 
 afterEach(cleanup)
 
@@ -400,7 +407,7 @@ describe('image draft rail', () => {
       }
       paste()
       expect(view.getByRole('alert').textContent).toContain('仅支持 PNG、JPG、WebP、GIF 格式的图片')
-      act(() => { vi.advanceTimersByTime(4000) })
+      endToastFade(view.getByRole('alert'))
       expect(view.queryByRole('alert')).toBeNull()
       // The identical rejection re-announces: the toast is keyed per show.
       paste()
@@ -419,6 +426,20 @@ describe('image draft rail', () => {
       ])
     })
     expect(result.view.getByRole('alert').textContent).toContain('图片读取服务不可用')
+  })
+})
+
+describe('running status row', () => {
+  it('names the running step above the draft and disappears when the turn ends', () => {
+    const { view, session } = bench({ running: true })
+    expect(view.getByRole('status').textContent).toBe('正在处理')
+    act(() => {
+      session.set({ ...session.getSnapshot(), runningCalls: [{ callId: 'c1', name: 'bash', argsRaw: '{}', turn: 1, step: 2,
+        time: 1, callView: null, subCalls: [] }] })
+    })
+    expect(view.container.querySelector('[data-composer-activity="tool"]')?.textContent).toBe('正在运行 bash第 2 步')
+    act(() => { session.set({ ...session.getSnapshot(), running: false }) })
+    expect(view.container.querySelector('[data-composer-activity]')).toBeNull()
   })
 })
 
@@ -1306,7 +1327,7 @@ describe('strips and variants', () => {
       // queries go through the view's document-bound helpers.
       expect(send.view.getByRole('alert').textContent).toContain('boom (agent-busy)')
       expect(send.view.queryByRole('button', { name: 'Retry' })).toBeNull()
-      act(() => { vi.advanceTimersByTime(4000) })
+      endToastFade(send.view.getByRole('alert'))
       expect(send.view.queryByRole('alert')).toBeNull()
     } finally {
       vi.useRealTimers()
@@ -1320,7 +1341,7 @@ describe('strips and variants', () => {
       act(() => { shell.notify('error', '命令失败了') })
       expect(view.getByRole('alert').textContent).toContain('命令失败了')
       expect(view.queryByRole('status')).toBeNull()
-      act(() => { vi.advanceTimersByTime(4000) })
+      endToastFade(view.getByRole('alert'))
       expect(view.queryByRole('alert')).toBeNull()
     } finally {
       vi.useRealTimers()

@@ -1,17 +1,16 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import css from './Toast.module.css'
 
-/** Full-opacity hold before the fade starts. Must agree with the stylesheet's
- * toast-fade delay (Toast.module.css) or the banner unmounts mid-fade. */
-const HOLD_MS = 3000
-/** Fade duration. Must agree with the stylesheet's toast-fade duration. */
-const FADE_MS = 1000
+/** Keyframes name of the stylesheet's exit fade; CSS modules may wrap it with a scope hash. */
+const FADE_ANIMATION = 'clocky-toast-fade'
 
 /**
- * Transient top-center banner: slides in, holds at full opacity, fades out,
- * then reports done so the owner can unmount it. Re-showing the same text
+ * Transient top-center banner: slides in, holds at full opacity for the
+ * `--clocky-duration-dwell` token, fades out, then reports done so the owner
+ * can unmount it. The fade's own `animationend` ends the lifetime, so the
+ * stylesheet's timing is the only timing. Re-showing the same text
  * restarts the cycle when the owner remounts the component (key it by a
  * per-show sequence). Rendered through a body portal so an owner inside a
  * transformed or filtered ancestor cannot trap the fixed banner in that
@@ -31,12 +30,22 @@ export function Toast({ text, icon, anchor, onDone }: {
   anchor?: HTMLElement | null
   onDone: () => void
 }) {
+  // A native listener: React resolves `onAnimationEnd` to a vendor-prefixed
+  // name where `AnimationEvent` is missing, which would strand the toast.
+  const toastRef = useRef<HTMLDivElement>(null)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
   useEffect(() => {
-    const timer = setTimeout(onDone, HOLD_MS + FADE_MS)
-    return () => { clearTimeout(timer) }
-  }, [onDone])
+    // The toast is always portaled while mounted, before passive effects run.
+    const element = toastRef.current as HTMLDivElement
+    const onEnd = (event: Event) => {
+      if ((event as AnimationEvent).animationName.includes(FADE_ANIMATION)) onDoneRef.current()
+    }
+    element.addEventListener('animationend', onEnd)
+    return () => { element.removeEventListener('animationend', onEnd) }
+  }, [])
   // Anchor-centered placement re-measures on window resizes; the banner lives
-  // four seconds, so sub-window layout drift within that span stays out of
+  // a few seconds, so sub-window layout drift within that span stays out of
   // scope.
   const [left, setLeft] = useState<number | null>(null)
   useLayoutEffect(() => {
@@ -50,7 +59,7 @@ export function Toast({ text, icon, anchor, onDone }: {
     return () => { window.removeEventListener('resize', measure) }
   }, [anchor])
   return createPortal(
-    <div className={css.toast} role="alert" style={left === null ? undefined : { left }}>
+    <div ref={toastRef} className={css.toast} role="alert" style={left === null ? undefined : { left }}>
       {icon !== undefined && <span className={css.icon} aria-hidden>{icon}</span>}
       <span className={css.text}>{text}</span>
     </div>,

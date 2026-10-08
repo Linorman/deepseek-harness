@@ -108,6 +108,11 @@ it('rejects missing actors, wrong channel membership, duplicate identities, gran
     expect(simulationCompanyTemplateSchema.safeParse({ ...template, spec: { ...spec, maxEntities: 2 } }).success).toBe(false)
     const resolved = resolveCreation(template, { ...h.input, limits: { maxEntities: 2 } }, text => ({ text, truncated: false }))
     expect(resolved.issues).toMatchObject([{ field: 'limits.maxEntities', code: 'invalid' }])
+    const limitedResidents = resolveCreation({ ...template, editableLimits: ['maxResidentActors'] },
+      { ...h.input, limits: { maxResidentActors: 1 } }, text => ({ text, truncated: false }))
+    expect(limitedResidents.issues).toContainEqual(expect.objectContaining({
+      field: 'limits.maxResidentActors', code: 'invalid',
+    }))
     expect(h.ctx.storageLog.get('owner-commands')!.tailSequence).toBe(-1)
     expect(h.requests).toEqual([])
   } finally { await h.close() }

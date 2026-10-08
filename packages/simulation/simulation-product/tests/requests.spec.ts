@@ -103,6 +103,23 @@ it('bounds complete receipt pages while preserving exact outcome lookup', async 
   } finally { await h.close() }
 })
 
+it('orders commands with equal acceptance times by their stable identities', async () => {
+  const h = await ownerFixture()
+  try {
+    const runId = await h.create()
+    const service = h.ctx.simulationAdministration
+    const acceptedAt = Date.now() + 1000
+    for (const commandId of ['prepare-z', 'prepare-a', 'prepare-m']) {
+      const now = vi.spyOn(Date, 'now').mockReturnValue(acceptedAt)
+      try { await service.prepare({ runId, commandId: commandId as never }, call()) }
+      finally { now.mockRestore() }
+      await h.finished(commandId as never)
+    }
+    expect((await service.listRequests({ runId }, call())).items.map(item => item.commandId))
+      .toEqual([h.input.commandId, 'prepare-a', 'prepare-m', 'prepare-z'])
+  } finally { await h.close() }
+})
+
 it.each(['json', 'sqlite'].flatMap(backend => ['prepare', 'restore'].map(kind => [backend, kind] as const)))
 ('resumes the accepted original %s %s command after cold discovery without a replacement identity', async (backend, kind) => {
   const h = await ownerFixture(backend as 'json' | 'sqlite')

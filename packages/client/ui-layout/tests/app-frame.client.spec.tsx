@@ -13,9 +13,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
 import { useSyncExternalStore } from 'react'
-import { AppFrame } from '@clocky/clocky-client-ui-layout/src/client/AppFrame.tsx'
+import { AppFrame, chordKeys } from '@clocky/clocky-client-ui-layout/src/client/AppFrame.tsx'
 import type { AppFrameProps } from '@clocky/clocky-client-ui-layout/src/client/AppFrame.tsx'
-import { SIDEBAR_COLLAPSED, SIDEBAR_DEFAULT, CENTER_MIN } from '@clocky/clocky-client-ui-layout/src/client/columns.ts'
+import { SIDEBAR_COLLAPSED, SIDEBAR_DEFAULT, CENTER_MIN, PANE_DEFAULT } from '@clocky/clocky-client-ui-layout/src/client/columns.ts'
 import { createLayoutStore } from '@clocky/clocky-client-ui-layout/src/client/stores.ts'
 import type {
   SessionId, SessionListState, WorkspaceListState,
@@ -25,6 +25,12 @@ import type {
 const selectedSession = { current: 's-test' as SessionId | undefined }
 const selectedSessionBlank = { current: false }
 const baselinesReady = { current: true }
+const connectionState = { current: undefined as undefined | 'connecting' | 'connected' | 'reconnecting' | 'unauthorized' }
+const selectedTeamId = { current: undefined as string | undefined }
+const commandFeed = {
+  sections: [] as ReturnType<NonNullable<AppFrameProps['readCommands']>>,
+  shortcuts: [] as ReturnType<NonNullable<AppFrameProps['readShortcuts']>>,
+}
 
 // Render-prop contract stub fed through the standard seat prop (the renderer
 // injects the real one in production): session mode runs children(id), empty
@@ -91,6 +97,16 @@ function mountFrame() {
       useSessions={useSessions}
       useWorkspaces={((sel: (s: WorkspaceListState) => unknown) => sel(workspaceState)) as never}
       SessionProvider={SessionProviderStub}
+      readCommands={() => commandFeed.sections}
+      readShortcuts={() => commandFeed.shortcuts}
+      {...selectedTeamId.current === undefined ? {} : {
+        useTeamTasks: ((sel: (s: { current: string; selected: undefined }) => unknown) =>
+          sel({ current: selectedTeamId.current!, selected: undefined })) as never,
+      }}
+      {...connectionState.current === undefined ? {} : {
+        useConnection: ((sel: (s: { state: typeof connectionState.current }) => unknown) =>
+          sel({ state: connectionState.current })) as never,
+      }}
     />
   )
   const utils = render(element())
@@ -121,6 +137,10 @@ beforeEach(() => {
   selectedSession.current = 's-test' as SessionId
   selectedSessionBlank.current = false
   baselinesReady.current = true
+  connectionState.current = undefined
+  selectedTeamId.current = undefined
+  commandFeed.sections = []
+  commandFeed.shortcuts = []
   vi.useFakeTimers()
   vi.stubGlobal('ResizeObserver', ResizeObserverStub)
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => { cb(0) }, 16) as unknown as number)
@@ -413,5 +433,103 @@ describe('AppFrame — unmount with an in-flight resize frame', () => {
     frameWidth = SIDEBAR_DEFAULT + CENTER_MIN + 330
     act(() => { fireResize?.(); fireResize?.(); vi.advanceTimersByTime(20) })
     expect(tracks(frame)).toEqual([SIDEBAR_DEFAULT, 330])
+  })
+})
+
+describe('AppFrame connection banner', () => {
+  it('stays quiet while connected and without a connection feed', () => {
+    const { queryByRole } = mountFrame()
+    expect(queryByRole('alert')).toBeNull()
+    expect(queryByRole('status')).toBeNull()
+  })
+
+  it('explains an expired credential in the shell overlay instead of inline transport text', () => {
+    connectionState.current = 'unauthorized'
+    const { getByRole, frame } = mountFrame()
+    const alert = getByRole('alert')
+    expect(frame.querySelector('[data-shell-overlay]')?.contains(alert)).toBe(true)
+    expect(alert.textContent).toContain('connection.unauthorized')
+    expect(alert.textContent).toContain('connection.unauthorizedHint')
+  })
+
+  it('reports reconnection as a status', () => {
+    connectionState.current = 'reconnecting'
+    const { getByRole } = mountFrame()
+    expect(getByRole('status').textContent).toBe('connection.reconnecting')
+  })
+})
+
+describe('AppFrame conversation pane', () => {
+  it('opens the Session beside the Team page instead of a modal, keeping the page visible at 1280px', () => {
+    frameWidth = 1280
+    selectedTeamId.current = 'team-1'
+    const { frame, getByRole } = mountFrame()
+    const center = frame.querySelector<HTMLElement>('[data-pane]')!
+    expect(center.dataset.pane).toBe('split')
+    expect(center.style.gridTemplateColumns).toBe(`minmax(0, 1fr) ${String(PANE_DEFAULT)}px`)
+    expect(frame.querySelector('dialog')).toBeNull()
+    const pane = getByRole('region', { name: 'session' })
+    expect(pane.getAttribute('data-conversation-pane')).toBe('split')
+    expect(frame.querySelector('[data-behind-pane]')).toBeNull()
+  })
+
+  it('resizes the pane from its keyboard separator and expands across the center column', () => {
+    frameWidth = 1600
+    selectedTeamId.current = 'team-1'
+    const { frame, getByRole, instance, rerenderFrame } = mountFrame()
+    const separator = getByRole('separator', { name: 'resizePane' })
+    act(() => { separator.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })) })
+    expect(instance.store.getSnapshot().pane).toBe(PANE_DEFAULT + 16)
+    act(() => { getByRole('button', { name: 'expand' }).click() })
+    rerenderFrame()
+    expect(frame.querySelector<HTMLElement>('[data-pane]')!.dataset.pane).toBe('expanded')
+    expect(frame.querySelector('[data-behind-pane]')).not.toBeNull()
+    act(() => { getByRole('button', { name: 'close' }).click() })
+    expect(instance.store.getSnapshot().paneExpanded).toBe(false)
+  })
+
+  it('presents a sheet on narrow viewports', () => {
+    frameWidth = 900
+    selectedTeamId.current = 'team-1'
+    const { frame } = mountFrame()
+    expect(frame.querySelector<HTMLElement>('[data-pane]')!.dataset.pane).toBe('sheet')
+    expect(frame.querySelector('[role="separator"]')).toBeNull()
+  })
+})
+
+describe('AppFrame command palette and shortcut overlay', () => {
+  beforeEach(() => {
+    // jsdom has no layout; the palette keeps its active row in view.
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
+  it('lists provider commands, runs the chosen one after closing, and returns to no overlay', () => {
+    const order: string[] = []
+    commandFeed.sections = [{ id: 'teams', label: 'Teams', items: [
+      { id: 'a', label: 'Alpha review', run: () => { order.push('run') } },
+      { id: 'b', label: 'Beta cleanup', run: vi.fn() },
+    ] }]
+    const { instance, getByRole, queryByRole } = mountFrame()
+    act(() => { instance.actions.setOverlay('palette') })
+    const input = getByRole('combobox', { name: 'palette.title' })
+    expect(getByRole('option', { name: /Alpha review/ })).toBeTruthy()
+    instance.store.subscribe(() => { order.push(instance.store.getSnapshot().overlay) })
+    act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })) })
+    expect(order).toEqual(['none', 'run'])
+    expect(queryByRole('combobox')).toBeNull()
+  })
+
+  it('groups registered shortcuts with platform key caps', () => {
+    commandFeed.shortcuts = [
+      { id: 'layout.palette', chord: 'mod+k', label: 'Open palette', group: 'Shell' },
+      { id: 'team.inbox', chord: 'g', label: 'Inbox', group: 'Team' },
+    ]
+    const { instance, getByRole } = mountFrame()
+    act(() => { instance.actions.setOverlay('shortcuts') })
+    const dialog = getByRole('dialog', { name: 'shortcuts.title' })
+    expect([...dialog.querySelectorAll('section')].map(section => section.getAttribute('aria-label'))).toEqual(['Shell', 'Team'])
+    expect(dialog.textContent).toContain('Open palette')
+    expect(chordKeys('mod+shift+k', true)).toEqual(['⌘', '⇧', 'K'])
+    expect(chordKeys('mod+k', false)).toEqual(['Ctrl', 'K'])
   })
 })

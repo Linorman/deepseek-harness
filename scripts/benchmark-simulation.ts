@@ -2,7 +2,7 @@
 import { spawn, execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { once } from 'node:events'
-import { createWriteStream } from 'node:fs'
+import { createWriteStream, existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { cpus, totalmem, platform, release } from 'node:os'
 import { resolve, join } from 'node:path'
@@ -12,7 +12,13 @@ import { parseSimulationBenchmarkOptions } from './simulation-benchmark-options.
 const options = parseSimulationBenchmarkOptions(process.argv.slice(2))
 await mkdir(options.output, { recursive: true })
 const directory = await mkdtemp(join(options.output, `${options.backend}-${options.workload}-`))
-const files = [...new Set(execFileSync('git', ['ls-files', '-co', '--exclude-standard'], { encoding: 'utf8' }).trim().split('\n'))]
+// Restrict the Git inventory before capture: unrelated notes and runtime files can exceed spawn's buffer.
+const files = [...new Set(execFileSync('git', ['ls-files', '-z', '-co', '--exclude-standard', '--',
+  'packages', 'vendor', 'examples/simulation-company',
+  'scripts/benchmark-simulation.ts', 'scripts/simulation-benchmark-options.ts', 'scripts/simulation-benchmark-metrics.ts',
+  'pnpm-lock.yaml', 'package.json', 'tsconfig.base.json', 'tsconfig.host.json',
+], { encoding: 'utf8' }).split('\0').filter(path => path.length > 0))]
+  .filter(path => existsSync(path))
   .filter(path => !/(^|\/)\.tmp[^/]*\//.test(path))
   .filter(path => /^(packages|vendor)\/.*\.(ts|json)$/.test(path) && !/\/(lib|node_modules)\/|\.d\.ts$/.test(path)
     || /^examples\/simulation-company\/.*\.(ts|yml)$/.test(path)

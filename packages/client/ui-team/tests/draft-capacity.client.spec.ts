@@ -6,6 +6,57 @@ import type { ChannelComposerDraft } from '../src/client/channel-draft.ts'
 const draft = (text: string): ChannelComposerDraft => ({ text, content: [{ id: 'text', content: { type: 'text', text } }],
   selected: [], audienceMode: 'broadcast', delivery: 'turn', retryKey: 'retry', retryFingerprint: undefined })
 
+it('treats repeated removal of absent input as a no-op without creating a Team view', () => {
+  const store = createTeamWorkspaceStore().create()
+  store.actions.discardChannelDraft('missing' as never, 'channel' as never)
+  store.actions.discardActionDraft('missing' as never, 'action' as never)
+  store.actions.discardTaskDraft('missing' as never, { kind: 'taskCreate' })
+  expect(store.getSnapshot().byTeam).toEqual({})
+  expect(store.getSnapshot().draftCount).toBe(0)
+  expect(store.getSnapshot().draftBytes).toBe(0)
+})
+
+it('retains independent scroll positions only for a registered Team view', () => {
+  const store = createTeamWorkspaceStore().create()
+  store.actions.update('team' as never, {})
+  store.actions.rememberScroll('team' as never, 'tasks', 50)
+  store.actions.rememberScroll('team' as never, 'channels', 100)
+  expect(store.getSnapshot().byTeam.team?.scroll).toEqual({ tasks: 50, channels: 100 })
+})
+
+it('commits map, order and counts before observers reenter at capacity without evicting pinned drafts', () => {
+  const store = createTeamWorkspaceStore({ maxDrafts: 2, maxViewStates: 3 }).create()
+  store.actions.setChannelDraft('a' as never, 'one' as never, draft('Pinned A'))
+  store.actions.setActionDraft('b' as never, 'action' as never, { answers: {} })
+  store.actions.update('old' as never, {})
+  let reentered = false
+  const off = store.subscribe(() => {
+    const state = store.getSnapshot()
+    expect(state.viewOrder.every(id => state.byTeam[id] !== undefined)).toBe(true)
+    expect(state.draftCount).toBe(2)
+    if (!reentered) { reentered = true; store.actions.update('inner' as never, {}) }
+  })
+  store.actions.update('outer' as never, {})
+  off()
+  expect(store.getSnapshot().byTeam.a?.channelDrafts.one?.text).toBe('Pinned A')
+  expect(store.getSnapshot().byTeam.b?.actionDrafts.action).toEqual({ answers: {} })
+  expect(store.getSnapshot().byTeam.old).toBeUndefined()
+  expect(store.getSnapshot().byTeam.inner).toBeDefined()
+  store.actions.discardActionDraft('b' as never, 'action' as never)
+  expect(store.getSnapshot().draftCount).toBe(1)
+  expect(store.getSnapshot().byTeam.b?.actionDrafts).toEqual({})
+})
+
+it('refuses oversized media before admitting or retaining a private channel draft', () => {
+  const store = createTeamWorkspaceStore({ maxDraftBytes: 100 }).create()
+  const value: ChannelComposerDraft = { ...draft(''), content: [{ id: 'image', content: {
+    type: 'image' as const, mediaType: 'image/png', data: 'a'.repeat(101),
+  } }] }
+  const before = store.getSnapshot()
+  expect(() => { store.actions.setChannelDraft('team' as never, 'channel' as never, value) }).toThrow('Retained channel draft bytes')
+  expect(store.getSnapshot()).toBe(before)
+})
+
 it('rejects additional drafts atomically and frees capacity only through explicit removal', () => {
   const store = createTeamWorkspaceStore({ maxDrafts: 2, maxDraftBytes: 4096 }).create()
   store.actions.setChannelDraft('a' as never, 'first' as never, draft('one'))
@@ -52,9 +103,9 @@ it('shares answer and channel limits, preserves retry identity and removes priva
   expect(store.getSnapshot().byTeam.team?.actionDrafts.question).toEqual(answer)
   expect(store.getSnapshot().byTeam.other).toBeUndefined()
   const before = store.getSnapshot()
-  expect(() => store.actions.setChannelDraft('team' as never, 'channel' as never, draft('input'))).toThrow(DraftCapacityError)
-  expect(() => store.actions.setActionDraft('team' as never, 'question' as never, { ...answer,
-    answers: { question: { selected: ['甲'], custom: '😀'.repeat(30) + 'x' } } })).toThrow(DraftCapacityError)
+  expect(() => { store.actions.setChannelDraft('team' as never, 'channel' as never, draft('input')) }).toThrow(DraftCapacityError)
+  expect(() => { store.actions.setActionDraft('team' as never, 'question' as never, { ...answer,
+    answers: { question: { selected: ['甲'], custom: '😀'.repeat(30) + 'x' } } }) }).toThrow(DraftCapacityError)
   expect(store.getSnapshot()).toBe(before)
   store.actions.clearFormDrafts()
   expect(store.getSnapshot().draftBytes).toBe(0)

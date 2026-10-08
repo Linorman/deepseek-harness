@@ -6,7 +6,8 @@
  * quiescent disposal are all exercised end to end. No model, no key.
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { HarnessTeam } from '@clocky/clocky-sdk-client'
 import { Context } from '@clocky/cordis'
 import { existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -50,15 +51,24 @@ const teamRuntime = [
   "  if (frame.method === 'team/cancel') {",
   "    if (process.env.FAKE_TEAM_CANCEL_FILE) writeFileSync(process.env.FAKE_TEAM_CANCEL_FILE, 'cancelled\\n')",
   "    if (process.env.FAKE_TEAM_CANCEL_ERROR) return process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: frame.id, error: { code: 1, message: 'cancel failed' } }) + '\\n')",
-  '    return reply(frame.id, {})',
+  "    return reply(frame.id, { phase: 'cancelled' })",
   '  }',
   "  if (frame.method === 'shutdown') { reply(frame.id, {}); return setImmediate(() => process.exit(0)) }",
   "  process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: frame.id, error: { code: -32603, message: 'unknown method' } }) + '\\n')",
   '})',
 ].join('\n')
 
-/** A parent Agent stub whose resolved workspace root falls back to its Session header. */
-const fakeParent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+/** Parent fixture supplies Agent's mandatory runtime fields for depth and workspace resolution. */
+function parentAgent(cwd?: string): Agent {
+  return {
+    id: 'parent',
+    options: {},
+    ctx: new Context(),
+    session: { header: cwd === undefined ? {} : { cwd } },
+  } as unknown as Agent
+}
+
+const fakeParent = parentAgent(process.cwd())
 
 function request(text = 'p', signal = new AbortController().signal) {
   return { label: text, prompt: [{ type: 'text' as const, text }], parent: fakeParent, signal }
@@ -270,6 +280,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
     const tmp = mkdtempSync(join(tmpdir(), 'subagent-clocky-sdk-team-cancel-'))
     const ready = join(tmp, 'ready')
     const cancelled = join(tmp, 'cancelled')
+    const cancel = vi.spyOn(HarnessTeam.prototype, 'cancel')
     try {
       const controller = new AbortController()
       const run = await startSdkRun(request('p', controller.signal), teamRuntimeSpec({
@@ -281,8 +292,12 @@ describe('clocky-subagent-clocky-sdk provider', () => {
       controller.abort('test')
       expect((await run.result).stopReason).toBe('aborted')
       await waitForFile(cancelled)
+      const cancellation = cancel.mock.results[0]
+      if (cancellation?.type !== 'return') throw new Error('Expected a real published Team cancellation')
+      await expect(cancellation.value).resolves.toEqual({ phase: 'cancelled' })
       await run.dispose()
     } finally {
+      cancel.mockRestore()
       rmSync(tmp, { recursive: true, force: true })
     }
   })
@@ -395,6 +410,12 @@ describe('clocky-subagent-clocky-sdk provider', () => {
   it('fails closed before spawning when the child product credential is absent', async () => {
     const { credential: _credential, ...withoutCredential } = teamRuntimeSpec()
     await expect(startSdkRun(request(), withoutCredential)).rejects.toThrow('requires an explicitly configured product credential')
+    const ctx = new Context()
+    try {
+      await ctx.plugin(SubagentRuntime)
+      await ctx.plugin(sdk, { providerName: 'clocky-sdk', command: process.execPath, args: [fakeRuntime], provider: 'fake', model: 'fake', env: {} })
+      await expect(ctx.subagents.start('clocky-sdk', request())).rejects.toThrow('requires an explicitly configured product credential')
+    } finally { await ctx.fiber.dispose() }
   })
 
   it('rejects after reaping when the child dies before the handshake', async () => {
@@ -562,7 +583,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
   it('uses a validated config cwd override instead of the parent session cwd', async () => {
     const tmp = mkdtempSync(join(tmpdir(), 'subagent-clocky-sdk-cwd-'))
     try {
-      const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+      const parent = parentAgent(process.cwd())
       const lease = openAgentWorkspaceLease(parent)
       const ctx = await setup({ FAKE_ECHO_CWD: '1', FAKE_TEXT: 'done' }, { cwd: tmp })
       try {
@@ -585,7 +606,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
 
   it('fails loud when neither config cwd nor parent session cwd exists', async () => {
     const ctx = await setup()
-    const parent = { id: 'parent', session: { header: {} } } as unknown as Agent
+    const parent = parentAgent()
     await expect(ctx.subagents.start('clocky-sdk', {
       label: 'p', prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal,
     }))
@@ -595,7 +616,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
 
   it('uses a live allocation root from the delegating Agent before its session cwd', async () => {
     const allocationRoot = realpathSync(mkdtempSync(join(tmpdir(), 'subagent-clocky-sdk-allocation-root-')))
-    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const parent = parentAgent(process.cwd())
     const lease = openAgentWorkspaceLease(parent)
     const ctx = await setup({ FAKE_ECHO_CWD: '1', FAKE_TEXT: 'done' })
     try {
@@ -614,7 +635,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
   })
 
   it('fails closed when the parent workspace lease is unavailable', async () => {
-    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const parent = parentAgent(process.cwd())
     const lease = openAgentWorkspaceLease(parent)
     const ctx = await setup()
     try {

@@ -12,10 +12,14 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { CommandPalette, ConnectionBanner, Kbd, Modal } from '@clocky/clocky-client-ui-primitives'
+import type { PaletteItem } from '@clocky/clocky-client-ui-primitives'
+import { AmbientBackdrop } from '@clocky/clocky-client-ui-viz'
+import type { CommandItem } from './commands.ts'
 import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@clocky/clocky-client-ui-slots'
 import { SessionStage } from './SessionStage.tsx'
 import { WORKSPACE_NAVIGATION_EVENT } from './navigation.ts'
-import { computeColumns, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_DEFAULT } from './columns.ts'
+import { computeColumns, computePane, PANE_MAX, PANE_MIN, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_DEFAULT } from './columns.ts'
 import type { createLayoutStore } from './stores.ts'
 import css from './AppFrame.module.css'
 
@@ -25,7 +29,30 @@ export type AppFrameProps =
   & PropsRenderSlots<'sidebar' | 'conversation' | 'details' | 'shell.overlay' | 'team.workspace' | 'simulation.workspace'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
   & PropsLocale<'layout'>
-  & { closeSession: () => void; showTeams: () => void }
+  & {
+    closeSession: () => void
+    showTeams: () => void
+    retryAuthorization?: (() => void) | undefined
+    /** Current palette sections from every registered provider. */
+    readCommands?: (() => readonly { id: string; label: string; items: readonly CommandItem[] }[]) | undefined
+    /** Registered shortcuts with display text resolved. */
+    readShortcuts?: (() => readonly { id: string; chord: string; label: string; group: string }[]) | undefined
+  }
+
+/**
+ * Key caps for a canonical chord.
+ * @param chord - chord such as `mod+k`.
+ * @param mac - whether `mod` is Command.
+ * @returns one label per key.
+ */
+export function chordKeys(chord: string, mac: boolean): string[] {
+  return chord.split('+').map((part) => {
+    if (part === 'mod') return mac ? '⌘' : 'Ctrl'
+    if (part === 'alt') return mac ? '⌥' : 'Alt'
+    if (part === 'shift') return mac ? '⇧' : 'Shift'
+    return part.length === 1 ? part.toUpperCase() : part
+  })
+}
 
 /** Center column grid item (session-body building block). */
 function CenterColumn(props: { children?: ReactNode }) {
@@ -41,7 +68,15 @@ function DetailsColumn(props: { children?: ReactNode; hidden: boolean }) {
  * One drag handle: pointer capture, rAF-throttled dx reports against the drag-start origin.
  * `side` keys the hover-reveal CSS to the owning column.
  */
-function DragHandle(props: { side: 'sidebar' | 'details'; left: number; onStart: () => void; onDrag: (dx: number) => void; onEnd: () => void }) {
+function DragHandle(props: {
+  side: 'sidebar' | 'details' | 'pane'
+  left: number
+  onStart: () => void
+  onDrag: (dx: number) => void
+  onEnd: () => void
+  /** Keyboard resizing for handles that own a focusable separator. */
+  keyboard?: { label: string; value: number; min: number; max: number; onStep: (dx: number) => void } | undefined
+}) {
   const [dragging, setDragging] = useState(false)
   const origin = useRef(0)
   const latest = useRef(0)
@@ -74,6 +109,7 @@ function DragHandle(props: { side: 'sidebar' | 'details'; left: number; onStart:
     callbacks.current.onEnd()
   }, [])
 
+  const keyboard = props.keyboard
   return (
     <div
       className={css.handle}
@@ -83,6 +119,23 @@ function DragHandle(props: { side: 'sidebar' | 'details'; left: number; onStart:
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      {...keyboard === undefined ? {} : {
+        role: 'separator',
+        tabIndex: 0,
+        'aria-orientation': 'vertical' as const,
+        'aria-label': keyboard.label,
+        'aria-valuenow': Math.round(keyboard.value),
+        'aria-valuemin': keyboard.min,
+        'aria-valuemax': keyboard.max,
+        onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+          const step = event.shiftKey ? 64 : 16
+          // dx follows pointer direction: moving the handle left is negative.
+          if (event.key === 'ArrowLeft') keyboard.onStep(-step)
+          else if (event.key === 'ArrowRight') keyboard.onStep(step)
+          else return
+          event.preventDefault()
+        },
+      }}
     />
   )
 }
@@ -92,13 +145,18 @@ export function AppFrame({
   useStore,
   useSessions,
   useTeamTasks,
+  useConnection,
   closeSession,
   showTeams,
+  retryAuthorization,
+  readCommands,
+  readShortcuts,
   t,
   actions,
   renderSlot,
 }: AppFrameProps) {
   const panels = useStore(s => s)
+  const connection = useConnection?.(s => s.state) ?? 'connected'
   const selectedTeam = useTeamTasks?.(s => s.current)
   const sessionId = useSessions(s => s.current)
   const sessionContext = useTeamTasks?.((s) => {
@@ -178,7 +236,13 @@ export function AppFrame({
   const sidebarPreference = sidebarCollapsed
     ? 0
     : panels.sidebar === 0 ? SIDEBAR_DEFAULT : panels.sidebar
-  const cols = computeColumns(viewport, sidebarPreference, detailsSession === undefined ? 0 : panels.details)
+  const detailsPreference = detailsSession === undefined ? 0 : panels.details
+  // A Team page with an open Session shows the conversation as a pane inside
+  // the center column; the details column then lives inside that pane.
+  const paneOpen = inspecting && sessionId !== undefined
+  const cols = computeColumns(viewport, sidebarPreference, paneOpen ? 0 : detailsPreference)
+  const paneCols = paneOpen ? computePane(cols.center, panels.pane, detailsPreference, panels.paneExpanded) : undefined
+  const detailsWidth = paneCols?.details ?? cols.details
   const colsRef = useRef(cols)
   colsRef.current = cols
 
@@ -187,12 +251,23 @@ export function AppFrame({
   // it stays frozen for the whole gesture so dx deltas do not compound.
   const sidebarBase = useRef(0)
   const detailsBase = useRef(0)
+  const paneBase = useRef(0)
   // Track-level transitions pause for the whole gesture: eased tracks would
   // detach the column edge from the pointer (AppFrame.module.css).
   const [dragging, setDragging] = useState(false)
   const onDragEnd = useCallback(() => { setDragging(false) }, [])
   const onSidebarStart = useCallback(() => { sidebarBase.current = colsRef.current.sidebar; setDragging(true) }, [])
-  const onDetailsStart = useCallback(() => { detailsBase.current = colsRef.current.details; setDragging(true) }, [])
+  const detailsWidthRef = useRef(detailsWidth)
+  detailsWidthRef.current = detailsWidth
+  const paneWidthRef = useRef(paneCols?.pane ?? 0)
+  paneWidthRef.current = paneCols?.pane ?? 0
+  const onDetailsStart = useCallback(() => { detailsBase.current = detailsWidthRef.current; setDragging(true) }, [])
+  const onPaneStart = useCallback(() => { paneBase.current = paneWidthRef.current; setDragging(true) }, [])
+  const onPaneDrag = useCallback((dx: number) => { actions.setPane(paneBase.current - dx) }, [actions])
+  const closePane = useCallback(() => {
+    actions.restorePane()
+    closeSession()
+  }, [actions, closeSession])
   const onSidebarDrag = useCallback((dx: number) => {
     actions.setSidebar(sidebarBase.current + dx)
   }, [actions])
@@ -207,7 +282,7 @@ export function AppFrame({
       style={{ gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr)` }}
       data-team-workspace={inspecting || undefined}
       data-sidebar-collapsed={sidebarCollapsed || undefined}
-      data-details-collapsed={cols.details === 0 || undefined}
+      data-details-collapsed={detailsWidth === 0 || undefined}
       data-dragging={dragging || undefined}
     >
       <div className={css.sidebarCol} data-clocky-navigation>
@@ -228,27 +303,97 @@ export function AppFrame({
             the shell's own pending rendering. The conversation
             is session-maybe; the strict details entry naturally renders
             empty while no session is current. */}
-        <CenterColumn>
-          <div className={css.productStage} hidden={simulation}>{renderSlot('team.workspace', {})}</div>
-          {renderSlot('simulation.workspace', { visible: simulation }, { fallback: simulation
-            ? <section className={css.unavailable} role="region" aria-label={t('simulationUnavailable')}>
-              <p>{t('simulationUnavailable')}</p><button type="button" onClick={showTeams}>{t('backToTeams')}</button>
-            </section> : null })}
+        <div
+          className={css.centerCol}
+          data-pane={paneCols?.mode}
+          style={paneCols?.mode === 'split' ? { gridTemplateColumns: `minmax(0, 1fr) ${String(paneCols.pane)}px` } : undefined}
+        >
+          {/* Each workspace stage carries one L0 backdrop tinted by its mode;
+              the hidden stage's backdrop pauses with it. */}
+          <div className={css.productStage} hidden={simulation} data-behind-pane={paneCols?.mode === 'expanded' || paneCols?.mode === 'sheet' || undefined}>
+            {!simulation && <AmbientBackdrop mode="team" />}
+            {renderSlot('team.workspace', {})}
+          </div>
+          <div className={css.productStage} hidden={!simulation} data-simulation-stage>
+            {simulation && <AmbientBackdrop mode="simulation" />}
+            {renderSlot('simulation.workspace', { visible: simulation }, { fallback: simulation
+              ? <section className={css.unavailable} role="region" aria-label={t('simulationUnavailable')}>
+                <p>{t('simulationUnavailable')}</p><button type="button" onClick={showTeams}>{t('backToTeams')}</button>
+              </section> : null })}
+          </div>
           <SessionStage inspecting={inspecting} visible={!simulation && (!inspecting || sessionId !== undefined)}
-            title={t(!inspecting && sessionId === undefined ? 'newTeam' : coordinatorConversation ? 'coordinator' : 'session')} context={sessionContext} backLabel={t('back')} expandLabel={t('expand')} restoreLabel={t('restore')} close={closeSession}>
-            <div className={css.sessionColumns} data-session-columns style={{ gridTemplateColumns: `minmax(0, 1fr) ${cols.details}px` }}>
+            mode={paneCols?.mode}
+            title={t(!inspecting && sessionId === undefined ? 'newTeam' : coordinatorConversation ? 'coordinator' : 'session')}
+            context={sessionContext} closeLabel={t('close')} expandLabel={t('expand')} restoreLabel={t('restore')}
+            close={closePane} toggleExpanded={() => { actions.togglePaneExpanded() }}>
+            <div className={css.sessionColumns} data-session-columns style={{ gridTemplateColumns: `minmax(0, 1fr) ${String(detailsWidth)}px` }}>
               <CenterColumn>{renderSlot('conversation', {})}</CenterColumn>
-              <DetailsColumn hidden={cols.details === 0}>{renderSlot('details', {})}</DetailsColumn>
+              <DetailsColumn hidden={detailsWidth === 0}>{renderSlot('details', {})}</DetailsColumn>
             </div>
           </SessionStage>
-        </CenterColumn>
+        </div>
       </>
       <div className={css.overlayLayer} data-shell-overlay>
+        <ConnectionBanner state={connection} onRetry={retryAuthorization} labels={{
+          reconnecting: t('connection.reconnecting'),
+          unauthorized: t('connection.unauthorized'),
+          unauthorizedHint: t('connection.unauthorizedHint'),
+          retry: t('connection.retry'),
+        }} />
         {renderSlot('shell.overlay', {})}
       </div>
+      <ShellOverlays overlay={panels.overlay} close={() => { actions.setOverlay('none') }}
+        readCommands={readCommands} readShortcuts={readShortcuts} t={t} />
       {/* The collapsed rail is fixed-width: no resize handle while closed. */}
       {!sidebarCollapsed && <DragHandle side="sidebar" left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
-      {!inspecting && cols.details > 0 && <DragHandle side="details" left={viewport - cols.details} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
+      {(!inspecting || paneCols !== undefined) && detailsWidth > 0 && paneCols?.mode !== 'sheet'
+        && <DragHandle side="details" left={viewport - detailsWidth} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
+      {paneCols?.mode === 'split' && (
+        <DragHandle side="pane" left={cols.sidebar + paneCols.team} onStart={onPaneStart} onDrag={onPaneDrag} onEnd={onDragEnd}
+          keyboard={{ label: t('resizePane'), value: paneCols.pane, min: PANE_MIN, max: PANE_MAX,
+            onStep: (dx) => { actions.setPane(paneCols.pane - dx) } }} />
+      )}
     </div>
   )
+}
+
+/** The command palette and shortcut overlay, read from the shell registries when opened. */
+function ShellOverlays({ overlay, close, readCommands, readShortcuts, t }: {
+  overlay: 'none' | 'palette' | 'shortcuts'
+  close: () => void
+  readCommands: AppFrameProps['readCommands']
+  readShortcuts: AppFrameProps['readShortcuts']
+  t: AppFrameProps['t']
+}) {
+  // The palette closes after a selection; run the command afterwards so a
+  // command that opens another overlay is not undone by that close.
+  const pending = useRef<(() => void) | undefined>(undefined)
+  const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+  const sections = overlay === 'palette' ? readCommands?.() ?? [] : []
+  const runs = new Map<string, () => void>()
+  const paletteSections = sections.map(section => ({
+    id: section.id,
+    label: section.label,
+    items: section.items.map((item): PaletteItem => {
+      const id = `${section.id}:${item.id}`
+      runs.set(id, item.run)
+      return { id, label: item.label, hint: item.hint, keywords: item.keywords, shortcut: item.shortcut }
+    }),
+  }))
+  const shortcuts = overlay === 'shortcuts' ? readShortcuts?.() ?? [] : []
+  const groups = [...new Set(shortcuts.map(item => item.group))]
+  return <>
+    <CommandPalette open={overlay === 'palette'} sections={paletteSections}
+      onClose={() => { const run = pending.current; pending.current = undefined; close(); run?.() }}
+      onSelect={(item) => { pending.current = runs.get(item.id) }}
+      labels={{ title: t('palette.title'), placeholder: t('palette.placeholder'), empty: t('palette.empty') }} />
+    <Modal open={overlay === 'shortcuts'} onClose={close} title={t('shortcuts.title')} closeLabel={t('shortcuts.close')}>
+      {groups.map(group => <section key={group} className={css.shortcutGroup} aria-label={group}>
+        <h3>{group}</h3>
+        <dl>{shortcuts.filter(item => item.group === group).map(item => <div key={item.id}>
+          <dt>{item.label}</dt><dd><Kbd keys={chordKeys(item.chord, mac)} /></dd>
+        </div>)}</dl>
+      </section>)}
+    </Modal>
+  </>
 }

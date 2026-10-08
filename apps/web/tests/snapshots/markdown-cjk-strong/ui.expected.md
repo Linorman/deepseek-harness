@@ -49,4 +49,5 @@
   - text: Test Model
   - img
 - button "Send message" [disabled]
-- text: 1 turns · 1 steps LLM {{duration}}
+- text: 1 turns · 1 steps
+- button "Session statistics": ⓘ

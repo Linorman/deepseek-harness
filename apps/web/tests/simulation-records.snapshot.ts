@@ -24,7 +24,7 @@ it.each(['json', 'sqlite'] as const)('browses, filters and exports authorized or
   const imports = products.config.imports as { spec: unknown }[]
   const spec = simulationRunSpecSchema.parse(imports[0]!.spec)
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(config))
-  const scaffold = await launchWebScaffold({ extraOverlayPath: overlay, tempRoot: directory, productPrincipalId: 'simulation-browser-user' })
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: overlay, tempRoot: directory, productPrincipalId: 'simulation-browser-user' })
   const { context, setNativeZoom } = await createNativeZoomContext(directory, { viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const page = await context.newPage()
   const errors = watchConsole(page)

@@ -951,6 +951,8 @@ describe('continuable durability and teardown', () => {
     expect(ctx.agents.get(target.childId)).toBeUndefined()
     expect(ctx.agents.get(grandchild.childId)).toBeUndefined()
     expect(ctx.agents.get(sibling.childId)).toBe(siblingAgent)
+    await ctx.subagents.drainContinuableChildren(parent, [target.childId, SessionId('unknown-child')])
+    expect(ctx.agents.get(sibling.childId)).toBe(siblingAgent)
     releaseSibling.resolve(undefined)
     await waitNoActivation(ctx, sibling.childId)
   })

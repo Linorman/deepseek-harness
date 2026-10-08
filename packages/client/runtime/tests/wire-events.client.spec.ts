@@ -59,6 +59,7 @@ async function mount(): Promise<Bench> {
     $dispatch: (event: string, args: readonly unknown[]) => { bench.dispatched.push([event, ...args]) },
   })
   const handle: ConnectionHandle = {
+    retryAuthorization: () => {},
     api,
     isLoopback: true,
     hostDescription: {

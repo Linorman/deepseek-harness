@@ -1,7 +1,7 @@
 /** Pure company allowance resolution shared by preview and durable creation admission. */
 import { simulationRunSpecSchema } from '@clocky/clocky-simulation'
 import type { SimulationRunSpec } from '@clocky/clocky-simulation'
-import type { SimulationCompanyTemplate } from './creation-types.ts'
+import type { SimulationInstalledCompanyTemplate } from './creation-types.ts'
 import type { SimulationProductLimits, SimulationProductPreflightInput, SimulationProductPreflightIssue } from './administration-types.ts'
 import { resolveScenarioTopology } from './scenario-topology.ts'
 
@@ -18,7 +18,7 @@ export interface CreationResolution {
  * @param text - Product owner's bounded public text encoder.
  * @returns immutable native spec or field issues; no provider, storage, Team or model calls.
  */
-export function resolveCreation(template: SimulationCompanyTemplate, input: SimulationProductPreflightInput,
+export function resolveCreation(template: SimulationInstalledCompanyTemplate, input: SimulationProductPreflightInput,
   text: (value: string) => SimulationProductPreflightIssue['message']): CreationResolution {
   const choices = Object.entries(input.limits ?? {}).filter((entry): entry is [string, string | number] => entry[1] !== undefined)
   const spec = { ...template.spec, ...Object.fromEntries(choices) }

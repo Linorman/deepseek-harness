@@ -23,6 +23,9 @@
     routes: {}
 
 - insert:
+    - id: human-approval-actor
+      name: '@clocky/clocky-team-human-actor'
+
     - id: human-approval-json
       name: '@clocky/clocky-storage-json'
       disabled: !!js process.env.CLOCKY_APPROVAL_BACKEND !== 'json'

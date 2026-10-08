@@ -39,3 +39,29 @@ it('keeps a failed diagnostic original query available separately from current c
   fireEvent.click(view.getByRole('button', { name: en.queryOriginal }))
   expect(query).toHaveBeenCalledOnce()
 })
+
+it('locates canonical entities, checkpoints and runs in exact read-only modules', () => {
+  const navigate = vi.fn()
+  const renderDiagnostic = (kind: 'entity' | 'checkpoint' | 'run') => render(<CheckpointDiagnostic runId={'run' as never}
+    value={{ stage: 'validate', code: 'binding-mismatch', subject: kind === 'entity'
+      ? { kind, entityId: 'entity' as never }
+      : kind === 'checkpoint' ? { kind, checkpointId: 'checkpoint' as never } : { kind } }}
+    navigate={navigate} t={key => en[key]} />)
+  for (const [kind, route] of [
+    ['entity', { runId: 'run', module: 'entities', search: '', objectId: 'entity' }],
+    ['checkpoint', { runId: 'run', module: 'checkpoints', search: '', objectId: 'checkpoint' }],
+    ['run', { runId: 'run', module: 'overview', search: '' }],
+  ] as const) {
+    cleanup()
+    const view = renderDiagnostic(kind)
+    fireEvent.click(view.getByRole('button', { name: en['diagnostic.locate'] }))
+    expect(navigate).toHaveBeenLastCalledWith(route)
+  }
+})
+
+it('links the exact owning Team for a canonical Team recovery diagnosis', () => {
+  const view = render(<CheckpointDiagnostic runId={'run' as never} value={{ stage: 'validate', code: 'binding-mismatch',
+    subject: { kind: 'team', teamId: 'team' as never } }} t={key => en[key]} />)
+  const link = view.getByRole('link', { name: `${en.inspectTeam}: team` }) as HTMLAnchorElement
+  expect(new URL(link.href).searchParams.get('team')).toBe('team')
+})

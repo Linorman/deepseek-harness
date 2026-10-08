@@ -292,11 +292,12 @@ describe('startInProcessRun', () => {
     await expect(startInProcessRun({ ...request(parent), maxDepth: 0 }, {}))
       .rejects.toMatchObject({ name: 'SubagentDepthError' })
     for (const value of [Number.NaN, 1.5, -1, -0, Number.MAX_SAFE_INTEGER + 1]) {
-      const malformed = { options: { subagentDepth: value }, session: { header: {} } } as unknown as Agent
+      const malformed = { id: parent.id, ctx: parent.ctx, options: { subagentDepth: value }, session: parent.session } as unknown as Agent
       await expect(startInProcessRun(request(malformed), {}))
         .rejects.toThrow('agent subagentDepth must be a non-negative safe integer')
     }
-    const maxParent = { options: { subagentDepth: Number.MAX_SAFE_INTEGER }, session: { header: {} } } as unknown as Agent
+    const maxParent = { id: parent.id, ctx: parent.ctx,
+      options: { subagentDepth: Number.MAX_SAFE_INTEGER }, session: parent.session } as unknown as Agent
     await expect(startInProcessRun(request(maxParent), {})).rejects.toBeInstanceOf(RangeError)
   })
 

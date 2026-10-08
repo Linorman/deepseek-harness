@@ -36,8 +36,8 @@ export function ImageLightbox({ src, alt, labels, onClose }: {
   const restoreRef = useRef<HTMLElement | null>(null)
 
   useLayoutEffect(() => {
-    const dialog = dialogRef.current
-    if (dialog === null) return
+    // The mounted preview always portals its dialog before layout effects run.
+    const dialog = dialogRef.current as HTMLDialogElement
     restoreRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     dialog.showModal()
     closeRef.current?.focus()

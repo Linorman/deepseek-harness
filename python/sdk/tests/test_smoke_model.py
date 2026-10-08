@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import runpy
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -36,42 +37,39 @@ def test_child_team_smoke_preserves_the_exact_final_channel_id() -> None:
     assert json.loads(calls[0]["function"]["arguments"])["channel_id"] == "channel-smoke"
 
 
-@pytest.mark.parametrize(
-    ("prompt_name", "expected"),
-    [
-        ("SNAPSHOT_WORKFLOW_CHILD_PROMPT", "WORKFLOW_CHILD_OK"),
-    ],
-)
-def test_child_prompt_precedes_runtime_context(prompt_name: str, expected: str) -> None:
+def test_native_workflow_task_precedes_runtime_context() -> None:
     chunks = SMOKE["completion_chunks"]({
         "messages": [
-            {"role": "user", "content": SMOKE[prompt_name]},
+            {"role": "user", "content": SMOKE["WORKFLOW_TASK_MARKER"]},
             {"role": "user", "content": "Current runtime context"},
         ],
     })
 
-    assert any(
-        choice.get("delta", {}).get("content") == expected
-        for chunk in chunks
-        for choice in chunk.get("choices", [])
-    )
+    calls = [call for chunk in chunks for choice in chunk.get("choices", [])
+             for call in choice.get("delta", {}).get("tool_calls", [])]
+    assert calls[0]["function"]["name"] == "run_code"
+    assert json.loads(calls[0]["function"]["arguments"])["code"] == "return 6 * 7"
 
 
-def test_direct_child_requests_cancellation_before_resumed_result() -> None:
-    chunks = SMOKE["completion_chunks"]({
+def test_cancelled_native_child_waits_for_release_before_returning() -> None:
+    SMOKE["TEAM_CHILD_STARTED"].clear()
+    SMOKE["TEAM_CHILD_RELEASED"].clear()
+    request = {
         "messages": [
-            {"role": "user", "content": SMOKE["SNAPSHOT_DIRECT_CHILD_PROMPT"]},
+            {"role": "user", "content": SMOKE["TEAM_CHILD_CANCEL_INSTRUCTIONS"]},
             {"role": "user", "content": "Current runtime context"},
         ],
-        "tools": [{"type": "function", "function": {"name": "snapshot_resume_pending"}}],
-    })
-    calls = [
-        call
-        for chunk in chunks
-        for choice in chunk.get("choices", [])
-        for call in choice.get("delta", {}).get("tool_calls", [])
-    ]
-    assert calls[0]["function"]["name"] == "snapshot_resume_pending"
+    }
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        result = executor.submit(SMOKE["completion_chunks"], request)
+        try:
+            assert SMOKE["TEAM_CHILD_STARTED"].wait(5)
+            assert not result.done()
+        finally:
+            SMOKE["TEAM_CHILD_RELEASED"].set()
+        chunks = result.result()
+    assert any(choice.get("delta", {}).get("content") == "Cancelled child request released."
+               for chunk in chunks for choice in chunk.get("choices", []))
 
 
 def test_mcp_smoke_requests_the_discovered_tool() -> None:

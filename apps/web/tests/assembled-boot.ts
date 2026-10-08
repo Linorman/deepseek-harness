@@ -245,5 +245,5 @@ export const REFRESHING_GOLDEN = process.env.CLOCKY_SNAPSHOT === 'record' || pro
  */
 export async function openAssembledCoordinator(): Promise<void> {
   fireEvent.click(await screen.findByRole('button', { name: /^(Talk to coordinator|View coordinator record)$/ }, { timeout: 10000 }))
-  await screen.findByRole('dialog', { name: /^(Talk to coordinator|Execution record)$/ }, { timeout: 10000 })
+  await screen.findByRole('region', { name: /^(Talk to coordinator|Execution record)$/ }, { timeout: 10000 })
 }

@@ -4,7 +4,7 @@
  * control.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SnapshotStore } from '@clocky/clocky-client-runtime/client'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@clocky/clocky-client-ui-slots'
 import {
@@ -43,6 +43,7 @@ export function PermissionRow({ load, select, usePermission, t }: PermissionRowP
   const [open, setOpen] = useState(false)
   const [confirmingFullAccess, setConfirmingFullAccess] = useState(false)
   const [acknowledged, setAcknowledged] = useState(false)
+  const selectorRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     void load()
@@ -88,6 +89,7 @@ export function PermissionRow({ load, select, usePermission, t }: PermissionRowP
           portal
           anchor={(
             <button
+              ref={selectorRef}
               type="button"
               className={css.selector}
               aria-haspopup="menu"
@@ -102,6 +104,7 @@ export function PermissionRow({ load, select, usePermission, t }: PermissionRowP
         />
       </div>
       <RiskConfirmation
+        fallbackFocus={selectorRef}
         open={confirmingFullAccess}
         title={t('confirm.title')}
         description={t('confirm.description')}

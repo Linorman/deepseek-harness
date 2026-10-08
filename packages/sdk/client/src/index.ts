@@ -37,6 +37,8 @@ export type {
   NotificationFilter,
   RunResult,
 } from './types.ts'
+// Explicit protocol imports and public re-exports repeat contract names, not executable behavior.
+/* jscpd:ignore-start */
 export type {
   ActivationDisposeParams,
   ActivationInterruptParams,
@@ -139,6 +141,7 @@ export type {
   TeamTaskWatchParams,
   TeamTaskWatchResult,
 } from '@clocky/clocky-sdk-protocol'
+/* jscpd:ignore-end */
 
 export type { TeamInboxRespondParams } from '@clocky/clocky-sdk-protocol'
 

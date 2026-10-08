@@ -6,7 +6,7 @@ import { taskExecutorFixture } from './task-executor-fixture.ts'
 import { taskAttemptIdSchema, teamTaskCancellationSnapshotSchema } from '@clocky/clocky-team'
 import { LlmAdapter, CallId } from '@clocky/clocky-llm'
 import type { GenerateOptions, StreamChunk } from '@clocky/clocky-llm'
-import { simulationEntityIdSchema, simulationDecisionIdSchema, simulationWindowIdSchema,
+import { simulationEntityIdSchema, simulationDecisionIdSchema, simulationOperationIdSchema, simulationWindowIdSchema,
   simulationCheckpointIdSchema, simulationInteractionIdSchema, simulationProposalSchema } from '@clocky/clocky-simulation'
 
 function loseResponse<Args extends unknown[], Result>(operation: (...args: Args) => Promise<Result>) {
@@ -59,6 +59,147 @@ it.each(['reserve', 'assign', 'decision', 'settle'] as const)('retries the origi
     expect(task.phase).toBe('completed')
     expect(h.computations).toBe(1)
     expect(h.run.snapshot().resources['received' as never]?.quantity).toBe('1')
+  } finally { await h.close() }
+})
+
+it('resumes an exact task window after its native open response is lost', async () => {
+  const h = await taskExecutorFixture()
+  try {
+    await h.start(); await h.createTask()
+    const open = h.connection.openWindow.bind(h.connection)
+    const lost = vi.spyOn(h.connection, 'openWindow').mockImplementationOnce(async (request) => {
+      const window = await open(request)
+      throw new Error(`Task window ${window.id} opened before its response was lost`)
+    })
+    await expect(h.executor.advance()).rejects.toThrow('response was lost')
+    expect(h.run.snapshot().activeWindowId).toBeDefined()
+    lost.mockRestore()
+    for (const route of [{ ...h.config.routes[0]!, operationId: simulationOperationIdSchema.parse('foreign-task-source') },
+      { ...h.config.routes[0]!, entityId: simulationEntityIdSchema.parse('buyer') }]) {
+      const wrong = new SimulationTaskExecutor(h.run, h.connection, { ...h.config, routes: [route] }, h.options)
+      expect((await wrong.advance()).reason).toBe('task-waiting')
+    }
+    expect((await h.executor.advance()).reason).toBe('idle')
+    expect(Object.values(h.run.snapshot().taskExecutions ?? {})).toHaveLength(1)
+    expect(h.computations).toBe(1)
+  } finally { await h.close() }
+})
+
+it('resumes a model-routed open task window without adding a deterministic policy', async () => {
+  const h = await taskExecutorFixture()
+  try {
+    await h.start(); await h.createTask()
+    const { cognition: _cognition, ...route } = h.config.routes[0]!
+    const executor = new SimulationTaskExecutor(h.run, h.connection, { ...h.config, routes: [route] }, h.options)
+    const open = h.connection.openWindow.bind(h.connection)
+    const lost = vi.spyOn(h.connection, 'openWindow').mockImplementationOnce(async (request) => {
+      await open(request)
+      throw new Error('Model window response was lost')
+    })
+    await expect(executor.advance()).rejects.toThrow('Model window response was lost')
+    expect(h.run.snapshot().activeWindowId).toBeDefined()
+    lost.mockRestore()
+    const execute = vi.spyOn(h.connection, 'executeTaskDecision')
+      .mockRejectedValueOnce(new Error('Stop before model inference'))
+    await expect(executor.advance()).rejects.toThrow('Stop before model inference')
+    const request = execute.mock.calls[0]?.[0]
+    if (request === undefined) throw new Error('Open model window was not resumed')
+    expect(Object.hasOwn(request, 'policy')).toBe(false)
+  } finally { await h.close() }
+})
+
+it('resumes an open task decision inside its original window after cognition interruption', async () => {
+  const h = await taskExecutorFixture()
+  let remove: (() => void) | undefined
+  try {
+    await h.start(); await h.createTask()
+    h.removeCognition()
+    let interrupted = false
+    remove = h.ctx.simulationTeams.registerDeterministicPolicy({ ...h.config.routes[0]!.cognition!, decide(view) {
+      if (!interrupted) { interrupted = true; throw new Error('Task cognition interrupted after window preparation') }
+      const block = view.content.find(section => section.kind === 'input')?.blocks[0]
+      if (block?.type !== 'text') throw new Error('Task cognition has no authorized inventory input')
+      const { reads } = JSON.parse(block.text) as { reads: unknown[] }
+      return [simulationProposalSchema.parse({ after: [], action: { kind: 'resource/transfer', grants: [], transaction: {
+        commitmentId: null, reads, transfers: [{ from: 'stock', to: 'received', quantity: '1' }],
+      } } })]
+    } })
+    await expect(h.executor.advance()).rejects.toThrow('cognition interrupted')
+    const windowId = h.run.snapshot().activeWindowId
+    if (windowId === undefined) throw new Error('Task decision lost its open window')
+    const decisionId = h.run.snapshot().windows?.[windowId]?.request.decisions[0]?.id
+    expect(decisionId === undefined ? undefined : h.run.snapshot().decisions[decisionId]?.status).toBe('open')
+    const resumed = vi.spyOn(h.connection, 'executeTaskDecision')
+    expect((await h.executor.advance()).reason).toBe('idle')
+    expect(resumed.mock.calls[0]?.[0]?.policy).toEqual(h.config.routes[0]?.cognition)
+    expect(h.run.snapshot().activeWindowId).toBeUndefined()
+    expect(h.run.snapshot().resources['received' as never]?.quantity).toBe('1')
+  } finally { remove?.(); await h.close() }
+})
+
+it('commits a submitted task window after interrupted commit and observes a concurrent pause', async () => {
+  const h = await taskExecutorFixture()
+  try {
+    await h.start(); await h.createTask()
+    const commit = h.run.commitWindow.bind(h.run)
+    const lost = vi.spyOn(h.run, 'commitWindow').mockRejectedValueOnce(new Error('Task window commit interrupted'))
+    await expect(h.executor.advance()).rejects.toThrow('commit interrupted')
+    const windowId = h.run.snapshot().activeWindowId
+    if (windowId === undefined) throw new Error('Interrupted task window is missing')
+    expect(h.run.snapshot().windows?.[windowId]?.request.decisions).toHaveLength(1)
+    lost.mockRestore()
+    vi.spyOn(h.run, 'commitWindow').mockImplementationOnce(async (id) => {
+      const result = await commit(id)
+      await h.run.setPhase('paused', h.run.snapshot().revision)
+      return result
+    })
+    expect((await h.executor.advance()).reason).toBe('paused')
+    expect(h.run.snapshot().activeWindowId).toBeUndefined()
+    await h.run.setPhase('running', h.run.snapshot().revision)
+    expect((await h.executor.advance()).reason).toBe('idle')
+    expect(h.computations).toBe(1)
+  } finally { await h.close() }
+})
+
+it('preserves a resident retry stop while resuming an already accepted task decision', async () => {
+  const h = await taskExecutorFixture()
+  try {
+    await h.start(); await h.createTask()
+    const interrupted = vi.spyOn(h.connection, 'completeTask').mockRejectedValueOnce(new Error('Completion response unavailable'))
+    await expect(h.executor.advance()).rejects.toThrow('Completion response unavailable')
+    interrupted.mockRestore()
+    const decision = Object.values(h.run.snapshot().taskExecutions ?? {})[0]?.decisions?.[0]
+    expect(decision).toBeDefined()
+    const drive = vi.spyOn(h.connection, 'driveResident').mockResolvedValueOnce({ reason: 'retry', rounds: 0,
+      steps: 0, revision: h.run.snapshot().revision, nextAttemptAt: Date.now() + 1000 })
+    const result = await h.executor.advance()
+    expect(result.reason).toBe('retry')
+    expect(result.nextAttemptAt).toBeDefined()
+    expect(drive).toHaveBeenCalledOnce()
+    expect(h.computations).toBe(1)
+    drive.mockRestore()
+    expect((await h.executor.advance()).reason).toBe('idle')
+  } finally { await h.close() }
+})
+
+it('keeps a completed original attempt when pause lands after retained task settlement', async () => {
+  const h = await taskExecutorFixture()
+  try {
+    await h.start(); await h.createTask()
+    const interrupted = vi.spyOn(h.connection, 'completeTask').mockRejectedValueOnce(new Error('Before task settlement'))
+    await expect(h.executor.advance()).rejects.toThrow('Before task settlement')
+    interrupted.mockRestore()
+    const complete = h.connection.completeTask.bind(h.connection)
+    vi.spyOn(h.connection, 'completeTask').mockImplementationOnce(async (request) => {
+      const result = await complete(request)
+      await h.run.setPhase('paused', h.run.snapshot().revision)
+      return result
+    })
+    expect((await h.executor.advance()).reason).toBe('paused')
+    expect(Object.values(h.run.snapshot().taskExecutions ?? {})[0]?.result?.request.outcome.kind).toBe('completed')
+    await h.run.setPhase('running', h.run.snapshot().revision)
+    expect((await h.executor.advance()).reason).toBe('idle')
+    expect(h.computations).toBe(1)
   } finally { await h.close() }
 })
 

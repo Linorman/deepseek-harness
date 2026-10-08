@@ -1,3 +1,4 @@
+import { ProvisioningQueue } from './provisioning-queue.ts'
 /** Durable direct-channel provisioning and canonical endpoint consent. @module @clocky/clocky-simulation-team/channels */
 import type { Context } from '@clocky/cordis'
 import { isDeepStrictEqual } from 'node:util'
@@ -9,7 +10,7 @@ import type { SimulationInvitationAuthority } from './invitation.ts'
 /** Owns serial channel provisioning per run; channel existence alone never grants endpoint consent. */
 export class SimulationChannelAuthority {
   private readonly proofs = new WeakMap<TeamSystemChannelLifecycleProof, () => SimulationChannelOpenScope>()
-  private readonly pending = new Map<SimulationRun, Promise<unknown>>()
+  private readonly pending = new ProvisioningQueue()
 
   constructor(private readonly ctx: Context, private readonly invitations: SimulationInvitationAuthority) {
     ctx.teams.registerSystemChannelLifecycleProofSource({ name: 'simulation-team', resolveChannelLifecycleProof: proof => this.proofs.get(proof)?.() })
@@ -28,7 +29,7 @@ export class SimulationChannelAuthority {
     checkAdmission: () => void): Promise<ChannelSnapshot> {
     const spec = simulationChannelSpecSchema.parse(request)
     checkAdmission()
-    const work = (this.pending.get(run) ?? Promise.resolve()).then(async () => {
+    return this.pending.enqueue(run, async () => {
       checkAdmission()
       await run.reserveChannel(spec, run.snapshot().revision)
       const reservedState = run.snapshot()
@@ -76,10 +77,7 @@ export class SimulationChannelAuthority {
       await run.confirmChannel(spec.key, channel.manifest.id, run.snapshot().revision)
       return channel
     })
-    const settled = work.then(() => {}, () => {})
-    this.pending.set(run, settled)
-    void settled.then(() => { if (this.pending.get(run) === settled) this.pending.delete(run) })
-    return work
+
   }
 
   /**
@@ -87,5 +85,5 @@ export class SimulationChannelAuthority {
    * @param run - Run whose admission is already closed.
    * @returns completion after its queued work settles.
    */
-  async drain(run: SimulationRun): Promise<void> { await this.pending.get(run) }
+  async drain(run: SimulationRun): Promise<void> { await this.pending.drain(run) }
 }

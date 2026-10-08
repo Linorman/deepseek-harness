@@ -14,6 +14,18 @@ describe('ACP Team lifecycle', () => {
     harness = undefined
   })
 
+  it('settles cancellation when the coordinator no longer has an interrupt target', async () => {
+    harness = await makeBridgeHarness({ scenarios: [{ kind: 'hang' }] })
+    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
+    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
+    const interrupt = vi.spyOn(harness.ctx.teamRuns, 'requestCoordinatorInterrupt').mockResolvedValue(undefined)
+    const prompt = harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'Wait.' }] })
+    await harness.adapter.started.promise
+    await harness.client.cancel({ sessionId })
+    await expect(prompt).resolves.toEqual({ stopReason: 'cancelled' })
+    expect(interrupt).toHaveBeenCalledOnce()
+  })
+
   it('records a trusted human soft interrupt and retries a cursor conflict before settling cancellation', async () => {
     harness = await makeBridgeHarness({ scenarios: [{ kind: 'hang' }] })
     await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })

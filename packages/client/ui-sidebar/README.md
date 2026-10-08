@@ -8,7 +8,7 @@ Sidebar shell plugin: the brand row, New team work action, layout-owned collapse
 
 The expanded brand row renders `sidebar.brand.mark` and `sidebar.brand.name` as independent single slots, while the collapsed rail renders the same mark slot. Without occupants, the shell uses the robot mark and Clocky text; the build revision is available on the name tooltip. A deployment package can replace either value without replacing the New team work control or rail geometry; declaration-aware `slots.inject()` lets such a package activate before or after the sidebar.
 
-New team work creates only a page-local Team draft and clears the selected transcript; it creates neither a Team nor a Session until the first input is admitted by `team.start`. Team-specific navigation belongs to ui-team.
+New team work creates only a page-local Team draft and clears the selected transcript; it creates neither a Team nor a Session until the first input is admitted by `team.start`. The search trigger below it opens the shell command palette through `ctx.layout.openCommandPalette()`; its key caps are visual, and `aria-keyshortcuts` carries the platform-neutral chord. Team-specific navigation belongs to ui-team.
 
 `SidebarRootComponentProps` composes the layout owner share, global Session and Workspace hooks, the declared brand, `sidebar.workspaceNavigation`, `sidebar.teamTasks`, optional `sidebar.workspaces`, `sidebar.settings`, and footer child slots, plus injected `startTask` and sidebar-toggle callbacks. There is no plugin store.
 
@@ -19,6 +19,8 @@ Scrollbars in the column are a pointer affordance: the shell rebinds ui-theme's 
 The foot is the `sidebar.settings` seat: the sidebar renders only the bottom-pinned layout slot and shares its column state (`wide`); ui-settings registers the trigger row and settings panel there.
 
 The `/client` exports are the plugin body (`apply`/`inject`) plus the contract types only; SidebarRoot, the row components, and the tree derivation remain package-internal behind the slot registration.
+
+When two or more workspaces register `sidebar.workspaceNavigation` entries, the expanded column renders them as one segmented mode switch whose indicator slides to the entry marked `aria-current` and carries the active mode's identity glow. A single entry and the collapsed rail keep the plain entries.
 
 ## Model Experience
 

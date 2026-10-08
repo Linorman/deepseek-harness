@@ -1,6 +1,8 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
+import { createHash } from 'node:crypto'
+import { Server, ServerResponse } from 'node:http'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -8,15 +10,17 @@ import { Context } from '@clocky/cordis'
 import Loader from '@clocky/cordis-plugin-loader'
 import Include from '@clocky/cordis-plugin-include'
 import ActivationSupervisors from '@clocky/clocky-activation-supervisor'
+import type { ActivationSupervisorObservation } from '@clocky/clocky-activation-supervisor'
 import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
+import { defineLogStream } from '@clocky/clocky-storage-log'
 import { activationBindingSnapshotSchema } from '@clocky/clocky-team'
 import { createProcessInspector } from '@clocky/clocky-subprocess-local'
 import type { ProcessInspector } from '@clocky/clocky-subprocess-local'
 import { createHttpActivationSupervisor } from '../src/client.ts'
 import * as HttpClient from '../src/client.ts'
-import { SdkProcessSupervisor, listenSupervisorEndpoint } from '../src/endpoint.ts'
+import { SdkProcessSupervisor, listenSupervisorEndpoint, apply } from '../src/endpoint.ts'
 import { validateSupervisorTarget } from '../src/protocol.ts'
 import type { Config, SupervisorHttpEndpoint } from '../src/endpoint.ts'
 
@@ -80,8 +84,18 @@ function client(endpoint: SupervisorHttpEndpoint) {
     url: `http://127.0.0.1:${endpoint.port}/`, timeoutMs: 1000, allowInsecureHttp: true,
   })
 }
+async function ownershipStream(ctx: Context, current: ReturnType<typeof binding>) {
+  const key = createHash('sha256').update(JSON.stringify([config.name, config.version, config.endpointId, current.activation.id])).digest('hex')
+  return await ctx.storageLog.open(defineLogStream({ name: `activation-supervisor/${key}`, version: 1 }))
+}
 
 describe('authenticated supervisor endpoint', () => {
+  it('requires a configured credential before binding a listener', async () => {
+    const provider = { name: config.name, version: config.version, validate: vi.fn(),
+      health: vi.fn(), fence: vi.fn() }
+    await expect(listenSupervisorEndpoint(provider, config)).rejects.toThrow('credential environment')
+  })
+
   it('validates secure URL and credential configuration before creating a remote provider', () => {
     process.env.CLOCKY_TEST_SUPERVISOR_CREDENTIAL = 'test-supervisor-credential'
     const remoteConfig = {
@@ -370,6 +384,216 @@ describe('authenticated supervisor endpoint', () => {
     const owner = new SdkProcessSupervisor(config, ctx.storageLog, controlledInspector())
     await owner.close()
     await expect(owner.health(binding(), signal)).rejects.toMatchObject({ code: 'SUPERVISOR_UNAVAILABLE' })
+  })
+
+  it('requires a live enrolled process and bounds its durable owner record', async () => {
+    const { ctx } = await storage()
+    const unreachable = Object.assign(controlledInspector(), { isAlive: () => false })
+    const current = binding()
+    await expect(new SdkProcessSupervisor(config, ctx.storageLog, unreachable).admitOwned(current))
+      .rejects.toMatchObject({ code: 'SUPERVISOR_INVALID' })
+    const tinyOwner = new SdkProcessSupervisor(Object.assign({}, config, { maxPayloadBytes: 1 }),
+      ctx.storageLog, controlledInspector())
+    await expect(tinyOwner.admitOwned(current))
+      .rejects.toMatchObject({ code: 'SUPERVISOR_INVALID' })
+    const altered = structuredClone(current)
+    Object.assign(altered.recovery!.supervisor!, { terminationMode: 'unsupported' })
+    expect(() => { new SdkProcessSupervisor(config, ctx.storageLog, controlledInspector()).validate(altered) })
+      .toThrow('owned-process termination')
+  })
+
+  it('replays a durable termination without repeating the process fence', async () => {
+    const { ctx } = await storage()
+    const current = binding()
+    const owner = new SdkProcessSupervisor(config, ctx.storageLog, controlledInspector())
+    await owner.admitOwned(current)
+    const stream = await ownershipStream(ctx, current)
+    await stream.append(0, [{ version: 1, terminated: true }])
+    await stream.close()
+    await expect(owner.health(current, signal)).resolves.toMatchObject({ status: 'terminated' })
+    await expect(owner.fence(current, signal)).resolves.toMatchObject({ status: 'terminated' })
+    const aborted = new AbortController()
+    aborted.abort(new Error('caller stopped'))
+    await expect(owner.health(current, aborted.signal)).rejects.toThrow('caller stopped')
+  })
+
+  it.each([
+    { name: 'missing owner', records: [] },
+    { name: 'too many records', records: [{ version: 1 }, { version: 1, terminated: true }, { version: 1, terminated: true }] },
+    { name: 'malformed termination', records: [{ version: 1 }, { version: 1, terminated: false }] },
+  ])('refuses $name from the durable ownership log', async ({ records }) => {
+    const { ctx } = await storage()
+    const current = binding()
+    const owner = new SdkProcessSupervisor(config, ctx.storageLog, controlledInspector())
+    const stream = await ownershipStream(ctx, current)
+    for (const record of records) await stream.append(stream.tailSequence, [
+      record.version === 1 && !('terminated' in record) ? { version: 1, binding: current } : record,
+    ])
+    await stream.close()
+    await expect(owner.health(current, signal)).rejects.toMatchObject({ code: records.length === 2 ? 'SUPERVISOR_INVALID' : 'SUPERVISOR_UNAVAILABLE' })
+  })
+
+  it('reports a rejected accepted operation during retirement', async () => {
+    const { ctx } = await storage()
+    const blocked = Promise.withResolvers<never>()
+    vi.spyOn(ctx.storageLog, 'open').mockImplementationOnce(() => blocked.promise)
+    const owner = new SdkProcessSupervisor(config, ctx.storageLog, controlledInspector())
+    const pending = owner.health(binding(), signal)
+    const closing = owner.close()
+    blocked.reject(new Error('storage unavailable'))
+    await expect(pending).rejects.toThrow('storage unavailable')
+    await expect(closing).rejects.toThrow('Supervisor accepted operations failed')
+  })
+
+  it('drains concurrent accepted ownership reads before retiring the owner', async () => {
+    const { ctx } = await storage()
+    const current = binding()
+    const owner = new SdkProcessSupervisor(config, ctx.storageLog, controlledInspector())
+    await owner.admitOwned(current)
+    const open = ctx.storageLog.open.bind(ctx.storageLog)
+    const gate = Promise.withResolvers<undefined>()
+    vi.spyOn(ctx.storageLog, 'open').mockImplementation(async (...args) => {
+      await gate.promise
+      return await open(...args)
+    })
+    const first = owner.health(current, signal)
+    const second = owner.health(current, signal)
+    const closing = owner.close()
+    gate.resolve(undefined)
+    await expect(first).resolves.toMatchObject({ status: 'reachable' })
+    await expect(second).resolves.toMatchObject({ status: 'reachable' })
+    await closing
+  })
+
+  it('loads the endpoint plugin and closes its registered provider on disposal', async () => {
+    process.env.CLOCKY_TEST_SUPERVISOR_CREDENTIAL = 'test-supervisor-credential'
+    const { ctx } = await storage()
+    await ctx.plugin(ActivationSupervisors)
+    await apply(ctx, config)
+    await expect(ctx.activationSupervisors.health(binding(), signal)).rejects.toMatchObject({ code: 'SUPERVISOR_UNAVAILABLE' })
+    await expect(apply(ctx, config)).rejects.toThrow()
+  })
+
+  it('reports both plugin retirement failures after trying to close the listener and owner', async () => {
+    process.env.CLOCKY_TEST_SUPERVISOR_CREDENTIAL = 'test-supervisor-credential'
+    const { ctx } = await storage()
+    await ctx.plugin(ActivationSupervisors)
+    const registerEffect = vi.spyOn(ctx, 'effect')
+    await apply(ctx, config)
+    const disposer: unknown = registerEffect.mock.results.at(-1)?.value
+    if (typeof disposer !== 'function') throw new Error('Supervisor endpoint did not register its retirement effect')
+    const close = vi.spyOn(SdkProcessSupervisor.prototype, 'close').mockRejectedValueOnce(new Error('owner close failed'))
+    try {
+      await expect((disposer as () => Promise<void>)()).rejects.toThrow('Supervisor endpoint retirement failed')
+      expect(close).toHaveBeenCalledOnce()
+    }
+    finally { close.mockRestore(); registerEffect.mockRestore() }
+  })
+
+  it('propagates a listener close failure after closing the native socket', async () => {
+    process.env.CLOCKY_TEST_SUPERVISOR_CREDENTIAL = 'test-supervisor-credential'
+    // The native close implementation needs its original Server receiver.
+    // oxlint-disable-next-line typescript/unbound-method
+    const native = Server.prototype.close
+    const close = vi.spyOn(Server.prototype, 'close').mockImplementationOnce(function (this: Server, callback) {
+      return Reflect.apply(native, this, [() => { callback?.(new Error('socket close failed')) }]) as Server
+    })
+    try {
+      const provider = { name: config.name, version: config.version, validate: vi.fn(), health: vi.fn(), fence: vi.fn() }
+      const endpoint = await listenSupervisorEndpoint(provider, config)
+      await expect(endpoint.close()).rejects.toThrow('socket close failed')
+    } finally { close.mockRestore() }
+  })
+
+  it('limits concurrent HTTP operations and waits for the admitted response when closed', async () => {
+    process.env.CLOCKY_TEST_SUPERVISOR_CREDENTIAL = 'test-supervisor-credential'
+    const current = binding()
+    const waiting = Promise.withResolvers<ActivationSupervisorObservation>()
+    const provider = { name: config.name, version: config.version, validate: vi.fn(),
+      health: vi.fn(() => waiting.promise), fence: vi.fn() }
+    const endpoint = await listenSupervisorEndpoint(provider, Object.assign({}, config, { maxConcurrentOperations: 1 }))
+    cleanup.push(endpoint.close)
+    const url = `http://127.0.0.1:${endpoint.port}/`
+    const options = { method: 'POST', headers: { authorization: 'Bearer test-supervisor-credential',
+      'content-type': 'application/json' }, body: JSON.stringify({ version: 1, operation: 'health', binding: current }) }
+    const first = fetch(url, options)
+    await vi.waitFor(() => { expect(provider.health).toHaveBeenCalledOnce() })
+    await expect(fetch(url, options)).resolves.toMatchObject({ status: 503 })
+    const closing = endpoint.close()
+    waiting.resolve({ descriptor: current.recovery!.supervisor!, status: 'reachable' })
+    await expect(first).resolves.toMatchObject({ status: 200 })
+    await closing
+    await endpoint.close()
+  })
+
+  it('rejects an oversized provider observation without returning its private body', async () => {
+    process.env.CLOCKY_TEST_SUPERVISOR_CREDENTIAL = 'test-supervisor-credential'
+    const current = binding()
+    const provider = { name: config.name, version: config.version, validate: vi.fn(),
+      health: vi.fn(async () => ({ descriptor: current.recovery!.supervisor!, status: 'reachable' as const,
+        privateBody: 'secret'.repeat(config.maxPayloadBytes) })), fence: vi.fn() }
+    const endpoint = await listenSupervisorEndpoint(provider, config)
+    cleanup.push(endpoint.close)
+    const response = await fetch(`http://127.0.0.1:${endpoint.port}/`, { method: 'POST',
+      headers: { authorization: 'Bearer test-supervisor-credential', 'content-type': 'application/json' },
+      body: JSON.stringify({ version: 1, operation: 'health', binding: current }) })
+    expect(response.status).toBe(409)
+    expect(await response.text()).toBe('{"code":"SUPERVISOR_INVALID"}')
+  })
+
+  it('retires a request even if writing its refusal response fails', async () => {
+    process.env.CLOCKY_TEST_SUPERVISOR_CREDENTIAL = 'test-supervisor-credential'
+    const current = binding()
+    const provider = { name: config.name, version: config.version, validate: vi.fn(),
+      health: vi.fn(async () => { throw new Error('private provider failure') }), fence: vi.fn() }
+    const endpoint = await listenSupervisorEndpoint(provider, config)
+    cleanup.push(endpoint.close)
+    const writeHead = vi.spyOn(ServerResponse.prototype, 'writeHead').mockImplementation(() => {
+      throw new Error('response writer failed')
+    })
+    const controller = new AbortController()
+    try {
+      const response = fetch(`http://127.0.0.1:${endpoint.port}/`, { method: 'POST', signal: controller.signal,
+        headers: { authorization: 'Bearer test-supervisor-credential', 'content-type': 'application/json' },
+        body: JSON.stringify({ version: 1, operation: 'health', binding: current }) })
+      await vi.waitFor(() => { expect(writeHead).toHaveBeenCalled() })
+      controller.abort(new Error('caller disconnected'))
+      await expect(response).rejects.toThrow('caller disconnected')
+      await endpoint.close()
+    } finally { writeHead.mockRestore() }
+  })
+
+  it.each(['success', 'failure'] as const)('retires an HTTP request whose caller disconnects before provider %s', async (outcome) => {
+    process.env.CLOCKY_TEST_SUPERVISOR_CREDENTIAL = 'test-supervisor-credential'
+    const current = binding()
+    const waiting = Promise.withResolvers<ActivationSupervisorObservation>()
+    const responseClosed = vi.fn()
+    // The native emitter needs its original response receiver.
+    // oxlint-disable-next-line typescript/unbound-method
+    const emit = ServerResponse.prototype.emit
+    const observeClose = vi.spyOn(ServerResponse.prototype, 'emit').mockImplementation(function (this: ServerResponse, event, ...args) {
+      if (event === 'close') { this.destroy(); responseClosed() }
+      const parameters: unknown[] = [event]
+      for (const arg of args as unknown[]) parameters.push(arg)
+      return Boolean(Reflect.apply(emit, this, parameters))
+    })
+    const provider = { name: config.name, version: config.version, validate: vi.fn(),
+      health: vi.fn(() => waiting.promise), fence: vi.fn() }
+    const endpoint = await listenSupervisorEndpoint(provider, config)
+    cleanup.push(endpoint.close)
+    const controller = new AbortController()
+    try {
+      const response = fetch(`http://127.0.0.1:${endpoint.port}/`, { method: 'POST', signal: controller.signal,
+        headers: { authorization: 'Bearer test-supervisor-credential', 'content-type': 'application/json' },
+        body: JSON.stringify({ version: 1, operation: 'health', binding: current }) })
+      await vi.waitFor(() => { expect(provider.health).toHaveBeenCalledOnce() })
+      controller.abort(new Error('caller disconnected'))
+      await expect(response).rejects.toThrow('caller disconnected')
+      await vi.waitFor(() => { expect(responseClosed).toHaveBeenCalled() })
+      if (outcome === 'success') waiting.resolve({ descriptor: current.recovery!.supervisor!, status: 'reachable' })
+      else waiting.reject(new Error('provider failed after caller disconnected'))
+      await endpoint.close()
+    } finally { observeClose.mockRestore() }
   })
 
   it.skipIf(process.platform === 'win32')('fences a real owned detached process over HTTP and replays its terminated generation after endpoint restart', async () => {

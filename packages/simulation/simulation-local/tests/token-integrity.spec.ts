@@ -25,6 +25,13 @@ it('requires current prepared owners for both conversation and auxiliary reserva
   const auxiliary = tokenRecordSchema.parse({ kind: 'token/compaction-reserved', id: 'tokens/0', entityId: h.actor.id,
     epoch: h.actor.lease.epoch, request: { ...h.request, compactionId: 'auxiliary' } })
   expect(() => foldTokens({ ...state, phase: 'stalled' }, auxiliary)).toThrow(/current canonical writer/)
+  const attemptId = 'cancelled-task-attempt' as never
+  const operationId = 'cancelled-task-operation' as never
+  const cancelled = { ...state,
+    taskExecutions: { [attemptId]: { request: { attemptId, operationId,
+      entityId: h.actor.id, epoch: h.actor.lease.epoch } } as never },
+    taskCancellations: { [operationId]: { operationId } as never } }
+  expect(() => foldTokens(cancelled, auxiliary)).toThrow(/current canonical writer/)
   const reservation = await h.actor.lease.reserveModelTokens(h.id, h.request)
   const current = h.run.snapshot()
   expect(() => requireTokenReservation(current, simulationTokenReservationIdSchema.parse('missing'))).toThrow(/does not exist/)

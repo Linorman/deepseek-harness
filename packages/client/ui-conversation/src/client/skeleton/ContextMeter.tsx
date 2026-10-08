@@ -10,7 +10,7 @@ import type { UseProjection } from '@clocky/clocky-client-runtime/client'
 import type {} from '@clocky/clocky-token-meter/client'
 import { Tooltip } from '@clocky/clocky-client-ui-primitives'
 import type { ComposerBarProps } from '../contract/slots.ts'
-import { contextOccupancy, formatTokens } from '../chat/StatsLine.tsx'
+import { contextOccupancy, formatTokens } from '../contract/stat-format.ts'
 import css from './ContextMeter.module.css'
 
 /** Ring geometry: 14px viewBox, 2px stroke. */

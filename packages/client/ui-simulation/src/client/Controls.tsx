@@ -28,6 +28,7 @@ export function Controls({ compact = false, name, value, connected, authorizatio
 }) {
   const [starting, setStarting] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'start' | 'pause'>()
   const [error, setError] = useState<string>()
   const admission = useRef(false)
   const active = useRef(true)
@@ -37,20 +38,20 @@ export function Controls({ compact = false, name, value, connected, authorizatio
   const pendingLabel = useRef<'start' | 'resumeScheduling'>(labelKey)
   const startLabel = t(busy ? pendingLabel.current : labelKey)
   const pausePrimary = control?.actions.pause.allowed === true && !control.actions.start.allowed
-  const can = (action: 'start' | 'pause') => connected && control !== undefined && !value.stale
+  const can = (action: 'start' | 'pause'): boolean => connected && control !== undefined && !value.stale
     && value.error === undefined && control.actions[action].allowed && !busy && !blockedPhases.includes(action === 'start' ? 'running' : 'paused')
   const manage = async (phase: 'running' | 'paused') => {
     const action = phase === 'running' ? 'start' : 'pause'
-    if (admission.current || !can(action) || control === undefined) return
+    if (admission.current || control === undefined) return
     pendingLabel.current = labelKey
-    admission.current = true; setBusy(true); setError(undefined)
+    admission.current = true; setBusy(true); setPendingAction(action); setError(undefined)
     try {
       const key = retain({ kind: 'manage', input: { runId: control.runId, managementId: crypto.randomUUID() as never, phase } }, authorizationVersion)
       setStarting(false)
       await submit(key)
       if (active.current) await refresh()
     } catch { if (active.current) setError(t('commandCapacity')) }
-    finally { admission.current = false; if (active.current) setBusy(false) }
+    finally { admission.current = false; if (active.current) { setBusy(false); setPendingAction(undefined) } }
   }
   return <section aria-label={t('management')} aria-busy={busy}>
     {value.error !== undefined && <p role="alert">{t(value.error === 'unavailable' ? 'noManagement' : value.error === 'forbidden' ? 'noControlAccess' : value.error)}</p>}
@@ -60,15 +61,18 @@ export function Controls({ compact = false, name, value, connected, authorizatio
         <dt>{t('owner')}</dt><dd>{t(control.owner === 'held' ? 'this-provider' : 'unowned')}</dd></dl>}
       {!compact && control.inFlight && <p role="status">{t('inFlight')}</p>}
       <div className={css.actions}>
-        <Button variant={pausePrimary ? 'outline' : 'primary'} disabled={!can('start')} onClick={() => { setStarting(true) }}>{startLabel}</Button>
-        <Button variant={pausePrimary ? 'primary' : 'outline'} disabled={!can('pause')} onClick={() => { void manage('paused') }}>{t('pauseScheduling')}</Button>
+        {/* The Host's allowed action is the one primary; the in-flight one keeps its label and shows progress. */}
+        <Button variant={pausePrimary ? 'secondary' : 'primary'} disabled={!can('start')} loading={pendingAction === 'start'}
+          onClick={() => { setStarting(true) }}>{startLabel}</Button>
+        <Button variant={pausePrimary ? 'primary' : 'secondary'} disabled={!can('pause')} loading={pendingAction === 'pause'}
+          onClick={() => { void manage('paused') }}>{t('pauseScheduling')}</Button>
 
       </div>
       <details data-simulation-maintenance open={!compact || undefined}><summary>{t('status.moreActions')}</summary>
         {compact && control.inFlight && <p role="status">{t('inFlight')}</p>}
-        <Button variant="outline" disabled={!connected || value.loading || busy} onClick={() => { void refresh() }}>{t('refreshControl')}</Button>
+        <Button variant="secondary" disabled={!connected || value.loading || busy} onClick={() => { void refresh() }}>{t('refreshControl')}</Button>
         <div className={css.actions}>{(['checkpoint', 'restore', 'ingress', 'prepare'] as const).map(kind => <div key={kind}>
-          <Button variant="outline" disabled={!connected || value.stale || value.error !== undefined || busy
+          <Button variant="secondary" disabled={!connected || value.stale || value.error !== undefined || busy
           || !control.administration.actions[kind].allowed || blockedMaintenance.includes(kind)}
           onClick={() => { openMaintenance(kind) }}>{t(`maintenance.${kind}`)}</Button>
           {!control.administration.actions[kind].allowed && <p>{t(`maintenanceReason.${control.administration.actions[kind].reason}`)}</p>}

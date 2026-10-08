@@ -77,9 +77,11 @@ export function apply(ctx: ClientContext): void {
   })
   ctx.remote.$on('cordis/request-run-resolved', () => { inventory.refresh() })
   ctx.on('connection/reset', () => {
+    inventory.resumeAuthorization()
     inventory.reset()
     inventory.refresh()
   })
+  ctx.on('connection/authorization-cleared', () => { inventory.clearAuthorization() })
 
   ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
     name: 'sidebar.footer.action',

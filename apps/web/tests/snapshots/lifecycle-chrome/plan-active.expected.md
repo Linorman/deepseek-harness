@@ -4,14 +4,22 @@
 - button "New team work":
   - img
   - text: New team work
-- navigation "Workspaces":
+- button "Search or jump to":
+  - img
+  - text: Search…
+- navigation "Main navigation":
   - button "Team work":
     - img
     - text: Team work
+  - button "Simulations":
+    - img
+    - text: Simulations
 - region "Team directory":
   - img
   - text: Team directory
-  - button "Inbox"
+  - button "Inbox":
+    - img
+    - text: Inbox
   - text: Working folders
   - button "Add working folder":
     - img

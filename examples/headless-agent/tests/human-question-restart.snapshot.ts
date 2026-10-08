@@ -86,6 +86,7 @@ describe('pending Host question cleanup after abrupt terminal intent', () => {
           const target = join(root, '.clocky/profiles/headless/snapshot-fixtures')
           await mkdir(target, { recursive: true })
           for (const driver of drivers) await writeFile(join(target, driver), await readFile(join(fixtures, driver)))
+          await writeFile(join(target, 'authenticated-host.ts'), await readFile(join(fixtures, 'authenticated-host.ts')))
           await writeFile(join(target, 'package.json'), '{"type":"module"}\n')
           const first = launch(root, backend, outcome, 'crash')
           const killed = await execa(first.command, first.args, { cwd: work, env: first.env, input: '',

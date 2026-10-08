@@ -1,8 +1,9 @@
 /** Member detail reads one capability window without grants, statistics or other participants. */
 import { expect, it } from 'vitest'
-import { teamMemberInspectionSchema } from '@clocky/clocky-team'
+import { activationIdSchema, teamMemberInspectionSchema } from '@clocky/clocky-team'
+import { SessionId } from '@clocky/clocky-session'
 import { projectMemberInspection } from '@clocky/clocky-team/selection'
-import { createdTeam, participant, participantChanged, teamId } from './fixtures.ts'
+import { createdTeam, participant, participantChanged, teamId, teamPhase } from './fixtures.ts'
 import { recover } from './durable-replay-fixtures.ts'
 
 it('keeps exact metadata and pages capabilities without reading grant or statistics bodies', () => {
@@ -69,4 +70,39 @@ it.each(['json', 'sqlite'] as const)('replays exact member details with deployme
     .rejects.toMatchObject({ code: 'TEAM_CURSOR_CONFLICT' })
   await expect(ctx.teams.inspectMember({ teamId, participantId: participant({ id: 'missing' }).id }))
     .rejects.toMatchObject({ code: 'TEAM_PARTICIPANT_NOT_FOUND' })
+})
+
+it('refuses a member Session binding that cannot fit the configured response bound', async () => {
+  const member = participant({ id: 'bounded-session-member', role: 'worker' })
+  const records = [createdTeam(), teamPhase(), ...(['invited', 'provisioning', 'active'] as const).map((phase, index) =>
+    participantChanged({ participant: { ...member, phase }, createdAt: 12 + index })),
+  { type: 'activation/changed', createdAt: 15, binding: { activation: {
+    id: activationIdSchema.parse('bounded-session-activation'), teamId, participantId: member.id, status: 'idle',
+  }, sessionId: SessionId('bounded-session'), provider: 'in-process' } }]
+  const ctx = await recover('json', records, undefined, teamId, [], records.length - 1, [], { maxSelectionBytes: 40 })
+  await expect(ctx.teams.getMemberSession({ teamId, participantId: member.id }))
+    .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+})
+
+it('reports an active agent without a published Session binding', async () => {
+  const member = participant({ id: 'unbound-session-member', role: 'worker' })
+  const records = [createdTeam(), teamPhase(), ...(['invited', 'provisioning', 'active'] as const).map((phase, index) =>
+    participantChanged({ participant: { ...member, phase }, createdAt: 12 + index }))]
+  const ctx = await recover('json', records)
+  await expect(ctx.teams.getMemberSession({ teamId, participantId: member.id }))
+    .rejects.toMatchObject({ code: 'TEAM_ACTIVATION_NOT_FOUND' })
+})
+
+it('maps oversized member metadata and an indivisible capability row to response backpressure', async () => {
+  const member = participant({ id: 'bounded-member', capabilities: ['first'] })
+  const records = [createdTeam(), participantChanged({ participant: member, createdAt: 12 })]
+  const metadata = await recover('json', records, undefined, teamId, [], records.length - 1, [],
+    { maxSelectionBytes: 40 })
+  await expect(metadata.teams.inspectMember({ teamId, participantId: member.id }))
+    .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+  const long = participant({ ...member, capabilities: ['x'.repeat(2000)] })
+  const row = await recover('json', [createdTeam(), participantChanged({ participant: long, createdAt: 12 })],
+    undefined, teamId, [], 1, [], { maxSelectionBytes: 512 })
+  await expect(row.teams.inspectMember({ teamId, participantId: member.id }))
+    .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
 })

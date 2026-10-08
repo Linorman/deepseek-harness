@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-28-cancellable-local-team-link-recovery.md
-2026-08-28-cancellable-local-team-link-recovery.md: e4e21f38d08a6f7c7dac858a95b1dea212ea97ab
-2026-08-28-cancellable-local-team-link-recovery.zh.md: 16182d0916695dfad4ee6d782c473e3522f4306e
+2026-08-28-cancellable-local-team-link-recovery.md: d2f250b12ff0963d848099d0815a747ffb087ef6
+2026-08-28-cancellable-local-team-link-recovery.zh.md: 2ab8256e868b0cd6fd641a825860122000808921

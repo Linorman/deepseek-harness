@@ -40,6 +40,9 @@
     },
     {
       "path": "../../core/activation-supervisor"
+    },
+    {
+      "path": "../../util/timeout"
     }
   ]
 }

@@ -21,7 +21,8 @@ import SubagentRuntime, {
 import { SessionId, type SessionEvent } from '@clocky/clocky-session'
 
 function fakeParent(id = 'parent-1'): Agent {
-  return { id: SessionId(id) } as unknown as Agent
+  return { id: SessionId(id), options: {}, ctx: new Context(),
+    session: { header: { version: 0, id, createdAt: 0 } } } as unknown as Agent
 }
 
 const ALL_CAPS: SubagentCapabilities = { outputSchema: true, depthLimit: true, toolFilter: true, persona: true }
@@ -327,6 +328,11 @@ describe('subagent descriptors', () => {
     type: 'subagent/descriptor',
     data,
   } as unknown as SessionEvent<'subagent/descriptor'>)
+
+  it.each([undefined, '1', -1, 0.5, Number.MAX_SAFE_INTEGER + 1, -0])('rejects a persisted recursion depth that cannot bound child ownership (%s)', (depth) => {
+    expect(() => foldSubagentDescriptor([event({ version: SUBAGENT_DESCRIPTOR_VERSION, mode: 'one-shot', provider: 'spawn', depth })]))
+      .toThrow('depth must be a non-negative safe integer')
+  })
 
   it('omits absent fields, recovers a complete payload, and rejects unsupported versions', () => {
     expect(foldSubagentDescriptor([])).toBeUndefined()

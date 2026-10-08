@@ -7,6 +7,9 @@
 - id: team-run
   disabled: true
 
+- id: team-delegation
+  disabled: true
+
 - id: tool-team-channel-summary
   disabled: true
 

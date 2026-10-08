@@ -70,7 +70,7 @@ export class ConnectionController {
   private generation = 0
   private attempt = 0
   private current: AbortController | null = null
-  private running = false
+  private lifecycle: 'idle' | 'running' | 'authorization-required' | 'stopped' = 'idle'
   private lastState: ConnectionState | null = null
   private readonly config: Required<ConnectionConfig>
 
@@ -84,14 +84,20 @@ export class ConnectionController {
 
   /** Idempotent: begin the connect/pump/reconnect loop. */
   start(): void {
-    if (this.running) return
-    this.running = true
+    if (this.isRunning()) return
+    this.lifecycle = 'running'
     void this.loop()
+  }
+
+  /** Retry a terminal authentication refusal once on explicit user request; other states ignore it. */
+  retryAuthorization(): void {
+    if (this.lifecycle !== 'authorization-required') return
+    this.start()
   }
 
   /** Stop the loop and abort the current generation's streams. */
   stop(): void {
-    this.running = false
+    this.lifecycle = 'stopped'
     this.current?.abort()
     this.current = null
   }
@@ -104,7 +110,7 @@ export class ConnectionController {
 
   /** Read through a method: stop() flips the flag across awaits, so narrowing from the loop condition must not stick. */
   private isRunning(): boolean {
-    return this.running
+    return this.lifecycle === 'running'
   }
 
   /** Re-read both mutable liveness guards after a potentially reentrant sink. */
@@ -113,7 +119,7 @@ export class ConnectionController {
   }
 
   private async loop(): Promise<void> {
-    while (this.running) {
+    while (this.isRunning()) {
       const gen = ++this.generation
       const ac = new AbortController()
       this.current = ac
@@ -122,8 +128,10 @@ export class ConnectionController {
       ac.signal.addEventListener('abort', releaseReady, { once: true })
       let denied = false
       const reportDenial = (error: unknown): void => {
-        if (gen !== this.generation || !this.running || denied || !authorizationLost(error)) return
+        if (gen !== this.generation || !this.isRunning() || denied || !authorizationLost(error)) return
         denied = true
+        this.lifecycle = 'authorization-required'
+        ac.abort()
         this.callSink(() => { this.sinks.onAuthorizationLost?.() })
       }
 
@@ -149,18 +157,17 @@ export class ConnectionController {
           () => this.isGenerationActive(ac))
       })
 
+      const timeout = new AbortController()
       try {
         // Strict readiness handshake: describe proves unary reachability, onOpen
         // proves each physical stream is established before any frame —
         // only then may onConnected fire, so the resync it triggers cannot outrun the
         // subscribed baseline. The timeout guards against a carrier that never fires onOpen
         // (see ConnectionConfig.streamOpenTimeoutMs).
-        const timeout = new AbortController()
         const [description] = await Promise.all([
-          this.api.host.describe({}),
+          this.api.host.describe({}, ac.signal),
           Promise.race([streamsOpen, sleep(this.config.streamOpenTimeoutMs, timeout.signal)]),
         ])
-        timeout.abort()
         const descriptionResult = description.result
         if (!descriptionResult.ok) {
           throw Object.assign(new Error(`host.describe failed: ${descriptionResult.error.code}`), { code: descriptionResult.error.code })
@@ -179,16 +186,19 @@ export class ConnectionController {
         // Transport failure: treat as generation failure, fall through to the shared backoff.
         if (!ac.signal.aborted) ac.abort()
       }
+      timeout.abort()
 
       ac.signal.removeEventListener('abort', releaseReady)
 
       await failed
-      if (!this.isRunning()) return
+      if (!this.isRunning() || gen !== this.generation) return
       this.emitState('reconnecting')
       this.attempt += 1
       console.warn(`[web-runtime] connection lost, retry #${this.attempt}`)
       const idle = new AbortController()
+      this.current = idle
       await sleep(this.backoffDelay(this.attempt), idle.signal)
+      if (gen !== this.generation) return
     }
   }
 

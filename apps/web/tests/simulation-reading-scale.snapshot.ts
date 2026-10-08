@@ -30,7 +30,7 @@ it('keeps a tenfold larger world bounded to one page with no per-row inspect rea
       '@clocky/clocky-client-ui-simulation': { pageSize: 16 },
     } }
     const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(config))
-    const scaffold = await launchWebScaffold({ tempRoot: directory, extraOverlayPath: overlay, productPrincipalId: 'simulation-browser-user' })
+    const scaffold = await launchWebScaffold({ tempRoot: directory, disableDefaultSimulation: true, extraOverlayPath: overlay, productPrincipalId: 'simulation-browser-user' })
     const browser = await chromium.launch(), page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' })
     const errors = watchConsole(page)
     let run: SimulationRun | undefined, collections = 0, inspect = 0

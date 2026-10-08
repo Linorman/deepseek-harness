@@ -47,7 +47,7 @@ export function PersistentRequests({ runId, ready, value, connected, authorizati
     const key = simulationCommandKey(command)
     try {
       // Warm originals retain their full captured payload; cold discovery keeps only an exact Host-owned selector.
-      if (commands[key] === undefined) retain(command, authorizationVersion)
+      retain(command, authorizationVersion)
       const result = await (retry ? submit(key) : query(key))
       if (active()) {
         await refresh()
@@ -60,7 +60,7 @@ export function PersistentRequests({ runId, ready, value, connected, authorizati
     <p>{t('requests.notice')}</p>
     <Button disabled={!connected || value.loading} onClick={() => { void refresh() }}>{t('requests.refresh')}</Button>
     {value.loading && <p role="status">{t('loading')}</p>}
-    {value.stale && <p role="status">{t('stale')}</p>}
+    {value.stale && <p role="status" className={css.stalePill}>{t('stale')}</p>}
     {value.error !== undefined && <p role="alert">{t(value.error)}</p>}
     {error !== undefined && <p role="alert">{error}</p>}
     {page?.items.length === 0 && !value.loading && <p>{t('requests.empty')}</p>}
@@ -74,7 +74,7 @@ export function PersistentRequests({ runId, ready, value, connected, authorizati
           {receipt.checkpointId !== undefined && <p>{t('checkpointId')}: <code>{receipt.checkpointId}</code></p>}
           <div className={css.actions}>
             <Button disabled={!connected} onClick={() => { void settle(receipt, false) }}>{t('requests.query')}</Button>
-            {receipt.status === 'accepted' && <Button variant="outline" disabled={!connected || value.loading || value.stale
+            {receipt.status === 'accepted' && <Button variant="secondary" disabled={!connected || value.loading || value.stale
             || value.error !== undefined} onClick={() => { void settle(receipt, true) }}>{t('requests.retry')}</Button>}
           </div>
         </>}

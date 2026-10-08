@@ -106,7 +106,7 @@ describe('ConversationController', () => {
     // The conversation seam consumes only teamId; the test double does not
     // need to fabricate the unrelated coordinator snapshot fields.
     await b.runtime.sessions.updateSummary('s1', { team: { teamId: 'team-1' as TeamId, participantId: 'coordinator' as never } })
-    vi.spyOn(b.runtime.teamTasks, 'resolveCoordinatorSession').mockResolvedValue({ teamId: 'team-1' as TeamId } as never)
+    vi.spyOn(b.runtime.teamTasks, 'resolveCoordinatorSession').mockResolvedValue({ teamId: 'team-1' as TeamId })
     b.runtime.teamTasks.stub('postInput', postInput)
     b.runtime.sessions.behavior('s1').projections.set('imageLimits', {
       maxImageBytes: 5 * 1024 * 1024,
@@ -206,7 +206,7 @@ describe('InputHub command plane', () => {
 
     expect(b.hub.inputTriggers('s1' as SessionId)).toBe(controller)
     await b.runtime.sessions.updateSummary('s1', { team: { teamId: 'team-1' as TeamId, participantId: 'coordinator' as never } })
-    vi.spyOn(b.runtime.teamTasks, 'resolveCoordinatorSession').mockResolvedValue({ teamId: 'team-1' as TeamId } as never)
+    vi.spyOn(b.runtime.teamTasks, 'resolveCoordinatorSession').mockResolvedValue({ teamId: 'team-1' as TeamId })
     expect(b.hub.inputTriggers('s1' as SessionId)).toBeUndefined()
     expect(sessionOf).toHaveBeenCalledOnce()
     await b.runtime.dispose()

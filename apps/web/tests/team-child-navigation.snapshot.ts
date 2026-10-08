@@ -194,7 +194,7 @@ export function apply(ctx) {
     await teamAppearance(page, 'zh', 'light')
     await page.setViewportSize({ width: 390, height: 844 })
     await page.locator('[data-sidebar-collapsed]').waitFor()
-    await expect.poll(() => page.locator('[data-clocky-navigation]').getByText('新建团队工作', { exact: true }).count()).toBe(0)
+    await expect.poll(() => page.locator('[data-clocky-navigation]').getByText('新建团队任务', { exact: true }).count()).toBe(0)
     await page.locator('[data-sidebar-collapsed]').evaluate(async (element) => {
       await Promise.allSettled(element.getAnimations().map(animation => animation.finished))
     })

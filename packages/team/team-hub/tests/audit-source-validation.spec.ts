@@ -43,7 +43,7 @@ async function dispose(ctx: Context) {
   contexts.delete(ctx)
 }
 
-async function hub(backend: Backend, root: string, onOpen?: (stream: LogStream) => void) {
+async function hub(backend: Backend, root: string, onOpen?: (stream: LogStream) => void, recoveryPageSize = 64) {
   const ctx = await storage(backend, root)
   if (onOpen !== undefined) {
     const open = ctx.storageLog.open.bind(ctx.storageLog)
@@ -53,7 +53,7 @@ async function hub(backend: Backend, root: string, onOpen?: (stream: LogStream) 
       return stream
     })
   }
-  await ctx.plugin(TeamHub, { recoveryPageSize: 64, checkpointEvery: 1 })
+  await ctx.plugin(TeamHub, { recoveryPageSize, checkpointEvery: 1 })
   ctx.teams.registerAdapter(directChannelAdapter)
   return ctx
 }
@@ -244,6 +244,55 @@ describe('audit validation against durable sources', () => {
       await replaceAudit('sqlite', fixture.root, fixture.auditName, fixture.rows)
       expect(await reader.teams.readAudit(fixture.request)).toEqual(fixture.valid)
       expect(await reader.teams.getTeam({ teamId: fixture.request.teamId })).toEqual(fixture.team)
+    })
+  }
+
+  for (const backend of ['json', 'sqlite'] as const) {
+    it(`pages a channel source without skipping records and propagates its storage fault on ${backend}`, async () => {
+      const fixture = await seed(backend, 'channel')
+      let source: LogStream | undefined
+      const reader = await hub(backend, fixture.root, (stream) => {
+        if (stream.name === fixture.sourceName) source = stream
+      }, 1)
+      await reader.teams.getChannel({ channelId: fixture.channelId })
+      const all = await reader.teams.readChannel({ channelId: fixture.channelId, afterCursor: -1 })
+      const pages = []
+      let afterCursor = -1
+      for (let pageNumber = 0; pageNumber < all.records.length + 1; pageNumber++) {
+        const page = await reader.teams.readChannelPage({ channelId: fixture.channelId, afterCursor, limit: 1 })
+        pages.push(...page.records)
+        if (page.nextCursor === undefined) break
+        afterCursor = page.nextCursor
+      }
+      expect(pages).toEqual(all.records)
+      expect(pages.length).toBeGreaterThan(1)
+      expect((await reader.teams.readChannelPage({ channelId: fixture.channelId,
+        afterCursor: all.channel.cursor, limit: 1 })).records).toEqual([])
+      if (source === undefined) throw new Error('Channel source was not opened')
+      const failure = new Error('Channel source read failed')
+      const failed = vi.spyOn(source, 'read').mockRejectedValueOnce(failure)
+      await expect(reader.teams.readChannelPage({ channelId: fixture.channelId, afterCursor: -1, limit: 1 }))
+        .rejects.toBe(failure)
+      failed.mockRestore()
+      expect((await reader.teams.readChannelPage({ channelId: fixture.channelId, afterCursor: -1, limit: 1 })).records)
+        .toEqual(all.records.slice(0, 1))
+      await dispose(reader)
+    })
+
+    it(`turns a compacted channel prefix into a typed page error on ${backend}`, async () => {
+      const fixture = await seed(backend, 'channel')
+      const writer = await storage(backend, fixture.root)
+      const source = await writer.storageLog.open({ name: fixture.sourceName, version: fixture.version })
+      const checkpoint = await source.readCheckpoint()
+      if (checkpoint === undefined) throw new Error('Channel compaction requires a checkpoint')
+      await source.compact({ throughSequence: 0, expectedCheckpointSequence: checkpoint.sequence })
+      await dispose(writer)
+      const reader = await hub(backend, fixture.root)
+      await expect(reader.teams.readChannelPage({ channelId: fixture.channelId, afterCursor: -1, limit: 1 }))
+        .rejects.toMatchObject({ code: 'TEAM_CHANNEL_COMPACTED', details: { firstCursor: 1 } })
+      expect((await reader.teams.readChannelPage({ channelId: fixture.channelId, afterCursor: 0, limit: 1 })).records)
+        .toHaveLength(1)
+      await dispose(reader)
     })
   }
 })

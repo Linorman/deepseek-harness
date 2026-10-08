@@ -16,6 +16,8 @@ Simulation 任务结果可能在 reviewer 休眠时等待接受或返工。通�
 
 每条已受理审核保留 `TeamTaskReviewDecision.simulationCommand`：run id、运行内 command id、原 task/create operation 和选定 revision。决定的既有字段保留 reviewer、attempt、phase 与 reason。运行内相同身份复用于其他任务或载荷会拒绝。相同命令且权限仍有效时，返回保留历史审核的当前规范任务，不再次运行策略或修改，也绝不审核后续 attempt。Native 仅观察仍属于原 attempt 的返回事实；历史重试跳过后续 attempt 的观察。Team journal 与 checkpoint format 40 拒绝旧格式；Native journal 结构不变。
 
+普通 DAG 调度器在任何 placement 或维护之前跳过带有不可变 `simulationRunId` 规则的 Team。Hub 拒绝对这些 Team 使用 scheduler-stall proof。Simulation 审核实体休眠时本就没有合格的普通 activation；若按普通调度脉冲累计诊断，就会持久写入 `TASK_NO_ELIGIBLE_OWNER`，并在检查点／重启后阻止原生审核。暂停原生运行不会转移调度权限。未知审核 IO 仍保留 accepted 状态以便核对原命令，因为目标可能已持久受理。
+
 ## Alternatives considered
 
 **激活 reviewer。** 激活为确定性的行政决定增加容量与恢复依赖，且不能证明原生结果所属权。
@@ -31,3 +33,5 @@ Participant review policy 与普通任务语义仍是权威。新连接方法是
 ## Verification
 
 [原生审核测试](../../../../packages/simulation/simulation-team/tests/task-review.spec.ts)覆盖 JSON 与 SQLite、reviewer 已物理停止时的 paused 审核、精确重试、载荷冲突、返工后另一次待审核 attempt、缺失原生结果或来源、reviewer binding 变更、非活动 phase、过期 revision、包括待完成策略 IO 的检查点与关闭准入、所有者读取或策略 IO 期间 reviewer 或调用方 lease 撤回，以及 proof 撤销／不可序列化。序列化 projection 重放保留 command 来源，并拒绝不同创建或未来 revision。Core runtime 与 Hub edge-case 回归保留普通 reviewer 和 scheduler 恢复行为。这些测试证明行政权限及幂等约束；产品组合与浏览器验证由所属工作流负责。
+
+调度器回归在存在 pending 任务和休眠审核实体时重复 drive，确认没有 placement 或修改。原生 JSON／SQLite 测试拒绝直接 scheduler-stall proof，再验证暂停审核。[Host 重启浏览器回归](../../../../apps/web/tests/simulation-process-restart.snapshot.ts)延迟点击并在暂停期间跨越普通调度脉冲，同时保留检查点／审核 SIGKILL 和原命令重试断言。

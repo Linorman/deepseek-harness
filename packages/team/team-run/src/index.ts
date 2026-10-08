@@ -844,6 +844,8 @@ interface RunState {
   coordinatorOutputContinuations: number
   /** Release has begun, so no new worker or reviewer topology proof may be issued. */
   topologyReleased: boolean
+  /** Final whose durable human receipt completed before this local run released its proofs. */
+  receiptedFinalEnvelopeId?: TeamEnvelope['id']
   reviewer?: ReviewerState | undefined
   reviewerActivation?: Promise<ReviewerState> | undefined
 }
@@ -874,14 +876,6 @@ interface ResumePhaseProofRecord {
   readonly scope: Extract<TeamSystemPhaseScope, { readonly kind: 'team-run-resume' }>
   /** Authenticated-human authorization that must remain live through the phase append. */
   readonly authorization?: TeamHumanResumeAuthorization
-}
-
-/** Private source-owned completion-admission proof retained only around one quiescing phase command. */
-interface FinalizationQuiescePhaseProofRecord {
-  /** Exact current local run whose accepted final result is being fenced. */
-  readonly state: RunState
-  /** Exact final-result identity and Team cursor accepted by the Hub. */
-  readonly scope: Extract<TeamSystemPhaseScope, { readonly kind: 'team-run-finalization-quiesce' }>
 }
 
 /** Private human-to-coordinator interrupt proof retained only while one current TeamRun asks the Hub to commit it. */
@@ -1071,7 +1065,6 @@ export class TeamRunService extends Service {
   private readonly closureProofs = new WeakMap<TeamSystemClosureProof, ClosureProofRecord>()
   private readonly resumePhaseProofs = new WeakMap<TeamSystemPhaseProof, ResumePhaseProofRecord>()
   private readonly resumePhaseProofByTeam = new Map<TeamId, TeamSystemPhaseProof>()
-  private readonly finalizationQuiescePhaseProofs = new Map<TeamSystemPhaseProof, FinalizationQuiescePhaseProofRecord>()
   private readonly interruptProofs = new Map<TeamSystemInterruptProof, InterruptProofRecord>()
   private readonly taskControlProofs = new Map<TeamSystemTaskControlProof, TaskControlProofRecord>()
   private readonly rootCreationProofs = new Map<TeamSystemRootCreationProof, RootCreationProofRecord>()
@@ -2197,11 +2190,7 @@ export class TeamRunService extends Service {
           'TEAM_RUN_NOT_QUIESCENT')
       }
       if (await this.reviewWaitChanged(task, current)) continue
-      const watched = await this.ctx.teams.watchTeam({
-        teamId: state.handle.teamId,
-        afterCursor: current.team.cursor,
-        ...request.signal === undefined ? {} : { signal: request.signal },
-      })
+      const watched = await this.watchDefaultWorkerTeam(state, current.team.cursor, request.signal)
       if (watched.kind === 'closed') {
         throw new TeamRunError(`Team '${state.handle.teamId}' closed before default-worker task '${task.id}' settled`, 'TEAM_RUN_NOT_QUIESCENT')
       }
@@ -2230,12 +2219,10 @@ export class TeamRunService extends Service {
     authority: TeamRunCoordinatorTaskAuthority,
     request: TeamRunDefaultWorkerTaskOwnerProposalRequest,
   ): Promise<TeamRunDefaultWorkerTaskOwnerProposal> {
-    const retained = await this.requireCoordinatorTaskControlAuthority(authority)
+    const retained = await this.requireOwnedTaskControl(authority, request.taskId)
     const { state, coordinator } = retained
-    this.requireDefaultWorkerTask(state, request.taskId)
     for (let attempt = 0; attempt < state.config.receiptRetryAttempts; attempt += 1) {
-      const current = await this.ctx.teams.getTask({ teamId: state.handle.teamId, taskId: request.taskId })
-      this.requireDefaultWorkerTask(state, request.taskId, current)
+      const current = await this.readOwnedDefaultWorkerTask(state, request.taskId)
       if (current.phase !== 'pending') {
         throw new TeamRunError(`default-worker task '${current.id}' cannot receive an owner proposal from '${current.phase}'`, 'TEAM_RUN_NOT_QUIESCENT')
       }
@@ -2293,17 +2280,27 @@ export class TeamRunService extends Service {
         if (state.defaultWorkerTaskIds.has(task.id) && await this.reviewWaitChanged(task, current)) reviewChanged = true
       }
       if (reviewChanged) continue
-      const watched = await this.ctx.teams.watchTeam({
-        teamId: state.handle.teamId,
-        afterCursor: current.team.cursor,
-        ...request.signal === undefined ? {} : { signal: request.signal },
-      })
+      const watched = await this.watchDefaultWorkerTeam(state, current.team.cursor, request.signal)
       if (watched.kind === 'closed') {
         const closed = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
         return Object.freeze({ cursor: closed.team.cursor, tasks: Object.freeze(defaultWorkerTaskValues(state, closed.tasks)) })
       }
       assertTeamWatchAdvance(watched, current.team.cursor, 'default-worker task watch')
     }
+  }
+
+  /** Read and validate owned task identity at each control retry; the caller still fences its mutation. */
+  private async readOwnedDefaultWorkerTask(state: RunState, taskId: TeamTaskId): Promise<TeamTaskSnapshot> {
+    const current = await this.ctx.teams.getTask({ teamId: state.handle.teamId, taskId })
+    this.requireDefaultWorkerTask(state, taskId, current)
+    return current
+  }
+
+  /** Establish the same cancellation-aware Team cursor watch for owned-task waits and snapshots. */
+  private watchDefaultWorkerTeam(state: RunState, afterCursor: number, signal?: AbortSignal): Promise<TeamWatchResult> {
+    return this.ctx.teams.watchTeam({
+      teamId: state.handle.teamId, afterCursor, ...signal === undefined ? {} : { signal },
+    })
   }
 
   /**
@@ -2316,12 +2313,10 @@ export class TeamRunService extends Service {
     authority: TeamRunCoordinatorTaskAuthority,
     request: TeamRunDefaultWorkerTaskCancelRequest,
   ): Promise<TeamRunDefaultWorkerTask> {
-    const retained = await this.requireCoordinatorTaskControlAuthority(authority)
+    const retained = await this.requireOwnedTaskControl(authority, request.taskId)
     const { state, coordinator } = retained
-    this.requireDefaultWorkerTask(state, request.taskId)
     for (let attempt = 0; attempt < state.config.receiptRetryAttempts; attempt += 1) {
-      const current = await this.ctx.teams.getTask({ teamId: state.handle.teamId, taskId: request.taskId })
-      this.requireDefaultWorkerTask(state, request.taskId, current)
+      const current = await this.readOwnedDefaultWorkerTask(state, request.taskId)
       if (current.phase === 'completed' || current.phase === 'failed' || current.phase === 'cancelled' || current.phase === 'deleted') {
         return defaultWorkerTaskValue(current)
       }
@@ -2834,12 +2829,23 @@ export class TeamRunService extends Service {
         })
         const final = findFinal(read.records, state.handle)
         if (final !== undefined) {
-          await this.assertNoUnfinishedTasks(state)
-          await this.settleFinalWorkspaces(state)
-          await this.admitCompletionIntent(state, final.id)
-          await this.admitHumanFinal(state, final)
-          await this.acknowledgeHumanFinal(state, final)
-          await this.complete(state, final.id)
+          if (state.topologyReleased) {
+            const current = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
+            if (state.receiptedFinalEnvelopeId !== final.id
+              || current.team.closure?.kind !== 'complete'
+              || current.team.closure.finalChannelId !== state.handle.channel.manifest.id
+              || current.team.closure.finalEnvelopeId !== final.id) {
+              throw new TeamRunError('released Team run has no matching durable final completion intent', 'TEAM_RUN_NOT_QUIESCENT')
+            }
+            await this.complete(state, final.id)
+          } else {
+            await this.assertNoUnfinishedTasks(state)
+            await this.settleFinalWorkspaces(state)
+            await this.admitCompletionIntent(state, final.id)
+            await this.admitHumanFinal(state, final)
+            await this.acknowledgeHumanFinal(state, final)
+            await this.complete(state, final.id)
+          }
           return Object.freeze({
             teamId: state.handle.teamId,
             channelId: state.handle.channel.manifest.id,
@@ -2985,14 +2991,7 @@ export class TeamRunService extends Service {
         message: `coordinator turn ended ${event.data.reason.kind} before an explicit final Envelope`,
       }
     await driver.recordTurnEnd({
-      teamId: state.handle.teamId,
-      coordinatorId: state.handle.coordinator.id,
-      activationId: state.handle.coordinatorLease.binding.activation.id,
-      sessionId: state.handle.coordinatorLease.binding.sessionId,
-      provider: state.handle.coordinatorLease.binding.provider,
-      turn: event.data.turn,
-      finalChannelId: state.handle.channel.manifest.id,
-      humanId: state.handle.recipient.id,
+      ...coordinatorTurnEndTarget(state, event.data.turn),
       reason,
       outcome: event.data.reason.kind === 'error' ? 'failure' : 'missing-final',
     })
@@ -3055,14 +3054,7 @@ export class TeamRunService extends Service {
     if (state.coordinatorOutputContinuations >= state.config.maxCoordinatorOutputContinuations) {
       if (driver === undefined) return
       await driver.recordTurnEnd({
-        teamId: state.handle.teamId,
-        coordinatorId: state.handle.coordinator.id,
-        activationId: state.handle.coordinatorLease.binding.activation.id,
-        sessionId: state.handle.coordinatorLease.binding.sessionId,
-        provider: state.handle.coordinatorLease.binding.provider,
-        turn: event.data.turn,
-        finalChannelId: state.handle.channel.manifest.id,
-        humanId: state.handle.recipient.id,
+        ...coordinatorTurnEndTarget(state, event.data.turn),
         reason: {
           code: 'FINAL_ANSWER_MISSING',
           message: `coordinator reached the output limit ${String(state.config.maxCoordinatorOutputContinuations)} times without posting a final Envelope`,
@@ -3083,14 +3075,7 @@ export class TeamRunService extends Service {
     } catch (error: unknown) {
       if (driver === undefined) throw error
       await driver.recordTurnEnd({
-        teamId: state.handle.teamId,
-        coordinatorId: state.handle.coordinator.id,
-        activationId: state.handle.coordinatorLease.binding.activation.id,
-        sessionId: state.handle.coordinatorLease.binding.sessionId,
-        provider: state.handle.coordinatorLease.binding.provider,
-        turn: event.data.turn,
-        finalChannelId: state.handle.channel.manifest.id,
-        humanId: state.handle.recipient.id,
+        ...coordinatorTurnEndTarget(state, event.data.turn),
         reason: {
           code: 'FINAL_ANSWER_MISSING',
           message: `coordinator output-limit continuation failed: ${String(error)}`,
@@ -3449,10 +3434,18 @@ export class TeamRunService extends Service {
       }, async actor => await this.ctx.teams.transitionParticipantPhase({ actor, ...provisioningInput }))
       return requiredParticipant(await this.ctx.teams.getTeam({ teamId: state.handle.teamId }), invited.id)
     } catch (error: unknown) {
-      if (isTeamCursorConflict(error)) {
-        const latest = (await this.ctx.teams.getTeam({ teamId: state.handle.teamId })).participants
+      // The invitation already committed. Keep its local route on an uncertain
+      // provisioning failure so the next pool request resumes this identity.
+      let latest: ParticipantSnapshot | undefined
+      try {
+        latest = (await this.ctx.teams.getTeam({ teamId: state.handle.teamId })).participants
           .find(participant => participant.id === invited.id)
-        if (latest !== undefined && latest.phase !== 'left' && latest.phase !== 'failed') return latest
+      } catch (readError: unknown) {
+        throw new AggregateError([error, readError], 'Worker provisioning and recovery read failed')
+      }
+      if (latest !== undefined && latest.phase !== 'left' && latest.phase !== 'failed') {
+        if (isTeamCursorConflict(error)) return latest
+        throw error
       }
       state.workers.splice(state.workers.findIndex(worker => worker.id === invited.id), 1)
       state.workerAgents.delete(invited.id)
@@ -3603,14 +3596,17 @@ export class TeamRunService extends Service {
     }
     let lease: TeamActivationLease | undefined
     let disposePrompt: (() => void) | undefined
+    const previous = current.activations.findLast(binding => binding.activation.participantId === worker.id)
+    const sessionId = previous?.sessionId ?? workerAgent.sessionId ?? SessionId(`team-worker-${randomUUID()}`)
+    state.workerAgents.set(worker.id, { ...workerAgent, sessionId })
     try {
       lease = await this.ctx.teamActivations.activate({
         teamId: state.handle.teamId,
         participantId: worker.id,
         expectedCursor: current.team.cursor,
         provider: state.config.activationProvider,
-        sessionId: workerAgent.sessionId ?? SessionId(`team-worker-${randomUUID()}`),
-        seed: workerAgent.sessionId === undefined ? { kind: 'fresh' } : { kind: 'resume' },
+        sessionId,
+        seed: previous === undefined ? { kind: 'fresh' } : { kind: 'resume' },
         agent: workerAgent,
         signal: signal ?? new AbortController().signal,
       })
@@ -3708,12 +3704,19 @@ export class TeamRunService extends Service {
             await lease.dispose().catch(() => {})
             throw new TeamRunError('reviewer activation did not publish a local Agent', 'TEAM_RUN_NOT_QUIESCENT')
           }
-          const disposePrompt = lease.localAgent.ctx.systemPrompt.section({
-            name: 'team-run:reviewer-task',
-            order: state.config.workerPromptOrder,
-            text: 'Review the assigned Team task result. Use team_task_review with the task_id, decision, and reason; the current review assignment supplies the revision fence. Do not modify files or delegate work.',
-          })
-          return { participant, lease, disposePrompt }
+          try {
+            const disposePrompt = lease.localAgent.ctx.systemPrompt.section({
+              name: 'team-run:reviewer-task',
+              order: state.config.workerPromptOrder,
+              text: 'Review the assigned Team task result. Use team_task_review with the task_id, decision, and reason; the current review assignment supplies the revision fence. Do not modify files or delegate work.',
+            })
+            return { participant, lease, disposePrompt }
+          } catch (error: unknown) {
+            try { await lease.dispose() } catch (cleanup: unknown) {
+              throw new AggregateError([error, cleanup], 'Reviewer activation cleanup failed')
+            }
+            throw error
+          }
         }
         conflicts = 0
       } catch (error: unknown) {
@@ -3787,6 +3790,15 @@ export class TeamRunService extends Service {
       }
     }
     throw new TeamRunError('default-worker task creation exhausted its Team cursor retries', 'TEAM_RUN_NOT_QUIESCENT')
+  }
+
+  /** Apply the same coordinator and default-task ownership check before either owner proposal or cancellation. */
+  private async requireOwnedTaskControl(
+    authority: TeamRunCoordinatorTaskAuthority, taskId: TeamTaskId,
+  ): Promise<CoordinatorAuthorityState> {
+    const retained = await this.requireCoordinatorTaskControlAuthority(authority)
+    this.requireDefaultWorkerTask(retained.state, taskId)
+    return retained
   }
 
   /** Revalidate an opaque coordinator capability and retain its exact current coordinator. */
@@ -3943,6 +3955,7 @@ export class TeamRunService extends Service {
           envelopeId: envelope.id,
           expectedCursor: channel.cursor,
         })
+        state.receiptedFinalEnvelopeId = envelope.id
         return
       } catch (error: unknown) {
         if (!isChannelCursorConflict(error) || attempt + 1 === state.config.receiptRetryAttempts) throw error
@@ -3991,6 +4004,10 @@ export class TeamRunService extends Service {
     let current = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
     for (const task of current.tasks) {
       if (task.phase !== 'pending') continue
+      // A prior attempt may still own a preserved workspace after review sends
+      // this task back to pending. Hub forbids its terminal task record until
+      // that allocation is physically released; a later cancel retries it.
+      if (current.workspaceAllocations.some(allocation => allocation.taskId === task.id && allocation.lifecycle !== 'released')) continue
       let candidate = task
       for (let attempt = 0; attempt < state.config.receiptRetryAttempts; attempt += 1) {
         try {
@@ -4035,9 +4052,35 @@ export class TeamRunService extends Service {
 
   /** Close every active channel through the exact retained TeamRun cancellation identity after release. */
   private async closeCancelledRunChannels(
-    state: RunState,
-    cancellation: TeamCancellationSnapshot,
-    knownChannelId: ChannelId,
+    state: RunState, cancellation: TeamCancellationSnapshot, knownChannelId: ChannelId,
+  ): Promise<void> {
+    await this.closeRunChannels(state, knownChannelId, 'cancellation', async (current, channelId, channel, reason) => {
+      const input = { teamId: state.handle.teamId, cancellationIdempotencyKey: cancellation.idempotencyKey,
+        cancellationRequestedAt: cancellation.requestedAt, expectedTeamCursor: current.team.cursor,
+        channelId, expectedCursor: channel.cursor, reason }
+      const scope: TeamSystemCancellationCleanupScope = Object.freeze({ kind: 'team-run-cancellation-channel-close', ...input })
+      await this.withCancellationCleanupProof(state, cancellation, scope, async actor =>
+        await this.ctx.teams.closeTeamCancellationChannel({ actor, ...input }))
+    })
+  }
+
+  /** Close every active channel through one exact post-release finalization proof per retry. */
+  private async closeFinalizationChannels(state: RunState, finalEnvelopeId: TeamEnvelope['id']): Promise<void> {
+    const finalChannelId = state.handle.channel.manifest.id
+    await this.closeRunChannels(state, finalChannelId, 'finalization', async (current, channelId, channel, reason) => {
+      const input = { teamId: state.handle.teamId, finalChannelId, finalEnvelopeId,
+        expectedTeamCursor: current.team.cursor, channelId, expectedCursor: channel.cursor, reason }
+      const scope: TeamSystemFinalizationCleanupScope = Object.freeze({ kind: 'team-run-finalization-channel-close',
+        ...input, humanId: state.handle.recipient.id, coordinatorId: state.handle.coordinator.id })
+      await this.withFinalizationCleanupProof(state, scope, async actor =>
+        await this.ctx.teams.closeTeamFinalizationChannel({ actor, ...input }))
+    })
+  }
+
+  /** Retry each exact retained channel independently; the caller owns its operation-specific proof and close mutation. */
+  private async closeRunChannels(
+    state: RunState, knownChannelId: ChannelId, kind: 'cancellation' | 'finalization',
+    operation: (current: TeamStateSnapshot, channelId: ChannelId, channel: ChannelSnapshot, reason: string) => Promise<void>,
   ): Promise<void> {
     const initial = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
     for (const channelId of initial.channelIds) {
@@ -4045,85 +4088,15 @@ export class TeamRunService extends Service {
         const current = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
         const channel = await this.ctx.teams.getChannel({ channelId })
         if (channel.phase === 'closed' || channel.phase === 'expired' || channel.phase === 'failed') break
-        const reason = channelId === knownChannelId ? 'Team cancelled' : 'parent Team cancelled'
-        try {
-          const scope: TeamSystemCancellationCleanupScope = Object.freeze({
-            kind: 'team-run-cancellation-channel-close',
-            teamId: state.handle.teamId,
-            cancellationIdempotencyKey: cancellation.idempotencyKey,
-            cancellationRequestedAt: cancellation.requestedAt,
-            expectedTeamCursor: current.team.cursor,
-            channelId,
-            expectedCursor: channel.cursor,
-            reason,
-          })
-          await this.withCancellationCleanupProof(state, cancellation, scope, async actor =>
-            await this.ctx.teams.closeTeamCancellationChannel({
-              actor,
-              teamId: state.handle.teamId,
-              cancellationIdempotencyKey: cancellation.idempotencyKey,
-              cancellationRequestedAt: cancellation.requestedAt,
-              expectedTeamCursor: current.team.cursor,
-              channelId,
-              expectedCursor: channel.cursor,
-              reason,
-            }))
-          break
-        } catch (error: unknown) {
+        const outcome = kind === 'cancellation' ? 'cancelled' : 'completed'
+        const reason = channelId === knownChannelId ? `Team ${outcome}` : `parent Team ${outcome}`
+        try { await operation(current, channelId, channel, reason); break }
+        catch (error: unknown) {
           if (!(error instanceof TeamError) || (error.code !== 'TEAM_CHANNEL_CURSOR_CONFLICT'
-            && error.code !== 'TEAM_ACTOR_PROOF_INVALID')) {
-            throw error
-          }
+            && error.code !== 'TEAM_ACTOR_PROOF_INVALID')) throw error
           if (attempt + 1 === state.config.receiptRetryAttempts) {
-            throw new TeamRunError('cancellation channel cleanup exhausted its Team cursor retries', 'TEAM_RUN_NOT_QUIESCENT')
-          }
-        }
-      }
-    }
-  }
-
-  /** Close every active channel through one exact post-release finalization proof per retry. */
-  private async closeFinalizationChannels(state: RunState, finalEnvelopeId: TeamEnvelope['id']): Promise<void> {
-    const finalChannelId = state.handle.channel.manifest.id
-    const initial = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
-    for (const channelId of initial.channelIds) {
-      for (let attempt = 0; attempt < state.config.receiptRetryAttempts; attempt += 1) {
-        const current = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
-        const channel = await this.ctx.teams.getChannel({ channelId })
-        if (channel.phase === 'closed' || channel.phase === 'expired' || channel.phase === 'failed') break
-        const reason = channelId === finalChannelId ? 'Team completed' : 'parent Team completed'
-        const scope: TeamSystemFinalizationCleanupScope = Object.freeze({
-          kind: 'team-run-finalization-channel-close',
-          teamId: state.handle.teamId,
-          finalChannelId,
-          finalEnvelopeId,
-          humanId: state.handle.recipient.id,
-          coordinatorId: state.handle.coordinator.id,
-          expectedTeamCursor: current.team.cursor,
-          channelId,
-          expectedCursor: channel.cursor,
-          reason,
-        })
-        try {
-          await this.withFinalizationCleanupProof(state, scope, async actor =>
-            await this.ctx.teams.closeTeamFinalizationChannel({
-              actor,
-              teamId: state.handle.teamId,
-              finalChannelId,
-              finalEnvelopeId,
-              expectedTeamCursor: current.team.cursor,
-              channelId,
-              expectedCursor: channel.cursor,
-              reason,
-            }))
-          break
-        } catch (error: unknown) {
-          if (!(error instanceof TeamError) || (error.code !== 'TEAM_CHANNEL_CURSOR_CONFLICT'
-            && error.code !== 'TEAM_ACTOR_PROOF_INVALID')) {
-            throw error
-          }
-          if (attempt + 1 === state.config.receiptRetryAttempts) {
-            throw new TeamRunError('finalization channel cleanup exhausted its Team cursor retries', 'TEAM_RUN_NOT_QUIESCENT')
+            if (kind === 'cancellation') throw error
+            throw new TeamRunError(`${kind} channel cleanup exhausted its Team cursor retries`, 'TEAM_RUN_NOT_QUIESCENT')
           }
         }
       }
@@ -4146,36 +4119,15 @@ export class TeamRunService extends Service {
       if (coordinatorPending !== 0 || humanPending !== 0) {
         throw new TeamRunError('the default Team channel retains unacknowledged delivery work', 'TEAM_RUN_NOT_QUIESCENT')
       }
-      await this.fenceFinalizationAdmission(state, finalEnvelopeId)
       await this.releaseRun(state)
       await this.closeFinalizationChannels(state, finalEnvelopeId)
     }
     const current = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
-    if (current.team.closure?.kind === 'complete') {
-      const driver = this.ctx.get('teamClosureDriver') as TeamClosureDriverBridge | undefined
-      await driver?.drive({ teamId: state.handle.teamId })
-      const terminal = await this.waitForTerminalTeam(current)
-      if (isTerminalTeamPhase(terminal.team.phase)) this.retainTerminalArchiveOwner(state, terminal)
-    } else if (current.team.phase === 'active' || current.team.phase === 'quiescing') {
-      const actor = this.mintCompleteClosureProof(state, finalEnvelopeId)
-      try {
-        const completed = await this.ctx.teams.completeTeam({
-          teamId: state.handle.teamId,
-          expectedCursor: current.team.cursor,
-          idempotencyKey: closureKey('complete', state.handle.teamId),
-          actor,
-          reason: { code: 'FINAL_ANSWER_ACCEPTED', message: 'The coordinator final answer was accepted by the human participant.' },
-          finalChannelId: state.handle.channel.manifest.id,
-          finalEnvelopeId,
-        })
-        const terminal = isTerminalTeamPhase(completed.team.phase)
-          ? completed
-          : await this.waitForTerminalTeam(completed)
-        if (isTerminalTeamPhase(terminal.team.phase)) this.retainTerminalArchiveOwner(state, terminal)
-      } finally {
-        this.revokeClosureProof(actor)
-      }
-    }
+    // waitForFinal admitted the exact completion intent before the receipt and local release.
+    const driver = this.ctx.get('teamClosureDriver') as TeamClosureDriverBridge | undefined
+    await driver?.drive({ teamId: state.handle.teamId })
+    const terminal = await this.waitForTerminalTeam(current)
+    if (isTerminalTeamPhase(terminal.team.phase)) this.retainTerminalArchiveOwner(state, terminal)
     this.runs.delete(state.handle.teamId)
     this.forgetStarts(state.handle.teamId)
   }
@@ -4188,21 +4140,19 @@ export class TeamRunService extends Service {
     let last: unknown
     for (let attempt = 0; attempt < state.config.receiptRetryAttempts; attempt += 1) {
       const current = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
-      if (current.team.closure?.kind === 'complete') return current
+      if (current.team.closure?.kind === 'complete') {
+        if (current.team.closure.finalChannelId !== state.handle.channel.manifest.id
+          || current.team.closure.finalEnvelopeId !== finalEnvelopeId) {
+          throw new TeamRunError('Team completion intent selected another final Envelope', 'TEAM_RUN_NOT_QUIESCENT')
+        }
+        return current
+      }
       if (current.team.cancellation !== undefined) {
         throw new TeamRunError('Team cancellation won before completion intent admission', 'TEAM_RUN_NOT_QUIESCENT')
       }
       const actor = this.mintCompleteClosureProof(state, finalEnvelopeId)
       try {
-        return await this.ctx.teams.completeTeam({
-          teamId: state.handle.teamId,
-          expectedCursor: current.team.cursor,
-          idempotencyKey: closureKey('complete', state.handle.teamId),
-          actor,
-          reason: { code: 'FINAL_ANSWER_ACCEPTED', message: 'The coordinator final answer was accepted by the human participant.' },
-          finalChannelId: state.handle.channel.manifest.id,
-          finalEnvelopeId,
-        })
+        return await this.ctx.teams.completeTeam(completionIntentRequest(state, current.team.cursor, finalEnvelopeId, actor))
       } catch (error: unknown) {
         last = error
         if (!isTeamCursorConflict(error) || attempt + 1 === state.config.receiptRetryAttempts) throw error
@@ -4332,7 +4282,6 @@ export class TeamRunService extends Service {
     this.bootstrapTopologies.clear()
     this.revokeWorkflowProofs()
     this.revokeAllResumePhaseProofs()
-    this.revokeFinalizationQuiescePhaseProofs()
     this.revokeInterruptProofs()
     const states = [...this.runs.values()]
     const results = await Promise.allSettled(states.map(async (state) => { await this.releaseRunWithRetries(state) }))
@@ -4368,7 +4317,6 @@ export class TeamRunService extends Service {
     this.revokeFinalizationCleanupProofs(state)
     this.revokeTopologyProofs(state)
     this.revokeWorkflowProofs(state)
-    this.revokeFinalizationQuiescePhaseProofs(state)
     this.revokeInterruptProofs(state)
     this.revokeFinalReceiptProof(state)
     this.revokeEnvelopePostProof(state)
@@ -4520,10 +4468,7 @@ export class TeamRunService extends Service {
     const record = this.finalReceiptProofs.get(proof)
     if (record === undefined || this.runs.get(record.scope.teamId) !== record.state) return undefined
     const { state, scope } = record
-    if (scope.teamId !== state.handle.teamId
-      || scope.channelId !== state.handle.channel.manifest.id
-      || scope.humanId !== state.handle.recipient.id
-      || scope.coordinatorId !== state.handle.coordinator.id) {
+    if (!matchesRunRecipient(state, scope)) {
       return undefined
     }
     return scope
@@ -4579,10 +4524,7 @@ export class TeamRunService extends Service {
     if (record === undefined || record.scope.kind !== 'team-run-human-input'
       || this.runs.get(record.scope.teamId) !== record.state) return undefined
     const { state, scope } = record
-    if (scope.teamId !== state.handle.teamId
-      || scope.channelId !== state.handle.channel.manifest.id
-      || scope.humanId !== state.handle.recipient.id
-      || scope.coordinatorId !== state.handle.coordinator.id) return undefined
+    if (!matchesRunRecipient(state, scope)) return undefined
     return scope
   }
 
@@ -4712,111 +4654,9 @@ export class TeamRunService extends Service {
     }
   }
 
-  /** Fence new channel admission after a human-receipted final and before local coordinator release. */
-  private async fenceFinalizationAdmission(
-    state: RunState,
-    finalEnvelopeId: TeamEnvelope['id'],
-  ): Promise<TeamStateSnapshot> {
-    let lastConflict: unknown
-    for (let attempt = 0; attempt < state.config.receiptRetryAttempts; attempt += 1) {
-      const current = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
-      if (current.team.cancellation !== undefined) {
-        throw new TeamRunError('Team cancellation won before final result admission could quiesce the Team', 'TEAM_RUN_NOT_QUIESCENT')
-      }
-      if (current.team.closure?.kind === 'complete'
-        && current.team.closure.finalChannelId === state.handle.channel.manifest.id
-        && current.team.closure.finalEnvelopeId === finalEnvelopeId) return current
-      if (current.team.phase === 'completed') return current
-      if (current.team.phase !== 'active' && current.team.phase !== 'quiescing') {
-        throw new TeamRunError(`Team '${state.handle.teamId}' cannot admit a final result from '${current.team.phase}'`, 'TEAM_RUN_NOT_QUIESCENT')
-      }
-      const actor = this.mintFinalizationQuiescePhaseProof(state, current, finalEnvelopeId)
-      try {
-        return await this.ctx.teams.transitionTeamPhase({
-          teamId: state.handle.teamId,
-          expectedCursor: current.team.cursor,
-          phase: 'quiescing',
-          actor,
-        })
-      } catch (error: unknown) {
-        const recovered = await this.ctx.teams.getTeam({ teamId: state.handle.teamId }).catch(() => undefined)
-        if (recovered?.team.cancellation !== undefined) {
-          throw new TeamRunError('Team cancellation won before final result admission could quiesce the Team', 'TEAM_RUN_NOT_QUIESCENT')
-        }
-        if (state.topologyReleased
-          || (!isTeamCursorConflict(error) && !(error instanceof TeamError && error.code === 'TEAM_ACTOR_PROOF_INVALID'))
-          || attempt + 1 === state.config.receiptRetryAttempts) {
-          throw error
-        }
-        lastConflict = error
-      } finally {
-        this.revokeFinalizationQuiescePhaseProof(actor)
-      }
-    }
-    throw lastConflict
-  }
-
-  /** Mint one exact current-run final-result admission proof before coordinator release begins. */
-  private mintFinalizationQuiescePhaseProof(
-    state: RunState,
-    current: TeamStateSnapshot,
-    finalEnvelopeId: TeamEnvelope['id'],
-  ): TeamSystemPhaseProof {
-    if (this.runs.get(state.handle.teamId) !== state
-      || state.topologyReleased
-      || current.team.id !== state.handle.teamId
-      || current.team.phase !== 'active' && current.team.phase !== 'quiescing') {
-      throw new TeamRunError('final result admission authority is no longer current for this local Team run', 'TEAM_RUN_NOT_QUIESCENT')
-    }
-    const proof = createTeamRunPhaseProof()
-    const scope = Object.freeze({
-      kind: 'team-run-finalization-quiesce' as const,
-      teamId: state.handle.teamId,
-      expectedCursor: current.team.cursor,
-      phase: 'quiescing' as const,
-      finalChannelId: state.handle.channel.manifest.id,
-      finalEnvelopeId,
-      humanId: state.handle.recipient.id,
-      coordinatorId: state.handle.coordinator.id,
-    })
-    this.finalizationQuiescePhaseProofs.set(proof, Object.freeze({ state, scope }))
-    return proof
-  }
-
-  /** Resolve a final-result admission proof only while its exact current TeamRun is still unreleased. */
-  private resolveFinalizationQuiescePhaseProof(
-    proof: TeamSystemPhaseProof,
-  ): TeamSystemPhaseScope | undefined {
-    const record = this.finalizationQuiescePhaseProofs.get(proof)
-    if (record === undefined
-      || this.closing
-      || record.state.topologyReleased
-      || this.runs.get(record.scope.teamId) !== record.state
-      || record.scope.teamId !== record.state.handle.teamId
-      || record.scope.finalChannelId !== record.state.handle.channel.manifest.id
-      || record.scope.humanId !== record.state.handle.recipient.id
-      || record.scope.coordinatorId !== record.state.handle.coordinator.id) {
-      return undefined
-    }
-    return record.scope
-  }
-
-  /** Resolve either a stalled-Team resume proof or an exact final-result admission proof. */
+  /** Resolve only the source-owned stalled-Team resume proof. */
   private resolveTeamRunPhaseProof(proof: TeamSystemPhaseProof): TeamSystemPhaseScope | undefined {
-    return this.resolveResumePhaseProof(proof) ?? this.resolveFinalizationQuiescePhaseProof(proof)
-  }
-
-  /** Revoke one final-result admission proof after its canonical phase command settles. */
-  private revokeFinalizationQuiescePhaseProof(proof: TeamSystemPhaseProof): void {
-    this.finalizationQuiescePhaseProofs.delete(proof)
-  }
-
-  /** Revoke final-result admission proofs owned by one released run, or all proofs during disposal. */
-  private revokeFinalizationQuiescePhaseProofs(state?: RunState): void {
-    for (const [proof, record] of this.finalizationQuiescePhaseProofs) {
-      if (state !== undefined && record.state !== state) continue
-      this.finalizationQuiescePhaseProofs.delete(proof)
-    }
+    return this.resolveResumePhaseProof(proof)
   }
 
   /** Mint one proof for the current stalled Team only while no replacement local run is published. */
@@ -4897,10 +4737,7 @@ export class TeamRunService extends Service {
     const record = this.interruptProofs.get(proof)
     if (record === undefined || this.runs.get(record.scope.teamId) !== record.state) return undefined
     const { state, scope } = record
-    if (scope.teamId !== state.handle.teamId
-      || scope.channelId !== state.handle.channel.manifest.id
-      || scope.humanId !== state.handle.recipient.id
-      || scope.coordinatorId !== state.handle.coordinator.id) return undefined
+    if (!matchesRunRecipient(state, scope)) return undefined
     return scope
   }
 
@@ -5686,6 +5523,7 @@ function isWorkflowPlanRace(error: unknown): boolean {
 }
 
 /** Keep local workflow union switches exhaustive. */
+/* v8 ignore next 3 -- parsed closed workflow and topology unions exhaust every discriminant before this guard. */
 function assertNever(value: never, label: string): never {
   throw new TypeError(`unknown ${label}: ${String(value)}`)
 }
@@ -6140,4 +5978,26 @@ function endedReviewTurn(session: Session, task: TeamTaskSnapshot): {
     }
   }
   return ended
+}
+
+/** Capture the exact current coordinator and human result route for a closure observation. */
+function coordinatorTurnEndTarget(state: RunState, turn: number) {
+  const handle = state.handle
+  const binding = handle.coordinatorLease.binding
+  return { teamId: handle.teamId, coordinatorId: handle.coordinator.id,
+    activationId: binding.activation.id, sessionId: binding.sessionId, provider: binding.provider,
+    turn, finalChannelId: handle.channel.manifest.id, humanId: handle.recipient.id }
+}
+
+/** Construct the complete final-admission payload for both intent acceptance and terminal completion. */
+function completionIntentRequest(state: RunState, expectedCursor: number, finalEnvelopeId: TeamEnvelope['id'], actor: TeamSystemClosureProof) {
+  return { teamId: state.handle.teamId, expectedCursor, idempotencyKey: closureKey('complete', state.handle.teamId), actor,
+    reason: { code: 'FINAL_ANSWER_ACCEPTED', message: 'The coordinator final answer was accepted by the human participant.' },
+    finalChannelId: state.handle.channel.manifest.id, finalEnvelopeId }
+}
+
+/** Compare only the immutable human/coordinator route already retained by a source-owned proof. */
+function matchesRunRecipient(state: RunState, scope: Pick<TeamSystemFinalReceiptScope, 'teamId' | 'channelId' | 'humanId' | 'coordinatorId'>): boolean {
+  return scope.teamId === state.handle.teamId && scope.channelId === state.handle.channel.manifest.id
+    && scope.humanId === state.handle.recipient.id && scope.coordinatorId === state.handle.coordinator.id
 }

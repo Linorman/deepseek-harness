@@ -1,3 +1,4 @@
+import { deepFreeze } from '@clocky/clocky-llm'
 import type { TeamIdentityResolveRequest, TeamIdentityResolvePage } from './types.ts'
 import { ExecutionProfiles } from './execution-profiles.ts'
 import type { TeamExecutionProfileRegistration, TeamExecutionProfilesRequest, TeamExecutionProfilesPage } from './types.ts'
@@ -46,7 +47,7 @@ import type { TeamWorkspaceObservationRequest, TeamWorkspaceObservation } from '
 
 import { Context, Service } from '@clocky/cordis'
 import { TeamError } from './error.ts'
-import { addTeamLatencySample, emptyTeamLatencyHistogram } from './metrics.ts'
+import { addTeamLatencySample, emptyTeamMetricsSnapshot } from './metrics.ts'
 import {
   activationBindingSnapshotSchema,
   channelEventSchema,
@@ -440,14 +441,6 @@ function renderListenerError(error: unknown): string {
   }
 }
 
-/** Recursively freeze a detached durable notification before observer delivery. */
-function deepFreeze<T>(value: T): T {
-  if (typeof value !== 'object' || value === null || Object.isFrozen(value)) return value
-  Object.freeze(value)
-  for (const child of Object.values(value)) deepFreeze(child)
-  return value
-}
-
 /** Create one opaque proof that rejects JSON serialization and structured cloning before it can cross a boundary. */
 function createTeamActorProof(): TeamActorProof {
   const proof: object = {}
@@ -524,32 +517,7 @@ export abstract class TeamRuntime extends Service {
   private readonly systemMaintenanceProofSources = new Map<string, TeamSystemMaintenanceProofSource>()
   private readonly systemInterruptProofSources = new Map<string, TeamSystemInterruptProofSource>()
   private readonly systemTaskReviewProofSources = new Map<string, TeamSystemTaskReviewProofSource>()
-  private readonly metrics: { -readonly [K in keyof TeamMetricsSnapshot]: TeamMetricsSnapshot[K] } = {
-    activeAdmissions: 0,
-    pendingDeliveries: 0,
-    activeActivations: 0,
-    activeTasks: 0,
-    stalledTeams: 0,
-    replayLag: 0,
-    lastTaskLatencyMs: 0,
-    lastReceiptLatencyMs: 0,
-    taskLatency: emptyTeamLatencyHistogram(),
-    receiptLatency: emptyTeamLatencyHistogram(),
-    workspaceConflicts: 0,
-    teamEvents: 0,
-    channelEvents: 0,
-    policyDenials: 0,
-    adapterFailures: 0,
-    deliveryClaims: 0,
-    taskAssignments: 0,
-    taskRetries: 0,
-    teamCompactions: 0,
-    channelCompactions: 0,
-    checkpointFailures: 0,
-    auditProjectionRepairs: 0,
-    auditProjectionFailures: 0,
-    updatedAt: Date.now(),
-  }
+  private readonly metrics: { -readonly [K in keyof TeamMetricsSnapshot]: TeamMetricsSnapshot[K] } = emptyTeamMetricsSnapshot(Date.now())
   private readonly policies = new Map<TeamPolicyHook, Map<string, TeamPolicy>>()
 
   constructor(ctx: Context) {

@@ -58,18 +58,31 @@ it('bounds wait admission, clamps real wait, and retires credential and service 
   const waiting = products.watch({ runId, cursor: first.cursor, waitMs: 1000 }, call())
   const retired = expect(waiting).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_UNAVAILABLE' })
   await fiber.dispose(); await retired
+  await expect(products.watch({ runId, waitMs: 0 }, call())).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_UNAVAILABLE' })
   expect(h.open).not.toHaveBeenCalled()
 })
 
 it('checks ownership before provider IO and does not return even a policy hint after revocation', async () => {
   const h = await fixture()
   const { products } = await h.mount()
+  const alreadyRetired = new AbortController()
+  alreadyRetired.abort()
+  await expect(products.watch({ runId: registration().id }, call(alreadyRetired)))
+    .rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_FORBIDDEN' })
   await expect(products.watch({ runId: registration().id }, call(new AbortController(), 'other')))
     .rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_FORBIDDEN' })
   expect(h.inspect).not.toHaveBeenCalled()
   const controller = new AbortController()
   h.inspect.mockImplementationOnce(async () => { controller.abort(); throw new Error('private-diagnostic') })
   await expect(products.watch({ runId: registration().id }, call(controller))).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_FORBIDDEN' })
+})
+
+it('propagates an unexpected inspection failure after rechecking the current reader', async () => {
+  const h = await fixture()
+  const { products } = await h.mount()
+  const failure = new Error('Inspection failed outside the native unavailable category')
+  vi.spyOn(products, 'inspect').mockRejectedValueOnce(failure)
+  await expect(products.watch({ runId: registration().id, waitMs: 0 }, call())).rejects.toBe(failure)
 })
 
 it('wakes an unchanged-world wait when an independent policy retires without replacing directory ownership', async () => {
@@ -81,7 +94,7 @@ it('wakes an unchanged-world wait when an independent policy retires without rep
   const remove = grant([{ principalId: 'reader' as never, entityIds: ['actor' as never] }])
   const first = await products.watch({ runId: registration().id, waitMs: 0 }, call())
   const waiting = products.watch({ runId: registration().id, cursor: first.cursor, waitMs: 1000 }, call())
-  await vi.waitFor(() => expect(h.inspect).toHaveBeenCalledTimes(2))
+  await vi.waitFor(() => { expect(h.inspect).toHaveBeenCalledTimes(2) })
   remove()
   const next = await waiting
   expect(next.status).toBe('reset')

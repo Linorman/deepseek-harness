@@ -166,7 +166,7 @@ async function handlePrompt(id: number | string): Promise<void> {
     })}`)
   }
   if (behavior.echoWorkspace === true) {
-    chunk(`workspace:${readdirSync(process.cwd()).sort().join(',')}`)
+    chunk(`workspace:${readdirSync(process.cwd()).filter(name => name !== '.git').sort().join(',')}`)
   }
   if (behavior.permissionProbe === true) {
     const requestId = nextOutboundId++

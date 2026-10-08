@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
 import * as schemas from '../src/index.ts'
+import { projectTeamSelection } from '../src/selection.ts'
 
 const actor = { teamId: 'team', participantId: 'worker', activationId: 'epoch', sessionId: 'session', provider: 'local' }
 const reason = { code: 'unavailable', message: 'Execution unavailable' }
@@ -401,5 +402,95 @@ describe('Team terminal record integrity', () => {
   it('requires the terminal histogram bucket to account for every observed latency', () => {
     rejects(schemas.teamLatencyHistogramSchema, { count: 1, sumMs: 1,
       buckets: [...schemas.TEAM_LATENCY_BUCKETS_MS, null].map(upperBoundMs => ({ upperBoundMs, count: 0 })) }, ['buckets'])
+  })
+})
+
+
+describe('Bounded product wire metadata', () => {
+  it('rejects discovery cursors with no scan work and pages that undercount retained rows', () => {
+    schemas.teamListPageSchema.parse({ scanned: 0, items: [] })
+    rejects(schemas.teamListPageSchema, { scanned: 0, items: [], nextCursor: 'cursor' }, [])
+    rejects(schemas.teamListPageSchema, { scanned: 0, items: [team] }, [])
+  })
+
+  it('rejects pending pages whose row categories, total or recovery ownership disagree', () => {
+    const action = { kind: 'human-action', id: 'pending', createdAt: 1, updatedAt: 1,
+      actionKind: 'question', handling: { kind: 'actionable' } }
+    const page = { teamId: 'team', teamCursor: 0, counts: { recovery: 0, humanActions: 1, reviews: 0, total: 1 }, items: [action] }
+    schemas.teamAttentionPageSchema.parse(page)
+    rejects(schemas.teamAttentionPageSchema, { ...page, counts: { recovery: 0, humanActions: 0, reviews: 0, total: 0 } }, ['items'])
+    rejects(schemas.teamAttentionPageSchema, { ...page, counts: { recovery: 1, humanActions: 0, reviews: 0, total: 1 } }, ['counts', 'humanActions'])
+    const recovery = { kind: 'team-recovery', id: 'foreign', createdAt: 1, handling: { kind: 'actionable' },
+      reason: { code: 'blocked', message: { text: 'Recovery needed', truncated: false } } }
+    rejects(schemas.teamAttentionPageSchema, { ...page, counts: { recovery: 1, humanActions: 0, reviews: 0, total: 1 },
+      items: [recovery] }, ['items', 0, 'id'])
+  })
+
+  it('rejects execution profiles with contradictory availability or foreign continuation identity', () => {
+    const entry = { id: `profile-${'a'.repeat(64)}`, kind: 'local-agent', role: 'worker', provider: 'local', model: 'model',
+      available: true, reasons: [] }
+    const page = { teamId: 'team', kind: 'local-agent', revision: 0, allowed: true, items: [entry] }
+    schemas.teamExecutionProfilesPageSchema.parse(page)
+    rejects(schemas.teamExecutionProfilesPageSchema, { ...page, items: [{ ...entry, reasons: ['owner-closing'] }] }, ['items', 0])
+    for (const patch of [{ allowed: false }, { items: [entry, entry] }, { kind: 'remote-agent' },
+      { nextCursor: { teamId: 'foreign', kind: 'local-agent', revision: 0, offset: 1 } }]) {
+      rejects(schemas.teamExecutionProfilesPageSchema, { ...page, ...patch }, [])
+    }
+  })
+
+  it('refuses repeated ready members and claims of readiness with a retained blocker', () => {
+    const ready = { participantId: 'worker', participation: 'active', state: 'ready', reasons: [] }
+    const page = { teamId: 'team', teamCursor: 0, observationId: 'a'.repeat(64), observedAt: 0, items: [ready] }
+    schemas.teamMemberReadinessPageSchema.parse(page)
+    rejects(schemas.teamMemberReadinessPageSchema, { ...page, items: [ready, ready] }, [])
+    for (const patch of [{ participation: 'left' }, { reasons: ['pool-capacity'] }]) {
+      rejects(schemas.teamMemberReadinessPageSchema, { ...page, items: [{ ...ready, ...patch }] }, [])
+    }
+  })
+
+  it('requires one choice for every workspace mode and consistent refusal reasons', () => {
+    const allow = { allowed: true, reasons: [] }
+    const page = { teamId: 'team', teamCursor: 0, create: allow,
+      workspaceModes: ['shared', 'worktree', 'sandbox', 'remote'].map(mode => ({ ...allow, mode })),
+      readScopes: { editable: true, accepted: true }, writeScopes: { editable: true, accepted: true }, maxAttempts: 1 }
+    schemas.teamTaskCapabilitiesSchema.parse(page)
+    rejects(schemas.teamTaskCapabilitiesSchema, { ...page, workspaceModes: page.workspaceModes.slice(1) }, [])
+    rejects(schemas.teamTaskCapabilitiesSchema, { ...page, create: { allowed: false, reasons: [] } }, [])
+  })
+
+  it('requires task queries to retain source scan counts, matching rows and their exact continuation', () => {
+    const row = { id: 'task', teamId: 'team', revision: 1, phase: 'pending', subject: { text: 'Task', truncated: false },
+      executionKind: 'participant', priority: 0, attemptCount: 0, maxAttempts: 1, dependencyCount: 0, reviewCount: 0,
+      hasLease: false, cancellationRequested: false }
+    const query = { search: '', phase: 'pending' }
+    const page = { kind: 'tasks', teamId: 'team', teamCursor: 0, total: 1, sourceTotal: 2, scanned: 1, items: [row], query,
+      nextQueryCursor: { teamId: 'team', teamCursor: 0, query, order: 'task-insertion-v1', afterCursor: 0 } }
+    schemas.teamBrowsePageSchema.parse(page)
+    const { sourceTotal: _sourceTotal, ...withoutCount } = page
+    rejects(schemas.teamBrowsePageSchema, withoutCount, ['scanned'])
+    rejects(schemas.teamBrowsePageSchema, { ...page, items: [{ ...row, phase: 'completed' }] }, [])
+    rejects(schemas.teamBrowsePageSchema, { ...page, nextQueryCursor: { ...page.nextQueryCursor,
+      query: { ...query, phase: 'completed' } } }, [])
+  })
+
+  it('rejects pending counts inconsistent with selection summaries and a stalled Team with no recovery item', () => {
+    const projected = projectTeamSelection({ team: schemas.teamSnapshotSchema.parse(team), rules: {}, participants: new Map(),
+      activations: new Map(), tasks: new Map(), channelIds: new Set(), workflowPlans: new Map(), humanActions: new Map() }, 512, 16384)
+    if (!projected.ok) throw new Error(projected.reason)
+    const page = projected.value
+    schemas.teamSelectionSnapshotSchema.parse(page)
+    rejects(schemas.teamSelectionSnapshotSchema, { ...page, attentionCounts: { recovery: 0, humanActions: 0, reviews: 1, total: 1 } },
+      ['attentionCounts'])
+    rejects(schemas.teamSelectionSnapshotSchema, { ...page, pendingHumanActionCount: 1 }, ['attentionCounts'])
+    rejects(schemas.teamSelectionSnapshotSchema, { ...page, team: { ...page.team, phase: 'stalled' } }, ['attentionCounts'])
+  })
+
+  it('requires update results to retain original admission while exposing an equal or later current task revision', () => {
+    const receipt = { teamId: 'team', taskId: 'task', commandId: 'update', expectedRevision: 1, appliedRevision: 2, appliedAt: 0 }
+    const current = { ...task, revision: 2 }
+    schemas.teamTaskDetailsUpdateResultSchema.parse({ receipt, task: current })
+    for (const patch of [{ teamId: 'foreign' }, { taskId: 'foreign' }, { expectedRevision: 2, appliedRevision: 3 }]) {
+      rejects(schemas.teamTaskDetailsUpdateResultSchema, { receipt: { ...receipt, ...patch }, task: current }, [])
+    }
   })
 })

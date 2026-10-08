@@ -22,11 +22,15 @@ Human input 是可信 human sender 的 direct v3 `message` Envelope，只携带 
 
 Team-run 只会从确切、存活的本地 coordinator Agent 生成 opaque default-worker task authority。其 task start operation 在内部派生 creator binding，接收 coordinator-scoped idempotency key、subject、instructions 及 read/write scope，并固定其余 worker task policy。其 task wait operation 只接收此前通过该 authority 准入的 task，返回保留的终态 result 或 attempt outcome，并允许 cancellation 只停止本地 Team-journal watch。
 
+worker pool 扩容会在 Participant 的 invitation 持久化后保留该成员。若 provisioning 在 phase 变更提交前失败，调用会报告原始错误，同时保留该 Participant 的本地 execution route；下一次扩容请求激活同一个 invited 身份。若 phase 变更已提交但回包报告 cursor conflict，Team-run 会重读持久 Participant 再继续。TeamRun 还会在 activation 前保留选定的 Session id，并根据持久 binding 选择 fresh 或 resume seed；报告 prompt 故障可先释放 lease，再用同一 Participant 与 Session 重试，而 activation 已持久化但回包丢失时可通过 activation controller 复用该 epoch。只有 Participant 缺失或进入终态时才移除该 route，因此不确定的回包不会在重试时留下 invited 孤儿并额外创建 worker。自动缩容保留零号 slot；显式 `setWorkerPoolSize(0)` 在 activation、task lease 和 review 所有权结清后，可通过 Hub 验证的精确 topology proof 退休 `worker` role。
+
 它也只会为该准确的 current coordinator 生成独立的 Goal authority。`tool-team-goal`通过它读取持久 objective，并且只有当前 open turn 含有可信 human direct-v3 Envelope 时才允许 compare-and-set objective edit。Team-run 从 lease 派生 actor，Hub 会再次为 mutation 设置 fence；model tool 不能创建 Goal 或改变其 phase。
 
 Host Team Remote 提供持久 Team 的 list/get 读取，以及本地 Team-run 的创建、可重试 start 与文本输入、final 等待和取消。current-run operation 要求已认证 product principal 拥有 Team 的 active human Participant；detached archive 与 resume 使用独立的[经认证的产品主体 Team 控制](2026-09-04-authenticated-product-principal-team-control.zh.md) proof boundary。Web bundle 组合相同的本地 Team 栈；显式 Agent preset 会经 activation request 到达 coordinator，`tool-team`只会在 Team-bound Agent scope 中安装 `team_final`。
 
-当部署提供 `reviewerPreset` 时，带 mutation scope 的 default-worker task 会冻结显式 participant-review 路由；Team-run 惰性配置 reviewer，scheduler 通过持久 consult channel 路由已完成 attempt。Task Agent 会在 settlement 前发布 provider-owned workspace 的 changed paths 与 artifact 引用，provider 永远不会自动集成用户改动。
+当部署提供 `reviewerPreset` 时，带 mutation scope 的 default-worker task 会冻结显式 participant-review 路由；Team-run 惰性配置 reviewer，scheduler 通过持久 consult channel 路由已完成 attempt。若 reviewer 的 prompt 注册在 activation 后失败，TeamRun 会先释放该 lease 再拒绝 task 准入，下一次请求可恢复同一 reviewer 身份。清理也失败时，两项错误会一起报告。Task Agent 会在 settlement 前发布 provider-owned workspace 的 changed paths 与 artifact 引用，provider 永远不会自动集成用户改动。
+
+Reviewer 可以把 task 退回 `pending`，而前一次 attempt 仍保留 preserved workspace allocation。若取消意图已持久化，TeamRun 会等该 allocation 物理释放后才进行本地 pending-task 退休；Hub closure driver 随后在重试时结算 task 和 Team。提前退休 task 会违反 Hub 的工作区所有权不变量，也无法让取消进入终态。
 
 Host Session 的提示词和取消会在普通 Agent routing 前识别 live coordinator 的持久 Team provenance。它们会验证唯一 active human/coordinator binding、通过 Team-run 追加 human input，并通过 Team authority 请求 soft interrupt。cold 或 orphaned Team Session 会响亮失败，而不会作为普通 Session 恢复。`@clocky/clocky-tool-team-task`是独立的 scoped TeamRun Consumer：它从每个 tool call lineage 派生 default-worker task-create key，返回紧凑 task identity 或 terminal fact，且绝不会暴露 worker transcript 或 lease data。它只会在 TeamRun 识别到准确的 live default coordinator 后注册；Headless 和 Web 会在 Team-run 之后挂载它。
 

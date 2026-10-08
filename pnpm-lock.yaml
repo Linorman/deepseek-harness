@@ -129,6 +129,9 @@ importers:
       '@clocky/clocky-agent-instructions':
         specifier: workspace:^
         version: link:../../packages/context/agent-instructions
+      '@clocky/clocky-agent-runtime-acp':
+        specifier: workspace:^
+        version: link:../../packages/agent-runtime/agent-runtime-acp
       '@clocky/clocky-agent-tool-presentation':
         specifier: workspace:^
         version: link:../../packages/core/agent-tool-presentation
@@ -174,6 +177,9 @@ importers:
       '@clocky/clocky-home-paths':
         specifier: workspace:^
         version: link:../../packages/util/home-paths
+      '@clocky/clocky-host-product-principal-digest':
+        specifier: workspace:^
+        version: link:../../packages/host/product-principal-digest
       '@clocky/clocky-jobs-local':
         specifier: workspace:^
         version: link:../../packages/jobs/jobs-local
@@ -358,6 +364,9 @@ importers:
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../../packages/client/ui-slots
+      '@clocky/clocky-client-ui-viz':
+        specifier: workspace:^
+        version: link:../../packages/client/ui-viz
       '@clocky/clocky-client-web':
         specifier: workspace:^
         version: link:../../packages/client/web
@@ -1074,6 +1083,9 @@ importers:
       '@clocky/clocky-team-link-websocket':
         specifier: workspace:^
         version: link:../../team/team-link-websocket
+      '@clocky/clocky-timeout':
+        specifier: workspace:^
+        version: link:../../util/timeout
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -1208,6 +1220,9 @@ importers:
       '@clocky/clocky-team-link-websocket-hub':
         specifier: workspace:^
         version: link:../../team/team-link-websocket-hub
+      '@clocky/clocky-timeout':
+        specifier: workspace:^
+        version: link:../../util/timeout
       '@clocky/clocky-tool-team':
         specifier: workspace:^
         version: link:../../team/tool-team
@@ -1796,6 +1811,9 @@ importers:
       '@clocky/clocky-client-ui-sidebar':
         specifier: workspace:^
         version: link:../../client/ui-sidebar
+      '@clocky/clocky-client-ui-simulation':
+        specifier: workspace:^
+        version: link:../../client/ui-simulation
       '@clocky/clocky-client-ui-skill':
         specifier: workspace:^
         version: link:../../client/ui-skill
@@ -1886,6 +1904,18 @@ importers:
       '@clocky/clocky-session-stats':
         specifier: workspace:^
         version: link:../../session/session-stats
+      '@clocky/clocky-simulation':
+        specifier: workspace:^
+        version: link:../../simulation/simulation
+      '@clocky/clocky-simulation-local':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-local
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-product
+      '@clocky/clocky-simulation-team':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-team
       '@clocky/clocky-storage':
         specifier: workspace:^
         version: link:../../storage/storage
@@ -1973,6 +2003,9 @@ importers:
       '@clocky/clocky-team-workspace-shared':
         specifier: workspace:^
         version: link:../../team/team-workspace-shared
+      '@clocky/clocky-tool-simulation':
+        specifier: workspace:^
+        version: link:../../simulation/tool-simulation
       '@clocky/clocky-tool-team':
         specifier: workspace:^
         version: link:../../team/tool-team
@@ -2402,6 +2435,9 @@ importers:
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@clocky/clocky-client-ui-viz':
+        specifier: workspace:^
+        version: link:../ui-viz
       '@clocky/clocky-commands':
         specifier: workspace:^
         version: link:../../interaction/commands
@@ -2629,18 +2665,27 @@ importers:
 
   packages/client/ui-layout:
     devDependencies:
+      '@clocky/clocky-client-connection':
+        specifier: workspace:^
+        version: link:../connection
       '@clocky/clocky-client-locale':
         specifier: workspace:^
         version: link:../locale
       '@clocky/clocky-client-runtime':
         specifier: workspace:^
         version: link:../runtime
+      '@clocky/clocky-client-ui-primitives':
+        specifier: workspace:^
+        version: link:../ui-primitives
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
       '@clocky/clocky-client-ui-theme':
         specifier: workspace:^
         version: link:../ui-theme
+      '@clocky/clocky-client-ui-viz':
+        specifier: workspace:^
+        version: link:../ui-viz
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -3045,6 +3090,9 @@ importers:
       '@clocky/clocky-client-test-runtime':
         specifier: workspace:^
         version: link:../../test-support/client-runtime
+      '@clocky/clocky-client-ui-layout':
+        specifier: workspace:^
+        version: link:../ui-layout
       '@clocky/clocky-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
@@ -3212,6 +3260,9 @@ importers:
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@clocky/clocky-client-ui-viz':
+        specifier: workspace:^
+        version: link:../ui-viz
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -3240,18 +3291,27 @@ importers:
       '@clocky/clocky-client-runtime':
         specifier: workspace:^
         version: link:../runtime
+      '@clocky/clocky-client-ui-conversation':
+        specifier: workspace:^
+        version: link:../ui-conversation
       '@clocky/clocky-client-ui-layout':
         specifier: workspace:^
         version: link:../ui-layout
       '@clocky/clocky-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
+      '@clocky/clocky-client-ui-settings':
+        specifier: workspace:^
+        version: link:../ui-settings
       '@clocky/clocky-client-ui-sidebar':
         specifier: workspace:^
         version: link:../ui-sidebar
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@clocky/clocky-client-ui-viz':
+        specifier: workspace:^
+        version: link:../ui-viz
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -3349,6 +3409,9 @@ importers:
       '@clocky/clocky-client-test-runtime':
         specifier: workspace:^
         version: link:../../test-support/client-runtime
+      '@clocky/clocky-client-ui-conversation':
+        specifier: workspace:^
+        version: link:../ui-conversation
       '@clocky/clocky-client-ui-layout':
         specifier: workspace:^
         version: link:../ui-layout
@@ -3361,6 +3424,9 @@ importers:
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@clocky/clocky-client-ui-viz':
+        specifier: workspace:^
+        version: link:../ui-viz
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -3588,6 +3654,37 @@ importers:
         specifier: ^18.2.0
         version: 18.3.1
 
+  packages/client/ui-viz:
+    dependencies:
+      clsx:
+        specifier: ^2.0.0
+        version: 2.1.1
+      d3-force:
+        specifier: ^3.0.0
+        version: 3.0.0
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@types/d3-force':
+        specifier: ^3.0.10
+        version: 3.0.10
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ~18.3.0
+        version: 18.3.7(@types/react@18.3.31)
+
   packages/client/ui-workspace:
     dependencies:
       clsx:
@@ -3645,6 +3742,9 @@ importers:
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@clocky/clocky-client-ui-viz':
+        specifier: workspace:^
+        version: link:../ui-viz
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -4868,6 +4968,9 @@ importers:
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../session
@@ -5604,9 +5707,15 @@ importers:
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
+      '@types/react-dom':
+        specifier: ~18.3.0
+        version: 18.3.7(@types/react@18.3.31)
       react:
         specifier: ^18.2.0
         version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
 
   packages/feedback/command-feedback:
     devDependencies:
@@ -8294,6 +8403,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@clocky/clocky-agent-default-model':
+        specifier: workspace:^
+        version: link:../../core/agent-default-model
       '@clocky/clocky-agent-presets':
         specifier: workspace:^
         version: link:../../preset/agent-presets
@@ -9247,6 +9359,9 @@ importers:
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../../core/session
@@ -9650,15 +9765,9 @@ importers:
       '@opentelemetry/api-logs':
         specifier: ^0.220.0
         version: 0.220.0
-      '@opentelemetry/exporter-logs-otlp-http':
-        specifier: ^0.220.0
-        version: 0.220.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/otlp-exporter-base':
         specifier: ^0.220.0
         version: 0.220.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/resources':
-        specifier: ^2.9.0
-        version: 2.10.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-logs':
         specifier: ^0.220.0
         version: 0.220.0(@opentelemetry/api@1.9.1)
@@ -9669,9 +9778,34 @@ importers:
       '@clocky/clocky-llm':
         specifier: workspace:^
         version: link:../../llm/llm
+      '@clocky/clocky-session-telemetry-otel':
+        specifier: workspace:^
+        version: link:../../session/session-telemetry-otel
       '@clocky/clocky-team':
         specifier: workspace:^
         version: link:../../core/team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-workspace-local-files:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -9731,6 +9865,9 @@ importers:
       '@clocky/clocky-team-workspace':
         specifier: workspace:^
         version: link:../../core/team-workspace
+      '@clocky/clocky-team-workspace-local-files':
+        specifier: workspace:^
+        version: link:../team-workspace-local-files
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -9771,6 +9908,9 @@ importers:
       '@clocky/clocky-team-workspace':
         specifier: workspace:^
         version: link:../../core/team-workspace
+      '@clocky/clocky-team-workspace-local-files':
+        specifier: workspace:^
+        version: link:../team-workspace-local-files
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -10856,9 +10996,15 @@ importers:
       '@clocky/clocky-team-run':
         specifier: workspace:^
         version: link:../../packages/team/team-run
+      '@clocky/clocky-team-scheduler-dag':
+        specifier: workspace:^
+        version: link:../../packages/team/team-scheduler-dag
       '@clocky/clocky-team-workspace':
         specifier: workspace:^
         version: link:../../packages/core/team-workspace
+      '@clocky/clocky-team-workspace-local-files':
+        specifier: workspace:^
+        version: link:../../packages/team/team-workspace-local-files
       '@clocky/clocky-team-workspace-shared':
         specifier: workspace:^
         version: link:../../packages/team/team-workspace-shared
@@ -10898,6 +11044,9 @@ importers:
       '@clocky/clocky-tool-jobs':
         specifier: workspace:^
         version: link:../../packages/jobs/tool-jobs
+      '@clocky/clocky-tool-simulation':
+        specifier: workspace:^
+        version: link:../../packages/simulation/tool-simulation
       '@clocky/clocky-tool-skill':
         specifier: workspace:^
         version: link:../../packages/skill/tool-skill

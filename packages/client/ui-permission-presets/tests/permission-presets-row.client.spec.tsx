@@ -108,6 +108,7 @@ describe('PermissionRow', () => {
     expect(mutate).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog', { name: 'Enable Full access?' })).toBeNull()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Read Only' }))
     fireEvent.click(screen.getByRole('button', { name: 'Read Only' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'Full access' }))
     const dialog = screen.getByRole('dialog', { name: 'Enable Full access?' })

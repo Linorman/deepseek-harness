@@ -2,7 +2,7 @@
 /** Task summaries retain authority, exact execution provenance, and list context. */
 import { useState } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react'
 import { makeTranslate } from '@clocky/clocky-client-test-runtime'
 import { TaskWorkspace, type TaskWorkspaceProps } from '../src/client/TaskWorkspace.tsx'
 import { createTeamWorkspaceStore, DEFAULT_TEAM_VIEW } from '../src/client/workspace-store.ts'
@@ -181,6 +181,8 @@ it('commits whole-Team search explicitly, guards IME composition and clears with
   fireEvent.submit(input.closest('form')!)
   expect(updateView).not.toHaveBeenCalled()
   fireEvent.compositionEnd(input)
+  fireEvent.keyDown(input, { key: 'Enter', isComposing: true })
+  fireEvent.keyDown(input, { key: 'Enter', isComposing: false })
   fireEvent.submit(input.closest('form')!)
   expect(updateView).toHaveBeenLastCalledWith({ taskSearch: '调查任务', taskPhase: 'all', taskListScroll: 0 })
   fireEvent.click(view.getByRole('button', { name: 'Clear task search' }))
@@ -199,4 +201,313 @@ it('keeps authoritative matches whose displayed title prefix does not contain th
     canManage={false} busy={false} onForm={vi.fn()} />)
   expect(view.getByRole('button', { name: 'A long title…' })).toBeTruthy()
   expect(view.getByText('Matching tasks: 12 · On this page: 1')).toBeTruthy()
+})
+
+it('omits deleted tasks from the loaded list while keeping the remaining task selectable', () => {
+  const deleted = workspaceTask('Deleted task', { phase: 'deleted' })
+  const pending = workspaceTask('Pending task')
+  const view = render(<TaskView state={{ ...workspaceState(), tasks: [deleted, pending] }} tasks={[deleted, pending]} />)
+  expect(view.queryByRole('button', { name: deleted.subject })).toBeNull()
+  fireEvent.click(view.getByRole('button', { name: pending.subject }))
+  expect(view.getByRole('heading', { name: pending.subject })).toBeTruthy()
+  view.rerender(<TaskView state={{ ...workspaceState(), tasks: [deleted, pending] }} tasks={[deleted, pending]}
+    viewState={{ ...DEFAULT_TEAM_VIEW, taskPhase: 'review' }} />)
+  expect(view.queryByRole('button', { name: pending.subject })).toBeNull()
+})
+
+it('loads disclosed attempt and review history, then pages each exact section independently', async () => {
+  const task = workspaceTask('History task')
+  const base = workspaceTaskDetail(task)
+  const readDetail = vi.fn(async () => {})
+  const props = { state: { team: workspaceState().team, participants: [], tasks: [task] },
+    tasks: [workspaceTaskSummary(task)], viewState: { ...DEFAULT_TEAM_VIEW, taskId: task.id },
+    updateView: vi.fn(), translate: makeTranslate(en), canManage: true, busy: false,
+    onForm: vi.fn(), readDetail }
+  const view = render(<TaskWorkspace {...props} detail={{ ...base,
+    attempts: { loading: false, value: undefined }, reviews: { loading: false, value: undefined } }} />)
+  const summary = within(view.getByRole('complementary', { name: en['taskView.summary'] }))
+  fireEvent.click(summary.getByText(en['taskView.fullDetails']))
+  await waitFor(() => {
+    expect(readDetail).toHaveBeenCalledWith(task.teamId, task.id, 'attempts', 'first')
+    expect(readDetail).toHaveBeenCalledWith(task.teamId, task.id, 'reviews', 'first')
+  })
+  readDetail.mockClear()
+  const attempts = base.attempts.value, reviews = base.reviews.value
+  if (attempts === undefined || reviews === undefined) throw new Error('Fixture history pages are missing')
+  view.rerender(<TaskWorkspace {...props} detail={{ ...base,
+    attempts: { loading: false, value: { ...attempts, nextCursor: 0 } },
+    reviews: { loading: false, value: { ...reviews, nextCursor: 0 } } }} />)
+  const disclosure = summary.getByText(en['taskView.fullDetails']).closest('details')
+  if (disclosure === null) throw new Error('Task history disclosure is missing')
+  const history = within(disclosure)
+  for (const label of [en['detail.firstPage'], en['taskView.refresh'], en['taskView.nextHistory']]) {
+    const buttons = history.getAllByRole('button', { name: label })
+    expect(buttons).toHaveLength(2)
+    fireEvent.click(buttons[0]!)
+    fireEvent.click(buttons[1]!)
+  }
+  expect(readDetail).toHaveBeenCalledWith(task.teamId, task.id, 'attempts', 'next')
+  expect(readDetail).toHaveBeenCalledWith(task.teamId, task.id, 'reviews', 'next')
+})
+
+it('does not replace stale or already-loading history when details are disclosed', async () => {
+  const task = workspaceTask('History loading')
+  const base = workspaceTaskDetail(task)
+  const readDetail = vi.fn(async () => {})
+  const props = { state: { team: workspaceState().team, participants: [], tasks: [task] },
+    tasks: [workspaceTaskSummary(task)], viewState: { ...DEFAULT_TEAM_VIEW, taskId: task.id },
+    updateView: vi.fn(), translate: makeTranslate(en), canManage: true, busy: false,
+    onForm: vi.fn(), readDetail }
+  const stale = { ...base, hasNewer: true,
+    attempts: { loading: false, value: undefined }, reviews: { loading: false, value: undefined } }
+  const view = render(<TaskWorkspace {...props} detail={stale} />)
+  readDetail.mockClear()
+  fireEvent.click(view.getByText(en['taskView.fullDetails']))
+  await waitFor(() => { expect(view.getByText(en['taskView.fullDetails']).closest('details')?.open).toBe(true) })
+  expect(readDetail).not.toHaveBeenCalled()
+  const loading = { ...base, attempts: { loading: true, value: undefined },
+    reviews: { loading: true, value: undefined } }
+  view.rerender(<TaskWorkspace {...props} detail={loading} />)
+  fireEvent.click(view.getByText(en['taskView.fullDetails']))
+  fireEvent.click(view.getByText(en['taskView.fullDetails']))
+  await waitFor(() => { expect(view.getByText(en['taskView.fullDetails']).closest('details')?.open).toBe(true) })
+  expect(readDetail).not.toHaveBeenCalled()
+})
+
+it('commits a phase choice and resets retained table scroll only when the filter changes', () => {
+  const state = { team: workspaceState().team, participants: [], tasks: [] }
+  const updateView = vi.fn()
+  const props = { state, tasks: [], viewState: DEFAULT_TEAM_VIEW, updateView,
+    translate: makeTranslate(en), canManage: false, busy: false, onForm: vi.fn() }
+  const view = render(<TaskWorkspace {...props} />)
+  const filter = view.getByRole('button', { name: en['taskView.status'] })
+  fireEvent.click(filter)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(filter.getAttribute('aria-expanded')).toBe('false')
+  fireEvent.click(filter)
+  fireEvent.click(view.getByRole('menuitem', { name: en['detail.task.phase.review'] }))
+  expect(updateView).toHaveBeenCalledWith({ taskSearch: '', taskPhase: 'review', taskListScroll: 0 })
+  const scroll = view.container.querySelector<HTMLElement>('[data-task-scroll]')
+  if (scroll === null) throw new Error('Task table scroll viewport is missing')
+  Object.defineProperty(scroll, 'getClientRects', { configurable: true,
+    value: () => [{ width: 200, height: 200 }] })
+  scroll.scrollTop = 87
+  fireEvent.scroll(scroll)
+  view.rerender(<TaskWorkspace {...props} viewState={{ ...DEFAULT_TEAM_VIEW, taskPhase: 'review' }} />)
+  expect(scroll.scrollTop).toBe(0)
+  view.unmount()
+  expect(updateView).toHaveBeenLastCalledWith({ taskListScroll: 0 })
+})
+
+it('reports a failed Session inspection without discarding the selected task', async () => {
+  const task = workspaceTask('Worker task', { phase: 'running', lease: {
+    attemptId: 'attempt' as never, participantId: 'worker' as never, activationId: 'activation' as never,
+    assignedAt: 1, expiresAt: 100, assignedRevision: 1, ordinal: 1, durationMs: 99, renewedAt: 1, startedAt: 2,
+  } })
+  const state = { ...workspaceState(), tasks: [task] }
+  const openParticipantSession = vi.fn(async () => { throw 'Session unavailable' })
+  const view = render(<TaskView state={state} tasks={[task]} openParticipantSession={openParticipantSession} />)
+  fireEvent.click(view.getByRole('button', { name: task.subject }))
+  fireEvent.click(within(view.getByRole('complementary')).getByRole('button', { name: en['taskView.openSession'] }))
+  await waitFor(() => { expect(view.getByRole('alert').textContent).toBe('Session unavailable') })
+  expect(view.getByRole('complementary').textContent).toContain(task.subject)
+})
+
+it('reports an Error from a failed Session inspection with its message', async () => {
+  const task = workspaceTask('Failed Session', { phase: 'running', lease: {
+    attemptId: 'attempt' as never, participantId: 'worker' as never, activationId: 'activation' as never,
+    assignedAt: 1, expiresAt: 100, assignedRevision: 1, ordinal: 1, durationMs: 99, renewedAt: 1, startedAt: 2,
+  } })
+  const view = render(<TaskView state={{ ...workspaceState(), tasks: [task] }} tasks={[task]}
+    openParticipantSession={vi.fn(async () => { throw new Error('Session read failed') })} />)
+  fireEvent.click(view.getByRole('button', { name: task.subject }))
+  fireEvent.click(view.getByRole('button', { name: en['taskView.openSession'] }))
+  await waitFor(() => { expect(view.getByRole('alert').textContent).toBe('Session read failed') })
+})
+
+it('opens a task from its dependency count, refreshes it and follows the exact parent reference', () => {
+  const parent = workspaceTask('Parent task')
+  const child = workspaceTask('Dependent task', { blockedBy: [parent.id] })
+  const state = { ...workspaceState(), tasks: [parent, child] }
+  const readDetail = vi.fn(async () => {})
+  const view = render(<TaskView state={state} tasks={[parent, child]} readDetail={readDetail} />)
+  fireEvent.click(view.getByRole('button', { name: en['taskView.inspectDependencies'].replace('{count}', '1') }))
+  const inspector = within(view.getByRole('complementary', { name: en['taskView.summary'] }))
+  expect(inspector.getByRole('heading', { name: child.subject })).toBeTruthy()
+  fireEvent.click(inspector.getAllByRole('button', { name: en['taskView.refresh'] })[0]!)
+  expect(readDetail).toHaveBeenLastCalledWith(child.teamId, child.id)
+  fireEvent.click(inspector.getByRole('button', { name: parent.subject }))
+  expect(inspector.getByRole('heading', { name: parent.subject })).toBeTruthy()
+})
+
+it('opens the pending edit from actions and closes the menu without changing the task', () => {
+  const task = workspaceTask('Editable task')
+  const onForm = vi.fn()
+  const view = render(<TaskView state={{ ...workspaceState(), tasks: [task] }} tasks={[task]} onForm={onForm} />)
+  fireEvent.click(view.getByRole('button', { name: task.subject }))
+  const actions = view.getByRole('button', { name: en['taskView.actions'] })
+  fireEvent.click(actions)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(actions.getAttribute('aria-expanded')).toBe('false')
+  expect(onForm).not.toHaveBeenCalled()
+  fireEvent.click(actions)
+  fireEvent.click(view.getByRole('menuitem', { name: en['taskForm.taskUpdate'] }))
+  expect(onForm).toHaveBeenCalledWith({ kind: 'taskUpdate', taskId: task.id })
+})
+
+it('offers assigned cancellation, review and integration from each task phase action menu', () => {
+  const assigned = workspaceTask('Assigned action', { phase: 'assigned', lease: {
+    attemptId: 'assigned-attempt' as never, participantId: 'worker' as never,
+    assignedAt: 1, expiresAt: 100, assignedRevision: 1, ordinal: 1, durationMs: 99, renewedAt: 1,
+  } })
+  const review = workspaceTask('Review action', { phase: 'review' })
+  const completed = workspaceTask('Integration action', { phase: 'completed', attemptCount: 1,
+    attemptHistory: [{ id: 'integration-attempt' as never, teamId: workspaceState().team.id,
+      taskId: 'Integration action' as never, ordinal: 1, participantId: 'worker' as never,
+      assignedAt: 1, leaseExpiresAt: 20, settledAt: 10,
+      outcome: { kind: 'completed', result: { summary: 'Integrated output' } } }] })
+  const onStop = vi.fn(), onForm = vi.fn()
+  const state = { ...workspaceState(), tasks: [assigned, review, completed] }
+  const view = render(<TaskView state={state} tasks={state.tasks} onStop={onStop} onForm={onForm} />)
+  fireEvent.click(view.getByRole('button', { name: assigned.subject }))
+  fireEvent.click(view.getByRole('button', { name: en['taskView.actions'] }))
+  fireEvent.click(view.getByRole('menuitem', { name: en['detail.task.stop'] }))
+  expect(onStop).toHaveBeenCalledWith(expect.objectContaining({ id: assigned.id }))
+  fireEvent.click(view.getByRole('button', { name: review.subject }))
+  fireEvent.click(view.getByRole('button', { name: en['taskView.actions'] }))
+  fireEvent.click(view.getByRole('menuitem', { name: en['taskForm.taskReview'] }))
+  expect(onForm).toHaveBeenCalledWith({ kind: 'taskReview', taskId: review.id })
+  fireEvent.click(view.getByRole('button', { name: completed.subject }))
+  fireEvent.click(view.getByRole('button', { name: en['taskView.actions'] }))
+  fireEvent.click(view.getByRole('menuitem', { name: en['taskForm.taskIntegrate'] }))
+  expect(onForm).toHaveBeenCalledWith({ kind: 'taskIntegrate', taskId: completed.id })
+})
+
+it('opens an available artifact and the exact session from disclosed attempt history', () => {
+  const state = workspaceState()
+  const participantId = 'artifact-worker' as never
+  const artifact = { id: 'review-report', provider: 'local', kind: 'report' as const,
+    uri: 'artifact://review-report/', visibility: 'team' as const }
+  const attempt = { id: 'artifact-attempt' as never, teamId: state.team.id, taskId: 'Artifacts task' as never,
+    ordinal: 1, participantId, activationId: 'artifact-activation' as never, assignedAt: 1,
+    leaseExpiresAt: 20, settledAt: 10,
+    outcome: { kind: 'completed' as const, result: { summary: 'Report ready', artifacts: [artifact] } } }
+  const task = workspaceTask('Artifacts task', { phase: 'completed', attemptCount: 1, attemptHistory: [attempt],
+    reviewHistory: [{ attemptId: attempt.id, reviewerId: participantId, nextPhase: 'completed',
+      reason: 'Verified report', decidedAt: 11 }] })
+  const openArtifact = vi.fn()
+  const openParticipantSession = vi.fn(async () => {})
+  const view = render(<TaskView state={{ ...state, tasks: [task] }} tasks={[task]}
+    openArtifact={openArtifact} openParticipantSession={openParticipantSession} />)
+  fireEvent.click(view.getByRole('button', { name: task.subject }))
+  fireEvent.click(view.getByRole('button', { name: 'review-report' }))
+  expect(openArtifact).toHaveBeenCalledWith(expect.objectContaining({ id: artifact.id }))
+  fireEvent.click(view.getByText(en['taskView.fullDetails']))
+  expect(view.getByText('Verified report')).toBeTruthy()
+  const details = view.getByText(en['taskView.fullDetails']).closest('details')
+  if (details === null) throw new Error('Attempt history disclosure is missing')
+  fireEvent.click(within(details).getByRole('button', { name: en['detail.openSession'] }))
+  expect(openParticipantSession).toHaveBeenCalledWith(participantId)
+  view.rerender(<TaskView state={{ ...state, tasks: [task] }} tasks={[task]}
+    openParticipantSession={openParticipantSession} />)
+  expect(view.getByRole('button', { name: 'review-report' }).hasAttribute('disabled')).toBe(true)
+})
+
+it('keeps a task readable while its record, latest attempt and history sections change read state', () => {
+  const task = workspaceTask('Read states')
+  const base = workspaceTaskDetail(task)
+  const props = { state: { team: workspaceState().team, participants: [], tasks: [task] },
+    tasks: [workspaceTaskSummary(task)], viewState: { ...DEFAULT_TEAM_VIEW, taskId: task.id },
+    updateView: vi.fn(), translate: makeTranslate(en), canManage: true, busy: false,
+    onForm: vi.fn(), readDetail: vi.fn(async () => {}) }
+  const view = render(<TaskWorkspace {...props} detail={{ ...base, record: { ...base.record, loading: true } }} />)
+  expect(view.getByText(en['taskView.loading'])).toBeTruthy()
+  view.rerender(<TaskWorkspace {...props} detail={{ ...base, record: { ...base.record, error: 'Record unavailable' },
+    latest: { ...base.latest, loading: true, error: 'Latest attempt unavailable' },
+    attempts: { ...base.attempts, loading: true, error: 'Attempts unavailable' },
+    reviews: { ...base.reviews, loading: true, error: 'Reviews unavailable' },
+    hasNewer: true, disconnected: true }} />)
+  expect(view.getAllByRole('alert').map(element => element.textContent)).toEqual(expect.arrayContaining([
+    'Record unavailable', 'Latest attempt unavailable', 'Attempts unavailable', 'Reviews unavailable',
+  ]))
+  expect(view.getByText(en['taskView.changed'])).toBeTruthy()
+  expect(view.getByText(en['taskView.disconnected'])).toBeTruthy()
+  expect(view.getAllByText(en['taskView.historyLoading'])).toHaveLength(2)
+  expect(view.getByRole('heading', { name: task.subject })).toBeTruthy()
+})
+
+it('distinguishes an empty Team result from an empty filtered Team page', () => {
+  const state = { team: workspaceState().team, participants: [], tasks: [] }
+  const queryState = { teamId: state.team.id, query: { search: '' }, loading: false, disconnected: false, hasNewer: false,
+    page: { kind: 'tasks' as const, teamId: state.team.id, teamCursor: 1, query: { search: '' }, sourceTotal: 0,
+      total: 0, scanned: 0, items: [] } }
+  const props = { state, tasks: [], searchScope: 'team' as const, queryState,
+    viewState: DEFAULT_TEAM_VIEW, updateView: vi.fn(), translate: makeTranslate(en),
+    canManage: false, busy: false, onForm: vi.fn() }
+  const view = render(<TaskWorkspace {...props} />)
+  expect(view.getByText(en['workspace.noTasks'])).toBeTruthy()
+  view.rerender(<TaskWorkspace {...props} viewState={{ ...DEFAULT_TEAM_VIEW, taskSearch: 'unmatched' }} />)
+  expect(view.getByText(en['taskView.noResults'])).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: en['taskView.clearFilters'] }))
+  expect(props.updateView).toHaveBeenCalledWith({ taskSearch: '', taskPhase: 'all', taskListScroll: 0 })
+})
+
+it('shows a stopping row, blocks actions during an authority read, and ignores a hidden scroll event', () => {
+  const task = workspaceTask('Stopping task', { phase: 'running', lease: {
+    attemptId: 'stopping-attempt' as never, participantId: 'worker' as never, assignedAt: 1,
+    expiresAt: 100, assignedRevision: 1, ordinal: 1, durationMs: 99, renewedAt: 1, startedAt: 2,
+  } })
+  const row = { ...workspaceTaskSummary(task), cancellationRequested: true }
+  const base = workspaceTaskDetail(task)
+  const onStop = vi.fn()
+  const props = { state: { team: workspaceState().team, participants: [], tasks: [task] }, tasks: [row],
+    detail: { ...base, record: { ...base.record, loading: true } },
+    viewState: { ...DEFAULT_TEAM_VIEW, taskId: task.id }, updateView: vi.fn(),
+    translate: makeTranslate(en), canManage: true, busy: true, onForm: vi.fn(),
+    readDetail: vi.fn(async () => {}), onStop }
+  const view = render(<TaskWorkspace {...props} />)
+  expect(view.getByText(en['detail.task.phase.stopping'])).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: en['taskView.actions'] }))
+  const stop = view.getByRole('menuitem', { name: en['detail.task.stop'] })
+  expect(stop.hasAttribute('disabled')).toBe(true)
+  fireEvent.click(stop)
+  expect(onStop).not.toHaveBeenCalled()
+  const scroll = view.container.querySelector<HTMLElement>('[data-task-scroll]')
+  if (scroll === null) throw new Error('Task table scroll viewport is missing')
+  scroll.scrollTop = 55
+  fireEvent.scroll(scroll)
+  view.unmount()
+  expect(props.updateView).toHaveBeenCalledWith({ taskListScroll: 0 })
+})
+
+it('renders an unavailable parent reference, integration evidence and rework review history', () => {
+  const state = workspaceState()
+  const participantId = 'review-worker' as never
+  const artifact = { id: 'proposal', provider: 'local', kind: 'patch' as const,
+    uri: 'artifact://proposal', visibility: 'team' as const }
+  const attempt = { id: 'review-attempt' as never, teamId: state.team.id, taskId: 'Review evidence' as never,
+    ordinal: 1, participantId, assignedAt: 1, leaseExpiresAt: 20, settledAt: 10,
+    outcome: { kind: 'completed' as const, result: { summary: 'Ready for review', verification: 'Verified against source',
+      integration: { target: 'main', status: 'proposed' as const, proposalArtifact: artifact } } } }
+  const task = workspaceTask('Review evidence', { phase: 'completed', blockedBy: ['off-page-task' as never],
+    attemptCount: 1, attemptHistory: [attempt], reviewHistory: [{ attemptId: attempt.id,
+      reviewerId: participantId, nextPhase: 'pending', reason: 'Need a smaller change', decidedAt: 11 }] })
+  const view = render(<TaskView state={{ ...state, tasks: [task] }} tasks={[task]} openArtifact={vi.fn()} />)
+  fireEvent.click(view.getByRole('button', { name: task.subject }))
+  expect(view.getByRole('button', { name: /off-page-task/ })).toBeTruthy()
+  expect(view.getByRole('button', { name: 'proposal' })).toBeTruthy()
+  fireEvent.click(view.getByText(en['taskView.fullDetails']))
+  expect(view.getByText('Verified against source')).toBeTruthy()
+  expect(view.getByText('Need a smaller change')).toBeTruthy()
+  expect(view.getByText(en['taskView.rework'])).toBeTruthy()
+})
+
+it('keeps a failed child Team explanation visible in the selected task', () => {
+  const task = workspaceTask('Delegated task', { execution: { kind: 'child-team', templateId: 'child', templateVersion: 1,
+    authorityGrant: { operations: [], workspaceModes: [], readScopes: [], writeScopes: [], budgets: {} }, budget: {} }, phase: 'failed',
+  delegation: { id: 'child-attempt' as never, phase: 'failed', requestedAt: 1, updatedAt: 2,
+    failure: { code: 'CHILD_UNAVAILABLE', message: 'Child Team could not start' } } })
+  const view = render(<TaskView state={{ ...workspaceState(), tasks: [task] }} tasks={[task]} />)
+  fireEvent.click(view.getByRole('button', { name: task.subject }))
+  expect(view.getByText('Child Team could not start')).toBeTruthy()
 })

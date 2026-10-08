@@ -39,6 +39,7 @@
     "lib/client.js",
     "lib/endpoint.js",
     "lib/protocol.js",
+    "lib/identity-config.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",

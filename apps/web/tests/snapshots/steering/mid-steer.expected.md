@@ -1,16 +1,18 @@
-- banner:
-  - text: {{workspace}}
+- text: {{workspace}}
+- img
+- text: Standard mode
+- button "Session log":
+  - text: Session log
   - img
-  - text: Standard mode
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
-- text: "Direct message from participant-{{uuid}}: Use the ask_user_question tool to ask me exactly one question with id \"checkpoint\", question \"Ready to continue?\", header \"Checkpoint\", and options labeled \"Yes\" and \"No\". After I answer, reply with one short sentence acknowledging my answer and stop. {{clock}}"
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
+- text: From a Team member Use the ask_user_question tool to ask me exactly one question with id "checkpoint", question "Ready to continue?", header "Checkpoint", and options labeled "Yes" and "No". After I answer, reply with one short sentence acknowledging my answer and stop. {{clock}}
 - button "Copy":
   - img
+- button "Running ask_user_question {{duration}}" [expanded]:
+  - img
+  - text: Running ask_user_question {{duration}}
 - button "Context injection @clocky/clocky-system-prompt":
   - img
   - img

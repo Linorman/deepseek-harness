@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
+import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import type {
   ParticipantSnapshot,
@@ -14,6 +15,8 @@ import type {
   TeamPolicy,
   TeamSystemArchiveProof,
   TeamSystemArchiveScope,
+  TeamSystemMaintenanceProof,
+  TeamSystemMaintenanceScope,
   TeamStateSnapshot,
 } from '@clocky/clocky-team'
 import { fingerprintTeamHumanActorPayload, jsonObjectSchema } from '@clocky/clocky-team'
@@ -28,14 +31,15 @@ afterEach(async () => {
 })
 
 /** Compose the local Hub over one isolated JSON Team journal backend. */
-async function setup(): Promise<{ readonly ctx: Context; dispose(): Promise<void> }> {
+async function setup(backend: 'json' | 'sqlite' = 'json', checkpointEvery = 1): Promise<{ readonly ctx: Context; dispose(): Promise<void> }> {
   const root = await freshRoot()
   const ctx = new Context()
   try {
     await ctx.plugin(Storage)
-    await ctx.plugin(StorageJson, { root })
-    await ctx.plugin(StorageLog, { backend: 'json', routes: {} })
-    await ctx.plugin(TeamHub)
+    if (backend === 'json') await ctx.plugin(StorageJson, { root })
+    else await ctx.plugin(StorageSqlite, { path: join(root, 'hub.db') })
+    await ctx.plugin(StorageLog, { backend, routes: {} })
+    await ctx.plugin(TeamHub, { checkpointEvery })
   } catch (error: unknown) {
     await ctx.fiber.dispose()
     throw error
@@ -85,6 +89,24 @@ function archiveScope(input: TeamArchiveInput): TeamSystemArchiveScope {
   return { kind: 'team-run-terminal-archive', ...input }
 }
 
+/** Register exact source-owned scheduler proofs for Team journal compaction. */
+function maintenanceAuthority(ctx: Context) {
+  const proofs = new Map<TeamSystemMaintenanceProof, TeamSystemMaintenanceScope>()
+  const dispose = ctx.teams.registerSystemMaintenanceProofSource({ name: 'team-scheduler-dag',
+    resolveMaintenanceProof: proof => proofs.get(proof) })
+  return { dispose, issue(scope: TeamSystemMaintenanceScope) {
+    const proof = Object.freeze({}) as TeamSystemMaintenanceProof
+    proofs.set(proof, scope)
+    return proof
+  } }
+}
+
+function compact(ctx: Context, authority: ReturnType<typeof maintenanceAuthority>, state: TeamStateSnapshot, throughSequence: number) {
+  const input = { teamId: state.team.id, expectedCursor: state.team.cursor, throughSequence }
+  const actor = authority.issue({ kind: 'scheduler-team-journal-compaction', ...input })
+  return ctx.teams.compactTeam({ actor, ...input })
+}
+
 /** Create and directly fixture-settle one terminal Team for archive admission tests. */
 async function terminalTeam(ctx: Context, objective = 'Archive a terminal Team.'): Promise<TeamStateSnapshot> {
   const created = await createTestRootTeam(ctx, { goal: { objective, budgets: {} }, rules: {}, budgets: {} })
@@ -120,6 +142,53 @@ async function terminalHumanTeam(ctx: Context, objective = 'Archive a human-owne
   const quiescing = await seedTeamPhase(ctx, created.team.id, 'quiescing')
   return { state: await seedTeamPhase(ctx, quiescing.team.id, 'completed'), human }
 }
+
+describe('terminal Team journal compaction', () => {
+  for (const backend of ['json', 'sqlite'] as const) {
+    it(`requires terminal state and retention of the final Team record on ${backend}`, async () => {
+      const harness = await setup(backend, 1_000)
+      const authority = maintenanceAuthority(harness.ctx)
+      try {
+        const active = await createTestRootTeam(harness.ctx, {
+          goal: { objective: 'Active Team cannot compact.', budgets: {} }, rules: {}, budgets: {},
+        })
+        const foreign = await createTestRootTeam(harness.ctx, {
+          goal: { objective: 'Another Team cannot authorize compaction.', budgets: {} }, rules: {}, budgets: {},
+        })
+        const wrong = authority.issue({ kind: 'scheduler-team-journal-compaction', teamId: foreign.team.id,
+          expectedCursor: active.team.cursor, throughSequence: 0 })
+        await expect(harness.ctx.teams.compactTeam({ actor: wrong,
+          teamId: active.team.id, expectedCursor: active.team.cursor, throughSequence: 0 }))
+          .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+        await expect(compact(harness.ctx, authority, active, 0)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+        const terminal = await terminalTeam(harness.ctx)
+        await expect(compact(harness.ctx, authority, terminal, terminal.team.cursor))
+          .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+        const before = await harness.ctx.teams.getTeam({ teamId: terminal.team.id })
+        const result = await compact(harness.ctx, authority, terminal, 0)
+        expect(result.compactedThrough).toBe(0)
+        expect(typeof result.auditCompactedThrough).toBe('number')
+        expect(result.auditCompactedThrough).toBeGreaterThanOrEqual(0)
+        expect(await harness.ctx.teams.getTeam({ teamId: terminal.team.id })).toEqual(before)
+      } finally { authority.dispose(); await harness.dispose() }
+    })
+
+    it(`refuses compaction if a successful checkpoint call left no terminal checkpoint on ${backend}`, async () => {
+      const harness = await setup(backend, 1_000)
+      const authority = maintenanceAuthority(harness.ctx)
+      try {
+        const terminal = await terminalTeam(harness.ctx, 'Detect a missing compaction checkpoint.')
+        const hub = harness.ctx.teams as unknown as { maybeCheckpointTeam(team: unknown, force: boolean): Promise<void> }
+        const skipped = vi.spyOn(hub, 'maybeCheckpointTeam').mockResolvedValueOnce(undefined)
+        try {
+          await expect(compact(harness.ctx, authority, terminal, 0))
+            .rejects.toMatchObject({ code: 'TEAM_JOURNAL_MALFORMED' })
+        } finally { skipped.mockRestore() }
+        expect(await harness.ctx.teams.getTeam({ teamId: terminal.team.id })).toEqual(terminal)
+      } finally { authority.dispose(); await harness.dispose() }
+    })
+  }
+})
 
 describe('terminal Team archive authority', () => {
   it('fails closed before policy for raw, foreign, and mismatched terminal archive proof requests', async () => {

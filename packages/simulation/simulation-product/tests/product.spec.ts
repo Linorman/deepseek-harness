@@ -175,6 +175,8 @@ it('rejects misconfigured imports and allowances before directory IO', async () 
   const h = await fixture()
   const open = vi.spyOn(h.ctx.storageLog, 'open')
   for (const config of [Object.assign({}, h.config, { directoryStream: ' ' }), Object.assign({}, h.config, { maxPendingReads: 0 }),
+    Object.assign({}, h.config, { maxContextPartBytes: 3 }), Object.assign({}, h.config, { maxWatchWaitMs: 2147483648 }),
+    Object.assign({}, h.config, { watchPollMs: 2147483648 }),
     Object.assign({}, h.config, { maxTextBytes: Number.POSITIVE_INFINITY }), Object.assign({}, h.config, { maxDirectoryEntryBytes: 1 }),
     Object.assign({}, h.config, { maxRuns: 1, imports: [registration('a'), registration('b')] }),
     Object.assign({}, h.config, { imports: [registration(), registration()] }),

@@ -4,6 +4,10 @@
 
 [遥测（telemetry）seam](../session-telemetry/) 的 OpenTelemetry 后端，是可选的部署插件。其 `mode` 决定 seam 是实时跟随会话事件、仅在记录反馈时回放权威日志，还是将遥测留在本地。上传模式会原样组合 OTel JS SDK（`LoggerProvider` → `BatchLogRecordProcessor` → OTLP/HTTP 日志导出器），把每条已交接记录映射到 `logger.emit()`，并使用两个插桩作用域（instrumentation scope）：ledger 记录挂在 `@clocky/clocky-session-sessionTelemetry-otel` 下，运维记录挂在 `@clocky/clocky-session-sessionTelemetry-otel/ops` 下。资源身份只包含配置的服务名称与版本，随每个导出批次携带一次，而非逐条记录携带；本包不创建用户标识，也不选择 collector 地址。
 
+## 共享 SDK pipeline
+
+独立的 `./pipeline` subpath 为本 Session backend 及 Team OTel backend 提供 `createOtelPipeline()` 与 `emitOtelRecord()`。它不导入 Session 服务或 capture policy，也不挂载插件。各消费者保留共享 mode、redaction、severity 映射、instrumentation scope、flush 及有界 shutdown。Exporter 与 processor option 原样传给 SDK。安装后的消费者使用 Host build 生成的编译 subpath。
+
 ## 配置
 
 ```yaml

@@ -2,7 +2,7 @@
 import { expect, it, vi } from 'vitest'
 import { HarnessClient, Clocky, SdkProtocolError } from '../src/index.ts'
 
-const create = { commandId: 'original', templateId: 'company', templateVersion: '1' as const, name: 'Company',
+const create = { commandId: 'original', templateId: 'company', templateVersion: '1' as const, expectedModel: { provider: 'company', name: 'scripted' }, name: 'Company',
   parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } }
 const summary = { id: 'run', name: { text: 'Company', truncated: false }, registeredAt: 1, observation: 'not-observed' }
 const receipt = { commandId: 'original', runId: 'run', kind: 'create', acceptedAt: 1, status: 'accepted' }
@@ -44,6 +44,15 @@ const cases = [
   ['inspectSimulation', 'runs-inspect', { runId: 'run' }, { run: summary, status: 'missing' }],
   ['browseSimulation', 'collections-list', { runId: 'run', collection: 'entities' },
     { runId: 'run', collection: 'entities', snapshotRevision: 1, observedAt: 1, total: 0, items: [] }],
+  ['inspectSimulationSource', 'sources-inspect', { runId: 'run', decisionId: 'decision', sourceIndex: 0 },
+    { runId: 'run', decisionId: 'decision', sourceIndex: 0, snapshotRevision: 1, readVersion: 'policy',
+      observedAt: 1, status: 'missing', items: [] }],
+  ['readSimulationRecords', 'records-list', { runId: 'run', mode: 'metadata' },
+    { runId: 'run', mode: 'metadata', selection: {}, snapshotRevision: 1, readVersion: 'policy',
+      observedAt: 1, bodyAccess: 'withheld', totalRecords: 0, items: [] }],
+  ['watchSimulation', 'changes-watch', { runId: 'run', waitMs: 0 },
+    { runId: 'run', readVersion: 'policy', cursor: 'watch-cursor', status: 'changed', observedAt: 1,
+      world: { status: 'missing' } }],
   ['inspectSimulationObject', 'objects-inspect', { runId: 'run', ...selection },
     { runId: 'run', selection, snapshotRevision: 1, observedAt: 1, status: 'missing' }],
   ['createSimulation', 'runs-create', create, receipt],
@@ -99,6 +108,28 @@ it('keeps not-found distinct and refuses mismatched absence, sections, revisions
   }
   send.mockResolvedValue({ runId: 'run', selection, snapshotRevision: 2, observedAt: 1, status: 'missing' })
   await expect(client.inspectSimulationObject({ runId: 'run', ...selection, expectedRevision: 1 } as never)).rejects.toThrow('different selection')
+})
+
+it('binds a decision knowledge inspection to the exact frozen reference', async () => {
+  const client = new HarnessClient({ command: process.execPath })
+  const input = { runId: 'run', collection: 'decisions' as const, id: 'decision', section: 'knowledge' as const,
+    reference: { id: 'knowledge', revision: 1 } }
+  const result = { runId: 'run', selection: { collection: 'decisions', id: 'decision', section: 'knowledge',
+    reference: input.reference }, snapshotRevision: 1, observedAt: 1, status: 'missing' }
+  const request = vi.spyOn(client, 'request').mockResolvedValue(result)
+  expect(await client.inspectSimulationObject(input)).toEqual(result)
+  for (const reference of [{ id: 'other', revision: 1 }, { id: 'knowledge', revision: 2 }, undefined]) {
+    request.mockResolvedValueOnce({ ...result, selection: { ...result.selection, reference } })
+    await expect(client.inspectSimulationObject(input)).rejects.toThrow('different selection')
+  }
+})
+
+it('rejects a Simulation review page from a different observed revision', async () => {
+  const client = new HarnessClient({ command: process.execPath })
+  vi.spyOn(client, 'request').mockResolvedValue({ runId: 'run', snapshotRevision: 2,
+    observedAt: 1, total: 0, items: [] })
+  await expect(client.listSimulationTaskReviews({ runId: 'run', expectedRevision: 1 }))
+    .rejects.toThrow('another selection')
 })
 
 it('rejects caller-supplied execution configuration before sending and refuses malformed public results', async () => {
@@ -259,9 +290,9 @@ tickUnit: { text: 'minute', truncated: false }, rulesVersion: { text: '1', trunc
 policyVersion: { text: '1', truncated: false }, sharedModelLimit: 1 }
 
 it('preflights through both SDK APIs with exact decimal allowances and rejects native configuration before sending', async () => {
-  const { commandId: _commandId, ...draft } = create
+  const { commandId: _commandId, expectedModel: _expectedModel, ...draft } = create
   const input = { ...draft, limits: { maxTime: configuration.limits.maxTime } }
-  const output = { status: 'ready', configuration }
+  const output = { status: 'ready', configuration, readiness: { status: 'ready', model: create.expectedModel } }
   for (const high of [false, true]) {
     const client = new HarnessClient({ command: process.execPath })
     const clocky = new Clocky({ launch: { command: process.execPath }, credential: 'test', provider: 'test', model: 'test' })
@@ -279,7 +310,7 @@ it('preflights through both SDK APIs with exact decimal allowances and rejects n
     expect(send).not.toHaveBeenCalled()
     send.mockResolvedValue({ status: 'ready', configuration: { ...configuration, cwd: '/private' } })
     await expect(api.preflightSimulation(input)).rejects.toBeInstanceOf(SdkProtocolError)
-    const invalid = { status: 'invalid', issues: [{ field: 'limits.maxEntities', code: 'not-allowed',
+    const invalid = { status: 'invalid', readiness: { status: 'needs-model', reason: 'default-model-missing' }, issues: [{ field: 'limits.maxEntities', code: 'not-allowed',
       message: { text: 'This allowance is fixed by deployment.', truncated: false } }] }
     send.mockResolvedValue(invalid)
     expect(await api.preflightSimulation(input)).toEqual(invalid)

@@ -1,13 +1,14 @@
+import { disconnectedRead } from './read-state.ts'
+import { ReadRequest } from './read-request.ts'
 /** Runtime-owned exact member metadata and one bounded capability page. */
 import type { IApiClient, ParticipantId, TeamId } from '@clocky/clocky-client-connection/client'
 import type { TeamMemberDetailState } from '../contract/team-tasks.ts'
-import { isTeamAuthorizationError } from './access.ts'
+import { acceptedRead } from './read-state.ts'
 
 /** Independent inspection lifetime; navigation never activates a member. */
 export class MemberInspector {
   private state: TeamMemberDetailState | undefined
-  private request: AbortController | undefined
-  private generation = 0
+  private readonly requests = new ReadRequest()
   private connected = true
   private minimumCursor = 0
 
@@ -33,22 +34,19 @@ export class MemberInspector {
     const afterCursor = mode === 'next' ? value?.nextCursor ?? -1 : mode === 'refresh' ? value?.startCursor ?? -1 : -1
     const expectedTeamCursor = mode === 'next' ? value?.teamCursor : undefined
     this.minimumCursor = same ? Math.max(this.minimumCursor, value?.teamCursor ?? 0) : 0
-    const generation = this.cancel()
-    if (generation !== this.generation) return
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
     const controller = new AbortController()
-    this.request = controller
+    this.requests.begin(controller)
     this.set({ teamId, participantId, value, loading: this.connected, disconnected: !this.connected,
       hasNewer: same && previous.hasNewer })
     try {
-      if (!this.connected || !this.current(generation, controller)) return
+      if (!this.connected || !this.requests.current(generation, controller)) return
       const response = await this.api.teams.memberInspect({ teamId, participantId, afterCursor,
         ...expectedTeamCursor === undefined ? {} : { expectedTeamCursor } }, controller.signal)
-      if (!this.current(generation, controller)) return
-      if (!response.result.ok) {
-        if (isTeamAuthorizationError(response.result.error)) { this.close(); this.denied(teamId); return }
-        throw new Error(response.result.error.message)
-      }
-      const result = response.result.value
+      if (!this.requests.current(generation, controller)) return
+      const result = acceptedRead(response.result, () => { this.close(); this.denied(teamId) })
+      if (result === undefined) return
       if (result.record.teamId !== teamId || result.record.id !== participantId || result.startCursor !== afterCursor
         || result.teamCursor < this.minimumCursor || expectedTeamCursor !== undefined && result.teamCursor !== expectedTeamCursor
         || result.nextCursor !== undefined && result.nextCursor <= afterCursor) {
@@ -56,9 +54,9 @@ export class MemberInspector {
       }
       this.set({ teamId, participantId, value: result, loading: false, disconnected: false, hasNewer: false })
     } catch (error: unknown) {
-      if (this.current(generation, controller) && this.state !== undefined) this.set({ ...this.state, loading: false,
+      if (this.requests.current(generation, controller) && this.state !== undefined) this.set({ ...this.state, loading: false,
         error: error instanceof Error ? error.message : String(error) })
-    } finally { if (this.request === controller) this.request = undefined }
+    } finally { if (this.requests.request === controller) this.requests.finish(controller) }
   }
 
   /** Mark retained detail stale without replacing its window.
@@ -73,9 +71,9 @@ export class MemberInspector {
   /** Cancel old transport IO while retaining authorized content. */
   disconnect(): void {
     this.connected = false
-    const generation = this.cancel()
-    if (generation === this.generation && this.state !== undefined) {
-      this.set({ ...this.state, loading: false, disconnected: true, hasNewer: true })
+    const generation = this.requests.cancel()
+    if (generation === this.requests.generation && this.state !== undefined) {
+      this.set(disconnectedRead(this.state))
     }
   }
 
@@ -88,22 +86,12 @@ export class MemberInspector {
 
   /** Release detail and fence late responses before abort callbacks. */
   close(): void {
-    const generation = this.cancel()
-    if (generation !== this.generation) return
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
     this.state = undefined
     this.publish(undefined)
   }
 
-  private cancel(): number {
-    const generation = ++this.generation
-    const request = this.request
-    this.request = undefined
-    request?.abort()
-    return generation
-  }
 
-  private current(generation: number, controller: AbortController): boolean {
-    return generation === this.generation && !controller.signal.aborted
-  }
   private set(state: TeamMemberDetailState): void { this.state = state; this.publish(state) }
 }

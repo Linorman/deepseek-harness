@@ -24,7 +24,7 @@ Web 客户端把 Clocky 呈现成"带一个 Team 页面的聊天应用"，但产
 
 ### 视觉系统
 
-- **两套并行色板。** [design-platform.css](../../../../packages/client/ui-theme/src/styles/design-platform.css) 为 Team 页面定义 `--clocky-workspace-*`，其余部分使用 `--clocky-alias-*`；`[data-team-workspace-page]` 作用域重映射 alias，导致 Team 页面与会话页面的画布、文字、边框和强调色各不相同。品牌强调色同时存在 `#315fcc`、`accent-500`（`rgb(65,118,230)`）和 `blue-600` 三种。
+- **两套并行色板。** `design-platform.css` 为 Team 页面定义 `--clocky-workspace-*`，其余部分使用 `--clocky-alias-*`；`[data-team-workspace-page]` 作用域重映射 alias，导致 Team 页面与会话页面的画布、文字、边框和强调色各不相同。品牌强调色同时存在 `#315fcc`、`accent-500`（`rgb(65,118,230)`）和 `blue-600` 三种。
 - **侧边栏像另一个产品。** `[data-clocky-navigation]` 在浅色模式下仍保持石墨色导航，与白色画布形成生硬分界，使应用看起来像两个产品。
 - **token 有不少冗余。** 深色块逐字重复了静态色板；`brand-primary-new-colorprimary-new-color`、`accent-700-delete` 等名称是导出残留。没有间距、圆角、层级或 z-index 刻度。
 - **功能 CSS 绕过 token。** 99 个 CSS Module 中：字面 `font-size` 声明 361 处，字体 token 使用仅 89 处；字面内边距 442 处；字面圆角 8 种（1–999px）；z-index 取值从 0 到 1100。
@@ -54,7 +54,7 @@ Web 客户端把 Clocky 呈现成"带一个 Team 页面的聊天应用"，但产
 
 ## 提案
 
-分十一个可堆叠阶段重构 Web 客户端。每个阶段独立交付，遵守 [packages/client/AGENTS.md](../../../../packages/client/AGENTS.md) 的 slot 与 props 纪律，按 [web-styling.md](../../../../docs/web-styling.zh.md) 使用 CSS Modules 和语义 token，不引入组件库或 Tailwind。产品文案以中文为先，并保留现有英文 locale。
+分十一个可堆叠阶段重构 Web 客户端。每个阶段独立交付，遵守 [packages/client/AGENTS.md](../../../../packages/client/AGENTS.md) 的 slot 与 props 纪律，按 [web-styling.md](../../../../docs/web-styling.zh.md) 使用 CSS Modules 和语义 token，不引入组件库或 Tailwind。产品文案以中文为先，并保留现有英文 locale。[开发计划](../../../plans/2026-10-02-web-ui-redesign/development-plan.md)负责工作包、顺序、验证与状态，其[清单](../../../plans/2026-10-02-web-ui-redesign/checklist.md)逐项跟踪完成情况。
 
 ### 设计原则
 

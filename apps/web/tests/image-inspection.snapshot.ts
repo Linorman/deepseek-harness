@@ -20,7 +20,7 @@ it('previews an image above Session inspection and returns focus without sending
     const binding = team.activations.find(value => value.activation.participantId === coordinator.id)!
     await scaffold.authenticateBrowserPage(page)
     await page.goto(`${scaffold.baseUrl}/?team=${team.team.id}&view=members&session=${binding.sessionId}&participant=${coordinator.id}`)
-    const inspection = page.locator('dialog[data-inspecting][open]')
+    const inspection = page.locator('[data-conversation-pane]')
     const input = inspection.getByRole('textbox')
     await input.fill('Unsent image context')
     await input.evaluate((element) => {

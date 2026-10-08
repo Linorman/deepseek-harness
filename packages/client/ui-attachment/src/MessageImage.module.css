@@ -23,9 +23,9 @@
   min-height: 44px;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
-  border-radius: 16px;
-  background: var(--clocky-alias-interactive-bg-hover);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-hover);
   cursor: zoom-in;
 }
 
@@ -45,17 +45,17 @@
 
 .loading,
 .error {
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .error {
   max-width: 240px;
   padding: 10px 12px;
-  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
-  border-radius: 10px;
-  background: var(--clocky-alias-interactive-bg-hover-danger);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-status-failed-bg);
   cursor: pointer;
 }
 
@@ -65,5 +65,5 @@
   height: 64px;
   padding: 4px;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--clocky-radius-xl);
 }

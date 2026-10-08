@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { liveActivationCapacity } from '@clocky/clocky-team'
 import { teamProjectionFromData } from '../src/fold.ts'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
-import { createdTeam, participant, participantChanged, task, taskCreatorActivationId, taskCreatorId,
+import { createdTeam, fenceTestActivation, participant, participantChanged, quiesceTestActivation,
+  task, taskChanged, taskLease, taskCreatorActivationId, taskCreatorId,
   taskCreatorSessionId, teamId, teamPhase } from './fixtures.ts'
 
 function fixture() {
@@ -83,4 +84,90 @@ it('rejects membership changes during cancellation unless they release unpublish
   expect(() => checkpointFor([...f.bound, cancellation,
     participantChanged({ participant: { ...data.participants[0], phase: 'left' }, createdAt: 18 })]))
     .toThrow('Closure participant mutation is not an unpublished-start release')
+})
+
+it.each(['json', 'sqlite'] as const)('refuses to publish %s quiescence while an owned workspace remains live', async (backend) => {
+  const f = fixture()
+  const initial = task({ createdAt: 17 })
+  const lease = taskLease({ participantId: taskCreatorId, activationId: taskCreatorActivationId,
+    assignedAt: 18, renewedAt: 18, durationMs: 60000, expiresAt: 60018 })
+  const assigned = task({ ...initial, phase: 'assigned', revision: 2, attemptCount: 1, lease })
+  const running = task({ ...assigned, phase: 'running', revision: 3, lease: { ...lease, startedAt: 19 } })
+  const allocation = { id: 'quiescence-capacity-allocation', revision: 1, teamId, taskId: initial.id,
+    attemptId: lease.attemptId, assignedRevision: lease.assignedRevision, participantId: taskCreatorId,
+    activationId: taskCreatorActivationId, sessionId: taskCreatorSessionId, provider: 'workspace-local',
+    mode: 'shared', baseVersion: 'base-a', lifecycle: 'reserved', reservedAt: 20, updatedAt: 20 }
+  const records = [...f.bound, taskChanged({ task: initial, createdAt: 17 }),
+    taskChanged({ task: assigned, createdAt: 18 }), taskChanged({ task: running, createdAt: 19 }),
+    { type: 'workspace-allocation/changed', allocation, createdAt: 20 }]
+  const ctx = await recover(backend, records)
+  const before = await ctx.teams.getTeam({ teamId })
+  const input = { teamId, activationId: taskCreatorActivationId, participantId: taskCreatorId,
+    sessionId: taskCreatorSessionId, provider: 'in-process', expectedCursor: before.team.cursor }
+  await expect(quiesceTestActivation(ctx, input)).rejects.toMatchObject({ code: 'TEAM_NOT_QUIESCENT' })
+  await expect(fenceTestActivation(ctx, input)).rejects.toMatchObject({ code: 'TEAM_NOT_QUIESCENT' })
+  const after = await ctx.teams.getTeam({ teamId })
+  expect(after.team.cursor).toBe(before.team.cursor)
+  expect(after.workspaceAllocations).toEqual(before.workspaceAllocations)
+  expect(after.tasks).toEqual(before.tasks)
+})
+
+it.each([['json', 'stopping', 'reserved'], ['json', 'offline', 'reserved'],
+  ['sqlite', 'stopping', 'reserved'], ['sqlite', 'offline', 'reserved'],
+  ['json', 'stopping', 'release-requested'], ['sqlite', 'stopping', 'release-requested']] as const)
+('keeps a repeated %s recovery fence idempotent from %s with %s workspace', async (backend, status, stage) => {
+  const member = participant({ id: taskCreatorId, role: 'coordinator' })
+  const recovery = { kind: 'sdk-local-cold-replace', version: 1, runtimeProvider: 'sdk', profile: 'local-sdk-v1',
+    agent: { provider: 'mock', model: 'mock', maxTokens: 32 },
+    process: { hostId: 'host-a', pid: 42, started: 'start-a', processGroupId: 42 } }
+  const binding = { activation: { id: taskCreatorActivationId, teamId, participantId: taskCreatorId, status: 'idle' },
+    sessionId: taskCreatorSessionId, provider: 'sdk', recovery }
+  const initial = task({ createdAt: 16 })
+  const created = task({ ...initial, createCommand: { ...initial.createCommand, creator: {
+    teamId, participantId: taskCreatorId, activationId: taskCreatorActivationId, sessionId: taskCreatorSessionId, provider: 'sdk',
+  } } })
+  const lease = taskLease({ participantId: taskCreatorId, activationId: taskCreatorActivationId,
+    assignedAt: 17, renewedAt: 17, durationMs: 60000, expiresAt: 60017 })
+  const assigned = task({ ...created, phase: 'assigned', revision: 2, attemptCount: 1, lease })
+  const running = task({ ...assigned, phase: 'running', revision: 3, lease: { ...lease, startedAt: 18 } })
+  const allocation = { id: 'recovery-fence-allocation', revision: 1, teamId, taskId: created.id,
+    attemptId: lease.attemptId, assignedRevision: lease.assignedRevision, participantId: taskCreatorId,
+    activationId: taskCreatorActivationId, sessionId: taskCreatorSessionId, provider: 'workspace-local',
+    mode: 'shared', baseVersion: 'base-a', lifecycle: 'reserved', reservedAt: 19, updatedAt: 19 }
+  const intentAt = stage === 'release-requested' ? 21 : 20
+  const intent = { teamId, actor: { kind: 'system', name: 'team-run' },
+    reason: { code: 'STOP', message: 'Stop the Team before release.' },
+    idempotencyKey: 'recovery-fence-capacity', requestedAt: intentAt }
+  const activeRows = [createdTeam(), teamPhase(),
+    participantChanged({ participant: member, createdAt: 12 }),
+    participantChanged({ participant: { ...member, phase: 'provisioning' }, createdAt: 13 }),
+    participantChanged({ participant: { ...member, phase: 'active' }, createdAt: 14 }),
+    { type: 'activation/changed', binding, createdAt: 15 },
+    taskChanged({ task: created, createdAt: 16 }), taskChanged({ task: assigned, createdAt: 17 }),
+    taskChanged({ task: running, createdAt: 18 }),
+    { type: 'workspace-allocation/changed', allocation, createdAt: 19 }]
+  const releasedBeforeFence = { ...allocation, revision: 2, lifecycle: 'release-requested', releaseRequestedAt: 20, updatedAt: 20 }
+  const rows = [...activeRows,
+    ...(stage === 'release-requested' ? [{ type: 'workspace-allocation/changed', allocation: releasedBeforeFence, createdAt: 20 }] : []),
+    { type: 'team/cancellation', cancellation: intent, createdAt: intentAt },
+    { type: 'team/phase', phase: 'quiescing', createdAt: intentAt + 1 },
+    { type: 'activation/changed', binding: { ...binding,
+      activation: { ...binding.activation, status } }, createdAt: intentAt + 2 }]
+  const withoutIntent = await recover(backend, activeRows)
+  const active = await withoutIntent.teams.getTeam({ teamId })
+  await expect(fenceTestActivation(withoutIntent, { teamId, activationId: taskCreatorActivationId,
+    participantId: taskCreatorId, sessionId: taskCreatorSessionId, provider: 'sdk',
+    expectedCursor: active.team.cursor })).rejects.toMatchObject({ code: 'TEAM_NOT_QUIESCENT' })
+  expect((await withoutIntent.teams.getTeam({ teamId })).team.cursor).toBe(active.team.cursor)
+  const ctx = await recover(backend, rows)
+  const before = await ctx.teams.getTeam({ teamId })
+  const input = { teamId, activationId: taskCreatorActivationId, participantId: taskCreatorId,
+    sessionId: taskCreatorSessionId, provider: 'sdk', expectedCursor: before.team.cursor }
+  const first = await fenceTestActivation(ctx, input)
+  expect(first.workspaceAllocations[0]).toMatchObject({ lifecycle: 'release-requested', revision: 2 })
+  expect(first.activations[0]).toMatchObject({ activation: { status }, fencedAt: first.team.updatedAt })
+  const repeated = await fenceTestActivation(ctx, { ...input, expectedCursor: first.team.cursor })
+  expect(repeated.team.cursor).toBe(first.team.cursor)
+  expect(repeated.workspaceAllocations).toEqual(first.workspaceAllocations)
+  expect(repeated.activations).toEqual(first.activations)
 })

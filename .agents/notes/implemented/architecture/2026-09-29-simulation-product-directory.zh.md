@@ -10,6 +10,8 @@ Status: implemented
 
 ## Decision
 
+标准 Web 通过命名 Simulation group 安装产品；[默认部署与模型就绪](2026-10-07-web-runtime-stability-and-default-simulation.zh.md)持有该组合。自定义与 headless 部署仍明确选择自身插件。
+
 显式启用的[产品插件](../../../../packages/simulation/simulation-product/README.zh.md) 拥有独立于世界历史的 Storage Log 目录，格式为 1。受信任导入将不透明产品身份绑定到不可变 provider/run spec 和一个所属已认证主体。精确重试与重启复用登记及时间戳；重复产品或 provider/run 身份、导入变化及不完整/损坏历史均被拒绝。移除导入不会删除保留身份或转移权限。
 
 发现只读目录元数据。provider 激活独立于登记；实际检查解析支持能力，并明确拒绝不可用 provider。Loader 激活遵循依赖，因此配置文本顺序不能使登记构造过程假定 provider 已就绪。
@@ -65,3 +67,5 @@ JSON/SQLite 目录测试覆盖恢复、精确重试、所有权重复、保留�
 [上下文／关系回归](../../../../packages/simulation/simulation-product/tests/context-and-relations.spec.ts)检查真实 JSON／SQLite 冻结视图，验证 Unicode 片段重建、独立正文 grant 和卸载／凭据约束，并保持世界 snapshot 不变。Web 场景检查生产 actor 上下文及精确关系分页；SDK 维护场景通过真实 stdio 读取两个分区，包含冷生命周期检查。正文 grant 与引用都不授予其他来源内容权限。
 
 观察回归覆盖原生 JSON／SQLite 变化、独立策略退役、凭据／卸载取消、仅元数据不可用状态及旧响应约束。真实浏览器维护组装卸载／重挂载策略插件时保留同一目录、run snapshot、模型次数及后来输入草稿。stdio SDK 场景验证进程重启后旧观察游标 reset。
+
+新增 reader 测试覆盖已记录的调度停滞、原生来源历史缺失、来源查询期间的披露策略变化、已关闭或调用前已取消的 watch，以及意外检查失败的传播。注册器测试检查仅限进程内使用而不可序列化、retry reader 独占、重复释放幂等，以及卸载后拒绝注册。

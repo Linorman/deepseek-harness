@@ -13,7 +13,7 @@
 import { useRef } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
-import { useAnchoredPosition } from '../src/useAnchoredPosition.ts'
+import { transformOriginFor, useAnchoredPosition } from '../src/useAnchoredPosition.ts'
 
 afterEach(() => {
   cleanup()
@@ -65,6 +65,9 @@ function Host({ open }: { open: boolean }) {
 }
 
 describe('useAnchoredPosition', () => {
+  it('places the origin at the bottom edge for an upward-opening anchored panel', () => {
+    expect(transformOriginFor({ left: 20, width: 40, top: 100 }, 30, 40)).toBe('10px 100%')
+  })
   it('observes the panel while open and disconnects when it closes', () => {
     const made = stubResizeObserver()
     const ui = render(<Host open />)

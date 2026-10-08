@@ -1,9 +1,10 @@
 /** Task target refusal and uncertain receipts retain independent dependent-operation outcomes. */
 import { describe, expect, it, vi } from 'vitest'
 import { teamIdSchema, teamTaskIdSchema } from '@clocky/clocky-team'
-import { simTimeSchema, simulationOutboxRetryRequestSchema } from '@clocky/clocky-simulation'
+import { simTimeSchema, simulationOperationIdSchema, simulationOutboxRetryRequestSchema } from '@clocky/clocky-simulation'
 import type { SimulationTaskTransport } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from './business-harness.ts'
+import { assertTaskExecutions } from '../src/task-execution.ts'
 
 const task = { subject: 'Prepare evidence', description: 'Return an independently reviewed result', blockedBy: [],
   requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',
@@ -78,6 +79,34 @@ for (const backend of ['json', 'sqlite'] as const) {
         expect(createTask.mock.calls[1]?.[0]).toEqual(createTask.mock.calls[0]?.[0])
         expect(restored.snapshot().operations[id]?.outbox?.attempts.map(attempt => attempt.outcome)).toEqual(['uncertain', 'applied'])
         expect(restored.snapshot().operations[id]?.outbox?.taskReceipt?.teamId).toBe('company')
+        const cancellation = { operationId: id, teamId: teamIdSchema.parse('company'), taskId: teamTaskIdSchema.parse('task'),
+          cancellation: { requestedRevision: 1, requestedBy: actor.id as never, requestedAt: 201,
+            target: { kind: 'pending' as const } } }
+        const beforeCancellation = restored.snapshot().revision
+        for (const invalid of [
+          { ...cancellation, operationId: 'missing-operation' },
+          { ...cancellation, teamId: 'foreign-team' },
+          { ...cancellation, cancellation: { ...cancellation.cancellation, requestedBy: 'foreign-participant' } },
+          { ...cancellation, cancellation: { ...cancellation.cancellation,
+            target: { kind: 'attempt', attemptId: 'missing-attempt', participantId: 'creator', activationId: 'missing-activation' } } },
+        ]) {
+          await expect(restored.recordTaskCancellation(invalid as never)).rejects.toThrow('exact accepted source')
+          expect(restored.snapshot().revision).toBe(beforeCancellation)
+        }
+        const first = await restored.recordTaskCancellation(cancellation)
+        expect(await restored.recordTaskCancellation(cancellation)).toEqual(first)
+        await expect(restored.recordTaskCancellation({ ...cancellation,
+          cancellation: { ...cancellation.cancellation, reason: 'Changed original reason' } }))
+          .rejects.toThrow('changed its original intent')
+        const retained = restored.snapshot()
+        expect(() => { assertTaskExecutions(retained) }).not.toThrow()
+        expect(() => { assertTaskExecutions({ ...retained, taskCancellations: { [simulationOperationIdSchema.parse('foreign-key')]: first } }) })
+          .toThrow('lost its original canonical source')
+        expect(() => { assertTaskExecutions({ ...retained, operations: { ...retained.operations, [id]: undefined } }) })
+          .toThrow('lost its original canonical source')
+        expect(() => { assertTaskExecutions({ ...retained, taskCancellations: { [id]: { ...first,
+          request: { ...first.request, cancellation: { ...first.request.cancellation, requestedBy: 'foreign' as never } } } } }) })
+          .toThrow('lost its original canonical source')
       } finally { await h.close() }
     })
   })

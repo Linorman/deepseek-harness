@@ -45,19 +45,19 @@ export class TeamArtifactStore extends Service {
    * @returns an effect-scoped disposer.
    */
   registerProvider(provider: TeamArtifactProvider): () => void {
-    assertProvider(provider)
+    const name = provider.name
+    assertProviderName(name)
     // oxlint-disable-next-line typescript/no-misused-promises -- the generator accepts an effect disposer function.
     return this.ctx.effect(function* (this: TeamArtifactStore) {
-      if (this.providers.has(provider.name)) {
+      if (this.providers.has(name)) {
         throw new TeamArtifactError(
-          `Team artifact provider '${provider.name}' is already registered`,
+          `Team artifact provider '${name}' is already registered`,
           'TEAM_ARTIFACT_PROVIDER_DUPLICATE',
         )
       }
-      this.providers.set(provider.name, provider)
-      yield () => {
-        if (this.providers.get(provider.name) === provider) this.providers.delete(provider.name)
-      }
+      this.providers.set(name, provider)
+      // Cordis retires this synchronous effect once; another registration cannot replace its live name.
+      yield () => { this.providers.delete(name) }
     }.bind(this), 'teamArtifacts.registerProvider()')
   }
 
@@ -142,8 +142,8 @@ export class TeamArtifactStore extends Service {
   }
 }
 
-function assertProvider(provider: TeamArtifactProvider): void {
-  if (provider.name.length === 0 || provider.name.trim() !== provider.name) {
+function assertProviderName(name: string): void {
+  if (name.length === 0 || name.trim() !== name) {
     throw new TeamArtifactError('Team artifact provider name must be non-empty without surrounding whitespace', 'TEAM_ARTIFACT_PROVIDER_INVALID')
   }
 }

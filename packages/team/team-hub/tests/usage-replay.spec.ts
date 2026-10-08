@@ -6,10 +6,10 @@ import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
-import { teamUsageSampleIdSchema } from '@clocky/clocky-team'
+import { jsonObjectSchema, jsonValueSchema, teamUsageSampleIdSchema } from '@clocky/clocky-team'
 import type { JsonObject, TeamId, TeamUsageRate, TeamUsageSampleInput } from '@clocky/clocky-team'
 import { createTestChildTeam, createTestRootTeam } from '../../../core/team/tests/bootstrap-topology-authority.ts'
-import { provisionTestCoordinator } from './fixtures.ts'
+import { provisionTestCoordinator, seedTeamPhase } from './fixtures.ts'
 import { delegationFixture } from './delegation-fixtures.ts'
 import TeamHub from '../src/index.ts'
 
@@ -199,5 +199,88 @@ describe('priced usage replay', () => {
         expect(await recordCount(harness.ctx, parent.team.id, 'usage/child-charged')).toBe(2)
       } finally { denyParent(); actor.revoke() }
     })
+
+    it(`retains an unpriced child charge when the parent has a frozen cost ceiling on ${backend}`, async () => {
+      const harness = await setup(backend, undefined, {})
+      const delegation = await delegationFixture(harness.ctx, harness.root, { maxCostUnits: 10 })
+      const parent = await harness.ctx.teams.getTeam({ teamId: delegation.parentId })
+      const child = await createTestChildTeam(harness.ctx, delegation.creation)
+      const actor = await usageActor(harness.ctx, child.team.id)
+      try {
+        const request = { actor: actor.proof,
+          expectedCursor: (await harness.ctx.teams.getTeam({ teamId: child.team.id })).team.cursor,
+          sample: sample('unpriced-child') }
+        await expect(harness.ctx.teams.recordUsage(request)).rejects.toMatchObject({ code: 'TEAM_BUDGET_INVALID' })
+        expect(await recordCount(harness.ctx, child.team.id, 'usage/changed')).toBe(1)
+        expect(await recordCount(harness.ctx, child.team.id, 'usage/parent-charge-pending')).toBe(1)
+        expect(await recordCount(harness.ctx, parent.team.id, 'usage/child-charged')).toBe(0)
+      } finally { actor.revoke() }
+    })
+
+    it(`replays a lost child charge settlement without billing its parent twice on ${backend}`, async () => {
+      const harness = await setup(backend)
+      const delegation = await delegationFixture(harness.ctx, harness.root)
+      const child = await createTestChildTeam(harness.ctx, delegation.creation)
+      const actor = await usageActor(harness.ctx, child.team.id)
+      try {
+        const input = sample('replayed-parent-charge')
+        const request = { actor: actor.proof,
+          expectedCursor: (await harness.ctx.teams.getTeam({ teamId: child.team.id })).team.cursor,
+          sample: input }
+        const accepted = await harness.ctx.teams.recordUsage(request)
+        expect(await recordCount(harness.ctx, delegation.parentId, 'usage/child-charged')).toBe(1)
+        const before = await harness.ctx.teams.getTeam({ teamId: child.team.id })
+        const stream = harness.ctx.storageLog.get(`team/${child.team.id}`)
+        if (stream === undefined) throw new Error('Child usage journal is not retained')
+        const pending = (await stream.read(-1, 128)).find((entry) => {
+          const value = jsonObjectSchema.safeParse(entry.value)
+          return value.success && value.data.type === 'usage/parent-charge-pending'
+        })
+        if (pending === undefined) throw new Error('Child usage journal has no pending charge source')
+        const pendingValue = jsonObjectSchema.parse(pending.value)
+        const replayedAt = Math.max(Date.now(), before.team.updatedAt + 1)
+        await stream.append(stream.tailSequence, [jsonValueSchema.parse({ ...pendingValue,
+          createdAt: replayedAt, charge: { ...jsonObjectSchema.parse(pendingValue['charge']), observedAt: replayedAt } })])
+        expect(await harness.ctx.teams.recordUsage(request)).toEqual(accepted)
+        expect(await recordCount(harness.ctx, delegation.parentId, 'usage/child-charged')).toBe(1)
+        expect(await recordCount(harness.ctx, child.team.id, 'usage/parent-charge-pending')).toBe(2)
+        expect(await recordCount(harness.ctx, child.team.id, 'usage/parent-charge-settled')).toBe(2)
+      } finally { actor.revoke() }
+    })
+
+    it(`stalls the parent after accepting a priced child charge above its cost ceiling on ${backend}`, async () => {
+      const harness = await setup(backend)
+      const delegation = await delegationFixture(harness.ctx, harness.root, { maxCostUnits: 5 })
+      const child = await createTestChildTeam(harness.ctx, delegation.creation)
+      const actor = await usageActor(harness.ctx, child.team.id)
+      try {
+        await harness.ctx.teams.recordUsage({ actor: actor.proof,
+          expectedCursor: (await harness.ctx.teams.getTeam({ teamId: child.team.id })).team.cursor,
+          sample: sample('over-parent-cost') })
+        const parent = await harness.ctx.teams.getTeam({ teamId: delegation.parentId })
+        expect(parent).toMatchObject({ team: { phase: 'stalled',
+          stallReason: { code: 'TEAM__COST_UNITS_BUDGET_EXCEEDED' } }, usage: { costUnits: 7 } })
+        expect(await recordCount(harness.ctx, delegation.parentId, 'usage/child-charged')).toBe(1)
+      } finally { actor.revoke() }
+    })
+
+    it(`retains a priced child overage while its parent is quiescing on ${backend}`, async () => {
+      const harness = await setup(backend)
+      const delegation = await delegationFixture(harness.ctx, harness.root, { maxCostUnits: 5 })
+      const child = await createTestChildTeam(harness.ctx, delegation.creation)
+      await harness.ctx.teams.getTeam({ teamId: delegation.parentId })
+      await seedTeamPhase(harness.ctx, delegation.parentId, 'quiescing')
+      const actor = await usageActor(harness.ctx, child.team.id)
+      try {
+        await harness.ctx.teams.recordUsage({ actor: actor.proof,
+          expectedCursor: (await harness.ctx.teams.getTeam({ teamId: child.team.id })).team.cursor,
+          sample: sample('quiescing-parent-cost') })
+        const parent = await harness.ctx.teams.getTeam({ teamId: delegation.parentId })
+        expect(parent).toMatchObject({ team: { phase: 'stalled',
+          stallReason: { code: 'TEAM__COST_UNITS_BUDGET_EXCEEDED' } }, usage: { costUnits: 7 } })
+        expect(await recordCount(harness.ctx, delegation.parentId, 'usage/child-charged')).toBe(1)
+      } finally { actor.revoke() }
+    })
+
   }
 })

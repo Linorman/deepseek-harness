@@ -8,7 +8,8 @@ import { simulationProductRunIdSchema, simulationProductTextSchema, simulationPr
 import type { SimulationProductCommandId, SimulationProductTemplateId, SimulationProductCreateInput,
   SimulationProductPrepareInput, SimulationProductRequestInput, SimulationProductRequestReceipt, SimulationProductRequestResult,
   SimulationProductCatalog, SimulationProductPreflightInput, SimulationProductPreflightResult,
-  SimulationProductRequestsInput, SimulationProductRequestsPage, SimulationProductRetryRequestInput } from './administration-types.ts'
+  SimulationProductRequestsInput, SimulationProductRequestsPage, SimulationProductRetryRequestInput,
+  SimulationProductModelReadiness, SimulationProductOriginalCreateInput } from './administration-types.ts'
 /** Empty catalog query carries no actor or deployment configuration. */
 export const simulationProductCatalogInputSchema = z.strictObject({})
 /** Brand a caller-retained command at its wire/file boundary. */
@@ -29,18 +30,35 @@ export const simulationProductConfigurationSchema = z.strictObject({ limits: sim
   budgetInterval: z.string().regex(/^[1-9][0-9]*$/), tickUnit: simulationProductTextSchema,
   rulesVersion: simulationProductTextSchema, policyVersion: simulationProductTextSchema, sharedModelLimit: z.number().int().positive() })
 /** Actor-free original creation payload; changed semantic payloads cannot reuse its command. */
+export const simulationProductModelRouteSchema = z.strictObject({ provider: z.string().trim().min(1), name: z.string().trim().min(1) })
+/** Safe reasons and an exact route only when metadata resolution succeeded. */
+export const simulationProductModelReadinessSchema = z.discriminatedUnion('status', [
+  z.strictObject({ status: z.literal('ready'), model: simulationProductModelRouteSchema }),
+  z.strictObject({ status: z.literal('needs-model'), reason: z.literal('default-model-missing') }),
+  z.strictObject({ status: z.literal('unavailable'), reason: z.enum(['provider-unavailable', 'metadata-unavailable',
+    'reasoning-unsupported', 'execution-unavailable', 'template-unavailable']) }),
+]) satisfies z.ZodType<SimulationProductModelReadiness>
+/** Creation confirms the observed route without supplying execution configuration. */
 export const simulationProductCreateInputSchema = z.strictObject({ commandId: simulationProductCommandIdSchema,
   templateId: simulationProductTemplateIdSchema, templateVersion: z.literal('1'), name: z.string().trim().min(1),
+  expectedModel: simulationProductModelRouteSchema,
   parameters: simulationCompanyParametersSchema, limits: simulationProductLimitsSchema.partial().optional(),
 }) satisfies z.ZodType<SimulationProductCreateInput>
 /** Preflight is a read: callers allocate no durable command identity. */
-export const simulationProductPreflightInputSchema = simulationProductCreateInputSchema.omit({ commandId: true }) satisfies
+export const simulationProductPreflightInputSchema = simulationProductCreateInputSchema.omit({
+  commandId: true, expectedModel: true,
+}) satisfies
   z.ZodType<SimulationProductPreflightInput>
+/** Existing journal layout keeps route confirmation in its frozen driver; no selector or new durable field is added. */
+export const simulationProductOriginalCreateInputSchema = simulationProductCreateInputSchema.omit({ expectedModel: true }) satisfies
+  z.ZodType<SimulationProductOriginalCreateInput>
 /** Public issues contain only bounded safe messages and field locations. */
 export const simulationProductPreflightResultSchema = z.discriminatedUnion('status', [
-  z.strictObject({ status: z.literal('ready'), configuration: simulationProductConfigurationSchema }),
+  z.strictObject({ status: z.literal('ready'), configuration: simulationProductConfigurationSchema,
+    readiness: z.strictObject({ status: z.literal('ready'), model: simulationProductModelRouteSchema }) }),
   z.strictObject({ status: z.literal('invalid'), issues: z.array(z.strictObject({ field: z.string().min(1).max(256),
-    code: z.enum(['invalid', 'not-allowed', 'unavailable', 'capacity-unavailable']), message: simulationProductTextSchema })).min(1).max(32) }),
+    code: z.enum(['invalid', 'not-allowed', 'unavailable', 'capacity-unavailable']), message: simulationProductTextSchema })).min(1).max(32),
+  readiness: simulationProductModelReadinessSchema }),
 ]) satisfies z.ZodType<SimulationProductPreflightResult>
 /** Preparation reuses the retained run; no browser-provided configuration or source. */
 export const simulationProductPrepareInputSchema = z.strictObject({ runId: simulationProductRunIdSchema,
@@ -105,7 +123,7 @@ export const simulationProductRequestResultSchema = z.discriminatedUnion('status
 /** Safe catalog metadata omits private deployment spec, paths, owner identity and credentials. */
 export const simulationProductCatalogSchema = z.strictObject({ items: z.array(z.strictObject({
   id: simulationProductTemplateIdSchema, version: z.literal('1'), name: simulationProductTextSchema,
-  kind: z.enum(['company-procurement', 'task-workflow']), model: z.strictObject({ provider: z.string().min(1), name: z.string().min(1) }),
+  kind: z.enum(['company-procurement', 'task-workflow']), readiness: simulationProductModelReadinessSchema,
   tickUnit: simulationProductTextSchema, execution: z.enum(['cognition-only', 'automatic-tasks']), review: z.enum(['none', 'buyer', 'participant']), maxStock: z.string().regex(/^[1-9][0-9]*$/),
   cognition: z.enum(['model', 'deterministic']).optional(),
   configuration: simulationProductConfigurationSchema.extend({ editable: z.array(simulationProductLimitKeySchema) }).optional(),

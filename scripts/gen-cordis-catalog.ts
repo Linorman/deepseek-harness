@@ -27,7 +27,7 @@ import {
   REGION_BEGIN,
   REGION_END,
 } from '@clocky/clocky-typert-generator'
-import type { CordisCatalogPolicy } from '@clocky/clocky-typert-generator'
+import type { CordisCatalogPolicy, CordisCatalogProjector, CordisCatalogModel } from '@clocky/clocky-typert-generator'
 import { renderCordisCoreApiPages } from './cordis-core-api.ts'
 import { contextKeyMap, contextMergeFiles, eventNameList } from './cordis-walk.ts'
 import {
@@ -239,6 +239,7 @@ export const EVENT_SCOPE_PAGE: Record<string, string> = {
 export const EVENT_WALK_EXEMPTIONS: Record<string, string> = {
   'command/executed': 'client-face local command acknowledgment — packages/client/ui-commands/README.md owns the API',
   'connection/reset': 'client-face transport signal — packages/client/runtime/README.md owns the API',
+  'connection/authorization-cleared': 'client-face authorization retirement signal — packages/client/runtime/README.md owns the API',
   'locale/change': 'client-face locale switch signal — packages/client/locale/README.md owns the API',
   'product-auth/browser-handoff-consumed': 'client-face product-auth handoff cleanup signal — packages/client/connection/README.md owns the API',
   'slash/input-begin-command': 'client-face slash-input protocol — packages/client/ui-input-trigger/README.md owns the API',
@@ -1031,7 +1032,6 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   TeamRunCancelClosureScope: 'team.md',
   TeamRunCreateFailureClosureScope: 'team.md',
   TeamRunResumePhaseScope: 'team.md',
-  TeamRunFinalizationQuiescePhaseScope: 'team.md',
   SchedulerStallPhaseScope: 'team.md',
   SchedulerTeamJournalCompactionScope: 'team.md',
   SchedulerChannelCompactionScope: 'team.md',
@@ -1560,11 +1560,7 @@ export function computeOutputs(): [string, string][] {
   const pages = [...new Set([...Object.values(SERVICE_PAGE), ...Object.values(EVENT_SCOPE_PAGE)])].sort()
   const outputs: [string, string][] = [
     [OUT_INHERITED, renderInheritedPage(CORDIS_CATALOG_POLICY)],
-    [OUT_RUNTIME_API, projector.renderRuntimeApi({
-      ...model,
-      services: model.services.filter(service => !service.source.startsWith('packages/compat/')),
-      events: model.events.filter(event => !event.source.startsWith('packages/compat/')),
-    })],
+    [OUT_RUNTIME_API, renderPublicRuntimeApi(projector, model)],
   ]
   for (const page of pages) {
     const region = renderPageRegion(
@@ -1646,6 +1642,19 @@ export function maybeRecordPair(pageRel: string, before: Map<string, Buffer>, sc
  * tests neither regenerates the committed files nor calls process.exit.
  * @returns nothing; writes files or reports freshness through the process.
  */
+/** Render the shipped model API, excluding private compatibility services and events.
+ * @param projector - Projector owning the complete documentation model.
+ * @param model - Complete validated documentation projection.
+ * @returns the model-facing TypeScript source for the public runtime.
+ */
+export function renderPublicRuntimeApi(projector: CordisCatalogProjector, model: CordisCatalogModel): string {
+  return projector.renderRuntimeApi({
+    ...model,
+    services: model.services.filter(service => !service.source.startsWith('packages/compat/')),
+    events: model.events.filter(event => !event.source.startsWith('packages/compat/')),
+  })
+}
+
 export function main(): void {
   const outputs: [string, string][] = [
     ...computeOutputs(),

@@ -13,7 +13,8 @@ import {
 } from '@clocky/clocky-sdk-client'
 import { SessionId } from '@clocky/clocky-session'
 import type { ProcessIdentity, ProcessInspector } from '@clocky/clocky-subprocess-local'
-import { activationBindingSnapshotSchema, participantSnapshotSchema, teamEventSchema, teamIdSchema } from '@clocky/clocky-team'
+import { activationBindingSnapshotSchema, participantSnapshotSchema, teamEventSchema, teamIdSchema,
+  type ActivationBindingSnapshot } from '@clocky/clocky-team'
 import TeamLinkRegistry from '@clocky/clocky-team-link'
 import type { TeamLinkEnrollmentProvider } from '@clocky/clocky-team-link'
 import * as SdkRuntime from '../src/index.ts'
@@ -118,6 +119,7 @@ class FakeClient implements SdkActivationClient {
   interruptError: unknown
   disposeError: unknown
   enrollError: unknown
+  enrollGate: Promise<void> | undefined
   closeError: unknown
 
   readonly initialize: SdkActivationClient['initialize'] = async (params) => {
@@ -162,6 +164,7 @@ class FakeClient implements SdkActivationClient {
   readonly enrollActivationLink: SdkActivationClient['enrollActivationLink'] = async (params) => {
     this.calls.push('link-enroll')
     this.enrollRequests.push(params)
+    await this.enrollGate
     if (this.enrollError !== undefined) throw this.enrollError
   }
 
@@ -305,6 +308,15 @@ function enrollmentProvider(revoke: () => Promise<void>, capability = 'opaque-ca
   }
 }
 
+function emitRemoteBinding(ctx: Context, target: SdkActivationTarget, status: 'idle' | 'running' | 'offline' = 'idle'): ActivationBindingSnapshot {
+  const binding = activationBindingSnapshotSchema.parse({
+    activation: { id: target.activationId, teamId: target.teamId, participantId: target.participantId, status },
+    sessionId: target.sessionId, provider: 'sdk',
+  })
+  ctx.emit('team/changed', teamEventSchema.parse({ type: 'activation/changed', binding, cursor: 1, createdAt: 1 }))
+  return binding
+}
+
 describe('SDK AgentRuntime provider', () => {
   it('fails closed before spawning a remote child when no product credential is configured', async () => {
     const { credential: _credential, ...withoutCredential } = config()
@@ -364,6 +376,17 @@ describe('SDK AgentRuntime provider', () => {
       new FakeClientFactory(),
       new FakeProcessInspector(),
     )).toThrow('recoveryFenceGraceMs requires recoveryProfile and recoveryHostId')
+    expect(() => SdkRuntime.createSdkAgentRuntimeProvider(
+      ctx,
+      config({ recoverySupervisor: { kind: 'local-process', provider: 'sdk' } as never }),
+      new FakeClientFactory(),
+      new FakeProcessInspector(),
+    )).toThrow('recoverySupervisor requires recoveryProfile and recoveryHostId')
+    expect(SdkRuntime.createSdkAgentRuntimeProvider(
+      ctx,
+      config({ recoveryProfile: 'local-sdk-v1', recoveryHostId: 'host-a' }),
+      new FakeClientFactory(),
+    ).fencer).toBeDefined()
   })
 
   it('rejects surrounding whitespace in local recovery identities', async () => {
@@ -403,6 +426,29 @@ describe('SDK AgentRuntime provider', () => {
     expect(factory.options[0]?.detached).toBe(true)
     expect(ctx.agentRuntimes.getFencer('sdk')).toBe(provider.fencer)
     await handle.dispose()
+    const withoutLimit = await ctx.agentRuntimes.activate(request(SessionId('sdk-recovery-no-token-limit'), {
+      agent: { options: { provider: 'remote-route', model: 'remote-model' } },
+    }))
+    expect(withoutLimit.recovery).toMatchObject({ agent: { provider: 'remote-route', model: 'remote-model' } })
+    expect(JSON.stringify(withoutLimit.recovery)).not.toContain('maxTokens')
+    await withoutLimit.dispose()
+  })
+
+  it('omits a POSIX process group from a Windows recovery plan', async () => {
+    const { ctx } = await setup({ config: config({ recoveryProfile: 'local-sdk-v1', recoveryHostId: 'host-a' }),
+      processInspector: new FakeProcessInspector() })
+    const platform = Object.getOwnPropertyDescriptor(process, 'platform')
+    if (platform === undefined) throw new Error('Process platform descriptor is unavailable')
+    Object.defineProperty(process, 'platform', { ...platform, value: 'win32' })
+    let handle: Awaited<ReturnType<typeof ctx.agentRuntimes.activate>> | undefined
+    try {
+      handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-windows-recovery-plan')))
+      expect(handle.recovery).toMatchObject({ process: { pid: 42, started: 'start-a' } })
+      expect(JSON.stringify(handle.recovery)).not.toContain('processGroupId')
+    } finally {
+      Object.defineProperty(process, 'platform', platform)
+      await handle?.dispose()
+    }
   })
 
   it('rejects recovery when the child process identity is unavailable', async () => {
@@ -573,6 +619,10 @@ describe('SDK AgentRuntime provider', () => {
       recovery: { ...binding.recovery!, profile: 'foreign-profile' },
     } as typeof binding
     expect(() => fencer.health(foreignBinding)).toThrow(expect.objectContaining({ code: 'AGENT_RUNTIME_SDK_RECOVERY_BINDING_INVALID' }))
+    const otherKindFencer = new SdkRuntime.SdkLocalProcessFencer({
+      provider: 'sdk', profile: 'local-sdk-v1', hostId: 'host-a', fenceGraceMs: 1, kind: 'acp-local-cold-replace',
+    }, inspector, 'linux')
+    expect(() => otherKindFencer.health(binding)).toThrow(expect.objectContaining({ code: 'AGENT_RUNTIME_SDK_RECOVERY_BINDING_INVALID' }))
     const missingGroupBinding = {
       ...binding,
       recovery: { ...binding.recovery!, process: { ...binding.recovery!.process, processGroupId: undefined } },
@@ -589,6 +639,12 @@ describe('SDK AgentRuntime provider', () => {
       provider: 'sdk', profile: 'local-sdk-v1', hostId: 'host-a', fenceGraceMs: 1,
     }, inspector, 'win32')
     expect(windows.health(binding)).toBe('unknown')
+    const gracefulWindowsInspector = new FakeProcessInspector()
+    const gracefulWindows = new SdkRuntime.SdkLocalProcessFencer({
+      provider: 'sdk', profile: 'local-sdk-v1', hostId: 'host-a', fenceGraceMs: 1,
+    }, gracefulWindowsInspector, 'win32')
+    await expect(gracefulWindows.fence(binding)).resolves.toBeUndefined()
+    expect(gracefulWindowsInspector.processes.map(([, signal]) => signal)).toEqual(['SIGTERM'])
 
     class StickyInspector extends FakeProcessInspector {
       override signalProcess(identity: ProcessIdentity, signal: 'SIGTERM' | 'SIGKILL'): void {
@@ -611,7 +667,7 @@ describe('SDK AgentRuntime provider', () => {
     let groupChecks = 0
     const stickyGroup = new StickyGroupInspector()
     const posixEscalating = new SdkRuntime.SdkLocalProcessFencer({
-      provider: 'sdk', profile: 'local-sdk-v1', hostId: 'host-a', fenceGraceMs: 1,
+      provider: 'sdk', profile: 'local-sdk-v1', hostId: 'host-a', fenceGraceMs: 20,
     }, stickyGroup, 'linux', () => {
       groupChecks += 1
       return groupChecks === 1
@@ -632,6 +688,21 @@ describe('SDK AgentRuntime provider', () => {
       provider: 'sdk', profile: 'local-sdk-v1', hostId: 'host-a', fenceGraceMs: 1,
     }, new LostRootInspector(), 'linux', () => true)
     await expect(lostRoot.fence(binding)).rejects.toMatchObject({ code: 'AGENT_RUNTIME_SDK_RECOVERY_FENCE_FAILED' })
+    class OrphanChildInspector extends FakeProcessInspector {
+      constructor() {
+        super()
+        this.members.push({ pid: 43, started: 'child-start' })
+        this.alive.add('43:child-start')
+      }
+      override signalGroup(group: number, signal: 'SIGTERM' | 'SIGKILL'): void {
+        this.groups.push([group, signal])
+        this.alive.delete('42:start-a')
+      }
+    }
+    const orphanChild = new SdkRuntime.SdkLocalProcessFencer({
+      provider: 'sdk', profile: 'local-sdk-v1', hostId: 'host-a', fenceGraceMs: 1,
+    }, new OrphanChildInspector(), 'linux', () => false)
+    await expect(orphanChild.fence(binding)).rejects.toMatchObject({ code: 'AGENT_RUNTIME_SDK_RECOVERY_FENCE_FAILED' })
     class NeverGoneGroupInspector extends FakeProcessInspector {
       override signalGroup(group: number, signal: 'SIGTERM' | 'SIGKILL'): void {
         this.groups.push([group, signal])
@@ -667,6 +738,8 @@ describe('SDK AgentRuntime provider', () => {
     if (target === undefined) throw new Error('SDK provider did not open an activation target')
 
     expect(client.enrollRequests).toEqual([])
+    ctx.emit('team/changed', teamEventSchema.parse({ type: 'participant/changed', participant, cursor: 1, createdAt: 1 }))
+    expect(client.enrollRequests).toEqual([])
     ctx.emit('team/changed', teamEventSchema.parse({
       type: 'activation/changed',
       binding: activationBindingSnapshotSchema.parse({
@@ -688,10 +761,109 @@ describe('SDK AgentRuntime provider', () => {
         },
       }])
     })
+    emitRemoteBinding(ctx, target, 'running')
+    await Promise.resolve()
+    expect(client.enrollRequests).toHaveLength(1)
 
     await handle.dispose()
     expect(revoke).toHaveBeenCalledOnce()
     expect(client.calls.indexOf('remote-dispose')).toBeLessThan(client.calls.indexOf('process-close'))
+  })
+
+  it('drops a queued initial Link enrollment when disposal wins before reservation', async () => {
+    const revoke = vi.fn(async () => {})
+    const { ctx, factory } = await setup({
+      config: config({ teamLinkEnrollmentProvider: 'websocket' }),
+      enrollmentProvider: enrollmentProvider(revoke),
+    })
+    const handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-link-queued-disposal')))
+    const client = factory.clients[0], target = client?.openRequests[0]?.target
+    if (client === undefined || target === undefined) throw new Error('Queued enrollment fixture has no target')
+    ctx.emit('team/changed', teamEventSchema.parse({ type: 'activation/changed',
+      binding: activationBindingSnapshotSchema.parse({
+        activation: { id: target.activationId, teamId: target.teamId, participantId: target.participantId, status: 'idle' },
+        sessionId: target.sessionId, provider: 'sdk',
+      }), cursor: 1, createdAt: 1 }))
+    await handle.dispose()
+    expect(client.enrollRequests).toEqual([])
+    expect(revoke).not.toHaveBeenCalled()
+  })
+
+  it('drops queued Link renewal after the current credential is retired by disposal', async () => {
+    const firstRevoke = vi.fn(async () => {}), secondRevoke = vi.fn(async () => {})
+    const { ctx, factory, enrollmentDispose } = await setup({
+      config: config({ teamLinkEnrollmentProvider: 'websocket' }),
+      enrollmentProvider: enrollmentProvider(firstRevoke, 'first-capability'),
+    })
+    const handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-link-queued-renewal')))
+    const client = factory.clients[0], target = client?.openRequests[0]?.target
+    if (client === undefined || target === undefined || enrollmentDispose === undefined) throw new Error('Queued renewal fixture has no issuer')
+    const binding = activationBindingSnapshotSchema.parse({
+      activation: { id: target.activationId, teamId: target.teamId, participantId: target.participantId, status: 'idle' },
+      sessionId: target.sessionId, provider: 'sdk',
+    })
+    ctx.emit('team/changed', teamEventSchema.parse({ type: 'activation/changed', binding, cursor: 1, createdAt: 1 }))
+    await vi.waitFor(() => { expect(client.enrollRequests).toHaveLength(1) })
+    enrollmentDispose()
+    ctx.teamLinks.registerEnrollmentProvider(enrollmentProvider(secondRevoke, 'second-capability'))
+    await handle.dispose()
+    expect(client.enrollRequests).toHaveLength(1)
+    expect(firstRevoke).toHaveBeenCalledOnce()
+    expect(secondRevoke).not.toHaveBeenCalled()
+  })
+
+  it('revokes a newly reserved Link credential when disposal begins before child enrollment', async () => {
+    const reserved = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    const revoke = vi.fn(async () => {})
+    const issuer: TeamLinkEnrollmentProvider = { name: 'websocket', reserve: async () => {
+      reserved.resolve(undefined)
+      await release.promise
+      return { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'late-capability', revoke }
+    } }
+    const { ctx, factory } = await setup({ config: config({ teamLinkEnrollmentProvider: 'websocket' }), enrollmentProvider: issuer })
+    const handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-link-reserve-race')))
+    const client = factory.clients[0], target = client?.openRequests[0]?.target
+    if (client === undefined || target === undefined) throw new Error('Reserve race fixture has no target')
+    emitRemoteBinding(ctx, target)
+    await reserved.promise
+    const disposing = handle.dispose()
+    release.resolve(undefined)
+    await disposing
+    expect(client.enrollRequests).toEqual([])
+    expect(revoke).toHaveBeenCalledOnce()
+  })
+
+  it('revokes a Link credential whose child enrollment returns after disposal begins', async () => {
+    const release = Promise.withResolvers<undefined>()
+    const revoke = vi.fn(async () => {})
+    const { ctx, factory } = await setup({ config: config({ teamLinkEnrollmentProvider: 'websocket' }),
+      enrollmentProvider: enrollmentProvider(revoke) })
+    const handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-link-enroll-race')))
+    const client = factory.clients[0], target = client?.openRequests[0]?.target
+    if (client === undefined || target === undefined) throw new Error('Enrollment race fixture has no target')
+    client.enrollGate = release.promise
+    emitRemoteBinding(ctx, target)
+    await vi.waitFor(() => { expect(client.enrollRequests).toHaveLength(1) })
+    const disposing = handle.dispose()
+    release.resolve(undefined)
+    await disposing
+    expect(revoke).toHaveBeenCalledOnce()
+    expect(client.calls.indexOf('link-enroll')).toBeLessThan(client.calls.indexOf('remote-dispose'))
+  })
+
+  it('contains Link revocation failure while completing a confirmed remote disposal', async () => {
+    const revoke = vi.fn(async () => {})
+    const { ctx, factory } = await setup({ config: config({ teamLinkEnrollmentProvider: 'websocket' }),
+      enrollmentProvider: enrollmentProvider(revoke) })
+    const handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-link-revoke-disposal')))
+    const client = factory.clients[0], target = client?.openRequests[0]?.target
+    if (client === undefined || target === undefined) throw new Error('Revocation fixture has no target')
+    emitRemoteBinding(ctx, target)
+    await vi.waitFor(() => { expect(client.enrollRequests).toHaveLength(1) })
+    revoke.mockRejectedValueOnce(new Error('issuer unavailable during disposal'))
+    await expect(handle.dispose()).resolves.toBeUndefined()
+    expect(revoke).toHaveBeenCalledOnce()
+    expect(client.calls).toContain('process-close')
   })
 
   it('turns a post-bind Link enrollment failure into a contained offline transition', async () => {
@@ -755,6 +927,26 @@ describe('SDK AgentRuntime provider', () => {
     await expect(handle.dispose()).resolves.toBeUndefined()
   })
 
+  it('contains a pending Link revoke failure when an already offline handle is disposed', async () => {
+    const release = Promise.withResolvers<undefined>()
+    const revoke = vi.fn(() => release.promise)
+    const { ctx, factory } = await setup({ config: config({ teamLinkEnrollmentProvider: 'websocket' }),
+      enrollmentProvider: enrollmentProvider(revoke) })
+    const handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-link-offline-revoke-race')))
+    const client = factory.clients[0], target = client?.openRequests[0]?.target
+    if (client === undefined || target === undefined) throw new Error('Offline revoke fixture has no target')
+    try {
+      emitRemoteBinding(ctx, target)
+      await vi.waitFor(() => { expect(client.enrollRequests).toHaveLength(1) })
+      client.emit(activationState(target, 'offline', 2))
+      await vi.waitFor(() => { expect(revoke).toHaveBeenCalledOnce() })
+      const disposing = handle.dispose()
+      release.reject(new Error('issuer revoke completed with error'))
+      await expect(disposing).resolves.toBeUndefined()
+      expect((await handle.health()).status).toBe('offline')
+    } finally { release.resolve(undefined) }
+  })
+
   it('re-enrolls a current remote binding after its issuer is replaced without another Team binding event', async () => {
     const firstRevoke = vi.fn(async () => {})
     const secondRevoke = vi.fn(async () => {})
@@ -789,6 +981,57 @@ describe('SDK AgentRuntime provider', () => {
 
     await handle.dispose()
     expect(secondRevoke).toHaveBeenCalledOnce()
+  })
+
+  it('ignores unrelated issuer changes and clears renewal eligibility after a terminal binding', async () => {
+    const firstRevoke = vi.fn(async () => {}), replacementRevoke = vi.fn(async () => {})
+    const { ctx, factory, enrollmentDispose } = await setup({
+      config: config({ teamLinkEnrollmentProvider: 'websocket' }),
+      enrollmentProvider: enrollmentProvider(firstRevoke),
+    })
+    const handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-link-unrelated-issuer')))
+    const client = factory.clients[0], target = client?.openRequests[0]?.target
+    if (client === undefined || target === undefined || enrollmentDispose === undefined) throw new Error('Issuer event fixture has no target')
+    emitRemoteBinding(ctx, target)
+    await vi.waitFor(() => { expect(client.enrollRequests).toHaveLength(1) })
+    const removeAlternate = ctx.teamLinks.registerEnrollmentProvider({ ...enrollmentProvider(async () => {}), name: 'alternate' })
+    removeAlternate()
+    expect(client.enrollRequests).toHaveLength(1)
+    enrollmentDispose()
+    emitRemoteBinding(ctx, target, 'offline')
+    ctx.teamLinks.registerEnrollmentProvider(enrollmentProvider(replacementRevoke, 'replacement'))
+    await Promise.resolve()
+    expect(client.enrollRequests).toHaveLength(1)
+    await handle.dispose()
+    expect(firstRevoke).toHaveBeenCalledOnce()
+    expect(replacementRevoke).not.toHaveBeenCalled()
+  })
+
+  it('does not start renewal before the initial issuer reservation settles', async () => {
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    const firstRevoke = vi.fn(async () => {}), secondRevoke = vi.fn(async () => {})
+    const firstIssuer: TeamLinkEnrollmentProvider = { name: 'websocket', reserve: async () => {
+      entered.resolve(undefined)
+      await release.promise
+      return { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'first-capability', revoke: firstRevoke }
+    } }
+    const { ctx, factory, enrollmentDispose } = await setup({ config: config({ teamLinkEnrollmentProvider: 'websocket' }),
+      enrollmentProvider: firstIssuer })
+    const handle = await ctx.agentRuntimes.activate(request(SessionId('sdk-link-pending-issuer')))
+    const client = factory.clients[0], target = client?.openRequests[0]?.target
+    if (client === undefined || target === undefined || enrollmentDispose === undefined) throw new Error('Pending issuer fixture has no target')
+    try {
+      emitRemoteBinding(ctx, target)
+      await entered.promise
+      enrollmentDispose()
+      ctx.teamLinks.registerEnrollmentProvider(enrollmentProvider(secondRevoke, 'second-capability'))
+      release.resolve(undefined)
+      await vi.waitFor(() => { expect(client.enrollRequests).toHaveLength(1) })
+      expect(client.enrollRequests[0]?.enrollment.capability).toBe('first-capability')
+      await handle.dispose()
+      expect(firstRevoke).toHaveBeenCalledOnce()
+      expect(secondRevoke).not.toHaveBeenCalled()
+    } finally { release.resolve(undefined) }
   })
 
   it('contains a re-enrollment failure after an issuer replacement', async () => {
@@ -1070,6 +1313,14 @@ describe('SDK AgentRuntime provider', () => {
     expect(SdkRuntime.inject).toEqual(['agentRuntimes'])
     await fiber.dispose()
     expect(ctx.agentRuntimes.getProvider('sdk')).toBeUndefined()
+    const recoveryPlugin = Object.assign(
+      (pluginCtx: Context): void => { SdkRuntime.apply(pluginCtx, config({ recoveryProfile: 'local-sdk-v1', recoveryHostId: 'host-a' })) },
+      { inject: SdkRuntime.inject },
+    )
+    const recoveryFiber = await ctx.plugin(recoveryPlugin)
+    expect(ctx.agentRuntimes.getFencer('sdk')).toBeDefined()
+    await recoveryFiber.dispose()
+    expect(ctx.agentRuntimes.getFencer('sdk')).toBeUndefined()
   })
 
   it('opens resume without a deadline or token cap and exercises the production client factory', async () => {

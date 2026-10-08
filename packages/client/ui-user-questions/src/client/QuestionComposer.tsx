@@ -396,7 +396,7 @@ function QuestionFlow({ pending, t }: { pending: PendingQuestion } & Pick<Questi
                 {error === null ? null : 'key' in error ? t(error.key) : error.text}
               </div>
               <div className={css.footerActions}>
-                <Button variant="outline" disabled={busy !== null} onClick={skipQuestion}>
+                <Button variant="secondary" disabled={busy !== null} onClick={skipQuestion}>
                   {t('action.skip')}
                 </Button>
                 <Button

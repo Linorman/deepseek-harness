@@ -27,8 +27,23 @@ if TYPE_CHECKING:
 EXPECTED_TEXT = "runtime smoke ok"
 CODE_PROMPT = "Use run_code to compute the packaged worker smoke value."
 CODE_WORKER_TEXT = "code worker smoke ok"
-WORKFLOW_PROMPT = "Use workflow to compute the packaged worker smoke value without agents."
-WORKFLOW_WORKER_TEXT = "workflow worker smoke ok"
+WORKFLOW_PROMPT = "Run one bounded native Team workflow and verify its worker result."
+WORKFLOW_WORKER_TEXT = "native workflow worker smoke ok"
+WORKFLOW_TASK_MARKER = "PYTHON_NATIVE_WORKFLOW_WORKER"
+WORKFLOW_PLAN = {
+    "version": 1, "name": "packaged-worker-smoke",
+    "tasks": [{"id": "compute", "subject": "Compute the packaged worker value",
+               "description": f"{WORKFLOW_TASK_MARKER}: compute 6 * 7 through run_code and report the verified result.",
+               "blockedBy": [], "requiredCapabilities": ["team-default-worker"], "priority": 0,
+               "readScopes": [], "writeScopes": [], "workspaceMode": "shared", "budget": {},
+               "reviewPolicy": {"kind": "none"}, "maxAttempts": 1}],
+    "bounds": {"maxTasks": 1, "maxParallelism": 1, "maxTotalAttempts": 1},
+    "channel": {"participantRoles": ["coordinator", "worker"],
+                "viewPolicy": {"type": "recent-window", "version": 1},
+                "graph": {"initial": {"kind": "participant", "role": "coordinator"},
+                          "transitions": [{"condition": {"kind": "always"}, "target": {"kind": "terminate"}}], "maxTurns": 1}},
+    "result": {"kind": "task-results", "taskTemplateIds": ["compute"]},
+}
 MINIMAL_PROMPT = "Exercise the packaged minimal agent's persistent Bash and string-replacement editor."
 MINIMAL_TEXT = "minimal agent smoke ok"
 MINIMAL_EDITOR_PATH_PREFIX = "Editor path: "
@@ -48,10 +63,7 @@ MINIMAL_BASH_COMMAND = (
 SIMULATION_PROMPT = "Verify the durable Simulation context."
 SIMULATION_FINAL = "SIMULATION_CONTEXT_OK"
 SNAPSHOT_PROMPT = "Run the advanced packaged-runtime snapshot scenario."
-SNAPSHOT_DIRECT_CHILD_PROMPT = "Reply with exactly DIRECT_CHILD_OK and nothing else."
-SNAPSHOT_WORKFLOW_CHILD_PROMPT = "Reply with exactly WORKFLOW_CHILD_OK and nothing else."
 SNAPSHOT_FINAL_TEXT = "ADVANCED_EXECUTABLE_OK"
-SNAPSHOT_RETAINED_INPUT = "PYTHON_SDK_RETAINED_INPUT"
 SNAPSHOT_PRODUCT_CREDENTIAL = "python-sdk-snapshot-product-credential"
 TEAM_CHILD_PROMPT = "Delegate one bounded child Team and return its result."
 TEAM_CHILD_RESULT = "PYTHON_CHILD_TEAM_RESULT"
@@ -76,40 +88,13 @@ return (ctx) => {
       return args.value * 2
     }
   })))
-  ctx.effect(() => harness.registerTool(ctx, harness.defineTool({
-    name: 'snapshot_resume_pending',
-    description: 'Queue retained SDK input and cancel this tool turn.',
-    parameters: {},
-    output: {
-      schema: { type: 'string' },
-      render(_args, value) { return [{ type: 'text', text: value }] }
-    },
-    async execute(_args, exec) {
-      if (exec.agent === undefined) throw new Error('SDK child Agent is required')
-      return await new Promise((_resolve, reject) => {
-        exec.signal.addEventListener('abort', () => reject(exec.signal.reason), { once: true })
-        exec.agent.send({
-          id: 'retained-' + exec.callId,
-          role: 'user',
-          content: [{ type: 'text', text: 'PYTHON_SDK_RETAINED_INPUT' }],
-          source: { kind: 'plugin', plugin: 'python-sdk-resume-snapshot' }
-        }, 'next-turn', true)
-        exec.agent.cancel({ kind: 'hook', reason: 'SDK retained-input snapshot' },
-          { keepInbox: true, resumePending: true })
-      })
-    }
-  })))
+
 }
 """
-SNAPSHOT_WORKFLOW_SCRIPT = (
-    "phase('Delegate')\n"
-    f"const reply = await agent('{SNAPSHOT_WORKFLOW_CHILD_PROMPT}', {{ label: 'workflow-child' }})\n"
-    "return { reply }"
-)
 ADVANCED_SNAPSHOT_DIRECTORY = (
     Path(__file__).resolve().parent / "snapshots" / "python-sdk-single-exe" / "advanced"
 )
-ADVANCED_SNAPSHOT_FILENAMES = ("result.json", "session.jsonl", "session.1.jsonl", "session.2.jsonl")
+ADVANCED_SNAPSHOT_FILENAMES = ("result.json", "session.jsonl")
 MINIMAL_SNAPSHOT_DIRECTORY = (
     Path(__file__).resolve().parent / "snapshots" / "python-sdk-single-exe" / "minimal"
 )
@@ -141,6 +126,13 @@ TEAM_RUNTIME_CORDIS = """\
   name: '@clocky/clocky-team-channel-direct'
 - id: team-human-client
   name: '@clocky/clocky-team-human-client'
+  config:
+    storagePageSize: 32
+    maxPageSize: 32
+    maxDeliveryBytes: 262144
+    maxPendingOperations: 128
+    watchTimeoutMs: 30000
+    pollIntervalMs: 250
 - id: team-human-actor
   name: '@clocky/clocky-team-human-actor'
 - id: team-workspace
@@ -177,9 +169,60 @@ TEAM_RUNTIME_CORDIS = """\
 - id: team-run
   name: '@clocky/clocky-team-run'
 """
-CUSTOM_CORDIS = """\
+NATIVE_WORKFLOW_CORDIS = """\
+- id: team-channel-workflow
+  name: '@clocky/clocky-team-channel-workflow'
+- id: team-channel-task-assignment
+  name: '@clocky/clocky-team-channel-task-assignment'
+- id: team-scheduler-dag
+  name: '@clocky/clocky-team-scheduler-dag'
+  config:
+    leaseDurationMs: 60000
+    maxAssignmentsPerDrive: 4
+    maxExpirationsPerDrive: 4
+    maxWakeDispatchesPerDrive: 4
+    maxConflictsPerDrive: 4
+    maxActiveAttemptsPerParticipant: 1
+    permittedWorkspaceModes: [shared]
+    disposalTimeoutMs: 5000
+    pulseIntervalMs: 1000
+"""
+SDK_SMOKE_CREDENTIAL = "python-runtime-smoke-product-credential"
+SDK_SMOKE_ROUTE = """\
+- id: product-principals
+  name: '@clocky/clocky-product-principal'
+- id: product-principal-digest
+  name: '@clocky/clocky-host-product-principal-digest'
+  config:
+    providerName: sdk-digest
+    credentialSha256: !!js process.env.CLOCKY_PRODUCT_CREDENTIAL_SHA256
+    principalId: sdk-smoke-user
+    subject: sdk-smoke-user
+- id: llm-pi-ai
+  name: '@clocky/clocky-llm-pi-ai'
+  config:
+    providers:
+      test-provider:
+        apiKeyEnv: TEST_API_KEY
+        api: openai-completions
+        baseURL: !!js process.env.TEST_BASE_URL
+        models:
+          - id: smoke-model
+"""
+
+
+def smoke_environment(base_url: str) -> dict[str, str]:
+    """Select the mock provider and the digest of the stdin product credential."""
+    return {"TEST_API_KEY": "sk-keyless-smoke", "TEST_BASE_URL": base_url,
+            "TEST_MODEL": "smoke-model", "CLOCKY_MODEL": "smoke-model",
+            "CLOCKY_PRODUCT_CREDENTIAL_SHA256": hashlib.sha256(SDK_SMOKE_CREDENTIAL.encode()).hexdigest()}
+
+
+CUSTOM_CORDIS = SDK_SMOKE_ROUTE + """\
 - id: sdk-jsonrpc-server
   name: '@clocky/clocky-sdk-jsonrpc-server'
+  config:
+    productPrincipalProvider: sdk-digest
 - id: agent-core
   name: '@clocky/clocky-agent-spine-demo'
   config:
@@ -196,30 +239,16 @@ CUSTOM_CORDIS = """\
     compression: 'none'
 - id: code-runtime
   name: '@clocky/clocky-code-runtime-worker-thread'
-- id: subagents
-  name: '@clocky/clocky-subagent'
-- id: subagent-spawn-in-process
-  name: '@clocky/clocky-subagent-spawn-in-process'
-  config:
-    providerName: spawn
-- id: subagent-tool
-  name: '@clocky/clocky-tool-subagent'
-  config:
-    provider: spawn
-- id: workflow-engine
-  name: '@clocky/clocky-workflow-worker-thread'
-  config:
-    provider: spawn
-- id: workflow-tool
-  name: '@clocky/clocky-tool-workflow'
 - id: cordis-host-runner
   name: '@clocky/clocky-cordis-host-runner'
 - id: cordis-tool
   name: '@clocky/clocky-tool-cordis'
-""" + TEAM_RUNTIME_CORDIS
-FS_SEARCH_CORDIS = """\
+""" + TEAM_RUNTIME_CORDIS + NATIVE_WORKFLOW_CORDIS
+FS_SEARCH_CORDIS = SDK_SMOKE_ROUTE + """\
 - id: sdk-jsonrpc-server
   name: '@clocky/clocky-sdk-jsonrpc-server'
+  config:
+    productPrincipalProvider: sdk-digest
 - id: agent-core
   name: '@clocky/clocky-agent-spine-demo'
   config:
@@ -339,6 +368,14 @@ def team_runtime_entries(storage_root: str) -> list[dict[str, object]]:
         },
         {"id": "team-hub", "name": "@clocky/clocky-team-hub"},
         {"id": "team-channel-direct", "name": "@clocky/clocky-team-channel-direct"},
+        {"id": "team-human-client", "name": "@clocky/clocky-team-human-client",
+         "config": {"storagePageSize": 32, "maxPageSize": 32, "maxDeliveryBytes": 262144,
+                    "maxPendingOperations": 128, "watchTimeoutMs": 30000, "pollIntervalMs": 250}},
+        {"id": "team-human-actor", "name": "@clocky/clocky-team-human-actor"},
+        {"id": "team-workspace", "name": "@clocky/clocky-team-workspace"},
+        {"id": "team-workspace-shared", "name": "@clocky/clocky-team-workspace-shared",
+         "config": {"root": str(Path(storage_root).parent), "allowTeamWorkspacePath": True}},
+        {"id": "team-channel-admission", "name": "@clocky/clocky-team-channel-admission"},
         {"id": "team-agent-runtime", "name": "@clocky/clocky-agent-runtime"},
         {"id": "team-agent-runtime-in-process", "name": "@clocky/clocky-agent-runtime-in-process"},
         {"id": "team-activation-controller", "name": "@clocky/clocky-team-activation-controller"},
@@ -350,12 +387,20 @@ def team_runtime_entries(storage_root: str) -> list[dict[str, object]]:
     ]
 
 
-def mcp_cordis(server_script: Path) -> str:
+def mcp_cordis(server_script: Path, base_url: str) -> str:
     """Build an external config that mounts the packaged MCP client."""
     return json.dumps([
+        {"id": "product-principals", "name": "@clocky/clocky-product-principal"},
+        {"id": "product-principal-digest", "name": "@clocky/clocky-host-product-principal-digest",
+         "config": {"providerName": "sdk-digest", "principalId": "sdk-smoke-user", "subject": "sdk-smoke-user",
+                    "credentialSha256": hashlib.sha256(SDK_SMOKE_CREDENTIAL.encode()).hexdigest()}},
+        {"id": "llm-pi-ai", "name": "@clocky/clocky-llm-pi-ai",
+         "config": {"providers": {"test-provider": {"apiKeyEnv": "TEST_API_KEY", "api": "openai-completions",
+                     "baseURL": base_url, "models": [{"id": "smoke-model"}]}}}},
         {
             "id": "sdk-jsonrpc-server",
             "name": "@clocky/clocky-sdk-jsonrpc-server",
+            "config": {"productPrincipalProvider": "sdk-digest"},
         },
         {
             "id": "agent-core",
@@ -369,9 +414,9 @@ def mcp_cordis(server_script: Path) -> str:
         {
             "id": "sessions",
             "name": "@clocky/clocky-session-persistence-jsonl",
-            "config": {"root": "./sessions", "compression": "none"},
+            "config": {"root": str(server_script.parent / "sessions"), "compression": "none"},
         },
-        *team_runtime_entries("./sessions"),
+        *team_runtime_entries(str(server_script.parent / "sessions")),
         {
             "id": "mcp-fixture",
             "name": "@clocky/clocky-mcp-client",
@@ -427,6 +472,29 @@ class MockModelHandler(BaseHTTPRequestHandler):
 
 
 def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
+    """Return explicit final Envelopes for coordinator replies."""
+    messages = body.get("messages", [])
+    if messages and messages[-1].get("role") == "tool":
+        _, tool_name = latest_tool_call(messages)
+        if tool_name == "team_final":
+            return text_chunks("Final receipt accepted.")
+    chunks = scenario_completion_chunks(body)
+    tools = body.get("tools", [])
+    if not any(tool.get("function", {}).get("name") == "team_final" for tool in tools):
+        return chunks
+    if chunks[-1]["choices"][0].get("finish_reason") != "stop":
+        return chunks
+    text = "".join(choice.get("delta", {}).get("content") or ""
+                   for chunk in chunks for choice in chunk.get("choices", []))
+    channel = re.search(r"call team_final with channel_id (\S+) and", json.dumps(body))
+    if channel is None:
+        if WORKFLOW_TASK_MARKER in json.dumps(messages):
+            return chunks
+        raise AssertionError("coordinator reply has no final channel")
+    return tool_call_chunks("smoke-final", "team_final", {"channel_id": channel.group(1), "text": text})
+
+
+def scenario_completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
     """Choose the next deterministic model response from request history."""
     messages = body.get("messages")
     if not isinstance(messages, list) or not messages:
@@ -470,6 +538,9 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
                 for message in messages
             ):
                 return text_chunks(TEAM_CHILD_RESULT)
+        workflow = native_workflow_followup(body, call_id, tool_name, tool_text)
+        if workflow is not None:
+            return workflow
         mcp = mcp_tool_followup(call_id, tool_name, tool_text)
         if mcp is not None:
             return mcp
@@ -486,8 +557,6 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
             raise AssertionError(f"{tool_name} worker returned no expected value: {latest}")
         if tool_name == "run_code":
             return text_chunks(CODE_WORKER_TEXT)
-        if tool_name == "workflow":
-            return text_chunks(WORKFLOW_WORKER_TEXT)
         raise AssertionError(f"unexpected tool follow-up: {tool_name}")
 
     user_prompts = [
@@ -495,8 +564,10 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         for message in reversed(messages)
         if isinstance(message, dict) and message.get("role") == "user"
     ]
-    if SNAPSHOT_RETAINED_INPUT in user_prompts:
-        return text_chunks("DIRECT_CHILD_OK")
+    if any(WORKFLOW_TASK_MARKER in prompt for prompt in user_prompts):
+        return tool_call_chunks("native-workflow-worker-code", "run_code", {
+            "code": "return 6 * 7", "description": "Compute the native workflow task result",
+        })
     minimal_prompt = next(
         (
             prompt
@@ -514,8 +585,6 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
             {"command": MINIMAL_BASH_COMMAND},
         )
     scenario_prompts = {
-        SNAPSHOT_DIRECT_CHILD_PROMPT,
-        SNAPSHOT_WORKFLOW_CHILD_PROMPT,
         SNAPSHOT_PROMPT,
         SIMULATION_PROMPT,
         TEAM_CHILD_PROMPT,
@@ -555,11 +624,6 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         return tool_call_chunks("python-child-final", "team_final", {
             "channel_id": channel.group(1), "text": TEAM_CHILD_RESULT,
         })
-    if prompt == SNAPSHOT_DIRECT_CHILD_PROMPT:
-        assert_advertised_tool(body, "snapshot_resume_pending")
-        return tool_call_chunks("advanced-resume", "snapshot_resume_pending", {})
-    if prompt == SNAPSHOT_WORKFLOW_CHILD_PROMPT:
-        return text_chunks("WORKFLOW_CHILD_OK")
     if prompt == SIMULATION_PROMPT:
         if "Simulation entity: snapshot-entity." not in json.dumps(messages):
             raise AssertionError("Simulation context was not included in the model request")
@@ -589,18 +653,8 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
             {"code": "return 6 * 7", "description": "Compute the smoke value"},
         )
     if prompt == WORKFLOW_PROMPT:
-        assert_advertised_tool(body, "workflow")
-        return tool_call_chunks(
-            "call-workflow-worker",
-            "workflow",
-            {
-                "script": "return 6 * 7",
-                "meta": {
-                    "name": "pkg-worker-smoke",
-                    "description": "exercise the packaged workflow worker",
-                },
-            },
-        )
+        assert_advertised_tool(body, "team_worker_pool_set")
+        return tool_call_chunks("native-workflow-pool", "team_worker_pool_set", {"worker_count": 1})
     if prompt == FS_SEARCH_PROMPT:
         assert_advertised_tool(body, "grep")
         assert_advertised_tool(body, "glob")
@@ -706,6 +760,43 @@ def minimal_tool_followup(
     raise AssertionError(f"unexpected minimal-agent follow-up: {call_id} {tool_name}: {tool_text}")
 
 
+def native_workflow_followup(
+    body: dict[str, object], call_id: str, tool_name: str, tool_text: str,
+) -> list[dict[str, object]] | None:
+    """Drive the native plan and its real worker through bounded task reporting."""
+    if not call_id.startswith("native-workflow-"):
+        return None
+    if call_id == "native-workflow-pool" and tool_name == "team_worker_pool_set":
+        return tool_call_chunks("native-workflow-start", "team_workflow_start", {"plan": WORKFLOW_PLAN})
+    if call_id == "native-workflow-start" and tool_name == "team_workflow_start":
+        if not tool_text.startswith("{"):
+            raise AssertionError(f"native workflow start was refused: {tool_text}")
+        plan_id = json.loads(tool_text).get("plan_id")
+        if not isinstance(plan_id, str):
+            raise AssertionError(f"native workflow returned no plan id: {tool_text}")
+        return tool_call_chunks("native-workflow-wait", "team_workflow_wait", {"plan_id": plan_id})
+    if call_id == "native-workflow-worker-code" and tool_name == "run_code":
+        if "42" not in tool_text:
+            raise AssertionError(f"native worker returned no computed value: {tool_text}")
+        text = "\n".join(message_text(message.get("content")) for message in body["messages"] if message.get("role") == "user")
+        assignment = re.findall(r"\nTask: (\S+)\nAttempt: (\S+)", text)
+        if not assignment:
+            raise AssertionError("native worker request has no exact task attempt")
+        task_id, attempt_id = assignment[-1]
+        return tool_call_chunks("native-workflow-worker-report", "team_task_report", {
+            "task_id": task_id, "attempt_id": attempt_id, "outcome": "completed", "summary": "42",
+            "evidence": ["42"], "verification": "run_code computed 6 * 7 in the packaged worker",
+        })
+    if call_id == "native-workflow-worker-report" and tool_name == "team_task_report":
+        return text_chunks("42")
+    if call_id == "native-workflow-wait" and tool_name == "team_workflow_wait":
+        result = json.loads(tool_text)
+        if result.get("phase") != "completed" or "42" not in tool_text:
+            raise AssertionError(f"native workflow did not retain its completed worker result: {tool_text}")
+        return text_chunks(WORKFLOW_WORKER_TEXT)
+    raise AssertionError(f"unexpected native workflow follow-up: {call_id} {tool_name}: {tool_text}")
+
+
 def advanced_tool_followup(
     body: dict[str, object],
     call_id: str,
@@ -744,33 +835,6 @@ def advanced_tool_followup(
     if call_id == "advanced-code" and tool_name == "run_code":
         if "42" not in tool_text:
             raise AssertionError(f"run_code returned no dynamic-tool value: {tool_text}")
-        assert_advertised_tool(body, "subagent")
-        return tool_call_chunks(
-            "advanced-direct-child",
-            "subagent",
-            {
-                "description": "Check direct child",
-                "prompt": SNAPSHOT_DIRECT_CHILD_PROMPT,
-            },
-        )
-    if call_id == "advanced-direct-child" and tool_name == "subagent":
-        if "DIRECT_CHILD_OK" not in tool_text:
-            raise AssertionError(f"subagent returned no expected child value: {tool_text}")
-        assert_advertised_tool(body, "workflow")
-        return tool_call_chunks(
-            "advanced-workflow",
-            "workflow",
-            {
-                "script": SNAPSHOT_WORKFLOW_SCRIPT,
-                "meta": {
-                    "name": "advanced-exe-snapshot",
-                    "description": "exercise one packaged workflow child",
-                },
-            },
-        )
-    if call_id == "advanced-workflow" and tool_name == "workflow":
-        if "WORKFLOW_CHILD_OK" not in tool_text:
-            raise AssertionError(f"workflow returned no expected child value: {tool_text}")
         assert_advertised_tool(body, "cordis_undefine")
         return tool_call_chunks(
             "advanced-undefine",
@@ -907,7 +971,9 @@ def project_temporary_directory(*, prefix: str) -> tempfile.TemporaryDirectory[s
     """Keep each smoke runtime and its files inside the repository."""
     root = Path(__file__).resolve().parent.parent / ".tmp" / "python-runtime-smoke"
     root.mkdir(parents=True, exist_ok=True)
-    return tempfile.TemporaryDirectory(prefix=prefix, dir=root)
+    temporary = tempfile.TemporaryDirectory(prefix=prefix, dir=root)
+    (Path(temporary.name) / ".git").mkdir()
+    return temporary
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -962,13 +1028,18 @@ def smoke_sdk_default(base_url: str) -> None:
     with project_temporary_directory(prefix="clocky-sdk-default-") as temporary:
         root = Path(temporary).resolve()
         sessions = root / "sessions"
+        from clocky_runtime import bundled_default_config_path
+        cordis = root / "cordis.yml"
+        cordis.write_text(bundled_default_config_path().read_text().replace(
+            "baseURL: http://127.0.0.1:9", f"baseURL: {base_url}", 1))
         with Clocky(
+            cordis=str(cordis),
             provider="test-provider",
             model="smoke-model",
             cwd=str(root),
             session_root=str(sessions),
-            api_key="sk-keyless-smoke",
-            base_url=base_url,
+            credential=SDK_SMOKE_CREDENTIAL,
+            env=smoke_environment(base_url),
             request_timeout_seconds=60,
         ) as harness:
             result = harness.run("reply with the smoke text")
@@ -991,8 +1062,8 @@ def smoke_sdk_custom(base_url: str, executable: Path) -> None:
             session_root=str(sessions),
             cordis=str(cordis),
             runtime_bin=str(executable),
-            api_key="sk-keyless-smoke",
-            base_url=base_url,
+            credential=SDK_SMOKE_CREDENTIAL,
+            env=smoke_environment(base_url),
             request_timeout_seconds=60,
         ) as harness:
             text_result = harness.run("reply with the smoke text")
@@ -1001,7 +1072,7 @@ def smoke_sdk_custom(base_url: str, executable: Path) -> None:
         assert text_result.final_response == EXPECTED_TEXT, text_result.final_response
         assert code_result.final_response == CODE_WORKER_TEXT, code_result.final_response
         assert workflow_result.final_response == WORKFLOW_WORKER_TEXT, workflow_result.final_response
-        assert_session_logs(sessions, root, EXPECTED_TEXT, CODE_WORKER_TEXT, WORKFLOW_WORKER_TEXT)
+        assert_session_logs(sessions, root, EXPECTED_TEXT, CODE_WORKER_TEXT, WORKFLOW_WORKER_TEXT, "42")
 
 
 def smoke_sdk_child_team(base_url: str, executable: Path | None = None) -> None:
@@ -1163,15 +1234,20 @@ def smoke_sdk_minimal(base_url: str, executable: Path, update_snapshots: bool) -
         editor_path = root / "created.txt"
         prompt = f"{MINIMAL_PROMPT}\n{MINIMAL_EDITOR_PATH_PREFIX}{editor_path}"
         sessions = root / "sessions"
+        cordis = root / "minimal.cordis.yml"
+        principal = MINIMAL_CORDIS.parent / "tests/fixtures/sdk-product-principal.ts"
+        cordis.write_text(MINIMAL_CORDIS.read_text().replace(
+            "baseURL: http://127.0.0.1:9", f"baseURL: {base_url}", 1).replace(
+            "name: './tests/fixtures/sdk-product-principal.ts'", f"name: '{principal}'"))
         with Clocky(
             provider="test-provider",
             model="smoke-model",
             cwd=str(root),
             session_root=str(sessions),
-            cordis=str(MINIMAL_CORDIS),
+            cordis=str(cordis),
             runtime_bin=str(executable),
-            api_key="sk-keyless-smoke",
-            base_url=base_url,
+            credential=SDK_SMOKE_CREDENTIAL,
+            env=smoke_environment(base_url),
             request_timeout_seconds=60,
         ) as harness:
             result = harness.run(prompt)
@@ -1183,7 +1259,7 @@ def smoke_sdk_minimal(base_url: str, executable: Path, update_snapshots: bool) -
             raise AssertionError(f"packaged editor wrote unexpected content: {editor_path.read_text()!r}")
         assert_session_log(sessions, root, MINIMAL_TEXT, "COUNT=1", "COUNT=2 CWD=/tmp")
 
-        files = build_minimal_snapshot_files(MockModelHandler.requests[first_request:], root)
+        files = build_minimal_snapshot_files(MockModelHandler.requests[first_request:], root, result)
         compare_snapshot_files(
             files, update_snapshots, MINIMAL_SNAPSHOT_DIRECTORY, MINIMAL_SNAPSHOT_FILENAMES,
         )
@@ -1206,8 +1282,8 @@ def smoke_sdk_fs_search(base_url: str, executable: Path) -> None:
             session_root=str(sessions),
             cordis=str(cordis),
             runtime_bin=str(executable),
-            api_key="sk-keyless-smoke",
-            base_url=base_url,
+            credential=SDK_SMOKE_CREDENTIAL,
+            env=smoke_environment(base_url),
             request_timeout_seconds=60,
         ) as harness:
             result = harness.run(FS_SEARCH_PROMPT)
@@ -1226,7 +1302,7 @@ def smoke_sdk_mcp(base_url: str, executable: Path | None) -> None:
         server_script = root / "mcp_server.py"
         server_script.write_text(MCP_SERVER_SCRIPT)
         cordis = root / "cordis.yml"
-        cordis.write_text(mcp_cordis(server_script))
+        cordis.write_text(mcp_cordis(server_script, base_url))
         discovery_log = server_script.with_suffix(".log")
         with Clocky(
             provider="test-provider",
@@ -1235,8 +1311,8 @@ def smoke_sdk_mcp(base_url: str, executable: Path | None) -> None:
             session_root=str(sessions),
             cordis=str(cordis),
             runtime_bin=None if executable is None else str(executable),
-            api_key="sk-keyless-smoke",
-            base_url=base_url,
+            credential=SDK_SMOKE_CREDENTIAL,
+            env=smoke_environment(base_url),
             request_timeout_seconds=60,
         ) as harness:
             result = harness.run(MCP_PROMPT)
@@ -1347,22 +1423,6 @@ def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) 
         ) + """\
 - id: code-runtime
   name: '@clocky/clocky-code-runtime-worker-thread'
-- id: subagents
-  name: '@clocky/clocky-subagent'
-- id: subagent-spawn-in-process
-  name: '@clocky/clocky-subagent-spawn-in-process'
-  config:
-    providerName: spawn
-- id: subagent-tool
-  name: '@clocky/clocky-tool-subagent'
-  config:
-    provider: spawn
-- id: workflow-engine
-  name: '@clocky/clocky-workflow-worker-thread'
-  config:
-    provider: spawn
-- id: workflow-tool
-  name: '@clocky/clocky-tool-workflow'
 - id: cordis-host-runner
   name: '@clocky/clocky-cordis-host-runner'
 - id: cordis-tool
@@ -1400,19 +1460,10 @@ def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) 
 
         logs = read_session_logs(sessions)
         coordinator_id = snapshot_coordinator_session_id(result)
-        child_ids = snapshot_child_ids(logs, coordinator_id)
-        if not any(event.get("type") == "turn/end" and event.get("data", {}).get("reason", {}).get("kind") == "aborted"
-                   for event in logs[child_ids[0]]):
-            raise AssertionError("advanced child snapshot emitted no cancelled turn")
-        expected_ids = {coordinator_id, *child_ids}
-        if set(logs) != expected_ids:
-            raise AssertionError(f"advanced snapshot expected parent plus two child logs: {sorted(logs)}")
-        if "DIRECT_CHILD_OK" not in render_jsonl(logs[child_ids[0]]):
-            raise AssertionError("first advanced child log has no direct-subagent result")
-        if "WORKFLOW_CHILD_OK" not in render_jsonl(logs[child_ids[1]]):
-            raise AssertionError("second advanced child log has no workflow-subagent result")
-
-        files = build_snapshot_files(result, logs, coordinator_id, child_ids, root)
+        if set(logs) != {coordinator_id}:
+            raise AssertionError(f"advanced snapshot expected one coordinator log: {sorted(logs)}")
+        # Native child completion, cancellation and recovery use the independent sdk-child-team lane.
+        files = build_snapshot_files(result, logs, coordinator_id, root)
         compare_snapshot_files(
             files, update_snapshots, ADVANCED_SNAPSHOT_DIRECTORY, ADVANCED_SNAPSHOT_FILENAMES,
         )
@@ -1429,22 +1480,27 @@ def smoke_direct(base_url: str, executable: Path) -> None:
             "CLOCKY_CORDIS_CONFIG": str(cordis),
             "CLOCKY_SESSION_ROOT": str(sessions),
             "CLOCKY_CWD": str(root),
-            "DEEPSEEK_API_KEY": "sk-keyless-smoke",
-            "DEEPSEEK_BASE_URL": base_url,
+            **smoke_environment(base_url),
         }
         peer = RuntimePeer([str(executable)], root, environment)
         try:
-            peer.send({"jsonrpc": "2.0", "id": "initialize", "method": "initialize", "params": {"cwd": str(root), "provider": "test-provider", "model": "smoke-model"}})
-            peer.read_until(lambda message: message.get("id") == "initialize")
+            peer.send({"jsonrpc": "2.0", "id": "initialize", "method": "initialize", "params": {"credential": SDK_SMOKE_CREDENTIAL, "cwd": str(root), "provider": "test-provider", "model": "smoke-model"}})
+            initialized = peer.read_until(lambda message: message.get("id") == "initialize")[-1]
+            if "error" in initialized:
+                raise AssertionError(f"direct initialization failed: {initialized}")
             peer.send({
                 "jsonrpc": "2.0",
                 "id": "prompt",
-                "method": "session/prompt",
-                "params": {"sessionId": "direct-smoke", "contentBlocks": [{"type": "text", "text": "reply with the smoke text"}]},
+                "method": "team/create",
+                "params": {"objective": "reply with the smoke text", "contentBlocks": [{"type": "text", "text": "reply with the smoke text"}]},
             })
             messages = peer.read_until(lambda message: message.get("id") == "prompt")
-            if not any(is_idle_notification(message) for message in messages):
-                messages.extend(peer.read_until(is_idle_notification))
+            created = next(message for message in messages if message.get("id") == "prompt")
+            if "error" in created:
+                raise AssertionError(f"direct Team creation failed: {created}")
+            peer.send({"jsonrpc": "2.0", "id": "final", "method": "team/wait-final",
+                       "params": {"teamId": created["result"]["teamId"]}})
+            messages.extend(peer.read_until(lambda message: message.get("id") == "final"))
             event_text = json.dumps(messages)
             if EXPECTED_TEXT not in event_text:
                 raise AssertionError(f"direct runtime emitted no final response: {messages}")
@@ -1612,29 +1668,10 @@ def snapshot_coordinator_session_id(result: "RunResult") -> str:
     raise AssertionError("advanced snapshot emitted no coordinator session notification")
 
 
-def snapshot_child_ids(
-    logs: dict[str, list[dict[str, object]]],
-    coordinator_session_id: str,
-) -> list[str]:
-    """Return the direct child session ids in durable creation order."""
-    children: list[tuple[int, str]] = []
-    for session_id, records in logs.items():
-        header = records[0] if records else {}
-        if header.get("parentSession") != coordinator_session_id:
-            continue
-        created_at = header.get("createdAt")
-        if not isinstance(created_at, int):
-            raise AssertionError(f"advanced snapshot child has no numeric createdAt: {session_id}")
-        children.append((created_at, session_id))
-    child_ids = [session_id for _, session_id in sorted(children)]
-    if len(child_ids) != 2:
-        raise AssertionError(f"advanced snapshot expected two child session ids: {child_ids}")
-    return child_ids
-
-
 def build_minimal_snapshot_files(
     requests: list[dict[str, object]],
     cwd: Path,
+    result: "RunResult",
 ) -> dict[str, str]:
     """Render the minimal composition's model-visible surface as expected output.
 
@@ -1645,6 +1682,15 @@ def build_minimal_snapshot_files(
     runtime-context snapshot is dropped, because their text differs across the platforms
     this expected output must replay on.
     """
+    identities = [(result.team_id, "{{team}}"), (result.final.channel_id, "{{channel}}"),
+                  (snapshot_coordinator_session_id(result), "{{coordinator}}")]
+    for event in result.events:
+        if event.get("type") != "user/message":
+            continue
+        source = event.get("data", {}).get("source", {})
+        if source.get("kind") == "team-envelope" and isinstance(source.get("senderId"), str):
+            identities.append((source["senderId"], "{{human-participant}}"))
+    identities.sort(key=lambda pair: len(pair[0]), reverse=True)
     snapshot = []
     for body in requests:
         messages = body.get("messages")
@@ -1658,7 +1704,8 @@ def build_minimal_snapshot_files(
                 if not is_runtime_context_message(message)
             ],
         })
-    return {"model-visible.json": json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n"}
+    stable = minimal_snapshot_text(snapshot, cwd, tuple(identities))
+    return {"model-visible.json": json.dumps(stable, indent=2, ensure_ascii=False) + "\n"}
 
 
 def is_runtime_context_message(message: object) -> bool:
@@ -1694,14 +1741,17 @@ def minimal_snapshot_message(message: object, cwd: Path) -> dict[str, object]:
     raise AssertionError(f"minimal model request has an unexpected message role: {message}")
 
 
-def minimal_snapshot_text(value: object, cwd: Path) -> object:
-    """Replace the scenario's temporary working directory everywhere it appears."""
+def minimal_snapshot_text(value: object, cwd: Path, identities: tuple[tuple[str, str], ...] = ()) -> object:
+    """Replace owned cwd and native identities without changing message content or tool schemas."""
     if isinstance(value, str):
-        return value.replace(str(cwd), "{{cwd}}")
+        stable = value.replace(str(cwd), "{{cwd}}")
+        for actual, token in identities:
+            stable = stable.replace(actual, token)
+        return stable
     if isinstance(value, list):
-        return [minimal_snapshot_text(item, cwd) for item in value]
+        return [minimal_snapshot_text(item, cwd, identities) for item in value]
     if isinstance(value, dict):
-        return {key: minimal_snapshot_text(item, cwd) for key, item in value.items()}
+        return {key: minimal_snapshot_text(item, cwd, identities) for key, item in value.items()}
     return value
 
 
@@ -1709,10 +1759,9 @@ def build_snapshot_files(
     result: "RunResult",
     logs: dict[str, list[dict[str, object]]],
     coordinator_session_id: str,
-    child_ids: list[str],
     cwd: Path,
 ) -> dict[str, str]:
-    """Render the SDK result and three persisted logs into stable expected outputs."""
+    """Render the dynamic-tool SDK result and its coordinator log into stable expected outputs."""
     replacements = [(str(cwd), "{{cwd}}"), (coordinator_session_id, "{{coordinator}}")]
     replacements.extend([
         (result.team_id, "{{team}}"),
@@ -1728,9 +1777,6 @@ def build_snapshot_files(
         (sources[0]["envelopeId"], "{{input-envelope}}"),
         (sources[0]["senderId"], "{{human-participant}}"),
     ])
-    replacements.append((snapshot_workflow_run_id(result), "{{workflow-run}}"))
-    for index, child_id in enumerate(child_ids, start=1):
-        replacements.append((child_id, f"{{{{child-{index}}}}}"))
     replacements.sort(key=lambda pair: len(pair[0]), reverse=True)
 
     result_value = {
@@ -1757,28 +1803,7 @@ def build_snapshot_files(
             ])
         ),
     }
-    for index, child_id in enumerate(child_ids, start=1):
-        files[f"session.{index}.jsonl"] = render_jsonl(
-            project_session_snapshot([
-                normalize_snapshot_value(record, replacements) for record in logs[child_id]
-            ])
-        )
     return files
-
-
-def snapshot_workflow_run_id(result: "RunResult") -> str:
-    """Return the one workflow run id emitted by the advanced scenario."""
-    run_ids: set[str] = set()
-    for event in result.events:
-        event_type = event.get("type")
-        data = event.get("data")
-        if not isinstance(event_type, str) or not event_type.startswith("tool-workflow/"):
-            continue
-        if isinstance(data, dict) and isinstance(data.get("runId"), str):
-            run_ids.add(data["runId"])
-    if len(run_ids) != 1:
-        raise AssertionError(f"advanced snapshot expected one workflow run id: {sorted(run_ids)}")
-    return next(iter(run_ids))
 
 
 def normalize_snapshot_value(

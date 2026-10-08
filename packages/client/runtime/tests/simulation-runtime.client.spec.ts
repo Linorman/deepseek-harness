@@ -113,6 +113,27 @@ it('bounds review pages, cancels replaced runs and clears their metadata on auth
   } finally { await h.ctx.fiber.dispose() }
 })
 
+it('keeps a task-control page on the latest run when an older task read settles late', async () => {
+  const h = await fixture()
+  try {
+    const first = { runId, snapshotRevision: 1, observedAt: 1, total: 0, items: [] }
+    const nextRun = 'next-run' as never
+    const pending = Promise.withResolvers<ReturnType<typeof ok<typeof first>>>()
+    const list = vi.spyOn(h.api.simulations, 'listTasks').mockReturnValueOnce(pending.promise)
+      .mockResolvedValueOnce(ok({ ...first, runId: nextRun }))
+    const old = h.runtime.listTasks({ runId, limit: 1 })
+    await vi.waitFor(() => { expect(list).toHaveBeenCalledOnce() })
+    await h.runtime.listTasks({ runId: nextRun, limit: 1 })
+    expect(list.mock.calls[0]?.[1]?.aborted).toBe(true)
+    pending.resolve(ok(first)); await old
+    expect(h.runtime.state.getSnapshot().tasks.value?.runId).toBe(nextRun)
+    h.runtime.disconnected()
+    expect(h.runtime.state.getSnapshot().tasks.stale).toBe(true)
+    h.runtime.connected('new-authority' as never)
+    expect(h.runtime.state.getSnapshot().tasks.value).toBeUndefined()
+  } finally { await h.ctx.fiber.dispose() }
+})
+
 it('refuses administrative review reads without withdrawing independently authorized viewing', async () => {
   const h = await fixture()
   try {

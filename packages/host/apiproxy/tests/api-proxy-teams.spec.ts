@@ -346,6 +346,8 @@ describe('Team API', () => {
       cwd: process.cwd(),
     })
     if (api.teams === undefined) throw new Error('Team API was not registered')
+    const client = new InProcessApiClient(authenticatedFetch(api))
+    expect((await client.teams.metrics({})).result).toMatchObject({ ok: true, value: { taskLatency: { count: 0 } } })
     const create = vi.spyOn(ctx.teamRuns, 'create').mockRejectedValue(new TeamRun.TeamRunError(
       'test TeamRun route', 'TEAM_RUN_WORKER_PRESET_REQUIRED',
     ))

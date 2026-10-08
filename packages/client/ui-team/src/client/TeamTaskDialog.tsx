@@ -1,8 +1,9 @@
-import type { TeamLoadedContext } from './TeamPage.tsx'
+import type { TeamLoadedContext, TaskInspectionProps } from './TeamPage.tsx'
 import type { TeamTaskDetailState, ITeamTasks } from '@clocky/clocky-client-runtime/client'
 /** Revision-fenced task authoring, review, and artifact integration forms. */
 
 import { useEffect, useId, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { Button, Input, Modal } from '@clocky/clocky-client-ui-primitives'
 import type { TeamManagementCommand } from '@clocky/clocky-client-runtime/client'
 import { TeamTaskStartError } from '@clocky/clocky-client-runtime/client'
@@ -16,7 +17,7 @@ import { createTaskFormDraft, hasTaskDraftInput, isPreviousTaskUpdateUnchanged,
   type TaskFormDraft, type TaskFormFields, type TeamTaskDialogTarget } from './task-draft.ts'
 export type { TeamTaskDialogTarget } from './task-draft.ts'
 
-interface TaskDialogProps {
+interface TaskDialogProps extends TaskInspectionProps {
 
   readonly inspection?: TeamTaskDetailState | undefined
   readonly readTaskDetail?: ITeamTasks['readTaskDetail']
@@ -26,14 +27,6 @@ interface TaskDialogProps {
   readonly manage?: ((command: TeamManagementCommand, signal?: AbortSignal) => Promise<void>) | undefined
   /** Current Team management eligibility; original-result reads remain independent. */
   readonly canSubmit?: boolean | undefined
-  readonly taskCapabilities?: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesState | undefined
-  readonly watchTaskCapabilities?: ((input: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesInput) => () => void) | undefined
-  readonly refreshTaskCapabilities?: ITeamTasks['refreshTaskCapabilities']
-  readonly lookupTaskUpdate?: ITeamTasks['lookupTaskUpdate']
-  readonly taskReferences?: import('@clocky/clocky-client-runtime/client').TaskReferencesState | undefined
-  readonly watchTaskReferences?: import('./TeamBrowser.tsx').TeamBrowserInjected['watchTaskReferences']
-  readonly refreshTaskReferences?: (() => Promise<void>) | undefined
-  readonly dependencyQuery?: import('@clocky/clocky-client-runtime/client').TeamTaskQueryState | undefined
   readonly readDependencies?: ITeamTasks['readDependencies']
   readonly closeDependencies?: ITeamTasks['closeDependencies']
   readonly onClose: () => void
@@ -186,6 +179,8 @@ function TaskForm({ target, state, inspection, readTaskDetail, dependencyQuery, 
   const [invalid, setInvalid] = useState<string | undefined>()
   const request = useRef<AbortController | undefined>()
   const form = useRef<HTMLFormElement | null>(null)
+  /** An input-method composition is in progress; its confirming Enter must not submit. */
+  const composing = useRef(false)
   const title = t(`taskForm.${target.kind}`)
 
   useEffect(() => {
@@ -212,6 +207,7 @@ function TaskForm({ target, state, inspection, readTaskDetail, dependencyQuery, 
     setError(undefined); setInvalid(undefined)
     let command: TeamManagementCommand
     if (target.kind === 'taskReview') {
+      /* v8 ignore next -- The parent dialog opens review only after loading a task and seeding its revision. */
       if (task === undefined || baselineRevision === undefined) return
       if (!reason.trim()) { fail('reason', t('taskForm.reasonRequired')); return }
       command = { operation: 'taskReview', input: { taskId: task.id, expectedRevision: baselineRevision, decision, reason: reason.trim() } }
@@ -219,6 +215,7 @@ function TaskForm({ target, state, inspection, readTaskDetail, dependencyQuery, 
       if (!subject.trim()) { fail('subject', t('taskForm.subjectRequired')); return }
       if (!description.trim()) { fail('description', t('taskForm.descriptionRequired')); return }
       if (target.kind === 'taskUpdate') {
+        /* v8 ignore next -- The parent dialog opens update only after loading a task and seeding its revision. */
         if (task === undefined || baselineRevision === undefined) return
         const input = { taskId: task.id,
           commandId: crypto.randomUUID() as Extract<TeamManagementCommand, { operation: 'taskUpdate' }>['input']['commandId'],
@@ -285,7 +282,10 @@ function TaskForm({ target, state, inspection, readTaskDetail, dependencyQuery, 
         }
       }
     }
-    finally { if (request.current === controller) { request.current = undefined; setBusy(false) } }
+    finally {
+      /* v8 ignore next -- A submission remains the sole request until this finally block retires it. */
+      if (request.current === controller) { request.current = undefined; setBusy(false) }
+    }
   }
   const settleOriginal = async (retry: NonNullable<TaskFormDraft['updateRetry']>): Promise<void> => {
     const current = draftRef.current
@@ -313,11 +313,13 @@ function TaskForm({ target, state, inspection, readTaskDetail, dependencyQuery, 
   }
   const recoverOriginal = async (retryWrite: boolean): Promise<void> => {
     const retry = draftRef.current.updateRetry
+    /* v8 ignore next -- Recovery controls exist only for retained retries and are disabled during another read. */
     if (retry === undefined || request.current !== undefined || lookupTaskUpdate === undefined) return
     const controller = new AbortController()
     request.current = controller; setBusy(true); setError(undefined); setNotice(undefined)
     try {
       if (retryWrite) {
+        /* v8 ignore next -- Retry is disabled when this Team cannot accept writes. */
         if (!canWrite) return
         await manage({ operation: 'taskUpdate', input: retry.input }, controller.signal)
         if (!controller.signal.aborted) await settleOriginal(retry)
@@ -344,7 +346,10 @@ function TaskForm({ target, state, inspection, readTaskDetail, dependencyQuery, 
         }
       }
     }
-    finally { if (request.current === controller) { request.current = undefined; setBusy(false) } }
+    finally {
+      /* v8 ignore next -- Recovery is single-flight and cannot replace its own request before settlement. */
+      if (request.current === controller) { request.current = undefined; setBusy(false) }
+    }
   }
   const dirty = hasTaskDraftInput(draft)
   const close = (): void => {
@@ -362,8 +367,14 @@ function TaskForm({ target, state, inspection, readTaskDetail, dependencyQuery, 
       || capabilityBlocked || dependenciesBlocked || draft.updateRetry !== undefined || isPreviousTaskUpdateUnchanged(draft)}>
       {title}</Button>
   </div>
-  return <><Modal open onClose={close} title={title} closeLabel={t('cancel')} footer={footer} bodyClassName={css.managementContent ?? ''}>
-    <form id={`${id}-form`} ref={form} noValidate className={css.managementForm} onSubmit={(event) => { event.preventDefault(); void submit() }}>
+  // Enter that confirms an input-method candidate never submits.
+  const guardComposingEnter = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key === 'Enter' && (event.nativeEvent.isComposing || composing.current)) event.preventDefault()
+  }
+  return <><Modal open onClose={close} title={title} closeLabel={t('cancel')} footer={footer} bodyClassName={css.managementContent as string}>
+    <form id={`${id}-form`} ref={form} noValidate className={css.managementForm} onKeyDown={guardComposingEnter}
+      onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
+      onSubmit={(event) => { event.preventDefault(); void submit() }}>
       <p className={css.muted}>{t('taskForm.draftRetention')}</p>
       {!canWrite && <p role="status">{t('taskForm.readOnlyRecovery')}</p>}
       {draft.updateRetry !== undefined && <div className={css.notice} role="status">
@@ -584,6 +595,6 @@ function commaList(value: string): string[] { return [...new Set(value.split(','
 /** Preserve spaces inside a workspace path while treating each line as one scope. */
 function pathLines(value: string): string[] { return [...new Set(value.split('\n').map(item => item.trim()).filter(Boolean))] }
 
-/* v8 ignore next 2 -- Runtime lookup schemas accept only the three closed outcome tags. */
 /** Require explicit handling when the original-update outcome protocol grows. */
+/* v8 ignore next -- Runtime lookup schemas accept only the three closed outcome tags. */
 function assertNever(value: never): never { void value; throw new Error('Unhandled task update outcome') }

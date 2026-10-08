@@ -1,0 +1,295 @@
+/* Mission banner, overview visualization panel, agent pods, and feed motion.
+   Mode identity tokens appear only on chrome (banner edge, panel header);
+   every state mark reads a status role. */
+
+.banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--clocky-space-4);
+  margin: var(--clocky-space-3) 0 0;
+  padding: var(--clocky-space-3) var(--clocky-space-4);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-surface-glass);
+  backdrop-filter: var(--clocky-blur-glass);
+  overflow: hidden;
+}
+
+.banner::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--clocky-mode-team-gradient);
+  opacity: 0.8;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--clocky-space-1);
+}
+
+.metric dt {
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-tertiary);
+}
+
+.metric dd {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--clocky-space-1);
+  font: var(--clocky-type-metric);
+  color: var(--clocky-fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.metric dd small {
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-tertiary);
+}
+
+.metric[data-attention] dd {
+  color: var(--clocky-status-needs-you-fg);
+}
+
+.metricUnavailable {
+  display: inline-block;
+  min-width: var(--clocky-space-8);
+  border: 1px dashed var(--clocky-border-default);
+  border-radius: var(--clocky-radius-xs);
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-tertiary);
+  text-align: center;
+}
+
+.ringCenter {
+  font: var(--clocky-type-label);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1100px) {
+  .banner {
+    grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-3);
+  padding: var(--clocky-space-4);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-surface);
+  min-width: 0;
+}
+
+.panelHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--clocky-space-2);
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font: var(--clocky-type-heading);
+}
+
+.panelMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--clocky-space-2);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-tertiary);
+}
+
+.legendItem {
+  white-space: nowrap;
+}
+
+.note {
+  margin: 0;
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-tertiary);
+}
+
+.planPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--clocky-space-2);
+}
+
+.planPicker button {
+  padding: var(--clocky-space-1) var(--clocky-space-3);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-full);
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-secondary);
+  background: var(--clocky-bg-control);
+  cursor: pointer;
+}
+
+.planPicker button[aria-pressed="true"] {
+  border-color: var(--clocky-accent-subtle-border);
+  color: var(--clocky-accent-fg);
+  background: var(--clocky-accent-subtle);
+}
+
+.planPicker button:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+}
+
+/* Agent pods: a state ring around the avatar; status role colors only. */
+.pod {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  padding: 2px;
+  border-radius: var(--clocky-radius-full);
+  box-shadow: 0 0 0 2px var(--clocky-status-idle-border);
+}
+
+.pod[data-state="running"] { box-shadow: var(--clocky-glow-running); }
+.pod[data-state="waiting"] { box-shadow: 0 0 0 2px var(--clocky-status-waiting-fg); }
+.pod[data-state="needs-you"] { box-shadow: var(--clocky-glow-needs-you); }
+.pod[data-state="blocked"] { box-shadow: 0 0 0 2px var(--clocky-status-blocked-fg); }
+.pod[data-state="failed"] { box-shadow: var(--clocky-glow-failed); }
+.pod[data-state="done"] { box-shadow: var(--clocky-glow-done); }
+
+.pod[data-stale] {
+  filter: saturate(0.2);
+  opacity: 0.7;
+}
+
+/* Feed entries observed live enter with a stagger (L2). */
+.feedEnter {
+  animation: feed-in var(--clocky-duration-slow) var(--clocky-ease-emphasized) backwards;
+  animation-delay: calc(var(--stagger, 0) * var(--clocky-stagger-step));
+}
+
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+
+.burst {
+  margin: 0 0 var(--clocky-space-1);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-accent-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedEnter { animation: fade var(--clocky-duration-fade) linear backwards; }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+}
+.bannerMoment { border-radius: var(--clocky-radius-lg); }
+
+.panelBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-3);
+  min-width: 0;
+}
+
+/* Overview first row: the visualization beside the attention rail. */
+.overviewTop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-areas: "viz rail";
+  gap: var(--clocky-space-5);
+  align-items: start;
+}
+
+.overviewTop > section {
+  grid-area: viz;
+}
+
+.attentionRail {
+  grid-area: rail;
+  display: grid;
+  align-content: start;
+  gap: var(--clocky-space-4);
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .overviewTop {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "rail" "viz";
+  }
+}
+
+/* Switching between equivalent views crossfades with a short rise, so the
+   new view arrives from the same place instead of teleporting in. */
+.viewEnter {
+  animation: view-in var(--clocky-duration-base) var(--clocky-ease-enter) both;
+}
+
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+.planPicker button {
+  transition: transform var(--clocky-duration-instant) var(--clocky-ease-enter), background var(--clocky-duration-fast) var(--clocky-ease-standard);
+}
+
+.planPicker button:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .viewEnter { animation: fade var(--clocky-duration-fade) linear both; }
+}
+
+/* Header chrome ------------------------------------------------------- */
+.eyebrow {
+  justify-self: start;
+  padding: 0 var(--clocky-space-2);
+  border-radius: var(--clocky-radius-full);
+  font: var(--clocky-type-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--clocky-mode-team-fg);
+  background: var(--clocky-mode-team-subtle);
+}
+
+/* Module underline: follows the selected tab; only its transform animates. */
+.tabIndicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--indicator-width, 0);
+  height: 2px;
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-mode-team-gradient);
+  opacity: var(--indicator-opacity, 0);
+  transform: translate(var(--indicator-x, 0), calc(var(--indicator-y, 0) + var(--indicator-height, 0) + 6px));
+  pointer-events: none;
+}
+
+.tabIndicator[data-ready] {
+  transition: transform var(--clocky-duration-slow) var(--clocky-ease-spring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabIndicator[data-ready] { transition: none; }
+}
+
+.panel {
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-xl);
+  background:
+    radial-gradient(90% 120% at 100% 0%, var(--clocky-mode-team-subtle), transparent 55%) padding-box,
+    linear-gradient(var(--clocky-surface-glass), var(--clocky-surface-glass)) padding-box,
+    linear-gradient(160deg, color-mix(in srgb, var(--clocky-mode-team-fg) 40%, transparent), var(--clocky-border-subtle) 40%) border-box;
+  backdrop-filter: var(--clocky-blur-glass);
+}

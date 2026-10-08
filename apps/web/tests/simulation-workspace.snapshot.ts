@@ -22,7 +22,7 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
   importedSpec.relationRules = [{ relation: 'supplies', subjectKinds: ['org'], objectKinds: ['org'], scopeKinds: ['org'], acyclic: false }]
   const configuredOverlay = join(local.root, 'overlay.json')
   await writeFile(configuredOverlay, JSON.stringify(config))
-  const scaffold = await launchWebScaffold({ extraOverlayPath: configuredOverlay, tempRoot: root, productPrincipalId: 'simulation-browser-user' })
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: configuredOverlay, tempRoot: root, productPrincipalId: 'simulation-browser-user' })
   const { context, setNativeZoom } = await createNativeZoomContext(root, { viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const page = await context.newPage()
   const errors = watchConsole(page)
@@ -67,7 +67,12 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
     await workspace.getByRole('button').filter({ hasText: '物流仿真' }).waitFor()
     expect(await workspace.locator('li').count()).toBe(2)
     const row = workspace.locator('li').filter({ hasText: '物流仿真' })
-    await row.getByText('9007199254740993 minute', { exact: true }).waitFor()
+    // Status refresh lives in the run list's ⋯ menu.
+    const refreshStatuses = async () => {
+      await workspace.getByRole('button', { name: '运行列表操作', exact: true }).click()
+      await page.getByRole('menuitem', { name: '刷新运行状态', exact: true }).click()
+    }
+    await row.getByTitle('9007199254740993 minute', { exact: true }).waitFor()
     await row.getByText('运行详情', { exact: true }).click()
     await row.getByText('规则版本', { exact: true }).waitFor()
     await row.getByText('策略版本', { exact: true }).waitFor()
@@ -75,22 +80,22 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
     expect(statuses.length).toBeGreaterThan(0)
     expect(statuses[0]).toHaveLength(2)
     await page.route('**/api/simulation.runs.statuses', route => route.abort('failed'))
-    await workspace.getByRole('button', { name: '刷新运行状态', exact: true }).click()
-    await workspace.getByText('保留的观察可能已过期，请刷新核对。', { exact: true }).first().waitFor()
-    expect(await row.getByText('9007199254740993 minute', { exact: true }).count()).toBe(1)
+    await refreshStatuses()
+    await workspace.getByText('有更新 · 刷新核对', { exact: true }).first().waitFor()
+    expect(await row.getByTitle('9007199254740993 minute', { exact: true }).count()).toBe(1)
     await page.unroute('**/api/simulation.runs.statuses')
-    await workspace.getByRole('button', { name: '刷新运行状态', exact: true }).click()
-    await expect.poll(async () => await workspace.getByText('保留的观察可能已过期，请刷新核对。', { exact: true }).count()).toBe(0)
+    await refreshStatuses()
+    await expect.poll(async () => await workspace.getByText('有更新 · 刷新核对', { exact: true }).count()).toBe(0)
     await page.screenshot({ path: join(root, '01-runs-desktop.png'), animations: 'disabled' })
     await simulationReadPresentation(page, root, `${backend}-runs`, setNativeZoom)
     await workspace.getByRole('button').filter({ hasText: '物流仿真' }).click()
-    await workspace.getByText('9007199254740993 minute', { exact: true }).waitFor()
+    await workspace.getByTitle('9007199254740993 minute', { exact: true }).waitFor()
     await workspace.getByText('当前查看部署未提供运行管理。', { exact: true }).waitFor()
     await workspace.getByRole('navigation', { name: '仿真模块' }).getByRole('button', { name: '实体', exact: true }).click()
     await workspace.getByRole('table').getByRole('button', { name: '查看详情' }).first().waitFor()
     expect(objectReads).toBe(0)
     const headerStatus = workspace.getByRole('region', { name: '当前仿真状态', exact: true })
-    await headerStatus.getByText('9007199254740993 minute', { exact: true }).waitFor()
+    await headerStatus.getByTitle('9007199254740993 minute', { exact: true }).waitFor()
     await headerStatus.getByText('浏览器连接', { exact: true }).waitFor()
     expect(await workspace.getByRole('table').getByRole('row').count()).toBe(3)
     await workspace.getByRole('button', { name: '筛选状态', exact: true }).click()
@@ -133,8 +138,8 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
     await page.screenshot({ path: join(root, '02-entity-desktop.png'), animations: 'disabled' })
     await simulationReadPresentation(page, root, `${backend}-entities`, setNativeZoom)
     const entityUrl = page.url()
-    const workspaceNavigation = page.getByRole('navigation', { name: '工作区', exact: true })
-    await workspaceNavigation.getByRole('button', { name: '团队工作', exact: true }).click()
+    const workspaceNavigation = page.getByRole('navigation', { name: '主导航', exact: true })
+    await workspaceNavigation.getByRole('button', { name: '团队任务', exact: true }).click()
     await workspace.waitFor({ state: 'hidden' })
     await workspaceNavigation.getByRole('button', { name: '仿真', exact: true }).click()
     await workspace.getByRole('complementary', { name: '查看详情' }).getByRole('button', { name: '复制完整 ID' }).waitFor()
@@ -144,7 +149,7 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
     for (const [module, title] of [['overview', '概览'], ['decisions', '决策'], ['operations', '操作'], ['checkpoints', '检查点']] as const) {
       await workspace.getByRole('navigation', { name: '仿真模块' }).getByRole('button', { name: title, exact: true }).click()
       await expect.poll(() => workspace.getByRole('button', { name: '刷新', exact: true }).isEnabled()).toBe(true)
-      expect(new URL(page.url()).searchParams.get('simulationModule')).toBe(module === 'overview' ? null : module)
+      await expect.poll(() => new URL(page.url()).searchParams.get('simulationModule')).toBe(module === 'overview' ? null : module)
       await simulationReadPresentation(page, root, `${backend}-${module}`, setNativeZoom)
     }
     await page.evaluate((url) => { window.history.pushState(null, '', url); window.dispatchEvent(new PopStateEvent('popstate')) }, entityUrl)
@@ -156,10 +161,12 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
       return box !== null && box.x >= 0 && box.x + box.width <= 390
     }).toBe(true)
     const modulePicker = workspace.getByRole('button', { name: '仿真模块: 实体', exact: true })
-    await expect.poll(async () => {
-      const box = await modulePicker.boundingBox()
-      return box !== null && box.y + box.height < 300
-    }).toBe(true)
+    await expect.poll(() => modulePicker.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      return box.width > 0 && box.height > 0 && box.x >= 0 && box.right <= innerWidth
+        && box.y >= 0 && box.bottom <= innerHeight
+        && element.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2))
+    })).toBe(true)
     await modulePicker.click()
     await page.getByRole('menuitem', { name: '检查点', exact: true }).waitFor()
     await page.keyboard.press('Escape')

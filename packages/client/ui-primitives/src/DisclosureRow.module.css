@@ -32,7 +32,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 button.leading {
@@ -42,7 +42,7 @@ button.leading {
 .iconIdle {
   display: inline-flex;
   opacity: 1;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .chevronHover {
@@ -50,7 +50,7 @@ button.leading {
   inset: 0;
   margin: auto;
   opacity: 0;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .row:hover .iconIdle {
@@ -63,7 +63,7 @@ button.leading {
 
 .title {
   flex: none;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-secondary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-secondary);
 }

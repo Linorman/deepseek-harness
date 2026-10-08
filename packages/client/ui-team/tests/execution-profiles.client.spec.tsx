@@ -59,4 +59,48 @@ it('blocks denied catalogs, offers refresh and clears a selected profile when th
   expect((view.getByRole('button', { name: en['manage.memberInvite'] }) as HTMLButtonElement).disabled).toBe(true)
   fireEvent.click(view.getByRole('button', { name: en['manage.profilesRefresh'] }))
   expect(p.refreshExecutionProfiles).toHaveBeenCalledOnce()
+  fireEvent.submit(view.getByRole('dialog').querySelector('form')!)
+  expect(view.getByRole('alert').textContent).toBe(en['manage.profileUnavailable'])
+  expect(p.manage).not.toHaveBeenCalled()
+  view.rerender(<TeamManagementDialog {...p} executionProfiles={{ ...state(),
+    input: { teamId: team.id, kind: 'service' }, loading: true, disconnected: true,
+    error: 'Profiles offline', value: undefined }} />)
+  expect(view.getByText(en['manage.profilesLoading'])).toBeTruthy()
+  expect(view.getAllByRole('status').map(item => item.textContent)).toContain(en['manage.profileUnavailable'])
+  expect(view.getAllByRole('alert').map(item => item.textContent)).toContain('Profiles offline')
+  view.rerender(<TeamManagementDialog {...p} executionProfiles={{ ...state(),
+    input: { teamId: team.id, kind: 'service' }, value: { teamId: team.id,
+      kind: 'service', revision: 1, allowed: true, items: [] } }} />)
+  expect(view.getByText(en['manage.profilesEmpty'])).toBeTruthy()
+})
+
+it('pages profile choices, returns to manual fields and submits an authored member invitation', async () => {
+  const p = props()
+  const first = state()
+  const cursor = { teamId: team.id, kind: 'local-agent' as const, revision: 1, offset: 1 }
+  const view = render(<TeamManagementDialog {...p} executionProfiles={{ ...first,
+    value: { ...first.value!, nextCursor: cursor, items: [{ ...profile,
+      preset: 'fast', available: false, reasons: ['provider-unavailable'] }] } }} />)
+  expect(document.body.textContent).toContain(en['readiness.reason.provider-unavailable'])
+  fireEvent.click(view.getByRole('button', { name: en['manage.profilesNext'] }))
+  expect(p.watchExecutionProfiles).toHaveBeenLastCalledWith({ teamId: team.id,
+    kind: 'local-agent', cursor })
+  fireEvent.click(view.getByRole('button', { name: en['manage.profilesRefresh'] }))
+  expect(p.watchExecutionProfiles).toHaveBeenLastCalledWith({ teamId: team.id, kind: 'local-agent' })
+  view.rerender(<TeamManagementDialog {...p} executionProfiles={state(true)} />)
+  fireEvent.click(view.getByRole('radio', { name: /custom-role/ }))
+  expect((view.getByLabelText(en['manage.role']) as HTMLInputElement).readOnly).toBe(true)
+  fireEvent.click(view.getByRole('radio', { name: en['manage.manualProfile'] }))
+  fireEvent.change(view.getByLabelText(en['manage.name']), { target: { value: '  Manual worker  ' } })
+  fireEvent.change(view.getByLabelText(en['manage.role']), { target: { value: 'reviewer' } })
+  fireEvent.change(view.getByLabelText(en['manage.capabilities']), { target: { value: 'search, search, write' } })
+  fireEvent.change(view.getByLabelText(en['manage.provider']), { target: { value: 'local' } })
+  fireEvent.change(view.getByLabelText(en['manage.preset']), { target: { value: 'fast' } })
+  fireEvent.change(view.getByLabelText(en['manage.model']), { target: { value: 'model-a' } })
+  fireEvent.click(view.getByRole('button', { name: en['manage.memberInvite'] }))
+  await waitFor(() => { expect(p.manage).toHaveBeenCalledWith({ operation: 'memberInvite', input: {
+    expectedCursor: team.cursor, kind: 'local-agent', displayName: 'Manual worker', role: 'reviewer',
+    capabilities: ['search', 'write'], provider: 'local', preset: 'fast', model: 'model-a',
+  } }, expect.any(AbortSignal)) })
+  expect(p.onClose).toHaveBeenCalledOnce()
 })

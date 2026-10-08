@@ -13,15 +13,15 @@
   height: 28px;
   padding: 6px;
   border: none;
-  border-radius: 28px;
+  border-radius: var(--clocky-radius-xl);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
 .action:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-secondary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-secondary);
 }
 
 .action:disabled {
@@ -32,7 +32,7 @@
 /* A recorded rating stays legible without hover, so the signal survives a
    pointer leaving the row. */
 .action[data-active] {
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .noteOpen {
@@ -40,11 +40,11 @@
   overflow: hidden;
   padding: 0 8px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--clocky-radius-lg);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 13px;
-  line-height: 28px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
@@ -52,15 +52,15 @@
 
 .noteOpen:hover,
 .noteOpen[aria-expanded='true'] {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-secondary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-secondary);
 }
 
 /* Portal surface: fixed in the viewport, left/top supplied inline from the
    trigger rect. Portaled panels must layer above modal overlays (z 1000). */
 .notePanel {
   position: fixed;
-  z-index: 1100;
+  z-index: var(--clocky-layer-popover);
   box-sizing: border-box;
   width: 320px;
   max-width: min(360px, calc(100vw - 24px));
@@ -75,24 +75,24 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 12px;
-  background: var(--clocky-specific-menu);
-  box-shadow: var(--clocky-shadow-lv3);
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .noteInput {
   width: 100%;
   box-sizing: border-box;
   padding: 6px 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 8px;
-  background: var(--clocky-alias-bg-layer-1);
-  color: var(--clocky-alias-label-primary);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-surface);
+  color: var(--clocky-fg-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
   resize: vertical;
 }
 
@@ -107,18 +107,18 @@
   height: 28px;
   padding: 0 10px;
   border: none;
-  border-radius: 14px;
-  font-size: 13px;
+  border-radius: var(--clocky-radius-lg);
+  font-size: var(--clocky-type-label-size);
   cursor: pointer;
 }
 
 .noteSave {
-  background: var(--clocky-alias-button-primary-fill);
-  color: var(--clocky-alias-label-primary-foreground);
+  background: var(--clocky-accent-bg);
+  color: var(--clocky-fg-on-accent);
 }
 
 .noteSave:hover:not(:disabled) {
-  background: var(--clocky-alias-button-primary-hover);
+  background: var(--clocky-accent-bg-hover);
 }
 
 .noteSave:disabled {
@@ -128,17 +128,17 @@
 
 .noteCancel {
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .noteCancel:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-secondary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-secondary);
 }
 
 .failure {
   padding-left: 4px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 13px;
-  line-height: 20px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
 }

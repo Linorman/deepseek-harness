@@ -89,8 +89,11 @@ export function hasApiRemoteSubagentOwner(
   agent: Agent | undefined,
 ): boolean {
   const seedLength = session.header.seedLength ?? 0
-  if (session.events?.some(event =>
-    String(event.type) === 'subagent/descriptor' && event.seq >= seedLength) === true) return true
+  if (session.events?.some((event) => {
+    // This BFF recognizes the optional compat owner's durable discriminator without loading that plugin.
+    const type: string = event.type
+    return type === 'subagent/descriptor' && event.seq >= seedLength
+  }) === true) return true
   const parentId = session.header.parentSession
   if (parentId === undefined || agent === undefined) return false
   const parent = ctx.agents.get(parentId)
@@ -163,6 +166,14 @@ export function createApiRemoteAgentResolver(
 ): (sessionId: SessionId) => Promise<ApiRemoteAgentResult> {
   const resumes = new Map<SessionId, Promise<Agent>>()
 
+  const attachedOwnershipError = (sessionId: SessionId): ApiRemoteLookupError | undefined => {
+    const attached = ctx.sessions.get(sessionId)
+    if (attached === undefined) return undefined
+    if (hasApiRemoteTeamOwner(attached)) return apiRemoteTeamOwnershipError(sessionId)
+    if (hasApiRemoteSubagentOwner(ctx, attached, undefined)) return apiRemoteSubagentOwnershipError(sessionId)
+    return undefined
+  }
+
   const fencedLiveAgent = (sessionId: SessionId): ApiRemoteAgentResult | undefined => {
     const live = ctx.agents.get(sessionId)
     if (live === undefined) return undefined
@@ -178,13 +189,8 @@ export function createApiRemoteAgentResolver(
   const agentFor = async (sessionId: SessionId): Promise<ApiRemoteAgentResult> => {
     const fenced = fencedLiveAgent(sessionId)
     if (fenced !== undefined) return fenced
-    const attached = ctx.sessions.get(sessionId)
-    if (attached !== undefined && hasApiRemoteTeamOwner(attached)) {
-      return { error: apiRemoteTeamOwnershipError(sessionId) }
-    }
-    if (attached !== undefined && hasApiRemoteSubagentOwner(ctx, attached, undefined)) {
-      return { error: apiRemoteSubagentOwnershipError(sessionId) }
-    }
+    const ownershipError = attachedOwnershipError(sessionId)
+    if (ownershipError !== undefined) return { error: ownershipError }
     let resume = resumes.get(sessionId)
     if (resume === undefined) {
       resume = (async () => {
@@ -236,13 +242,8 @@ export function createApiRemoteAgentResolver(
       }
       const fenced = fencedLiveAgent(sessionId)
       if (fenced !== undefined) return fenced
-      const attached = ctx.sessions.get(sessionId)
-      if (attached !== undefined && hasApiRemoteTeamOwner(attached)) {
-        return { error: apiRemoteTeamOwnershipError(sessionId) }
-      }
-      if (attached !== undefined && hasApiRemoteSubagentOwner(ctx, attached, undefined)) {
-        return { error: apiRemoteSubagentOwnershipError(sessionId) }
-      }
+      const ownershipError = attachedOwnershipError(sessionId)
+      if (ownershipError !== undefined) return { error: ownershipError }
       return {
         error: {
           code: 'internal',

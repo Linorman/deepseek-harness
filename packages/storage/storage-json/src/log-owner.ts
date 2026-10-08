@@ -35,7 +35,10 @@ export async function acquireJsonLogOwner(directory: string): Promise<JsonLogOwn
       const ownership = `${JSON.stringify({ host: hostname(), pid: process.pid, nonce: randomUUID() })}\n`
       await handle.writeFile(ownership, 'utf8')
       await handle.sync()
-      return new FileLogOwner(path, handle)
+      // Ownership is the durable record and live PID, not an operating-system
+      // descriptor lock. Retained records must not retain an open native handle.
+      await handle.close()
+      return new FileLogOwner(path)
     } catch (error) {
       /* v8 ignore next -- a fault after exclusive creation requires filesystem-error injection outside this owner contract. */
       if (created) {
@@ -124,34 +127,11 @@ async function quarantineStaleOwner(path: string, nonce: string): Promise<void> 
 class FileLogOwner implements JsonLogOwner {
   private closed = false
 
-  constructor(
-    private readonly path: string,
-    private readonly handle: FileHandle,
-  ) {}
+  constructor(private readonly path: string) {}
 
   async close(): Promise<void> {
     if (this.closed) return
     this.closed = true
-    let closeError: Error | undefined
-    /* v8 ignore start -- close/remove failures require a filesystem-fault injector after the handle has been acquired. */
-    try {
-      await this.handle.close()
-    } catch (error) {
-      closeError = asError(error)
-    }
-    try {
-      await rm(this.path, { force: true })
-    } catch (error) {
-      if (closeError === undefined) throw error
-      throw new AggregateError([closeError, error], 'JSON log owner release failed')
-    }
-    if (closeError !== undefined) throw closeError
-    /* v8 ignore stop */
+    await rm(this.path, { force: true })
   }
-}
-
-/** Normalize a caught value before an owner-release error escapes. */
-/* v8 ignore next -- called only from the filesystem-fault cleanup branch above. */
-function asError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error))
 }

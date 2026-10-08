@@ -1,7 +1,5 @@
 export type { TeamTaskUpdateLookup, TeamTaskUpdateLookupInput, TeamTaskUpdateCommandId } from '@clocky/clocky-client-connection/client'
 export type { TeamTaskReferencesPage, TeamTaskReference } from '@clocky/clocky-client-connection/client'
-export type { TaskReferencesState, TaskReferencesOptions } from '../teams/task-references.ts'
-import type { TeamIdentityState, TeamIdentityOptions } from '../teams/identity-resolver.ts'
 export type { TeamActionInspection, TeamAttentionHandling } from '@clocky/clocky-client-connection/client'
 
 /** One verified artifact byte window; view components retain selection and feedback only. */
@@ -37,7 +35,7 @@ export interface TeamActionDetailState {
   readonly disconnected: boolean
 }
 export type { TeamAttentionReadInput, TeamAttentionPage, TeamAttentionCounts, TeamAttentionItem, TeamAttentionCursor } from '@clocky/clocky-client-connection/client'
-import type { TeamAttentionPage, TeamAttentionCursor } from '@clocky/clocky-client-connection/client'
+import type { TeamTaskReference, TeamAttentionPage, TeamAttentionCursor } from '@clocky/clocky-client-connection/client'
 
 /** One retained Team pending page and its independent request state. */
 export interface TeamAttentionState {
@@ -607,7 +605,7 @@ export interface ITeamTasks {
    * @param options - Validated consumer resource limits.
    * @returns disposer for this form's observation.
    */
-  watchTaskReferences?(teamId: TeamId, taskIds: readonly TeamTaskId[], options: import('../teams/task-references.ts').TaskReferencesOptions): () => void
+  watchTaskReferences?(teamId: TeamId, taskIds: readonly TeamTaskId[], options: TaskReferencesOptions): () => void
   /** Explicitly refresh the current exact dependency set. */
   refreshTaskReferences?(): Promise<void>
   /** Read dependency candidates independently from the main task collection. */
@@ -629,4 +627,44 @@ export interface ITeamTasks {
    * @returns selected Team state plus its coordinator transcript identity.
    */
   start(input: TeamTaskStartInput, signal?: AbortSignal): Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }>
+}
+
+/** Current facts only for the IDs requested by the current form. */
+export interface TaskReferencesState {
+  readonly teamId: TeamId
+  readonly taskIds: readonly TeamTaskId[]
+  readonly items: readonly TeamTaskReference[]
+  readonly teamCursor?: number | undefined
+  readonly loading: boolean
+  readonly disconnected: boolean
+  readonly hasNewer: boolean
+  readonly error?: string | undefined
+}
+
+/** Validated consumer limits for retained references, requests and observation. */
+export interface TaskReferencesOptions {
+  readonly capacity: number
+  readonly batchSize: number
+  readonly refreshMs: number
+}
+
+
+/** Principal-scoped bounded identity cache; only references requested by a view are read. */
+
+/** One identity observation retains the current Team's cached names through ordinary network loss. */
+export interface TeamIdentityState {
+  readonly teamId: TeamId
+  readonly items: readonly TeamIdentityItem[]
+  readonly loading: boolean
+  readonly disconnected: boolean
+  readonly error?: string | undefined
+  readonly forbidden: boolean
+}
+/** Public display row from the authenticated Host. */
+export type TeamIdentityItem = Extract<Awaited<ReturnType<IApiClient['teams']['identityResolve']>>['result'], { ok: true }>['value']['items'][number]
+/** Explicit deployment limits for polling, retained names and each requested batch. */
+export interface TeamIdentityOptions {
+  readonly refreshMs: number
+  readonly capacity: number
+  readonly batchSize: number
 }

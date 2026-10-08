@@ -2,11 +2,11 @@
    theme (--shiki-* custom properties emitted by the ui-primitives CodeBlock).
    Light values on :root, dark overrides on the body attribute — the same
    cascade as every other token sheet. Background/foreground deliberately
-   alias the markdown code-block tokens so highlighted and plain blocks agree. */
+   use the code-block surface roles so highlighted and plain blocks agree. */
 
 :root {
-  --shiki-foreground: var(--clocky-alias-label-primary);
-  --shiki-background: var(--clocky-alias-markdown-code-block);
+  --shiki-foreground: var(--clocky-fg-primary);
+  --shiki-background: var(--clocky-bg-sunken);
   --shiki-token-constant: #1c7ed6;
   --shiki-token-string: #2f9e44;
   --shiki-token-comment: #868e96;

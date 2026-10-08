@@ -1,13 +1,14 @@
+import { trackTeamOperation } from '@clocky/clocky-team'
+import { withTeamOperationTimeout } from '@clocky/clocky-team'
 import type { TeamListPageRequest } from '@clocky/clocky-team'
 /** Restart-safe, provider-routed convergence of durable Team closure work. @module @clocky/clocky-team-closure-driver */
 
 import { Context, Service } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import { TeamError } from '@clocky/clocky-team'
+import { TeamError, teamEventOwnerId } from '@clocky/clocky-team'
 import type {
   ChannelEvent,
   JsonObject,
-  TeamEvent,
   TeamId,
   TeamSnapshot,
   TeamStateSnapshot,
@@ -260,7 +261,7 @@ export class TeamClosureDriver {
     this.unregisterProofSource = teams.registerSystemClosureDriverProofSource(this.proofSource)
     this.started = true
     this.listeners.push(this.ctx.on('team/changed', (event) => {
-      void this.driveFrom({ teamId: teamIdFromEvent(event) }, 'team-event')
+      void this.driveFrom({ teamId: teamEventOwnerId(event) }, 'team-event')
     }))
     this.listeners.push(this.ctx.on('channel/changed', (event) => {
       const operation = this.requestChannelDrive(event)
@@ -394,9 +395,6 @@ export class TeamClosureDriver {
           }
         }))
       inspected += page.scanned
-      if (page.nextCursor !== undefined && page.nextCursor === afterCursor) {
-        throw new TeamError('Team closure discovery page cursor did not advance', 'TEAM_CURSOR_CONFLICT')
-      }
       await settleAll(
         [
           ...candidates.map(team => this.requestTeamDrive(team.id, trigger)),
@@ -522,15 +520,9 @@ export class TeamClosureDriver {
 
   /** Retain background rejection handling without altering the caller-visible promise. */
   private track(operation: Promise<void>, label: string): void {
-    if (this.accepted.has(operation)) return
-    this.accepted.add(operation)
-    void operation.then(
-      () => { this.accepted.delete(operation) },
-      (error: unknown) => {
-        this.accepted.delete(operation)
-        this.ctx.logger.warn(`team-closure-driver: ${label} failed: ${renderError(error)}`)
-      },
-    )
+    trackTeamOperation(this.accepted, operation, (error) => {
+      this.ctx.logger.warn(`team-closure-driver: ${label} failed: ${renderError(error)}`)
+    })
   }
 
   /** Close all local entry paths before awaiting work that the backend already accepted. */
@@ -742,23 +734,8 @@ function observedScope(team: TeamSnapshot, action: TeamClosureDriverAction): Tea
       reason: structuredClone(action.reason),
     })
   }
-  if (action.outcome === 'missing-final') {
-    return Object.freeze({
-      kind: 'closure-stall-missing-final' as const,
-      teamId: team.id,
-      expectedCursor: team.cursor,
-      coordinatorId: action.coordinatorId,
-      activationId: action.activationId,
-      sessionId: action.sessionId,
-      provider: action.provider,
-      turn: action.turn,
-      ...action.finalChannelId === undefined ? {} : { finalChannelId: action.finalChannelId },
-      ...action.humanId === undefined ? {} : { humanId: action.humanId },
-      reason: structuredClone(action.reason),
-    })
-  }
   return Object.freeze({
-    kind: 'closure-fail-turn' as const,
+    kind: action.outcome === 'missing-final' ? 'closure-stall-missing-final' as const : 'closure-fail-turn' as const,
     teamId: team.id,
     expectedCursor: team.cursor,
     coordinatorId: action.coordinatorId,
@@ -834,41 +811,6 @@ async function yieldToQueuedTeamEvents(): Promise<void> {
   await new Promise<void>((resolve) => { setTimeout(resolve, 0) })
 }
 
-/** Resolve the Team identity carried by every immutable Team notification form. */
-function teamIdFromEvent(event: TeamEvent): TeamId {
-  switch (event.type) {
-    case 'team/created':
-    case 'team/changed':
-      return event.team.id
-    case 'goal/changed':
-      return event.goal.teamId
-    case 'participant/changed':
-      return event.participant.teamId
-    case 'activation/changed':
-      return event.binding.activation.teamId
-    case 'participant-interrupt/changed':
-      return event.interrupt.target.teamId
-    case 'human-action/changed':
-      return event.action.teamId
-    case 'usage/changed':
-      return event.teamId
-    case 'workflow-plan/changed':
-      return event.plan.teamId
-    case 'task/changed':
-      return event.task.teamId
-    case 'workspace/observed':
-      return event.observation.teamId
-    case 'workspace-allocation/changed':
-      return event.allocation.teamId
-    case 'policy/denied':
-      return event.teamId
-    /* v8 ignore next -- TeamEvent is closed and every durable notification is routed above. */
-    default:
-      event satisfies never
-      throw new Error('unreachable Team event')
-  }
-}
-
 /** Return one collision-free map key for a branded Team identity. */
 function teamKey(teamId: TeamId): string {
   return JSON.stringify(teamId)
@@ -921,16 +863,8 @@ function deepFreeze<T>(value: T): T {
 }
 
 /** Bound backend shutdown without retaining a timer after normal settlement. */
-async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer!: ReturnType<typeof setTimeout>
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => { reject(new Error(`team-closure-driver: disposal exceeded ${timeoutMs}ms`)) }, timeoutMs)
-  })
-  try {
-    return await Promise.race([operation, timeout])
-  } finally {
-    clearTimeout(timer)
-  }
+function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  return withTeamOperationTimeout(operation, timeoutMs, () => new Error(`team-closure-driver: disposal exceeded ${timeoutMs}ms`))
 }
 
 /** Render a listener or background-drive failure without allowing formatting to throw. */

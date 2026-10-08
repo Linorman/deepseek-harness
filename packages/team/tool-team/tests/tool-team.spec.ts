@@ -927,6 +927,24 @@ describe('team_task_report', () => {
     expect(noChangePublish).toHaveBeenCalledWith(noChanges.agent, expect.objectContaining({
       taskId: noChanges.task.id, attemptId: 'attempt-tool-team', allocationId: noChangeAllocation.id, expectedRevision: 2,
     }))
+
+    const missingPublisher = await harness()
+    missingPublisher.team = { ...missingPublisher.team,
+      workspaceAllocations: [teamWorkspaceAllocationSnapshotSchema.parse(allocation)] }
+    const missingPublisherResult = await missingPublisher.execute({ task_id: 'task-tool-team',
+      attempt_id: 'attempt-tool-team', outcome: 'completed', summary: 'Cannot publish.' })
+    expect(missingPublisherResult.error?.info?.code).toBe('TEAM_TASK_REPORT_ASSIGNMENT_STALE')
+    expect(missingPublisher.link.settle).not.toHaveBeenCalled()
+
+    const emptyPublisher = await harness()
+    emptyPublisher.team = { ...emptyPublisher.team,
+      workspaceAllocations: [teamWorkspaceAllocationSnapshotSchema.parse(allocation)] }
+    const noManifest = vi.fn(async () => undefined)
+    emptyPublisher.ctx.provide('teamWorkspaces', { publishForOwner: noManifest } as never)
+    const emptyResult = await emptyPublisher.execute({ task_id: 'task-tool-team', attempt_id: 'attempt-tool-team',
+      outcome: 'completed', summary: 'No published manifest.' })
+    expect(value(emptyResult)).toMatchObject({ task: { phase: 'completed' }, status: 'settled' })
+    expect(noManifest).toHaveBeenCalledOnce()
   })
 
   it('retains optional report evidence, artifact metadata, changed paths, and verification in the model result', async () => {
@@ -1231,6 +1249,45 @@ describe('team_message', () => {
     const denied = await mounted.execute({ channel_id: channel.manifest.id, text: 'Not a review decision', delivery: 'turn' }, mounted.agent, 'team_message')
     expect(denied.isError).toBe(true)
     expect(post).toHaveBeenCalledTimes(1)
+
+    const fromMessage = await harness({ remote, source: false, channel })
+    fromMessage.agent.session.append('user/message', {
+      id: MessageId('consult-channel-view-message'), role: 'user', content: [{ type: 'text', text: 'A consult request.' }],
+      source: { kind: 'team-channel-view', teamId: 'team-tool-team', channelId: String(channel.manifest.id),
+        adapter: { type: 'consult', version: 1 }, viewPolicy: { type: 'full-transcript', version: 1 },
+        triggeringEnvelopeId: 'message-source-request', sourceEnvelopeIds: ['message-source-request'], delivery: 'turn' },
+    } as never, { surfaceOp: 'append' })
+    fromMessage.agent.session.append('turn/start', { turn: 1 })
+    fromMessage.link.post.mockResolvedValueOnce({
+      ...acceptedMessageEnvelope(fromMessage.binding, String(channel.manifest.id),
+        ['participant-team-final-recipient'], 'From message source.', 'turn'),
+      kind: 'response', causationId: 'message-source-request',
+    })
+    const messageResult = await fromMessage.execute({ channel_id: channel.manifest.id,
+      text: 'From message source.', delivery: 'turn' }, fromMessage.agent, 'team_message')
+    expect(value(messageResult)).toHaveProperty('envelope_id')
+    expect(fromMessage.link.post.mock.calls.at(-1)?.[0]).toMatchObject({ draft: {
+      kind: 'response', causationId: 'message-source-request',
+    } })
+
+    const fromReviewAssignment = await harness({ remote, source: false, channel })
+    fromReviewAssignment.agent.session.append('user/message', {
+      id: MessageId('consult-review-assignment'), role: 'user', content: [{ type: 'text', text: 'Review this result.' }],
+      source: { kind: 'team-review-assignment', teamId: 'team-tool-team', channelId: String(channel.manifest.id),
+        envelopeId: 'review-assignment-envelope', taskId: 'task-tool-team', attemptId: 'attempt-tool-team',
+        reviewRevision: 1, reviewerId: 'participant-tool-team', initiatorId: 'participant-team-final-recipient',
+        result: { summary: 'Result needing review.' } },
+    } as never, { surfaceOp: 'append' })
+    const reviewMessageResult = await fromReviewAssignment.execute({ channel_id: channel.manifest.id,
+      text: 'Cannot bypass review.', delivery: 'turn' }, fromReviewAssignment.agent, 'team_message')
+    expect(reviewMessageResult.isError).toBe(true)
+    expect(fromReviewAssignment.link.post).not.toHaveBeenCalled()
+
+    const noSource = await harness({ remote, source: false, channel })
+    const withoutRequest = await noSource.execute({ channel_id: channel.manifest.id,
+      text: 'No retained request.', delivery: 'turn' }, noSource.agent, 'team_message')
+    expect(withoutRequest.isError).toBe(true)
+    expect(noSource.link.post).not.toHaveBeenCalled()
   })
 
   it('posts a direct message through the local Link, derives the peer audience, and uses a message-specific retry key', async () => {
@@ -1259,6 +1316,20 @@ describe('team_message', () => {
     expect(harnessed.teams.getTeam).toHaveBeenCalledWith({ teamId: 'team-tool-team' })
     expect(harnessed.teams.getChannel).toHaveBeenCalledWith({ channelId: 'channel-team-final' })
     expect(harnessed.link.close).toHaveBeenCalledTimes(1)
+
+    const v4 = await harness({ source: false, channel: channelSnapshotSchema.parse({
+      ...finalChannel('team-tool-team', 'participant-tool-team'),
+      manifest: { ...finalChannel('team-tool-team', 'participant-tool-team').manifest,
+        adapter: { type: 'direct', version: 4 } },
+    }) })
+    v4.link.post.mockResolvedValueOnce(acceptedMessageEnvelope(v4.binding, 'channel-team-final',
+      ['participant-team-final-recipient'], 'V4 update.', 'turn'))
+    const v4Result = await v4.execute({ channel_id: 'channel-team-final', text: 'V4 update.', delivery: 'turn',
+      audience: ['participant-team-final-recipient'] }, v4.agent, 'team_message')
+    expect(value(v4Result)).toHaveProperty('envelope_id')
+    expect(v4.link.post.mock.calls.at(-1)?.[0]).toMatchObject({ draft: {
+      payload: { content: [{ type: 'text', text: 'V4 update.' }] },
+    } })
   })
 
   it('posts a remote message through the borrowed Link with an explicit audience and supports broadcast adapters locally', async () => {
@@ -1351,6 +1422,23 @@ describe('team_message', () => {
     const unavailableResult = await unavailable.execute({ channel_id: 'channel-team-final', text: 'x', delivery: 'turn', audience: ['participant-team-final-recipient'] }, unavailable.agent, 'team_message')
     expect(unavailableResult.error?.info?.code).toBe('TEAM_MESSAGE_UNAVAILABLE')
 
+    const remoteClosed = await harness({ remote: true, source: false, channel: channelSnapshotSchema.parse({
+      ...finalChannel('team-tool-team', 'participant-tool-team'), phase: 'closed',
+    }) })
+    const remoteClosedResult = await remoteClosed.execute({ channel_id: 'channel-team-final', text: 'x', delivery: 'turn',
+      audience: ['participant-team-final-recipient'] }, remoteClosed.agent, 'team_message')
+    expect(remoteClosedResult.error?.info?.code).toBe('TEAM_MESSAGE_CHANNEL_INVALID')
+    expect(remoteClosed.link.post).not.toHaveBeenCalled()
+
+    const remoteMismatch = await harness({ remote: true, source: false })
+    remoteMismatch.link.post.mockResolvedValueOnce(finalEnvelope(remoteMismatch.binding, {
+      channelId: channelIdSchema.parse('channel-team-final'),
+      idempotencyKey: channelPostIdempotencyKeySchema.parse('remote-message-key'), text: 'x',
+    }))
+    const remoteMismatchResult = await remoteMismatch.execute({ channel_id: 'channel-team-final', text: 'x', delivery: 'turn',
+      audience: ['participant-team-final-recipient'] }, remoteMismatch.agent, 'team_message')
+    expect(remoteMismatchResult.error?.info?.code).toBe('TEAM_MESSAGE_CHANNEL_INVALID')
+
     const remoteAudience = await harness({ remote: true, source: false })
     remoteAudience.link.post.mockResolvedValueOnce(acceptedMessageEnvelope(
       remoteAudience.binding, 'channel-team-final', ['participant-team-final-recipient'], 'x', 'turn',
@@ -1405,6 +1493,15 @@ describe('team_final', () => {
       text: 'The requested work is complete.',
     }))
     expect(harnessed.link.close).toHaveBeenCalledTimes(1)
+
+    const response = await harness({ source: false })
+    response.link.postFinalResult.mockResolvedValueOnce(teamEnvelopeSchema.parse({
+      ...finalEnvelope(response.binding, { channelId: channelIdSchema.parse('channel-team-final'),
+        idempotencyKey: channelPostIdempotencyKeySchema.parse('response-final'), text: 'Response final.' }),
+      kind: 'response',
+    }))
+    const responseResult = await response.executeFinal({ channel_id: 'channel-team-final', text: 'Response final.' })
+    expect(value(responseResult)).toEqual({ channel_id: 'channel-team-final', envelope_id: 'envelope-team-final' })
     await harnessed.toolFiber.dispose()
     expect(harnessed.ctx.tools.get('team_final', harnessed.agent)).toBeUndefined()
   })
@@ -1667,6 +1764,33 @@ describe('team_final', () => {
       taskId: reviewed.id, expectedRevision: reviewed.revision, nextPhase: 'pending', reason: 'Please add a regression test.',
     })
     expect(remote.borrowCalls).toHaveBeenCalledOnce()
+
+    const renderedView = await harness({ task: reviewed, remote: true, source: false })
+    renderedView.agent.session.append('turn/start', { turn: 1 })
+    renderedView.agent.session.append('team/channel-view', {
+      teamId: String(reviewed.teamId), channelId: 'channel-review-tool-team',
+      adapter: { type: 'basic', version: 1 }, viewPolicy: { type: 'full-transcript', version: 1 },
+      triggeringEnvelopeId: 'envelope-review-tool-team', sourceEnvelopeIds: ['envelope-review-tool-team'], delivery: 'turn',
+      taskId: String(reviewed.id), review: { attemptId: String(attempt.id), reviewRevision: reviewed.revision,
+        reviewerId: 'participant-tool-team', initiatorId: 'participant-team-final-recipient' },
+      content: [{ type: 'text', text: 'Review the submitted result.' }],
+    }, { surfaceOp: 'append' })
+    renderedView.agent.session.append('team/channel-view', {
+      teamId: String(reviewed.teamId), channelId: 'channel-review-tool-team',
+      adapter: { type: 'basic', version: 1 }, viewPolicy: { type: 'full-transcript', version: 1 },
+      triggeringEnvelopeId: 'unrelated-view', sourceEnvelopeIds: ['unrelated-view'], delivery: 'turn',
+      taskId: 'other-task', content: [{ type: 'text', text: 'An unrelated channel view.' }],
+    }, { surfaceOp: 'append' })
+    renderedView.link.post.mockResolvedValueOnce(teamEnvelopeSchema.parse({
+      id: 'envelope-review-response-view', teamId: reviewed.teamId, channelId: 'channel-review-tool-team', sequence: 4,
+      senderId: 'participant-tool-team', audience: ['participant-team-final-recipient'], kind: 'response',
+      payload: { text: 'Please add a regression test.', decision: 'rework' }, delivery: 'turn',
+      causationId: 'envelope-review-tool-team', taskId: reviewed.id, priority: 'normal', createdAt: 4,
+    }))
+    renderedView.link.resolveTaskReview.mockResolvedValueOnce(pending)
+    const fromView = await renderedView.execute({ task_id: reviewed.id, decision: 'rework',
+      reason: 'Please add a regression test.' }, renderedView.agent, 'team_task_review')
+    expect(value(fromView)).toMatchObject({ task: { id: reviewed.id, phase: 'pending' }, decision: 'rework' })
 
     const missingOwner = await harness({ task: reviewed, source: false })
     appendReviewAssignment(missingOwner)

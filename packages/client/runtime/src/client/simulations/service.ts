@@ -22,7 +22,7 @@ import type { SimulationProductWatchResult, SimulationProductRunId } from '@cloc
 export type * from '@clocky/clocky-simulation-product/types'
 
 /** Localized UI recovery category; private transport/provider diagnostics are not displayed. */
-export type SimulationReadError = 'forbidden' | 'unavailable' | 'stale' | 'invalid' | 'network' | 'internal'
+export type SimulationReadError = 'forbidden' | 'unavailable' | 'stale' | 'invalid' | 'network' | 'internal' | 'model-changed'
 /** One bounded response, its selection identity and independent pending/freshness state. */
 export interface SimulationReadState<T> {
   readonly scope?: string | undefined
@@ -203,12 +203,10 @@ export class SimulationRuntime {
     for (const value of [options.waitMs, options.retryMs]) {
       if (!Number.isSafeInteger(value) || value < 1 || value > 2147483647) throw new Error('Invalid Simulation observation timer')
     }
-    const generation = this.generation
     const old = this.observer
-    const active = () => this.observer === observer && generation === this.generation && this.state.getSnapshot().connected
     const observer = new SimulationObserver(this.api, runId, options,
-      (value) => { if (active()) this.observed(value) },
-      (error) => { if (active()) this.observationFailed(error) })
+      (value) => { this.observed(value) },
+      (error) => { this.observationFailed(error) })
     this.observationJobs.add(observer.done)
     void observer.done.then(() => this.observationJobs.delete(observer.done), () => this.observationJobs.delete(observer.done))
     this.transitions++
@@ -217,7 +215,8 @@ export class SimulationRuntime {
       const requests = this.retireReads(['object', 'record'])
       const state = this.state.getSnapshot()
       this.state.set({ ...state, record: { loading: false, stale: true }, object: (state.object.value?.value?.section === 'context' || state.object.value?.value?.section === 'knowledge')
-        ? { scope: state.object.scope, loading: false, stale: true } : state.object,
+        ? { scope: state.object.scope, loading: false, stale: true }
+        : state.object.loading ? { ...state.object, loading: false, stale: true } : state.object,
       observation: { scope: JSON.stringify(['watch', runId]), loading: true, stale: false } })
       for (const request of requests) request.controller.abort()
       old?.close()
@@ -408,7 +407,9 @@ export class SimulationRuntime {
     this.state.set({ ...this.state.getSnapshot(), statuses: { ...this.state.getSnapshot().statuses, loading: false, stale: true } })
     for (const request of retired) request.controller.abort()
     if (!current()) return
-    const selection = (reservation ?? 0) + 1
+    /* v8 ignore next -- retireReads unconditionally records this directory reservation. */
+    if (reservation === undefined) throw new Error('Missing Simulation directory reservation')
+    const selection = reservation + 1
     const reading = this.read('directory', JSON.stringify(['directory', (input.search ?? '').trim().toLowerCase()]),
       signal => this.api.simulations.list(input, signal))
     await reading

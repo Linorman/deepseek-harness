@@ -1691,3 +1691,28 @@ it('retires a denied current Team but preserves another selected Team after a fo
     expect(tasks.list.getSnapshot().current).toBeUndefined()
   } finally { await ctx.fiber.dispose() }
 })
+
+it('suspends directory timers after product denial and restores only live watchers on a successful handshake', async () => {
+  vi.useFakeTimers()
+  const { ctx, api, tasks } = setup()
+  const list = vi.spyOn(api.teams, 'list')
+  const stop = tasks.watch(250)
+  try {
+    await vi.advanceTimersByTimeAsync(500)
+    expect(list).toHaveBeenCalledTimes(2)
+    tasks.clearAuthorization()
+    await vi.advanceTimersByTimeAsync(30_000)
+    await tasks.refresh()
+    expect(list).toHaveBeenCalledTimes(2)
+    tasks.handleConnected()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(list).toHaveBeenCalledTimes(5)
+    stop()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(list).toHaveBeenCalledTimes(5)
+  } finally {
+    stop()
+    await ctx.fiber.dispose()
+    vi.useRealTimers()
+  }
+})

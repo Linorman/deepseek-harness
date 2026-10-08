@@ -183,6 +183,10 @@ export interface WebScaffold {
 
 /** Options for {@link launchWebScaffold}. */
 export interface LaunchOptions {
+  /** Replace only external model availability; zero providers and no default route are a valid installation. */
+  noModels?: boolean
+  /** Explicit custom-composition takeover: disable the published group before mounting a separate Simulation overlay. */
+  disableDefaultSimulation?: boolean
   /** Parent-owned persistent roots for a separately launched Host restart scenario; close never deletes them. */
   retainedWorld?: { workspaceCwd: string; persistenceRoot: string }
   /** Explicit port retained across independent Host processes; omission requests an OS-assigned port. */
@@ -304,6 +308,9 @@ async function cleanupScaffoldWorld(ctx: Context, workspaceCwd: string, persiste
 export async function launchWebScaffold(options: LaunchOptions = {}): Promise<WebScaffold> {
   requireDist()
   const mode = webSnapshotMode()
+  if (options.noModels && (mode === 'record' || options.replayFixture !== undefined)) {
+    throw new Error('noModels requires a fixture-free keyless scaffold')
+  }
   const browserHost = options.remoteAuthority ?? '127.0.0.1'
   const localModelBaseURL = process.env.CLOCKY_LOCAL_MODEL_BASE_URL
   const localModelId = process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit'
@@ -389,7 +396,8 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     ? []
     : loadOverlayPatches('web e2e scaffold', options.extraOverlayPath)
   const extraOverlayOwnsDefaultModel = extraOverlayPatches.some(patch => patch.id === 'agent-default-model')
-  const composedRows = composeEntries([basePatches, surfacePatches, extraOverlayPatches])
+  const simulationTakeover: PatchOptions[] = options.disableDefaultSimulation ? [{ id: 'web-simulation', disabled: true }] : []
+  const composedRows = composeEntries([basePatches, surfacePatches, simulationTakeover, extraOverlayPatches])
   const webRuntimeConfig = composedRows.find(row => row.id === 'web-runtime')?.config as {
     surfaceContext?: boolean
   } | undefined
@@ -397,6 +405,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
   const patches: PatchOptions[] = [
     ...basePatches,
     ...surfacePatches,
+    ...simulationTakeover,
     ...extraOverlayPatches,
     ...(options.legacyWorkspaceSurface
       ? [
@@ -525,9 +534,11 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
           { id: 'llm-pi-ai', config: { providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY' } } } },
           { id: 'agent-default-model', config: { provider: 'deepseek', model: 'deepseek-chat' } },
         ]
-      : extraOverlayOwnsDefaultModel
-        ? []
-        : [{ id: 'agent-default-model', config: { provider: 'test-provider', model: 'test-model' } }]),
+      : options.noModels
+        ? [{ id: 'agent-default-model', config: {} }]
+        : extraOverlayOwnsDefaultModel
+          ? []
+          : [{ id: 'agent-default-model', config: { provider: 'test-provider', model: 'test-model' } }]),
   ]
 
   // Sessions inherit the gateway's process.cwd() default; run the boot from
@@ -625,7 +636,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
         ...(options.replayChildFixtures === undefined ? {} : { childFiles: options.replayChildFixtures }),
         ...(options.paceMs === undefined ? {} : { paceMs: options.paceMs }),
       })
-    } else if (mode !== 'record') {
+    } else if (mode !== 'record' && !options.noModels) {
       // A fixture-free keyless scenario still gets a test route so the shell
       // can render a model selector; any accidental model call fails loudly.
       // a fixture would, with streaming that still fails loud: the scenario

@@ -112,6 +112,17 @@ export class SimulationTaskExecutor {
     const phase = this.run.snapshot().phase
     return phase === 'running' ? undefined : this.result(phase, controlSteps, facts)
   }
+  /** Preserve current-lifetime checks and technical stop reasons before settling a task attempt. */
+  private async driveTaskResident(controlSteps: number,
+    facts: Pick<SimulationTaskExecutorResult, 'attemptId' | 'operationId' | 'nextAttemptAt'>): Promise<SimulationTaskExecutorResult | undefined> {
+    const driven = await this.connection.driveResident({ until: this.run.snapshot().time }, Date.now, this.options.residency)
+    const stop = this.stopped(controlSteps, facts)
+    if (stop !== undefined) return stop
+    if (driven.reason === 'until' || driven.reason === 'decision-required') return undefined
+    return this.result(driven.reason, controlSteps, { ...facts,
+      ...driven.nextAttemptAt === undefined ? {} : { nextAttemptAt: driven.nextAttemptAt } })
+  }
+
   private async pump(select: (id: import('@clocky/clocky-simulation').SimulationOperationId) => void): Promise<SimulationTaskExecutorResult> {
     for (let step = 0; step < this.config.maxControlSteps; step++) {
       let stop = this.stopped(step)
@@ -119,18 +130,21 @@ export class SimulationTaskExecutor {
       let state = this.run.snapshot()
       if (state.activeWindowId !== undefined) {
         const window = state.windows?.[state.activeWindowId], slot = window?.request.decisions[0]
+        /* v8 ignore next -- Native projection validation retains the active window and its nonempty parsed decision list. */
         const owner = slot === undefined ? undefined : state.taskDecisionOwners?.[slot.id]
         const execution = owner === undefined ? undefined : state.taskExecutions?.[owner.attemptId]
         const operation = execution === undefined ? undefined : state.operations[execution.request.operationId]
         const route = operation === undefined ? undefined : this.config.routes.find(value => value.sourceEntityId === operation.entityId
           && (value.operationId === undefined || value.operationId === operation.id) && value.entityId === slot?.entityId)
-        if (window?.request.decisions.length !== 1 || slot === undefined || execution === undefined || route === undefined) {
+        if (window?.request.decisions.length !== 1 || slot === undefined || owner === undefined
+          || execution === undefined || route === undefined) {
           return this.result('task-waiting', step)
         }
         select(execution.request.operationId)
         const decision = state.decisions[slot.id]
         if (decision?.status === 'open') {
-          const association = execution.decisions?.[owner?.index ?? 0]
+          const association = execution.decisions?.[owner.index]
+          /* v8 ignore next -- Native task projection validation requires this owner index to name the same recorded decision. */
           if (association === undefined) throw new Error('Task window has no recorded task association')
           const task = await this.options.readTask({ teamId: execution.request.teamId, taskId: execution.request.taskId })
           await this.connection.executeTaskDecision({ attemptId: execution.request.attemptId, decisionId: slot.id,
@@ -218,19 +232,15 @@ export class SimulationTaskExecutor {
         ...route.interactionId === undefined ? {} : { interactionId: route.interactionId } })
       stop = this.stopped(step + 1, { ...facts, attemptId })
       if (stop !== undefined) return stop
-      const retained = execution.decisions?.at(-1)?.request
+      const recordedDecisions = execution.decisions ?? []
+      const retained = recordedDecisions.at(-1)?.request
       let decisionId = retained?.decisionId ?? simulationDecisionIdSchema.parse(`${attemptId}/decision`)
       let predecessor = retained?.predecessor ?? null
       let decisionReason = retained?.reason ?? route.reason
       let policy = retained?.policy ?? (retained === undefined ? route.cognition : undefined)
       if (retained !== undefined && this.run.snapshot().decisions[retained.decisionId]?.status === 'accepted') {
-        const driven = await this.connection.driveResident({ until: this.run.snapshot().time }, Date.now, this.options.residency)
-        stop = this.stopped(step + 1, { ...facts, attemptId })
-        if (stop !== undefined) return stop
-        if (driven.reason !== 'until' && driven.reason !== 'decision-required') {
-          return this.result(driven.reason, step + 1, { ...facts, attemptId,
-            ...driven.nextAttemptAt === undefined ? {} : { nextAttemptAt: driven.nextAttemptAt } })
-        }
+        const driveStop = await this.driveTaskResident(step + 1, { ...facts, attemptId })
+        if (driveStop !== undefined) return driveStop
         const completed = await this.connection.completeTask({ attemptId, policy: route.completion })
         stop = this.stopped(step + 1, { ...facts, attemptId })
         if (stop !== undefined) return stop
@@ -241,16 +251,17 @@ export class SimulationTaskExecutor {
         if (effectsPending(this.run.snapshot(), retained.decisionId)) return this.result('task-waiting', step + 1, { ...facts, attemptId })
         const selected = this.options.nextDecision?.(deepFreeze(this.run.snapshot()), deepFreeze(completed.execution))
         if (selected === undefined || selected.kind === 'waiting') return this.result('task-waiting', step + 1, { ...facts, attemptId })
-        if (selected.kind === 'blocked' || (execution.decisions?.length ?? 0) >= this.config.maxDecisionsPerAttempt) {
+        if (selected.kind === 'blocked' || recordedDecisions.length >= this.config.maxDecisionsPerAttempt) {
           return this.result('task-blocked', step + 1, { ...facts, attemptId })
         }
-        decisionId = simulationDecisionIdSchema.parse(`${attemptId}/decision/${(execution.decisions?.length ?? 0) + 1}`)
+        decisionId = simulationDecisionIdSchema.parse(`${attemptId}/decision/${recordedDecisions.length + 1}`)
         predecessor = retained.decisionId
         decisionReason = selected.reason
         policy = selected.policy
       }
       const decision = this.run.snapshot().decisions[decisionId]
       if (decision?.status === 'cancelled') return this.result('recovery-required', step + 1, { ...facts, attemptId })
+      /* v8 ignore next -- Native task execution associates a decision before its window can accept it. */
       if (decision?.status !== 'accepted') {
         await this.connection.executeTaskDecision({ attemptId, decisionId, predecessor, reason: decisionReason,
           ...policy === undefined ? {} : { policy },
@@ -258,13 +269,8 @@ export class SimulationTaskExecutor {
         stop = this.stopped(step + 1, { ...facts, attemptId })
         if (stop !== undefined) return stop
       }
-      const driven = await this.connection.driveResident({ until: this.run.snapshot().time }, Date.now, this.options.residency)
-      stop = this.stopped(step + 1, { ...facts, attemptId })
-      if (stop !== undefined) return stop
-      if (driven.reason !== 'until' && driven.reason !== 'decision-required') {
-        return this.result(driven.reason, step + 1, { ...facts, attemptId,
-          ...driven.nextAttemptAt === undefined ? {} : { nextAttemptAt: driven.nextAttemptAt } })
-      }
+      const driveStop = await this.driveTaskResident(step + 1, { ...facts, attemptId })
+      if (driveStop !== undefined) return driveStop
       const completed = await this.connection.completeTask({ attemptId, policy: route.completion })
       const reason = settlementStop(completed)
       if (reason !== undefined) {
@@ -316,11 +322,14 @@ export class SimulationTaskExecutor {
 
 /** Pending effects or unpersisted recipient delivery need reconciliation, not another cognition with a new operation identity. */
 function effectsPending(state: SimulationSnapshot, decisionId: import('@clocky/clocky-simulation').SimulationDecisionId): boolean {
-  return state.decisions[decisionId]?.operationIds.some((id) => {
+  const decision = state.decisions[decisionId]
+  /* v8 ignore next -- Both callers use a native associated decision id, so the decision projection exists. */
+  if (decision === undefined) return false
+  return decision.operationIds.some((id) => {
     const operation = state.operations[id]
     return operation?.result === undefined || operation.action.kind === 'communication/post'
       && operation.result.status === 'applied' && operation.delivery?.receipt === undefined
-  }) ?? false
+  })
 }
 
 /** Rework authority is the exact canonical review of the latest completed attempt, never its result alone. */

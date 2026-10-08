@@ -82,7 +82,7 @@ export function OperationRetry({ draft, ...props }: Props) {
   }
   return <>
     <Modal open title={t('operationRetry.title')} closeLabel={t('closeKeepDraft')} onClose={props.close}
-      footer={<><Button variant="outline" onClick={() => { setDiscard(true) }}>{t('discardDraft')}</Button>
+      footer={<><Button variant="secondary" onClick={() => { setDiscard(true) }}>{t('discardDraft')}</Button>
         <Button disabled={!canSubmit || record?.pending} onClick={() => { void submit() }}>{t('operationRetry.grant')}</Button></>}>
       <p>{t('operationRetry.notice')}</p><code>{draft.operationId}</code>
       <p>{t('operationRetry.fence')}: {draft.expectedAttemptCount}</p>

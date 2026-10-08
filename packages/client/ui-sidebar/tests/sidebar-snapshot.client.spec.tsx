@@ -48,7 +48,7 @@ describe('sidebar shell snapshots', () => {
     const { runtime } = await bench()
     const slot = runtime.renderSlot('sidebar', { workspace: 'team', collapsed: false, width: 300 })
     // Wordmark + capsule both start a task draft in the expanded state.
-    expect(slot.view.getAllByRole('button', { name: '新建团队工作' })).toHaveLength(2)
+    expect(slot.view.getAllByRole('button', { name: '新建团队任务' })).toHaveLength(2)
     expect(slot.container).toMatchSnapshot()
     await runtime.dispose()
   })
@@ -68,7 +68,7 @@ describe('sidebar shell snapshots', () => {
     const shell = slot.container.firstElementChild
     slot.update({ workspace: 'team', collapsed: true, width: 56 })
     // The wide content (wordmark shortcut) unmounts at the 150ms settle;
-    // only the rail's capsule remains a New Task button.
+    // only the rail's capsule remains a new-team-work button.
     await waitFor(() => {
       expect(slot.view.getAllByRole('button', { name: 'New team work' })).toHaveLength(1)
     })
@@ -81,11 +81,11 @@ describe('sidebar shell snapshots', () => {
   it('a locale switch refreshes mounted copy without re-registration', async () => {
     const { runtime, locale } = await bench()
     const slot = runtime.renderSlot('sidebar', { workspace: 'team', collapsed: false, width: 300 })
-    expect(slot.view.getAllByRole('button', { name: '新建团队工作' })).toHaveLength(2)
+    expect(slot.view.getAllByRole('button', { name: '新建团队任务' })).toHaveLength(2)
     // Same fiber, same registration: setLocale alone re-renders the outlet.
     act(() => { locale.setLocale('en') })
     expect(slot.view.getAllByRole('button', { name: 'New team work' })).toHaveLength(2)
-    expect(slot.view.queryByRole('button', { name: '新建团队工作' })).toBeNull()
+    expect(slot.view.queryByRole('button', { name: '新建团队任务' })).toBeNull()
     await runtime.dispose()
   })
 })

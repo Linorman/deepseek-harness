@@ -17,6 +17,10 @@ function fakePanels(): PanelActions {
     setNarrow: vi.fn(),
     openDetails: vi.fn(),
     closeDetails: vi.fn(),
+    setPane: vi.fn(),
+    togglePaneExpanded: vi.fn(),
+    restorePane: vi.fn(),
+    setOverlay: vi.fn(),
   }
 }
 

@@ -191,6 +191,21 @@ describe('TeamLinkRegistry service definition', () => {
     await ctx.fiber.dispose()
   })
 
+  it('does not let a stale borrower disposer remove a replacement owner callback', async () => {
+    const { ctx, fiber } = await setup()
+    const owner = {}
+    const first = { withLink: async <T>(operation: (current: TeamLink) => Promise<T>) => await operation(link()) }
+    const replacement = { ...first }
+    const dispose = ctx.teamLinks.registerBoundLinkBorrower(owner, first)
+    const internals = ctx.teamLinks as unknown as { boundLinkBorrowers: WeakMap<object, TeamLinkBoundLinkBorrower> }
+    internals.boundLinkBorrowers.set(owner, replacement)
+    dispose()
+    expect(ctx.teamLinks.getBoundLinkBorrower(owner)).toBe(replacement)
+    internals.boundLinkBorrowers.delete(owner)
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
   it('does not let a stale disposer remove a replacement provider', async () => {
     const { ctx, fiber } = await setup()
     const first = provider()
@@ -291,10 +306,47 @@ describe('TeamLinkRegistry service definition', () => {
         }
       },
     }))
+    expect(() => ctx.teamLinks.registerEnrollmentProvider(enrollmentProvider())).toThrow(expect.objectContaining<Partial<TeamLinkError>>({
+      code: 'TEAM_LINK_ENROLLMENT_PROVIDER_DUPLICATE',
+    }))
     await expect(ctx.teamLinks.reserveEnrollment({ provider: 'websocket', binding })).rejects.toMatchObject({
       code: 'TEAM_LINK_ENROLLMENT_MISMATCH',
     })
 
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
+  it('keeps a replacement issuer when an older registration disposes and reports failed credential revocation', async () => {
+    const { ctx, fiber } = await setup()
+    const first = enrollmentProvider()
+    const replacement = enrollmentProvider({
+      async reserve() { return { provider: 'other', endpoint: '', capability: '',
+        async revoke() { throw Object.create(null) } } },
+    })
+    const dispose = ctx.teamLinks.registerEnrollmentProvider(first)
+    const internals = ctx.teamLinks as unknown as { enrollmentProviders: Map<string, TeamLinkEnrollmentProvider> }
+    internals.enrollmentProviders.set('websocket', replacement)
+    dispose()
+    expect(ctx.teamLinks.getEnrollmentProvider('websocket')).toBe(replacement)
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => undefined)
+    await expect(ctx.teamLinks.reserveEnrollment({ provider: 'websocket', binding })).rejects.toMatchObject({
+      code: 'TEAM_LINK_ENROLLMENT_MISMATCH',
+    })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[unrenderable thrown value]'))
+    internals.enrollmentProviders.clear()
+    await fiber.dispose()
+    await ctx.fiber.dispose()
+  })
+
+  it('contains an asynchronously rejected provider topology observer', async () => {
+    const { ctx, fiber } = await setup()
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => undefined)
+    // The registry must contain a Promise-returning observer despite Cordis's void event signature.
+    // oxlint-disable-next-line typescript/no-misused-promises -- intentional async observer rejection.
+    ctx.on('team-link/provider-added', async () => { throw new Error('async observer failed') })
+    ctx.teamLinks.registerProvider(provider())
+    await vi.waitFor(() => { expect(warn).toHaveBeenCalledWith(expect.stringContaining('listener rejected')) })
     await fiber.dispose()
     await ctx.fiber.dispose()
   })

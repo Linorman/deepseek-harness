@@ -152,3 +152,45 @@ describe('JSON audit owner and append recovery', () => {
     expect(await harness.ctx.teams.getTeam({ teamId: input.teamId })).toEqual(harness.created)
   })
 })
+
+describe('bounded Team audit suffix repair', () => {
+  it('rejects audit storage that reports a tail ahead of its authoritative Team journal', async () => {
+    const harness = await setup('json')
+    const ahead = vi.spyOn(harness.owned, 'tailSequence', 'get').mockReturnValue(harness.created.team.cursor + 1)
+    const input = { teamId: harness.created.team.id, afterCursor: -1, limit: 16 }
+    try { await expect(harness.ctx.teams.readAudit(input)).rejects.toMatchObject({ code: 'TEAM_JOURNAL_MALFORMED' }) }
+    finally { ahead.mockRestore() }
+    expect((await harness.ctx.teams.readAudit(input)).items.map(item => item.cursor))
+      .toEqual(Array.from({ length: harness.created.team.cursor + 1 }, (_, cursor) => cursor))
+  })
+  it.each(['empty page', 'cursor gap'] as const)('refuses a %s from the source before publishing audit facts', async (failure) => {
+    const harness = await setup('json')
+    const source = harness.ctx.storageLog.get(`team/${harness.created.team.id}`)
+    if (source === undefined) throw new Error('Fixture Team journal is not retained')
+    const first = (await source.read(-1, 1))[0]
+    if (first === undefined) throw new Error('Fixture Team journal has no genesis')
+    const read = vi.spyOn(source, 'read').mockResolvedValueOnce(failure === 'empty page' ? []
+      : [{ ...first, sequence: first.sequence + 1 }])
+    const input = { teamId: harness.created.team.id, afterCursor: -1, limit: 16 }
+    try { await expect(harness.ctx.teams.readAudit(input)).rejects.toMatchObject({ code: 'TEAM_JOURNAL_MALFORMED' }) }
+    finally { read.mockRestore() }
+    expect(harness.owned.tailSequence).toBe(-1)
+    expect((await harness.ctx.teams.readAudit(input)).items.map(item => item.cursor))
+      .toEqual(Array.from({ length: harness.created.team.cursor + 1 }, (_, cursor) => cursor))
+  })
+
+  it('rejects an audit append reply whose tail differs from the records actually committed', async () => {
+    const harness = await setup('json')
+    const append = harness.owned.append.bind(harness.owned)
+    const reply = vi.spyOn(harness.owned, 'append').mockImplementationOnce(async (cursor, values) => {
+      const accepted = await append(cursor, values)
+      return { ...accepted, tailSequence: accepted.tailSequence + 1 }
+    })
+    const input = { teamId: harness.created.team.id, afterCursor: -1, limit: 16 }
+    try { await expect(harness.ctx.teams.readAudit(input)).rejects.toMatchObject({ code: 'TEAM_JOURNAL_MALFORMED' }) }
+    finally { reply.mockRestore() }
+    expect(harness.owned.tailSequence).toBe(harness.created.team.cursor)
+    expect((await harness.ctx.teams.readAudit(input)).items.map(item => item.cursor))
+      .toEqual(Array.from({ length: harness.created.team.cursor + 1 }, (_, cursor) => cursor))
+  })
+})

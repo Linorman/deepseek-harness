@@ -1037,6 +1037,8 @@ describe('small chat tails', () => {
           : undefined}
       />,
     )
-    expect(view.container.textContent).toBe('1 轮 · 1 步| 输入 0 tok · 输出 10 tok')
+    expect(view.container.textContent).toBe('1 轮 · 1 步ⓘ')
+    fireEvent.click(view.getByRole('button', { name: '会话统计详情' }))
+    expect([...document.body.querySelectorAll('[role="dialog"] li')].map(item => item.textContent)).toEqual(['输入 0 tok · 输出 10 tok'])
   })
 })

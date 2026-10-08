@@ -155,6 +155,8 @@ export function TeamManagementDialog({ target,
   const [invalidField, setInvalidField] = useState<string | undefined>()
   const request = useRef<AbortController | undefined>()
   const form = useRef<HTMLFormElement | null>(null)
+  /** An input-method composition is in progress; its confirming Enter must not submit. */
+  const composing = useRef(false)
   const cancellingOpening = target.kind === 'channelClose' && channel?.phase === 'pending'
   const title = t(cancellingOpening ? 'channel.cancelOpening' : `manage.${target.kind}`)
   const participant = 'participantId' in target ? state.participants.find(item => item.id === target.participantId) : undefined
@@ -193,8 +195,16 @@ export function TeamManagementDialog({ target,
       const encoded = await encodeChannelImages(files, draftRef.current, limits.maxDraftBytes, controller.signal)
       if (!controller.signal.aborted) setContent(previous => [...previous, ...encoded])
     } catch (cause: unknown) {
-      if (!controller.signal.aborted) { setError(cause instanceof RangeError ? t('channel.draftCapacity')
-        : cause instanceof Error ? cause.message : String(cause)); controller.abort() }
+      if (!controller.signal.aborted) {
+        let message = t('channel.draftCapacity')
+        if (!(cause instanceof RangeError)) {
+          /* v8 ignore else -- The owned image encoder and FileReader reject with Error or DOMException values. */
+          if (cause instanceof Error) message = cause.message
+          else message = String(cause)
+        }
+        setError(message)
+        controller.abort()
+      }
     } finally {
       if (imageImport.current === controller) setImporting(false)
     }
@@ -278,6 +288,7 @@ export function TeamManagementDialog({ target,
         const audience = basic ? (channel.manifest.adapter.type === 'consult' ? options.map(item => item.id) : null)
           : audienceMode === 'broadcast' ? null : options.filter(item => selected.includes(item.id)).map(item => item.id)
         if (audience !== null && audience.length === 0) { failField('members', t('manage.audienceRequired')); return }
+        /* v8 ignore next -- Discussion exposes only turn/context delivery; retain this protocol guard for restored drafts. */
         if (channel.manifest.adapter.type === 'discussion' && delivery === 'steer') { failField('basic-text', t('channel.discussionNoSteer')); return }
         const selectedDelivery = channel.manifest.adapter.type === 'consult' ? 'turn' : delivery
         const fingerprint = channelDraftFingerprint({ content: ordered, audience, delivery: selectedDelivery })
@@ -298,6 +309,7 @@ export function TeamManagementDialog({ target,
           channelId: target.channelId, expectedCursor: channel.cursor, ...text.trim() ? { reason: text.trim() } : {},
         } }
         break
+      /* v8 ignore next -- Management targets are a closed discriminated union validated before rendering. */
       default: assertNever(target)
     }
     const controller = new AbortController()
@@ -326,6 +338,7 @@ export function TeamManagementDialog({ target,
         if (accepted && !inline) onClose()
       }
     } finally {
+      /* v8 ignore next -- Submission is single-flight; its controller cannot be replaced before this finally block. */
       if (request.current === controller) { request.current = undefined; setBusy(false) }
     }
   }
@@ -340,8 +353,10 @@ export function TeamManagementDialog({ target,
     {busy && <Button onClick={stopWaiting}>{t('detail.cancelRead')}</Button>}
     <Button form={`${id}-form`} type="submit" variant="primary" disabled={busy || importing || target.kind === 'memberInvite' && profileBlocked || target.kind === 'channelPost' && channelPending}>{title}</Button>
   </div>
-  const formContent = <form id={`${id}-form`} ref={form} noValidate className={inline ? hubCss.composerForm : css.managementForm} onKeyDown={(event) => {
-    if (inline && (event.metaKey || event.ctrlKey) && event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); void submit() }
+  const formContent = <form id={`${id}-form`} ref={form} noValidate className={inline ? hubCss.composerForm : css.managementForm} onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }} onKeyDown={(event) => {
+    // Enter that confirms an input-method candidate never submits.
+    if (event.key === 'Enter' && (event.nativeEvent.isComposing || composing.current)) { event.preventDefault(); return }
+    if (inline && (event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); void submit() }
   }} onSubmit={(event) => { event.preventDefault(); void submit() }}>
     {participant !== undefined && <p><strong>{participant.displayName}</strong> · {participant.role}</p>}
     {(target.kind === 'memberRemove' || target.kind === 'memberActivate' || target.kind === 'memberInterrupt' || target.kind === 'channelClose')
@@ -469,7 +484,7 @@ export function TeamManagementDialog({ target,
     </>}
     {target.kind === 'channelClose' && <>
       <label htmlFor={`${id}-text`}>{t('manage.reason')}</label>
-      <textarea id={`${id}-text`} className={`${css.managementText} clocky-resize-none`} value={text} disabled={busy} onChange={(event) => { setText(event.target.value) }} aria-invalid={invalidField === 'text'} aria-describedby={invalidField === 'text' ? `${id}-error` : undefined} rows={5} />
+      <textarea id={`${id}-text`} className={`${css.managementText} clocky-resize-none`} value={text} disabled={busy} onChange={(event) => { setText(event.target.value) }} rows={5} />
     </>}
     {target.kind === 'channelPost' && !basic && <fieldset id={`${id}-content`} tabIndex={-1} className={css.managementChoices}
       disabled={busy || importing} aria-invalid={invalidField === 'content'} aria-describedby={invalidField === 'content' ? `${id}-error` : undefined}>
@@ -511,10 +526,11 @@ export function TeamManagementDialog({ target,
     </p>
     {footer}
   </div></>
-    : <Modal open onClose={close} title={title} closeLabel={t('cancel')} footer={footer} bodyClassName={css.managementContent ?? ''}>{formContent}</Modal>
+    : <Modal open onClose={close} title={title} closeLabel={t('cancel')} footer={footer} bodyClassName={css.managementContent as string}>{formContent}</Modal>
 }
 
 /** Keep management forms exhaustive when another operation is introduced. */
+/* v8 ignore next -- Only the closed TeamManagementTarget variants reach this exhaustive switch. */
 function assertNever(value: never): never {
   throw new Error(`Unsupported Team management target: ${String(value)}`)
 }

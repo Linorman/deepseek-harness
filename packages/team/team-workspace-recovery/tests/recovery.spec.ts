@@ -171,6 +171,8 @@ function fakeDriveContext(options: {
     }),
     confirmWorkspaceAllocationRelease: vi.fn(async (input: Record<string, unknown>) => await options.confirmRelease?.(input)),
     preserveWorkspaceAllocation: vi.fn(async (input: Record<string, unknown>) => await options.preserve?.(input)),
+    requestWorkspaceAllocationRelease: vi.fn(async () => {}),
+    recordWorkspaceAllocationLoss: vi.fn(async () => {}),
   }
   const providerReconcile = options.reconcileRelease ?? (async () => {})
   const reconcileRelease = vi.fn(async (
@@ -329,6 +331,82 @@ async function releaseRequested(ctx: Context, requestRelease = true, remote = fa
 }
 
 describe('Team workspace release recovery', () => {
+  it('restarts a proven unavailable release only while that exact allocation remains current', async () => {
+    const executionWorld = teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'recovery-unavailable-world' })
+    const unavailable: TeamWorkspaceAllocationSnapshot = { ...driveAllocation('unavailable'), mode: 'remote',
+      executionWorld, releaseRequestedAt: 2,
+      loss: { executionWorld, reason: 'sandbox-expired', terminationProven: true, artifacts: [], observedAt: 2 } }
+    const active = fakeDriveContext({ pages: [{ items: [{ id: unavailable.teamId }] }], state: driveState(unavailable) })
+    await WorkspaceRecovery.apply(active.ctx, { maxTeamsPerDrive: 1, pageSize: 1 })
+    expect(active.teams.requestWorkspaceAllocationRelease).toHaveBeenCalledOnce()
+    expect(active.teamWorkspaces.reconcileRelease).toHaveBeenCalledOnce()
+    await active.ctx.fiber.dispose()
+
+    const gone = fakeDriveContext({ pages: [{ items: [{ id: unavailable.teamId }] }], state: driveState(unavailable) })
+    gone.teams.getTeam.mockResolvedValueOnce(driveState(unavailable))
+      .mockResolvedValueOnce({ ...driveState(unavailable), workspaceAllocations: [] })
+    await WorkspaceRecovery.apply(gone.ctx, { maxTeamsPerDrive: 1, pageSize: 1 })
+    expect(gone.teams.requestWorkspaceAllocationRelease).not.toHaveBeenCalled()
+    expect(gone.teamWorkspaces.reconcileRelease).not.toHaveBeenCalled()
+    await gone.ctx.fiber.dispose()
+
+    const renewed = fakeDriveContext({ pages: [{ items: [{ id: unavailable.teamId }] }], state: driveState(unavailable) })
+    renewed.teams.getTeam.mockResolvedValueOnce(driveState(unavailable))
+      .mockResolvedValueOnce(driveState({ ...unavailable, lifecycle: 'release-requested' }))
+    await WorkspaceRecovery.apply(renewed.ctx, { maxTeamsPerDrive: 1, pageSize: 1 })
+    expect(renewed.teams.requestWorkspaceAllocationRelease).not.toHaveBeenCalled()
+    expect(renewed.teamWorkspaces.reconcileRelease).toHaveBeenCalledOnce()
+    await renewed.ctx.fiber.dispose()
+  })
+
+  it('does not record a stale loss after another owner settles the release', async () => {
+    const executionWorld = teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'recovery-race-world' })
+    const candidate = { ...driveAllocation(), mode: 'remote' as const, executionWorld }
+    const context = fakeDriveContext({ pages: [{ items: [{ id: candidate.teamId }] }], state: driveState(candidate),
+      reconcileRelease: async () => { throw new TeamWorkspaceLostError({ executionWorld,
+        reason: 'sandbox-expired', terminationProven: true, artifacts: [] }) } })
+    context.teams.getTeam.mockResolvedValueOnce(driveState(candidate))
+      .mockResolvedValueOnce(driveState({ ...candidate, lifecycle: 'released' }))
+    await WorkspaceRecovery.apply(context.ctx, { maxTeamsPerDrive: 1, pageSize: 1 })
+    expect(context.teams.recordWorkspaceAllocationLoss).not.toHaveBeenCalled()
+    await context.ctx.fiber.dispose()
+  })
+
+  it('restarts a recurring sweep from the first Team after its discovery cursor expires', async () => {
+    const candidate = driveAllocation()
+    const context = fakeDriveContext({ pages: [{ items: [] }], state: driveState(candidate) })
+    let reads = 0
+    context.teams.listTeamsPage.mockImplementation(async () => {
+      reads += 1
+      if (reads === 2) throw new TeamError('Cursor expired', 'TEAM_DISCOVERY_CURSOR_EXPIRED')
+      return { items: [], scanned: 0 }
+    })
+    const warning = vi.spyOn(context.ctx.logger, 'warn').mockImplementation(() => undefined)
+    try {
+      await WorkspaceRecovery.apply(context.ctx, { maxTeamsPerDrive: 1, pageSize: 1,
+        pulseIntervalMs: 1, readAttempts: 1 })
+      await vi.waitFor(() => { expect(reads).toBeGreaterThanOrEqual(3) }, { timeout: 1_000 })
+      expect(context.teams.listTeamsPage).toHaveBeenNthCalledWith(3, { afterCursor: -1, limit: 1 })
+      expect(warning).toHaveBeenCalledWith(expect.stringContaining('Cursor expired'))
+    } finally { await context.ctx.fiber.dispose() }
+  })
+
+
+  it('retains an unavailable allocation when the provider cannot prove termination', async () => {
+    const reconcile = vi.fn(async () => {})
+    const ctx = await setup(reconcile)
+    const allocation = await releaseRequested(ctx, true, true)
+    if (allocation.executionWorld === undefined) throw new Error('Expected exact remote world')
+    reconcile.mockRejectedValueOnce(new TeamWorkspaceLostError({
+      executionWorld: allocation.executionWorld, reason: 'manifest-missing', terminationProven: false, artifacts: [],
+    }))
+    await WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 8, pageSize: 4 })
+    expect((await ctx.teams.getTeam({ teamId: allocation.teamId })).workspaceAllocations[0]).toMatchObject({
+      lifecycle: 'unavailable', loss: { reason: 'manifest-missing', terminationProven: false },
+    })
+    expect(reconcile).toHaveBeenCalledOnce()
+  })
+
   it('records definite loss before confirming a cold provider release', async () => {
     const reconcile = vi.fn(async () => {})
     const ctx = await setup(reconcile)

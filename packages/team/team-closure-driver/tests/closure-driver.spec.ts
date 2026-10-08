@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
+import { TeamError } from '@clocky/clocky-team'
 import type {
   ChannelSnapshot,
   JsonObject,
@@ -234,6 +235,18 @@ describe('Team closure driver', () => {
     const driver = new TeamClosureDriver(mounted.ctx, mounted.ctx.teamClosureDrives, config())
     await expect(driver.start()).rejects.toMatchObject({ code: 'TEAM_CURSOR_CONFLICT' })
     expect(mounted.teams.listTeamsPage).toHaveBeenCalledTimes(2)
+    await driver.close()
+  })
+
+  it('restarts discovery after its durable Team page cursor expires', async () => {
+    const calls: TeamClosureDriveRequest[] = []
+    const mounted = await harness({ pages: [{ items: [] }], backend: recordingBackend(calls) })
+    const driver = new TeamClosureDriver(mounted.ctx, mounted.ctx.teamClosureDrives, config())
+    await driver.start()
+    mounted.teams.listTeamsPage.mockRejectedValueOnce(new TeamError('Expired Team page', 'TEAM_DISCOVERY_CURSOR_EXPIRED'))
+    await expect(driver.drive()).resolves.toBeUndefined()
+    expect(mounted.teams.listTeamsPage).toHaveBeenLastCalledWith({ afterCursor: -1, limit: 2 })
+    expect(calls).toEqual([])
     await driver.close()
   })
 

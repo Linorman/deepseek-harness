@@ -1,6 +1,6 @@
 /** Durable summary cursors and retained task-owner references across fresh Hub recovery. @module */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { channelIdSchema, channelRecordSchema, channelManifestSchema, teamEnvelopeSchema, fingerprintChannelSummarySources, fingerprintChannelManifest, teamTaskSnapshotSchema } from '@clocky/clocky-team'
 import type { TeamViewPolicy } from '@clocky/clocky-team'
 import { channelProjectionData, channelProjectionFromData, foldChannelRecord } from '../src/fold.ts'
@@ -68,6 +68,98 @@ function summarizedChannel() {
 
 for (const backend of ['json', 'sqlite'] as const) {
   describe(`durable reference boundaries (${backend})`, () => {
+    it('publishes an externally appended summary without reopening the attached channel', async () => {
+      const f = summarizedChannel()
+      const ctx = await recover(backend, f.journal, undefined, teamId,
+        [{ id: f.channelId, records: f.records, checkpoint: f.checkpoint }])
+      ctx.teams.registerAdapter(retainedFinalAdapter)
+      ctx.teams.registerViewPolicy(summaryPolicy)
+      const before = await ctx.teams.getChannel({ channelId: f.channelId })
+      const stream = ctx.storageLog.get(`channel/${f.channelId}`)
+      if (stream === undefined) throw new Error('Recovered channel has no source stream')
+      const next = { ...f.summary, sequence: before.cursor + 1, createdAt: f.summary.createdAt + 1,
+        idempotencyKey: 'external-summary' }
+      await stream.append(stream.tailSequence, [next])
+      const shortRead = vi.spyOn(stream, 'read').mockResolvedValueOnce([])
+      expect((await ctx.teams.getChannel({ channelId: f.channelId })).cursor).toBe(before.cursor)
+      shortRead.mockRestore()
+      const refreshed = await ctx.teams.getChannel({ channelId: f.channelId })
+      expect(refreshed.cursor).toBe(before.cursor + 1)
+      expect((await ctx.teams.readChannelPage({ channelId: f.channelId, afterCursor: before.cursor, limit: 1 })).records)
+        .toEqual([next])
+    })
+
+    it('folds an externally appended ordinary Envelope after the retained summary', async () => {
+      const f = summarizedChannel()
+      const ctx = await recover(backend, f.journal, undefined, teamId,
+        [{ id: f.channelId, records: f.records, checkpoint: f.checkpoint }])
+      ctx.teams.registerAdapter(retainedFinalAdapter)
+      ctx.teams.registerViewPolicy(summaryPolicy)
+      const before = await ctx.teams.getChannel({ channelId: f.channelId })
+      const stream = ctx.storageLog.get(`channel/${f.channelId}`)
+      if (stream === undefined) throw new Error('Recovered channel has no source stream')
+      const envelope = teamEnvelopeSchema.parse({ id: 'external-message', teamId, channelId: f.channelId,
+        sequence: before.cursor + 1, senderId: taskCreatorId, audience: [], kind: 'message',
+        payload: { text: 'Externally retained follow-up.' }, delivery: 'context', priority: 'normal', createdAt: 23 })
+      await stream.append(stream.tailSequence, [{ type: 'channel/envelope', envelope, deliveryIntents: [] }])
+      const refreshed = await ctx.teams.getChannel({ channelId: f.channelId })
+      expect(refreshed.cursor).toBe(before.cursor + 1)
+      expect((await ctx.teams.readChannel({ channelId: f.channelId, afterCursor: before.cursor })).records)
+        .toEqual([{ type: 'channel/envelope', envelope, deliveryIntents: [] }])
+    })
+
+    it('coalesces concurrent reads while one external channel suffix is still loading', async () => {
+      const f = summarizedChannel()
+      const ctx = await recover(backend, f.journal, undefined, teamId,
+        [{ id: f.channelId, records: f.records, checkpoint: f.checkpoint }])
+      ctx.teams.registerAdapter(retainedFinalAdapter)
+      ctx.teams.registerViewPolicy(summaryPolicy)
+      const before = await ctx.teams.getChannel({ channelId: f.channelId })
+      const stream = ctx.storageLog.get(`channel/${f.channelId}`)
+      if (stream === undefined) throw new Error('Recovered channel has no source stream')
+      await stream.append(stream.tailSequence, [{ ...f.summary, sequence: before.cursor + 1,
+        createdAt: f.summary.createdAt + 1, idempotencyKey: 'concurrent-external-summary' }])
+      const entered = Promise.withResolvers<undefined>(), resume = Promise.withResolvers<undefined>()
+      const read = stream.read.bind(stream)
+      let gated = false
+      const delayed = vi.spyOn(stream, 'read').mockImplementation(async (cursor, limit) => {
+        if (!gated && cursor === before.cursor) { gated = true; entered.resolve(undefined); await resume.promise }
+        return await read(cursor, limit)
+      })
+      const first = ctx.teams.getChannel({ channelId: f.channelId })
+      await entered.promise
+      const second = ctx.teams.getChannel({ channelId: f.channelId })
+      resume.resolve(undefined)
+      try {
+        const [a, b] = await Promise.all([first, second])
+        expect(a.cursor).toBe(before.cursor + 1)
+        expect(b).toEqual(a)
+      } finally { resume.resolve(undefined); delayed.mockRestore() }
+    })
+
+    it('rejects a gapped external page and recovers the unchanged authoritative WAL', async () => {
+      const f = summarizedChannel()
+      const ctx = await recover(backend, f.journal, undefined, teamId,
+        [{ id: f.channelId, records: f.records, checkpoint: f.checkpoint }])
+      ctx.teams.registerAdapter(retainedFinalAdapter)
+      ctx.teams.registerViewPolicy(summaryPolicy)
+      const before = await ctx.teams.getChannel({ channelId: f.channelId })
+      const stream = ctx.storageLog.get(`channel/${f.channelId}`)
+      if (stream === undefined) throw new Error('Recovered channel has no source stream')
+      const next = { ...f.summary, sequence: before.cursor + 1, createdAt: f.summary.createdAt + 1,
+        idempotencyKey: 'external-gap-source' }
+      await stream.append(stream.tailSequence, [next])
+      const read = stream.read.bind(stream)
+      const gap = vi.spyOn(stream, 'read').mockImplementation(async (after, limit) => (await read(after, limit)).map(entry => ({
+        ...entry, sequence: entry.sequence + 1,
+      })))
+      try {
+        await expect(ctx.teams.getChannel({ channelId: f.channelId }))
+          .rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' })
+      } finally { gap.mockRestore() }
+      expect((await ctx.teams.getChannel({ channelId: f.channelId })).cursor).toBe(before.cursor + 1)
+    })
+
     it('retains a valid owner proposal after the named participant leaves', async () => {
       const f = ownerProposal()
       const ctx = await recover(backend, f.records, { ...f.checkpoint, rules: { ...f.checkpoint.rules, retainedOwner: true } })

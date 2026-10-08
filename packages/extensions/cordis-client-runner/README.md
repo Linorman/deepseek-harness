@@ -30,6 +30,8 @@ Nothing loads at activation, and nothing is restored after a refresh — a page 
 - `approve(requestId)` / `decline(requestId)` / `startUserRun({ agentId, id, hasClientHalf })` — the two entries. All three are idempotent (per request id, and per definition for the user's own run), so a double press cannot start two runs. `hasClientHalf` is required: a host-only definition has no source to fetch, so the caller states the shape from the registry row it is acting on rather than the orchestrator learning it from a failed fetch. An answerable request always has a browser half, because the host runs a host-only definition itself instead of asking a page.
 - `subscribe()` / `getSnapshot()` / `isLoaded(id)` — what this page has loaded. `isLoaded` is page-local truth, never the host's "it is running".
 
+Authorization clearing cancels active inspect queries and queued manifest publication. Old query results and publications remain fenced across authentication recovery; only a successful connection reset resumes publication.
+
 ## Model Experience
 
 ### Run resolution, when a model asked for the run

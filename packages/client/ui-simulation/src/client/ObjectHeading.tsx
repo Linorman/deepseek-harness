@@ -15,8 +15,8 @@ export function ObjectHeading({ name, domain, close, t }: {
   const [expanded, setExpanded] = useState(false)
   const [clipped, setClipped] = useState(false)
   useLayoutEffect(() => {
-    const element = heading.current
-    if (element === null) return
+    // The heading is unconditional and its ref attaches before layout effects.
+    const element = heading.current as HTMLHeadingElement
     const measure = () => { setClipped(element.scrollHeight > element.clientHeight + 1) }
     measure()
     const observer = new ResizeObserver(measure)

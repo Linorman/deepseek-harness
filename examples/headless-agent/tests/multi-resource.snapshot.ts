@@ -61,6 +61,7 @@ describe('mixed resources through the actual workflow and Host producers', () =>
       const target = join(root, '.clocky/profiles/headless/snapshot-fixtures')
       await mkdir(target, { recursive: true })
       for (const driver of drivers) await writeFile(join(target, driver), await readFile(join(fixtures, driver)))
+      await writeFile(join(target, 'authenticated-host.ts'), await readFile(join(fixtures, 'authenticated-host.ts')))
       await writeFile(join(target, 'package.json'), '{"type":"module"}\n')
       const launch = resolveExampleLaunch({ srcBin: join(repository, 'apps/cli/src/bin.ts'),
         configArgs: ['--profile', 'headless', ...configs.flatMap(config => ['--patch', join(fixtures, config)])],

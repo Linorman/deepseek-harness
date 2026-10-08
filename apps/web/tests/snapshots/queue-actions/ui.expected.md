@@ -31,4 +31,5 @@
 - button "Select model, current Test Model":
   - text: Test Model
   - img
+- status: Writing a reply Step 1
 - button "Stop generating"

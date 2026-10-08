@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import { once } from 'node:events'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -57,12 +58,19 @@ interface ApplyHarness {
 }
 
 /** Poll asynchronous output for up to five seconds. */
-async function waitFor<T>(get: () => T | undefined, description: string): Promise<T> {
+async function waitFor<T>(
+  get: () => T | undefined,
+  description: string,
+  recentFrames: () => Record<string, unknown>[],
+): Promise<T> {
   const deadline = Date.now() + 5000
   for (;;) {
     const value = get()
     if (value !== undefined) return value
-    if (Date.now() > deadline) throw new Error(`timed out waiting for ${description}`)
+    if (Date.now() > deadline) {
+      const observed = JSON.stringify(recentFrames().slice(-8))
+      throw new Error(`timed out waiting for ${description}; last frames:\n${observed}`)
+    }
     await new Promise(resolve => setTimeout(resolve, 5))
   }
 }
@@ -86,6 +94,7 @@ async function mountPlugin(
     writeDelayMs?: number
     failFlush?: boolean
     maxPendingNotificationBytes?: number
+    promptCompletionUrl?: string
     beforeServer?: (ctx: Context) => Promise<void> | void
   } = {},
 ): Promise<ApplyHarness> {
@@ -97,7 +106,7 @@ async function mountPlugin(
       'test-provider': {
         apiKeyEnv: 'TEST_API_KEY',
         api: 'openai-completions',
-        baseURL: process.env.TEST_BASE_URL ?? 'http://127.0.0.1:9',
+        baseURL: options.promptCompletionUrl ?? process.env.TEST_BASE_URL ?? 'http://127.0.0.1:9',
         models: ['apply-model', 'dsagent-model', 'x'].map(id => ({ id, maxTokens: 8192 })),
       },
     },
@@ -174,7 +183,7 @@ async function mountPlugin(
     sendRaw: (text) => { input.write(text) },
     frames,
     exits: () => events.flatMap(event => event.kind === 'exit' ? [event.code] : []),
-    waitForFrame: (predicate, description) => waitFor(() => frames().find(predicate), description),
+    waitForFrame: (predicate, description) => waitFor(() => frames().find(predicate), description, frames),
     dispose: async () => { await ctx.fiber.dispose() },
   }
 }
@@ -210,6 +219,31 @@ async function mockCompletionServer(): Promise<{ url: string; requests: unknown[
 }
 
 describe('clocky-sdk-jsonrpc-server plugin apply', () => {
+  it('serves a handshake when directly applied with only the optional stream hooks', async () => {
+    const ctx = new Context()
+    await installTestProductPrincipals(ctx)
+    ctx.provide('llm', { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] } as never)
+    const input = new PassThrough()
+    const output = new PassThrough()
+    const exit = vi.fn()
+    jsonrpc.apply(ctx, { input, output, exit })
+    try {
+      const response = once(output, 'data')
+      input.write(`${JSON.stringify({ jsonrpc: '2.0', id: 'direct-init', method: 'initialize', params: {
+        credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model',
+      } })}\n`)
+      const values: unknown[] = await response
+      const data = values[0]
+      expect(JSON.parse(String(data))).toEqual({ jsonrpc: '2.0', id: 'direct-init',
+        result: { serverInfo: { name: 'clocky-sdk-runtime', version: '0.0.1' } } })
+      expect(exit).not.toHaveBeenCalled()
+    } finally {
+      await ctx.fiber.dispose()
+      input.destroy()
+      output.destroy()
+    }
+  })
+
   it('disposes the runtime and exits nonzero when notification bytes exceed the deployment allowance', async () => {
     const storageDir = await freshStorageRoot('clocky-jsonrpc-overflow-')
     vi.stubEnv('TEST_API_KEY', 'test-key')
@@ -220,7 +254,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
         credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'apply-model' } })
       await harness.waitForFrame(frame => frame.id === 'init', 'initialized bounded transport')
       harness.ctx.sessions.create(SessionId('overflow-source')).append('turn/start', { turn: 1 })
-      await waitFor(() => harness.exits()[0], 'failed stream exit')
+      await waitFor(() => harness.exits()[0], 'failed stream exit', () => harness.frames())
       expect(harness.exits()).toEqual([1])
       expect(harness.events.findIndex(event => event.kind === 'root-disposed'))
         .toBeLessThan(harness.events.findIndex(event => event.kind === 'exit'))
@@ -308,8 +342,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
     const storageDir = await freshStorageRoot('clocky-jsonrpc-apply-prompt-')
     const llmServer = await mockCompletionServer()
     vi.stubEnv('TEST_API_KEY', 'test-key')
-    vi.stubEnv('TEST_BASE_URL', llmServer.url)
-    const harness = await mountPlugin(storageDir)
+    const harness = await mountPlugin(storageDir, { promptCompletionUrl: llmServer.url })
     try {
       harness.send({
         jsonrpc: '2.0', id: 1, method: 'initialize',
@@ -478,7 +511,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
       const second = { jsonrpc: '2.0', id: 'sd-2', method: 'shutdown' }
       harness.sendRaw(`${JSON.stringify(first)}\n${JSON.stringify(second)}\n`)
 
-      await waitFor(() => harness.exits().length > 0 ? true : undefined, 'exit recorder call')
+      await waitFor(() => harness.exits().length > 0 ? true : undefined, 'exit recorder call', () => harness.frames())
       expect(harness.exits()).toEqual([0])
 
       // Both response writes and the flush barrier complete before exit.
@@ -520,7 +553,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
       await harness.waitForFrame(frame => frame.id === 'init-flush-failure', 'authenticated initialization before shutdown')
       harness.send({ jsonrpc: '2.0', id: 'sd-fail', method: 'shutdown' })
 
-      await waitFor(() => harness.exits().length > 0 ? true : undefined, 'exit after flush failure')
+      await waitFor(() => harness.exits().length > 0 ? true : undefined, 'exit after flush failure', () => harness.frames())
       await settle()
       expect(harness.exits()).toEqual([0])
       expect(harness.events.filter(event => event.kind === 'root-disposed')).toHaveLength(1)

@@ -75,3 +75,71 @@ export function computeColumns(viewport: number, sidebar: number, details: numbe
   // absorbs any remaining deficit (may drop below CENTER_MIN).
   return { sidebar: s, center: Math.max(0, viewport - s), details: 0 }
 }
+
+// Conversation pane: while a Team page is open, the Session it inspects sits
+// in a right pane inside the center column instead of a modal.
+/** Team page floor beside an open conversation pane. */
+export const TEAM_MIN = 480
+/** Conversation pane drag clamp floor. */
+export const PANE_MIN = 380
+/** Conversation pane drag clamp ceiling. */
+export const PANE_MAX = 880
+/** Conversation pane width before any user drag. */
+export const PANE_DEFAULT = 480
+/** Conversation transcript floor inside the pane when the details column shares it. */
+export const CONVERSATION_MIN = 360
+
+/**
+ * How the conversation pane presents: `split` beside the Team page,
+ * `expanded` across the whole center column by request, or `sheet` over the
+ * center column when the Team page and a minimum pane no longer fit.
+ */
+export type PaneMode = 'split' | 'expanded' | 'sheet'
+
+/** Resolved pane geometry inside the center column. */
+export interface PaneColumns {
+  mode: PaneMode
+  /** Pane width in px (the whole center column unless split). */
+  pane: number
+  /** Team page width in px; 0 while expanded. */
+  team: number
+  /** Details column width inside the pane; 0 means closed. */
+  details: number
+}
+
+/**
+ * Fit the details column inside a pane, conceding to the transcript first.
+ * @param pane - pane width.
+ * @param details - details preference (0 = closed).
+ * @returns the details width, or 0 when it cannot fit.
+ */
+function fitDetails(pane: number, details: number): number {
+  if (details === 0) return 0
+  const preferred = clampWidth(details, DETAILS_MIN, DETAILS_MAX)
+  if (pane - preferred >= CONVERSATION_MIN) return preferred
+  const shrunk = pane - CONVERSATION_MIN
+  return shrunk >= DETAILS_MIN ? shrunk : 0
+}
+
+/**
+ * Solve the conversation pane inside the center column. Concession chain:
+ * keep the preferred pane while the Team page keeps TEAM_MIN, then shrink the
+ * pane toward PANE_MIN, then present the pane as a sheet over the page. Like
+ * {@link computeColumns}, the output depends only on its inputs, so widening
+ * the window restores the split.
+ * @param center - center column width in px.
+ * @param pane - pane width preference in px.
+ * @param details - details preference in px (0 = closed).
+ * @param expanded - the pane was expanded to the full center column.
+ * @returns the resolved pane geometry.
+ */
+export function computePane(center: number, pane: number, details: number, expanded: boolean): PaneColumns {
+  if (expanded) return { mode: 'expanded', pane: center, team: 0, details: fitDetails(center, details) }
+  const preferred = clampWidth(pane, PANE_MIN, PANE_MAX)
+  if (center - preferred >= TEAM_MIN) {
+    return { mode: 'split', pane: preferred, team: center - preferred, details: fitDetails(preferred, details) }
+  }
+  const shrunk = center - TEAM_MIN
+  if (shrunk >= PANE_MIN) return { mode: 'split', pane: shrunk, team: TEAM_MIN, details: fitDetails(shrunk, details) }
+  return { mode: 'sheet', pane: center, team: center, details: fitDetails(center, details) }
+}

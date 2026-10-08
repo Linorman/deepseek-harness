@@ -246,7 +246,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:104`](../packages/agent-runtime/agent-runtime-acp/src/index.ts)
+Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:106`](../packages/agent-runtime/agent-runtime-acp/src/index.ts)
 
 <a id="clockyclocky-agent-runtime-in-process"></a>
 
@@ -262,7 +262,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/agent-runtime/agent-runtime-in-process/src/index.ts:31`](../packages/agent-runtime/agent-runtime-in-process/src/index.ts)
+Source: [`packages/agent-runtime/agent-runtime-in-process/src/index.ts:32`](../packages/agent-runtime/agent-runtime-in-process/src/index.ts)
 
 <a id="clockyclocky-agent-runtime-sdk"></a>
 
@@ -313,7 +313,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/agent-runtime/agent-runtime-sdk/src/index.ts:66`](../packages/agent-runtime/agent-runtime-sdk/src/index.ts)
+Source: [`packages/agent-runtime/agent-runtime-sdk/src/index.ts:68`](../packages/agent-runtime/agent-runtime-sdk/src/index.ts)
 
 <a id="clockyclocky-agent-spine-demo"></a>
 
@@ -1878,7 +1878,7 @@ export enum SessionTelemetryMode {
 
 Depends on: `BatchLogRecordProcessorOptions` (`@opentelemetry/sdk-logs`) · `OTLPExporterNodeConfigBase` (`@opentelemetry/otlp-exporter-base`)
 
-Source: [`packages/session/session-telemetry-otel/src/index.ts:90`](../packages/session/session-telemetry-otel/src/index.ts)
+Source: [`packages/session/session-telemetry-otel/src/index.ts:87`](../packages/session/session-telemetry-otel/src/index.ts)
 
 <a id="clockyclocky-session-title"></a>
 
@@ -2360,7 +2360,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-activation-controller/src/index.ts:71`](../packages/team/team-activation-controller/src/index.ts)
+Source: [`packages/team/team-activation-controller/src/index.ts:73`](../packages/team/team-activation-controller/src/index.ts)
 
 <a id="clockyclocky-team-activation-recovery"></a>
 
@@ -2454,7 +2454,7 @@ export interface RetentionConfig {
 }
 ```
 
-Source: [`packages/team/team-artifact-local/src/index.ts:41`](../packages/team/team-artifact-local/src/index.ts)
+Source: [`packages/team/team-artifact-local/src/index.ts:42`](../packages/team/team-artifact-local/src/index.ts)
 
 <a id="clockyclocky-team-channel-admission"></a>
 
@@ -2526,7 +2526,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-closure-driver/src/index.ts:40`](../packages/team/team-closure-driver/src/index.ts)
+Source: [`packages/team/team-closure-driver/src/index.ts:41`](../packages/team/team-closure-driver/src/index.ts)
 
 <a id="clockyclocky-team-delegation"></a>
 
@@ -2628,7 +2628,7 @@ export interface Config {
 
 Depends on: [`TeamUsageRate`](../packages/core/team/src/index.ts)
 
-Source: [`packages/team/team-hub/src/index.ts:1020`](../packages/team/team-hub/src/index.ts)
+Source: [`packages/team/team-hub/src/index.ts:1023`](../packages/team/team-hub/src/index.ts)
 
 <a id="clockyclocky-team-human-client"></a>
 
@@ -2690,7 +2690,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-link-local/src/index.ts:62`](../packages/team/team-link-local/src/index.ts)
+Source: [`packages/team/team-link-local/src/index.ts:63`](../packages/team/team-link-local/src/index.ts)
 
 <a id="clockyclocky-team-link-websocket"></a>
 
@@ -2960,7 +2960,7 @@ export interface TeamTelemetryAlertRule {
 
 Depends on: `BatchLogRecordProcessorOptions` (`@opentelemetry/sdk-logs`) · `OTLPExporterNodeConfigBase` (`@opentelemetry/otlp-exporter-base`) · [`TeamTelemetryRecord`](subsystems/team.md) · [`TeamTelemetrySeverity`](subsystems/team.md)
 
-Source: [`packages/team/team-telemetry-otel/src/index.ts:54`](../packages/team/team-telemetry-otel/src/index.ts)
+Source: [`packages/team/team-telemetry-otel/src/index.ts:51`](../packages/team/team-telemetry-otel/src/index.ts)
 
 <a id="clockyclocky-team-workspace-e2b"></a>
 
@@ -2998,7 +2998,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/e2b/team-workspace-e2b/src/index.ts:67`](../packages/e2b/team-workspace-e2b/src/index.ts)
+Source: [`packages/e2b/team-workspace-e2b/src/index.ts:68`](../packages/e2b/team-workspace-e2b/src/index.ts)
 
 <a id="clockyclocky-team-workspace-recovery"></a>
 
@@ -3058,7 +3058,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-workspace-sandbox/src/index.ts:60`](../packages/team/team-workspace-sandbox/src/index.ts)
+Source: [`packages/team/team-workspace-sandbox/src/index.ts:67`](../packages/team/team-workspace-sandbox/src/index.ts)
 
 <a id="clockyclocky-team-workspace-shared"></a>
 
@@ -3108,7 +3108,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-workspace-shared/src/index.ts:65`](../packages/team/team-workspace-shared/src/index.ts)
+Source: [`packages/team/team-workspace-shared/src/index.ts:75`](../packages/team/team-workspace-shared/src/index.ts)
 
 <a id="clockyclocky-team-workspace-worktree"></a>
 
@@ -3146,7 +3146,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-workspace-worktree/src/index.ts:56`](../packages/team/team-workspace-worktree/src/index.ts)
+Source: [`packages/team/team-workspace-worktree/src/index.ts:58`](../packages/team/team-workspace-worktree/src/index.ts)
 
 <a id="clockyclocky-terminal-bash"></a>
 
@@ -3496,7 +3496,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/tool-team/src/index.ts:60`](../packages/team/tool-team/src/index.ts)
+Source: [`packages/team/tool-team/src/index.ts:61`](../packages/team/tool-team/src/index.ts)
 
 <a id="clockyclocky-tool-terminal"></a>
 
@@ -3600,7 +3600,7 @@ export interface Config {
 export type ToolPresentationMode = 'native' | 'code' | 'both'
 ```
 
-Source: [`packages/core/tools/src/index.ts:654`](../packages/core/tools/src/index.ts)
+Source: [`packages/core/tools/src/index.ts:655`](../packages/core/tools/src/index.ts)
 
 <a id="clockyclocky-typert-loader"></a>
 
@@ -3893,6 +3893,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@clocky/clocky-client-test-runtime` ([`packages/test-support/client-runtime/src/index.ts`](../packages/test-support/client-runtime/src/index.ts))
 - `@clocky/clocky-client-ui-primitives` ([`packages/client/ui-primitives/src/index.ts`](../packages/client/ui-primitives/src/index.ts))
 - `@clocky/clocky-client-ui-slots` ([`packages/client/ui-slots/src/index.ts`](../packages/client/ui-slots/src/index.ts))
+- `@clocky/clocky-client-ui-viz` ([`packages/client/ui-viz/src/index.ts`](../packages/client/ui-viz/src/index.ts))
 - `@clocky/clocky-client-web` ([`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts))
 - `@clocky/clocky-cmdline` ([`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts))
 - `@clocky/clocky-code-runtime-python` ([`packages/code-runtime/code-runtime-python/src/index.ts`](../packages/code-runtime/code-runtime-python/src/index.ts))
@@ -3913,6 +3914,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@clocky/clocky-team` ([`packages/core/team/src/index.ts`](../packages/core/team/src/index.ts))
 - `@clocky/clocky-team-human-actor` ([`packages/team/team-human-actor/src/index.ts`](../packages/team/team-human-actor/src/index.ts))
 - `@clocky/clocky-team-link-websocket-hub` ([`packages/team/team-link-websocket-hub/src/index.ts`](../packages/team/team-link-websocket-hub/src/index.ts))
+- `@clocky/clocky-team-workspace-local-files` ([`packages/team/team-workspace-local-files/src/index.ts`](../packages/team/team-workspace-local-files/src/index.ts))
 - `@clocky/clocky-timeout` ([`packages/util/timeout/src/index.ts`](../packages/util/timeout/src/index.ts))
 - `@clocky/clocky-typert-generator` ([`packages/typert/generator/src/index.ts`](../packages/typert/generator/src/index.ts))
 - `@clocky/clocky-typert-protocol` ([`packages/typert/protocol/src/index.ts`](../packages/typert/protocol/src/index.ts))

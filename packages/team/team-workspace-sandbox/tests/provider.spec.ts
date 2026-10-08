@@ -10,8 +10,19 @@ import type {
   TeamWorkspacePrepareRequest,
   TeamWorkspaceSourceIntegrateRequest,
 } from '@clocky/clocky-team-workspace'
-import type { TaskAttemptId, TeamTaskSnapshot } from '@clocky/clocky-team'
+import type { ParticipantSnapshot, TaskAttemptId, TeamTaskSnapshot } from '@clocky/clocky-team'
 import * as SandboxWorkspace from '../src/index.ts'
+
+const mkdirRace = vi.hoisted(() => ({ enabled: false }))
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const original = await importOriginal<typeof import('node:fs/promises')>()
+  return { ...original, async mkdir(...args: Parameters<typeof original.mkdir>) {
+    if (mkdirRace.enabled && String(args[0]).includes('.clocky-team-sandbox-')) {
+      throw Object.assign(new Error('root appeared concurrently'), { code: 'EEXIST' })
+    }
+    return await original.mkdir(...args)
+  } }
+})
 
 const roots: string[] = []
 
@@ -63,7 +74,7 @@ function fixture(sourceRoot: string, allocationParent: string) {
     authorize: vi.fn(async () => ({ kind: 'allow' as const })),
   }
   const agent = { session: { id: sessionId } }
-  const agents = { get: vi.fn(() => agent) }
+  const agents = { get: vi.fn((): typeof agent | undefined => agent) }
   const artifactBytes = new Map<string, Uint8Array>()
   const saves = vi.fn(async (_provider: string, request: {
     readonly name?: string
@@ -129,6 +140,184 @@ async function setup(options: {
 }
 
 describe('local Team sandbox workspace provider', () => {
+  it('preflights active sandbox placement only while its required roots exist', async () => {
+    const { ctx, harness } = await setup()
+    const provider = ctx.teamWorkspaces.getProvider('sandbox-local')
+    if (provider?.preflight === undefined) throw new Error('sandbox preflight is unavailable')
+    const member = harness.state.participants[0]
+    if (member === undefined) throw new Error('sandbox fixture has no participant')
+    const participant: ParticipantSnapshot = { ...member, displayName: 'Sandbox worker', role: 'worker', capabilities: [] }
+    const preflight = provider.preflight.bind(provider)
+    const route = { provider: 'in-process', model: 'test-model', cwd: harness.allocationParent }
+    const check = (task = harness.task, candidate = participant) => preflight({ task, participant: candidate, route })
+    expect(await check()).toBe(true)
+    expect(await check({ ...harness.task, workspaceMode: 'shared' } as never)).toBe(false)
+    expect(await check(harness.task, { ...participant, phase: 'provisioning' })).toBe(false)
+    await rm(harness.sourceRoot, { recursive: true, force: true })
+    expect(await check()).toBe(false)
+    await ctx.fiber.dispose()
+
+    const empty = await setup({ source: false })
+    const noSource = empty.ctx.teamWorkspaces.getProvider('sandbox-local')
+    if (noSource?.preflight === undefined) throw new Error('unseeded sandbox preflight is unavailable')
+    const emptyMember = empty.harness.state.participants[0]
+    if (emptyMember === undefined) throw new Error('unseeded sandbox fixture has no participant')
+    const emptyParticipant: ParticipantSnapshot = { ...emptyMember, displayName: 'Sandbox worker', role: 'worker', capabilities: [] }
+    expect(await noSource.preflight({ task: empty.harness.task, participant: emptyParticipant,
+      route: { provider: 'in-process', model: 'test-model', cwd: empty.harness.allocationParent } })).toBe(true)
+    await rm(empty.harness.allocationParent, { recursive: true, force: true })
+    expect(await noSource.preflight({ task: empty.harness.task, participant: emptyParticipant,
+      route: { provider: 'in-process', model: 'test-model', cwd: empty.harness.allocationParent } })).toBe(false)
+    await empty.ctx.fiber.dispose()
+  })
+
+  it('rejects allocation when roots or the exact local Agent disappear', async () => {
+    const missingParent = await setup()
+    await rm(missingParent.harness.allocationParent, { recursive: true, force: true })
+    await expect(missingParent.ctx.teamWorkspaces.prepare('sandbox', missingParent.harness.request))
+      .rejects.toThrow('allocation parent')
+    await missingParent.ctx.fiber.dispose()
+
+    const missingSource = await setup()
+    await rm(missingSource.harness.sourceRoot, { recursive: true, force: true })
+    await expect(missingSource.ctx.teamWorkspaces.prepare('sandbox', missingSource.harness.request))
+      .rejects.toThrow('source root')
+    await missingSource.ctx.fiber.dispose()
+
+    const missingAgent = await setup()
+    missingAgent.harness.agents.get.mockReturnValue(undefined)
+    await expect(missingAgent.ctx.teamWorkspaces.prepare('sandbox', missingAgent.harness.request))
+      .rejects.toThrow('not a live local Agent')
+    await missingAgent.ctx.fiber.dispose()
+  })
+
+  it('rebuilds a missing sandbox root from its retained manifest and nested seed tree', async () => {
+    const { ctx, harness } = await setup()
+    await mkdir(join(harness.sourceRoot, 'nested'))
+    await writeFile(join(harness.sourceRoot, 'nested', 'seed.txt'), 'nested seed\n')
+    const preparation = await ctx.teamWorkspaces.prepare('sandbox', harness.request)
+    const allocation = await preparation.materialize()
+    expect(await readFile(join(allocation.root, 'nested', 'seed.txt'), 'utf8')).toBe('nested seed\n')
+    const provider = ctx.teamWorkspaces.getProvider('sandbox-local')
+    if (provider === undefined) throw new Error('sandbox provider was not registered')
+    const internals = provider as unknown as {
+      readonly allocations: Map<string, TeamWorkspaceAllocation>
+      readonly preparations: Map<string, unknown>
+    }
+    internals.allocations.clear()
+    internals.preparations.clear()
+    await rm(allocation.root, { recursive: true, force: true })
+    const replacement = await (await provider.prepare(harness.request)).materialize()
+    expect(await readFile(join(replacement.root, 'nested', 'seed.txt'), 'utf8')).toBe('nested seed\n')
+    await replacement.release()
+    await ctx.fiber.dispose()
+  })
+
+  it('refuses a live root whose provider manifest was removed', async () => {
+    const { ctx, harness } = await setup()
+    const allocation = await (await ctx.teamWorkspaces.prepare('sandbox', harness.request)).materialize()
+    const manifest = (await readdir(harness.allocationParent)).find(entry => entry.endsWith('.manifest.json'))
+    if (manifest === undefined) throw new Error('sandbox provider did not write its manifest')
+    await rm(join(harness.allocationParent, manifest))
+    const provider = ctx.teamWorkspaces.getProvider('sandbox-local')
+    if (provider === undefined) throw new Error('sandbox provider was not registered')
+    const internals = provider as unknown as {
+      readonly allocations: Map<string, TeamWorkspaceAllocation>
+      readonly preparations: Map<string, unknown>
+    }
+    internals.allocations.clear()
+    internals.preparations.clear()
+    await expect(provider.restore(harness.request, allocation)).rejects.toThrow('no provider manifest')
+    await expect((await provider.prepare(harness.request)).materialize()).rejects.toThrow('not owned by this provider')
+    await expect(allocation.release()).rejects.toThrow('no provider manifest')
+    await ctx.fiber.dispose()
+  })
+
+  it('rejects malformed and unreadable provider manifests at the file boundary', async () => {
+    const { ctx, harness } = await setup()
+    const allocation = await (await ctx.teamWorkspaces.prepare('sandbox', harness.request)).materialize()
+    const manifest = (await readdir(harness.allocationParent)).find(entry => entry.endsWith('.manifest.json'))
+    if (manifest === undefined) throw new Error('sandbox provider did not write its manifest')
+    const manifestFile = join(harness.allocationParent, manifest)
+    await writeFile(manifestFile, '{')
+    await expect(allocation.release()).rejects.toThrow('invalid provider manifest')
+    await rm(manifestFile)
+    await mkdir(manifestFile)
+    await expect(allocation.release()).rejects.toMatchObject({ code: 'EISDIR' })
+    await ctx.fiber.dispose()
+  })
+
+  it('cleans a new root when its seed disappears after allocation authorization', async () => {
+    const { ctx, harness } = await setup()
+    const preparation = await ctx.teamWorkspaces.prepare('sandbox', harness.request)
+    harness.teams.authorize.mockImplementationOnce(async () => {
+      await rm(harness.sourceRoot, { recursive: true, force: true })
+      return { kind: 'allow' as const }
+    })
+    await expect(preparation.materialize()).rejects.toMatchObject({ code: 'ENOENT' })
+    expect((await readdir(harness.allocationParent)).filter(name => name.startsWith('.clocky-team-sandbox-'))).toEqual([])
+    await ctx.fiber.dispose()
+  })
+
+  it('cleans a recovered root if its seed disappears after authorization', async () => {
+    const { ctx, harness } = await setup()
+    const allocation = await (await ctx.teamWorkspaces.prepare('sandbox', harness.request)).materialize()
+    const provider = ctx.teamWorkspaces.getProvider('sandbox-local')
+    if (provider === undefined) throw new Error('sandbox provider was not registered')
+    const internals = provider as unknown as {
+      readonly allocations: Map<string, TeamWorkspaceAllocation>
+      readonly preparations: Map<string, unknown>
+    }
+    internals.allocations.clear()
+    internals.preparations.clear()
+    await rm(allocation.root, { recursive: true, force: true })
+    const preparation = await provider.prepare(harness.request)
+    harness.teams.authorize.mockImplementationOnce(async () => {
+      await rm(harness.sourceRoot, { recursive: true, force: true })
+      return { kind: 'allow' as const }
+    })
+    await expect(preparation.materialize()).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(stat(allocation.root)).rejects.toMatchObject({ code: 'ENOENT' })
+    await ctx.fiber.dispose()
+  })
+
+  it('propagates a root creation failure after authorization if the allocation parent disappears', async () => {
+    const { ctx, harness } = await setup()
+    const preparation = await ctx.teamWorkspaces.prepare('sandbox', harness.request)
+    harness.teams.authorize.mockImplementationOnce(async () => {
+      await rm(harness.allocationParent, { recursive: true, force: true })
+      return { kind: 'allow' as const }
+    })
+    await expect(preparation.materialize()).rejects.toMatchObject({ code: 'ENOENT' })
+    await ctx.fiber.dispose()
+  })
+
+  it('rejects a concurrent root creation reported by the filesystem', async () => {
+    const { ctx, harness } = await setup()
+    const preparation = await ctx.teamWorkspaces.prepare('sandbox', harness.request)
+    mkdirRace.enabled = true
+    try {
+      await expect(preparation.materialize()).rejects.toThrow('created concurrently')
+    } finally {
+      mkdirRace.enabled = false
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('rejects source integration when its deployment authority is disabled', async () => {
+    const { ctx, harness } = await setup({ artifact: true })
+    const patch = await harness.saves('test-artifacts', { name: 'disabled', sourceAttemptId: harness.request.attemptId,
+      kind: 'patch', visibility: 'team', data: 'unused' })
+    await expect(ctx.teamWorkspaces.integrateSource('sandbox-local', {
+      source: { teamId: harness.request.teamId, taskId: harness.request.taskId,
+        attemptId: harness.request.attemptId, artifacts: [patch] },
+      integrationTaskId: 'sandbox-disabled-task' as never,
+      integrationAttemptId: 'sandbox-disabled-attempt' as never,
+      target: 'main', mode: 'integrate',
+    })).rejects.toMatchObject({ code: 'TEAM_POLICY_DENIED' })
+    await ctx.fiber.dispose()
+  })
+
   it('allocates after the Team check, restores from its manifest, publishes changes, and releases only its own root', async () => {
     const { ctx, harness } = await setup({ artifact: true })
     const preparation = await ctx.teamWorkspaces.prepare('sandbox', harness.request)
@@ -427,6 +616,13 @@ describe('local Team sandbox workspace provider', () => {
       integrationTaskId: 'sandbox-unsafe-target' as never,
       integrationAttemptId: 'sandbox-unsafe-attempt' as never,
     })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    for (const target of ['nested\\target', '/absolute-target']) {
+      await expect(ctx.teamWorkspaces.integrateSource('sandbox-local', {
+        ...request, target,
+        integrationTaskId: 'sandbox-invalid-target-task' as never,
+        integrationAttemptId: 'sandbox-invalid-target-attempt' as never,
+      })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    }
     await expect(ctx.teamWorkspaces.integrateSource('sandbox-local', {
       ...request,
       source: { ...request.source, teamId: '' as never },
@@ -541,5 +737,20 @@ describe('local Team sandbox workspace provider', () => {
     await reject({ allocationParent, integrationRoot, integrationEnabled: true }, /artifactProvider is required/)
     await reject({ allocationParent, sourceRoot: allocationParent }, /sourceRoot and allocationParent must not overlap/)
     await reject({ allocationParent, sourceRoot, integrationRoot: sourceRoot }, /sourceRoot and integrationRoot must not overlap/)
+    await reject({ allocationParent, providerName: ' ' }, /providerName must be non-empty/)
+    await reject({ allocationParent, maxArtifactBytes: 0 }, /maxArtifactBytes/)
+    await reject({ allocationParent, maxIntegrationBytes: Number.NaN }, /maxIntegrationBytes/)
+    await reject({ allocationParent: join(allocationParent, 'missing') }, /cannot be canonicalized/)
+    const fileRoot = join(allocationParent, 'not-a-directory')
+    await writeFile(fileRoot, 'file\n')
+    await reject({ allocationParent: fileRoot }, /not a directory/)
+    const direct = new Context()
+    await expect(SandboxWorkspace.apply(direct, { allocationParent, maxArtifactBytes: 0 }))
+      .rejects.toThrow(/maxArtifactBytes must be a positive/)
+    await expect(SandboxWorkspace.apply(direct, { allocationParent, maxIntegrationBytes: Number.NaN }))
+      .rejects.toThrow(/maxIntegrationBytes must be a positive/)
+    await direct.plugin(TeamWorkspaceRegistry)
+    await SandboxWorkspace.apply(direct, { allocationParent })
+    await direct.fiber.dispose()
   })
 })

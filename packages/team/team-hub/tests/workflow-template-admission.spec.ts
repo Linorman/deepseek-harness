@@ -15,8 +15,9 @@ import type {
   TeamTaskSnapshot, TeamWorkflowPlanSnapshot, TeamWorkflowTaskTemplate,
 } from '@clocky/clocky-team'
 import { createTestRootTeam, inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
-import { postActor } from './fixtures.ts'
+import { postActor, seedTeamPhase } from './fixtures.ts'
 import TeamHub from '../src/index.ts'
+import type { Config as TeamHubConfig } from '../src/index.ts'
 
 type Backend = 'json' | 'sqlite'
 const roots: string[] = []
@@ -28,23 +29,23 @@ afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
 })
 
-async function hub(backend: Backend, root: string) {
+async function hub(backend: Backend, root: string, config: TeamHubConfig = {}) {
   const ctx = new Context()
   contexts.add(ctx)
   await ctx.plugin(Storage)
   if (backend === 'json') await ctx.plugin(StorageJson, { root })
   else await ctx.plugin(StorageSqlite, { path: join(root, 'hub.db') })
   await ctx.plugin(StorageLog, { backend, routes: {} })
-  await ctx.plugin(TeamHub)
+  await ctx.plugin(TeamHub, config)
   return ctx
 }
 
 /** Publish real coordinator/worker/reviewer records before authorizing plan and task JSON. */
-async function setup(backend: Backend) {
+async function setup(backend: Backend, config: TeamHubConfig = {}) {
   await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
   const root = await mkdtemp(join(process.cwd(), '.tmp', 'workflow-template-admission-'))
   roots.push(root)
-  const ctx = await hub(backend, root)
+  const ctx = await hub(backend, root, config)
   const created = await createTestRootTeam(ctx, {
     goal: { objective: 'Compile only tasks represented by their admitted workflow templates.', budgets: {} }, rules: {}, budgets: {},
   })
@@ -128,6 +129,22 @@ async function bind(
 }
 
 describe('workflow template admission through public task JSON', () => {
+  it('rejects plan admission after the Team stalls and before reserving tasks beyond its limit', async () => {
+    const capacity = await setup('json', { maxTasksPerTeam: 1 })
+    const beforeCapacity = await capacity.ctx.teams.getTeam({ teamId: capacity.teamId })
+    await expect(admit(capacity, [template('first'), template('second')], 'too-many-tasks'))
+      .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+    expect(await capacity.ctx.teams.getTeam({ teamId: capacity.teamId })).toEqual(beforeCapacity)
+
+    const stalled = await setup('json')
+    await seedTeamPhase(stalled.ctx, stalled.teamId, 'stalled', {
+      code: 'PROVIDER_UNAVAILABLE', message: 'Awaiting coordinator recovery.',
+    })
+    const beforeStalled = await stalled.ctx.teams.getTeam({ teamId: stalled.teamId })
+    await expect(admit(stalled, [template('first')], 'stalled-plan'))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    expect(await stalled.ctx.teams.getTeam({ teamId: stalled.teamId })).toEqual(beforeStalled)
+  })
   for (const backend of ['json', 'sqlite'] as const) {
     it(`rejects task fields that diverge from the admitted template before mutation policy on ${backend}`, async () => {
       const fixture = await setup(backend)

@@ -9,7 +9,7 @@ import type { SidebarRootInjected } from '@clocky/clocky-client-ui-sidebar/clien
 async function bench(declare = true) {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
-  const layout = { toggleSidebar: vi.fn(), showWorkspace: vi.fn() }
+  const layout = { toggleSidebar: vi.fn(), showWorkspace: vi.fn(), openCommandPalette: vi.fn() }
   const sessions = { open: vi.fn(), clear: vi.fn() }
   const teamTasks = { startDraft: vi.fn() }
   ctx.provide('layout', layout)
@@ -44,12 +44,15 @@ describe('ui-sidebar apply', () => {
     // Copy rides the standard locale seat, not the inject face.
     expect(b.slots.entries('sidebar')[0]!.locale).toBe('sidebar')
     const injected = (b.slots.entries('sidebar')[0]!.inject as () => SidebarRootInjected)()
-    expect(Object.keys(injected)).toEqual(['startTask', 'toggleSidebar'])
+    expect(Object.keys(injected)).toEqual(['startTask', 'toggleSidebar', 'openSearch'])
     injected.startTask()
     expect(b.teamTasks.startDraft).toHaveBeenCalledOnce()
     expect(b.sessions.clear).toHaveBeenCalledOnce()
     injected.toggleSidebar()
     expect(b.layout.toggleSidebar).toHaveBeenCalledOnce()
+    if (injected.openSearch === undefined) throw new Error('sidebar did not receive the palette opener')
+    injected.openSearch()
+    expect(b.layout.openCommandPalette).toHaveBeenCalledOnce()
   })
 
   it('fails when no live owner declared the sidebar slot', async () => {

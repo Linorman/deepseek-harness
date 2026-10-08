@@ -582,3 +582,26 @@ describe('coverage tails (branch duals)', () => {
   })
 
 })
+
+describe('SessionRuntime connection status', () => {
+  it('moves from connecting to connected, reconnecting, and back', () => {
+    const { svc } = bench()
+    expect(svc.connection.getSnapshot()).toEqual({ state: 'connecting' })
+    svc.handleConnected()
+    expect(svc.connection.getSnapshot()).toEqual({ state: 'connected' })
+    svc.handleDisconnected()
+    expect(svc.connection.getSnapshot()).toEqual({ state: 'reconnecting' })
+    svc.handleConnected()
+    expect(svc.connection.getSnapshot()).toEqual({ state: 'connected' })
+  })
+
+  it('keeps an access refusal visible across retries until a handshake succeeds', () => {
+    const { svc } = bench()
+    svc.handleAuthorizationLost()
+    expect(svc.connection.getSnapshot()).toEqual({ state: 'unauthorized' })
+    svc.handleDisconnected()
+    expect(svc.connection.getSnapshot()).toEqual({ state: 'unauthorized' })
+    svc.handleConnected()
+    expect(svc.connection.getSnapshot()).toEqual({ state: 'connected' })
+  })
+})

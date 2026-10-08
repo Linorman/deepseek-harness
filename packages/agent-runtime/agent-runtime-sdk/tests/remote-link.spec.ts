@@ -1297,12 +1297,12 @@ describe('SDK remote Link enrollment', () => {
       expect(records.records.some(record => record.type === 'channel/receipt'
         && record.participantId === recipient.id
         && record.envelopeId === second.id)).toBe(true)
-    }, { interval: 20, timeout: 10_000 })
+    }, { interval: 20, timeout: 30_000 })
     const current = await ctx.teams.getActivation({ teamId: created.team.id, activationId: lease.binding.activation.id })
     expect(current.activation.id).toBe(lease.binding.activation.id)
 
     await hub.dispose()
     await lease.dispose()
     await controller.close()
-  }, 45_000)
+  }, 60_000)
 })

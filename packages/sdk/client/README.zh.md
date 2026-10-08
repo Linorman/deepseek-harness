@@ -40,6 +40,8 @@ Team-list continuation 是 opaque string，`-1` 表示新扫描。`scanned` 表�
 
 `listSimulationTasks()` 读取有界的规范运行任务控制。`cancelSimulationTask()` 固定来源操作、任务 revision、命令 ID 与精确 attempt ID；显式 `null` 要求当前没有活动 attempt lease。客户端拒绝其他运行、命令或回执类型。`getSimulationRequest()` 仅为 `cancel-task` 返回原始 `cancellation`；查询与精确重试不分配新命令。这些方法不授予通用 Team 写权限，也不启动推理。
 
+Simulation 目录／预检结果要求带判别值的 `readiness`；`ready.model` 是创建时应传给 `expectedModel` 的精确路由。预检不携带该确认字段或命令 ID。缺失／未知就绪字段或路由在使用前被拒绝；模型变化拒绝要求重新确认，未知响应保留原命令身份。
+
 ## Clocky
 
 ```ts

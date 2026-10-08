@@ -3,12 +3,14 @@
  * selection off the page URL, and the single-consumer stream-loop ownership.
  */
 import { Context } from '@clocky/cordis'
+import { PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE } from '@clocky/clocky-host-apiproxy/api'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { apply, type ConnectionHandle } from '../src/client/index.ts'
 import type { RpcMessage } from '../src/client/api.ts'
 import { RpcId } from '../src/client/api.ts'
 import { FixtureApiClient } from '../src/client/fixture.ts'
 import { WebApiClient } from '../src/client/web-api-client.ts'
+import { waitForProductAuthBootstrap } from '../src/client/product-auth-bootstrap.ts'
 import { PRODUCT_AUTH_BOOTSTRAP_PROMISE } from '../src/product-auth-contract.ts'
 
 type Win = { location?: { hostname: string; search: string; origin?: string } }
@@ -41,6 +43,11 @@ class FakeWebSocket extends EventTarget {
     if (this.readyState === FakeWebSocket.CLOSED) return
     this.readyState = FakeWebSocket.CLOSED
     this.dispatchEvent(new Event('close'))
+  }
+
+  retireAuthentication(): void {
+    this.readyState = FakeWebSocket.CLOSED
+    this.dispatchEvent(Object.assign(new Event('close'), { code: PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE }))
   }
 
   receive(data: unknown): void {
@@ -172,6 +179,22 @@ describe('connection client apply', () => {
     }
   })
 
+  it('forwards an explicit product authorization loss to the connection owner', async () => {
+    ;(globalThis as Win).location = { hostname: 'localhost', search: '?fixture' }
+    const handle = await mount()
+    vi.spyOn(handle.api.host, 'describe').mockResolvedValue({ result: { ok: false,
+      error: { code: 'PRODUCT_AUTH_REQUIRED', message: 'Authentication required', details: {} } } } as never)
+    const denied = vi.fn()
+    const owner: { loop?: ReturnType<ConnectionHandle['start']> } = {}
+    owner.loop = handle.start({ onAuthorizationLost: denied })
+    try {
+      await vi.waitFor(() => { expect(denied).toHaveBeenCalledOnce() })
+      expect(handle.hostDescription.getSnapshot()).toBeUndefined()
+      await new Promise(resolve => setTimeout(resolve, 75))
+      expect(denied).toHaveBeenCalledOnce()
+    } finally { owner.loop?.stop() }
+  })
+
   it('WebApiClient keeps unary calls and respond on globalThis.fetch', async () => {
     ;(globalThis as Win).location = { hostname: 'localhost', search: '' }
     const handle = await mount()
@@ -194,6 +217,11 @@ describe('connection client apply', () => {
     }
     expect(seen.some(u => u.includes('/api/host.describe'))).toBe(true)
     expect(seen.some(u => u.includes('/api/respond'))).toBe(true)
+  })
+
+  it('rejects a malformed Host bootstrap value before opening a carrier', async () => {
+    ;(globalThis as Record<string, unknown>)[PRODUCT_AUTH_BOOTSTRAP_PROMISE] = { then: 1 }
+    await expect(waitForProductAuthBootstrap()).rejects.toThrow('Product authentication bootstrap is unavailable')
   })
 
   it('waits for the Host-injected bootstrap exchange before browser HTTP, generic RPC, or WebSocket traffic', async () => {
@@ -286,6 +314,17 @@ describe('connection client apply', () => {
     expect(sockets.every(socket => socket.readyState === FakeWebSocket.CLOSED)).toBe(true)
     errors.mockRestore()
     fetch.mockRestore()
+  })
+
+  it('drops queued frames and reports product authorization retirement on WebSocket close', async () => {
+    ;(globalThis as Win).location = { hostname: 'localhost', search: '', origin: 'http://localhost:3080' }
+    ;(globalThis as WebSocketGlobal).WebSocket = FakeWebSocket as unknown as typeof WebSocket
+    const client = (await mount()).api
+    const iterator = client.events.mux({}, new AbortController().signal)[Symbol.asyncIterator]()
+    const pending = iterator.next()
+    await vi.waitFor(() => { expect(sockets).toHaveLength(1) })
+    sockets[0]!.retireAuthentication()
+    await expect(pending).rejects.toMatchObject({ code: 'PRODUCT_AUTH_INVALID', status: 401 })
   })
 
   it('maps an HTTPS page origin to a secure WebSocket URL', async () => {

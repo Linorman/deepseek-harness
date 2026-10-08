@@ -19,7 +19,7 @@ class AnswerModel extends QuestionModel {
       const signal = options.signal
       assert(signal !== undefined)
       if (signal.aborted) return
-      await new Promise<void>(resolve => signal.addEventListener('abort', () => { resolve() }, { once: true }))
+      await new Promise<void>((resolve) => { signal.addEventListener('abort', () => { resolve() }, { once: true }) })
       return
     }
     yield* super.stream(options)
@@ -64,7 +64,7 @@ async function run(ctx: Context, model: AnswerModel) {
       value(await client.teams.inboxAcknowledge({ throughCursor: delivered.sequence }))
       value(await client.teams.cancel({ teamId: state.team.id }))
       const terminal = value(await client.teams.get({ teamId: state.team.id }))
-      const action = terminal.humanActions?.find(item => item.id === delivered!.action.id)
+      const action = terminal.humanActions?.find(item => item.id === delivered.action.id)
       assert.equal(action?.phase, 'resolved')
       assert.equal(model.askCalls, 1)
       return { scenario: 'principal-human-question', backend: process.env.CLOCKY_QUESTION_BACKEND,

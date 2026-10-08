@@ -63,7 +63,7 @@
 }
 
 .callRow {
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 /* Selection still sets data-selected for details linkage; no outline —
@@ -77,15 +77,15 @@
   display: inline-flex;
   align-items: center;
   height: 26px;
-  font: var(--clocky-font-s-strong-14);
+  font: var(--clocky-type-body-strong);
   white-space: nowrap;
   background: linear-gradient(
     90deg,
-    var(--clocky-static-accent-500) 0%,
-    var(--clocky-static-accent-500) 40%,
-    var(--clocky-static-accent-200) 50%,
-    var(--clocky-static-accent-500) 60%,
-    var(--clocky-static-accent-500) 100%
+    var(--clocky-accent-bg) 0%,
+    var(--clocky-accent-bg) 40%,
+    var(--clocky-accent-subtle-border) 50%,
+    var(--clocky-accent-bg) 60%,
+    var(--clocky-accent-bg) 100%
   );
   background-position: 100% 0;
   background-size: 250% 100%;
@@ -93,16 +93,16 @@
   color: transparent;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: clocky-turn-status-shimmer 1.8s linear infinite;
+  animation: clocky-turn-status-shimmer var(--clocky-duration-shimmer) linear infinite;
 }
 
 .turnStatusClock {
   margin-left: 8px;
-  font: var(--clocky-font-xs-13);
+  font: var(--clocky-type-body-small);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: var(--clocky-alias-label-caption);
-  -webkit-text-fill-color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
+  -webkit-text-fill-color: var(--clocky-fg-tertiary);
 }
 
 @keyframes clocky-turn-status-shimmer {
@@ -120,15 +120,15 @@
 }
 
 .hint {
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .openError {
-  color: var(--clocky-alias-state-error-primary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-status-failed-fg);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .older {
@@ -138,11 +138,11 @@
 
 .older button {
   border: none;
-  border-radius: 14px;
+  border-radius: var(--clocky-radius-lg);
   padding: 4px 12px;
-  font-size: 12px;
-  color: var(--clocky-alias-label-secondary);
-  background: var(--clocky-alias-interactive-bg-hover-solid);
+  font-size: var(--clocky-type-caption-size);
+  color: var(--clocky-fg-secondary);
+  background: var(--clocky-bg-sunken);
   cursor: pointer;
 }
 
@@ -159,7 +159,7 @@
   bottom: 16px;
   /* Above the sticky composer (z-index 7) so the control stays clickable and
      visible over the input card. */
-  z-index: 8;
+  z-index: var(--clocky-layer-local-8);
   height: 0;
   display: flex;
   justify-content: flex-end;
@@ -183,20 +183,101 @@
   height: 34px;
   margin-top: -34px;
   padding: 0;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 100px;
-  color: var(--clocky-alias-label-primary);
-  background: var(--clocky-alias-button-floating-fill);
-  box-shadow: var(--clocky-shadow-lv2);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-full);
+  color: var(--clocky-fg-primary);
+  background: var(--clocky-bg-control);
+  box-shadow: var(--clocky-elevation-2);
   cursor: pointer;
   pointer-events: auto;
 }
 
 .toBottom:hover {
-  background: var(--clocky-alias-button-floating-hover);
+  background: var(--clocky-bg-sunken);
 }
 
 /* Host open-path refusal: same dialog family as the workspace folder error. */
 .modalAction {
   min-width: 72px;
+}
+
+/* Process groups: the work behind an answer, folded under one line. */
+.processGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-2);
+}
+
+.processHeader {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--clocky-space-2);
+  max-width: 100%;
+  min-height: 28px;
+  padding: 0 var(--clocky-space-2);
+  border: 0;
+  border-radius: var(--clocky-radius-md);
+  background: transparent;
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-body-small);
+  cursor: pointer;
+}
+
+.processHeader:hover:not(:disabled) {
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
+}
+
+.processHeader:disabled {
+  cursor: default;
+}
+
+.processHeader:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
+}
+
+.processChevron {
+  flex: none;
+  color: var(--clocky-fg-tertiary);
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-standard);
+}
+
+.processHeader[aria-expanded='true'] .processChevron {
+  transform: rotate(90deg);
+}
+
+.processGroup[data-failed] .processHeader {
+  color: var(--clocky-status-failed-fg);
+}
+
+.processLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: process-tick var(--clocky-duration-fast) var(--clocky-ease-enter);
+}
+
+.processElapsed {
+  flex: none;
+  color: var(--clocky-fg-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.processBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-2);
+  padding-left: var(--clocky-space-4);
+  border-left: 1px solid var(--clocky-border-subtle);
+  margin-left: var(--clocky-space-3);
+}
+
+@keyframes process-tick {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }

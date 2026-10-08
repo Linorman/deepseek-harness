@@ -110,6 +110,102 @@ describe('disposeRuntimeProcess', () => {
     expect(signals).toEqual([[42, 'SIGTERM']])
   })
 
+  it('skips signals for a detached group that has already disappeared', async () => {
+    const fake = new FakeChild()
+    fake.exitCode = 0
+    const signal = vi.fn()
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 5, disposeGraceMs: 5 }, 'linux', true,
+      { signal, exists: () => false })
+    expect(signal).not.toHaveBeenCalled()
+  })
+
+  it('waits within the grace for descendants to finish after SIGTERM', async () => {
+    const fake = new FakeChild()
+    fake.exitCode = 0
+    let live = true
+    const signals: string[] = []
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 5, disposeGraceMs: 30 }, 'linux', true, {
+      exists: () => live,
+      signal: (_group, signal) => {
+        signals.push(signal)
+        setTimeout(() => { live = false }, 1)
+      },
+    })
+    expect(signals).toEqual(['SIGTERM'])
+  })
+
+  it('escalates a detached group from SIGTERM to SIGKILL after its grace', async () => {
+    const fake = new FakeChild()
+    fake.exitCode = 0
+    let live = true
+    const signals: Array<[number, 'SIGTERM' | 'SIGKILL']> = []
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 1, disposeGraceMs: 2 }, 'linux', true, {
+      exists: () => live,
+      signal: (group, signal) => {
+        signals.push([group, signal])
+        if (signal === 'SIGKILL') live = false
+      },
+    })
+    expect(signals).toEqual([[42, 'SIGTERM'], [42, 'SIGKILL']])
+  })
+
+  it('rejects when a detached group survives SIGKILL and both grace windows', async () => {
+    const fake = new FakeChild()
+    fake.exitCode = 0
+    const signals: string[] = []
+    await expect(disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 1, disposeGraceMs: 2 }, 'linux', true, {
+      exists: () => true,
+      signal: (_group, signal) => { signals.push(signal) },
+    })).rejects.toThrow('runtime process group 42 did not exit within 2ms after SIGKILL')
+    expect(signals).toEqual(['SIGTERM', 'SIGKILL'])
+  })
+
+  it('uses the local process-group signal and recognizes ESRCH as complete exit', async () => {
+    const fake = new FakeChild()
+    fake.exitCode = 0
+    let live = true
+    const missing = Object.assign(new Error('group gone'), { code: 'ESRCH' })
+    const kill = vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
+      expect(pid).toBe(-42)
+      if (signal === 0) {
+        if (!live) throw missing
+        return true
+      }
+      expect(signal).toBe('SIGTERM')
+      live = false
+      return true
+    })
+    try {
+      await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 5, disposeGraceMs: 5 }, 'linux', true)
+      expect(kill.mock.calls.map(([, signal]) => signal)).toEqual([0, 'SIGTERM', 0])
+    } finally {
+      kill.mockRestore()
+    }
+  })
+
+  it('propagates a local process-group existence error instead of treating it as exit', async () => {
+    const fake = new FakeChild()
+    fake.exitCode = 0
+    const failure = Object.assign(new Error('group inspection denied'), { code: 'EPERM' })
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => { throw failure })
+    try {
+      await expect(disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 5, disposeGraceMs: 5 }, 'linux', true))
+        .rejects.toBe(failure)
+    } finally {
+      kill.mockRestore()
+    }
+  })
+
+  it('validates a detached child group identity before signalling anything', async () => {
+    for (const pid of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const fake = new FakeChild()
+      fake.pid = pid
+      await expect(disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 5, disposeGraceMs: 5 }, 'linux', true))
+        .rejects.toThrow('detached runtime child has no valid process group identity')
+      expect(fake.stdinEnded).toBe(false)
+    }
+  })
+
   it('tier 1: a cooperative child quiesces on stdin EOF — no signal is ever sent', async () => {
     const fake = new FakeChild({ diesOn: 'eof', delayMs: 5 })
     await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 1000, disposeGraceMs: 1000 })
@@ -143,6 +239,19 @@ describe('disposeRuntimeProcess', () => {
       },
     )
     expect(signals).toEqual([[42, 'SIGTERM']])
+  })
+
+  it('signals a detached group after an unresponsive child ignores stdin EOF', async () => {
+    const fake = new FakeChild()
+    let live = true
+    const signals: string[] = []
+    await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 1, disposeGraceMs: 5 }, 'linux', true, {
+      exists: () => live,
+      signal: (_group, signal) => { signals.push(signal); live = false },
+    })
+    expect(fake.stdinEnded).toBe(true)
+    expect(fake.kills).toEqual([])
+    expect(signals).toEqual(['SIGTERM'])
   })
 
   it('tier 2: a child that ignores EOF but honors SIGTERM dies on the middle rung', async () => {

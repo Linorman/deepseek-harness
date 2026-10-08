@@ -1,3 +1,5 @@
+export { retainActivationPublication,subscribeActivationStatus } from './publication.ts'
+import { deepFreeze as freeze } from '@clocky/clocky-llm'
 /**
  * AgentRuntime Service Definition: a named activation-provider registry and
  * Participant-bound activation dispatch independent of Team Hub persistence.
@@ -52,14 +54,6 @@ declare module '@clocky/cordis' {
      */
     'agent-runtime/activation-changed'(this: AgentRuntime, activation: ActivationSnapshot): void
   }
-}
-
-/** Recursively freeze a detached activation or provider notification. */
-function freeze<T>(value: T): T {
-  if (typeof value !== 'object' || value === null || Object.isFrozen(value)) return value
-  Object.freeze(value)
-  for (const child of Object.values(value)) freeze(child)
-  return value
 }
 
 /** Render a listener failure without allowing diagnostics to throw. */

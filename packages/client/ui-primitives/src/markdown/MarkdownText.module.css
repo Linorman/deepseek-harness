@@ -6,7 +6,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   font: var(--clocky-font-markdown-base);
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .markdown strong {
@@ -56,18 +56,15 @@
 }
 
 .markdown a {
-  /* The upstream markdown reference uses brand-text (blue in newDesign); this sheet
-     keeps design-platform brand-text as near-black, so links use the blue
-     business-primary alias instead. */
-  color: var(--clocky-alias-state-business-primary);
-  transition: box-shadow var(--ds-transition-duration) var(--ds-ease-in-out);
+  color: var(--clocky-accent-fg);
+  transition: box-shadow var(--clocky-duration-base) var(--clocky-ease-standard);
   position: relative;
   text-decoration: none;
-  /* Transparent hit-area padding; literal zero-alpha only (no painted color). */
-  border-left: 3px solid rgb(255 255 255 / 0);
-  border-right: 3px solid rgb(255 255 255 / 0);
-  border-top: 2px solid rgb(255 255 255 / 0);
-  border-bottom: 2px solid rgb(255 255 255 / 0);
+  /* Transparent hit-area padding (no painted color). */
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
   margin-left: -3px;
   margin-right: -3px;
 }
@@ -75,11 +72,11 @@
 .markdown a:hover,
 .markdown a:focus {
   outline: none;
-  text-decoration: underline var(--clocky-alias-state-business-primary);
+  text-decoration: underline var(--clocky-accent-bg);
 }
 
 .markdown a:focus-visible {
-  box-shadow: 0 0 0 2px var(--clocky-alias-state-business-primary);
+  box-shadow: 0 0 0 2px var(--clocky-accent-bg);
 }
 
 .markdown :where(ul, ol) {
@@ -97,7 +94,7 @@
 
 .markdown li::marker {
   line-height: 28px;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 /* Nested ol under ul/ol: markers inside (models sometimes emit this shape). */
@@ -128,11 +125,11 @@
   border: none;
   height: 1px;
   margin: 32px 0;
-  background: var(--clocky-alias-border-l2);
+  background: var(--clocky-border-default);
 }
 
 .markdown blockquote {
-  border-left: 2px solid var(--clocky-alias-label-caption);
+  border-left: 2px solid var(--clocky-fg-tertiary);
   margin: 16px 0 0;
   padding-left: 14px;
 }
@@ -150,8 +147,8 @@
   font: var(--clocky-font-markdown-code);
   font-family: var(--ds-font-family-code);
   font-size: 0.875em !important;
-  background-color: var(--clocky-alias-markdown-inline-code);
-  border-radius: 6px;
+  background-color: var(--clocky-bg-active);
+  border-radius: var(--clocky-radius-sm);
   padding: 0 5px;
 }
 
@@ -168,7 +165,7 @@
 
 .markdown input[type='checkbox'] {
   margin: 0 8px 0 0;
-  accent-color: var(--clocky-alias-label-secondary);
+  accent-color: var(--clocky-fg-secondary);
 }
 
 .tableScroll {
@@ -201,7 +198,7 @@
    the sheet's link focus color. */
 .tableScroll:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--clocky-alias-state-business-primary);
+  box-shadow: 0 0 0 2px var(--clocky-accent-bg);
 }
 
 /* Many-column tables (the renderer's `md-table-wide` hook) keep their
@@ -225,7 +222,7 @@
 .tableScroll th {
   text-align: start;
   padding: 10px 16px;
-  border-bottom: 1px solid var(--clocky-alias-border-l3);
+  border-bottom: 1px solid var(--clocky-border-default);
   border-top: none;
   font: var(--clocky-font-markdown-table-head);
   max-width: 320px;
@@ -235,7 +232,7 @@
 
 .tableScroll td {
   padding: 10px 16px;
-  border-bottom: 1px solid var(--clocky-alias-border-l2);
+  border-bottom: 1px solid var(--clocky-border-default);
   font: var(--clocky-font-markdown-table);
   max-width: 320px;
   max-width: min(30vw, 320px);
@@ -252,7 +249,7 @@
 }
 
 .tableScroll table code {
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
 }
 
 .markdown > *:first-child,
@@ -266,7 +263,7 @@
 }
 
 .imageAlt {
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   font-style: italic;
 }
 
@@ -276,8 +273,8 @@
   max-width: 100%;
   height: auto;
   margin: 0;
-  border-radius: 8px;
-  background: var(--clocky-alias-bg-base);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-canvas);
   object-fit: contain;
 }
 
@@ -291,7 +288,7 @@
   border: none;
   background: none;
   font: inherit;
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
   text-decoration: none;
   cursor: pointer;
 }
@@ -299,6 +296,6 @@
 .fileMention:hover,
 .fileMention:focus {
   outline: none;
-  text-decoration: underline var(--clocky-alias-state-business-primary);
+  text-decoration: underline var(--clocky-accent-bg);
   text-underline-offset: 3px;
 }

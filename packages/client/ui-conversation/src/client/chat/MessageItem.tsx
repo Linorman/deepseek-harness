@@ -7,9 +7,10 @@ import type { ReactNode } from 'react'
 import type {
   ModelRetryNode, TurnErrorNode, UserMessageNode,
 } from '@clocky/clocky-client-runtime/client'
-import { JsonBlock, MessageText, StateDot } from '@clocky/clocky-client-ui-primitives'
+import { Avatar, JsonBlock, MessageText, StateDot } from '@clocky/clocky-client-ui-primitives'
+import { teamSenderOf, withoutSenderPrefix } from './team-sender.ts'
 import type { ChatNodeOwnerProps, ChatNodeViewProps, ChatViewSlotProps } from '../contract/slots.ts'
-import { ReferenceIcon } from '../reference/ReferenceIcon.tsx'
+import { ReferenceIcon } from '../contract/ReferenceIcon.tsx'
 import { CompactionItem } from './CompactionItem.tsx'
 import { ContextInjectionRow } from './ContextInjectionRow.tsx'
 import { MessageIconActions } from './MessageIconActions.tsx'
@@ -219,9 +220,11 @@ function projectUserText(text: string, sessionLabels: readonly string[]): ReactN
 
 /** Right-aligned bubble shared by user and steering rows. */
 function UserStyleBubble({
-  content, renderMessageImages, actions, pending = false, referenceLabels = [], t,
+  content, renderMessageImages, actions, pending = false, referenceLabels = [], sender, t,
 }: {
   content: readonly unknown[]
+  /** Identity chip shown above the bubble for Team-delivered input. */
+  sender?: ReactNode
   renderMessageImages: ChatNodeOwnerProps['renderMessageImages']
   /** Optional IconActions (or similar) below the bubble; receives the joined text. */
   actions?: (text: string) => ReactNode
@@ -237,6 +240,7 @@ function UserStyleBubble({
   return (
     <div className={css.userRow} data-pending-steering={pending || undefined} data-time-hover-root>
       <div className={css.userStack}>
+        {sender}
         {renderMessageImages({ images, align: 'end' })}
         {showBubble && <div className={css.bubble}>
           {projectUserText(text, referenceLabels)}
@@ -287,9 +291,18 @@ export const UserMessageNodeView = memo(function UserMessageNodeView({
   node, renderMessageImages, t,
 }: ChatNodeViewProps<'user' | 'steering'>) {
   const data = node.data
+  const sender = teamSenderOf(data.source)
   return (
     <UserStyleBubble
-      content={data.content}
+      content={sender === undefined ? data.content : withoutSenderPrefix(data.content, sender)}
+      {...sender === undefined ? {} : {
+        sender: (
+          <span className={css.senderChip} title={sender.senderId}>
+            <Avatar name={t('message.teamSender')} role="member" size={20} decorative />
+            <span>{t('message.teamSender')}</span>
+          </span>
+        ),
+      }}
       renderMessageImages={renderMessageImages}
       {...data.referenceLabels === undefined ? {} : { referenceLabels: data.referenceLabels }}
       t={t}

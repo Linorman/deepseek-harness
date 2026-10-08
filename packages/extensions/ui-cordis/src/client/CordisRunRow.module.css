@@ -14,15 +14,15 @@
   display: inline-flex;
   flex: none;
   margin-right: 8px;
-  color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-accent-fg);
 }
 
 .title {
   flex: none;
-  color: var(--clocky-alias-state-business-primary);
-  font-size: 14px;
+  color: var(--clocky-accent-fg);
+  font-size: var(--clocky-type-body-size);
   font-weight: 500;
-  line-height: 24px;
+  line-height: var(--clocky-type-body-line-height);
 }
 
 .separator {
@@ -30,8 +30,8 @@
   width: 2px;
   height: 2px;
   margin: 0 8px;
-  border-radius: 50%;
-  background: var(--clocky-alias-state-business-primary);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-accent-bg);
 }
 
 .summary,
@@ -39,36 +39,36 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 13px;
-  line-height: 24px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .error {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .status {
   flex: none;
   margin-left: 8px;
-  color: var(--clocky-alias-label-caption);
-  font-size: 12px;
-  line-height: 24px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .card[data-cordis-status='awaiting-approval'] .status,
 .card[data-cordis-status='client-pending'] .status {
-  color: var(--clocky-alias-state-warn-label);
+  color: var(--clocky-status-needs-you-fg);
 }
 
 .card[data-cordis-status='running'] .status {
-  color: var(--clocky-alias-state-success-primary);
+  color: var(--clocky-status-done-fg);
 }
 
 .card[data-cordis-status='failed'] .status {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .inspect {
@@ -80,9 +80,9 @@
   margin-left: 4px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
   opacity: 0;
 }
@@ -93,34 +93,34 @@
 }
 
 .inspect:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .message {
   padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--clocky-alias-button-ghost-active-fill);
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-active);
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .business {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 12px;
-  background: var(--clocky-alias-bg-base);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-canvas);
 }
 
 .output {
   margin: 0;
   padding: 10px 12px;
   overflow: auto;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 8px;
-  background: var(--clocky-alias-markdown-code-block);
-  color: var(--clocky-alias-label-secondary);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-sunken);
+  color: var(--clocky-fg-secondary);
   font: var(--clocky-font-markdown-code-block-small);
   white-space: pre-wrap;
   overflow-wrap: anywhere;

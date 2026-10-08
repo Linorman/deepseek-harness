@@ -9,6 +9,10 @@ type Translate = (key: Key) => string
  */
 export function Feedback({ value, t }: { value: SimulationReadState<unknown>; t: Translate }) {
   return <div className={css.feedback} aria-live="polite">
-    {value.error !== undefined ? <p role="alert">{t(value.error)}</p> : value.stale ? <p>{t('stale')}</p> : value.loading ? <p>{t('loading')}</p> : null}
+    {value.error !== undefined
+      ? <p role="alert">{t(value.error)}</p>
+      : value.stale
+        ? <p className={css.stalePill}>{t('stale')}</p>
+        : value.loading ? <p className={css.loading}>{t('loading')}</p> : null}
   </div>
 }

@@ -82,6 +82,39 @@ it('discovers safe metadata and refuses another principal before selected-Team b
   expect(body).not.toHaveBeenCalled()
 })
 
+it('reads bounded task and member details and the exact original task update without activating execution', async () => {
+  const { ctx, server } = await fixture()
+  const own = await team(ctx, 'sdk-test-principal')
+  const state = await ctx.teams.getTeam({ teamId: own })
+  const created = await server.createTeamTask({ teamId: own, expectedCursor: state.team.cursor,
+    idempotencyKey: 'bounded-read-task', subject: 'Bounded task', description: 'Read the original task',
+    blockedBy: [], requiredCapabilities: [], priority: 1, readScopes: [], writeScopes: [], workspaceMode: 'shared',
+    budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1 })
+  const task = created.value
+  expect((await server.getTeamTask({ teamId: own, taskId: task.id })).value.id).toBe(task.id)
+  expect((await server.listTeamTasks({ teamId: own, limit: 1 })).items.map(value => value.id)).toEqual([task.id])
+  for (const section of ['record', 'attempts', 'reviews'] as const) {
+    const result = await server.inspectTeamTask({ teamId: own, taskId: task.id, expectedRevision: task.revision, section })
+    expect(result.inspection.taskId).toBe(task.id)
+  }
+  const update = { teamId: own, taskId: task.id, commandId: 'original-update', expectedRevision: task.revision, subject: 'Updated task' }
+  await server.updateTeamTask(update)
+  const original = await server.getTeamTaskUpdateResult({ teamId: own, taskId: task.id, commandId: update.commandId })
+  expect(original).toMatchObject({ kind: 'applied', receipt: { commandId: update.commandId } })
+  for (const kind of ['tasks', 'members', 'workflowPlans'] as const) {
+    expect((await server.browseTeam({ teamId: own, kind, limit: 1 })).page.teamId).toBe(own)
+  }
+  const members = await server.listTeamMembers({ teamId: own, limit: 1 })
+  const member = members.items[0]
+  if (member === undefined) throw new Error('Authorized Team member missing')
+  expect((await server.inspectTeamMember({ teamId: own, participantId: member.id, limit: 1 })).detail.record.id).toBe(member.id)
+  await expect(server.getTeamMemberSession({ teamId: own, participantId: member.id }))
+    .rejects.toMatchObject({ code: 'TEAM_ACTIVATION_NOT_FOUND' })
+  expect((await server.listWorkflowPlans({ teamId: own, limit: 1 })).items).toEqual([])
+  expect((await server.listTeamArtifacts({ teamId: own, limit: 1 })).items).toEqual([])
+  expect(ctx.agents.list()).toEqual([])
+})
+
 it('withholds both successful and failed selected-Team results when membership changes during IO', async () => {
   const { ctx, server } = await fixture()
   const own = await team(ctx, 'sdk-test-principal')

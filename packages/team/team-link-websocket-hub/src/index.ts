@@ -190,11 +190,6 @@ interface InterruptDelivery {
   readonly interrupt: ParticipantInterruptSnapshot
 }
 
-interface Settled<T> {
-  readonly kind: 'fulfilled' | 'rejected'
-  readonly value?: T
-  readonly reason?: unknown
-}
 
 /** One pending endpoint acknowledgement for a Hub-originated cancellation. */
 interface PendingCancellation {
@@ -474,7 +469,7 @@ class TeamLinkSocket {
       try {
         return await Promise.race([completion.promise, timeout])
       } finally {
-        if (timer !== undefined) clearTimeout(timer)
+        clearTimeout(timer)
       }
     } finally {
       this.pendingCancellations.delete(id)
@@ -775,8 +770,8 @@ class TeamLinkSocket {
       const result = await watched
       // oxlint-disable-next-line typescript/no-unnecessary-condition -- abort can race the settled cursor watch.
       if (this.abort.signal.aborted) return
-      if (result.kind === 'rejected') throw result.reason
-      if (result.value?.kind === 'closed') return
+      if (result.status === 'rejected') throw result.reason
+      if (result.value.kind === 'closed') return
       assertTeamWatchCursor(result.value, state.team.cursor)
       state = await this.ctx.teams.getTeam({ teamId: binding.teamId })
       this.startChannels(state.channelIds)
@@ -816,14 +811,14 @@ class TeamLinkSocket {
       if (current.phase === 'pending') {
         afterCursor = current.cursor
         const observed = await watched
-        if (observed.kind === 'rejected') throw observed.reason
+        if (observed.status === 'rejected') throw observed.reason
         assertWatchCursor(observed.value, watchAfterCursor, channelId)
-        if (observed.value?.kind === 'closed') return
+        if (observed.value.kind === 'closed') return
         continue
       }
       if ((current.phase !== 'active' && current.phase !== 'closed')) {
         const observed = await watched
-        if (observed.kind === 'rejected') throw observed.reason
+        if (observed.status === 'rejected') throw observed.reason
         assertWatchCursor(observed.value, watchAfterCursor, channelId)
         return
       }
@@ -840,7 +835,7 @@ class TeamLinkSocket {
         if (current.manifest.teamId !== binding.teamId) throw new Error('invalid Team channel')
         if (current.phase !== 'active') {
           const observed = await watched
-          if (observed.kind === 'rejected') throw observed.reason
+          if (observed.status === 'rejected') throw observed.reason
           assertWatchCursor(observed.value, watchAfterCursor, channelId)
           return
         }
@@ -861,13 +856,13 @@ class TeamLinkSocket {
       const result = await watched
       // oxlint-disable-next-line typescript/no-unnecessary-condition -- abort can race the settled channel watch.
       if (this.abort.signal.aborted) return
-      if (result.kind === 'rejected') throw result.reason
+      if (result.status === 'rejected') throw result.reason
       assertWatchCursor(result.value, watchAfterCursor, channelId)
       if (page.channel.phase === 'closed') {
         if (afterCursor < page.channel.cursor) continue
         return
       }
-      if (result.value?.kind === 'closed') return
+      if (result.value.kind === 'closed') return
     }
   }
 
@@ -1346,11 +1341,8 @@ function parseInput<T>(validator: schema.ZodType<T>, value: unknown): T {
 }
 
 /** Wait for one operation without leaving its rejection unobserved. */
-function settle<T>(operation: Promise<T>): Promise<Settled<T>> {
-  return operation.then(
-    value => ({ kind: 'fulfilled', value }),
-    (reason: unknown) => ({ kind: 'rejected', reason }),
-  )
+function settle<T>(operation: Promise<T>): Promise<PromiseSettledResult<T>> {
+  return Promise.allSettled([operation]).then(([result]) => result)
 }
 
 /** Reject a changed watch that repeats or rewinds the cursor it was asked to observe. */
@@ -1362,8 +1354,7 @@ function assertWatchCursor(result: ChannelWatchResult | undefined, afterCursor: 
 }
 
 /** Reject a Team watch that repeats or rewinds the cursor it was asked to observe. */
-function assertTeamWatchCursor(result: TeamWatchResult | undefined, afterCursor: number): void {
-  if (result === undefined) throw new Error('Team watch returned no result')
+function assertTeamWatchCursor(result: TeamWatchResult, afterCursor: number): void {
   if (result.kind === 'changed' && result.cursor <= afterCursor) {
     throw new Error('Team watch cursor did not advance')
   }

@@ -7568,7 +7568,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SimulationProductCreateInput',
-    declaration: 'export interface SimulationProductCreateInput {\n    readonly commandId: SimulationProductCommandId;\n    readonly templateId: SimulationProductTemplateId;\n    readonly templateVersion: \'1\';\n    readonly name: string;\n    readonly parameters: SimulationCompanyParameters;\n    readonly limits?: {\n        readonly [Key in keyof SimulationProductLimits]?: SimulationProductLimits[Key] | undefined;\n    } | undefined;\n}',
+    declaration: 'export interface SimulationProductCreateInput {\n    readonly commandId: SimulationProductCommandId;\n    readonly templateId: SimulationProductTemplateId;\n    readonly templateVersion: \'1\';\n    readonly expectedModel: SimulationProductModelRoute;\n    readonly name: string;\n    readonly parameters: SimulationCompanyParameters;\n    readonly limits?: {\n        readonly [Key in keyof SimulationProductLimits]?: SimulationProductLimits[Key] | undefined;\n    } | undefined;\n}',
   },
   {
     name: 'SimulationProductCursor',
@@ -7687,6 +7687,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SimulationProductModelPoolObservation = {\n    readonly status: \'unavailable\';\n    readonly clock: \'real\';\n    readonly observedAt: number;\n} | {\n    readonly status: \'observed\';\n    readonly clock: \'real\';\n    readonly observedAt: number;\n    readonly active: number;\n    readonly queued: number;\n    readonly limit: number;\n    readonly queueLimit: number;\n};',
   },
   {
+    name: 'SimulationProductModelReadiness',
+    declaration: 'export type SimulationProductModelReadiness = {\n    readonly status: \'ready\';\n    readonly model: SimulationProductModelRoute;\n} | {\n    readonly status: \'needs-model\';\n    readonly reason: \'default-model-missing\';\n} | {\n    readonly status: \'unavailable\';\n    readonly reason: \'provider-unavailable\' | \'metadata-unavailable\' | \'reasoning-unsupported\' | \'execution-unavailable\' | \'template-unavailable\';\n};',
+  },
+  {
+    name: 'SimulationProductModelRoute',
+    declaration: 'export interface SimulationProductModelRoute {\n    readonly provider: string;\n    readonly name: string;\n}',
+  },
+  {
     name: 'SimulationProductObjectDetail',
     declaration: 'export type SimulationProductObjectDetail = SimulationProductKnowledgeDetail | {\n    readonly collection: \'entities\';\n    readonly section: \'relationships\';\n    readonly id: SimulationEntityId;\n    readonly time: SimTime;\n    readonly relationships: DetailPage<SimulationProductRelation>;\n} | {\n    readonly collection: \'decisions\';\n    readonly section: \'context\';\n    readonly id: SimulationDecisionId;\n    readonly readVersion: SimulationProductReadVersion;\n    readonly accounting: SimulationProductContextSummary;\n    readonly bodyAccess: \'allowed\' | \'withheld\';\n    readonly frozen?: SimulationProductFrozenContext | undefined;\n    readonly items: DetailPage<SimulationProductContextItem>;\n} | {\n    readonly collection: \'entities\';\n    readonly section: \'identity\';\n    readonly id: SimulationEntityId;\n    readonly summary: SimulationProductEntitySummary;\n    readonly revision: number;\n    readonly profileRevision: number;\n    readonly writerEpoch?: SimulationWriterEpoch | undefined;\n    readonly binding?: {\n        readonly teamId: TeamId;\n        readonly participantId: ParticipantId;\n        readonly sessionId: SessionId;\n    } | undefined;\n} | {\n    readonly collection: \'decisions\';\n    readonly section: \'execution\';\n    readonly id: SimulationDecisionId;\n    readonly summary: SimulationProductDecisionSummary;\n    readonly context: SimulationProductContextSummary;\n    readonly inference?: SimulationProductInference | undefined;\n    readonly closedAt?: number | undefined;\n     /* …truncated — full shape in source */',
   },
@@ -7728,7 +7736,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SimulationProductPreflightInput',
-    declaration: 'export type SimulationProductPreflightInput = Omit<SimulationProductCreateInput, \'commandId\'>;',
+    declaration: 'export type SimulationProductPreflightInput = Omit<SimulationProductCreateInput, \'commandId\' | \'expectedModel\'>;',
   },
   {
     name: 'SimulationProductPreflightIssue',
@@ -7736,7 +7744,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SimulationProductPreflightResult',
-    declaration: 'export type SimulationProductPreflightResult = {\n    readonly status: \'ready\';\n    readonly configuration: SimulationProductConfiguration;\n} | {\n    readonly status: \'invalid\';\n    readonly issues: readonly SimulationProductPreflightIssue[];\n};',
+    declaration: 'export type SimulationProductPreflightResult = {\n    readonly status: \'ready\';\n    readonly configuration: SimulationProductConfiguration;\n    readonly readiness: Extract<SimulationProductModelReadiness, {\n        readonly status: \'ready\';\n    }>;\n} | {\n    readonly status: \'invalid\';\n    readonly issues: readonly SimulationProductPreflightIssue[];\n    readonly readiness: SimulationProductModelReadiness;\n};',
   },
   {
     name: 'SimulationProductPrepareInput',
@@ -7876,7 +7884,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SimulationProductTemplateSummary',
-    declaration: 'export interface SimulationProductTemplateSummary {\n    readonly id: SimulationProductTemplateId;\n    readonly version: \'1\';\n    readonly name: SimulationProductText;\n    readonly kind: \'company-procurement\' | \'task-workflow\';\n    readonly model: {\n        readonly provider: string;\n        readonly name: string;\n    };\n    readonly tickUnit: SimulationProductText;\n    readonly execution: \'cognition-only\' | \'automatic-tasks\';\n    readonly cognition?: \'model\' | \'deterministic\' | undefined;\n    readonly review: \'none\' | \'buyer\' | \'participant\';\n    readonly maxStock: string;\n    readonly configuration?: (SimulationProductConfiguration & {\n        readonly editable: readonly (keyof SimulationProductLimits)[];\n    }) | undefined;\n}',
+    declaration: 'export interface SimulationProductTemplateSummary {\n    readonly id: SimulationProductTemplateId;\n    readonly version: \'1\';\n    readonly name: SimulationProductText;\n    readonly kind: \'company-procurement\' | \'task-workflow\';\n    readonly readiness: SimulationProductModelReadiness;\n    readonly tickUnit: SimulationProductText;\n    readonly execution: \'cognition-only\' | \'automatic-tasks\';\n    readonly cognition?: \'model\' | \'deterministic\' | undefined;\n    readonly review: \'none\' | \'buyer\' | \'participant\';\n    readonly maxStock: string;\n    readonly configuration?: (SimulationProductConfiguration & {\n        readonly editable: readonly (keyof SimulationProductLimits)[];\n    }) | undefined;\n}',
   },
   {
     name: 'SimulationProductText',
@@ -9328,7 +9336,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamRunBootstrapParticipantInviteScope',
-    declaration: 'export interface TeamRunBootstrapParticipantInviteScope {\n    readonly kind: \'team-run-bootstrap-participant-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: {\n        readonly kind: ParticipantKind;\n        readonly displayName: string;\n        readonly role: string;\n        readonly capabilities: readonly string[];\n        readonly owner?: TeamParticipantOwner | undefined;\n        readonly provider?: string | undefined;\n        readonly preset?: string | undefined;\n        readonly model?: string | undefined;\n        readonly authScheme?: string | undefined;\n        readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    };\n}',
+    declaration: 'export interface TeamRunBootstrapParticipantInviteScope {\n    readonly kind: \'team-run-bootstrap-participant-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: Omit<ParticipantInviteInput, \'teamId\' | \'expectedCursor\'>;\n}',
   },
   {
     name: 'TeamRunBootstrapParticipantPhaseScope',
@@ -9447,10 +9455,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamRunFinalizationChannelCleanupScope {\n    readonly kind: \'team-run-finalization-channel-close\';\n    readonly teamId: TeamId;\n    readonly finalChannelId: ChannelId;\n    readonly finalEnvelopeId: EnvelopeId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n    readonly expectedTeamCursor: number;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly reason: string;\n}',
   },
   {
-    name: 'TeamRunFinalizationQuiescePhaseScope',
-    declaration: 'export interface TeamRunFinalizationQuiescePhaseScope {\n    readonly kind: \'team-run-finalization-quiesce\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly phase: \'quiescing\';\n    readonly finalChannelId: ChannelId;\n    readonly finalEnvelopeId: EnvelopeId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n}',
-  },
-  {
     name: 'TeamRunFinalWaitRequest',
     declaration: 'export interface TeamRunFinalWaitRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor?: number;\n    readonly signal?: AbortSignal;\n    readonly humanOwner?: Extract<TeamParticipantOwner, {\n        readonly kind: \'product-principal\';\n    }>;\n}',
   },
@@ -9480,7 +9484,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamRunReviewerInviteScope',
-    declaration: 'export interface TeamRunReviewerInviteScope {\n    readonly kind: \'team-run-reviewer-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: {\n        readonly kind: ParticipantKind;\n        readonly displayName: string;\n        readonly role: string;\n        readonly capabilities: readonly string[];\n        readonly owner?: TeamParticipantOwner | undefined;\n        readonly provider?: string | undefined;\n        readonly preset?: string | undefined;\n        readonly model?: string | undefined;\n        readonly authScheme?: string | undefined;\n        readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    };\n}',
+    declaration: 'export interface TeamRunReviewerInviteScope {\n    readonly kind: \'team-run-reviewer-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: Omit<ParticipantInviteInput, \'teamId\' | \'expectedCursor\'>;\n}',
   },
   {
     name: 'TeamRunReviewerPhaseScope',
@@ -9512,7 +9516,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamRunWorkerInviteScope',
-    declaration: 'export interface TeamRunWorkerInviteScope {\n    readonly kind: \'team-run-worker-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: {\n        readonly kind: ParticipantKind;\n        readonly displayName: string;\n        readonly role: string;\n        readonly capabilities: readonly string[];\n        readonly owner?: TeamParticipantOwner | undefined;\n        readonly provider?: string | undefined;\n        readonly preset?: string | undefined;\n        readonly model?: string | undefined;\n        readonly authScheme?: string | undefined;\n        readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    };\n}',
+    declaration: 'export interface TeamRunWorkerInviteScope {\n    readonly kind: \'team-run-worker-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: Omit<ParticipantInviteInput, \'teamId\' | \'expectedCursor\'>;\n}',
   },
   {
     name: 'TeamRunWorkerPoolSetRequest',
@@ -9880,7 +9884,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemPhaseScope',
-    declaration: 'export type TeamSystemPhaseScope = TeamRunResumePhaseScope | TeamRunFinalizationQuiescePhaseScope | SchedulerStallPhaseScope | ActivationControllerCancellationStallPhaseScope | ActivationControllerClosureStallPhaseScope | ActivationControllerStartupStallPhaseScope | ActivationControllerRecoveryStallPhaseScope;',
+    declaration: 'export type TeamSystemPhaseScope = TeamRunResumePhaseScope | SchedulerStallPhaseScope | ActivationControllerCancellationStallPhaseScope | ActivationControllerClosureStallPhaseScope | ActivationControllerStartupStallPhaseScope | ActivationControllerRecoveryStallPhaseScope;',
   },
   {
     name: 'TeamSystemRootCreationProof',
@@ -11056,7 +11060,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WorkflowCondition',
-    declaration: 'export type WorkflowCondition = {\n    readonly kind: \'always\';\n} | {\n    readonly kind: \'envelope-kind\';\n    readonly value: string;\n} | {\n    readonly kind: \'payload-present\';\n    readonly path: string;\n} | {\n    readonly kind: \'payload-equals\';\n    readonly path: string;\n    readonly value: JsonValue;\n} | {\n    readonly kind: \'extension\';\n    readonly name: string;\n    readonly version: number;\n    readonly config: JsonValue;\n};',
+    declaration: 'export type WorkflowCondition = TeamWorkflowCondition;',
   },
   {
     name: 'WorkflowExtension',

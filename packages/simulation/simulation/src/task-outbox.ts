@@ -1,6 +1,7 @@
+import { teamTaskCreateFields } from '@clocky/clocky-team/schema'
 /** Accepted participant-task creation and its durable target receipt. @module @clocky/clocky-simulation/task-outbox */
 import { z } from 'zod'
-import { teamIdSchema, teamTaskIdSchema, jsonObjectSchema, teamTaskWorkspaceModeSchema, teamTaskReviewPolicySchema } from '@clocky/clocky-team'
+import { teamIdSchema, teamTaskIdSchema } from '@clocky/clocky-team'
 import type { Branded } from '@clocky/clocky-brand'
 import type { SimulationEntityBinding } from './writer-types.ts'
 import type { SimulationEntityId } from './entity-types.ts'
@@ -8,13 +9,10 @@ import type { SimulationRunId } from './types.ts'
 import type { SimulationDecisionId, SimulationOperationId } from './business-types.ts'
 
 /** Task fields explicitly selected before decision acceptance; task execution is always Participant-owned. */
-export const simulationTaskSpecSchema = z.strictObject({
-  subject: z.string().min(1), description: z.string().min(1), blockedBy: z.array(teamTaskIdSchema),
-  requiredCapabilities: z.array(z.string().min(1)), priority: z.number().int().nonnegative(),
-  readScopes: z.array(z.string().min(1)), writeScopes: z.array(z.string().min(1)),
-  workspaceMode: teamTaskWorkspaceModeSchema, reviewPolicy: teamTaskReviewPolicySchema,
-  budget: jsonObjectSchema, maxAttempts: z.number().int().positive(),
-})
+export const simulationTaskSpecSchema = z.object(teamTaskCreateFields).pick({
+  subject: true, description: true, blockedBy: true, requiredCapabilities: true, priority: true,
+  readScopes: true, writeScopes: true, workspaceMode: true, reviewPolicy: true, budget: true, maxAttempts: true,
+}).strict()
 /** Explicit accepted task definition. */
 export type SimulationTaskSpec = z.infer<typeof simulationTaskSpecSchema>
 /** Task identity returned by the owning Team, never a proof of task completion. */

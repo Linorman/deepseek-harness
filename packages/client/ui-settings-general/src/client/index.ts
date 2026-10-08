@@ -8,6 +8,8 @@
  * Export discipline: packages/client/AGENTS.md.
  */
 import type { ClientContext } from '@clocky/clocky-client-runtime/client'
+import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
+import type {} from '@clocky/clocky-client-ui-layout/client'
 import type { ConnectionHandle } from '@clocky/clocky-api-remotes/client'
 import { resolveSlotLabel } from '@clocky/clocky-client-ui-slots'
 // Type-only: the settings slot declarations plus the ctx.settingsScope Context
@@ -17,8 +19,9 @@ import type {} from '@clocky/clocky-client-ui-settings/client'
 // Type-only: pulls ctx.locale into this program.
 import type {} from '@clocky/clocky-client-locale/client'
 import type {
-  SettingsOnboardingStep, SettingsRootInjected, SettingsSectionRow,
+  SettingsOnboardingStep, SettingsOpenRequest, SettingsRootInjected, SettingsSectionRow,
 } from './shell-contract.ts'
+import { ModelSetupAction } from './ModelSetupAction.tsx'
 import { SettingsRoot } from './SettingsRoot.tsx'
 import { CloseLabel, HeaderContent, TriggerContent } from './chrome.tsx'
 import { GeneralSection } from './GeneralSection.tsx'
@@ -90,7 +93,17 @@ export function apply(ctx: ClientContext): void {
   let rows: readonly SettingsSectionRow[] = []
   let onboardingVersion = -1
   let onboardingSteps: readonly SettingsOnboardingStep[] = []
+  // External open requests (the command palette); the shell only seeds its local state from them.
+  const openRequests = createSnapshotStore<SettingsOpenRequest>({ seq: 0 })
+  let returnToCaller: (() => void) | undefined
+  const externalClosed = () => {
+    const resume = returnToCaller
+    returnToCaller = undefined
+    resume?.()
+  }
+  ctx.effect(() => () => { returnToCaller = undefined }, 'ui-settings-general: external workflow return')
   const shellInjected = (): SettingsRootInjected => ({
+    externalClosed,
     hooks: {
       sections: {
         getSnapshot: () => {
@@ -136,7 +149,33 @@ export function apply(ctx: ClientContext): void {
         },
         subscribe: listener => ctx.slots.subscribe('settings.onboarding', listener),
       },
+      openRequests: { getSnapshot: () => openRequests.getSnapshot(), subscribe: listener => openRequests.subscribe(listener) },
     },
+  })
+  const openSettings = (section?: string, afterClose?: () => void) => {
+    returnToCaller = afterClose
+    openRequests.set({ seq: openRequests.getSnapshot().seq + 1, section })
+  }
+  ctx.slots.inject('settings.model-setup', () => ctx.slots.register({
+    name: 'settings.model-setup', locale: NS,
+    inject: () => ({ open: (afterClose: () => void) => { openSettings('models', afterClose) } }),
+  }, ModelSetupAction))
+  // The palette lists Settings and each registered section whenever the optional layout service is (or becomes) present.
+  ctx.inject(['layout'], (scope: ClientContext) => {
+    scope.effect(() => scope.layout.registerCommands({
+      id: 'settings',
+      label: () => t('title'),
+      items: () => [
+        { id: 'open', label: t('palette.open'), run: () => { openSettings() } },
+        ...ctx.slots.entries('settings.section').map(entry => ({
+          // List-slot registration requires an id before the entry is published.
+          id: entry.options.id as string,
+          label: resolveSlotLabel(entry.options.label) ?? '',
+          hint: t('title'),
+          run: () => { openSettings(entry.options.id) },
+        })).filter(item => item.id !== '' && item.label !== ''),
+      ],
+    }), 'ui-settings-general: palette')
   })
   ctx.slots.inject('sidebar.settings', () => ctx.slots.register({
     name: 'sidebar.settings',

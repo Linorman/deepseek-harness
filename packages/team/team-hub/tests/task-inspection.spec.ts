@@ -4,7 +4,7 @@ import { teamTaskInspectionSchema, teamTaskInspectRequestSchema } from '@clocky/
 import { projectTaskInspection, withoutPrivateTaskArtifacts } from '@clocky/clocky-team/selection'
 import { recover } from './durable-replay-fixtures.ts'
 import { createdTeam, participant, participantChanged, settledAttempt, task, taskChanged,
-  taskCreatorActivationId, taskCreatorId, taskCreatorSessionId, teamId, teamPhase } from './fixtures.ts'
+  taskCreatorActivationId, taskCreatorId, taskCreatorSessionId, taskLease, teamId, teamPhase } from './fixtures.ts'
 
 function longTask() {
   const history = Array.from({ length: 1000 }, (_, index) => settledAttempt({ id: `inspect-attempt-${index}`, ordinal: index + 1,
@@ -144,14 +144,15 @@ describe('bounded task inspection', () => {
   it.each(['json', 'sqlite'] as const)('reads a replayed task without an Agent and enforces its revision (%s)', async (backend) => {
     const member = participant({ id: taskCreatorId, role: 'coordinator' })
     const row = task({ createdAt: 16 })
-    const ctx = await recover(backend, [createdTeam(), teamPhase(),
+    const records = [createdTeam(), teamPhase(),
       ...(['invited', 'provisioning', 'active'] as const).map((phase, index) =>
         participantChanged({ participant: { ...member, phase }, createdAt: 12 + index })),
       { type: 'activation/changed', createdAt: 15, binding: {
         activation: { id: taskCreatorActivationId, teamId, participantId: taskCreatorId, status: 'idle' },
         sessionId: taskCreatorSessionId, provider: 'in-process',
       } }, taskChanged({ task: row, createdAt: 16 }),
-    ])
+    ]
+    const ctx = await recover(backend, records)
     const record = await ctx.teams.inspectTask({ teamId, taskId: row.id, section: 'record' })
     expect(record).toMatchObject({ section: 'record', revision: 1, task: { id: row.id, subject: row.subject } })
     expect(await ctx.teams.inspectTask({ teamId, taskId: row.id, section: 'reviews', expectedRevision: 1 }))
@@ -163,5 +164,35 @@ describe('bounded task inspection', () => {
     expect(opening).not.toHaveBeenCalled()
     await expect(ctx.teams.inspectTask({ teamId, taskId: 'foreign' as typeof row.id, section: 'record' }))
       .rejects.toMatchObject({ code: 'TEAM_TASK_NOT_FOUND' })
+    const bounded = await recover(backend, records, undefined, teamId, [], records.length - 1, [],
+      { maxSelectionBytes: 100 })
+    await expect(bounded.teams.inspectTask({ teamId, taskId: row.id, section: 'record' }))
+      .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+  })
+
+  it('refuses an indivisible completed attempt row under the public inspection byte limit', async () => {
+    const member = participant({ id: taskCreatorId, role: 'coordinator' })
+    const initial = task({ createdAt: 16, maxAttempts: 2 })
+    const lease = taskLease({ participantId: taskCreatorId, activationId: taskCreatorActivationId,
+      assignedAt: 17, renewedAt: 17, expiresAt: 27, durationMs: 10 })
+    const assigned = task({ ...initial, revision: 2, phase: 'assigned', attemptCount: 1, lease })
+    const running = task({ ...assigned, revision: 3, phase: 'running', lease: { ...lease, startedAt: 18 } })
+    const settled = task({ ...running, revision: 4, phase: 'completed', lease: undefined,
+      attemptHistory: [settledAttempt({ id: lease.attemptId, participantId: taskCreatorId,
+        activationId: taskCreatorActivationId, assignedAt: 17, startedAt: 18,
+        leaseExpiresAt: 27, settledAt: 20,
+        outcome: { kind: 'completed', result: { summary: 'large-result-'.repeat(300) } } })] })
+    const records = [createdTeam(), teamPhase(), ...(['invited', 'provisioning', 'active'] as const).map((phase, index) =>
+      participantChanged({ participant: { ...member, phase }, createdAt: 12 + index })),
+    { type: 'activation/changed', createdAt: 15, binding: { activation: {
+      id: taskCreatorActivationId, teamId, participantId: taskCreatorId, status: 'idle',
+    }, sessionId: taskCreatorSessionId, provider: 'in-process' } },
+    taskChanged({ task: initial, createdAt: 16 }), taskChanged({ task: assigned, createdAt: 17 }),
+    taskChanged({ task: running, createdAt: 18 }), taskChanged({ task: settled, createdAt: 20 })]
+    const ctx = await recover('json', records, undefined, teamId, [], records.length - 1, [],
+      { maxSelectionBytes: 512 })
+    await expect(ctx.teams.inspectTask({ teamId, taskId: initial.id, section: 'attempts', afterCursor: -1, limit: 1 }))
+      .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+    expect((await ctx.teams.getTask({ teamId, taskId: initial.id })).attemptHistory).toEqual(settled.attemptHistory)
   })
 })

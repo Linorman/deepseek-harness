@@ -1,3 +1,4 @@
+export { resolveSessionContentOwner } from './ancestry.ts'
 import { isSimulationContextView, isSimulationContextViewEvent } from './simulation-context.ts'
 /**
  * Event-sourced session service: append-only session log, in-memory store, and
@@ -141,8 +142,10 @@ function validateSessionHeader(id: SessionId, input: unknown): SessionHeader {
   return deepFreeze(record as unknown as SessionHeader)
 }
 
-/** Reject pre-cutover product metadata instead of silently dropping it. */
-function assertNoRetiredHeaderFields(value: unknown): void {
+/** Reject pre-cutover product metadata instead of silently dropping it.
+ * @param value - Session header input at creation or durable read.
+ */
+export function assertNoRetiredHeaderFields(value: unknown): void {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return
   const record = value as Record<string, unknown>
   for (const key of ['origin', 'delegationDepth'] as const) {

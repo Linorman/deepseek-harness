@@ -169,6 +169,71 @@ describe('StorageLogFacility', () => {
     await expect(facility.readSummary(descriptor, 0)).rejects.toMatchObject({ code: 'scan-invalid' })
     await facility.closeAll()
     await expect(facility.readSummary(descriptor, 1024)).rejects.toMatchObject({ code: 'closed' })
+    await expect(facility.scanNames({ prefix: 'team/', limit: 1 })).rejects.toMatchObject({ code: 'closed' })
+    await expect(facility.hasStream(descriptor.name)).rejects.toMatchObject({ code: 'closed' })
+  })
+
+  it('refuses recovery discovery on a provider that lacks bounded physical metadata capabilities', async () => {
+    const { facility } = await setup()
+    await expect(facility.hasStream('team/absent')).rejects.toMatchObject({ code: 'facet-unsupported' })
+    await expect(facility.scanNames({ prefix: 'team/', limit: 1 })).rejects.toMatchObject({ code: 'facet-unsupported' })
+    await facility.closeAll()
+  })
+
+  it('drains owned streams even when a retained discovery iterator refuses cleanup', async () => {
+    const log = new MemoryLogFacet()
+    const cleanupError = new Error('discovery cleanup failed')
+    const { facility } = await setup({
+      open: descriptor => log.open(descriptor),
+      list: () => log.list(),
+      async * scanNames() {
+        try { yield 'team/a'; yield 'team/b' }
+        finally { throw cleanupError }
+      },
+    })
+    const stream = await facility.open({ name: 'team/a', version: 1 })
+    expect((await facility.scanNames({ prefix: 'team/', limit: 1 })).names).toEqual(['team/a'])
+    await expect(facility.closeAll()).rejects.toThrow('storage log facility disposal failed')
+    await expect(stream.read(-1, 1)).rejects.toThrow('closed')
+    await expect(facility.closeAll()).rejects.toThrow('storage log facility disposal failed')
+  })
+
+  it('filters historical names by their current route while forwarding bounded existence and summary reads', async () => {
+    const ctx = new Context()
+    await ctx.plugin(Storage)
+    const physical = new MemoryLogFacet()
+    const reads: Array<{ name: string; maxBytes: number }> = []
+    ctx.storage.backend.register('primary', {
+      close: async () => {},
+      log: {
+        open: descriptor => physical.open(descriptor), list: () => physical.list(),
+        has: async name => name === 'team/a',
+        readSummary: async (descriptor, maxBytes) => {
+          reads.push({ name: descriptor.name, maxBytes })
+          return { sequence: 0, value: { label: 'bounded header' } }
+        },
+        async * scanNames() { yield undefined; yield 'team/a'; yield 'team/child/historical' },
+      },
+    })
+    ctx.storage.backend.register('secondary', {
+      close: async () => {},
+      log: {
+        open: descriptor => physical.open(descriptor), list: () => physical.list(),
+        async * scanNames() { yield 'team/child/current' },
+      },
+    })
+    const facility = new StorageLogFacility(ctx, { backend: 'primary', routes: {
+      'team/child/historical': 'secondary', 'team/child/current': 'secondary',
+    } })
+    try {
+      expect(await facility.hasStream('team/a')).toBe(true)
+      expect(await facility.hasStream('team/absent')).toBe(false)
+      expect(await facility.readSummary({ name: 'team/a', version: 1 }, 64))
+        .toEqual({ sequence: 0, value: { label: 'bounded header' } })
+      expect(reads).toEqual([{ name: 'team/a', maxBytes: 64 }])
+      expect(await facility.scanNames({ prefix: 'team/', limit: 16 }))
+        .toEqual({ names: ['team/a', 'team/child/current'], scanned: 6 })
+    } finally { await facility.closeAll(); await ctx.fiber.dispose() }
   })
 
   it('routes a declared stream, exposes the mounted form, and frees its name after close', async () => {
@@ -196,6 +261,9 @@ describe('StorageLogFacility', () => {
     await expect(facility.open({ name: 'team_beta', version: 1 })).rejects.toMatchObject({
       code: 'facet-unsupported',
     })
+    await expect(facility.hasStream('team_beta')).rejects.toMatchObject({ code: 'facet-unsupported' })
+    await expect(facility.scanNames({ prefix: 'team/', limit: 1 })).rejects.toMatchObject({ code: 'facet-unsupported' })
+    await facility.closeAll()
   })
 
   it('uses the default route for an opaque inherited-property stream name', async () => {

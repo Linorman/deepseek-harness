@@ -27,16 +27,30 @@ export interface SettingsOnboardingStep {
 }
 
 /**
+ * A request from outside the shell (the command palette) to open the panel.
+ * `seq` grows with every request so a repeat of the same section still opens.
+ */
+export interface SettingsOpenRequest {
+  seq: number
+  /** Section id to show; absent opens the panel on its default section. */
+  section?: string | undefined
+}
+
+/**
  * Registrant-private injected share of the settings shell (assembled in
  * apply): the ledger's nav-row projection as a hooks-compartment source —
  * the shell reads no locale state and subscribes through the bound hook.
  */
 export type SettingsRootInjected = {
+  /** Notify the private external-open owner after an explicit modal close. */
+  externalClosed?: () => void
   hooks: {
     /** settings.section ledger projected into ordered nav rows. */
     sections: HostObservable<readonly SettingsSectionRow[]>
     /** settings.onboarding ledger projected into coordinator order. */
     onboardingSteps: HostObservable<readonly SettingsOnboardingStep[]>
+    /** Latest external open request; `seq: 0` means none yet. */
+    openRequests: HostObservable<SettingsOpenRequest>
   }
 }
 
@@ -44,7 +58,8 @@ export type SettingsRootInjected = {
  * Full component props of the settings shell root: the sidebar owner share
  * (wide/rail state) plus the declared render shares and the injected face
  * (hooks compartment bound to useSections). No store is registered — modal
- * open state and active section id are component-local viewing state.
+ * open state and active section id are component-local viewing state; an
+ * external open request only seeds them.
  */
 export type SettingsRootComponentProps =
   PropsRuntime<'sidebar.settings'>

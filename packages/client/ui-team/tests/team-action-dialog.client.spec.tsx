@@ -99,7 +99,83 @@ it('requires explicit discard confirmation and preserves existing input after ca
   expect((view.getByLabelText('Other answer') as HTMLTextAreaElement).value).toBe('Retained answer')
   fireEvent.click(view.getByRole('button', { name: 'Discard answer draft' }))
   expect(discard).not.toHaveBeenCalled()
-  const confirmation = view.getByRole('dialog', { name: 'Discard answer draft' })
+  let confirmation = view.getByRole('dialog', { name: 'Discard answer draft' })
+  fireEvent.click(within(confirmation).getAllByRole('button', { name: 'Cancel' })[1]!)
+  expect(view.queryByRole('dialog', { name: 'Discard answer draft' })).toBeNull()
+  expect(discard).not.toHaveBeenCalled()
+  fireEvent.click(view.getByRole('button', { name: 'Discard answer draft' }))
+  confirmation = view.getByRole('dialog', { name: 'Discard answer draft' })
+  fireEvent.click(within(confirmation).getAllByRole('button', { name: 'Cancel' })[0]!)
+  expect(view.queryByRole('dialog', { name: 'Discard answer draft' })).toBeNull()
+  fireEvent.click(view.getByRole('button', { name: 'Discard answer draft' }))
+  confirmation = view.getByRole('dialog', { name: 'Discard answer draft' })
   fireEvent.click(within(confirmation).getByRole('button', { name: 'Discard answer draft' }))
   await waitFor(() => { expect(discard).toHaveBeenCalledOnce() })
+})
+
+it('refreshes a mismatched request and keeps current errors and stale content visible', async () => {
+  const value = inspection()
+  const inspect = vi.fn(async () => value)
+  const closeDetail = vi.fn()
+  const onClose = vi.fn()
+  const props = { teamId: value.teamId, actionId: value.action.id, changeDraft: vi.fn(), discardDraft: vi.fn(), translate: t,
+    inspect, closeDetail, respond: vi.fn(async (input: TeamActionResponseInput) => accepted(input)), onClose }
+  const view = render(<TeamActionDialog {...props} detail={{ teamId: value.teamId, actionId: 'other' as never, value,
+    loading: false, hasNewer: false, disconnected: false }} />)
+  await waitFor(() => { expect(inspect).toHaveBeenCalledWith(value.teamId, value.action.id) })
+  expect(view.getByText('Loading pending items…')).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: 'Refresh request details' }))
+  expect(inspect).toHaveBeenCalledTimes(2)
+  view.rerender(<TeamActionDialog {...props} detail={{ teamId: value.teamId, actionId: value.action.id, value,
+    loading: false, hasNewer: true, disconnected: true, error: 'Read failed' }} />)
+  expect(view.getByText('Disconnected; showing the last authorized content.')).toBeTruthy()
+  expect(view.getByRole('alert').textContent).toBe('Read failed')
+  expect(view.queryByText(en['human.changed'])).toBeNull()
+  fireEvent.click(view.getAllByRole('button', { name: 'Cancel' })[0]!)
+  expect(onClose).toHaveBeenCalledOnce()
+  view.unmount()
+  expect(closeDetail).toHaveBeenCalledOnce()
+})
+
+it('reports failed current-request checks and opens the request execution context', async () => {
+  const value = inspection()
+  const inspect = vi.fn().mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce({ ...value, handling: { kind: 'waiting', reason: 'parent-inspection' } })
+  const openContext = vi.fn(async () => {})
+  const onClose = vi.fn()
+  const view = render(<TeamActionDialog teamId={value.teamId} actionId={value.action.id}
+    detail={{ teamId: value.teamId, actionId: value.action.id, value, loading: false, hasNewer: false, disconnected: false }}
+    changeDraft={vi.fn()} discardDraft={vi.fn()} translate={t} inspect={inspect} closeDetail={vi.fn()}
+    respond={async input => accepted(input)} openContext={openContext} onClose={onClose} />)
+  fireEvent.click(view.getByRole('button', { name: 'Check current request' }))
+  await waitFor(() => { expect(view.getByRole('alert').textContent).toBe(en['human.readFailed']) })
+  fireEvent.click(view.getByRole('button', { name: 'Check current request' }))
+  await waitFor(() => { expect(view.getByRole('alert').textContent).toBe(en['attention.wait.parent-inspection']) })
+  fireEvent.click(view.getByRole('button', { name: 'Inspect execution context' }))
+  await waitFor(() => { expect(openContext).toHaveBeenCalledWith(value.action) })
+  expect(onClose).toHaveBeenCalledOnce()
+})
+
+it('keeps the request dialog open while an answer submission is pending', async () => {
+  const value = inspection()
+  let finish!: () => void
+  const respond = vi.fn((input: TeamActionResponseInput) => new Promise<TeamActionResponseResult>((resolve) => {
+    finish = () => { resolve(accepted(input)) }
+  }))
+  const onClose = vi.fn()
+  const view = render(<TeamActionDialog teamId={value.teamId} actionId={value.action.id}
+    detail={{ teamId: value.teamId, actionId: value.action.id, value, loading: false, hasNewer: false, disconnected: false }}
+    draft={{ answers: { evidence: { selected: [], custom: 'Proceed after review' } } }}
+    changeDraft={vi.fn()} discardDraft={vi.fn()} translate={t} inspect={vi.fn(async () => value)} closeDetail={vi.fn()}
+    respond={respond} onClose={onClose} />)
+  fireEvent.click(view.getByRole('button', { name: 'Check current request' }))
+  await view.findByRole('button', { name: 'Submit answers' })
+  fireEvent.click(view.getByRole('button', { name: 'Submit answers' }))
+  await waitFor(() => { expect(respond).toHaveBeenCalledOnce() })
+  fireEvent.click(view.getAllByRole('button', { name: 'Cancel' })[0]!)
+  expect(onClose).not.toHaveBeenCalled()
+  finish()
+  await view.findByText('Answer accepted. Check the task records for subsequent execution.')
+  fireEvent.click(view.getAllByRole('button', { name: 'Cancel' })[0]!)
+  expect(onClose).toHaveBeenCalledOnce()
 })

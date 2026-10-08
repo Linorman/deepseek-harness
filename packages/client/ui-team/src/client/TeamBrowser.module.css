@@ -7,8 +7,8 @@
   scrollbar-gutter: stable;
   /* The Team list/detail scrolls inside the elevated sidebar surface. Keep
      its scrollbar pair aligned with the l2 surface contract. */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .page {
@@ -41,8 +41,8 @@
   padding: 0;
 }
 
-.channelMessageHeader { display: flex; gap: 12px; align-items: baseline; margin-bottom: 8px; font-size: 13px; }
-.channelMessageHeader time { font-size: 12px; color: var(--clocky-alias-label-secondary); }
+.channelMessageHeader { display: flex; gap: 12px; align-items: baseline; margin-bottom: 8px; font-size: var(--clocky-type-label-size); }
+.channelMessageHeader time { font-size: var(--clocky-type-caption-size); color: var(--clocky-fg-secondary); }
 
 .pageHeader {
   display: grid;
@@ -53,10 +53,10 @@
 .pageHeader h1,
 .section h2 {
   margin: 0;
-  color: var(--clocky-alias-label-primary);
-  font-size: 13px;
+  color: var(--clocky-fg-primary);
+  font-size: var(--clocky-type-label-size);
   font-weight: 600;
-  line-height: 18px;
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .pageHeader h1 {
@@ -77,7 +77,7 @@
   gap: 8px;
 }
 
-.sectionHeader h2 { margin-right: auto; font-size: 16px; line-height: 24px; }
+.sectionHeader h2 { margin-right: auto; font-size: var(--clocky-type-heading-size); line-height: var(--clocky-type-heading-line-height); }
 
 .actions {
   align-items: start;
@@ -89,14 +89,14 @@
 .participant button,
 .channelList button {
   min-height: 28px;
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 8px;
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-md);
   padding: 4px 8px;
   background: transparent;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   cursor: pointer;
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .actions button:hover,
@@ -104,15 +104,15 @@
 .participant button:hover,
 .channelList button:hover,
 .channelList button[aria-pressed='true'] {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
 }
 
 .actions button:focus-visible,
 .sectionHeader button:focus-visible,
 .participant button:focus-visible,
 .channelList button:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: 2px;
 }
 
@@ -136,9 +136,9 @@
 .taskMeta,
 .record small,
 .result small {
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .list,
@@ -157,9 +157,9 @@
 .record,
 .notice {
   min-width: 0;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
   padding: 7px 8px;
-  background: var(--clocky-alias-bg-layer-2);
+  background: var(--clocky-bg-raised);
 }
 
 .participant {
@@ -180,9 +180,9 @@
 
 .participantTasks {
   overflow: hidden;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 15px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -192,24 +192,24 @@
 .record strong,
 .result strong {
   overflow-wrap: anywhere;
-  color: var(--clocky-alias-label-primary);
-  font-size: 12px;
-  line-height: 16px;
+  color: var(--clocky-fg-primary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .phase {
   margin: 0;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .task p,
 .result p {
   margin: 2px 0;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 12px;
-  line-height: 17px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   overflow-wrap: anywhere;
 }
 
@@ -242,16 +242,16 @@
   width: 24px;
   height: 24px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
   padding: 0;
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
 .taskDelete:hover {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
-  color: var(--clocky-alias-state-error-primary);
+  background: var(--clocky-status-failed-bg);
+  color: var(--clocky-status-failed-fg);
 }
 
 .taskStop {
@@ -262,25 +262,25 @@
   width: 24px;
   height: 24px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
   padding: 0;
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
 .taskStop:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
 }
 
 .taskDelete:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: 2px;
 }
 
 .taskStop:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: 2px;
 }
 
@@ -298,10 +298,10 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
-  font-size: 10px;
-  line-height: 15px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   list-style: none;
 }
 
@@ -310,9 +310,9 @@
 }
 
 .details summary:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: var(--clocky-radius-xs);
 }
 
 .details[open] > summary svg {
@@ -329,28 +329,28 @@
 
 .taskDetailDescription {
   margin: 4px 0;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   overflow-wrap: anywhere;
 }
 
 .taskDeleteConfirm {
-  color: var(--clocky-alias-state-error-primary) !important;
+  color: var(--clocky-status-failed-fg) !important;
 }
 
 .taskStopConfirm {
-  color: var(--clocky-alias-label-primary) !important;
+  color: var(--clocky-fg-primary) !important;
 }
 
 .badge {
   flex: none;
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   padding: 1px 6px;
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 10px;
-  line-height: 15px;
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .json {
@@ -360,10 +360,10 @@
   overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   font-family: var(--ds-font-family-code);
-  font-size: 10px;
-  line-height: 14px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .records,
@@ -376,16 +376,16 @@
 .error {
   grid-column: 1 / -1;
   margin: 0;
-  color: var(--clocky-alias-state-error-primary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-status-failed-fg);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   overflow-wrap: anywhere;
 }
 
 .notice {
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   overflow-wrap: anywhere;
 }
 
@@ -395,10 +395,10 @@
   gap: 6px;
   height: 30px;
   padding: 0 8px;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 13px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-label-size);
   font-weight: 500;
-  line-height: 20px;
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .workspaceToolbar {
@@ -408,9 +408,9 @@
   gap: 8px;
   min-height: 28px;
   padding: 0 8px;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .workspaceAdd,
@@ -418,21 +418,21 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 7px;
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-sm);
   padding: 3px 7px;
   background: transparent;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   cursor: pointer;
-  font-size: 10px;
-  line-height: 14px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .workspaceAdd:hover,
 .workspaceAddTask:hover,
 .workspaceButton:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
 }
 
 .workspaceAdd:disabled,
@@ -444,7 +444,7 @@
 .workspaceAdd:focus-visible,
 .workspaceAddTask:focus-visible,
 .workspaceButton:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: 2px;
 }
 
@@ -457,10 +457,10 @@
 
 .workspaceGroup {
   min-width: 0;
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 9px;
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-md);
   padding: 4px;
-  background: var(--clocky-alias-bg-layer-2);
+  background: var(--clocky-bg-raised);
 }
 
 .workspaceHead {
@@ -480,10 +480,10 @@
   border: 0;
   padding: 3px 4px;
   background: transparent;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   cursor: pointer;
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   text-align: left;
 }
 
@@ -497,8 +497,8 @@
 
 .workspaceCount {
   flex: none;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 10px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
 }
 
 .workspaceAddTask {
@@ -514,16 +514,16 @@
 .workspaceEmpty {
   margin: 0;
   padding: 4px 6px 5px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 10px;
-  line-height: 14px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .workspaceUnassigned {
   padding: 3px 4px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 10px;
-  line-height: 14px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .list {
@@ -547,27 +547,27 @@
   min-height: 44px;
   box-sizing: border-box;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
   padding: 6px 8px;
   background: transparent;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   cursor: pointer;
   text-align: left;
 }
 
 .row:hover,
 .row.selected {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .row:active,
 .rail:active {
-  background: var(--clocky-alias-interactive-bg-active);
+  background: var(--clocky-bg-active);
 }
 
 .row:focus-visible,
 .rail:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: 2px;
 }
 
@@ -582,22 +582,22 @@
   height: 24px;
   margin-right: 4px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
   padding: 0;
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
-  font-size: 17px;
-  line-height: 22px;
+  font-size: var(--clocky-type-heading-size);
+  line-height: var(--clocky-type-heading-line-height);
 }
 
 .archive:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
 }
 
 .archive:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: 2px;
 }
 
@@ -609,33 +609,33 @@
 .objective {
   min-width: 0;
   overflow: hidden;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .phase {
   align-self: start;
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   padding: 1px 6px;
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 11px;
-  line-height: 16px;
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   white-space: nowrap;
 }
 
 .empty,
 .error {
   padding: 0 8px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .error {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .rail {
@@ -646,15 +646,15 @@
   height: 36px;
   margin-bottom: 8px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
   padding: 0;
   background: transparent;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   cursor: pointer;
 }
 
 .rail:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .managementContent {
@@ -691,10 +691,10 @@
   width: 100%;
   min-height: 100px;
   padding: 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 8px;
-  background: var(--clocky-alias-bg-base);
-  color: var(--clocky-alias-label-primary);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-canvas);
+  color: var(--clocky-fg-primary);
   font: inherit;
 }
 
@@ -712,8 +712,19 @@
   overflow-wrap: anywhere;
 }
 
+.inboxList {
+  display: flex;
+  flex-direction: column;
+}
+
+.inboxEntry:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--clocky-radius-sm);
+}
+
 .inboxEntry + .inboxEntry {
-  border-top: 1px solid var(--clocky-alias-border-l2);
+  border-top: 1px solid var(--clocky-border-default);
 }
 
 .humanText {
@@ -741,20 +752,20 @@
 
 .managementChoices small {
   display: block;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .memberDetail { overflow-wrap: anywhere; max-height: 60dvh; overflow-y: auto; }
 .memberPages { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 .memberReadiness {
-  font: var(--clocky-font-xxs-12);
-  color: var(--clocky-alias-label-secondary);
+  font: var(--clocky-type-caption);
+  color: var(--clocky-fg-secondary);
   overflow-wrap: anywhere;
 }
 
 .memberReadiness p { margin: 4px 0 0; }
-.participant small { font: var(--clocky-font-xxs-12); }
+.participant small { font: var(--clocky-type-caption); }
 
 .changes {
   overflow-x: auto;
@@ -769,13 +780,13 @@
 .changes td {
   vertical-align: top;
   padding: 8px;
-  border-bottom: 1px solid var(--clocky-alias-border-l1);
+  border-bottom: 1px solid var(--clocky-border-subtle);
   text-align: start;
   overflow-wrap: anywhere;
 }
 .changes th small {
   display: block;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   font-weight: normal;
 }
 .changes pre {
@@ -784,3 +795,170 @@
   overflow-wrap: anywhere;
   font: inherit;
 }
+
+/* Sidebar Team rows: status glyph, two-line title and meta, hover actions.
+   These rules come last so they win over the shared list rules above. */
+.workspaceGroup {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.workspaceList {
+  gap: var(--clocky-space-3);
+}
+
+.item {
+  position: relative;
+  display: block;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--clocky-space-2);
+  min-height: 44px;
+  padding: var(--clocky-space-2) var(--clocky-space-2);
+  border-radius: var(--clocky-radius-md);
+}
+
+.row.selected {
+  background: var(--clocky-bg-active);
+}
+
+.glyph {
+  margin-top: 2px;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.objective {
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-primary);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--clocky-space-1);
+  min-width: 0;
+  color: var(--clocky-fg-tertiary);
+  font: var(--clocky-type-caption);
+  white-space: nowrap;
+}
+
+.meta .phase {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+/* Row actions appear on hover and whenever focus is inside the row, so they
+   stay keyboard reachable. */
+.rowActions {
+  position: absolute;
+  top: var(--clocky-space-1);
+  right: var(--clocky-space-1);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--clocky-duration-fast) var(--clocky-ease-standard);
+}
+
+.item:hover .rowActions,
+.item:focus-within .rowActions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.rowActions:empty {
+  display: none;
+}
+
+.rowActions .archive {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  border-radius: var(--clocky-radius-sm);
+  background: var(--clocky-bg-sidebar);
+  font: var(--clocky-type-label);
+}
+
+.inboxRow,
+.railInbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--clocky-space-2);
+  border: 0;
+  background: transparent;
+  color: var(--clocky-fg-secondary);
+  cursor: pointer;
+}
+
+.inboxRow {
+  width: calc(100% - var(--clocky-space-4));
+  height: 32px;
+  margin: 0 var(--clocky-space-2) var(--clocky-space-2);
+  padding: 0 var(--clocky-space-2);
+  border-radius: var(--clocky-radius-md);
+  font: var(--clocky-type-label);
+}
+
+.inboxRow:hover,
+.railInbox:hover {
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
+}
+
+.inboxRow:focus-visible,
+.railInbox:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
+}
+
+.inboxLabel {
+  flex: 1;
+  text-align: left;
+}
+
+.inboxBadge,
+.railBadge {
+  min-width: 18px;
+  padding: 0 var(--clocky-space-1);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-status-needs-you-fg);
+  color: var(--clocky-fg-on-accent);
+  font: var(--clocky-type-micro);
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.railInbox {
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--clocky-radius-md);
+}
+
+.railBadge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 14px;
+  line-height: 14px;
+  font-size: var(--clocky-type-micro-size);
+}
+
+/* Module content below the Team header; named for module view transitions. */
+.moduleArea { display: flex; flex-direction: column; gap: 24px; min-width: 0; }

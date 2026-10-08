@@ -11,6 +11,7 @@
 import type { BoundActions } from '@clocky/clocky-client-ui-slots'
 import type { createLayoutStore } from './stores.ts'
 import { readWorkspaceSource, workspaceNavigationSource, SIMULATION_ROUTE_KEYS, WORKSPACE_NAVIGATION_EVENT } from './navigation.ts'
+import { CommandRegistry, type CommandProvider, type ShortcutSpec } from './commands.ts'
 
 /** The layout store's bound action set (framework-baked, draft params peeled). */
 export type PanelActions = BoundActions<ReturnType<typeof createLayoutStore>>
@@ -34,11 +35,48 @@ export interface ILayout {
   openDetails(): void
   /** Close the details panel. */
   closeDetails(): void
+  /**
+   * Register a keyboard shortcut with the shell's single listener.
+   * @param spec - chord, label, group, and action.
+   * @returns a disposer.
+   * @throws ShortcutConflictError when another owner holds the chord.
+   */
+  registerShortcut(spec: ShortcutSpec): () => void
+  /**
+   * Contribute a command-palette section.
+   * @param provider - section id, label, and a live item reader.
+   * @returns a disposer.
+   */
+  registerCommands(provider: CommandProvider): () => void
+  /** Open the command palette. */
+  openCommandPalette(): void
 }
 
 /** Cross-plugin panel-action face (ctx.layout). */
 export class LayoutController implements ILayout {
   #panels: PanelActions | undefined
+  /** Shortcut and palette registries; the shell installs the one key listener. */
+  readonly commands = new CommandRegistry()
+
+  /** @param spec - shortcut to add. @returns its disposer. */
+  registerShortcut(spec: ShortcutSpec): () => void {
+    return this.commands.registerShortcut(spec)
+  }
+
+  /** @param provider - palette section to add. @returns its disposer. */
+  registerCommands(provider: CommandProvider): () => void {
+    return this.commands.registerProvider(provider)
+  }
+
+  /** Open the palette through the root store. */
+  openCommandPalette(): void {
+    this.#panels?.setOverlay('palette')
+  }
+
+  /** Open the shortcut overlay through the root store. */
+  showShortcuts(): void {
+    this.#panels?.setOverlay('shortcuts')
+  }
   /** @param workspace - Product domain to display; selection carries no execution authority. */
   showWorkspace(workspace: 'team' | 'simulation'): void {
     const url = new URL(window.location.href)

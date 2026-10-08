@@ -53,10 +53,10 @@ export async function companyFixture(backend: 'json' | 'sqlite' = 'json', prepar
   const connection = await ctx.simulationTeams.attach(run, teamId, companySettings.ownerName)
   const requests: Array<{ stage: string; tools: string[]; goal: string }> = []
   const adapter = companyModel(run, requests, alter)
-  ctx.llm.registerAdapter(['company'], adapter)
+  const modelRegistration = ctx.llm.registerAdapter(['company'], adapter)
   const lifetime = new AbortController()
   const driver = new SimulationCompanyDriver(run, connection, companySettings, companyConfig, lifetime.signal)
-  return { ctx, run, connection, driver, lifetime, requests, adapter, selection,
+  return { ctx, run, connection, driver, lifetime, requests, adapter, selection, modelRegistration,
     async start() { await run.managePhase(simulationPhaseManagementRequestSchema.parse({ id: 'start', phase: 'running' })) },
     async close() {
       await driver.drain(); await run.close(); await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true })

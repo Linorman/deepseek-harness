@@ -8,7 +8,7 @@
 }
 
 .field + .field {
-  border-top: 1px solid var(--clocky-alias-border-l2);
+  border-top: 1px solid var(--clocky-border-default);
 }
 
 .head {
@@ -20,10 +20,10 @@
 .label {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
   font-weight: 500;
   line-height: 1.5;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .badges {
@@ -33,23 +33,23 @@
 }
 
 .badge {
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   padding: 1px 8px;
-  font-size: 11px;
-  line-height: 17px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   white-space: nowrap;
   font-weight: 500;
-  background: var(--clocky-alias-bg-module-platform);
-  color: var(--clocky-alias-label-secondary);
+  background: var(--clocky-bg-sunken);
+  color: var(--clocky-fg-secondary);
 }
 
 .badgeMuted {
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   padding: 1px 8px;
-  font-size: 11px;
-  line-height: 17px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   white-space: nowrap;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .reset {
@@ -57,14 +57,14 @@
   background: none;
   padding: 0;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--clocky-type-caption-size);
   line-height: 1.5;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   cursor: pointer;
 }
 
 .reset:hover:not(:disabled) {
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .reset:disabled {
@@ -74,40 +74,40 @@
 .input {
   height: 34px;
   padding: 0 12px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 8px;
-  background: var(--clocky-alias-bg-layer-3);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-overlay);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
   line-height: 1.5;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .input:focus-visible {
   outline: none;
-  border-color: var(--clocky-alias-brand-primary);
+  border-color: var(--clocky-accent-bg);
 }
 
 .input:disabled {
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: default;
 }
 
 .inputInvalid {
   composes: input;
-  border-color: var(--clocky-alias-label-error);
+  border-color: var(--clocky-status-failed-fg);
 }
 
 .invalid {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--clocky-type-caption-size);
   line-height: 1.5;
-  color: var(--clocky-alias-label-error);
+  color: var(--clocky-status-failed-fg);
 }
 
 .hint {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--clocky-type-caption-size);
   line-height: 1.5;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }

@@ -1,4 +1,5 @@
 /** A genuine pending Host approval is durably cancelled after terminal intent and abrupt Host loss. */
+import { createFixtureTeam, withFixturePrincipal } from './authenticated-host.ts'
 import assert from 'node:assert/strict'
 import { writeSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -104,7 +105,7 @@ async function crash(ctx: Context, config: Config, model: FaultModel): Promise<n
     if (result.isError === true) requested.reject(new Error(`actual approval failed before Host loss: ${JSON.stringify(result.content)}`))
   })
   try {
-    const handle = await ctx.teamRuns.create({ objective: 'Retain a pending human approval across Host loss.', cwd: process.cwd(),
+    const handle = await createFixtureTeam(ctx, { objective: 'Retain a pending human approval across Host loss.', cwd: process.cwd(),
       selection: { provider: MODEL, model: MODEL } })
     await ctx.teamRuns.postHumanInput({ teamId: handle.teamId,
       idempotencyKey: channelPostIdempotencyKeySchema.parse('human-approval-restart-input'), content: [{ type: 'text', text: INPUT }] })
@@ -226,7 +227,7 @@ export function apply(ctx: Context, config: Config): void {
   ctx.llm.registerAdapter([MODEL], model)
   const exit = ctx.get('appExit')
   assert(exit !== undefined)
-  const operation = config.stage === 'crash' ? crash(ctx, config, model) : recover(ctx, config, model)
+  const operation = withFixturePrincipal(ctx, () => config.stage === 'crash' ? crash(ctx, config, model) : recover(ctx, config, model))
   void operation.then((output) => { process.stdout.write(`${JSON.stringify(output)}\n`); exit(0) }, (error: unknown) => {
     process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`)
     exit(1)

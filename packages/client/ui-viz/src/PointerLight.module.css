@@ -1,0 +1,16 @@
+/* The light itself: a soft disc in the surface's tint. Its position comes
+   from transform and its visibility from opacity, both set by the hook. */
+.light {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 380px;
+  height: 380px;
+  margin: -190px 0 0 -190px;
+  border-radius: var(--clocky-radius-full);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--pointer-light-tint, var(--clocky-fg-primary)) 14%, transparent), transparent);
+  opacity: 0;
+  pointer-events: none;
+  z-index: var(--clocky-layer-behind);
+  transition: opacity var(--clocky-duration-base) var(--clocky-ease-standard);
+}

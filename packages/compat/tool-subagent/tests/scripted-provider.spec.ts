@@ -5,9 +5,10 @@ import SubagentRuntime, { type SubagentStartRequest } from '@clocky/clocky-compa
 import { SessionId } from '@clocky/clocky-session'
 import * as scripted from './scripted-provider.ts'
 
-/** A minimal parent; the scripted provider only reads its id. */
+/** Parent with the runtime fields read by depth resolution before provider dispatch. */
 function fakeParent(id = 'parent-1'): Agent {
-  return { id: SessionId(id) } as unknown as Agent
+  return { id: SessionId(id), options: {}, ctx: new Context(),
+    session: { header: { version: 0, id, createdAt: 0 } } } as unknown as Agent
 }
 
 function baseRequest(over: Partial<SubagentStartRequest> = {}): SubagentStartRequest {

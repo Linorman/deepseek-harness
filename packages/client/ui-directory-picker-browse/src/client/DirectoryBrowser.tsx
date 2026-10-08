@@ -949,7 +949,7 @@ export function DirectoryBrowser({ open, listDirectory, createDirectory, onOpen,
         </div>
         <div className={css.footerBar}>
           <Button
-            variant="outline"
+            variant="secondary"
             icon={<IconPlusOutline16 size={14} />}
             disabled={parent === null || loading || parentInert || draftPending}
             onClick={() => {
@@ -977,7 +977,7 @@ export function DirectoryBrowser({ open, listDirectory, createDirectory, onOpen,
             {showHidden && <IconCheckOutline16 size={14} />}
           </button>
           <span className={css.footerGap} />
-          <Button variant="outline" className={clsx(css.footerAction)} disabled={parentInert} onClick={onClose}>{t('browser.cancel')}</Button>
+          <Button variant="secondary" className={clsx(css.footerAction)} disabled={parentInert} onClick={onClose}>{t('browser.cancel')}</Button>
           <Button
             variant="primary"
             className={clsx(css.footerAction)}
@@ -1023,7 +1023,7 @@ export function DirectoryBrowser({ open, listDirectory, createDirectory, onOpen,
           />
           {createError !== null && <div className={css.error} role="alert">{createError}</div>}
           <div className={css.createActions}>
-            <Button variant="outline" disabled={creatingFolder} onClick={() => { setFolderDraft(null) }}>{t('browser.cancel')}</Button>
+            <Button variant="secondary" disabled={creatingFolder} onClick={() => { setFolderDraft(null) }}>{t('browser.cancel')}</Button>
             <Button
               variant="primary"
               disabled={creatingFolder || folderDraft === null || folderDraft.trim() === ''}

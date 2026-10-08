@@ -25,21 +25,21 @@
   margin: 0 -2px;
   padding: 0 10px 0 8px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--clocky-radius-lg);
   background: transparent;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--clocky-type-body-size);
   cursor: pointer;
   overflow: hidden;
 }
 
 .badge:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .badge[data-active] {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .badgeLabel {
@@ -52,9 +52,9 @@
 .badgeCount {
   flex: none;
   margin-left: auto;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 16px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   font-variant-numeric: tabular-nums;
 }
 
@@ -70,7 +70,7 @@
   width: 36px;
   height: 36px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
 }
 
 .rail .footerButtons {
@@ -82,20 +82,20 @@
    left/bottom offsets are measured from the trigger before paint. */
 .panel {
   position: fixed;
-  z-index: 30;
+  z-index: var(--clocky-layer-dropdown);
   display: flex;
   flex-direction: column;
   width: 420px;
   max-width: calc(100vw - 24px);
   max-height: 60vh;
   overflow: hidden;
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 12px;
-  background: var(--clocky-specific-menu);
-  box-shadow: var(--clocky-shadow-lv3);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
   /* Only `.body` scrolls; the header remains fixed above it. */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .header {
@@ -116,31 +116,31 @@
 }
 
 .title {
-  font-size: 14px;
+  font-size: var(--clocky-type-body-size);
   font-weight: 500;
-  line-height: 20px;
-  color: var(--clocky-alias-label-primary);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-primary);
 }
 
 .note,
 .readError {
   margin: 4px 0;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .readError {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 /* Session headings replace per-row ownership markers. */
 .group {
   margin: 8px 0 8px;
-  font-size: 11px;
+  font-size: var(--clocky-type-micro-size);
   font-weight: 500;
-  line-height: 16px;
-  color: var(--clocky-alias-label-caption);
+  line-height: var(--clocky-type-micro-line-height);
+  color: var(--clocky-fg-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -159,12 +159,12 @@
   flex-direction: column;
   gap: 8px;
   padding: 14px 12px 10px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 12px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-lg);
 }
 
 .row[data-cordis-awaiting] {
-  border-color: var(--clocky-alias-state-business-primary);
+  border-color: var(--clocky-accent-bg);
 }
 
 .rowHead {
@@ -175,20 +175,20 @@
 
 .rowId {
   flex: none;
-  color: var(--clocky-alias-label-tertiary);
-  font-family: var(--clocky-font-mono, monospace);
-  font-size: 11px;
-  line-height: 20px;
+  color: var(--clocky-fg-tertiary);
+  font-family: var(--ds-font-family-code);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .rowName {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
   font-weight: 500;
-  line-height: 20px;
-  color: var(--clocky-alias-label-primary);
+  line-height: var(--clocky-type-label-line-height);
+  color: var(--clocky-fg-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -199,32 +199,32 @@
   align-items: center;
   height: 20px;
   padding: 0 6px;
-  border-radius: 10px;
-  background: var(--clocky-alias-button-ghost-active-fill);
-  font-size: 11px;
-  line-height: 20px;
-  color: var(--clocky-alias-label-caption);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-active);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .row[data-cordis-status='idle'] .rowStatus {
-  background: var(--clocky-alias-button-ghost-active-fill);
-  color: var(--clocky-alias-label-caption);
+  background: var(--clocky-bg-active);
+  color: var(--clocky-fg-tertiary);
 }
 
 .row[data-cordis-status='awaiting-approval'] .rowStatus,
 .row[data-cordis-status='client-pending'] .rowStatus {
-  background: var(--clocky-alias-state-warn-tertiary);
-  color: var(--clocky-alias-state-warn-label);
+  background: var(--clocky-status-needs-you-bg);
+  color: var(--clocky-status-needs-you-fg);
 }
 
 .row[data-cordis-status='failed'] .rowStatus {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
-  color: var(--clocky-alias-state-error-primary);
+  background: var(--clocky-status-failed-bg);
+  color: var(--clocky-status-failed-fg);
 }
 
 .row[data-cordis-status='running'] .rowStatus {
-  background: var(--clocky-alias-state-success-tertiary);
-  color: var(--clocky-alias-state-success-primary);
+  background: var(--clocky-status-done-bg);
+  color: var(--clocky-status-done-fg);
 }
 
 .rowDetail {
@@ -238,9 +238,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--clocky-alias-label-caption);
-  font-size: 11px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .versionPicker select {
@@ -248,10 +248,10 @@
   flex: 1;
   height: 26px;
   padding: 0 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 7px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-sm);
   background: transparent;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   font: inherit;
 }
 
@@ -259,17 +259,17 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .rowError {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-state-error-primary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-status-failed-fg);
 }
 
 .rowActions {
@@ -284,9 +284,9 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  color: var(--clocky-alias-label-caption);
-  font-size: 11px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .transitionActions {
@@ -297,16 +297,16 @@
 
 .transitionActions button {
   padding: 2px 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 999px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-full);
   background: transparent;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   font: inherit;
   cursor: pointer;
 }
 
 .transitionActions button:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .transitionActions button:disabled {
@@ -315,9 +315,9 @@
 }
 
 .activeVersion {
-  color: var(--clocky-alias-label-caption);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 /* Matches GoalBar's action controls: compact circular icons whose visible copy
@@ -330,15 +330,15 @@
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
 .actionButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-secondary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-secondary);
 }
 
 .actionButton:disabled {

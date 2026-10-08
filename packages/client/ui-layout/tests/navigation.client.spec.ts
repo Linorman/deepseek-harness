@@ -26,7 +26,8 @@ it('pushes a same-document destination, restores product visibility and notifies
   window.history.replaceState(null, '', '/?workspace=simulation&simulation=run&simulationSource=2')
   const service = new LayoutController()
   const panels = { showWorkspace: vi.fn(), setSidebar: vi.fn(), setDetails: vi.fn(), toggleSidebar: vi.fn(),
-    setNarrow: vi.fn(), openDetails: vi.fn(), closeDetails: vi.fn() }
+    setNarrow: vi.fn(), openDetails: vi.fn(), closeDetails: vi.fn(), setPane: vi.fn(),
+    togglePaneExpanded: vi.fn(), restorePane: vi.fn(), setOverlay: vi.fn() }
   service.attachPanels(panels)
   const notify = vi.fn()
   window.addEventListener(WORKSPACE_NAVIGATION_EVENT, notify)

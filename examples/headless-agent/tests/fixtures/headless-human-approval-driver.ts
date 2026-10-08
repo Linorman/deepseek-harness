@@ -1,4 +1,5 @@
 /** A denied real filesystem mutation enters the formal Host approval path before public Team cancellation. */
+import { createFixtureTeam, withFixturePrincipal } from './authenticated-host.ts'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -148,7 +149,7 @@ async function run(ctx: Context, model: ApprovalModel): Promise<Record<string, u
   })()
   void pump.catch((error: unknown) => { requested.reject(error); resolved.reject(error) })
   try {
-    const handle = await ctx.teamRuns.create({ objective: 'Obtain approval for a real denied project-file mutation.',
+    const handle = await createFixtureTeam(ctx, { objective: 'Obtain approval for a real denied project-file mutation.',
       cwd: process.cwd(), selection: { provider: MODEL, model: MODEL } })
     await ctx.teamRuns.postHumanInput({ teamId: handle.teamId,
       idempotencyKey: channelPostIdempotencyKeySchema.parse('human-approval-input'), content: [{ type: 'text', text: INPUT }] })
@@ -237,7 +238,7 @@ export function apply(ctx: Context): void {
   ctx.llm.registerAdapter([MODEL], model)
   const exit = ctx.get('appExit')
   assert(exit !== undefined)
-  void run(ctx, model).then((output) => { process.stdout.write(`${JSON.stringify(output, null, 2)}\n`); exit(0) }, (error: unknown) => {
+  void withFixturePrincipal(ctx, () => run(ctx, model)).then((output) => { process.stdout.write(`${JSON.stringify(output, null, 2)}\n`); exit(0) }, (error: unknown) => {
     process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`)
     exit(1)
   })

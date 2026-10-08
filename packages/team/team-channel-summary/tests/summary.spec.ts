@@ -7,8 +7,10 @@ import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import type {
   ChannelSummarySourceRequest,
+  JsonObject,
   TeamActorProof,
   TeamChannelAdapter,
+  TeamSystemChannelSummaryProof,
   TeamViewPolicy,
 } from '@clocky/clocky-team'
 import TeamHub from '@clocky/clocky-team-hub'
@@ -71,7 +73,7 @@ async function freshRoot(): Promise<string> {
 }
 /** Create one active channel with an accepted source Envelope and summary input. */
 async function summaryInput(
-  ctx: Context, options: { hidden?: boolean; text?: string; role?: string } = {},
+  ctx: Context, options: { hidden?: boolean; text?: string; role?: string; payload?: JsonObject } = {},
 ): Promise<ChannelSummarySourceRequest & { requester: TeamActorProof }> {
   const team = await createTestRootTeam(ctx, { goal: { objective: 'Summarize one channel.', budgets: {} }, rules: {}, budgets: {} })
   const invited = await inviteBootstrapParticipant(ctx, {
@@ -121,7 +123,7 @@ async function summaryInput(
     expectedCursor: activeChannel.cursor,
     draft: {
       channelId: channel.manifest.id,
-      audience: [], kind: 'message', payload: { text: options.text ?? 'Source summary input.' }, delivery: 'context',
+      audience: [], kind: 'message', payload: options.payload ?? { text: options.text ?? 'Source summary input.' }, delivery: 'context',
     },
   })
   return {
@@ -133,6 +135,106 @@ async function summaryInput(
   }
 }
 describe('explicit channel summary Consumer', () => {
+  it('stops resolving live proof capabilities when the Consumer closes', async () => {
+    const ctx = new Context()
+    let resolve: ((proof: TeamSystemChannelSummaryProof) => unknown) | undefined
+    ctx.provide('teams', { registerSystemChannelSummaryProofSource(source: {
+      resolveChannelSummaryProof(proof: TeamSystemChannelSummaryProof): unknown
+    }) {
+      resolve = proof => source.resolveChannelSummaryProof(proof)
+      return () => {}
+    } } as never)
+    const service = new Summary.TeamChannelSummary(ctx, { allowedPolicies: ['summary-test'],
+      maxSourceEnvelopes: 1, maxSourceBytes: 1024, maxSummaryBytes: 100,
+      maxHistorySpan: 1, disposalTimeoutMs: 100 })
+    try {
+      if (resolve === undefined) throw new Error('summary proof source was not registered')
+      const proof = {} as TeamSystemChannelSummaryProof
+      expect(resolve(proof)).toBeUndefined()
+      await service.close()
+      expect(resolve(proof)).toBeUndefined()
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('reports detached bounds and rejects ambiguous policy configuration', async () => {
+    const harness = await setup()
+    try {
+      const bounds = harness.ctx.teamChannelSummaries.describe()
+      expect(bounds).toMatchObject({ allowedPolicies: ['summary-test'], maxSourceEnvelopes: 8,
+        maxSourceBytes: 65536, maxSummaryBytes: 1024, maxHistorySpan: 32 })
+      expect(bounds.allowedPolicies).not.toBe(harness.ctx.teamChannelSummaries.describe().allowedPolicies)
+      expect(harness.ctx.teamChannelSummaries.describe().allowedPolicies).toEqual(['summary-test'])
+    } finally { await harness.dispose() }
+    for (const allowedPolicies of [['summary-test', 'summary-test'], [' summary-test'], ['']]) {
+      await expect(setup({ allowedPolicies })).rejects.toThrow(/distinct non-empty trimmed/)
+    }
+  })
+
+  it('bounds the selected history span before requesting source data', async () => {
+    const harness = await setup({ maxHistorySpan: 1 })
+    try {
+      const request = await summaryInput(harness.ctx)
+      const read = vi.spyOn(harness.ctx.teams, 'readChannelSummarySource')
+      await expect(harness.ctx.teamChannelSummaries.summarize({ ...request,
+        coveredSequenceRange: { from: 0, to: request.expectedCursor } }))
+        .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+      expect(read).not.toHaveBeenCalled()
+    } finally { await harness.dispose() }
+  })
+
+  it('revokes live proof serialization and rejects accepted work if the Consumer closes during its source read', async () => {
+    const harness = await setup({ disposalTimeoutMs: 10 })
+    try {
+      const request = await summaryInput(harness.ctx)
+      const summarize = harness.ctx.teams.summarizeChannel.bind(harness.ctx.teams)
+      vi.spyOn(harness.ctx.teams, 'summarizeChannel').mockImplementationOnce(async (input) => {
+        expect(() => JSON.stringify(input.actor)).toThrow(/runtime-only/)
+        return await summarize(input)
+      })
+      await harness.ctx.teamChannelSummaries.summarize(request)
+
+      const source = await harness.ctx.teams.readChannelSummarySource({ requester: request.requester,
+        channelId: request.channelId, expectedCursor: request.expectedCursor,
+        coveredSequenceRange: request.coveredSequenceRange, idempotencyKey: request.idempotencyKey })
+      const held = Promise.withResolvers<typeof source>()
+      vi.spyOn(harness.ctx.teams, 'readChannelSummarySource').mockReturnValueOnce(held.promise)
+      const pending = harness.ctx.teamChannelSummaries.summarize({ ...request,
+        idempotencyKey: 'held-summary' as never, expectedCursor: source.existing?.sequence ?? request.expectedCursor })
+      const closing = harness.ctx.teamChannelSummaries.close()
+      await expect(closing).rejects.toMatchObject({ code: 'TEAM_SUMMARY_DISPOSAL_TIMEOUT' })
+      held.resolve(source)
+      await expect(pending).rejects.toMatchObject({ code: 'TEAM_DISPOSED' })
+    } finally { await harness.dispose() }
+  })
+
+  it('extracts ordered text blocks and refuses image or empty message content', async () => {
+    const harness = await setup()
+    try {
+      const blocks = await summaryInput(harness.ctx, { payload: { content: [
+        { type: 'text', text: ' First ' }, { type: 'text', text: 'second' },
+      ] } })
+      expect((await harness.ctx.teamChannelSummaries.summarize(blocks)).text)
+        .toBe(`[${String(blocks.expectedCursor)}] First second`)
+      for (const payload of [
+        { content: [{ type: 'image', attachment: { attachmentId: 'image' } }] },
+        { content: [{ type: 'text', text: 1 }] },
+        { content: [] },
+        { text: '  ' },
+      ]) {
+        const request = await summaryInput(harness.ctx, { payload })
+        await expect(harness.ctx.teamChannelSummaries.summarize(request)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+      }
+    } finally { await harness.dispose() }
+  })
+
+  it('rejects a view policy outside the deployment allowlist', async () => {
+    const harness = await setup({ allowedPolicies: ['another-policy'] })
+    try {
+      const request = await summaryInput(harness.ctx)
+      await expect(harness.ctx.teamChannelSummaries.summarize(request)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    } finally { await harness.dispose() }
+  })
+
   it('commits extracted text and source fingerprint, then returns the same durable retry', async () => {
     const harness = await setup()
     try {

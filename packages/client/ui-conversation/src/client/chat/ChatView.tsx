@@ -19,6 +19,8 @@ import { Button, IconChevronDownOutline14, Modal } from '@clocky/clocky-client-u
 import type { ChatViewSlotProps, RenderMessageImages } from '../contract/slots.ts'
 import { PendingSteeringBubble } from './MessageItem.tsx'
 import { ChatNodeSeat } from './ChatNodeSeat.tsx'
+import { ProcessGroup } from './ProcessGroup.tsx'
+import { groupFlow, isProcessNode } from './process-groups.ts'
 import { formatRunDuration } from './message-chrome.ts'
 import css from './ChatView.module.css'
 
@@ -160,6 +162,11 @@ export function ChatView({
   fileMentions, t,
 }: ChatViewSlotProps) {
   const order = useSession(s => s.chat.order)
+  // One character per row keeps the grouping subscription stable between
+  // streaming deltas that do not change any row's process classification.
+  const processSignature = useSession(s => s.chat.order.map(key => isProcessNode(s.chat.nodes.get(key)) ? '1' : '0').join(''))
+  const flow = useMemo(() => groupFlow(order, Array.from(processSignature, flag => flag === '1')), [order, processSignature])
+  const latestGroup = flow.findLast(entry => entry.type === 'group')?.key
   const nodeStore = useSession(s => s.chat.nodes)
   const timeline = useSession(s => s.chat.timeline)
   const inbox = useSession(s => s.queue)
@@ -412,6 +419,24 @@ export function ChatView({
     loadOlder()
   }
 
+
+  const renderSeat = (nodeKey: string) => (
+    <ChatNodeSeat
+      key={nodeKey}
+      nodeKey={nodeKey}
+      useSession={useSession}
+      selectedCallId={selectedCallId}
+      cwd={cwd}
+      openFile={requestOpenFile}
+      inspectCall={inspectCall}
+      {...continueOutput === undefined ? {} : { continueOutput }}
+      renderMessageImages={renderMessageImages}
+      fileMentions={fileMentions}
+      renderSlot={renderSlot}
+      t={t}
+    />
+  )
+
   return (
     <div className={css.root}>
       <div ref={listRef} className={css.scroll}>
@@ -429,22 +454,18 @@ export function ChatView({
               </button>
             </div>
           )}
-          {order.map(nodeKey => (
-            <ChatNodeSeat
-              key={nodeKey}
-              nodeKey={nodeKey}
-              useSession={useSession}
-              selectedCallId={selectedCallId}
-              cwd={cwd}
-              openFile={requestOpenFile}
-              inspectCall={inspectCall}
-              {...continueOutput === undefined ? {} : { continueOutput }}
-              renderMessageImages={renderMessageImages}
-              fileMentions={fileMentions}
-              renderSlot={renderSlot}
-              t={t}
-            />
-          ))}
+          {flow.map(entry => entry.type === 'group'
+            ? (
+              <ProcessGroup
+                key={entry.key}
+                keys={entry.keys}
+                defaultOpen={entry.key === latestGroup}
+                useSession={useSession}
+                renderNode={nodeKey => renderSeat(nodeKey)}
+                t={t}
+              />
+            )
+            : renderSeat(entry.key))}
           {/* No pending placeholders: questions (ui-user-questions) and approvals
               (ApprovalPanel) both take over the composer, so a flow card would
               double-render the same wait. */}
@@ -511,7 +532,7 @@ function FileOpenErrorDialog({
       description={message}
       footer={(
         <>
-          <Button variant="outline" className={css.modalAction} onClick={onClose}>{t('cancel')}</Button>
+          <Button variant="secondary" className={css.modalAction} onClick={onClose}>{t('cancel')}</Button>
           <Button variant="primary" className={css.modalAction} disabled={busy} onClick={onRetry}>{t('retry')}</Button>
         </>
       )}

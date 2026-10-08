@@ -5,14 +5,14 @@
 .mask {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--clocky-layer-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  background-color: var(--clocky-alias-bg-mask-drop);
+  background-color: var(--clocky-bg-drop);
   backdrop-filter: blur(10px);
-  animation: fade-in 160ms ease-out;
+  animation: fade-in var(--clocky-duration-fast) var(--clocky-ease-enter);
 }
 
 @keyframes fade-in {
@@ -32,7 +32,7 @@
   align-items: center;
   margin-top: -3%;
   padding: 0 40px;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   text-align: center;
 }
 
@@ -43,12 +43,12 @@
 
 .title {
   margin-top: 16px;
-  font: var(--clocky-font-l-20);
+  font: var(--clocky-type-title);
 }
 
 .desc {
   margin-top: 16px;
-  font: var(--clocky-font-s-14);
-  color: var(--clocky-alias-label-tertiary);
+  font: var(--clocky-type-body);
+  color: var(--clocky-fg-tertiary);
   white-space: pre-wrap;
 }

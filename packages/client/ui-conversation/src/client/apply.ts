@@ -16,7 +16,7 @@ import type {
   ComposerChainProps, ConversationInjected, ConversationSessionHeaderInjected, ConversationSessionInjected,
   DetailsInjected,
 } from './contract/slots.ts'
-import type { InputNotice, InputState } from './input/contract.ts'
+import type { InputNotice, InputState } from './contract/input.ts'
 import { createChatStore } from './stores.ts'
 import { ConversationController, UnsupportedImageMediaTypeError } from './service.ts'
 import type { IConversation } from './service.ts'
@@ -230,6 +230,15 @@ export function apply(ctx: Context): void {
     },
   }
   ctx.effect(() => () => { teamDraftInput.dispose() }, 'ui-conversation: Team draft input')
+  // The empty-state launcher's folder chip: pick through the Host, register
+  // the folder as a Workspace, and pin it to the draft.
+  const workspaceService = ctx.get('workspaces')
+  const pickDraftFolder = workspaceService === undefined ? undefined : async (): Promise<void> => {
+    const path = await workspaceService.pickDirectory()
+    if (path === null) return
+    await workspaceService.create({ path })
+    ctx.teamTasks.updateDraft({ cwd: path })
+  }
 
   // The composer-block registry: a plugin that knows a session cannot send —
   // ui-model-selection, when no adapter serves the session's route — raises a block
@@ -269,6 +278,7 @@ export function apply(ctx: Context): void {
       'conversation.input.left': { kind: 'list', scope: 'session' },
       'conversation.input.right': { kind: 'list', scope: 'session' },
       'conversation.hero.brand.mark': { kind: 'single', scope: 'root' },
+      'conversation.hero.modes': { kind: 'list', scope: 'root' },
       // Legacy WorkspacePicker compositions may occupy this root slot; the
       // shell renders it only when an occupant is present.
       'conversation.hero.workspace': { kind: 'single', scope: 'root' },
@@ -276,6 +286,10 @@ export function apply(ctx: Context): void {
     inject: (sessionId: SessionId | undefined): ConversationInjected => ({
       hooks: {
         composerBlock: sessionId === undefined ? ABSENT_BLOCK : composerBlocks.storeFor(sessionId),
+      },
+      launcher: {
+        setDraftText: (text) => { teamDraftInput.actions.setDraft(text) },
+        pickFolder: pickDraftFolder,
       },
     }),
   }, ConversationRoot)

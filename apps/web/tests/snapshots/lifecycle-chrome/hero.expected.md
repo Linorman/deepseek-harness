@@ -4,14 +4,22 @@
 - button "New team work":
   - img
   - text: New team work
-- navigation "Workspaces":
+- button "Search or jump to":
+  - img
+  - text: Search…
+- navigation "Main navigation":
   - button "Team work":
     - img
     - text: Team work
+  - button "Simulations":
+    - img
+    - text: Simulations
 - region "Team directory":
   - img
   - text: Team directory
-  - button "Inbox"
+  - button "Inbox":
+    - img
+    - text: Inbox
   - text: Working folders
   - button "Add working folder":
     - img
@@ -22,6 +30,22 @@
   - text: Settings
 - region "New team work":
   - text: Into the Unknown Preview
+  - paragraph: Send a swarm of agents to finish work in parallel, or run an organization over simulated time.
+  - group "Workspaces":
+    - button "Team swarm · Open Teams":
+      - text: Team Team swarm Agents split the work and run in parallel to finish sooner.
+      - strong: "0"
+      - text: running
+      - strong: "0"
+      - text: Teams
+      - img "Status of the 0 most recent Teams"
+      - text: No Teams yet. Describe a goal below to start one.
+    - button "Simulated organization · Open simulations":
+      - text: Simulation Simulated organization Run an organization of agents over simulated time.
+      - strong: "0"
+      - text: runs
+      - img "0 loaded runs"
+      - text: Open the simulation directory to create or inspect runs.
   - textbox "Describe what you want to build"
   - button "Commands" [disabled]:
     - img
@@ -29,3 +53,22 @@
     - text: Test Model
     - img
   - button "Send message" [disabled]
+  - group "New team work options":
+    - button "Choose working folder":
+      - img
+      - text: Choose working folder
+    - img
+    - text: Default preset
+    - list "Suggested starters":
+      - listitem:
+        - button "Map this repository’s architecture and write an overview":
+          - img
+          - text: Map this repository’s architecture and write an overview
+      - listitem:
+        - button "Find the failing tests and fix them":
+          - img
+          - text: Find the failing tests and fix them
+      - listitem:
+        - button "Write release notes for the recent changes":
+          - img
+          - text: Write release notes for the recent changes

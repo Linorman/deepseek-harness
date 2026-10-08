@@ -3,8 +3,11 @@ import { CollectionWorkspace } from './CollectionWorkspace.tsx'
 import { Feedback } from './Feedback.tsx'
 import { OperationRetry } from './OperationRetry.tsx'
 import { operationRetryDraftKey } from './store.ts'
+import { NeedsYou } from './NeedsYou.tsx'
 import { RunOverview } from './RunOverview.tsx'
-import { RunStatus } from './RunStatus.tsx'
+import { RunStatus, driverStatus } from './RunStatus.tsx'
+import { Moment, navigateWithTransition, transitionDirection, transitionName, useLiveTransition } from '@clocky/clocky-client-ui-viz'
+import visualsCss from './Visuals.module.css'
 import { TaskReviews } from './TaskReviews.tsx'
 import { PersistentRequests } from './PersistentRequests.tsx'
 import { TaskControls } from './TaskControls.tsx'
@@ -12,7 +15,7 @@ import { taskCancelDraftKey } from './store.ts'
 import { RecordsView } from './RecordsView.tsx'
 /** Simulation product pages consume framework-bound business snapshots and view-only store actions. */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { PropsRuntime, PropsStore, PropsLocale, SnapshotSelectorHook } from '@clocky/clocky-client-ui-slots'
+import type { PropsRuntime, PropsStore, PropsLocale, PropsRenderSlots, SnapshotSelectorHook } from '@clocky/clocky-client-ui-slots'
 import { Button, Menu, IconChevronDownOutline14 } from '@clocky/clocky-client-ui-primitives'
 import type { SimulationRuntimeState, SimulationProductRunId, SimulationProductBrowseInput,
   SimulationProductObjectInput, SimulationReadState, SimulationProductCursor, SimulationAdministrationState, SimulationCommandKey, SimulationCommand, SimulationCommandState, SimulationProductControl } from '@clocky/clocky-client-runtime/client'
@@ -69,7 +72,7 @@ export interface Injected {
 }
 /** Framework shares derive visibility, translations and the view store. */
 export type Props = PropsRuntime<'simulation.workspace'> & PropsStore<ReturnType<typeof createSimulationStore>>
-  & PropsLocale<'simulation'> & Injected
+  & PropsLocale<'simulation'> & PropsRenderSlots<'settings.model-setup'> & Injected
 const modules: Module[] = ['overview', 'entities', 'decisions', 'operations', 'checkpoints', 'records', 'requests']
 
 
@@ -81,6 +84,17 @@ export function Workspace(props: Props) {
   const view = props.useStore(state => state)
   const data = props.useSimulation(state => state)
   const administration = props.useAdministration(state => state)
+  const creationContext = useRef({ visible: props.visible, data, view })
+  creationContext.current = { visible: props.visible, data, view }
+  const returnFromModelSetup = () => {
+    const authorizationVersion = data.authorizationVersion
+    void props.catalog().then(() => {
+      const latest = creationContext.current
+      if (!latest.visible || !latest.data.connected || latest.data.authorizationVersion !== authorizationVersion) return
+      if (latest.view.creation !== undefined) props.actions.creation({ ...latest.view.creation, recheckAfterModelSetup: true })
+      props.actions.creating(true)
+    })
+  }
   const locale = props.useFormatLocale(state => state.active) === 'zh' ? 'zh-CN' : 'en-US'
   const date = (value: number) => new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(value)
   const [moduleMenu, setModuleMenu] = useState(false)
@@ -144,8 +158,8 @@ export function Workspace(props: Props) {
   }, [props.visible, data.connected, data.authorizationVersion, data.generation, runId, view.module, data.run.scope,
     props.listRequests, props.pageSize])
   useEffect(() => {
-    if (props.visible && view.creating && data.connected) void props.catalog()
-  }, [props.visible, view.creating, data.connected, data.authorizationVersion, props.catalog])
+    if (props.visible && (view.creating || runId === undefined) && data.connected) void props.catalog()
+  }, [props.visible, view.creating, runId, data.connected, data.authorizationVersion, props.catalog])
   useEffect(() => {
     props.actions.active(props.visible)
     if (!props.visible) { props.pause(); return }
@@ -175,6 +189,7 @@ export function Workspace(props: Props) {
     if (!props.visible || !data.connected || runId === undefined || view.objectId === undefined || view.module === 'overview') {
       props.closeObject(); return
     }
+    /* v8 ignore next -- Normalized object routes in a collection module always produce a selection. */
     if (selection === undefined) return
     if ((selection.section === 'context' || selection.section === 'knowledge') && data.observation.value?.runId !== runId) return
     void props.inspectObject(selection)
@@ -191,8 +206,22 @@ export function Workspace(props: Props) {
     else if (view.module === 'overview') { void props.inspect(runId); void props.control(runId) }
     else if (view.module === 'requests') void props.listRequests({ runId, limit: props.pageSize })
     else if (view.module === 'records') void props.readRecords({ runId, mode: 'metadata', kind: view.recordKind, limit: props.pageSize })
-    else if (collection !== undefined) void props.browse(collection)
+    else {
+      /* v8 ignore next -- Every remaining module is one of the four collection modules. */
+      if (collection === undefined) return
+      void props.browse(collection)
+    }
   }
+  // Ignite (L3): the driver was observed starting while this run stayed open.
+  // Each new control observation counts as one step; the first is settled.
+  const controlObservation = useRef<{ value: unknown; count: number }>({ value: undefined, count: 0 })
+  if (data.control.value !== controlObservation.current.value) {
+    controlObservation.current = { value: data.control.value, count: controlObservation.current.count + 1 }
+  }
+  const observedDriver = data.control.value?.runId === runId ? data.control.value?.driver : undefined
+  const ignition = useLiveTransition(runId ?? '', controlObservation.current.count, driverStatus(observedDriver) === 'running')
+  const igniteGeneration = useRef(0)
+  if (ignition.live && ignition.previous === false && driverStatus(observedDriver) === 'running') igniteGeneration.current = ignition.generation
   if (!props.visible) return null
   const current = runId === undefined ? data.directory : view.module === 'overview' ? data.run : view.module === 'records' ? data.records : view.module === 'requests' ? data.persistentRequests : data.collection
   const run = data.run.value?.run.id === runId ? data.run.value : undefined
@@ -215,6 +244,7 @@ export function Workspace(props: Props) {
   const retryTarget = authorized && view.operationRetryTarget?.runId === runId ? view.operationRetryTarget : undefined
   const retryDraft = retryTarget === undefined ? undefined : view.operationRetryDrafts[operationRetryDraftKey(retryTarget)]
   const openRetry = (operationId: string, expectedAttemptCount: number) => {
+    /* v8 ignore next -- Retry actions render only inside a selected run. */
     if (runId === undefined) return
     const target = { runId, operationId }
     const key = operationRetryDraftKey(target)
@@ -223,15 +253,20 @@ export function Workspace(props: Props) {
     navigate({ runId, module: 'operations', objectId: operationId, search: view.search })
   }
   const readObjectPage = (cursor?: SimulationProductCursor) => {
+    /* v8 ignore next -- Object pagination is rendered only for an exact selected object. */
     if (selection === undefined) return
+    /* v8 ignore next -- Every paginated object section carries a limit in its selector. */
     if ('limit' in selection) {
       void props.inspectObject({ ...selection, cursor, expectedRevision: cursor === undefined ? undefined : object?.snapshotRevision })
     }
   }
   const scenario = control.value?.versions?.scenario ?? run?.operational?.scenario
   const supportsTasks = scenario?.status !== 'observed' || scenario.execution === 'automatic-tasks'
-  const reviewNeeded = runId !== undefined && data.reviews.value?.runId === runId
-    && data.reviews.value.items.some(item => item.phase === 'review')
+  const reviewCount = runId !== undefined && data.reviews.value?.runId === runId
+    ? data.reviews.value.items.filter(item => item.phase === 'review').length : 0
+  const reviewNeeded = reviewCount > 0
+  const lookupCount = retained.filter(([, record]) => record.unknown || record.requestObservationUnavailable
+    || record.requestObservation?.comparison === 'conflict').length
   const overviewPanels = runId === undefined ? [] : [
     supportsTasks && <TaskReviews key={`reviews:${runId}`} runId={runId} ready={data.run.scope === JSON.stringify(['run', runId])} value={data.reviews}
       connected={data.connected} authorizationVersion={data.authorizationVersion}
@@ -250,11 +285,14 @@ export function Workspace(props: Props) {
         navigate={navigate} navigateApplication={props.navigateApplication} />
       {record.command.kind !== 'create' && record.command.kind !== 'manage' && record.command.kind !== 'review'
             && record.command.kind !== 'retry-operation' && record.command.kind !== 'retry-request' && record.command.kind !== 'cancel-task' && <Button onClick={() => {
+        /* v8 ignore next -- This button renders only for the remaining maintenance command kinds. */
         if (record.command.kind === 'create' || record.command.kind === 'manage' || record.command.kind === 'review'
               || record.command.kind === 'retry-operation' || record.command.kind === 'retry-request' || record.command.kind === 'cancel-task') return
+        navigate({ runId: record.command.input.runId, module: 'overview', search: view.search })
         props.actions.maintenance({ runId: record.command.input.runId, kind: record.command.kind, commandKey: key })
       }}>{t('inspectOriginal')}</Button>}
       {record.command.kind === 'retry-operation' && <Button onClick={() => {
+        /* v8 ignore next -- Only retry-operation records render this button. */
         if (record.command.kind !== 'retry-operation') return
         const input = record.command.input
         const target = { runId: input.runId, operationId: input.operationId }, draftKey = operationRetryDraftKey(target)
@@ -265,6 +303,7 @@ export function Workspace(props: Props) {
         navigate({ runId: input.runId, module: 'operations', objectId: input.operationId, search: view.search })
       }}>{t('inspectOriginal')}</Button>}
       {record.command.kind === 'cancel-task' && <Button onClick={() => {
+        /* v8 ignore next -- Only cancel-task records render this button. */
         if (record.command.kind !== 'cancel-task') return
         const input = record.command.input, target = { runId: input.runId, operationId: input.operationId }
         const draftKey = taskCancelDraftKey(target)
@@ -275,6 +314,7 @@ export function Workspace(props: Props) {
         props.actions.cancelTarget(target); navigate({ runId: input.runId, module: 'overview', search: view.search })
       }}>{t('inspectOriginal')}</Button>}
       {record.command.kind === 'review' && <Button onClick={() => {
+        /* v8 ignore next -- Only review records render this button. */
         if (record.command.kind !== 'review') return
         const input = record.command.input
         const target = { runId: input.runId, operationId: input.operationId, attemptId: input.attemptId }
@@ -301,16 +341,18 @@ export function Workspace(props: Props) {
         props.actions.scroll(runId === undefined ? 'directory' : 'collection', event.currentTarget.scrollTop)
       }
     }}>
-    <header className={css.header}>
-      <div>{runId !== undefined && <Button onClick={() => { navigate({ module: 'overview', search: view.search }) }}>
+    {/* The directory header continues the launch tile; a run header continues its directory card. */}
+    <header className={css.header} style={{ viewTransitionName: runId === undefined ? 'clocky-mode-simulation' : transitionName('clocky-run', runId) }}>
+      <div>{runId !== undefined && <Button onClick={() => { navigateWithTransition(() => { navigate({ module: 'overview', search: view.search }) }) }}>
         {t('back')}</Button>}
+      <span className={css.eyebrow}>{t('mode.eyebrow')}</span>
       <h1>{runId === undefined ? t('title') : run?.run.name.text ?? runId}</h1>
       {runId === undefined && <p className={css.muted}>{t('readOnly')}</p>}</div>
       <div className={css.actions}>{runId === undefined && <Button variant="primary" disabled={!data.connected || !authorized}
         onClick={() => { props.actions.creating(true) }}>{t('createTitle')}</Button>}
-      <Button variant="outline" disabled={!data.connected || current.loading} onClick={refresh} aria-busy={current.loading}>{t('refresh')}</Button></div>
+      <Button variant="secondary" disabled={!data.connected || current.loading} onClick={refresh} aria-busy={current.loading}>{t('refresh')}</Button></div>
     </header>
-    {runId !== undefined && <div className={css.runBar}>
+    {runId !== undefined && <Moment kind="ignite" generation={igniteGeneration.current} className={visualsCss.consoleMoment}><div className={css.runBar}>
       <RunStatus value={run} control={control} connected={data.connected}
         stale={data.run.stale || data.run.error !== undefined
           || control.value !== undefined && (control.stale || control.error !== undefined)} header t={t} />
@@ -322,20 +364,24 @@ export function Workspace(props: Props) {
             && (record.unknown || record.pending || record.receipt?.value.status === 'accepted') ? [record.command.kind] : [])}
         blockedPhases={retained.flatMap(([, record]) => record.command.kind === 'manage'
             && (record.unknown || record.pending || record.receipt?.value.status === 'in-progress') ? [record.command.input.phase] : [])} t={t} />
-    </div>}
+    </div></Moment>}
     {!data.connected && <p className={css.notice} role="status">{t('connection')}</p>}
     {runId !== undefined && <Feedback value={data.observation} t={t} />}
     {view.module !== 'requests' && <Feedback value={current} t={t} />}
     {runId === undefined ? <RunDirectory directory={data.directory} statuses={statuses} directoryIds={directoryIds}
+      catalog={data.catalog} create={() => { props.actions.creating(true) }}
       connected={data.connected} search={view.search} draftSearch={view.draftSearch} searchDraft={props.actions.searchDraft}
       navigate={navigate} refresh={refresh} readDirectory={props.directory} runStatuses={props.runStatuses} t={t} date={date} /> : <>
       <nav className={css.moduleNavigation} aria-label={t('modules')}>
         <div className={css.tabs}>{modules.filter(module => module !== 'requests').map(module => <Button key={module}
           aria-current={view.module === module ? 'page' : undefined}
-          onClick={() => { navigate({ runId, module, search: view.search }) }}>{t(module)}</Button>)}
+          onClick={() => {
+            const direction = transitionDirection(modules, view.module, module)
+            navigateWithTransition(() => { navigate({ runId, module, search: view.search }) }, direction)
+          }}>{t(module)}</Button>)}
         <Menu open={moreMenu} portal items={[{ id: 'requests', label: t('requests') }]}
           selectedId={view.module === 'requests' ? 'requests' : undefined}
-          anchor={<Button variant="outline" aria-label={`${t('modules.more')}${view.module === 'requests' ? `: ${t('requests')}` : ''}`}
+          anchor={<Button variant="secondary" aria-label={`${t('modules.more')}${view.module === 'requests' ? `: ${t('requests')}` : ''}`}
             aria-expanded={moreMenu} aria-current={view.module === 'requests' ? 'page' : undefined}
             onClick={() => { setMoreMenu(!moreMenu) }}>{t(view.module === 'requests' ? 'requests' : 'more')}<IconChevronDownOutline14 /></Button>}
           onClose={() => { setMoreMenu(false) }} onSelect={() => {
@@ -344,10 +390,11 @@ export function Workspace(props: Props) {
         </div>
         <div className={css.modulePicker}><Menu open={moduleMenu} portal selectedId={view.module}
           items={modules.map(id => ({ id, label: t(id) }))}
-          anchor={<Button variant="outline" aria-label={`${t('modules')}: ${t(view.module)}`} aria-expanded={moduleMenu}
+          anchor={<Button variant="secondary" aria-label={`${t('modules')}: ${t(view.module)}`} aria-expanded={moduleMenu}
             onClick={() => { setModuleMenu(!moduleMenu) }}>{t(view.module)}<IconChevronDownOutline14 /></Button>}
           onClose={() => { setModuleMenu(false) }} onSelect={(id) => {
             const module = modules.find(value => value === id)
+            /* v8 ignore next -- The menu emits only IDs from the closed modules array above. */
             if (module !== undefined) navigate({ runId, module, search: view.search })
             setModuleMenu(false)
           }} /></div>
@@ -361,7 +408,16 @@ export function Workspace(props: Props) {
           renderOriginal={renderOriginal} originals={retained.map(([, record]) => record)} />
       </> : view.module === 'records' ? <RecordsView key={runId} view={view} data={data} read={props.readRecords} close={props.closeRecords}
         exportRecords={props.exportRecords} cancelExport={props.cancelExport} useExport={props.useRecordsExport}
-        pageSize={props.pageSize} navigate={navigate} t={t} /> : view.module === 'overview' ? <div className={css.scroll}>
+        pageSize={props.pageSize} navigate={navigate} t={t} /> : view.module === 'overview' ? <div className={css.scroll} style={{ viewTransitionName: 'clocky-module' }}>
+        <NeedsYou t={t} items={[
+          { id: 'reviews', count: reviewCount, open: () => {
+            document.querySelector<HTMLElement>('[data-simulation-reviews]')?.scrollIntoView({ block: 'start' })
+          } },
+          { id: 'unknown', count: unknownCount ?? 0, open: () => {
+            navigate({ runId, module: 'operations', search: view.search, status: 'outcome-unknown' })
+          } },
+          { id: 'requests', count: lookupCount, open: () => { navigate({ runId, module: 'requests', search: view.search }) } },
+        ]} />
         {unknownCount !== undefined && unknownCount > 0 && <section aria-label={t('operationRetry.unknownWork')}>
           <h2>{t('operationRetry.unknownWork')} · {unknownCount}</h2><p>{t('operationRetry.unknownNotice')}</p>
           <Button onClick={() => { navigate({ runId, module: 'operations', search: view.search, status: 'outcome-unknown' }) }}>{t('operationRetry.viewUnknown')}</Button>
@@ -382,7 +438,7 @@ export function Workspace(props: Props) {
           read={props.listTasks} drafts={authorized ? view.cancelDrafts : {}} target={authorized ? view.cancelTarget : undefined}
           change={props.actions.cancel} select={props.actions.cancelTarget} commands={administration.commands}
           retain={props.retain} submit={props.submit} query={props.query} t={t} />}
-        <Button variant="outline" onClick={() => { navigate({ runId, module: 'requests', search: view.search }) }}>
+        <Button variant="secondary" onClick={() => { navigate({ runId, module: 'requests', search: view.search }) }}>
           {t('requests.open')}{retained.some(([, record]) => record.unknown || record.requestObservationUnavailable
             || record.requestObservation?.comparison === 'conflict') ? ` · ${t('requests.needsLookup')}` : ''}
         </Button>
@@ -417,9 +473,10 @@ export function Workspace(props: Props) {
     {authorized && view.creating && <CreationDialog draft={creation} catalog={data.catalog} validation={data.preflight}
       preflight={props.preflight} closePreflight={props.closePreflight} connected={data.connected}
       authorizationVersion={data.authorizationVersion} maxDraftBytes={props.maxDraftBytes}
+      renderSlot={props.renderSlot} returnFromModelSetup={returnFromModelSetup}
       command={creation?.commandKey === undefined ? undefined : administration.commands[creation.commandKey]}
       change={props.actions.creation} close={() => { props.actions.creating(false) }}
       openRun={(id) => { props.actions.creating(false); navigate({ runId: id, module: 'overview', search: view.search }) }}
-      refreshCatalog={props.catalog} retain={props.retain} submit={props.submit} query={props.query} t={t} />}
+      refreshCatalog={props.catalog} retain={props.retain} release={props.release} submit={props.submit} query={props.query} t={t} />}
   </main>
 }

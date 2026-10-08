@@ -151,7 +151,7 @@ Source: [`packages/preset/agent-presets/src/session.ts:26`](../packages/preset/a
 'agent-runtime-acp/prompt-completed': AcpPromptCompletedData
 ```
 
-Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:99`](../packages/agent-runtime/agent-runtime-acp/src/index.ts)
+Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:101`](../packages/agent-runtime/agent-runtime-acp/src/index.ts)
 
 ### `approval/*`
 

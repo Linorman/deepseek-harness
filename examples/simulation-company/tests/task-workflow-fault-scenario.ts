@@ -110,7 +110,7 @@ try {
     assert.equal(paused.result.value.phase, 'paused'); assert.equal(requests.length, 0)
   } else {
     const creation = await client.simulations.create({ commandId: 'workflow-create' as never, templateId: 'company' as never,
-      templateVersion: '1', name: 'Recoverable report workflow', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
+      templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' }, name: 'Recoverable report workflow', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
     assert.ok(creation.result.ok); runId = creation.result.value.runId; await finished('workflow-create')
   }
   const started = await client.simulations.manage({ runId, managementId: (cold ? 'cold-start' : 'start') as never, phase: 'running' })

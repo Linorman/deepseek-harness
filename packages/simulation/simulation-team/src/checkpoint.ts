@@ -3,14 +3,11 @@ import { simulationCheckpointManifestSchema, checkpointState } from '@clocky/clo
 import { isDeepStrictEqual } from 'node:util'
 import { deepFreeze } from '@clocky/clocky-llm'
 import type { Context } from '@clocky/cordis'
-import { TeamError } from '@clocky/clocky-team'
 import type { TeamId } from '@clocky/clocky-team'
-import { SessionPersistenceReferenceChanged } from '@clocky/clocky-session-persistence'
 import type { SimulationCheckpointCut, SimulationEntity, SimulationRun } from '@clocky/clocky-simulation'
 import type { SimulationCheckpointCollection } from './types.ts'
 import { validateAcceptedTargets } from './target-references.ts'
-import { checkpointRule, checkpointSource } from './checkpoint-failure.ts'
-import { SimulationCheckpointError } from '@clocky/clocky-simulation'
+import { checkpointRule, checkpointSource, checkpointOwnerMoved } from './checkpoint-failure.ts'
 
 /**
  * Collect and recheck every owner after the coordinator has retired local writers.
@@ -123,6 +120,7 @@ export async function collectCheckpoint(ctx: Context, run: SimulationRun, cut: S
           check()
           const sessionId = reference.kind === 'unmaterialized' ? reference.sessionId : reference.header.id
           const binding = Object.values(cut.snapshot.entities).find(entity => entity.binding?.sessionId === sessionId)?.binding
+          /* v8 ignore next -- every Session reference was collected from a binding in this same sealed cut snapshot. */
           if (binding === undefined) throw checkpointRule('Checkpoint Session has no retained entity binding', 'validate', 'binding-mismatch', teamSubject)
           const subject = { kind: 'session' as const, ...binding }
           if (reference.kind === 'unmaterialized') {
@@ -158,9 +156,7 @@ export async function collectCheckpoint(ctx: Context, run: SimulationRun, cut: S
         } })
     } catch (error: unknown) {
       check()
-      const moved = error instanceof SimulationCheckpointError && error.diagnostic.code === 'source-moved'
-        || error instanceof SessionPersistenceReferenceChanged
-        || error instanceof TeamError && (error.code === 'TEAM_CURSOR_CONFLICT' || error.code === 'TEAM_CHANNEL_CURSOR_CONFLICT')
+      const moved = checkpointOwnerMoved(error)
       if (!moved || attempt + 1 === maxAttempts) throw error
     }
   }

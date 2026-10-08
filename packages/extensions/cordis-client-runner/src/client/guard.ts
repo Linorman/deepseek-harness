@@ -163,7 +163,7 @@ function guardedTheme(theme: ThemeRuntime, env: DynamicCordisGuardEnv, ctx: Cont
         if (tokens === undefined && typeof source === 'object' && source !== null) {
           return rejectGuard(env,
             'theme.overrideTokens(source, tokens) takes two arguments; source is replaced with your package id, '
-            + 'so pass any string first and the token map second: overrideTokens(\'mine\', { \'--clocky-alias-…\': { light: \'…\', dark: \'…\' } })',
+            + 'so pass any string first and the token map second: overrideTokens(\'mine\', { \'--clocky-accent-bg\': { light: \'…\', dark: \'…\' } })',
           )
         }
         const method = Reflect.get(target, 'overrideTokens', target)

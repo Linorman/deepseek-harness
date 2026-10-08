@@ -3,13 +3,19 @@ import assert from 'node:assert/strict'
 import type { Context } from '@clocky/cordis'
 import { CallId, LlmAdapter } from '@clocky/clocky-llm'
 import type { GenerateOptions, StreamChunk } from '@clocky/clocky-llm'
-import { channelPostIdempotencyKeySchema } from '@clocky/clocky-team'
+import { channelPostIdempotencyKeySchema, teamWorkspaceAllocationReleaseRequestInputSchema,
+  teamWorkspaceAllocationReleaseInputSchema } from '@clocky/clocky-team'
+import type { TeamRunHandle } from '@clocky/clocky-team-run'
+import type { TeamWorkspaceAllocation } from '@clocky/clocky-team-workspace'
+import type { TeamSystemWorkspaceAllocationProof, TeamSystemWorkspaceAllocationScope } from '@clocky/clocky-team'
 import type {} from '@clocky/clocky-team-run'
 
 const MODEL = 'review-projection-model'
 const INPUT = 'VERIFY_COORDINATOR_REVIEW_FACTS'
 const REWORK_REASON = 'Include the missing failure-case evidence.'
 const REASSIGN = process.env.CLOCKY_REVIEW_REASSIGN === '1'
+const PROMPT_RETRY = process.env.CLOCKY_REVIEW_PROMPT_RETRY === '1'
+const CANCEL_PRESERVED = process.env.CLOCKY_REVIEW_CANCEL_PRESERVED === '1'
 type Mode = 'none' | 'review' | 'rework'
 interface Value {
   task_id: string
@@ -46,6 +52,11 @@ function result(options: GenerateOptions, id: string): unknown {
   return undefined
 }
 
+function failedResult(options: GenerateOptions, id: string): boolean {
+  return options.messages.some(message => message.content.some(block => block.type === 'tool-result'
+    && block.toolCallId === id && block.isError === true))
+}
+
 /** Bound only the deterministic external model's response, respecting actual request cancellation. */
 async function released(gate: Promise<undefined>, signal: AbortSignal | undefined): Promise<void> {
   signal?.throwIfAborted()
@@ -59,6 +70,7 @@ async function released(gate: Promise<undefined>, signal: AbortSignal | undefine
 class ReviewProjectionModel extends LlmAdapter {
   readonly attempts: string[] = []
   readonly firstReviewDecided = Promise.withResolvers<undefined>()
+  readonly releaseFirstReport = Promise.withResolvers<undefined>()
   readonly releaseFirst = Promise.withResolvers<undefined>()
   readonly secondStarted = Promise.withResolvers<undefined>()
   readonly releaseSecond = Promise.withResolvers<undefined>()
@@ -89,9 +101,11 @@ class ReviewProjectionModel extends LlmAdapter {
         assert(tool !== undefined)
         this.descriptions[name] = tool.description
       }
-      const start = result(options, 'start') as Value | undefined
+      const retryStart = PROMPT_RETRY && failedResult(options, 'start')
+      const start = result(options, retryStart ? 'start-retry' : 'start') as Value | undefined
       if (start === undefined) {
-        yield* chunks('team_task_start', 'start', { subject: 'Verify the review projection.', instructions: 'Report the assigned work.',
+        yield* chunks('team_task_start', retryStart ? 'start-retry' : 'start', {
+          subject: 'Verify the review projection.', instructions: 'Report the assigned work.',
           read_scopes: ['task.txt'], write_scopes: this.mode === 'none' ? [] : ['task.txt'] })
         return
       }
@@ -182,6 +196,7 @@ class ReviewProjectionModel extends LlmAdapter {
       if (this.mode === 'rework' && attemptId === this.attempts[0]) await released(this.releaseFirst.promise, options.signal)
       yield* text(); return
     }
+    if (CANCEL_PRESERVED && this.attempts.length === 1) await released(this.releaseFirstReport.promise, options.signal)
     if (this.mode !== 'rework') await released(this.releaseSecond.promise, options.signal)
     if (this.mode === 'rework' && this.attempts.length === 2) {
       if (REASSIGN) {
@@ -196,21 +211,141 @@ class ReviewProjectionModel extends LlmAdapter {
   }
 }
 
+/** Replay one model-created review and real Hub allocation through the loaded Team owners. */
+async function runPreservedCancellation(ctx: Context, model: ReviewProjectionModel, handle: TeamRunHandle,
+  releasePhysical: () => Promise<void>): Promise<void> {
+  const scopes = new Map<TeamSystemWorkspaceAllocationProof, TeamSystemWorkspaceAllocationScope>()
+  const unregister = ctx.teams.registerSystemWorkspaceAllocationProofSource({
+    name: 'review-projection-workspace-release', resolveWorkspaceAllocationProof: proof => scopes.get(proof),
+  })
+  const issue = (scope: TeamSystemWorkspaceAllocationScope): TeamSystemWorkspaceAllocationProof => {
+    const proof = Object.freeze({}) as TeamSystemWorkspaceAllocationProof
+    scopes.set(proof, scope)
+    return proof
+  }
+  try {
+    let state = await ctx.teams.getTeam({ teamId: handle.teamId })
+    let task = state.tasks[0]
+    while (task?.phase !== 'running' || !state.workspaceAllocations.some(allocation => allocation.lifecycle === 'active')) {
+      await ctx.teams.watchTeam({ teamId: handle.teamId, afterCursor: state.team.cursor })
+      state = await ctx.teams.getTeam({ teamId: handle.teamId })
+      task = state.tasks[0]
+    }
+    model.releaseFirstReport.resolve(undefined)
+    await model.firstReviewDecided.promise
+    for (;;) {
+      state = await ctx.teams.getTeam({ teamId: handle.teamId })
+      task = state.tasks.find(candidate => candidate.id === task?.id)
+      if (task?.phase === 'pending' && task.reviewHistory.at(-1)?.nextPhase === 'pending') break
+      await ctx.teams.watchTeam({ teamId: handle.teamId, afterCursor: state.team.cursor })
+    }
+    assert(task !== undefined)
+    const taskId = task.id
+    const coordinator = handle.coordinatorLease.localAgent
+    assert(coordinator !== undefined)
+    const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+    const cancelled = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.cancelDefaultWorkerTask(authority, {
+      taskId,
+    }))
+    assert.equal(cancelled.phase, 'pending')
+    const firstError: unknown = await ctx.teamRuns.cancel(handle.teamId).then(() => undefined, (error: unknown) => error)
+    assert(firstError instanceof Error)
+    const errors: readonly unknown[] = firstError instanceof AggregateError ? firstError.errors as unknown[] : [firstError]
+    assert(!errors.some(error => error !== null && typeof error === 'object' && 'code' in error
+      && error.code === 'TEAM_TASK_GRAPH_INVALID'), 'TeamRun must defer task retirement until the workspace is released')
+    state = await ctx.teams.getTeam({ teamId: handle.teamId })
+    task = state.tasks.find(candidate => candidate.id === taskId)
+    assert.equal(task?.phase, 'pending')
+    assert(task.cancellation !== undefined)
+    assert.equal(state.workspaceAllocations[0]?.lifecycle, 'preserved')
+    await releasePhysical()
+    const allocation = state.workspaceAllocations[0]
+    assert(allocation !== undefined)
+    const releaseRequest = teamWorkspaceAllocationReleaseRequestInputSchema.parse({ teamId: handle.teamId,
+      allocationId: allocation.id, expectedCursor: state.team.cursor, expectedRevision: allocation.revision })
+    const releasing = await ctx.teams.requestWorkspaceAllocationRelease({
+      actor: issue({ kind: 'workspace-allocation-release-request', ...releaseRequest }), ...releaseRequest,
+    })
+    state = await ctx.teams.getTeam({ teamId: handle.teamId })
+    const release = teamWorkspaceAllocationReleaseInputSchema.parse({ teamId: handle.teamId,
+      allocationId: releasing.id, expectedCursor: state.team.cursor, expectedRevision: releasing.revision })
+    await ctx.teams.confirmWorkspaceAllocationRelease({ actor: issue({ kind: 'workspace-allocation-release', ...release }), ...release })
+    await ctx.teamRuns.cancel(handle.teamId)
+    state = await ctx.teams.getTeam({ teamId: handle.teamId })
+    task = state.tasks.find(candidate => candidate.id === taskId)
+    assert.equal(state.team.phase, 'cancelled')
+    assert(task !== undefined)
+    assert.equal(task?.phase, 'cancelled')
+    assert.equal(state.workspaceAllocations[0]?.lifecycle, 'released')
+    process.stdout.write(`${JSON.stringify({ scenario: 'review-rework-preserved-cancel',
+      firstCancellationDeferred: true, firstReview: task.reviewHistory[0]?.nextPhase,
+      attemptCount: task.attemptHistory.length, workspace: 'released', task: task.phase, team: state.team.phase }, null, 2)}\n`)
+  } finally {
+    model.releaseFirstReport.resolve(undefined)
+    unregister()
+  }
+}
+
 /** Test-only Loader identity. */
 export const name = 'review-projection-driver'
 /** Real Team owner and model registry are resolved by the Loader. */
-export const inject = ['teamRuns', 'teams', 'llm']
+export const inject = ['teamRuns', 'teams', 'llm', 'systemPrompt', 'agents', 'teamWorkspaces']
 /** Run one configured real task and inspect its durable review lineage. @param ctx - Loader context. */
 export function apply(ctx: Context): void {
   const mode = process.env.CLOCKY_REVIEW_MODE
   assert(mode === 'none' || mode === 'review' || mode === 'rework')
   const model = new ReviewProjectionModel(mode)
   ctx.llm.registerAdapter([MODEL], model)
+  if (PROMPT_RETRY) {
+    // oxlint-disable-next-line typescript/unbound-method -- The wrapper calls through with the original scoped receiver.
+    const section = ctx.systemPrompt.section
+    let rejected = false
+    ctx.effect(() => {
+      ctx.systemPrompt.section = function (this: typeof ctx.systemPrompt, request) {
+        if (!rejected && request.name === 'team-run:reviewer-task') {
+          rejected = true
+          throw new Error('Injected reviewer prompt failure')
+        }
+        return section.call(this, request)
+      }
+      return () => { ctx.systemPrompt.section = section }
+    }, 'reviewProjection.reviewerPromptFault()')
+  }
   const exit = ctx.get('appExit')
   assert(exit !== undefined)
   const run = async (): Promise<void> => {
     await ctx.get('loader')?.await()
-    const started = await ctx.teamRuns.start({ objective: INPUT, cwd: process.cwd(), idempotencyKey: channelPostIdempotencyKeySchema.parse('review-projection-start'), content: [{ type: 'text', text: INPUT }] })
+    const materialize = ctx.teamWorkspaces.materialize.bind(ctx.teamWorkspaces)
+    const publish = ctx.teamWorkspaces.publish.bind(ctx.teamWorkspaces)
+    const providerAllocations = new Map<TeamWorkspaceAllocation, TeamWorkspaceAllocation>()
+    let physicalRelease: (() => Promise<void>) | undefined
+    if (CANCEL_PRESERVED) {
+      ctx.teamWorkspaces.materialize = async (...args) => {
+        const allocation = await materialize(...args)
+        physicalRelease = allocation.release.bind(allocation)
+        const delivery = { ...allocation, async release() { throw new Error('Injected provider release failure before physical cleanup') } }
+        providerAllocations.set(delivery, allocation)
+        return delivery
+      }
+      ctx.teamWorkspaces.publish = async (mode, request) => {
+        const allocation = providerAllocations.get(request.allocation) ?? request.allocation
+        return await publish(mode, { ...request, allocation })
+      }
+    }
+    let started: Awaited<ReturnType<typeof ctx.teamRuns.start>>
+    try {
+      started = await ctx.teamRuns.start({ objective: INPUT, cwd: process.cwd(), idempotencyKey: channelPostIdempotencyKeySchema.parse('review-projection-start'), content: [{ type: 'text', text: INPUT }] })
+      if (CANCEL_PRESERVED) {
+        await runPreservedCancellation(ctx, model, started.handle, async () => {
+          assert(physicalRelease !== undefined)
+          await physicalRelease()
+        })
+        return
+      }
+    } finally {
+      ctx.teamWorkspaces.materialize = materialize
+      ctx.teamWorkspaces.publish = publish
+    }
     const final = await ctx.teamRuns.waitForFinal({ teamId: started.handle.teamId })
     assert.equal(final.text, 'REVIEW_PROJECTION_VERIFIED')
     const state = await ctx.teams.getTeam({ teamId: started.handle.teamId })

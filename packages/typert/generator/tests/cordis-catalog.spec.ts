@@ -14,6 +14,7 @@ import {
   REGION_BEGIN,
   REGION_END,
   SERVICE_PAGE,
+  renderPublicRuntimeApi,
 } from '../../../../scripts/gen-cordis-catalog.ts'
 
 const workspaceRoot = resolve(import.meta.dirname, '../../../..')
@@ -80,7 +81,7 @@ describe('Typert-backed Cordis catalog', () => {
         )
       }
     }
-    expect(projector.renderRuntimeApi(model)).toBe(
+    expect(renderPublicRuntimeApi(projector, model)).toBe(
       expected('packages/extensions/tool-cordis/src/api-catalog.ts'),
     )
   })

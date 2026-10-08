@@ -87,7 +87,8 @@ export async function snapshotDirectory(root: string, limits: ScanLimits, signal
     } catch (error: unknown) {
       reasons.add(cancellation.signal.aborted ? signal?.aborted === true ? 'canceled' : 'duration-limit' : filesystemReason(error))
     }
-    for (const entry of entries.sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0)) {
+    // One directory cannot contain two entries with the same name.
+    for (const entry of entries.sort((left, right) => left.name < right.name ? -1 : 1)) {
       if (expired()) break
       const path = prefix.length === 0 ? entry.name : `${prefix}/${entry.name}`
       if (path.includes('\\') || path.includes('\0')) { reasons.add('non-portable-path'); knownOmittedEntries += 1; continue }
@@ -116,6 +117,8 @@ export async function snapshotDirectory(root: string, limits: ScanLimits, signal
           let size = 0
           if (info.size > 0) {
             const stream = file.createReadStream({ start: 0, end: info.size - 1, autoClose: false, signal: cancellation.signal })
+            // An already-aborted signal may emit before the async iterator installs its error handler.
+            stream.on('error', () => {})
             for await (const chunk of stream) {
               const bytes = chunk as Buffer
               hashedBytes += bytes.byteLength
@@ -142,7 +145,7 @@ export async function snapshotDirectory(root: string, limits: ScanLimits, signal
   }
   try { await visit(root, ''); expired() } catch (error: unknown) { reasons.add(filesystemReason(error)) } finally { clearTimeout(timer); signal?.removeEventListener('abort', cancel) }
   const complete = reasons.size === 0
-  const ordered = Object.fromEntries(Object.entries(files).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0))
+  const ordered = Object.fromEntries(Object.entries(files).sort(([left], [right]) => left < right ? -1 : 1))
   const digest = fingerprintDirectoryEntries(ordered, complete)
   return { files: ordered, version: { digest, complete, startedAt, finishedAt: Math.max(startedAt, Date.now()),
     scannedEntries, hashedBytes, knownOmittedEntries, incompleteReasons: [...reasons].sort() } }
@@ -161,7 +164,7 @@ function filesystemReason(error: unknown): string {
  * @returns A digest of observed data; incomplete digests never identify a complete tree.
  */
 export function fingerprintDirectoryEntries(files: Readonly<Record<string, FileFingerprint>>, complete: boolean): TeamWorkspaceScanVersion['digest'] {
-  const entries = Object.entries(files).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+  const entries = Object.entries(files).sort(([left], [right]) => left < right ? -1 : 1)
     .map(([path, value]) => value.kind === 'file' ? [path, value.kind, value.size, value.modifiedAt, value.contentHash ?? null]
       : value.kind === 'symlink' ? [path, value.kind, value.target] : [path, value.kind, value.type])
   return teamWorkspaceContentVersionSchema.parse(`sha256:${createHash('sha256').update(JSON.stringify([complete, entries])).digest('hex')}`)

@@ -123,7 +123,7 @@ it('retains an explicit reconciliation failure at capacity and never silently re
   const administration = source.administration(ctx, { maxCommands: 8, maxBytes: 1024 })
   try {
     const key = administration.retain({ kind: 'create', input: { commandId: 'original' as never,
-      templateId: 'company' as never, templateVersion: '1', name: 'Original',
+      templateId: 'company' as never, templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' }, name: 'Original',
       parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } } }, source.state.getSnapshot().authorizationVersion)
     const runId = 'large-run-identity-'.repeat(100) as SimulationProductRequestsPage['runId']
     const large = { ...page, runId, items: [{ ...page.items[0]!, runId, status: 'completed' as const }] }

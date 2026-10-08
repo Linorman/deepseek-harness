@@ -16,6 +16,7 @@ import {
 import { CONSULT_RESPONSE_KIND, resolveConsultTextDraft } from '@clocky/clocky-team-channel-basic'
 import type { ConsultTextRequestAnchor } from '@clocky/clocky-team-channel-basic'
 import {
+  parseTeamParticipantHeader,
   activationIdSchema,
   channelIdSchema,
   channelPostIdempotencyKeySchema,
@@ -46,7 +47,7 @@ import type {
 } from '@clocky/clocky-team'
 import type { TeamLink, TeamLinkBoundLinkBorrower } from '@clocky/clocky-team-link'
 import type {} from '@clocky/clocky-team-workspace'
-import { defineTool } from '@clocky/clocky-tools'
+import { bindAgentToolDisposal, defineTool, requireScopedToolAgent } from '@clocky/clocky-tools'
 import type { GenericCallView, ToolRunContext } from '@clocky/clocky-tools'
 
 /** Cordis plugin name. */
@@ -234,24 +235,35 @@ interface TeamFinalValue {
   readonly envelope_id: string
 }
 
+/** Ordered task identity fields shared by all compact task-result schemas. */
+const TASK_IDENTITY_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: true,
+  properties: {
+    id: { type: 'string', required: true },
+    revision: { type: 'integer', required: true },
+  },
+} as const
+
+type TaskValuePhaseSchema =
+  | { readonly type: 'string'; readonly required: true; readonly enum: readonly TeamTaskSnapshot['phase'][] }
+  | { readonly type: 'string'; readonly required: true; readonly const: TeamTaskSnapshot['phase'] }
+
+/** Keep the task field order while each result owns its exact phase constraint. */
+function taskValueSchema<const Phase extends TaskValuePhaseSchema>(phase: Phase):
+  Omit<typeof TASK_IDENTITY_SCHEMA, 'properties'> & {
+    readonly properties: typeof TASK_IDENTITY_SCHEMA.properties & { readonly phase: Phase }
+  } {
+  return { ...TASK_IDENTITY_SCHEMA, properties: { ...TASK_IDENTITY_SCHEMA.properties, phase } }
+}
+
 const TASK_REPORT_VALUE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    task: {
-      type: 'object',
-      additionalProperties: false,
-      required: true,
-      properties: {
-        id: { type: 'string', required: true },
-        revision: { type: 'integer', required: true },
-        phase: {
-          type: 'string',
-          required: true,
-          enum: ['pending', 'assigned', 'running', 'review', 'completed', 'failed', 'cancelled', 'deleted'],
-        },
-      },
-    },
+    task: taskValueSchema({ type: 'string', required: true,
+      enum: ['pending', 'assigned', 'running', 'review', 'completed', 'failed', 'cancelled', 'deleted'] }),
     attempt: {
       type: 'object',
       additionalProperties: false,
@@ -316,20 +328,7 @@ const TASK_INTEGRATION_OUTPUT = {
     type: 'object',
     additionalProperties: false,
     properties: {
-      task: {
-        type: 'object',
-        additionalProperties: false,
-        required: true,
-        properties: {
-          id: { type: 'string', required: true },
-          revision: { type: 'integer', required: true },
-          phase: {
-            type: 'string',
-            required: true,
-            enum: ['pending', 'assigned', 'running', 'review', 'completed', 'failed', 'cancelled', 'deleted'],
-          },
-        },
-      },
+      task: TASK_REPORT_VALUE_SCHEMA.properties.task,
       attempt: {
         type: 'object',
         additionalProperties: false,
@@ -367,16 +366,7 @@ const TASK_HEARTBEAT_OUTPUT = {
     type: 'object',
     additionalProperties: false,
     properties: {
-      task: {
-        type: 'object',
-        additionalProperties: false,
-        required: true,
-        properties: {
-          id: { type: 'string', required: true },
-          revision: { type: 'integer', required: true },
-          phase: { type: 'string', required: true, const: 'running' },
-        },
-      },
+      task: taskValueSchema({ type: 'string', required: true, const: 'running' }),
       attempt: {
         type: 'object',
         additionalProperties: false,
@@ -396,16 +386,7 @@ const TASK_REVIEW_OUTPUT = {
     type: 'object',
     additionalProperties: false,
     properties: {
-      task: {
-        type: 'object',
-        additionalProperties: false,
-        required: true,
-        properties: {
-          id: { type: 'string', required: true },
-          revision: { type: 'integer', required: true },
-          phase: { type: 'string', required: true, enum: ['pending', 'completed'] },
-        },
-      },
+      task: taskValueSchema({ type: 'string', required: true, enum: ['pending', 'completed'] }),
       decision: { type: 'string', required: true, enum: ['accepted', 'rework'] },
       reason: { type: 'string', required: true },
     },
@@ -462,18 +443,7 @@ function install(agent: Agent, ctx: Context, linkProvider: string): () => void {
       outcome: { type: 'string', required: true, enum: ['completed', 'failed', 'released'] },
       summary: { type: 'string', description: 'Concise result summary; required only with completed.' },
       evidence: { type: 'array', items: { type: 'string' }, description: 'Optional evidence statements supporting the result.' },
-      artifacts: { type: 'array', items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          id: { type: 'string', required: true },
-          kind: { type: 'string', required: true, enum: ['file', 'patch', 'log', 'screenshot', 'report'] },
-          uri: { type: 'string', required: true },
-          contentHash: { type: 'string' },
-          sourceAttemptId: { type: 'string' },
-          visibility: { type: 'string', required: true, enum: ['private', 'team', 'human'] },
-        },
-      }, description: 'Optional artifact references produced by this attempt.' },
+      artifacts: { type: 'array', items: TOOL_ARTIFACT_SCHEMA, description: 'Optional artifact references produced by this attempt.' },
       changed_paths: { type: 'array', items: { type: 'string' }, description: 'Optional changed paths from the execution workspace.' },
       verification: { type: 'string', description: 'Optional verification command or summary.' },
       failure_code: { type: 'string', description: 'Stable failure classification; required only with failed.' },
@@ -613,14 +583,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
   for (const agent of ctx.agents.list()) installAgent(agent)
   ctx.on('agent/created', ({ agent }) => { installAgent(agent) })
-  ctx.on('agent/disposed', ({ agent }) => {
-    installed.get(agent)?.()
-    installed.delete(agent)
-  })
-  ctx.effect(() => () => {
-    for (const dispose of installed.values()) dispose()
-    installed.clear()
-  }, 'toolTeam.scopedTools()')
+  bindAgentToolDisposal(ctx, installed, 'toolTeam.scopedTools()')
 }
 
 /** Extract an exact Team/Participant header pair or reject model use outside a Team-bound Session. */
@@ -628,9 +591,7 @@ function teamParticipant(agent: Agent): {
   readonly teamId: ReturnType<typeof teamIdSchema.parse>
   readonly participantId: ReturnType<typeof participantIdSchema.parse>
 } | undefined {
-  const teamId = teamIdSchema.safeParse(agent.session.header.teamId)
-  const participantId = participantIdSchema.safeParse(agent.session.header.participantId)
-  return teamId.success && participantId.success ? { teamId: teamId.data, participantId: participantId.data } : undefined
+  return parseTeamParticipantHeader(agent.session.header)
 }
 
 /** Recover an exact live calling Agent under the active Agent driver. */
@@ -640,13 +601,7 @@ function requireExecution(
   scopedAgent: Agent,
   tool: 'team_task_report' | 'team_task_integrate' | 'team_task_heartbeat' | 'team_task_review' | 'team_message' | 'team_final',
 ): Agent {
-  const agent = exec.agent
-  if (agent === undefined) throw executionError(tool, `${tool} requires a calling Agent`, 'AGENT_REQUIRED')
-  if (agent !== scopedAgent || ctx.agents.get(agent.id) !== agent || agent.status !== 'running'
-    || ctx.agents.currentInitiator() !== agent) {
-    throw executionError(tool, `${tool} requires its exact live scoped Agent inside an active driver`, 'DRIVER_REQUIRED')
-  }
-  return agent
+  return requireScopedToolAgent(ctx.agents, exec, scopedAgent, tool, (message, kind) => executionError(tool, message, kind))
 }
 
 /** Create the execution-authentication failure for one scoped Team tool. */
@@ -1355,14 +1310,7 @@ function assertBorrowedBinding(
   participantId: ReturnType<typeof participantIdSchema.parse>,
   source: TaskAssignmentSource,
 ): void {
-  const binding = link.binding
-  if (binding.activation.id !== source.activationId
-    || binding.activation.teamId !== source.teamId
-    || binding.activation.participantId !== participantId
-    || binding.sessionId !== agent.session.id
-    || (binding.activation.status !== 'idle' && binding.activation.status !== 'running')) {
-    throw reportError('task-assignment source no longer has its active bound Agent residency', 'TEAM_TASK_REPORT_ASSIGNMENT_STALE')
-  }
+  assertBinding(link.binding, agent, participantId, source)
 }
 
 /** Verify the source activation is still the exact live binding for the scoped Agent. */
@@ -1713,19 +1661,15 @@ function reviewSourceFromChannelView(
 ): CurrentReviewAssignment | undefined {
   const review = source.review
   if (source.taskId !== taskId || review?.initiatorId === undefined) return undefined
-  try {
-    return {
-      teamId: parseIdentifier(teamIdSchema, source.teamId, 'team id'),
-      channelId: parseIdentifier(channelIdSchema, source.channelId, 'channel id'),
-      envelopeId: parseIdentifier(envelopeIdSchema, source.triggeringEnvelopeId, 'Envelope id'),
-      taskId,
-      attemptId: parseIdentifier(taskAttemptIdSchema, review.attemptId, 'attempt id'),
-      reviewRevision: review.reviewRevision,
-      reviewerId: parseIdentifier(participantIdSchema, review.reviewerId, 'reviewer id'),
-      initiatorId: parseIdentifier(participantIdSchema, review.initiatorId, 'initiator id'),
-    }
-  } catch {
-    return undefined
+  return {
+    teamId: parseIdentifier(teamIdSchema, source.teamId, 'team id'),
+    channelId: parseIdentifier(channelIdSchema, source.channelId, 'channel id'),
+    envelopeId: parseIdentifier(envelopeIdSchema, source.triggeringEnvelopeId, 'Envelope id'),
+    taskId,
+    attemptId: parseIdentifier(taskAttemptIdSchema, review.attemptId, 'attempt id'),
+    reviewRevision: review.reviewRevision,
+    reviewerId: parseIdentifier(participantIdSchema, review.reviewerId, 'reviewer id'),
+    initiatorId: parseIdentifier(participantIdSchema, review.initiatorId, 'initiator id'),
   }
 }
 

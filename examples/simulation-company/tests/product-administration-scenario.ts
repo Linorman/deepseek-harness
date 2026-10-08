@@ -30,8 +30,10 @@ const call: AuthenticatedProductCall = { principal: { id: 'reader' as never, iss
 const client = new InProcessApiClient(toFetchHandler(createApiProxy(ctx, { cwd: process.cwd(), defaultModelSelection: () => undefined }),
   { authenticatedProductCall: call }))
 const input = simulationProductCreateInputSchema.parse({ commandId: 'original-create', templateId: 'company', templateVersion: '1',
+  expectedModel: { provider: 'company', name: 'scripted' },
   name: 'Original company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
 const proofPath = resolve(process.env.SIMULATION_COMPANY_ROOT!, 'original-proof.json')
+const originalTerminal = Promise.withResolvers<'command/completed' | 'command/failed'>()
 const hold = async (stage: string): Promise<void> => {
   if (process.env.COMPANY_PRODUCT_CRASH !== stage) return
   const commands = ctx.storageLog.get('product-commands')!
@@ -46,8 +48,14 @@ try {
     const append = stream.append.bind(stream)
     stream.append = async (...args) => {
       const result = await append(...args)
-      const entry = args[1][0] as { kind: string }
+      const entry = args[1][0] as { kind: string; commandId?: string }
       await hold(name === 'product-directory' ? 'directory' : entry.kind === 'command/accepted' ? 'accepted' : 'terminal')
+      if (name === 'product-commands' && entry.commandId === input.commandId
+        && (entry.kind === 'command/completed' || entry.kind === 'command/failed')) {
+        const kind = entry.kind
+        // The next IO turn observes the command store's post-append fold, without imposing a fixture-only startup budget.
+        setImmediate(() => { originalTerminal.resolve(kind) })
+      }
       return result
     }
   }
@@ -79,6 +87,14 @@ try {
     if (observation.result.value.world !== undefined) assert.equal(observation.result.value.world.owner, 'unowned')
   }
   assert.equal(modelCalls, 0)
+  if (process.env.COMPANY_PRODUCT_SLOW_ATTACH === 'true') {
+    const attach = ctx.simulationTeams.attach.bind(ctx.simulationTeams)
+    ctx.simulationTeams.attach = async (...args) => {
+      const connection = await attach(...args)
+      await new Promise<void>((resolve) => { setTimeout(resolve, 1100) })
+      return connection
+    }
+  }
   const receipt = await client.simulations.create(input)
   assert.ok(receipt.result.ok)
   const id = receipt.result.value.runId
@@ -86,14 +102,16 @@ try {
     const original = JSON.parse(await readFile(proofPath, 'utf8')) as { id: string }
     assert.equal(id, original.id)
   }
-  let settled = false
-  for (let round = 0; round < 200; round++) {
-    const result = await client.simulations.request({ commandId: input.commandId })
-    assert.ok(result.result.ok)
-    if (result.result.value.status === 'found' && result.result.value.request.status === 'completed') { settled = true; break }
-    await new Promise<void>((resolve) => { setTimeout(resolve, 5) })
+  // The observer is installed before submission; re-read afterward so a completed retry cannot leave a subscription gap.
+  const current = await client.simulations.request({ commandId: input.commandId })
+  assert.ok(current.result.ok)
+  if (current.result.value.status === 'found' && current.result.value.request.status === 'accepted') {
+    assert.equal(await originalTerminal.promise, 'command/completed')
   }
-  assert.ok(settled)
+  const settled = await client.simulations.request({ commandId: input.commandId })
+  assert.ok(settled.result.ok)
+  assert.equal(settled.result.value.status, 'found')
+  if (settled.result.value.status === 'found') assert.equal(settled.result.value.request.status, 'completed')
   const journal = ctx.storageLog.get('product-commands')!
   const tail = journal.tailSequence
   const retry = await client.simulations.create(input)

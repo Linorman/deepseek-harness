@@ -22,7 +22,9 @@ class OutboxModel extends LlmAdapter {
   requests = 0
   private readonly respond: boolean
   constructor(respond: boolean) { super(); this.respond = respond }
-  override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> { return { provider, id: model, name: model } }
+  override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
+    return { provider, id: model, name: model }
+  }
   async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     if (options.purpose !== 'session-title') {
       this.requests++
@@ -188,7 +190,8 @@ async function run(ctx: Context) {
       adapter: { type: 'consult', version: 1 }, viewPolicy: { type: 'full-transcript', version: 1 },
       participants: [{ id: human.id, role: 'initiator' }, { id: responder.id, role: 'respondent' }], limits: {} })
     await auth.withCall(async (call) => {
-      const own = (await ctx.teams.getChannelAdmission({ channelId: humanChannel.manifest.id })).invitations.find(invitation => invitation.participantId === human.id)
+      const own = (await ctx.teams.getChannelAdmission({ channelId: humanChannel.manifest.id })).invitations
+        .find(invitation => invitation.participantId === human.id)
       assert(own)
       const input = { channelId: humanChannel.manifest.id, revision: own.revision, manifestFingerprint: own.manifestFingerprint,
         idempotencyKey: channelInvitationIdempotencyKeySchema.parse('human-consult-consent') }
@@ -204,7 +207,8 @@ async function run(ctx: Context) {
       const discussion = await owner.open({ kind: 'channel-open', teamId, expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor,
         adapter: { type: 'discussion', version: 1 }, viewPolicy: { type: 'full-transcript', version: 1 },
         participants: members.map(member => ({ id: member.id, role: 'speaker' })), limits: { maxTurns: 1, speakerPolicy: 'free-form' } })
-      const invite = (await ctx.teams.getChannelAdmission({ channelId: discussion.manifest.id })).invitations.find(value => value.participantId === human.id)
+      const invite = (await ctx.teams.getChannelAdmission({ channelId: discussion.manifest.id })).invitations
+        .find(value => value.participantId === human.id)
       assert(invite)
       const consent = { channelId: discussion.manifest.id, revision: invite.revision, manifestFingerprint: invite.manifestFingerprint,
         idempotencyKey: channelInvitationIdempotencyKeySchema.parse('human-discussion-consent') }
@@ -222,9 +226,11 @@ async function run(ctx: Context) {
       assert.equal(entries.filter(record => record.type === 'channel/receipt' && record.envelopeId === last.id).length, 2)
       await until(async () => readerModel.agent?.status === 'idle')
       const workflow = await owner.workflow(b.binding, members)
-      const workflowInvite = (await ctx.teams.getChannelAdmission({ channelId: workflow.manifest.id })).invitations.find(value => value.participantId === human.id)
+      const workflowInvite = (await ctx.teams.getChannelAdmission({ channelId: workflow.manifest.id })).invitations
+        .find(value => value.participantId === human.id)
       assert(workflowInvite)
-      const workflowConsent = { channelId: workflow.manifest.id, revision: workflowInvite.revision, manifestFingerprint: workflowInvite.manifestFingerprint,
+      const workflowConsent = { channelId: workflow.manifest.id, revision: workflowInvite.revision,
+        manifestFingerprint: workflowInvite.manifestFingerprint,
         idempotencyKey: channelInvitationIdempotencyKeySchema.parse('human-workflow-consent') }
       await ctx.teamHumanActors.withProof(call, { teamId, operation: 'channel-open', fence: { kind: 'revision', revision: workflowInvite.revision }, payload: jsonObjectSchema.parse(workflowConsent) },
         actor => ctx.teams.acknowledgeChannelInvitation({ actor, ...workflowConsent }))

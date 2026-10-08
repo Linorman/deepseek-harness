@@ -15,13 +15,6 @@ const clockyBin = join(repoRoot, 'apps/cli/lib/bin.js')
 const invalidProvider = fileURLToPath(new URL('./fixtures/invalid-provider.cordis.yml', import.meta.url))
 const LEGACY_GOAL_ROWS = ['goal', 'goal-round-driver', 'command-goal', 'tool-goal']
 
-function dumpedRow(source: string, id: string): string {
-  const start = source.indexOf(`- id: ${id}\n`)
-  if (start < 0) throw new Error(`missing dumped row '${id}'`)
-  const end = source.indexOf('\n- id: ', start + 1)
-  return source.slice(start, end < 0 ? source.length : end)
-}
-
 async function runBuiltBin(
   args: readonly string[] = [],
   env: Readonly<Record<string, string | undefined>> = {},
@@ -762,7 +755,7 @@ describe.skipIf(!existsSync(clockyBin))('clocky BUILT bin (node lib/bin.js, no t
       expect(stdout).toContain("name: '@clocky/clocky-host-webserver'")
       expect(stdout).toContain("name: '@clocky/clocky-command-team-goal'")
       expect(stdout).not.toContain("name: '@clocky/clocky-client-ui-goal'")
-      for (const id of LEGACY_GOAL_ROWS) expect(dumpedRow(stdout, id)).toContain('disabled: true')
+      for (const id of LEGACY_GOAL_ROWS) expect(stdout).not.toContain(`- id: ${id}\n`)
     }, 30_000)
 
     it('prints the headless profile without Host or browser layers', async () => {
@@ -776,7 +769,7 @@ describe.skipIf(!existsSync(clockyBin))('clocky BUILT bin (node lib/bin.js, no t
       expect(stdout).not.toMatch(/name: '@clocky\/clocky-host-/)
       expect(stdout).not.toContain("name: '@clocky/clocky-web-app'")
       expect(stdout).not.toMatch(/name: '@clocky\/clocky-client-/)
-      for (const id of LEGACY_GOAL_ROWS) expect(dumpedRow(stdout, id)).toContain('disabled: true')
+      for (const id of LEGACY_GOAL_ROWS) expect(stdout).not.toContain(`- id: ${id}\n`)
     }, 30_000)
 
     it('composes the profile user layer and a --patch overlay in order', async () => {

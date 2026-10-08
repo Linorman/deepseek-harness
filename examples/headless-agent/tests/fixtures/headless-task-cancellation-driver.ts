@@ -1,4 +1,5 @@
 /** Model-driven single-task cancellation preserves approval and review authority while the Team continues. */
+import { createFixtureTeam, withFixturePrincipal } from './authenticated-host.ts'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -173,7 +174,7 @@ async function run(ctx: Context, model: CancellationModel): Promise<Record<strin
   })()
   void pump.catch((error: unknown) => { requested.reject(error); resolved.reject(error) })
   try {
-    const handle = await ctx.teamRuns.create({ objective: 'Obtain approval for a real denied project-file mutation.',
+    const handle = await createFixtureTeam(ctx, { objective: 'Obtain approval for a real denied project-file mutation.',
       cwd: process.cwd(), selection: { provider: MODEL, model: MODEL } })
     await ctx.teamRuns.postHumanInput({ teamId: handle.teamId,
       idempotencyKey: channelPostIdempotencyKeySchema.parse('human-approval-input'), content: [{ type: 'text', text: INPUT }] })
@@ -312,7 +313,7 @@ export function apply(ctx: Context): void {
   assert(exit !== undefined)
   const failure = Promise.withResolvers<never>()
   ctx.on('agent/error', ({ error }) => { failure.reject(error) })
-  void Promise.race([run(ctx, model), failure.promise]).then((output) => { process.stdout.write(`${JSON.stringify(output, null, 2)}\n`); exit(0) }, (error: unknown) => {
+  void Promise.race([withFixturePrincipal(ctx, () => run(ctx, model)), failure.promise]).then((output) => { process.stdout.write(`${JSON.stringify(output, null, 2)}\n`); exit(0) }, (error: unknown) => {
     process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`)
     exit(1)
   })

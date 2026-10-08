@@ -5,13 +5,17 @@ import { simulationProductManageInputSchema, simulationProductManagementInputSch
 import { simulationCompanyPreparationSchema } from '../src/company-preparation.ts'
 import { SimulationCompanyOwner } from '../src/company-owner.ts'
 import { simulationCheckpointRequestSchema } from '@clocky/clocky-simulation'
+import { simulationIngressRequestSchema } from '@clocky/clocky-simulation'
 import type { SimulationSnapshot } from '@clocky/clocky-simulation'
 import { operation as observedOperation } from './collection-fixtures.ts'
 import type { LogStream } from '@clocky/clocky-storage'
-import { SimulationCompanyDriver } from '../src/company-driver.ts'
+import { SimulationCompanyDriver, simulationCompanyDriverSchema } from '../src/company-driver.ts'
 import type { SimulationCompanyDriveResult } from '../src/company-driver.ts'
 import { ownerFixture } from './company-owner-fixture.ts'
+import { companyConfig } from './company-driver-fixture.ts'
 import { call } from './fixtures.ts'
+import { simulationProductTaskReviewResolveInputSchema } from '../src/review-schema.ts'
+import { simulationProductTaskCancelInputSchema } from '../src/task-control-schema.ts'
 
 afterEach(() => { vi.restoreAllMocks() })
 
@@ -348,11 +352,130 @@ it('makes a retiring owner readable but refuses later management and preparation
     await owner.close()
     expect(owner.observe()).toMatchObject({ driver: 'retiring', actions: { pause: { allowed: false, reason: 'retiring' } } })
     await expect(owner.manage(management(runId, 'closed', 'paused'), () => {})).rejects.toThrow('retiring')
+    const review = simulationProductTaskReviewResolveInputSchema.parse({ runId, commandId: 'closed-review',
+      operationId: 'closed-operation', attemptId: 'closed-attempt', expectedRevision: 1,
+      nextPhase: 'completed', reason: 'Owner has retired' })
+    const cancellation = simulationProductTaskCancelInputSchema.parse({ runId, commandId: 'closed-cancel',
+      operationId: 'closed-operation', expectedRevision: 1, expectedAttemptId: null, reason: 'Owner has retired' })
+    await expect(owner.review(review, () => {}, async () => {})).rejects.toThrow('retiring')
+    await expect(owner.cancelTask(cancellation, () => {}, async () => {})).rejects.toThrow('retiring')
+    await expect(owner.retryOperation({ runId, commandId: 'closed-retry' as never,
+      operationId: 'closed-operation' as never, expectedAttemptCount: 1, reason: 'Owner has retired' }, Date.now(),
+    () => {}, async () => {})).rejects.toThrow('retiring')
+    expect(owner.retryCapability('closed-operation' as never).reason).toBe('maintenance-in-progress')
     const operation = vi.fn(async () => {})
     await expect(owner.prepare(simulationCompanyPreparationSchema.parse({ ...h.input.parameters, version: '1', ownerName: `simulation-product/${runId}`,
       objective: 'Deliver one inventory unit', participant: { provider: 'in-process', preset: 'simulation', model: 'company/scripted' },
       checkpoint: { id: 'not-admitted' as never, maxDrainRounds: 4, maxAttempts: 3 } }), operation)).rejects.toThrow('unstarted owner')
     expect(operation).not.toHaveBeenCalled()
+  } finally { await h.close() }
+})
+
+it('reports retry maintenance while a real owner checkpoint is collecting', async () => {
+  const h = await ownerFixture()
+  const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+  try {
+    const runId = await h.create(), owner = await captureOwner(h, runId)
+    const attach = h.ctx.simulationTeams.attach.bind(h.ctx.simulationTeams)
+    vi.spyOn(h.ctx.simulationTeams, 'attach').mockImplementationOnce(async (...args) => {
+      const connection = await attach(...args), checkpoint = connection.checkpoint.bind(connection)
+      vi.spyOn(connection, 'checkpoint').mockImplementationOnce(async (request) => {
+        entered.resolve(undefined); await release.promise; return await checkpoint(request)
+      })
+      return connection
+    })
+    const cut = simulationCheckpointRequestSchema.parse({ id: 'held-owner-cut', implementationVersion: 'company/1',
+      maxDrainRounds: 4, maxAttempts: 3 })
+    const collecting = owner.checkpoint(cut)
+    await entered.promise
+    expect(owner.observe()).toMatchObject({ driver: 'checkpointing', inFlight: true,
+      actions: { pause: { allowed: false, reason: 'checkpoint-in-progress' } } })
+    expect(owner.retryCapability('blocked-operation' as never).reason).toBe('maintenance-in-progress')
+    release.resolve(undefined)
+    expect((await collecting).status).toBe('completed')
+  } finally { release.resolve(undefined); await h.close() }
+})
+
+it('checks native task ownership and current Team revision before cancellation', async () => {
+  const driver = simulationCompanyDriverSchema.parse({ ...companyConfig, tasks: { version: '1', cognition: 'deterministic',
+    leaseDurationMs: 100000, maxAttempts: 3, retry: 'scene', review: 'buyer' } })
+  const h = await ownerFixture('json', {}, driver, { maxMicrostepsPerTime: 5 })
+  try {
+    const runId = await h.create(), service = h.ctx.simulationAdministration
+    await service.manage(management(runId, 'task-owner-start'), call())
+    const row = await vi.waitFor(async () => {
+      const item = (await service.listTaskReviews({ runId }, call())).items.find(value => value.action.allowed)
+      if (item === undefined) throw new Error('Review task is not ready')
+      return item
+    }, { timeout: 5000 })
+    await service.manage(management(runId, 'task-owner-pause', 'paused'), call())
+    const owner = await captureOwner(h, runId)
+    const review = simulationProductTaskReviewResolveInputSchema.parse({ runId, commandId: 'owner-review-target',
+      operationId: row.operationId, attemptId: row.attemptId, expectedRevision: row.taskRevision,
+      nextPhase: 'completed', reason: 'Review target must be exact' })
+    const pendingCut = simulationCheckpointRequestSchema.parse({ id: 'review-pending-cut', implementationVersion: 'company/1',
+      maxDrainRounds: 4, maxAttempts: 3 })
+    await h.owned().beginCheckpoint(pendingCut)
+    await expect(owner.review(review, () => {}, async () => {})).rejects.toThrow('outside native maintenance')
+    await h.owned().failCheckpoint(pendingCut.id, 'test checkpoint retirement')
+    await expect(owner.review({ ...review, operationId: 'foreign-operation' as never }, () => {}, async () => {}))
+      .rejects.toThrow('original attempt')
+    const operation = h.owned().snapshot().operations[row.operationId]
+    if (operation?.outbox?.taskReceipt === undefined) throw new Error('Company task has no canonical receipt')
+    const input = simulationProductTaskCancelInputSchema.parse({ runId, commandId: 'terminal-task-cancel',
+      operationId: operation.id, expectedRevision: row.taskRevision - 1, expectedAttemptId: null, reason: 'Task selection is stale' })
+    await expect(owner.cancelTask({ ...input, operationId: 'foreign-operation' as never }, () => {}, async () => {}))
+      .rejects.toThrow('not an accepted run-owned task')
+    await expect(owner.cancelTask(input, () => {}, async () => {})).rejects.toThrow('target changed')
+    const quiesce = simulationCheckpointRequestSchema.parse({ id: 'review-stall-cut', implementationVersion: 'company/1',
+      maxDrainRounds: 4, maxAttempts: 3 })
+    expect((await owner.checkpoint(quiesce)).status).toBe('completed')
+    const beforeStall = h.owned().snapshot()
+    await h.owned().ingest(simulationIngressRequestSchema.parse({ id: 'review-stall-ingress', entityId: 'buyer',
+      source: 'Operator', text: 'Input at the exhausted microstep', availableAt: beforeStall.time }))
+    const pendingRecipients = new Set(Object.values(h.owned().snapshot().wakes)
+      .filter(value => value.status === 'pending').map(value => value.entityId))
+    if (pendingRecipients.size === 0) throw new Error('Review fixture has no pending recipient wake')
+    for (const id of pendingRecipients) {
+      const recipient = h.owned().snapshot().entities[id]
+      if (recipient === undefined) throw new Error('Review wake has no recipient entity')
+      await h.owned().change({ kind: 'entity/phase', id, entityRevision: recipient.revision, phase: 'inactive' },
+        h.owned().snapshot().revision)
+    }
+    await h.owned().setPhase('running', h.owned().snapshot().revision)
+    expect((await h.owned().drive({ until: beforeStall.time })).reason).toBe('stalled')
+    await expect(owner.review(review, () => {}, async () => {})).rejects.toThrow('outside native maintenance')
+  } finally { await h.close() }
+})
+
+it('refuses administrative review for a real task whose scenario disabled review', async () => {
+  const driver = simulationCompanyDriverSchema.parse({ ...companyConfig, tasks: { version: '1', cognition: 'deterministic',
+    leaseDurationMs: 100000, maxAttempts: 1, retry: 'scene', review: 'none' } })
+  const h = await ownerFixture('json', {}, driver)
+  try {
+    const runId = await h.create(), service = h.ctx.simulationAdministration
+    await service.manage(management(runId, 'unreviewed-start'), call())
+    await vi.waitFor(async () => { expect((await service.control({ runId }, call())).stop).toBe('completed') }, { timeout: 5000 })
+    const execution = Object.values(h.owned().snapshot().taskExecutions ?? {})[0]
+    if (execution === undefined) throw new Error('Unreviewed task has no native attempt')
+    const owner = await captureOwner(h, runId)
+    const review = simulationProductTaskReviewResolveInputSchema.parse({ runId, commandId: 'unreviewed-command',
+      operationId: execution.request.operationId, attemptId: execution.request.attemptId, expectedRevision: 1,
+      nextPhase: 'completed', reason: 'Review was not configured' })
+    await expect(owner.review(review, () => {}, async () => {})).rejects.toThrow('does not permit administrative review')
+  } finally { await h.close() }
+})
+
+it('revalidates a queued retry against the current native operation before granting an allowance', async () => {
+  const h = await ownerFixture()
+  try {
+    const runId = await h.create(), owner = await captureOwner(h, runId)
+    const complete = vi.fn(async () => {})
+    await expect(owner.retryOperation({ runId, commandId: 'stale-native-retry' as never,
+      operationId: 'absent-operation' as never, expectedAttemptCount: 1, reason: 'Retry current operation' },
+    Date.now(), () => {}, complete)).rejects.toThrow('retry target changed')
+    expect(complete).not.toHaveBeenCalled()
+    expect(owner.observe().inFlight).toBe(false)
   } finally { await h.close() }
 })
 

@@ -28,14 +28,14 @@ declare module '@clocky/clocky-agent' {
  * @throws if the runtime `AgentOptions.subagentDepth` is not a non-negative safe integer.
  */
 export function delegationDepthOf(agent: Agent): number {
-  const runtime = agent.options?.subagentDepth
+  const runtime = agent.options.subagentDepth
   if (runtime !== undefined && (!Number.isSafeInteger(runtime) || runtime < 0 || Object.is(runtime, -0))) {
     throw new TypeError('agent subagentDepth must be a non-negative safe integer')
   }
   const session = (agent as unknown as { session?: Agent['session'] }).session
   const durable = session === undefined
     ? 0
-    : agent.ctx?.get('sessionProjections')?.snapshot(session).values.subagent?.depth ?? 0
+    : agent.ctx.get('sessionProjections')?.snapshot(session).values.subagent?.depth ?? 0
   return Math.max(durable, runtime ?? 0)
 }
 

@@ -237,3 +237,23 @@ describe('the agent-preset settings controller', () => {
     expect(controller.store.getSnapshot()).toMatchObject({ currentValue: 'standard', error: 'socket closed' })
   })
 })
+
+it('drops an older principal roster even when recovery precedes the late response', async () => {
+  const api = fakeApi([{ id: 'new', trust: 'user', isDefault: true }])
+  const list = api.agentPresets.list.bind(api.agentPresets)
+  let release: (value: Awaited<ReturnType<typeof list>>) => void = () => {}
+  const slow = new Promise<Awaited<ReturnType<typeof list>>>((resolve) => { release = resolve })
+  let reads = 0
+  api.agentPresets.list = () => ++reads === 1 ? slow : list({})
+  const controller = derivedController(api)
+  const pending = controller.load()
+  controller.clearAuthorization()
+  await controller.load()
+  expect(reads).toBe(1)
+  controller.resumeAuthorization()
+  await controller.load()
+  release({ rpcId: 'late-roster' as never, result: { ok: true,
+    value: { presets: [{ id: 'private-old', trust: 'user', isDefault: true }], authorable: true, hasDocument: true } } })
+  await pending
+  expect(controller.store.getSnapshot().options.map(row => row.id)).toEqual(['new'])
+})

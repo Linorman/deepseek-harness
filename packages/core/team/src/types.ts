@@ -1497,24 +1497,7 @@ export interface TeamRunBootstrapParticipantInviteScope {
   /** Team-journal cursor observed before the invitation. */
   readonly expectedCursor: number
   /** Complete immutable descriptor for the invited participant. */
-  readonly participant: {
-    /** Logical participant implementation category. */
-    readonly kind: ParticipantKind
-    /** Human-facing participant name. */
-    readonly displayName: string
-    /** Template-defined responsibility label. */
-    readonly role: string
-    /** Immutable capabilities declared for scheduler eligibility. */
-    readonly capabilities: readonly string[]
-    /** Closed immutable human owner, when this descriptor creates a human participant. */
-    readonly owner?: TeamParticipantOwner | undefined
-    readonly provider?: string | undefined
-    readonly preset?: string | undefined
-    readonly model?: string | undefined
-    readonly authScheme?: string | undefined
-    /** Optional authority subset; omission inherits the Team grant. */
-    readonly authorityGrant?: TeamAuthorityGrant | undefined
-  }
+  readonly participant: Omit<ParticipantInviteInput, 'teamId' | 'expectedCursor'>
 }
 
 /** Exact TeamRun bootstrap membership transition for one default-topology participant. */
@@ -1579,23 +1562,7 @@ export interface TeamRunWorkerInviteScope {
   /** Team-journal cursor observed before the invitation. */
   readonly expectedCursor: number
   /** Complete immutable descriptor for the invited worker. */
-  readonly participant: {
-    /** Logical participant implementation category. */
-    readonly kind: ParticipantKind
-    /** Human-facing participant name. */
-    readonly displayName: string
-    /** Worker-pool responsibility label. */
-    readonly role: string
-    /** Immutable capabilities declared for scheduler eligibility. */
-    readonly capabilities: readonly string[]
-    readonly owner?: TeamParticipantOwner | undefined
-    readonly provider?: string | undefined
-    readonly preset?: string | undefined
-    readonly model?: string | undefined
-    readonly authScheme?: string | undefined
-    /** Optional authority subset; omission inherits the Team grant. */
-    readonly authorityGrant?: TeamAuthorityGrant | undefined
-  }
+  readonly participant: Omit<ParticipantInviteInput, 'teamId' | 'expectedCursor'>
 }
 
 /** Exact TeamRun activation of one worker-pool participant. */
@@ -1639,24 +1606,7 @@ export interface TeamRunReviewerInviteScope {
   /** Team-journal cursor observed before the invitation. */
   readonly expectedCursor: number
   /** Complete immutable descriptor for the invited reviewer. */
-  readonly participant: {
-    /** Logical participant implementation category. */
-    readonly kind: ParticipantKind
-    /** Human-facing participant name. */
-    readonly displayName: string
-    /** Template-defined responsibility label. */
-    readonly role: string
-    /** Immutable capabilities declared for scheduler eligibility. */
-    readonly capabilities: readonly string[]
-    /** Closed immutable human owner, when this descriptor creates a human participant. */
-    readonly owner?: TeamParticipantOwner | undefined
-    readonly provider?: string | undefined
-    readonly preset?: string | undefined
-    readonly model?: string | undefined
-    readonly authScheme?: string | undefined
-    /** Optional authority subset; omission inherits the Team grant. */
-    readonly authorityGrant?: TeamAuthorityGrant | undefined
-  }
+  readonly participant: Omit<ParticipantInviteInput, 'teamId' | 'expectedCursor'>
 }
 
 /** Exact TeamRun membership transition for one lazily provisioned reviewer. */
@@ -3382,26 +3332,6 @@ export interface TeamRunResumePhaseScope {
   readonly phase: 'active'
 }
 
-/** Exact TeamRun final-result admission fence that closes new channel admission before local release. */
-export interface TeamRunFinalizationQuiescePhaseScope {
-  /** Closed source operation selected by this proof. */
-  readonly kind: 'team-run-finalization-quiesce'
-  /** Team whose accepted final result is being settled. */
-  readonly teamId: TeamId
-  /** Team-journal cursor observed before quiescing completion admission. */
-  readonly expectedCursor: number
-  /** Only the quiescing lifecycle phase is permitted by this finalization fence. */
-  readonly phase: 'quiescing'
-  /** Direct-v3 channel retaining the accepted coordinator final. */
-  readonly finalChannelId: ChannelId
-  /** Durable human-receipted coordinator final selected for settlement. */
-  readonly finalEnvelopeId: EnvelopeId
-  /** Human recipient whose receipt made the final result admissible. */
-  readonly humanId: ParticipantId
-  /** Coordinator that authored the accepted final result. */
-  readonly coordinatorId: ParticipantId
-}
-
 /** Exact scheduler operation that may record a durable Team stall. */
 export interface SchedulerStallPhaseScope {
   /** Closed source operation selected by this proof. */
@@ -3493,7 +3423,6 @@ export interface ActivationControllerRecoveryStallPhaseScope {
 /** Closed durable scopes a system phase source may select. */
 export type TeamSystemPhaseScope =
   | TeamRunResumePhaseScope
-  | TeamRunFinalizationQuiescePhaseScope
   | SchedulerStallPhaseScope
   | ActivationControllerCancellationStallPhaseScope
   | ActivationControllerClosureStallPhaseScope

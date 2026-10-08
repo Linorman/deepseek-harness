@@ -1,25 +1,7 @@
-import { isTeamAuthorizationError } from './access.ts'
-/** Principal-scoped bounded identity cache; only references requested by a view are read. */
 import type { HostDescription, IApiClient, ParticipantId, TeamId } from '@clocky/clocky-client-connection/client'
-
-/** One identity observation retains the current Team's cached names through ordinary network loss. */
-export interface TeamIdentityState {
-  readonly teamId: TeamId
-  readonly items: readonly TeamIdentityItem[]
-  readonly loading: boolean
-  readonly disconnected: boolean
-  readonly error?: string | undefined
-  readonly forbidden: boolean
-}
-/** Public display row from the authenticated Host. */
-export type TeamIdentityItem = Extract<Awaited<ReturnType<IApiClient['teams']['identityResolve']>>['result'], { ok: true }>['value']['items'][number]
-/** Explicit deployment limits for polling, retained names and each requested batch. */
-export interface TeamIdentityOptions {
-  readonly refreshMs: number
-  readonly capacity: number
-  readonly batchSize: number
-}
-
+import type { TeamIdentityState, TeamIdentityItem, TeamIdentityOptions } from '../contract/team-tasks.ts'
+export type { TeamIdentityState, TeamIdentityItem, TeamIdentityOptions } from '../contract/team-tasks.ts'
+import { isTeamAuthorizationError } from './access.ts'
 /** A connection handshake pins authority; identity responses cannot replace that pin. */
 export class IdentityResolver {
   private scope: HostDescription['authorizationScope']

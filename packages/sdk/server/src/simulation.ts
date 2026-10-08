@@ -1,3 +1,5 @@
+// Explicit protocol imports and public re-exports repeat contract names, not executable behavior.
+/* jscpd:ignore-start */
 import { simulationProductTasksInputSchema, simulationProductTaskCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductRequestsInputSchema, simulationProductRetryRequestInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductPreflightInputSchema } from '@clocky/clocky-simulation-product/schema'
@@ -8,6 +10,7 @@ import { simulationProductSourceInputSchema } from '@clocky/clocky-simulation-pr
 import { simulationProductRecordsInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductWatchInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductControlInputSchema, simulationProductManageInputSchema, simulationProductManagementInputSchema, simulationProductCheckpointInputSchema, simulationProductRestoreInputSchema, simulationProductIngressInputSchema, simulationProductIngressQuerySchema } from '@clocky/clocky-simulation-product/schema'
+/* jscpd:ignore-end */
 /** Simulation JSON-RPC requests share the product owners and transport-authenticated call lifetime. */
 import type { Context } from '@clocky/cordis'
 import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'

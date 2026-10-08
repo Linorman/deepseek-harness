@@ -13,21 +13,21 @@
   min-width: 34px;
   padding: 2px 8px;
   border: none;
-  border-radius: 999px;
-  background: var(--clocky-alias-state-warn-tertiary);
-  color: var(--clocky-alias-state-warn-label);
-  font-size: 13px;
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-status-needs-you-bg);
+  color: var(--clocky-status-needs-you-fg);
+  font-size: var(--clocky-type-label-size);
   font-weight: 500;
-  line-height: 20px;
+  line-height: var(--clocky-type-label-line-height);
   cursor: pointer;
 }
 
 .chip:hover:not(:disabled) {
-  color: var(--clocky-alias-state-warn-primary);
+  color: var(--clocky-status-needs-you-fg);
 }
 
 .chip:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-warn-label);
+  outline: 2px solid var(--clocky-status-needs-you-fg);
   outline-offset: 2px;
 }
 
@@ -43,7 +43,7 @@
 }
 
 .error {
-  color: var(--clocky-alias-state-error-primary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-status-failed-fg);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }

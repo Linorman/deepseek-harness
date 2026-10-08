@@ -21,6 +21,12 @@
       "path": "../ui-primitives"
     },
     {
+      "path": "../ui-viz"
+    },
+    {
+      "path": "../ui-conversation"
+    },
+    {
       "path": "../ui-layout"
     },
     {

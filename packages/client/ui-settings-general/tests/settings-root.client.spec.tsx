@@ -30,7 +30,8 @@ function mount({
     { id: 'welcome', order: -100 },
     { id: 'credential', order: 0 },
   ],
-}: { wide?: boolean; onboardingActive?: boolean; rows?: Row[]; steps?: Step[] } = {}) {
+  request = { seq: 0 },
+}: { wide?: boolean; onboardingActive?: boolean; rows?: Row[]; steps?: Step[]; request?: { seq: number; section?: string } } = {}) {
   // Mutable row source standing in for the bound useSections hook; bump()
   // plays a ledger change through the same observable contract.
   let current = rows
@@ -54,6 +55,7 @@ function mount({
     useWorkspaces: unusedHook,
     wide,
     useOnboardingSteps: select => select(steps),
+    useOpenRequests: select => select(request),
     useSections: (select) => {
       const [, force] = useState(0)
       useEffect(() => {
@@ -78,6 +80,17 @@ function mount({
 function openPanel() {
   fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
 }
+
+describe('SettingsRoot external open request', () => {
+  it('stays closed without a request and opens on the requested section', () => {
+    mount({ onboardingActive: false })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    cleanup()
+    mount({ onboardingActive: false, request: { seq: 1, section: 'models' } })
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByTestId('section-models')).toBeTruthy()
+  })
+})
 
 describe('SettingsRoot trigger', () => {
   it('renders the trigger seat content as the accessible name (no aria-label of its own)', () => {
@@ -141,10 +154,10 @@ describe('SettingsPanel close paths', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('closes via document-level Escape and unhooks the listener with the panel', () => {
+  it('closes through native dialog cancellation without a document Escape listener', () => {
     mount()
     openPanel()
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
     expect(screen.queryByRole('dialog')).toBeNull()
     // Ignored while closed (listener removed with the panel) and non-Escape
     // keys are ignored while open.

@@ -1,3 +1,5 @@
+import type { SessionSummary, SessionListState, SessionBinding, SessionProvideDescriptor } from '../contract/sessions.ts'
+export type { SessionSummary, SessionListState, SessionBinding, SessionProvideContribution, SessionProvideDescriptor } from '../contract/sessions.ts'
 /**
  * SessionRuntime: root sessions service — list snapshot store (manager
  * projection; carries `current`, the persisted selection every
@@ -16,7 +18,7 @@
  */
 import type { Context, Fiber } from '@clocky/cordis'
 import type {
-  IApiClient, RpcResult, SessionId, JobView,
+  IApiClient, RpcResult, SessionId,
 } from '@clocky/clocky-api-remotes/client'
 // Value import from the inline-safe wire layer (not the connection plugin):
 // plugin-to-plugin value imports are a bundle purity error.
@@ -24,88 +26,23 @@ import { SESSION_SEARCH_RESULT_LIMIT } from '@clocky/clocky-host-apiproxy/api'
 import type {
   HostObservable, SessionMaybeProvideInfo, SessionProvideInfo,
 } from '@clocky/clocky-client-ui-slots'
-import type { SessionProjectionMap } from '@clocky/clocky-session-projection/types'
 import type { SnapshotStore } from '../contract/store.ts'
 import { createSnapshotStore } from '../contract/store.ts'
 import type { SessionFace } from '../contract/session.ts'
 import type { AgentContext, ISessions } from '../contract/sessions.ts'
-import { createScope, scopeOf as scopeTagOf } from '../agents/scope.ts'
+import { createScope, scopeOf as scopeTagOf } from './scope.ts'
 import type { ConversationRuntime } from './conversation-assembler.ts'
 import { SessionManager } from './manager.ts'
 import type { SessionRemotes } from './remotes.ts'
-import type { SessionListPhase, SessionSearchResultItem } from './manager.ts'
-import type { PendingInteractionStatus } from './pending.ts'
+import type { SessionSearchResultItem } from './manager.ts'
 import { SessionProvideChannel } from './provide.ts'
 import type { Session } from './session.ts'
-
-/** Session list row projected from the host list RPC plus live stream increments. */
-export interface SessionSummary {
-  /** Immutable ownership reported by the Host; used for exact Team input routing. */
-  team?: import('@clocky/clocky-api-remotes/client').SessionSummary['team']
-  id: SessionId
-  /** Latest durable log-backed title, absent until the host projects one. */
-  title?: string
-  /** Human-facing label: durable title, project basename, then session id. */
-  displayTitle: string
-  cwd?: string
-  /**
-   * Agent preset this session's agent was composed from; absent when the
-   * deployment composes no presets. The session header labels what the
-   * session actually runs rather than the deployment's current default.
-   */
-  agentPreset?: string
-  running: boolean
-  /** User interaction currently blocking this session. */
-  pendingInteraction?: PendingInteractionStatus
-  /** Finished while not selected and not yet opened. Absent = false. */
-  completed?: boolean
-  /**
-   * Empty-log bit (Host summary derivation mirror). Non-product Workspace
-   * flows may reuse a blank Session targeting the same Workspace.
-   */
-  blank: boolean
-  updatedAt: number
-  /** Current host-computed projection values retained by the object layer. */
-  projectionValues?: Readonly<Partial<SessionProjectionMap>>
-}
-
-/**
- * Session list store shape. `current` rides the same snapshot (arbitrated:
- * the single useSessions standard hook reads list and selection together —
- * sidebar highlighting and SessionProvider share one fact source).
- */
-export interface SessionListState {
-  /** Host-list order. */
-  ids: SessionId[]
-  /** Host rows keyed by Session id. */
-  byId: Record<SessionId, SessionSummary>
-  current: SessionId | undefined
-  /** Arrival lifecycle projected 1:1 from the manager snapshot (see SessionListPhase): empty-with-ready means "truly no sessions". */
-  phase: SessionListPhase
-  /**
-   * Background jobs each session can see, mirrored last-wins from
-   * `session/jobs`. A missing key is an empty set — the Host sends no baseline
-   * for a session without tasks — so consumers read absence, never a sentinel.
-   */
-  jobsBySession: Readonly<Record<SessionId, readonly JobView[]>>
-}
 
 interface SessionSelection {
   sessionId?: SessionId
 }
 
-/** Session assembly handle for SessionProvider/inject factories (identity-stable per session). */
-export interface SessionBinding {
-  readonly sessionId: SessionId
-  /** The outward session face only — feature code never sees the concrete class. */
-  readonly session: SessionFace
-  readonly ctx: AgentContext
-}
-
-// Scope primitives live in ../agents/scope.ts (the client mirror of host
-// clocky-scope, keyed by Agent identity); re-exported here so existing
-// consumers keep their import site.
-export { scopeOf } from '../agents/scope.ts'
+export { scopeOf } from './scope.ts'
 
 /**
  * Workspace display title of a session cwd: the path's last non-empty
@@ -144,28 +81,6 @@ interface ScopeRecord {
   provideInfo: SessionProvideInfo
 }
 
-/** One plugin's per-session standard-props contribution (see {@link SessionRuntime.provide}). */
-export interface SessionProvideContribution {
-  /** Bare observable sources, keyed by hook base name ('input' → useInput). */
-  hooks?: Record<string, HostObservable<unknown>>
-  /** Stable plain members (action callbacks etc.), spread into standard props verbatim. */
-  props?: Record<string, unknown>
-}
-
-/**
- * Static declaration plus per-session resolver for one standard-kit
- * contribution. The declared names let the renderer construct the same hook
- * and prop surface while no session is current.
- */
-export interface SessionProvideDescriptor {
-  /** Hook base names (`input` becomes `useInput`). */
-  hooks?: readonly string[]
-  /** Plain standard-prop names. */
-  props?: readonly string[]
-  /** Resolve every declared member for one definite session. */
-  resolve(binding: SessionBinding): SessionProvideContribution
-}
-
 /** Root sessions service: list store, current selection, object-layer manager, scope tree, bindings, and breadcrumb routes. */
 export class SessionRuntime implements ISessions {
   /**
@@ -177,6 +92,8 @@ export class SessionRuntime implements ISessions {
   readonly searchResultLimit = SESSION_SEARCH_RESULT_LIMIT
   /** List snapshot store (list RPC + host stream increments; re-pulled on reconnect) — the useSessions standard feed, current included. */
   readonly list: SnapshotStore<SessionListState>
+  /** Coarse Host connection state for the useConnection standard hook. */
+  readonly connection: SnapshotStore<import('../contract/sessions.ts').ConnectionStatus>
   /** The object-layer instance cluster and frame dispatch entry. */
   private readonly manager: SessionManager
   /**
@@ -240,6 +157,7 @@ export class SessionRuntime implements ISessions {
       restored.sessionId,
       conversation,
     )
+    this.connection = createSnapshotStore<import('../contract/sessions.ts').ConnectionStatus>({ state: 'connecting' })
     this.list = createSnapshotStore<SessionListState>({
       ids: [], byId: {}, current: undefined, phase: 'pending',
       jobsBySession: {},
@@ -382,11 +300,18 @@ export class SessionRuntime implements ISessions {
    * @param scope - Host authorization identity; replacement retires data from the previous principal.
    */
   handleConnected(scope?: import('@clocky/clocky-client-connection/client').HostDescription['authorizationScope']): void {
+    this.connection.set({ state: 'connected' })
     if (scope !== this.authorizationScope) {
       this.authorizationScope = scope
       this.clearAuthorization()
     }
     this.manager.handleConnected()
+  }
+
+  /** Record an explicit product access refusal; only a later handshake clears it. */
+  handleAuthorizationLost(): void {
+    this.connection.set({ state: 'unauthorized' })
+    this.clearAuthorization()
   }
 
   /** Retire all Session content and views after an explicit product access refusal. */
@@ -402,6 +327,7 @@ export class SessionRuntime implements ISessions {
 
   /** Drop generation-scoped live interaction state the moment a connection generation dies. */
   handleDisconnected(): void {
+    if (this.connection.getSnapshot().state !== 'unauthorized') this.connection.set({ state: 'reconnecting' })
     this.manager.handleDisconnected()
   }
 

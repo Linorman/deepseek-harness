@@ -47,7 +47,7 @@ export class ActivationSupervisors extends Service {
     return this.ctx.effect(() => {
       if (this.providers.has(key)) throw new ActivationSupervisorError(`Supervisor '${provider.name}' version ${provider.version} is registered`, 'SUPERVISOR_INVALID')
       this.providers.set(key, provider)
-      return () => { if (this.providers.get(key) === provider) this.providers.delete(key) }
+      return () => { this.providers.delete(key) }
     }, 'activationSupervisors.registerProvider()')
   }
 

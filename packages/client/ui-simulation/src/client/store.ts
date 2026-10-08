@@ -18,6 +18,8 @@ export interface Route {
   entityId?: string | undefined
   decisionId?: string | undefined
   section?: 'attempts' | 'relationships' | 'context' | 'knowledge' | undefined
+  /** Collection modules: `visual` shows the world, timeline, effects, or checkpoint view instead of the table. */
+  display?: 'visual' | undefined
   sourceIndex?: number | undefined
   knowledgeId?: string | undefined
   knowledgeRevision?: number | undefined
@@ -37,13 +39,24 @@ export function route(): Route {
     entityId: query.get('simulationEntity') ?? undefined, decisionId: query.get('simulationDecision') ?? undefined,
     section: query.get('simulationSection') as Route['section'],
     sourceIndex: query.get('simulationSource')?.match(/^(0|[1-9][0-9]*)$/) ? Number(query.get('simulationSource')) : undefined, knowledgeId: query.get('simulationKnowledge') ?? undefined,
-    knowledgeRevision: query.get('simulationKnowledgeRevision')?.match(/^[1-9][0-9]*$/) ? Number(query.get('simulationKnowledgeRevision')) : undefined })
+    knowledgeRevision: query.get('simulationKnowledgeRevision')?.match(/^[1-9][0-9]*$/) ? Number(query.get('simulationKnowledgeRevision')) : undefined,
+    display: query.get('simulationDisplay') === 'visual' ? 'visual' : undefined })
 }
 /** Write only safe viewing identifiers and committed search to browser history.
  * @param next - View selection without private input.
  * @param push - Whether this creates a browser-history entry.
  */
 export function writeRoute(next: Route, push = true): void {
+  const url = routeUrl(next)
+  if (url.href === window.location.href) return
+  if (push) window.history.pushState(null, '', url)
+  else window.history.replaceState(null, '', url)
+}
+/** Build the same-document URL for a view selection, keeping unrelated parameters.
+ * @param next - View selection without private input.
+ * @returns the URL `writeRoute` would commit.
+ */
+export function routeUrl(next: Route): URL {
   next = normalize(next)
   const url = new URL(window.location.href)
   url.searchParams.set('workspace', 'simulation')
@@ -52,13 +65,11 @@ export function writeRoute(next: Route, push = true): void {
     ['simulationCognition', next.cognition], ['simulationEntity', next.entityId], ['simulationDecision', next.decisionId],
     ['simulationRecordKind', next.recordKind], ['simulationSequence', next.recordSequence?.toString()],
     ['simulationSource', next.sourceIndex?.toString()], ['simulationSection', next.section], ['simulationKnowledge', next.knowledgeId],
-    ['simulationKnowledgeRevision', next.knowledgeRevision?.toString()]] as const) {
+    ['simulationKnowledgeRevision', next.knowledgeRevision?.toString()], ['simulationDisplay', next.display]] as const) {
     if (value === undefined) url.searchParams.delete(key)
     else url.searchParams.set(key, value)
   }
-  if (url.href === window.location.href) return
-  if (push) window.history.pushState(null, '', url)
-  else window.history.replaceState(null, '', url)
+  return url
 }
 /** Raw create input and its selected original operation; business receipts live only in runtime. */
 export interface SimulationCreationDraft {
@@ -70,6 +81,8 @@ export interface SimulationCreationDraft {
   /** Blank overrides select installed defaults; only Host-advertised limit keys are submitted. */
   readonly limits?: Partial<Record<keyof import('@clocky/clocky-client-runtime/client').SimulationProductLimits, string>> | undefined
   readonly commandKey?: SimulationCommandKey | undefined
+  /** Re-run read-only validation after returning from model setup; never resubmit automatically. */
+  readonly recheckAfterModelSetup?: true | undefined
 }
 /** Initial form contains no invented deployment configuration. */
 export const EMPTY_CREATION: SimulationCreationDraft = { templateId: '', name: '', buyerName: '', supplierName: '', initialStock: '' }
@@ -278,6 +291,7 @@ export function createSimulationStore(maxDraftBytes: number, maxInputDrafts: num
       d.decisionId = next.decisionId; d.section = next.section
       d.sourceIndex = next.sourceIndex
       d.knowledgeId = next.knowledgeId; d.knowledgeRevision = next.knowledgeRevision
+      d.display = next.display
     },
     searchDraft: (d, value: string) => { d.draftSearch = value },
     search: (d, value: string) => { d.search = value; d.draftSearch = value; d.directoryScroll = 0 },

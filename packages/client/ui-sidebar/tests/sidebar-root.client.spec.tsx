@@ -23,9 +23,11 @@ afterEach(() => {
 // props share; stub them as never-called functions.
 const neverHook = (() => { throw new Error('shell must not read global hooks') }) as never
 
-function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; width?: number } = {}) {
+function mountShell({ collapsed = false, width = 300, search = false }: { collapsed?: boolean; width?: number; search?: boolean } = {}) {
   const startTask = vi.fn()
   const toggleSidebar = vi.fn()
+  const openSearch = vi.fn()
+  let navigationOwner: SidebarSectionOwnerProps | undefined
   let teamRegionOwner: SidebarSectionOwnerProps | undefined
   let workspaceRegionOwner: SidebarSectionOwnerProps | undefined
   let settingsOwner: SidebarSettingsOwnerProps | undefined
@@ -38,12 +40,14 @@ function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; w
       collapsed={current.collapsed} width={current.width}
       useSessions={neverHook} useWorkspaces={neverHook}
       startTask={startTask} toggleSidebar={toggleSidebar} t={t}
+      openSearch={search ? openSearch : undefined}
       renderSlot={((
         key: string,
         owner: SidebarFooterActionOwnerProps | SidebarSectionOwnerProps | SidebarSettingsOwnerProps,
       ) => {
         if (key === 'sidebar.brand.mark') return brandMark
         if (key === 'sidebar.brand.name') return brandName
+        if (key === 'sidebar.workspaceNavigation') { navigationOwner = owner as SidebarSectionOwnerProps; return null }
         if (key === 'sidebar.settings') {
           settingsOwner = owner
           return <div data-testid="settings-seat" data-wide={owner.wide} />
@@ -68,6 +72,11 @@ function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; w
   return {
     startTask,
     toggleSidebar,
+    openSearch,
+    navigationOwner: () => {
+      if (navigationOwner === undefined) throw new Error('Navigation owner not rendered')
+      return navigationOwner
+    },
     teamRegionOwner: () => {
       if (teamRegionOwner === undefined) throw new Error('Team region owner not rendered')
       return teamRegionOwner
@@ -92,7 +101,22 @@ function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; w
 }
 
 describe('SidebarRoot shell', () => {
-  it('routes New Task (capsule + wordmark) and the column toggle', () => {
+  it('opens search and lets each navigation occupant request only expansion, never collapse', () => {
+    vi.spyOn(navigator, 'platform', 'get').mockReturnValue('MacIntel')
+    const b = mountShell({ search: true })
+    fireEvent.click(screen.getByRole('button', { name: t('search.label') }))
+    expect(b.openSearch).toHaveBeenCalledOnce()
+    expect(screen.getByText('⌘')).toBeDefined()
+    b.navigationOwner().expandSidebar()
+    b.workspaceRegionOwner().expandSidebar()
+    expect(b.toggleSidebar).not.toHaveBeenCalled()
+    b.rerender({ collapsed: true })
+    b.navigationOwner().expandSidebar()
+    b.workspaceRegionOwner().expandSidebar()
+    expect(b.toggleSidebar).toHaveBeenCalledTimes(2)
+    vi.restoreAllMocks()
+  })
+  it('routes new-team-work (capsule + wordmark) and the column toggle', () => {
     const b = mountShell()
     expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
     expect(screen.getByTestId('custom-brand-name')).toBeTruthy()

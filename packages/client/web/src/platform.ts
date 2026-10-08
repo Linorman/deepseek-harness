@@ -9,6 +9,7 @@ export const PLATFORM_MODULES = [
   'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@clocky/cordis',
   '@clocky/clocky-client-ui-slots',
   '@clocky/clocky-client-ui-primitives',
+  '@clocky/clocky-client-ui-viz',
 ] as const
 
 /** Client-bundle specifiers whose factories the parser preloads before the shell starts. */

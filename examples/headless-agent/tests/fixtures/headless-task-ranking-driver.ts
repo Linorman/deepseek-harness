@@ -5,7 +5,9 @@ import { join } from 'node:path'
 import type { Context } from '@clocky/cordis'
 import { CallId, LlmAdapter } from '@clocky/clocky-llm'
 import type { GenerateOptions, StreamChunk } from '@clocky/clocky-llm'
-import { teamIdSchema, participantIdSchema, teamTaskCreateIdempotencyKeySchema, teamTaskRankingPolicySchema } from '@clocky/clocky-team'
+import {
+  teamIdSchema, participantIdSchema, teamTaskCreateIdempotencyKeySchema, teamTaskRankingPolicySchema, teamTaskUpdateCommandIdSchema,
+} from '@clocky/clocky-team'
 import type { TeamId, ParticipantId, TeamStateSnapshot } from '@clocky/clocky-team'
 import { TeamDagScheduler } from '@clocky/clocky-team-scheduler-dag'
 import type {} from '@clocky/clocky-team-run'
@@ -25,7 +27,11 @@ class RankingModel extends LlmAdapter {
       .filter(block => block.type === 'text').map(block => block.text).join('\n')
     if (input.includes(INPUT)) {
       this.coordinatorStarted.resolve(undefined)
-      await this.releaseCoordinator.promise
+      const signal = options.signal
+      assert(signal !== undefined)
+      if (signal.aborted) return
+      await new Promise<void>((resolve) => { signal.addEventListener('abort', () => { resolve() }, { once: true }) })
+      if (signal.aborted) return
       yield* text(); return
     }
     const assignment = [...input.matchAll(/\nTask: (\S+)\nAttempt: (\S+)/gu)].at(-1)
@@ -77,6 +83,27 @@ async function run(ctx: Context, model: RankingModel) {
   await ctx.teamRuns.postHumanInput({ teamId: run.teamId, content: [{ type: 'text', text: INPUT }] })
   await model.coordinatorStarted.promise
   const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+  if (metadata === undefined) {
+    // Unassignable pending work keeps both real pool members alive while their ranking history is trained.
+    const issuer = ctx.teams.openActivationActorProofIssuer()
+    const actor = issuer.issue(run.coordinatorLease.binding)
+    try {
+      const blocker = await ctx.teams.createTask({ actor: actor.proof, teamId: run.teamId,
+        expectedCursor: (await ctx.teams.getTeam({ teamId: run.teamId })).team.cursor,
+        createCommand: { idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('ranking-capacity-blocker') },
+        subject: 'Retain the training pool', description: 'No fixture worker has this capability.', blockedBy: [],
+        requiredCapabilities: ['ranking-fixture-unavailable'], priority: 0, readScopes: [], writeScopes: [],
+        workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1 })
+      for (const index of [1, 2]) {
+        const hold = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startDefaultWorkerTask(authority, {
+          idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse(`ranking-capacity-hold-${index}`),
+          subject: 'Retain worker capacity', instructions: 'Wait for the unavailable prerequisite.', readScopes: [], writeScopes: [] }))
+        await ctx.teams.updateTaskDetails({ actor: actor.proof, teamId: run.teamId, taskId: hold.id,
+          commandId: teamTaskUpdateCommandIdSchema.parse(`ranking-capacity-dependency-${index}`),
+          expectedRevision: (await ctx.teams.getTask({ teamId: run.teamId, taskId: hold.id })).revision, blockedBy: [blocker.id] })
+      }
+    } finally { actor.revoke(); issuer.close() }
+  }
   const workers = [...run.workers].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
   const slowId = metadata === undefined ? workers[0]!.id : participantIdSchema.parse(metadata.slowId)
   const fastId = metadata === undefined ? workers[1]!.id : participantIdSchema.parse(metadata.fastId)
@@ -112,8 +139,6 @@ async function run(ctx: Context, model: RankingModel) {
       assert.deepEqual(fast.latencyBucketCounts, [2, 0])
       assert.deepEqual(slow.latencyBucketCounts, [0, 2])
       await writeFile(metadataPath, JSON.stringify({ teamId: run.teamId, fastId, slowId }))
-      model.releaseCoordinator.resolve(undefined)
-      await coordinator.whenIdle()
       await ctx.teamRuns.close()
       assert((await ctx.teams.getTeam({ teamId: run.teamId })).activations.every(binding => binding.activation.status === 'offline' && binding.quiescedAt !== undefined))
       return { stage: 'train', completed: [2, 2], latencyBuckets: [[2, 0], [0, 2]], outcomeBeatsUnseen: true, explicitProposalWins: true }
@@ -123,8 +148,6 @@ async function run(ctx: Context, model: RankingModel) {
     assert.equal(policy.version, 1)
     assert.deepEqual(policy.latencyUpperBoundsMs, [1000])
     assert.equal(await execute('RANK_RESTART_PROBE'), fastId)
-    model.releaseCoordinator.resolve(undefined)
-    await coordinator.whenIdle()
     await ctx.teamRuns.cancel(run.teamId)
     return { stage: 'restart', selected: 'fast-owner', samePersistedFacts: true, team: 'cancelled' }
   } finally { model.releaseCoordinator.resolve(undefined); await owned.close() }

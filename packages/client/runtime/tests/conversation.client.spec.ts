@@ -1,9 +1,9 @@
-/** Assistant block classifier (moved here with sessions/conversation.ts). */
+/** Shared assistant block classifier used by finalized and partial messages. */
 
 import { describe, expect, it } from 'vitest'
 import { AttachmentId } from '@clocky/clocky-attachment'
 import type { ContentBlock } from '@clocky/clocky-api-remotes/client'
-import { toAssistantBlock, toAssistantBlocks } from '../src/client/sessions/conversation.ts'
+import { toAssistantBlock, toAssistantBlocks } from '../src/client/contract/conversation-snapshot.ts'
 
 describe('toAssistantBlock', () => {
   it('classifies the four block shapes', () => {

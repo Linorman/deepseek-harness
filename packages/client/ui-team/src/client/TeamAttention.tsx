@@ -38,10 +38,12 @@ export function TeamAttention({ state, counts, preview = false, translate: t, re
       case 'team-recovery': openRecovery(); return
       case 'task-review': case 'task-recovery': openTask(item.id); return
       case 'human-action':
+        /* v8 ignore next -- The action button is disabled while the callback is absent or another answer opens. */
         if (openAction === undefined || opening !== undefined) return
         setOpening(item.id)
         run(async () => { try { await openAction(item.id) } finally { setOpening(undefined) } })
         return
+      /* v8 ignore next -- Pending item kinds are a closed union; label rejects unknown kinds before a click. */
       default: return assertNever(item)
     }
   }
@@ -74,8 +76,11 @@ export function TeamAttention({ state, counts, preview = false, translate: t, re
       {(item.kind === 'team-recovery' || item.kind === 'task-recovery') && item.reason !== undefined && <p>{item.reason.message.text}</p>}
     </li>)}</ul>}
     <div className={css.pendingControls}>
-      {read !== undefined && <Button size="sm" disabled={state?.loading || state?.disconnected}
-        onClick={() => { run(async () => { await read('first') }) }}>{t(preview ? 'attention.refreshPreview' : 'attention.refresh')}</Button>}
+      {/* The preview follows pushed changes; its reread is a recovery action
+          offered only when the observation is newer, failed, or disconnected. */}
+      {read !== undefined && (!preview || state?.hasNewer === true || state?.error !== undefined || state?.disconnected === true)
+        && <Button size="sm" disabled={state?.loading || state?.disconnected}
+          onClick={() => { run(async () => { await read('first') }) }}>{t(preview ? 'attention.refreshPreview' : 'attention.refresh')}</Button>}
       {preview && total !== undefined && total > 0 && viewAll !== undefined && <Button size="sm" onClick={viewAll}>{t('attention.viewAll')}</Button>}
       {!preview && read !== undefined && <Button size="sm" disabled={state?.loading || state?.disconnected || state?.hasNewer
         || state?.error !== undefined || page?.nextCursor === undefined}

@@ -108,6 +108,7 @@ try {
     assert.equal((await control()).phase, 'paused'); assert.equal(requests.length, 0)
   } else {
     const creation = await client.simulations.create(simulationProductCreateInputSchema.parse({ commandId: 'task-create', templateId: 'company',
+      expectedModel: { provider: 'company', name: 'scripted' },
       templateVersion: '1', name: 'Task company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } }))
     assert.ok(creation.result.ok); runId = creation.result.value.runId
     await writeFile(proof, JSON.stringify({ runId, stages: [] }))

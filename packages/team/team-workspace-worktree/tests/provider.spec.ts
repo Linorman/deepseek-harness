@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
-import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
@@ -31,6 +31,17 @@ import type {
   TeamWorkspaceSourceIntegrateRequest,
 } from '@clocky/clocky-team-workspace'
 import * as WorktreeWorkspace from '../src/index.ts'
+
+const removalFault = vi.hoisted(() => ({ pathPart: undefined as string | undefined }))
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const original = await importOriginal<typeof import('node:fs/promises')>()
+  return { ...original, async rm(...args: Parameters<typeof original.rm>) {
+    if (removalFault.pathPart !== undefined && String(args[0]).includes(removalFault.pathPart)) {
+      throw Object.assign(new Error('temporary file removal unavailable'), { code: 'EACCES' })
+    }
+    await original.rm(...args)
+  } }
+})
 
 const teamId = teamIdSchema.parse('worktree-workspace-team')
 const participantId = participantIdSchema.parse('worktree-workspace-worker')
@@ -280,6 +291,35 @@ async function materialize(harness: FakeHarness): Promise<TeamWorkspaceAllocatio
 }
 
 describe('worktree Team workspace provider', () => {
+  it('preflights only active worktree tasks while repository and allocation roots remain available', async () => {
+    const harness = await setup()
+    const participant = harness.state.participants[0]
+    if (participant === undefined) throw new Error('worktree fixture has no participant')
+    if (harness.provider.preflight === undefined) throw new Error('worktree provider has no preflight')
+    const providerPreflight = harness.provider.preflight.bind(harness.provider)
+    const route = { provider: 'in-process', model: 'test-model', cwd: harness.repoRoot }
+    const preflight = (task = harness.task, candidate = participant) =>
+      providerPreflight({ task, participant: candidate, route })
+    expect(await preflight()).toBe(true)
+    expect(await preflight({ ...harness.task, workspaceMode: 'shared' })).toBe(false)
+    expect(await preflight(harness.task, { ...participant, phase: 'provisioning' })).toBe(false)
+    await rm(harness.allocationParent, { recursive: true, force: true })
+    expect(await preflight()).toBe(false)
+  })
+
+  it('publishes only the exact live allocation owned by this provider', async () => {
+    const harness = await setup()
+    if (harness.provider.publish === undefined) throw new Error('worktree provider has no publish')
+    const publish = harness.provider.publish.bind(harness.provider)
+    const allocation = await materialize(harness)
+    await expect(publish({ allocation: { ...allocation, root: harness.repoRoot } }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(publish({ allocation: { ...allocation, assignedRevision: allocation.assignedRevision + 1 } }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await allocation.release()
+    await expect(publish({ allocation })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  })
+
   it('allocates one exact detached worktree through the subprocess seam, calls policy, then normally releases it', async () => {
     const harness = await setup()
     await expect(harness.ctx.teamWorkspaces.eligible('worktree', { task: harness.task, binding: harness.binding })).resolves.toBe(true)
@@ -396,6 +436,39 @@ describe('worktree Team workspace provider', () => {
     await expect(harness.provider.restore(harness.request, failed)).rejects.toThrow('contains modified or untracked files')
     await rm(dirty)
     await harness.provider.reconcileRelease(harness.request, failed)
+  })
+
+  it('refuses release reconciliation that becomes live while restore holds the attempt queue', async () => {
+    const harness = await setup()
+    const allocation = await materialize(harness)
+    const internals = harness.provider as unknown as {
+      readonly allocations: Map<string, Promise<TeamWorkspaceAllocation>>
+      readonly preparations: Map<string, unknown>
+    }
+    internals.allocations.clear()
+    internals.preparations.clear()
+    const entered = Promise.withResolvers<undefined>()
+    const proceed = Promise.withResolvers<undefined>()
+    let held = false
+    const originalSpawn = harness.ctx.subprocess.spawn.bind(harness.ctx.subprocess)
+    const spawn = vi.spyOn(harness.ctx.subprocess, 'spawn').mockImplementation((spec) => {
+      const handle = originalSpawn(spec)
+      if (!held && spec.cwd === allocation.root && spec.argv.includes('rev-parse')) {
+        held = true
+        entered.resolve(undefined)
+        return { ...handle, done: proceed.promise.then(async () => await handle.done) }
+      }
+      return handle
+    })
+    try {
+      const restoring = harness.provider.restore(harness.request, allocation)
+      await entered.promise
+      const reconciling = harness.provider.reconcileRelease(harness.request, allocation)
+      proceed.resolve(undefined)
+      const restored = await restoring
+      await expect(reconciling).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+      await restored.release()
+    } finally { spawn.mockRestore(); proceed.resolve(undefined) }
   })
 
   it('rejects a restored root with a changed base or without provider Git registration', async () => {
@@ -521,9 +594,41 @@ describe('worktree Team workspace provider', () => {
       actorId: participantId,
     }
 
-    await expect(harness.ctx.teamWorkspaces.integrateSource('worktree-local', request)).rejects.toThrow('failed with exit')
+    const originalSpawn = harness.ctx.subprocess.spawn.bind(harness.ctx.subprocess)
+    const reset = vi.spyOn(harness.ctx.subprocess, 'spawn').mockImplementation((spec) => {
+      if (spec.argv.includes('reset') && spec.argv.includes('--hard')) throw new Error('reset unavailable')
+      return originalSpawn(spec)
+    })
+    try {
+      await expect(harness.ctx.teamWorkspaces.integrateSource('worktree-local', request)).rejects.toThrow('failed with exit')
+    } finally { reset.mockRestore() }
     expect((await git(harness.ctx, harness.repoRoot, ['show', 'refs/heads/source-integration-malformed:README.md'])).trim())
       .toBe('initial')
+  })
+
+  it('reports detached worktree cleanup failure after a rejected source patch', async () => {
+    const harness = await setup({ artifacts: true, integration: true })
+    await git(harness.ctx, harness.repoRoot, ['branch', 'source-integration-remove-error'])
+    const artifact = await harness.ctx.teamArtifacts.save('local', {
+      teamId, sourceAttemptId: attemptId, kind: 'patch', visibility: 'team', data: 'not a Git patch\n',
+    })
+    const request: TeamWorkspaceSourceIntegrateRequest = {
+      source: { teamId, taskId, attemptId, artifacts: [artifact] },
+      integrationTaskId: teamTaskIdSchema.parse('worktree-source-remove-task'),
+      integrationAttemptId: taskAttemptIdSchema.parse('worktree-source-remove-attempt'),
+      target: 'source-integration-remove-error', mode: 'integrate', actorId: participantId,
+    }
+    const originalSpawn = harness.ctx.subprocess.spawn.bind(harness.ctx.subprocess)
+    const spawn = vi.spyOn(harness.ctx.subprocess, 'spawn').mockImplementation((spec) => {
+      if (spec.argv.includes('worktree') && spec.argv.includes('remove') && spec.argv.includes('--force')) {
+        throw new Error('detached worktree removal unavailable')
+      }
+      return originalSpawn(spec)
+    })
+    try {
+      await expect(harness.ctx.teamWorkspaces.integrateSource('worktree-local', request))
+        .rejects.toThrow('source integration cleanup failed')
+    } finally { spawn.mockRestore() }
   })
 
   it('reports a source-integration target conflict when the target ref advances during compare-and-set', async () => {
@@ -577,6 +682,128 @@ describe('worktree Team workspace provider', () => {
     await allocation.release()
   })
 
+  it('recovers source integration when its target update settles before the command reports failure', async () => {
+    const harness = await setup({ artifacts: true, integration: true })
+    await git(harness.ctx, harness.repoRoot, ['branch', 'source-integration-settlement-race'])
+    const allocation = await materialize(harness)
+    await writeFile(join(allocation.root, 'README.md'), 'settled source change\n')
+    const published = await harness.ctx.teamWorkspaces.publish('worktree', { allocation })
+    const patch = published.artifacts.find(artifact => artifact.kind === 'patch')
+    if (patch === undefined) throw new Error('source settlement fixture did not publish a patch')
+    const targetBefore = (await git(harness.ctx, harness.repoRoot, ['rev-parse', 'refs/heads/source-integration-settlement-race'])).trim()
+    const request: TeamWorkspaceSourceIntegrateRequest = {
+      source: { teamId, taskId, attemptId, artifacts: published.artifacts },
+      integrationTaskId: teamTaskIdSchema.parse('worktree-source-settled-task'),
+      integrationAttemptId: taskAttemptIdSchema.parse('worktree-source-settled-attempt'),
+      target: 'source-integration-settlement-race', expectedTarget: targetBefore,
+      mode: 'integrate', actorId: participantId,
+    }
+    let integrationRoot: string | undefined
+    const originalSpawn = harness.ctx.subprocess.spawn.bind(harness.ctx.subprocess)
+    const spawn = vi.spyOn(harness.ctx.subprocess, 'spawn').mockImplementation((spec) => {
+      if (spec.argv.includes('worktree') && spec.argv.includes('add') && spec.argv.includes('--detach')) {
+        integrationRoot = spec.argv.at(-2)
+      }
+      if (spec.argv.includes('update-ref') && spec.argv.includes('refs/heads/source-integration-settlement-race')) {
+        if (integrationRoot === undefined) throw new Error('source integration root was not observed')
+        const commit = execFileSync('git', ['-C', integrationRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+        execFileSync('git', ['-C', harness.repoRoot, 'update-ref', 'refs/heads/source-integration-settlement-race', commit, targetBefore])
+      }
+      return originalSpawn(spec)
+    })
+    try {
+      await expect(harness.ctx.teamWorkspaces.integrateSource('worktree-local', request))
+        .resolves.toMatchObject({ status: 'integrated', artifact: patch })
+    } finally { spawn.mockRestore() }
+    await writeFile(join(allocation.root, 'README.md'), 'initial\n')
+    await allocation.release()
+  })
+
+  it.each(['unchanged', 'lookup-failed'] as const)(
+    'preserves source target update failure after a %s target observation', async (observation) => {
+      const harness = await setup({ artifacts: true, integration: true })
+      await git(harness.ctx, harness.repoRoot, ['branch', 'source-integration-cas-error'])
+      const allocation = await materialize(harness)
+      await writeFile(join(allocation.root, 'README.md'), 'source CAS error\n')
+      const published = await harness.ctx.teamWorkspaces.publish('worktree', { allocation })
+      const request: TeamWorkspaceSourceIntegrateRequest = {
+        source: { teamId, taskId, attemptId, artifacts: published.artifacts },
+        integrationTaskId: teamTaskIdSchema.parse(`worktree-source-cas-${observation}-task`),
+        integrationAttemptId: taskAttemptIdSchema.parse(`worktree-source-cas-${observation}-attempt`),
+        target: 'source-integration-cas-error', mode: 'integrate', actorId: participantId,
+      }
+      let updateFailed = false
+      const originalSpawn = harness.ctx.subprocess.spawn.bind(harness.ctx.subprocess)
+      const spawn = vi.spyOn(harness.ctx.subprocess, 'spawn').mockImplementation((spec) => {
+        if (spec.argv.includes('update-ref') && spec.argv.includes('refs/heads/source-integration-cas-error')) {
+          updateFailed = true
+          throw new Error('source compare-and-set unavailable')
+        }
+        if (updateFailed && observation === 'lookup-failed' && spec.argv.includes('rev-parse')
+          && spec.argv.some(arg => arg.includes('refs/heads/source-integration-cas-error'))) {
+          throw new Error('source target lookup unavailable')
+        }
+        return originalSpawn(spec)
+      })
+      try {
+        const operation = harness.ctx.teamWorkspaces.integrateSource('worktree-local', request)
+        if (observation === 'lookup-failed') {
+          await expect(operation).resolves.toMatchObject({ status: 'conflict' })
+        } else {
+          await expect(operation).rejects.toThrow('source compare-and-set unavailable')
+        }
+      } finally { spawn.mockRestore() }
+      await writeFile(join(allocation.root, 'README.md'), 'initial\n')
+      await allocation.release()
+    },
+  )
+
+  it('reports conflicted paths when a source patch and target commit change the same file', async () => {
+    const harness = await setup({ artifacts: true, integration: true })
+    const allocation = await materialize(harness)
+    await writeFile(join(allocation.root, 'README.md'), 'source change\n')
+    const published = await harness.ctx.teamWorkspaces.publish('worktree', { allocation })
+    const patch = published.artifacts.find(artifact => artifact.kind === 'patch')
+    if (patch === undefined) throw new Error('source conflict fixture did not publish a patch')
+    const originalBranch = (await git(harness.ctx, harness.repoRoot, ['branch', '--show-current'])).trim()
+    await git(harness.ctx, harness.repoRoot, ['checkout', '-b', 'source-patch-conflict'])
+    await writeFile(join(harness.repoRoot, 'README.md'), 'target change\n')
+    await git(harness.ctx, harness.repoRoot, ['add', 'README.md'])
+    await git(harness.ctx, harness.repoRoot, ['-c', 'commit.gpgSign=false', 'commit', '-m', 'conflicting target'])
+    await git(harness.ctx, harness.repoRoot, ['checkout', originalBranch])
+    const request: TeamWorkspaceSourceIntegrateRequest = {
+      source: { teamId, taskId, attemptId, artifacts: published.artifacts },
+      integrationTaskId: teamTaskIdSchema.parse('worktree-source-conflict-task'),
+      integrationAttemptId: taskAttemptIdSchema.parse('worktree-source-conflict-attempt'),
+      target: 'source-patch-conflict', mode: 'integrate', actorId: participantId,
+    }
+    await expect(harness.ctx.teamWorkspaces.integrateSource('worktree-local', request))
+      .resolves.toMatchObject({ status: 'conflict', artifact: patch, conflictPaths: ['README.md'] })
+    await writeFile(join(allocation.root, 'README.md'), 'initial\n')
+    await allocation.release()
+  })
+
+  it('reports source patch temporary-file cleanup failure after a successful target update', async () => {
+    const harness = await setup({ artifacts: true, integration: true })
+    await git(harness.ctx, harness.repoRoot, ['branch', 'source-patch-cleanup-error'])
+    const allocation = await materialize(harness)
+    await writeFile(join(allocation.root, 'README.md'), 'source cleanup change\n')
+    const published = await harness.ctx.teamWorkspaces.publish('worktree', { allocation })
+    const request: TeamWorkspaceSourceIntegrateRequest = {
+      source: { teamId, taskId, attemptId, artifacts: published.artifacts },
+      integrationTaskId: teamTaskIdSchema.parse('worktree-source-cleanup-task'),
+      integrationAttemptId: taskAttemptIdSchema.parse('worktree-source-cleanup-attempt'),
+      target: 'source-patch-cleanup-error', mode: 'integrate', actorId: participantId,
+    }
+    removalFault.pathPart = '.clocky-team-source-patch-'
+    try {
+      await expect(harness.ctx.teamWorkspaces.integrateSource('worktree-local', request))
+        .rejects.toThrow('source integration cleanup failed')
+    } finally { removalFault.pathPart = undefined }
+    await writeFile(join(allocation.root, 'README.md'), 'initial\n')
+    await allocation.release()
+  })
+
   it('materializes bounded file artifact references with attempt provenance', async () => {
     const harness = await setup()
     const allocation = await materialize(harness)
@@ -620,6 +847,46 @@ describe('worktree Team workspace provider', () => {
     const patchBytes = await harness.ctx.teamArtifacts.read('local', { reference: patch })
     expect(new TextDecoder().decode(patchBytes)).toContain('changed')
     await writeFile(join(allocation.root, 'README.md'), 'initial\n')
+    await allocation.release()
+  })
+
+  it('publishes an unchanged worktree without inventing a patch artifact', async () => {
+    const harness = await setup({ artifacts: true })
+    const allocation = await materialize(harness)
+    await expect(harness.ctx.teamWorkspaces.publish('worktree', { allocation }))
+      .resolves.toMatchObject({ changedPaths: [], artifacts: [], accepted: false })
+    await allocation.release()
+  })
+
+  it('reports a changed symbolic link without treating it as a regular file artifact', async () => {
+    const harness = await setup({ artifacts: true })
+    const allocation = await materialize(harness)
+    const link = join(allocation.root, 'readme-link')
+    await symlink('README.md', link)
+    const published = await harness.ctx.teamWorkspaces.publish('worktree', { allocation })
+    expect(published.changedPaths).toContain('readme-link')
+    expect(published.artifacts.map(artifact => artifact.kind)).toEqual(['patch'])
+    await rm(link)
+    await allocation.release()
+  })
+
+  it('refuses to materialize a Git-reported path outside the worktree root', async () => {
+    const harness = await setup()
+    const allocation = await materialize(harness)
+    const originalSpawn = harness.ctx.subprocess.spawn.bind(harness.ctx.subprocess)
+    const spawn = vi.spyOn(harness.ctx.subprocess, 'spawn').mockImplementation((spec) => {
+      const handle = originalSpawn(spec)
+      if (!spec.argv.includes('--name-only') || !spec.argv.includes('-z')) return handle
+      const stdout = handle.collected.stdout
+      if (stdout === undefined) throw new Error('Git path output was not collected')
+      return { ...handle, collected: { ...handle.collected, stdout: {
+        readFrom(offset: number) { return { ...stdout.readFrom(offset), text: '../outside-worktree\0' } },
+      } } }
+    })
+    try {
+      await expect(harness.ctx.teamWorkspaces.publish('worktree', { allocation }))
+        .resolves.toMatchObject({ changedPaths: ['../outside-worktree'], artifacts: [] })
+    } finally { spawn.mockRestore() }
     await allocation.release()
   })
 
@@ -668,13 +935,15 @@ describe('worktree Team workspace provider', () => {
       allocation,
       target: 'main',
       mode: 'integrate',
+      actorId: participantId,
     })).rejects.toMatchObject({ code: 'TEAM_POLICY_DENIED', message: 'integration is forbidden' })
+    expect(harness.authorizations.at(-1)).toMatchObject({ hook: 'workspace-integrate', actorId: participantId })
     await writeFile(join(allocation.root, 'README.md'), 'initial\n')
     await allocation.release()
   })
 
   it('integrates through a detached merge authority with an expected target ref', async () => {
-    const harness = await setup({ integration: true })
+    const harness = await setup({ integration: true, artifacts: true })
     await git(harness.ctx, harness.repoRoot, ['branch', 'integration-target'])
     const allocation = await materialize(harness)
     await writeFile(join(allocation.root, 'README.md'), 'integrated by Team\n')
@@ -701,6 +970,21 @@ describe('worktree Team workspace provider', () => {
 
     // Integration does not silently clean the provider-owned source checkout;
     // the task owner decides when its worktree can be released.
+    await writeFile(join(allocation.root, 'README.md'), 'initial\n')
+    await allocation.release()
+  })
+
+  it('reports temporary index cleanup failure after an owned integration', async () => {
+    const harness = await setup({ integration: true })
+    await git(harness.ctx, harness.repoRoot, ['branch', 'integration-index-cleanup-error'])
+    const allocation = await materialize(harness)
+    await writeFile(join(allocation.root, 'README.md'), 'owned cleanup change\n')
+    removalFault.pathPart = '.clocky-team-index-'
+    try {
+      await expect(harness.ctx.teamWorkspaces.integrate('worktree', {
+        allocation, target: 'integration-index-cleanup-error', mode: 'integrate',
+      })).rejects.toThrow('integration cleanup failed')
+    } finally { removalFault.pathPart = undefined }
     await writeFile(join(allocation.root, 'README.md'), 'initial\n')
     await allocation.release()
   })
@@ -754,7 +1038,7 @@ describe('worktree Team workspace provider', () => {
   })
 
   it('reports a target conflict when the detached integration ref advances during compare-and-set', async () => {
-    const harness = await setup({ integration: true })
+    const harness = await setup({ integration: true, artifacts: true })
     await git(harness.ctx, harness.repoRoot, ['branch', 'integration-race'])
     const raceRoot = join(harness.allocationParent, 'race-source')
     await git(harness.ctx, harness.repoRoot, ['worktree', 'add', '--detach', raceRoot, 'integration-race'])
@@ -785,12 +1069,33 @@ describe('worktree Team workspace provider', () => {
         target: 'integration-race',
         expectedTarget: targetBefore,
         mode: 'integrate',
-      })).resolves.toMatchObject({ status: 'conflict', accepted: false, target: 'integration-race' })
+      })).resolves.toMatchObject({ status: 'conflict', accepted: false, target: 'integration-race', artifact: { kind: 'patch' } })
     } finally {
       spawn.mockRestore()
     }
     expect((await git(harness.ctx, harness.repoRoot, ['show', 'refs/heads/integration-race:README.md'])).trim())
       .toBe('concurrent target change')
+    await writeFile(join(allocation.root, 'README.md'), 'initial\n')
+    await allocation.release()
+  })
+
+  it('preserves a merge failure when conflict inspection and abort are unavailable', async () => {
+    const harness = await setup({ integration: true })
+    await git(harness.ctx, harness.repoRoot, ['branch', 'integration-merge-error'])
+    const allocation = await materialize(harness)
+    await writeFile(join(allocation.root, 'README.md'), 'source change before merge failure\n')
+    const originalSpawn = harness.ctx.subprocess.spawn.bind(harness.ctx.subprocess)
+    const spawn = vi.spyOn(harness.ctx.subprocess, 'spawn').mockImplementation((spec) => {
+      if (spec.argv.includes('merge') && spec.argv.includes('--no-commit')) throw new Error('merge command unavailable')
+      if (spec.argv.includes('diff') && spec.argv.includes('--diff-filter=U')) throw new Error('conflict inspection unavailable')
+      if (spec.argv.includes('merge') && spec.argv.includes('--abort')) throw new Error('merge abort unavailable')
+      return originalSpawn(spec)
+    })
+    try {
+      await expect(harness.ctx.teamWorkspaces.integrate('worktree', {
+        allocation, target: 'integration-merge-error', mode: 'integrate',
+      })).rejects.toThrow('merge command unavailable')
+    } finally { spawn.mockRestore() }
     await writeFile(join(allocation.root, 'README.md'), 'initial\n')
     await allocation.release()
   })
@@ -816,6 +1121,33 @@ describe('worktree Team workspace provider', () => {
       spawn.mockRestore()
       await rm(lockPath, { force: true })
     }
+    await writeFile(join(allocation.root, 'README.md'), 'initial\n')
+    await allocation.release()
+  })
+
+  it('returns a conflict when a failed target update also prevents ref observation', async () => {
+    const harness = await setup({ integration: true })
+    await git(harness.ctx, harness.repoRoot, ['branch', 'integration-ref-unavailable'])
+    const allocation = await materialize(harness)
+    await writeFile(join(allocation.root, 'README.md'), 'unobserved integration\n')
+    let updateFailed = false
+    const originalSpawn = harness.ctx.subprocess.spawn.bind(harness.ctx.subprocess)
+    const spawn = vi.spyOn(harness.ctx.subprocess, 'spawn').mockImplementation((spec) => {
+      if (spec.argv.includes('update-ref') && spec.argv.includes('refs/heads/integration-ref-unavailable')) {
+        updateFailed = true
+        throw new Error('target update unavailable')
+      }
+      if (updateFailed && spec.argv.includes('rev-parse')
+        && spec.argv.some(arg => arg.includes('refs/heads/integration-ref-unavailable'))) {
+        throw new Error('target ref observation unavailable')
+      }
+      return originalSpawn(spec)
+    })
+    try {
+      await expect(harness.ctx.teamWorkspaces.integrate('worktree', {
+        allocation, target: 'integration-ref-unavailable', mode: 'integrate',
+      })).resolves.toMatchObject({ status: 'conflict', accepted: false })
+    } finally { spawn.mockRestore() }
     await writeFile(join(allocation.root, 'README.md'), 'initial\n')
     await allocation.release()
   })

@@ -40,6 +40,8 @@ Team-list continuations are opaque strings, with `-1` selecting a fresh scan. `s
 
 `listSimulationTasks()` reads bounded canonical run-owned task controls. `cancelSimulationTask()` retains one source operation, task revision, command ID and exact attempt ID; an explicit `null` requires no active attempt lease. The client rejects another run, command or receipt family. `getSimulationRequest()` returns the original `cancellation` only for `cancel-task`; query and exact retry allocate no new command. These methods neither grant general Team writes nor start inference.
 
+Simulation catalog/preflight results require a discriminated `readiness`; `ready.model` is the exact route to pass as creation `expectedModel`. Preflight omits that confirmation and the command ID. Missing/unknown readiness fields or routes reject before application use. A model-change refusal requires a fresh review; uncertain responses retain the original command identity.
+
 ## Clocky
 
 ```ts

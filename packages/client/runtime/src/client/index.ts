@@ -3,7 +3,7 @@ export type { TeamTaskUpdateLookup, TeamTaskUpdateLookupInput, TeamTaskUpdateCom
 export type { TaskReferencesState, TaskReferencesOptions, TeamTaskReferencesPage, TeamTaskReference } from './contract/team-tasks.ts'
 export type { TeamActionDetailState, TeamActionInspection, TeamAttentionHandling } from './contract/team-tasks.ts'
 export { isTeamAuthorizationError } from './teams/access.ts'
-export type { TeamIdentityState, TeamIdentityOptions, TeamIdentityItem } from './teams/identity-resolver.ts'
+export type { TeamIdentityState, TeamIdentityOptions, TeamIdentityItem } from './contract/team-tasks.ts'
 /** Browser runtime services for slots, Teams, Sessions, Workspaces, and connection-stream delivery. */
 import type { Context } from '@clocky/cordis'
 import type { ConnectionHandle, SessionId } from '@clocky/clocky-api-remotes/client'
@@ -15,18 +15,18 @@ import type { TypertContext } from '@clocky/clocky-typert-protocol'
 import type { MaybeSnapshotSelectorHook, SnapshotSelectorHook } from '@clocky/clocky-client-ui-slots'
 import { SlotRegistry } from './slots.ts'
 import { SessionRuntime } from './sessions/service.ts'
-import type { SessionListState } from './sessions/service.ts'
+import type { SessionListState } from './contract/sessions.ts'
 import { WorkspaceRuntime } from './workspaces/service.ts'
 import { TeamTaskRuntime } from './teams/service.ts'
 import { SimulationRuntime } from './simulations/service.ts'
 export { SimulationRuntime, simulationRecordsScope } from './simulations/service.ts'
 export type * from './simulations/service.ts'
-import type { ConversationSnapshot } from './sessions/conversation.ts'
+import type { ConversationSnapshot } from './contract/conversation-snapshot.ts'
 import type { UseProjection } from './sessions/projection-store.ts'
 import { ConversationEventRegistry } from './conversation/event-registry.ts'
 import { ConversationViewRegistry } from './conversation/view-registry.ts'
 
-export { isAppendSurfaceEvent, isReplacementSurfaceEvent } from '@clocky/clocky-session/surface'
+export { deriveEventMessage, isAppendSurfaceEvent, isReplacementSurfaceEvent } from '@clocky/clocky-session/surface'
 
 export { SlotRegistry } from './slots.ts'
 export { ConversationEventRegistry } from './conversation/event-registry.ts'
@@ -51,8 +51,8 @@ export { SessionRuntime, scopeOf, workspaceTitleOf } from './sessions/service.ts
 // materialization/projection implementation; no test-side mirror to drift).
 export { SessionProvideChannel } from './sessions/provide.ts'
 export type { SessionProvideChannelHost } from './sessions/provide.ts'
-export { createScope } from './agents/scope.ts'
-export type { AgentScopeHandle } from './agents/scope.ts'
+export { createScope } from './sessions/scope.ts'
+export type { AgentScopeHandle } from './sessions/scope.ts'
 export { DirectoryBrowseError, WorkspaceCreateError, WorkspaceRuntime } from './workspaces/service.ts'
 export { TeamTaskRuntime, TeamTaskStartError } from './teams/service.ts'
 export { abbreviateHomePath, resolveWorkspacePath } from './workspaces/path.ts'
@@ -64,7 +64,7 @@ export type {
 } from './contract/settings-scope.ts'
 export type { Session } from './sessions/session.ts'
 export type { ISession, ProjectionsFace, SessionFace } from './contract/session.ts'
-export type { AgentContext, ISessions } from './contract/sessions.ts'
+export type { AgentContext, ConnectionStatus, ISessions } from './contract/sessions.ts'
 export type { IWorkspaces } from './contract/workspaces.ts'
 export type {
   TeamWorkflowSummary, TeamWorkflowInspection, TeamWorkflowDetailReadMode, TeamWorkflowDetailState,
@@ -87,11 +87,11 @@ export type {
 } from '@clocky/clocky-client-connection/client'
 export type {
   SessionBinding, SessionListState, SessionProvideContribution, SessionProvideDescriptor, SessionSummary,
-} from './sessions/service.ts'
-export type { SessionListPhase, SessionSearchResultItem } from './sessions/manager.ts'
+} from './contract/sessions.ts'
+export type { SessionListPhase, SessionSearchResultItem } from './contract/sessions.ts'
 export type { JobView } from '@clocky/clocky-client-connection/client'
 export type { WorkspaceListPhase } from './workspaces/manager.ts'
-export type { WorkspaceListState } from './workspaces/service.ts'
+export type { WorkspaceListState } from './contract/workspaces.ts'
 export type {
   DirectoryEntry, DirectoryListing, WorkspaceId, WorkspaceView,
 } from '@clocky/clocky-client-connection/client'
@@ -108,27 +108,27 @@ export type {
   LegacyConversationSlice, PartialAssistant, RunningToolCall,
   SteeringMessageNode, TodoItem, ToolCallBlock, ToolResultNode, TurnErrorNode, TurnMaxTokensNode,
   UnknownSurfaceNode, UserMessageNode,
-} from './sessions/conversation.ts'
+} from './contract/conversation-snapshot.ts'
 export {
   EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS, toAssistantBlock, toAssistantBlocks,
-} from './sessions/conversation.ts'
+} from './contract/conversation-snapshot.ts'
 export { emptyAssistantBlock } from './sessions/partial.ts'
 export { isTokenDelta } from './sessions/assistant-timing.ts'
-export { contextForm, contextProvenance, sessionRecallLabels } from './sessions/context-provenance.ts'
+export { contextForm, contextProvenance, sessionRecallLabels } from './contract/context-provenance.ts'
 export { displayFailureMessage } from './sessions/failure-display.ts'
 export type {
   ConversationContext, ConversationContextOriginKind,
 } from './sessions/conversation-context.ts'
 export type {
   ContextProvenanceView, ContextRole, KnownContextForm,
-} from './sessions/context-provenance.ts'
+} from './contract/context-provenance.ts'
 export type {
   ConversationPromptSnapshot, RequestInspectionSnapshot, RequestPromptChange, RequestView,
 } from './sessions/request-inspection.ts'
-export { PendingWait } from './sessions/pending.ts'
+export { PendingWait } from './contract/pending.ts'
 export type {
   PendingInteraction, PendingInteractionStatus, PendingKind, PendingPayloads,
-} from './sessions/pending.ts'
+} from './contract/pending.ts'
 // Projection value store (push model; see the session-projection subsystem
 // page, docs/subsystems/session-projection.md): host-computed
 // whole values per key; domains ship projection support with zero client code.
@@ -178,6 +178,8 @@ declare module '@clocky/clocky-client-ui-slots' {
     useWorkspaces: SnapshotSelectorHook<import('./workspaces/service.ts').WorkspaceListState>
     /** Selector hook over durable Team task state and the local first-input draft. */
     useTeamTasks?: SnapshotSelectorHook<import('./contract/team-tasks.ts').TeamTaskListState>
+    /** Selector hook over the coarse Host connection and authorization state. */
+    useConnection?: SnapshotSelectorHook<import('./contract/sessions.ts').ConnectionStatus>
   }
 }
 
@@ -196,6 +198,12 @@ declare module '@clocky/cordis' {
      * @mode emit
      */
     'connection/reset'(): void
+    /**
+     * Product authentication was refused or a different authenticated principal replaced the previous one.
+     * Clear principal-scoped projections and cancel reads without fetching; a successful handshake alone restores loading.
+     * @mode emit
+     */
+    'connection/authorization-cleared'(): void
   }
   interface Context {
     slots: import('./slots.ts').SlotRegistry
@@ -236,6 +244,7 @@ export function apply(ctx: Context): void {
   const simulationRuns = new SimulationRuntime(ctx, connection.api)
   sessions.clear()
   teamTasks.startDraft()
+  let authorizationScope: Parameters<SessionRuntime['handleConnected']>[0]
   const loop = connection.start({
     onMuxEnvelope: (envelope) => {
       if (envelope.payload.type === 'team/access-revoked') {
@@ -258,6 +267,10 @@ export function apply(ctx: Context): void {
       if (frame.type === 'host/remote-event') ctx.remote.$dispatch(frame.event, frame.args)
     },
     onConnected: (description) => {
+      if (authorizationScope !== undefined && authorizationScope !== description.authorizationScope) {
+        ctx.emit('connection/authorization-cleared')
+      }
+      authorizationScope = description.authorizationScope
       sessions.handleConnected(description.authorizationScope)
       workspaces.handleConnected(description.authorizationScope)
       teamTasks.handleConnected(description.authorizationScope)
@@ -265,11 +278,12 @@ export function apply(ctx: Context): void {
       ctx.emit('connection/reset')
     },
     onAuthorizationLost: () => {
-      sessions.clearAuthorization()
+      authorizationScope = undefined
+      sessions.handleAuthorizationLost()
       workspaces.clearAuthorization()
       teamTasks.clearAuthorization()
       simulationRuns.clearAuthorization()
-      ctx.emit('connection/reset')
+      ctx.emit('connection/authorization-cleared')
     },
     onStateChange: (state) => {
       // Generation death fires before any next-generation frame can arrive

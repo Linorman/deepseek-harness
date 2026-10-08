@@ -13,6 +13,7 @@ import * as ReactDomClient from 'react-dom/client'
 import * as Cordis from '@clocky/cordis'
 import * as UiSlots from '@clocky/clocky-client-ui-slots'
 import * as UiPrimitives from '@clocky/clocky-client-ui-primitives'
+import * as UiViz from '@clocky/clocky-client-ui-viz'
 import type { PlatformModule } from './platform.ts'
 
 /**
@@ -31,5 +32,6 @@ export function getStaticModules(): Record<string, unknown> {
     '@clocky/cordis': Cordis,
     '@clocky/clocky-client-ui-slots': UiSlots,
     '@clocky/clocky-client-ui-primitives': UiPrimitives,
+    '@clocky/clocky-client-ui-viz': UiViz,
   } satisfies Record<PlatformModule, unknown>
 }

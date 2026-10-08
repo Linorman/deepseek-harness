@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-01-simulation-task-review-authority.md
-2026-10-01-simulation-task-review-authority.md: fef2618a7798cec25ff2a332de1f83492a2d480c
-2026-10-01-simulation-task-review-authority.zh.md: af39461d19e5013e06d7584aa5931d75af3dc437
+2026-10-01-simulation-task-review-authority.md: 73aead9a964f0891f85aaf9ccacb8aaab85a8f91
+2026-10-01-simulation-task-review-authority.zh.md: 1227a7b1e203e47bc2f362140443cfae7e29b5d6

@@ -1,6 +1,6 @@
 /** Production control batches separate scheduling, inference, effects, residency and completed retry. */
 import { expect, it, vi } from 'vitest'
-import { SimulationCompanyDriver } from '../src/company-driver.ts'
+import { SimulationCompanyDriver, simulationCompanyDriverSchema } from '../src/company-driver.ts'
 import { companyFixture, companySettings, companyConfig } from './company-driver-fixture.ts'
 
 it.each(['json', 'sqlite'] as const)('runs real bounded procurement batches and preserves a completed retry (%s)', async (backend) => {
@@ -37,6 +37,26 @@ it('refuses a changed model route or implementation version before activating an
     vi.spyOn(h.run, 'snapshot').mockReturnValueOnce({ ...h.run.snapshot(), spec: { ...h.run.snapshot().spec, rulesVersion: 'other' } })
     expect(() => new SimulationCompanyDriver(h.run, h.connection, companySettings, companyConfig, h.lifetime.signal))
       .toThrow('rules or policy version')
+    expect(h.run.population().chargedActors).toBe(0)
+  } finally { await h.close() }
+})
+
+it('rejects missing task readers, insufficient report capacity and changed prepared topology before activation', async () => {
+  const h = await companyFixture()
+  try {
+    const tasks = simulationCompanyDriverSchema.parse({ ...companyConfig, tasks: { version: '1', cognition: 'deterministic',
+      leaseDurationMs: 60000, maxAttempts: 2, retry: 'scene', review: 'buyer' } })
+    expect(() => new SimulationCompanyDriver(h.run, h.connection, companySettings, tasks, h.lifetime.signal))
+      .toThrow('canonical task reader')
+    const reader = { readTask: h.ctx.teams.getTask.bind(h.ctx.teams) }
+    const snapshot = h.run.snapshot()
+    vi.spyOn(h.run, 'snapshot').mockReturnValueOnce({ ...snapshot,
+      spec: { ...snapshot.spec, maxResidentActors: 1 } })
+    expect(() => new SimulationCompanyDriver(h.run, h.connection, companySettings, tasks, h.lifetime.signal, reader))
+      .toThrow('two resident actors')
+    expect(() => new SimulationCompanyDriver(h.run, h.connection, { ...companySettings,
+      topology: { actors: [], channels: [] } }, companyConfig, h.lifetime.signal))
+      .toThrow('Workflow topology differs')
     expect(h.run.population().chargedActors).toBe(0)
   } finally { await h.close() }
 })

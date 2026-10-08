@@ -10,7 +10,7 @@
 import { defineStore, type EngineStoreHandle } from '@clocky/clocky-client-runtime/client'
 import {
   clampWidth, DETAILS_DEFAULT, DETAILS_MAX, DETAILS_MIN,
-  SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN,
+  PANE_DEFAULT, PANE_MAX, PANE_MIN, SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN,
 } from './columns.ts'
 
 /**
@@ -20,7 +20,19 @@ import {
  * `narrowExpanded` is the manual override that re-expands the auto-collapsed
  * sidebar over the squeezed center without rewriting the width preference.
  */
-type LayoutState = { sidebar: number; details: number; narrow: boolean; narrowExpanded: boolean; workspace: 'team' | 'simulation' }
+type LayoutState = {
+  sidebar: number
+  details: number
+  narrow: boolean
+  narrowExpanded: boolean
+  workspace: 'team' | 'simulation'
+  /** Conversation pane width preference beside a Team page. */
+  pane: number
+  /** Whether the conversation pane covers the whole center column. */
+  paneExpanded: boolean
+  /** Shell-wide overlay currently open: the command palette or the shortcut list. */
+  overlay: 'none' | 'palette' | 'shortcuts'
+}
 
 /**
  * Annotation twin of the actions literal below (the export needs a declared
@@ -34,6 +46,10 @@ type LayoutActions = {
   setNarrow: (draft: LayoutState, narrow: boolean) => void
   openDetails: (draft: LayoutState) => void
   closeDetails: (draft: LayoutState) => void
+  setPane: (draft: LayoutState, px: number) => void
+  togglePaneExpanded: (draft: LayoutState) => void
+  restorePane: (draft: LayoutState) => void
+  setOverlay: (draft: LayoutState, overlay: LayoutState['overlay']) => void
 }
 
 /**
@@ -49,7 +65,10 @@ type LayoutActions = {
  */
 export function createLayoutStore(initialWorkspace: LayoutState['workspace'] = 'team'): EngineStoreHandle<LayoutState, LayoutActions> {
   const handle = defineStore({
-    init: (): LayoutState => ({ sidebar: SIDEBAR_DEFAULT, details: 0, narrow: false, narrowExpanded: false, workspace: initialWorkspace }),
+    init: (): LayoutState => ({
+      sidebar: SIDEBAR_DEFAULT, details: 0, narrow: false, narrowExpanded: false, workspace: initialWorkspace,
+      pane: PANE_DEFAULT, paneExpanded: false, overlay: 'none',
+    }),
     actions: {
       showWorkspace: (d, workspace: LayoutState['workspace']) => { d.workspace = workspace },
       setSidebar: (d, px: number) => { d.sidebar = clampWidth(px, SIDEBAR_MIN, SIDEBAR_MAX) },
@@ -69,6 +88,11 @@ export function createLayoutStore(initialWorkspace: LayoutState['workspace'] = '
       },
       openDetails: (d) => { if (d.details === 0) d.details = DETAILS_DEFAULT },
       closeDetails: (d) => { d.details = 0 },
+      setPane: (d, px: number) => { d.pane = clampWidth(px, PANE_MIN, PANE_MAX) },
+      togglePaneExpanded: (d) => { d.paneExpanded = !d.paneExpanded },
+      // Closing the pane forgets the expansion so the next conversation opens beside the page.
+      restorePane: (d) => { d.paneExpanded = false },
+      setOverlay: (d, overlay: LayoutState['overlay']) => { d.overlay = overlay },
     },
   })
   return handle

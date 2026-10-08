@@ -1,8 +1,10 @@
+import { rpcErrorFrom } from '@clocky/clocky-host-apiproxy/api'
 import { MemberInspector } from './member-inspector.ts'
 import { ArtifactInspector } from './artifact-inspector.ts'
 import { TaskReferences } from './task-references.ts'
 import { isTeamAuthorizationError } from './access.ts'
-import { IdentityResolver, type TeamIdentityOptions } from './identity-resolver.ts'
+import { IdentityResolver } from './identity-resolver.ts'
+import type { TeamIdentityOptions } from '../contract/team-tasks.ts'
 import type { HostDescription, ParticipantId } from '@clocky/clocky-client-connection/client'
 import { ExecutionProfiles } from './execution-profiles.ts'
 import { MemberReadiness } from './member-readiness.ts'
@@ -64,6 +66,8 @@ export class TeamTaskRuntime implements ITeamTasks {
   readonly list: SnapshotStore<TeamTaskListState & { readonly inbox: TeamInboxState }>
   private readonly identities: IdentityResolver
   private authorizationGeneration = 0
+  private directoryAuthorization = new AbortController()
+  private readonly listWatches = new Set<{ intervalMs: number; timer: ReturnType<typeof setInterval> | undefined }>()
   private readonly workflowInspector: WorkflowInspector
   private readonly executionProfiles: ExecutionProfiles
   private readonly memberReadiness: MemberReadiness
@@ -99,6 +103,11 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** @param ctx - client root context. @param api - shared Host API client. */
   constructor(ctx: Context, private readonly api: IApiClient) {
+    ctx.effect(() => () => {
+      this.directoryAuthorization.abort()
+      this.pauseListWatches()
+      this.listWatches.clear()
+    }, 'runtime: Team directory observations')
     this.list = createSnapshotStore({
       items: [], current: undefined, selected: undefined, phase: 'pending', state: 'idle', error: null, draft: undefined,
       pendingHumanActions: [],
@@ -228,6 +237,7 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Refresh durable Team summaries and retain local selection or draft state. */
   refresh(firstPage = false): Promise<void> {
+    if (this.directoryAuthorization.signal.aborted) return Promise.resolve()
     if (firstPage && this.refreshing !== undefined) return this.refreshing.then(async () => { await this.refresh(true) })
     if (this.continuing !== undefined) return this.continuing.then(async () => { await this.refresh(firstPage) })
     this.refreshing ??= this.load(firstPage ? -1 : undefined).then(async () => { await this.refreshCurrentSelection() })
@@ -237,6 +247,7 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Replace the Team window with its next page; a failure preserves the current window. */
   loadMore(): Promise<void> {
+    if (this.directoryAuthorization.signal.aborted) return Promise.resolve()
     if (this.continuing !== undefined) return this.continuing
     const generation = this.authorizationGeneration
     const pendingRefresh = this.refreshing
@@ -248,7 +259,7 @@ export class TeamTaskRuntime implements ITeamTasks {
       if (afterCursor === undefined) return
       this.list.set({ ...current, loadingMore: true, error: null })
       try {
-        const result = (await this.api.teams.list({ afterCursor })).result
+        const result = (await this.api.teams.list({ afterCursor }, this.directoryAuthorization.signal)).result
         if (generation !== this.authorizationGeneration) return
         if (!result.ok) throw new TeamTaskStartError(result.error.message, result.error)
         if (result.value.nextCursor !== undefined && result.value.nextCursor === afterCursor) {
@@ -263,7 +274,7 @@ export class TeamTaskRuntime implements ITeamTasks {
       } catch (error: unknown) {
         if (generation !== this.authorizationGeneration) return
         this.list.set({ ...this.list.getSnapshot(), state: 'error', error: error instanceof TeamTaskStartError && error.rpcError !== undefined
-          ? error.rpcError : { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} } })
+          ? error.rpcError : rpcErrorFrom(error) })
       } finally {
         if (generation === this.authorizationGeneration) this.list.set({ ...this.list.getSnapshot(), loadingMore: false })
       }
@@ -274,8 +285,22 @@ export class TeamTaskRuntime implements ITeamTasks {
   /** Start periodic Team-list refreshes so the browser converges after remote lifecycle changes. */
   watch(intervalMs = 2_000): () => void {
     if (!Number.isSafeInteger(intervalMs) || intervalMs < 250) throw new TypeError('Team live refresh interval must be at least 250ms')
-    const timer = setInterval(() => { void this.refresh() }, intervalMs)
-    return () => { clearInterval(timer) }
+    const watch = { intervalMs, timer: undefined as ReturnType<typeof setInterval> | undefined }
+    this.listWatches.add(watch)
+    this.resumeListWatches()
+    return () => { clearInterval(watch.timer); this.listWatches.delete(watch) }
+  }
+
+  private pauseListWatches(): void {
+    for (const watch of this.listWatches) {
+      clearInterval(watch.timer)
+      watch.timer = undefined
+    }
+  }
+
+  private resumeListWatches(): void {
+    if (this.directoryAuthorization.signal.aborted) return
+    for (const watch of this.listWatches) watch.timer ??= setInterval(() => { void this.refresh() }, watch.intervalMs)
   }
 
   /** Resolve a Team and explicitly resume its offline coordinator when needed. */
@@ -292,12 +317,7 @@ export class TeamTaskRuntime implements ITeamTasks {
   /** Select bounded Team data without creating or resuming an activation. */
   async inspect(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection> {
     if (this.list.getSnapshot().current !== teamId) {
-      this.taskInspector.close(); this.taskReferences.close()
-      this.dependencyQuery.close(); this.taskQuery.close(); this.taskCapabilities.close()
-      this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
-      this.artifactInspector.close()
-      this.memberReadiness.close(); this.executionProfiles.close(); this.identities.close(); this.workflowInspector.close()
-      this.closeChannelView(); this.resetChannelList()
+      this.closeSelectedTeamViews()
     }
     const generation = ++this.selectionGeneration
     const response = await this.api.teams.selection({ teamId, includeMetadata: true }, signal)
@@ -309,12 +329,7 @@ export class TeamTaskRuntime implements ITeamTasks {
     }
     const selection = selectionOf(response.result.value)
     if (this.list.getSnapshot().current !== teamId) {
-      this.taskInspector.close(); this.taskReferences.close()
-      this.dependencyQuery.close(); this.taskQuery.close(); this.taskCapabilities.close()
-      this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
-      this.artifactInspector.close()
-      this.memberReadiness.close(); this.executionProfiles.close(); this.identities.close(); this.workflowInspector.close()
-      this.closeChannelView(); this.resetChannelList()
+      this.closeSelectedTeamViews()
     }
     this.assertCurrentSelectionRequest(generation, signal)
     const current = this.list.getSnapshot()
@@ -325,6 +340,16 @@ export class TeamTaskRuntime implements ITeamTasks {
     return selection
   }
 
+  /** Retire all Team-specific readers before selection changes or archive publication. */
+  private closeSelectedTeamViews(): void {
+    this.taskInspector.close(); this.taskReferences.close()
+    this.dependencyQuery.close(); this.taskQuery.close(); this.taskCapabilities.close()
+    this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
+    this.artifactInspector.close()
+    this.memberReadiness.close(); this.executionProfiles.close(); this.identities.close(); this.workflowInspector.close()
+    this.closeChannelView(); this.resetChannelList()
+  }
+
   /** Archive one terminal Team through its revisioned Host operation. */
   async archive(teamId: TeamId, signal?: AbortSignal): Promise<TeamStateSnapshot> {
     const current = this.list.getSnapshot().items.find(item => item.id === teamId) ?? this.currentSelection(teamId)?.state.team
@@ -333,12 +358,7 @@ export class TeamTaskRuntime implements ITeamTasks {
     const result = response.result
     if (!result.ok) throw new TeamTaskStartError(result.error.message, result.error)
     if (this.list.getSnapshot().current === teamId) {
-      this.taskInspector.close(); this.taskReferences.close()
-      this.dependencyQuery.close(); this.taskQuery.close(); this.taskCapabilities.close()
-      this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
-      this.artifactInspector.close()
-      this.memberReadiness.close(); this.executionProfiles.close(); this.identities.close(); this.workflowInspector.close()
-      this.closeChannelView(); this.resetChannelList()
+      this.closeSelectedTeamViews()
     }
     const next = this.list.getSnapshot()
     this.list.set({
@@ -370,13 +390,7 @@ export class TeamTaskRuntime implements ITeamTasks {
   async deleteTask(teamId: TeamId, taskId: TeamTaskId, expectedRevision: number, signal?: AbortSignal): Promise<TeamTaskSnapshot> {
     const response = await this.api.teams.taskDelete({ teamId, taskId, expectedRevision }, signal)
     if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-    const task = response.result.value
-    this.replaceSelectedTask(teamId, task)
-    if (this.list.getSnapshot().taskDetail?.taskId === task.id) await this.readTaskDetail(teamId, task.id)
-    if (task.lease !== undefined && task.cancellation !== undefined) {
-      void this.reconcileTaskUntilSettled(teamId, task.id, signal)
-    }
-    return task
+    return this.reconcileTaskMutation(teamId, response.result.value, signal)
   }
 
   /** Cancel one assigned or running Team task and reconcile its selected detail projection. */
@@ -390,7 +404,11 @@ export class TeamTaskRuntime implements ITeamTasks {
       ...reason === undefined ? {} : { reason },
     }, signal)
     if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-    const task = response.result.value
+    return this.reconcileTaskMutation(teamId, response.result.value, signal)
+  }
+
+  /** Publish a task mutation and follow a still-leased cancellation to settlement. */
+  private async reconcileTaskMutation(teamId: TeamId, task: TeamTaskSnapshot, signal?: AbortSignal): Promise<TeamTaskSnapshot> {
     this.replaceSelectedTask(teamId, task)
     if (this.list.getSnapshot().taskDetail?.taskId === task.id) await this.readTaskDetail(teamId, task.id)
     if (task.lease !== undefined && task.cancellation !== undefined) {
@@ -600,7 +618,7 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   private inboxFailure(error: unknown): void {
     this.updateInbox({ phase: 'error', error: error instanceof TeamTaskStartError && error.rpcError !== undefined
-      ? error.rpcError : { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} } })
+      ? error.rpcError : rpcErrorFrom(error) })
   }
 
   private publishInboxAction(action: TeamHumanActionSnapshot): void {
@@ -1061,6 +1079,11 @@ export class TeamTaskRuntime implements ITeamTasks {
       draft, pendingHumanActions: [], inbox: emptyInboxState() })
     this.identities.reconnect(); this.taskCapabilities.reconnect(); this.memberReadiness.reconnect()
     this.executionProfiles.reconnect()
+    this.reconnectReadViews()
+  }
+
+  /** Revalidate retained detail and query readers after their transport is current. */
+  private reconnectReadViews(): void {
     void this.attentionPreview.reconnect(); void this.attention.reconnect(); void this.actionInspector.reconnect()
     void this.memberInspector.reconnect()
     void this.taskQuery.reconnect(); void this.dependencyQuery.reconnect()
@@ -1070,6 +1093,8 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Retire principal-scoped Team data and local input after an explicit product access refusal. */
   clearAuthorization(): void {
+    this.directoryAuthorization.abort()
+    this.pauseListWatches()
     this.clearAuthorizedTeamData()
     this.list.set({ ...this.list.getSnapshot(), draft: undefined })
   }
@@ -1487,17 +1512,15 @@ export class TeamTaskRuntime implements ITeamTasks {
    * @param scope - Principal-generation cache discriminator from the completed Host handshake.
    */
   handleConnected(scope?: HostDescription['authorizationScope']): void {
+    if (this.directoryAuthorization.signal.aborted) this.directoryAuthorization = new AbortController()
+    this.resumeListWatches()
     if (this.identities.authorize(scope)) this.clearAuthorizedTeamData()
     this.identities.reconnect()
     void this.artifactInspector.reconnect()
     this.executionProfiles.reconnect()
     this.memberReadiness.reconnect()
     this.taskCapabilities.reconnect()
-    void this.attentionPreview.reconnect(); void this.attention.reconnect(); void this.actionInspector.reconnect()
-    void this.memberInspector.reconnect()
-    void this.taskQuery.reconnect(); void this.dependencyQuery.reconnect()
-    void this.taskInspector.reconnect(); this.taskReferences.reconnect()
-    void this.workflowInspector.reconnect()
+    this.reconnectReadViews()
     if (this.list.getSnapshot().channelCatalog !== undefined) void this.readChannelCatalog()
     const channels = this.list.getSnapshot().channels
     if (channels !== undefined) void this.readChannels(channels.teamId)
@@ -1608,7 +1631,7 @@ export class TeamTaskRuntime implements ITeamTasks {
       if (generation !== this.selectionGeneration || signal?.aborted) return
       const rpcError = error instanceof TeamTaskStartError ? error.rpcError : undefined
       this.list.set({ ...this.list.getSnapshot(), error: rpcError
-        ?? { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} } })
+        ?? rpcErrorFrom(error) })
     }
   }
 
@@ -1649,11 +1672,12 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   private async load(requestedStart?: NonNullable<TeamTaskListState['nextCursor']> | -1): Promise<void> {
+    if (this.directoryAuthorization.signal.aborted) return
     const generation = this.authorizationGeneration
     this.list.set({ ...this.list.getSnapshot(), state: 'loading', error: null })
     try {
       const afterCursor = requestedStart ?? this.list.getSnapshot().startCursor ?? -1
-      const response = await this.api.teams.list({ afterCursor })
+      const response = await this.api.teams.list({ afterCursor }, this.directoryAuthorization.signal)
       if (generation !== this.authorizationGeneration) return
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
       const page = response.result.value

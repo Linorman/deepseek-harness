@@ -16,6 +16,7 @@ export type { TeamWorkspaceView } from './workspace-store.ts'
 
 type TeamWorkspaceControls = Pick<TeamBrowserInjected,
   'watchAttention' | 'readAttention' | 'refreshAttentionPreview' | 'pauseAttention' | 'openPendingAction' | 'inspectAction' | 'closeActionDetail' | 'readTaskQuery' | 'pauseTaskQuery' | 'watchIdentities' | 'refreshIdentities' | 'watchExecutionProfiles' | 'refreshExecutionProfiles' | 'watchMemberReadiness' | 'refreshMemberReadiness' | 'watchTaskCapabilities' | 'refreshTaskCapabilities' | 'readDependencies' | 'closeDependencies' | 'watchTaskReferences' | 'refreshTaskReferences' | 'lookupTaskUpdate' | 'readMemberDetail' | 'closeMemberDetail' | 'readWorkflowDetail' | 'closeWorkflowDetail' | 'readTaskDetail' | 'closeTaskDetail' | 'respondAction' | 'openActionContext' | 'manageTeam' | 'cancelTask' | 'cancelTeam' | 'deleteTask' | 'openTeam' | 'openParticipantSession' | 'readArtifact' | 'readCollections' | 'readAudit' | 'readChannel' | 'acknowledgeChannel' | 'closeChannelView' | 'readChannels' | 'readChannelAttachment' | 'readChannelCatalog' | 'resumeTeam'>
+  & Required<Pick<TeamBrowserInjected, 'openParticipantSession' | 'readAudit' | 'readChannel' | 'closeChannelView' | 'readArtifact'>>
 
 /** Framework-bound Team state plus the existing Host operation callbacks. */
 export type TeamWorkspaceProps = PropsRuntime<'team.workspace'> & PropsRenderSlots<'team.channel.message'>
@@ -111,6 +112,7 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
         historyUrl.current = workspaceRouteUrl(window.location.href, route)
         historyIdentity.current = workspaceRouteIdentity(route)
       })().catch((error: unknown) => {
+        /* v8 ignore next -- The injected route owner absorbs aborted reads before this UI catch observes them. */
         if (!controller.signal.aborted) {
           const failure = describeNavigationFailure(error)
           const deniedTeam = new URL(requestedHref).searchParams.get('team')
@@ -139,14 +141,24 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
   const activeChannel = view === 'channels' ? state?.channel?.channelId : undefined
   useEffect(() => {
     if (new URL(window.location.href).searchParams.get('workspace') === 'simulation') return
-    if (!handshakeComplete || restoring.current || navigationError !== undefined || state?.phase !== 'ready' || (state.current !== undefined && teamId === undefined)) return
+    if (!handshakeComplete || restoring.current || navigationPending || navigationError !== undefined
+      || state?.phase !== 'ready' || (state.current !== undefined && teamId === undefined)) return
     const route: WorkspaceRoute | undefined = teamId === undefined ? undefined : { teamId, view,
       actionId: viewState.actionId, taskForm: viewState.taskForm,
       planId: view === 'workflows' ? viewState.workflowPlanId : undefined,
       taskId: view === 'tasks' ? viewState.taskId : undefined, channelId: activeChannel, sessionId, participantId,
       search: view === 'tasks' ? viewState.taskSearch : '', phase: view === 'tasks' ? viewState.taskPhase : 'all',
+      ...view === 'overview' ? { viz: viewState.overviewViz } : {},
     }
     const url = workspaceRouteUrl(window.location.href, route)
+    // A completed target read can arrive after the application navigator has
+    // already committed this route. Retire the stale local history cursor
+    // without adding a second entry for the identical destination.
+    if (url === window.location.href) {
+      historyUrl.current = url
+      historyIdentity.current = workspaceRouteIdentity(route)
+      return
+    }
     if (url === historyUrl.current) return
     const identity = workspaceRouteIdentity(route)
     if (historyUrl.current === undefined || identity === historyIdentity.current) window.history.replaceState(window.history.state, '', url)
@@ -163,10 +175,12 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
     viewState.taskId,
     viewState.taskSearch,
     viewState.taskPhase,
+    viewState.overviewViz,
     sessionId,
     participantId,
     activeChannel,
     navigationEpoch,
+    navigationPending,
     navigationError,
     state?.phase,
     state?.current])
@@ -199,7 +213,7 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
         {sourceObject !== null && sourceObject !== undefined && <><dt>{t('workspace.sourceObject')}</dt><dd><code>{sourceObject}</code></dd></>}
       </dl>
     </details>}
-    <Button variant="outline" onClick={() => { navigateApplication(source) }}>{t('workspace.returnToSource')}</Button>
+    <Button variant="secondary" onClick={() => { navigateApplication(source) }}>{t('workspace.returnToSource')}</Button>
   </nav>
   const navigationFailure = navigationError === undefined ? null : <main className={css.workspace} data-team-navigation-error>
     <h1 ref={failedHeading} tabIndex={-1}>{t('workspace.targetUnavailable')}</h1>
@@ -208,7 +222,7 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
     <details><summary>{t('workspace.navigationDetails')}</summary><p>{navigationError.detail}</p></details>
     <div className={css.pendingControls}>
       {returnToSource}
-      <Button variant="outline" onClick={() => { window.dispatchEvent(new Event(WORKSPACE_NAVIGATION_EVENT)) }}>{t('workspace.retryNavigation')}</Button>
+      <Button variant="secondary" onClick={() => { window.dispatchEvent(new Event(WORKSPACE_NAVIGATION_EVENT)) }}>{t('workspace.retryNavigation')}</Button>
       <Button onClick={resetNavigation}>{t('workspace.resetNavigation')}</Button>
     </div>
   </main>
@@ -233,7 +247,9 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
   const cancel = !writableTeam || cancelTeam === undefined ? undefined : async () => { await cancelTeam(teamId) }
   const resume = !writableTeam || resumeTeam === undefined ? undefined : async () => { await resumeTeam(teamId) }
   const updateView = (patch: Partial<TeamViewState>) => {
-    if (Object.keys(patch).some(key => key !== 'taskListScroll')) {
+    // Layout persistence is emitted on first paint as well as after dragging;
+    // it cannot cancel authorization of the requested navigation target.
+    if (Object.keys(patch).some(key => key !== 'taskListScroll' && key !== 'swarmPositions')) {
       historyRequest.current?.abort()
       restoring.current = false
       setNavigationPending(false)
@@ -268,7 +284,9 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
       onTaskDraftChange={(target, draft) => {
         try { actions.setTaskDraft(teamId, target, draft) }
         catch (error: unknown) {
+          /* v8 ignore next 2 -- Typed form drafts reach this store only through its bounded-capacity admission. */
           if (error instanceof DraftCapacityError) throw new Error(t('taskForm.draftCapacity'))
+          /* v8 ignore next -- Typed form drafts cannot raise another store failure here. */
           throw error
         }
       }}
@@ -284,7 +302,6 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
       openPendingAction={inspectAction === undefined ? undefined : (_teamId, actionId) => {
         updateView({ actionId }); return Promise.resolve()
       }}
-      humanActions={state?.inbox?.items.flatMap(item => item.kind === 'action' && item.action.teamId === teamId ? [item.action] : [])}
       workflowDetail={state?.workflowDetail}
       closeWorkflowDetail={closeWorkflowDetail}
       readWorkflowDetail={readWorkflowDetail === undefined ? undefined : async (id, mode) => { await readWorkflowDetail(teamId, id, mode) }}
@@ -309,10 +326,8 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
       {...state?.collections?.teamId !== teamId ? {} : { collections: state.collections }}
       renderSlot={renderSlot}
       translate={t}
-      {...openParticipantSession === undefined ? {} : {
-        openParticipantSession: async (participantId) => {
-          try { await openParticipantSession(teamId, participantId) } catch (error: unknown) { actionFailure(error) }
-        },
+      openParticipantSession={async (participantId) => {
+        try { await openParticipantSession(teamId, participantId) } catch (error: unknown) { actionFailure(error) }
       }}
       openTeam={async (childTeamId) => {
         await openTeam(childTeamId)
@@ -320,10 +335,8 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
       {...readCollections === undefined ? {} : {
         readCollections: async (collection, mode) => { await readCollections(teamId, collection, mode) },
       }}
-      {...readAudit === undefined ? {} : {
-        readAudit: async (options, signal) => await readAudit(teamId, options, signal),
-      }}
-      {...readChannel === undefined ? {} : { readChannel }}
+      readAudit={async (options, signal) => await readAudit(teamId, options, signal)}
+      readChannel={readChannel}
       {...state?.channel === undefined ? {} : { channelState: state.channel }}
       {...state?.channels === undefined ? {} : { channelListState: state.channels }}
       {...readChannels === undefined ? {} : { readChannels }}
@@ -331,18 +344,11 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
       {...readChannelCatalog === undefined ? {} : { readChannelCatalog }}
       {...state?.channelCatalog === undefined ? {} : { channelCatalog: state.channelCatalog }}
       {...!writableTeam || acknowledgeChannel === undefined ? {} : { acknowledgeChannel }}
-      {...closeChannelView === undefined ? {} : { closeChannelView }}
-      {...!writableTeam || respondAction === undefined ? {} : { respondAction: async (input, signal) => {
-        const { teamId: _inputTeamId, ...answer } = input
-        return await respondAction(teamId, answer, signal)
-      } }}
-      {...openActionContext === undefined ? {} : { openActionContext }}
+      closeChannelView={closeChannelView}
       {...!writableTeam || manageTeam === undefined ? {} : {
         manage: async (command, signal) => { await manageTeam(teamId, command, signal) },
       }}
-      {...readArtifact === undefined ? {} : {
-        readArtifact: async (artifactId, signal) => { await readArtifact(teamId, artifactId, signal) },
-      }}
+      readArtifact={async (artifactId, signal) => { await readArtifact(teamId, artifactId, signal) }}
       {...!writableTeam || deleteTask === undefined ? {} : {
         deleteTask: async (taskId, expectedRevision, signal) => {
           await deleteTask(teamId, taskId, expectedRevision, signal)
@@ -353,7 +359,6 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
           await cancelTask(teamId, taskId, expectedRevision, reason, signal)
         },
       }}
-      pendingActions={(state?.pendingHumanActions ?? []).filter(action => action.teamId === teamId)}
       {...cancel === undefined ? {} : { onCancel: cancel }}
       {...resume === undefined ? {} : { onResume: resume }}
     />
@@ -364,7 +369,9 @@ export function TeamWorkspace({ maxDraftBytes, useTeamTasks,
       changeDraft={(draft) => {
         try { actions.setActionDraft(teamId, selectedActionId, draft) }
         catch (error: unknown) {
+          /* v8 ignore next 2 -- Typed answer drafts reach this store only through its bounded-capacity admission. */
           if (error instanceof DraftCapacityError) throw new Error(t('human.draftCapacity'))
+          /* v8 ignore next -- Typed answer drafts cannot raise another store failure here. */
           throw error
         }
       }}

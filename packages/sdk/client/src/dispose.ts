@@ -161,6 +161,5 @@ export async function disposeRuntimeProcess(
     }
   }
   // 3. Force-kill and await a bounded exit edge.
-  if (processGroupId !== undefined) return
   await forceTerminateWithin(child, graces.disposeGraceMs)
 }

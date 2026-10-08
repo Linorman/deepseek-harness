@@ -1,0 +1,37 @@
+/* Static ambient backdrop: a faint dot grid plus two mode-tinted glows.
+   Chrome only: the mode identity ramp tints it, no state reads from it. */
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: var(--clocky-layer-behind);
+  background-image: radial-gradient(var(--clocky-viz-grid) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+.glow {
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: var(--clocky-radius-full);
+  opacity: 0.22;
+  filter: blur(90px);
+}
+
+.glow:nth-child(1) {
+  top: -30vmax;
+  right: -18vmax;
+}
+
+.glow:nth-child(2) {
+  bottom: -36vmax;
+  left: -22vmax;
+  opacity: 0.12;
+}
+
+.backdrop[data-mode="team"] .glow { background: var(--clocky-mode-team-gradient); }
+.backdrop[data-mode="simulation"] .glow { background: var(--clocky-mode-simulation-gradient); }
+/* The magenta ramp reads hotter than cyan at equal opacity; calm it. */
+.backdrop[data-mode="simulation"] .glow:nth-child(1) { opacity: 0.15; }

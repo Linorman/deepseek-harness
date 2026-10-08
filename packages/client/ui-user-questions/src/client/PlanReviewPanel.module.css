@@ -24,16 +24,16 @@
      hidden): cap the card against the viewport and scroll the plan, so the
      strip and the decision row stay reachable on a long plan. */
   max-height: min(60vh, 520px);
-  border: 1px solid var(--clocky-alias-state-warn-secondary);
-  border-radius: 20px;
-  background: var(--clocky-specific-input-major);
-  box-shadow: var(--clocky-shadow-lv2);
-  color: var(--clocky-alias-label-primary);
+  border: 1px solid var(--clocky-status-needs-you-border);
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-surface);
+  box-shadow: var(--clocky-elevation-2);
+  color: var(--clocky-fg-primary);
   /* Elevated surface in dark: the plan body inside scrolls once the card hits
      the cap above, so the thumb takes the l2 pair (see ui-theme
      styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .card,
@@ -48,17 +48,17 @@
   flex-shrink: 0;
   gap: 8px;
   padding: 10px 16px;
-  background: var(--clocky-alias-state-warn-tertiary);
-  color: var(--clocky-alias-state-warn-primary);
-  font-size: 13px;
-  line-height: 18px;
+  background: var(--clocky-status-needs-you-bg);
+  color: var(--clocky-status-needs-you-fg);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
 }
 
 .dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: var(--clocky-alias-state-warn-primary);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-status-needs-you-fg);
 }
 
 /* The plan is the panel's message: it takes the whole body and the scroll. */
@@ -68,8 +68,8 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 12px 16px 4px;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
 }
 
 .footer {
@@ -83,9 +83,9 @@
 
 .feedback {
   min-height: 16px;
-  color: var(--clocky-alias-state-error-primary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-status-failed-fg);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .actions {
@@ -100,16 +100,16 @@
    the icon reads as a prefix rather than a peer-sized control. */
 .discuss {
   gap: 6px;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .discuss:hover:not(:disabled) {
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 @media (max-width: 720px) {
   .card {
-    border-radius: 16px;
+    border-radius: var(--clocky-radius-xl);
   }
 
   .body {

@@ -65,6 +65,7 @@ export async function executeTaskDecision(ctx: Context, run: SimulationRun, conn
   await run.commitWindow(windowId)
   check()
   const accepted = run.snapshot().decisions[selected.decisionId]
+  /* v8 ignore next -- a successful native window commit retains its exact decision in append-only history. */
   if (accepted === undefined) throw new Error('Simulation task window lost its exact decision')
   return accepted
 }

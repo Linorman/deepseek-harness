@@ -704,20 +704,6 @@ const teamRunResumePhaseScopeSchema = z.object({
   phase: z.literal('active'),
 }).strict()
 
-/** Parse one source-owned TeamRun final-result admission fence. */
-const teamRunFinalizationQuiescePhaseScopeSchema = z.object({
-  kind: z.literal('team-run-finalization-quiesce'),
-  teamId: teamIdSchema,
-  expectedCursor: nonNegativeSafeIntegerSchema,
-  phase: z.literal('quiescing'),
-  finalChannelId: channelIdSchema,
-  finalEnvelopeId: envelopeIdSchema,
-  humanId: participantIdSchema,
-  coordinatorId: participantIdSchema,
-}).strict().refine(scope => scope.humanId !== scope.coordinatorId, {
-  message: 'finalization quiesce scope must name distinct human and coordinator participants',
-})
-
 /** Parse one source-owned scheduler Team-stall scope. */
 const schedulerStallPhaseScopeSchema = z.object({
   kind: z.literal('scheduler-stall'),
@@ -795,7 +781,6 @@ export const teamSystemPhaseScopeSchema = z.discriminatedUnion('kind', [
     reason: z.object({ code: z.literal('ACTIVATION_STARTUP_UNCONFIRMED'), message: nonEmptyStringSchema }).strict(),
   }),
   teamRunResumePhaseScopeSchema,
-  teamRunFinalizationQuiescePhaseScopeSchema,
   schedulerStallPhaseScopeSchema,
   activationControllerCancellationStallPhaseScopeSchema,
   activationControllerClosureStallPhaseScopeSchema,
@@ -3399,9 +3384,8 @@ export const teamSystemChannelAdmissionProofResolutionSchema = z.object({
   ]),
 }).strict() satisfies z.ZodType<TeamSystemChannelAdmissionProofResolution>
 
-/** Parse a client-supplied envelope before Hub stamping. */
-export const teamEnvelopeDraftSchema = z.object({
-  channelId: channelIdSchema,
+/** Envelope payload fields shared by caller drafts and Hub-stamped records. */
+const envelopePayloadFields = {
   audience: z.array(participantIdSchema).nullable(),
   kind: nonEmptyStringSchema,
   payload: jsonObjectSchema,
@@ -3410,6 +3394,12 @@ export const teamEnvelopeDraftSchema = z.object({
   correlationId: nonEmptyStringSchema.optional(),
   taskId: teamTaskIdSchema.optional(),
   traceId: nonEmptyStringSchema.optional(),
+}
+
+/** Parse a client-supplied envelope before Hub stamping. */
+export const teamEnvelopeDraftSchema = z.object({
+  channelId: channelIdSchema,
+  ...envelopePayloadFields,
   priority: envelopePrioritySchema.optional(),
   ttlMs: positiveSafeIntegerSchema.optional(),
 }).strict() as z.ZodType<TeamEnvelopeDraft>
@@ -3421,14 +3411,7 @@ export const teamEnvelopeSchema = z.object({
   channelId: channelIdSchema,
   sequence: nonNegativeSafeIntegerSchema,
   senderId: participantIdSchema,
-  audience: z.array(participantIdSchema).nullable(),
-  kind: nonEmptyStringSchema,
-  payload: jsonObjectSchema,
-  delivery: envelopeDeliverySchema,
-  causationId: envelopeIdSchema.optional(),
-  correlationId: nonEmptyStringSchema.optional(),
-  taskId: teamTaskIdSchema.optional(),
-  traceId: nonEmptyStringSchema.optional(),
+  ...envelopePayloadFields,
   priority: envelopePrioritySchema,
   createdAt: nonNegativeSafeIntegerSchema,
   ttlMs: positiveSafeIntegerSchema.optional(),
@@ -3657,11 +3640,8 @@ export const channelDeliveryExpiredRecordSchema = z.object({
   reason: z.enum(['cancellation', 'closure'] as const).optional(),
 }).strict() satisfies z.ZodType<ChannelDeliveryExpiredRecord>
 
-/** Parse one durable channel summary WAL record. */
-export const channelSummaryRecordSchema = z.object({
-  type: z.literal('channel/summary'),
-  sequence: nonNegativeSafeIntegerSchema,
-  createdAt: nonNegativeSafeIntegerSchema,
+/** Immutable source selection and summary content shared by admission and WAL parsing. */
+const channelSummaryFields = {
   coveredSequenceRange: channelSequenceRangeSchema,
   sourceFingerprint: channelSummarySourceFingerprintSchema,
   sourceEnvelopeIds: z.array(envelopeIdSchema).min(1).superRefine((ids, context) => {
@@ -3672,6 +3652,14 @@ export const channelSummaryRecordSchema = z.object({
   text: trimmedTextSchema,
   policy: teamViewPolicyRefSchema,
   idempotencyKey: channelSummaryIdempotencyKeySchema,
+}
+
+/** Parse one durable channel summary WAL record. */
+export const channelSummaryRecordSchema = z.object({
+  type: z.literal('channel/summary'),
+  sequence: nonNegativeSafeIntegerSchema,
+  createdAt: nonNegativeSafeIntegerSchema,
+  ...channelSummaryFields,
 }).strict() satisfies z.ZodType<ChannelSummaryRecord>
 
 /** Parse one adapter-owned WAL record. */
@@ -3723,16 +3711,7 @@ export const channelSummarySelectionInputSchema = z.object({
 export const channelSummarizeInputSchema = z.object({
   channelId: channelIdSchema,
   expectedCursor: nonNegativeSafeIntegerSchema,
-  coveredSequenceRange: channelSequenceRangeSchema,
-  sourceFingerprint: channelSummarySourceFingerprintSchema,
-  sourceEnvelopeIds: z.array(envelopeIdSchema).min(1).superRefine((ids, context) => {
-    if (new Set(ids).size !== ids.length) {
-      context.addIssue({ code: 'custom', message: 'channel summary source Envelope ids must be unique' })
-    }
-  }),
-  text: trimmedTextSchema,
-  policy: teamViewPolicyRefSchema,
-  idempotencyKey: channelSummaryIdempotencyKeySchema,
+  ...channelSummaryFields,
 }).strict() satisfies z.ZodType<ChannelSummarizeInput>
 
 /** Parse one identified post-commit channel WAL notification. */
@@ -4158,7 +4137,8 @@ export const participantInterruptAcknowledgeInputSchema = z.object({
   interruptId: teamInterruptIdSchema,
 }).strict() satisfies z.ZodType<ParticipantInterruptAcknowledgeInput>
 
-const teamTaskCreateFields = {
+/** Task creation field validators; wire consumers pick their supported actor-free fields. */
+export const teamTaskCreateFields = {
   teamId: teamIdSchema,
   expectedCursor: nonNegativeSafeIntegerSchema,
   createCommand: teamTaskCreateCommandInputSchema,
@@ -4758,6 +4738,16 @@ export const teamSimulationTaskStartInputSchema = z.object({
 /** Parse native task settlement without caller-selected activation or participant identity. */
 export const teamSimulationTaskSettleInputSchema = teamSimulationTaskStartInputSchema.extend({ outcome: taskAttemptOutcomeSchema }) satisfies z.ZodType<import('./types.ts').TeamSimulationTaskSettleInput>
 
+/** Exact Simulation execution binding shared by assignment, start and settlement proofs. */
+const simulationTaskExecutionScopeFields = {
+  creatorId: participantIdSchema, ordinal: positiveSafeIntegerSchema,
+  runId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationRunId'>),
+  operationId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationOperationId'>),
+  entityId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationEntityId'>),
+  epoch: z.string().regex(/^(0|[1-9][0-9]*)$/).transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationWriterEpoch'>),
+  lifecycleOwner: nonEmptyStringSchema, sessionId: sessionIdSchema, reservationId: activationReservationIdSchema,
+}
+
 /** Parse the source-selected Simulation or TeamRun task-control operation. */
 export const teamSystemTaskControlScopeSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('simulation-task-cancel'),
@@ -4771,29 +4761,14 @@ export const teamSystemTaskControlScopeSchema = z.discriminatedUnion('kind', [
     lifecycleOwner: nonEmptyStringSchema, participantId: participantIdSchema, publishAllowed: z.boolean(),
     input: z.object(teamTaskCreateFields).omit({ expectedCursor: true }).strict() as z.ZodType<Omit<TeamTaskCreateInput, 'expectedCursor'>>,
   }).strict(),
-  z.object({ kind: z.literal('simulation-task-assign'), creatorId: participantIdSchema, ordinal: positiveSafeIntegerSchema,
-    runId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationRunId'>),
-    operationId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationOperationId'>),
-    entityId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationEntityId'>),
-    epoch: z.string().regex(/^(0|[1-9][0-9]*)$/).transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationWriterEpoch'>),
-    lifecycleOwner: nonEmptyStringSchema, sessionId: sessionIdSchema, reservationId: activationReservationIdSchema,
+  z.object({ kind: z.literal('simulation-task-assign'), ...simulationTaskExecutionScopeFields,
     input: teamSimulationTaskAssignInputSchema,
   }).strict(),
-  z.object({ kind: z.literal('simulation-task-start'), creatorId: participantIdSchema, ordinal: positiveSafeIntegerSchema,
-    runId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationRunId'>),
-    operationId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationOperationId'>),
-    entityId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationEntityId'>),
-    epoch: z.string().regex(/^(0|[1-9][0-9]*)$/).transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationWriterEpoch'>),
-    lifecycleOwner: nonEmptyStringSchema, sessionId: sessionIdSchema, reservationId: activationReservationIdSchema,
+  z.object({ kind: z.literal('simulation-task-start'), ...simulationTaskExecutionScopeFields,
     decisionId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationDecisionId'>),
     inputId: nonEmptyStringSchema, input: teamSimulationTaskStartInputSchema,
   }).strict(),
-  z.object({ kind: z.literal('simulation-task-settle'), creatorId: participantIdSchema, ordinal: positiveSafeIntegerSchema,
-    runId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationRunId'>),
-    operationId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationOperationId'>),
-    entityId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationEntityId'>),
-    epoch: z.string().regex(/^(0|[1-9][0-9]*)$/).transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationWriterEpoch'>),
-    lifecycleOwner: nonEmptyStringSchema, sessionId: sessionIdSchema, reservationId: activationReservationIdSchema,
+  z.object({ kind: z.literal('simulation-task-settle'), ...simulationTaskExecutionScopeFields,
     input: teamSimulationTaskSettleInputSchema,
   }).strict(),
   teamRunDefaultWorkerOwnerProposalScopeSchema,

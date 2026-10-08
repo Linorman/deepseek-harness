@@ -6,6 +6,7 @@ import type { Agent, AgentStatus } from '@clocky/clocky-agent'
 import CommandRuntime from '@clocky/clocky-commands'
 import { createScope } from '@clocky/clocky-scope'
 import {
+  TeamError,
   participantIdSchema,
   teamIdSchema,
   teamStateSnapshotSchema,
@@ -162,6 +163,30 @@ describe('@clocky/clocky-command-team-goal registration', () => {
 })
 
 describe('/goal Team command', () => {
+  it.each(['paused', 'blocked', 'complete'] as const)('renders the durable %s phase and its public blocker', async (phase) => {
+    const test = await harness()
+    test.teams.getTeam.mockResolvedValueOnce(state({ phase,
+      ...phase === 'blocked' ? { blocker: { code: 'NEEDS_INPUT', message: 'Await a human decision' } } : {},
+    }))
+    const shown = await test.run()
+    expect(shown.text).toContain(`Status: ${phase}`)
+    expect(shown.text?.includes('Blocker: NEEDS_INPUT: Await a human decision')).toBe(phase === 'blocked')
+  })
+
+  it.each([
+    ['TEAM_GOAL_STALE_REVISION', 'changed while this command was pending'],
+    ['TEAM_POLICY_DENIED', 'not authorized'],
+    ['TEAM_PARTICIPANT_NOT_FOUND', 'not authorized'],
+    ['TEAM_INVALID_ARGUMENT', 'not valid for the current state'],
+  ] as const)('maps %s to a concise command result without private provider text', async (code, expected) => {
+    const test = await harness()
+    test.teams.getTeam.mockRejectedValueOnce(new TeamError('/private/provider-detail', code))
+    const result = await test.run()
+    expect(result).toMatchObject({ kind: 'error' })
+    expect(result.text).toContain(expected)
+    expect(result.text).not.toContain('/private/provider-detail')
+  })
+
   it('renders the durable objective but rejects mutation without an authenticated Team actor', async () => {
     const test = await harness()
     const shown = await test.run()

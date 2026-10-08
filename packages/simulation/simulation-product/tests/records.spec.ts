@@ -1,5 +1,5 @@
 /** Journal inspection returns original durable sequences with independent private-history permission. */
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { simulationChangeSchema } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from '../../simulation-local/tests/business-harness.ts'
 import { fixture, registration, call } from './fixtures.ts'
@@ -21,6 +21,8 @@ it.each(['json', 'sqlite'] as const)('reads bounded original history without acq
     const input = { runId: registration().id, mode: 'original', sequence, limit: 3 } as const
     const hidden = await products.readRecords(input, call())
     expect(hidden).toMatchObject({ bodyAccess: 'withheld', totalRecords: 1, items: [{ sequence, body: { status: 'withheld' } }] })
+    const filtered = await products.readRecords({ runId: input.runId, mode: 'metadata', kind: 'run/created' }, call())
+    expect(filtered).toMatchObject({ selection: { kind: 'run/created' }, totalRecords: 1 })
     expect(JSON.stringify(hidden)).not.toContain('Secret')
     const remove = products.recordReaderRegistrar()([{ principalId: 'reader' as never, runId: registration().id }])
     const metadata = await products.readRecords({ ...input, mode: 'metadata' }, call())
@@ -73,6 +75,16 @@ it('withholds reads across policy and credential retirement, and counts the full
   expect(page.items.length).toBeLessThan(64)
   h.inspect.mockImplementationOnce(async () => { remove(); return observation })
   await expect(products.readRecords(input, call())).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_STALE' })
+  const revokeAfterProjection = products.recordReaderRegistrar()([{ principalId: 'reader' as never }])
+  const internals = products as unknown as { boundedParts: (...args: unknown[]) => unknown }
+  const boundedParts = internals.boundedParts.bind(internals)
+  const projected = vi.spyOn(internals, 'boundedParts').mockImplementation((...args) => {
+    const page = boundedParts(...args)
+    queueMicrotask(revokeAfterProjection)
+    return page
+  })
+  await expect(products.readRecords(input, call())).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_STALE' })
+  projected.mockRestore()
   const controller = new AbortController()
   h.inspect.mockImplementationOnce(async () => { controller.abort(); return observation })
   await expect(products.readRecords(input, call(controller))).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_FORBIDDEN' })

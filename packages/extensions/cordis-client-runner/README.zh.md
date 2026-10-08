@@ -30,6 +30,8 @@
 - `approve(requestId)` / `decline(requestId)` / `startUserRun({ agentId, id, hasClientHalf })` —— 两条入口。三者都幂等（按 requestId，用户自发的 run 按定义 id），所以连点两次不会起两次 run。`hasClientHalf` 是必填：纯 host 定义没有源码可取，所以由调用方从它正在操作的注册表行里把这个事实说出来，而不是让编排器从一次失败的取码里反推。可回答的请求必然带浏览器半 —— 纯 host 定义是 host 自己起的，它不会去问页面。
 - `subscribe()` / `getSnapshot()` / `isLoaded(id)` —— 这一页装了什么。`isLoaded` 是页面本地的事实，永远不等于 host 说的「在跑」。
 
+授权清退会取消活跃 inspect 查询与排队的清单发布。认证恢复后仍拦截旧查询结果和发布；只有成功连接重置才恢复发布。
+
 ## 模型体验
 
 ### 由模型发起那次 run 的最终回答

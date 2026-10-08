@@ -20,6 +20,8 @@ The existing UI owners implement this composition without additional plugins. `u
 
 URL restoration waits for the connection owner's completed handshake. The initial authenticated scope invalidates pre-handshake Team reads just as a changed principal invalidates old reads, so selection cannot race that scope publication. Disconnect aborts pending restoration while preserving the URL; the next handshake revalidates the route through the Host. Whole-Team task search and phase filters use an independent bounded runtime query, retain committed URL state and respect IME composition. Query pages never replace dependency drafts or task inspection.
 
+Cancelling a Team selection or folder picker is not a list failure. Browser cancellation may arrive as a `DOMException` or an `Error` named `AbortError`; both leave the Team directory free of an error banner, while other failures remain visible.
+
 Member inspection shares the runtime selection and authorization lifetime rather than retaining a server page in React. One bounded capability window survives ordinary transport failure; permission loss and Team replacement clear it before late IO can publish. Journal advancement marks the page stale, and continuation requires revalidation instead of mixing revisions.
 
 Session inspection uses one stable conversation subtree inside a native dialog, including the existing details slot. Opening, closing, and expanding the view preserve its mounted state; closing clears viewing selection and does not stop execution. Task attempt links resolve the recorded activation, while member links select the latest activation. Selecting a Team does not resume an offline coordinator; Resume is a separate command.
@@ -54,5 +56,7 @@ Complete Team projections provide accurate counts but remain a scaling dependenc
 ## Testing
 
 Client tests cover bounded previews, exact attempt selection, offline Resume, navigation cancellation, draft retry identity, IME handling, mutation errors, and stable Session mounting. Real-Host keyless browser scenarios cover channel protocols, 65-row pagination and read recovery, child-Team navigation, Session return and browser history, long objectives, both locales and appearances, narrow layouts, and reduced motion. The [implementation report](../../../../design/team-workspace-2026-09-11/implementation-report.md) records verification commands, screenshots, and repository-wide check limitations.
+
+The keyless Team workspace browser scenario cancels one selection with a browser `DOMException`, verifies that the directory shows no error, then opens the same Team through the real Host.
 
 The [draft-lifetime decision](2026-09-29-team-form-draft-lifetime.md) owns task-form fields, capacity, dismissal, revision and retry identity.

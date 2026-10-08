@@ -3,7 +3,7 @@
 .onboardingOverlay {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: var(--clocky-layer-modal);
 }
 
 /* Mask */
@@ -13,17 +13,17 @@
   right: 0px;
   top: 80px;
   bottom: 0px;
-  background: rgba(0, 0, 0, 0.24);
+  background: var(--clocky-bg-scrim);
   /* Mask-blur */
   backdrop-filter: blur(2px);
 }
 
 .onboardingStage {
   position: absolute;
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
   inset: 0;
   display: flex;
   justify-content: center;
   overflow: hidden;
-  background: var(--clocky-alias-bg-layer-1);
+  background: var(--clocky-bg-surface);
 }

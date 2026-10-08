@@ -33,15 +33,17 @@ export function messageOf(error: unknown): string {
  * namespace and field the host resolves at session creation.
  * @param api - the settings wire face.
  * @param id - the preset to make default.
+ * @param signal - optional authorization lifetime; abort prevents late publication by callers.
  * @returns the failure message, or undefined once the write landed.
  */
 export async function writeDefaultPreset(
   api: Pick<IApiClient, 'settings'>,
   id: string,
+  signal?: AbortSignal,
 ): Promise<string | undefined> {
   let response
   try {
-    response = await api.settings.update({ ns: AGENT_PRESET_SETTINGS_NS, patch: { default: id } })
+    response = await api.settings.update({ ns: AGENT_PRESET_SETTINGS_NS, patch: { default: id } }, signal)
   } catch (error) {
     // The transport rejected rather than answering; the caller must be able to
     // say so instead of the row silently snapping back.
@@ -99,11 +101,12 @@ export type RosterRead = { ok: true; value: RosterValue } | { ok: false; error: 
  * them here keeps each store's `load` about what it does with a roster rather
  * than about how the call can fail.
  * @param api - the agent-preset wire face.
+ * @param signal - optional authorization lifetime; cancellation is returned as a failed read.
  * @returns the roster, or the message to show in its place.
  */
-export async function readRoster(api: Pick<IApiClient, 'agentPresets'>): Promise<RosterRead> {
+export async function readRoster(api: Pick<IApiClient, 'agentPresets'>, signal?: AbortSignal): Promise<RosterRead> {
   try {
-    const response = await api.agentPresets.list({})
+    const response = await api.agentPresets.list({}, signal)
     return response.result.ok
       ? { ok: true, value: response.result.value }
       : { ok: false, error: response.result.error.message }
@@ -121,16 +124,20 @@ export async function readRoster(api: Pick<IApiClient, 'agentPresets'>): Promise
  * failure. What differs between surfaces starts after this.
  * @param api - the agent-preset wire face.
  * @param store - the surface's own snapshot store.
+ * @param signal - authorization lifetime; cancellation publishes no outcome.
  * @returns the roster, or undefined when the caller should return.
  */
 export async function beginRosterRead<S extends { status: string; error: string | null }>(
   api: Pick<IApiClient, 'agentPresets'>,
   store: SnapshotStore<S>,
+  signal?: AbortSignal,
 ): Promise<RosterValue | undefined> {
   const before = store.getSnapshot()
-  if (before.status === 'loading') return undefined
+  const cancelled = () => signal?.aborted === true
+  if (before.status === 'loading' || cancelled()) return undefined
   store.set({ ...before, status: 'loading', error: null })
-  const roster = await readRoster(api)
+  const roster = await readRoster(api, signal)
+  if (cancelled()) return undefined
   if (roster.ok) return roster.value
   store.set({ ...store.getSnapshot(), status: 'error', error: roster.error })
   return undefined
@@ -191,6 +198,18 @@ const INITIAL: AgentPresetSettingsState = {
 export class AgentPresetSettingsController {
   /** Row snapshot the renderer subscribes to. */
   readonly store: SnapshotStore<AgentPresetSettingsState> = createSnapshotStore(INITIAL)
+  private authorization = new AbortController()
+
+  /** Cancel reads and clear the previous principal's roster without refreshing. */
+  clearAuthorization(): void {
+    this.authorization.abort()
+    this.store.set({ ...INITIAL, status: 'unavailable', writable: false })
+  }
+
+  /** Restore the read lifetime after a successful authentication handshake. */
+  resumeAuthorization(): void {
+    if (this.authorization.signal.aborted) this.authorization = new AbortController()
+  }
 
   /**
    * @param api - the agent-preset and settings wire faces (roster and default write).
@@ -212,7 +231,8 @@ export class AgentPresetSettingsController {
    * @returns once the snapshot reflects the host.
    */
   async load(): Promise<void> {
-    const roster = await beginRosterRead(this.api, this.store)
+    const signal = this.authorization.signal
+    const roster = await beginRosterRead(this.api, this.store, signal)
     if (roster === undefined) return
     const { presets } = roster
     const [first] = presets
@@ -225,6 +245,7 @@ export class AgentPresetSettingsController {
     // answers, so the row stays read-only rather than offering a control
     // whose write the Host would refuse.
     await this.describeFace.ensure()
+    if (signal.aborted) return
     this.set({
       status: 'ready',
       error: null,
@@ -244,10 +265,14 @@ export class AgentPresetSettingsController {
    * @returns once the write settled and the roster was re-read.
    */
   async select(id: string): Promise<void> {
+    const signal = this.authorization.signal
+    const cancelled = () => signal.aborted
+    if (cancelled()) return
     const before = this.store.getSnapshot()
     if (before.status === 'saving' || id === before.currentValue) return
     this.set({ status: 'saving', error: null, currentValue: id })
-    const failure = await writeDefaultPreset(this.api, id)
+    const failure = await writeDefaultPreset(this.api, id, signal)
+    if (cancelled()) return
     if (failure !== undefined) {
       this.set({ status: 'ready', currentValue: before.currentValue, error: failure })
       return

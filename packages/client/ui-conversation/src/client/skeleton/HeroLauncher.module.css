@@ -1,0 +1,121 @@
+.launcher {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--clocky-space-3);
+  width: 100%;
+  padding-inline: var(--clocky-composer-side-clearance);
+  margin-top: var(--clocky-space-3);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--clocky-space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--clocky-space-1);
+  max-width: 280px;
+  height: 28px;
+  padding: 0 var(--clocky-space-3);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-bg-surface);
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-caption);
+  font-weight: 500;
+}
+
+button.chip {
+  cursor: pointer;
+}
+
+button.chip:hover:not(:disabled) {
+  border-color: var(--clocky-border-strong);
+  color: var(--clocky-fg-primary);
+}
+
+button.chip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.chipText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.starters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--clocky-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.starter {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  --pointer-light-tint: var(--clocky-accent-fg);
+  display: flex;
+  align-items: center;
+  gap: var(--clocky-space-3);
+  width: 100%;
+  height: 100%;
+  padding: var(--clocky-space-3);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-surface-glass);
+  backdrop-filter: var(--clocky-blur-glass);
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-body-small);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--clocky-duration-fast) var(--clocky-ease-standard),
+    color var(--clocky-duration-fast) var(--clocky-ease-standard),
+    transform var(--clocky-duration-fast) var(--clocky-ease-enter);
+}
+
+/* Icon chip: a small tile in the accent tint so each starter reads as an action. */
+.starter svg {
+  flex: none;
+  box-sizing: content-box;
+  padding: var(--clocky-space-2);
+  border-radius: var(--clocky-radius-md);
+  color: var(--clocky-accent-fg);
+  background: var(--clocky-accent-subtle);
+  transition: transform var(--clocky-duration-base) var(--clocky-ease-spring);
+}
+
+.starter:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .starter:hover {
+    border-color: var(--clocky-accent-subtle-border);
+    color: var(--clocky-fg-primary);
+    transform: translateY(-2px);
+  }
+
+  .starter:hover svg {
+    transform: rotate(-12deg) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .starter:hover, .starter:active, .starter:hover svg { transform: none; }
+}
+
+.chip:focus-visible,
+.starter:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
+}

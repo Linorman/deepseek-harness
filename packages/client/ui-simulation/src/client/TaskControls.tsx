@@ -2,16 +2,17 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button, Modal } from '@clocky/clocky-client-ui-primitives'
 import type { SimulationProductRunId, SimulationProductTasksInput, SimulationProductTasksPage, SimulationReadState,
-  SimulationCommand, SimulationCommandKey, SimulationCommandState } from '@clocky/clocky-client-runtime/client'
+  SimulationCommand, SimulationCommandKey } from '@clocky/clocky-client-runtime/client'
 import { simulationCommandKey } from '@clocky/clocky-client-runtime/client'
 import type { SimulationTaskCancelDraft } from './store.ts'
 import { taskCancelDraftKey } from './store.ts'
-import type { Key } from './locales.ts'
+import { commandUnresolved, type CommandProps } from './command-props.ts'
 import { CommandRecord } from './CommandRecord.tsx'
 import css from './Workspace.module.css'
+import { useTaskDraft } from './useTaskDraft.ts'
 
 type Target = Pick<SimulationTaskCancelDraft, 'runId' | 'operationId'>
-interface Props {
+interface Props extends CommandProps {
   runId: SimulationProductRunId
   ready: boolean
   connected: boolean
@@ -23,11 +24,7 @@ interface Props {
   target?: Target | undefined
   change: (key: string, value?: SimulationTaskCancelDraft) => void
   select: (target?: Target) => void
-  commands: Readonly<Record<string, SimulationCommandState>>
-  retain: (command: SimulationCommand, version: number) => SimulationCommandKey
-  submit: (key: SimulationCommandKey) => Promise<SimulationCommandState | undefined>
-  query: (key: SimulationCommandKey) => Promise<SimulationCommandState | undefined>
-  t: (key: Key) => string
+
 }
 /** Show bounded current task phases and one explicit exact-cancellation dialog without starting execution. */
 export function TaskControls(props: Props) {
@@ -39,11 +36,11 @@ export function TaskControls(props: Props) {
   const selected = props.target?.runId === runId ? props.drafts[taskCancelDraftKey(props.target)] : undefined
   return <section className={css.review} data-empty={page?.total === 0 || page === undefined && value.error !== undefined || undefined} aria-label={t('taskControl.title')}>
     <header className={css.reviewHeader}><h2>{t('taskControl.title')}{page === undefined ? '' : ` · ${page.total}`}</h2>
-      <Button variant="outline" disabled={!connected || value.loading} aria-busy={value.loading}
+      <Button variant="secondary" disabled={!connected || value.loading} aria-busy={value.loading}
         onClick={() => { void refresh() }}>{t('taskControl.refresh')}</Button></header>
     {page?.total !== 0 && value.error === undefined && <p>{t('taskControl.notice')}</p>}
     {value.loading && <p role="status">{t('loading')}</p>}
-    {value.stale && <p role="status">{t('stale')}</p>}
+    {value.stale && <p role="status" className={css.stalePill}>{t('stale')}</p>}
     {value.error !== undefined && <p role="alert">{t(value.error)}</p>}
     {error !== undefined && <p role="alert">{error}</p>}
     {page?.items.length === 0 && !value.loading && <p>{t('taskControl.empty')}</p>}
@@ -70,26 +67,20 @@ export function TaskControls(props: Props) {
 
 function CancelDialog({ draft, refresh, ...props }: Props & { draft: SimulationTaskCancelDraft; refresh: () => Promise<void> }) {
   const { t, connected, value } = props
-  const id = useId(), key = taskCancelDraftKey(draft), busy = useRef(false), composing = useRef(false), latest = useRef(draft)
-  latest.current = draft
-  const [error, setError] = useState<string>(), [discard, setDiscard] = useState(false)
+  const id = useId(), key = taskCancelDraftKey(draft), busy = useRef(false), composing = useRef(false)
+  const [discard, setDiscard] = useState(false)
   const record = draft.commandKey === undefined ? undefined : props.commands[draft.commandKey]
   const commandKey = draft.commandKey
   const row = value.value?.runId === draft.runId ? value.value.items.find(item => item.operationId === draft.operationId) : undefined
   const original = record?.command.kind === 'cancel-task' ? record.command.input : undefined
-  const unresolved = record !== undefined && (record.pending || record.unknown || record.receipt === undefined || record.receipt.value.status === 'accepted')
+  const unresolved = commandUnresolved(record)
   const sameFailed = record?.receipt?.kind === 'request' && record.receipt.value.status === 'failed' && original !== undefined
     && draft.reason.trim() === original.reason && draft.expectedRevision === original.expectedRevision
     && draft.expectedAttemptId === original.expectedAttemptId
   const fresh = connected && !value.loading && !value.stale && value.error === undefined
   const matches = row?.taskRevision === draft.expectedRevision && row.expectedAttemptId === draft.expectedAttemptId
   const canSubmit = fresh && row?.cancel.allowed === true && matches && draft.reason.trim() !== '' && !unresolved && !sameFailed
-  const change = (next: SimulationTaskCancelDraft) => {
-    try { props.change(key, next); latest.current = next; setError(undefined) }
-    catch { setError(t('commandCapacity')) }
-  }
-  const active = useRef(true)
-  useEffect(() => { active.current = true; return () => { active.current = false } }, [])
+  const { latest, active, error, setError, change } = useTaskDraft(draft, (next) => { props.change(key, next) }, () => t('commandCapacity'))
   const settle = async (commandKey: SimulationCommandKey, query: boolean) => {
     const result = await (query ? props.query(commandKey) : props.submit(commandKey))
     if (!active.current) return result
@@ -122,12 +113,12 @@ function CancelDialog({ draft, refresh, ...props }: Props & { draft: SimulationT
   }
   return <>
     <Modal open title={t('taskControl.open')} closeLabel={t('closeKeepDraft')} onClose={() => { props.select(undefined) }}
-      footer={<><Button variant="outline" onClick={() => { setDiscard(true) }}>{t('discardDraft')}</Button>
+      footer={<><Button variant="secondary" onClick={() => { setDiscard(true) }}>{t('discardDraft')}</Button>
         <Button disabled={!canSubmit || record?.pending} onClick={() => { void execute() }}>{t('taskControl.confirm')}</Button></>}>
       <p>{t('taskControl.cancelNotice')}</p><code>{row?.taskId ?? draft.operationId}</code>
       <p>{t('reviews.revision')}: {draft.expectedRevision} · {t('reviews.attempt')}: {draft.expectedAttemptId ?? t('taskControl.noLease')}</p>
       <Button disabled={!connected || value.loading} onClick={() => { void refresh() }}>{t('taskControl.refresh')}</Button>
-      {!fresh && <p role="status">{t('reviews.stale')}</p>}
+      {!fresh && <p role="status" className={css.stalePill}>{t('reviews.stale')}</p>}
       {fresh && row !== undefined && !matches && !unresolved && <Button onClick={() => {
         change({ ...draft, expectedRevision: row.taskRevision, expectedAttemptId: row.expectedAttemptId, commandKey: undefined })
       }}>{t('taskControl.confirmFence')}</Button>}

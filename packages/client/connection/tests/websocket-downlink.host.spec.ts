@@ -1,8 +1,11 @@
 import { once } from 'node:events'
+import { EventEmitter } from 'node:events'
 import { createServer } from 'node:http'
+import type { IncomingMessage } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { PassThrough } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import WebSocket from 'ws'
+import WebSocket, { WebSocketServer } from 'ws'
 import type {
   ApiProxy, HostFrame, MuxFrame, RpcRequest, ServerRequest,
 } from '@clocky/clocky-host-apiproxy/api'
@@ -10,7 +13,7 @@ import { RpcId, PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE } from '@clocky/clocky
 import { currentAuthenticatedProductCall } from '@clocky/clocky-host-apiproxy'
 import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
 import { HOST_EVENTS_PATH, MUX_EVENTS_PATH } from '../src/api-path.ts'
-import { WebSocketDownlinks } from '../src/websocket-downlink.ts'
+import { rejectWebSocketUpgrade, WebSocketDownlinks } from '../src/websocket-downlink.ts'
 
 type MuxSource = (signal: AbortSignal) => AsyncIterable<RpcRequest<MuxFrame>>
 type HostSource = (signal: AbortSignal) => AsyncIterable<RpcRequest<HostFrame>>
@@ -79,6 +82,17 @@ async function acceptedSocket(downlinks: WebSocketDownlinks): Promise<WebSocket>
   })
   return accepted as WebSocket
 }
+
+function productCall(signal: AbortSignal): AuthenticatedProductCall {
+  return { principal: { id: 'ws-principal' as never, issuer: 'test', subject: 'user', assurance: 'test', credentialGeneration: 1 },
+    credentialGeneration: 1, signal }
+}
+
+function acceptor(downlinks: WebSocketDownlinks): WebSocketServer {
+  return (downlinks as unknown as { server: WebSocketServer }).server
+}
+
+function fakeRequest(): IncomingMessage { return { url: MUX_EVENTS_PATH } as IncomingMessage }
 
 describe('WebSocket downlinks', () => {
   it('opens both event sources under the authenticated product principal', async () => {
@@ -371,5 +385,79 @@ describe('WebSocket downlinks', () => {
       releaseCleanup()
       await closing
     }
+  })
+
+  it('destroys an upgrade socket when product authentication retires before negotiation', async () => {
+    const authentication = new AbortController()
+    const downlinks = new WebSocketDownlinks(api(idle, idle))
+    const handleUpgrade = vi.spyOn(acceptor(downlinks), 'handleUpgrade').mockImplementation(() => {})
+    const socket = new PassThrough()
+    const destroy = vi.spyOn(socket, 'destroy')
+    try {
+      const pending = downlinks.handleMux(fakeRequest(), socket, Buffer.alloc(0), productCall(authentication.signal))
+      expect(handleUpgrade).toHaveBeenCalledOnce()
+      authentication.abort()
+      await pending
+      expect(destroy).toHaveBeenCalledOnce()
+    } finally {
+      handleUpgrade.mockRestore()
+    }
+  })
+
+  it('terminates a late upgrade callback after authentication retired', async () => {
+    const authentication = new AbortController()
+    const downlinks = new WebSocketDownlinks(api(idle, idle))
+    let accept!: (socket: WebSocket) => void
+    const handleUpgrade = vi.spyOn(acceptor(downlinks), 'handleUpgrade').mockImplementation((request, _socket, _head, callback) => {
+      accept = (socket) => { callback(socket, request) }
+    })
+    const socket = new PassThrough()
+    const terminate = vi.fn()
+    const accepted = Object.assign(new EventEmitter(), { terminate }) as unknown as WebSocket
+    try {
+      const pending = downlinks.handleMux(fakeRequest(), socket, Buffer.alloc(0), productCall(authentication.signal))
+      authentication.abort()
+      await pending
+      accept(accepted)
+      expect(terminate).toHaveBeenCalledOnce()
+    } finally {
+      handleUpgrade.mockRestore()
+    }
+  })
+
+  it.each([new Error('upgrade failed'), 'upgrade failed'])('normalizes a synchronous upgrade failure %s', async (failure) => {
+    const downlinks = new WebSocketDownlinks(api(idle, idle))
+    const handleUpgrade = vi.spyOn(acceptor(downlinks), 'handleUpgrade').mockImplementation(() => { throw failure })
+    try {
+      await expect(downlinks.handleMux(fakeRequest(), new PassThrough(), Buffer.alloc(0))).rejects.toThrow('upgrade failed')
+    } finally {
+      handleUpgrade.mockRestore()
+    }
+  })
+
+  it.each([new Error('socket close failed'), 'socket close failed'])('settles a pump rejection after socket close fails %s', async (failure) => {
+    const downlinks = new WebSocketDownlinks(api(async function * () {}, idle))
+    const accepted = Object.assign(new EventEmitter(), {
+      readyState: WebSocket.OPEN,
+      close: vi.fn(() => { throw failure }),
+    }) as unknown as WebSocket
+    const handleUpgrade = vi.spyOn(acceptor(downlinks), 'handleUpgrade').mockImplementation((request, _socket, _head, callback) => {
+      callback(accepted, request)
+    })
+    try {
+      await expect(downlinks.handleMux(fakeRequest(), new PassThrough(), Buffer.alloc(0))).rejects.toThrow('socket close failed')
+    } finally {
+      handleUpgrade.mockRestore()
+    }
+  })
+
+  it('rejects a disallowed upgrade before WebSocket negotiation', async () => {
+    const socket = new PassThrough()
+    const chunks: Buffer[] = []
+    socket.on('data', (chunk: Buffer) => { chunks.push(chunk) })
+    const ended = once(socket, 'end')
+    rejectWebSocketUpgrade(socket)
+    await ended
+    expect(Buffer.concat(chunks).toString('utf8')).toBe('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 9\r\n\r\nforbidden')
   })
 })

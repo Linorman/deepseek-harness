@@ -65,13 +65,31 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     const memberCursor = (await rpc<TeamStateSnapshot>('team.get', { teamId })).team.cursor
     await rpc('team.member.invite', { teamId, expectedCursor: memberCursor, kind: 'local-agent',
       role: 'research', displayName: 'Capability detail member', capabilities: Array.from({ length: 260 }, (_, index) => `capability-${index}`) })
+    // One browser-native AbortError models a replaced selection before the real Host read succeeds.
+    await page.addInitScript(() => {
+      const originalFetch = window.fetch.bind(window)
+      window.fetch = async (input, init) => {
+        const url = input instanceof Request ? input.url : input instanceof URL ? input.href : input
+        const marker = 'team-workspace-abort-selection-once'
+        if (new URL(url, location.href).pathname === '/api/team.selection' && sessionStorage.getItem(marker) !== 'done') {
+          sessionStorage.setItem(marker, 'done')
+          throw new DOMException('Selection replaced', 'AbortError')
+        }
+        return await originalFetch(input, init)
+      }
+    })
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
-    await page.getByRole('button', { name: /^发布准备 / }).click()
+    const teamEntry = page.getByRole('button', { name: /^发布准备 / })
+    await teamEntry.click()
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('team-workspace-abort-selection-once'))).toBe('done')
+    await expect.poll(() => teamEntry.isDisabled()).toBe(false)
+    expect(await page.getByRole('region', { name: '团队目录' }).getByRole('alert').count()).toBe(0)
+    await teamEntry.click()
     const workspace = page.locator('[data-team-workspace-page]')
     await workspace.getByText('任务完成', { exact: true }).waitFor()
-    expect(await page.getByRole('dialog', { name: '与协调者沟通', exact: true }).count()).toBe(0)
+    expect(await page.getByRole('region', { name: '与协调者沟通', exact: true }).count()).toBe(0)
     await workspace.evaluate(async (element) => {
-      await Promise.all(
+      await Promise.allSettled(
         element.getAnimations({ subtree: true })
           .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
           .map(animation => animation.finished),
@@ -84,6 +102,21 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     })).toBeLessThan(2)
     await page.screenshot({ path: join(output, '01-overview.png') })
     await workspace.getByRole('region', { name: '团队成员', exact: true }).waitFor()
+    // First screen at 1440×900: status, everything that needs a person, members, and task progress, without scrolling.
+    await page.setViewportSize({ width: 1440, height: 900 })
+    const firstScreen = [
+      workspace.locator('header [data-status]').first(),
+      workspace.getByRole('region', { name: '需要你处理', exact: true }).first(),
+      workspace.getByRole('region', { name: '团队成员', exact: true }),
+      workspace.getByRole('region', { name: '任务执行', exact: true }),
+    ]
+    for (const region of firstScreen) {
+      const box = await region.boundingBox()
+      if (box === null) throw new Error(`first-screen region is not rendered: ${await region.evaluate(element => element.outerHTML.slice(0, 120))}`)
+      expect(box.y + Math.min(box.height, 120)).toBeLessThanOrEqual(900)
+    }
+    await page.screenshot({ path: join(output, '01b-first-screen-1440x900.png') })
+    await page.setViewportSize({ width: 1440, height: 1000 })
     await workspace.getByRole('navigation', { name: '团队模块' }).getByRole('button', { name: '成员', exact: true }).click()
     const memberDetailReply = page.waitForResponse(reply => new URL(reply.url()).pathname === '/api/team.member.inspect')
     await workspace.getByRole('listitem').filter({ hasText: 'Capability detail member' })
@@ -122,22 +155,22 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
 
     const memberBindingReply = page.waitForResponse(reply => new URL(reply.url()).pathname === '/api/team.member.session')
     await workspace.getByRole('region', { name: '团队成员', exact: true }).getByRole('button')
-      .filter({ hasText: '打开 Session' }).first().click()
+      .filter({ hasText: '打开会话' }).first().click()
     const bindingReply = await (await memberBindingReply).json() as {
       result: { ok: boolean; value: { activation: { teamId: string; participantId: string }; sessionId: string } }
     }
     expect(bindingReply.result.ok).toBe(true)
     expect(bindingReply.result.value.activation.teamId).toBe(teamId)
     expect(bindingReply.result.value.activation.participantId).toBe(created.participants.find(member => member.role === 'coordinator')?.id)
-    const memberInspection = page.getByRole('dialog', { name: '与协调者沟通', exact: true })
+    const memberInspection = page.getByRole('region', { name: '与协调者沟通', exact: true })
     await memberInspection.waitFor()
     await memberInspection.evaluate(async (element) => {
-      await Promise.all(element.getAnimations({ subtree: true })
+      await Promise.allSettled(element.getAnimations({ subtree: true })
         .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
         .map(animation => animation.finished))
     })
     await page.screenshot({ path: join(output, '00-member-session.png') })
-    await memberInspection.getByRole('button', { name: '返回团队', exact: true }).click()
+    await memberInspection.getByRole('button', { name: '关闭对话', exact: true }).click()
     await memberInspection.waitFor({ state: 'hidden' })
     await workspace.getByRole('region', { name: '最近动态', exact: true }).waitFor()
     await workspace.getByRole('region', { name: '产物预览', exact: true }).waitFor()
@@ -148,7 +181,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     await workspace.getByRole('button', { name: '接口迁移', exact: true }).click()
     await workspace.getByRole('complementary', { name: '任务摘要' }).waitFor()
     await workspace.getByRole('complementary', { name: '任务摘要' }).evaluate(async (element) => {
-      await Promise.all(element.getAnimations().map(animation => animation.finished))
+      await Promise.allSettled(element.getAnimations().map(animation => animation.finished))
     })
     const taskInspector = workspace.getByRole('complementary', { name: '任务摘要' })
     await taskInspector.getByText('接口迁移：保留现有授权检查，并记录验证结果。', { exact: true }).first().waitFor()
@@ -189,7 +222,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     expect(await filter.inputValue()).toBe('接口')
     await workspace.getByRole('complementary', { name: '任务摘要' }).waitFor()
     await workspace.getByRole('button', { name: '与协调者沟通' }).click()
-    const session = page.getByRole('dialog', { name: '与协调者沟通', exact: true })
+    const session = page.getByRole('region', { name: '与协调者沟通', exact: true })
     await session.waitFor()
     const settled = scaffold.whenTurnSettled(30_000)
     const posted = page.waitForRequest(request => new URL(request.url()).pathname === '/api/team.postInput')
@@ -216,22 +249,22 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     const composer = session.locator('textarea:visible').last()
     await composer.fill('保留这段未发送的说明。')
     await session.evaluate(async (element) => {
-      await Promise.all(element.getAnimations().map(animation => animation.finished))
+      await Promise.allSettled(element.getAnimations().map(animation => animation.finished))
     })
     await page.screenshot({ path: join(output, '03-session.png') })
-    await session.getByRole('button', { name: '返回团队', exact: true }).click()
+    await session.getByRole('button', { name: '关闭对话', exact: true }).click()
     await session.waitFor({ state: 'hidden' })
     await workspace.getByRole('button', { name: '与协调者沟通' }).click()
     await session.waitFor()
     expect(await session.locator('textarea:visible').last().inputValue()).toBe('保留这段未发送的说明。')
-    await session.getByRole('button', { name: '返回团队', exact: true }).click()
+    await session.getByRole('button', { name: '关闭对话', exact: true }).click()
     await session.waitFor({ state: 'hidden' })
     expect(await filter.inputValue()).toBe('接口')
     await workspace.getByRole('complementary', { name: '任务摘要' }).waitFor()
     await page.setViewportSize({ width: 390, height: 844 })
     const collapsed = page.locator('[data-sidebar-collapsed]')
     await collapsed.waitFor()
-    await collapsed.evaluate(async (element) => { await Promise.all(element.getAnimations().map(animation => animation.finished)) })
+    await collapsed.evaluate(async (element) => { await Promise.allSettled(element.getAnimations().map(animation => animation.finished)) })
     const summaryBox = await workspace.getByRole('complementary', { name: '任务摘要' }).boundingBox()
     expect(summaryBox).not.toBeNull()
     expect(summaryBox!.x + summaryBox!.width).toBeLessThanOrEqual(390)
@@ -255,7 +288,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     await workspace.getByRole('navigation', { name: 'Team modules' }).getByRole('button', { name: 'Overview', exact: true }).click()
     await workspace.getByRole('region', { name: 'Recent activity' }).waitFor()
     await workspace.evaluate(async (element) => {
-      await Promise.all(
+      await Promise.allSettled(
         element.getAnimations({ subtree: true })
           .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
           .map(animation => animation.finished),
@@ -285,12 +318,18 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     longUrl.searchParams.set('team', longTeam.team.id)
     longUrl.searchParams.set('view', 'overview')
     await page.goto(longUrl.href, { waitUntil: 'load' })
-    const heading = page.getByRole('heading', { name: longObjective, exact: true })
+    // The header titles the Team with the objective's leading clause; the full
+    // objective is its tooltip and an explicit disclosure.
+    const heading = page.getByRole('heading', { level: 1 }).and(page.getByTitle(longObjective, { exact: true }))
     await page.getByRole('button', { name: 'View full objective', exact: true }).waitFor()
+    expect(await heading.textContent()).toBe('长目标验证')
     expect((await heading.boundingBox())!.height).toBeLessThanOrEqual(65)
+    const fullObjective = page.locator('[data-team-workspace-page] header p').filter({ hasText: longObjective })
+    expect(await fullObjective.isVisible()).toBe(false)
     await page.getByRole('button', { name: 'View full objective', exact: true }).click()
-    expect((await heading.boundingBox())!.height).toBeGreaterThan(65)
+    await fullObjective.waitFor()
     await page.getByRole('button', { name: 'Collapse', exact: true }).click()
+    await fullObjective.waitFor({ state: 'hidden' })
     await page.screenshot({ path: join(output, '07-long-objective.png') })
     expect(fullTeamReads).toBe(0)
     expect(fullMemberReads).toBe(0)
@@ -301,6 +340,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     expect(await page.getByText(longObjective, { exact: true }).count()).toBe(0)
     await page.screenshot({ path: join(output, '08-authorization-retired.png') })
     await scaffold.authenticateBrowserPage(page)
+    await page.getByRole('button', { name: 'Check access again', exact: true }).click()
     await heading.waitFor()
     await workspace.getByRole('navigation', { name: 'Team modules' }).getByRole('button', { name: 'Tasks', exact: true }).click()
     await workspace.getByRole('button', { name: 'Create task', exact: true }).click()

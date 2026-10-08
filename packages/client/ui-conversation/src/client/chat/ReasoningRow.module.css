@@ -17,10 +17,10 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--clocky-alias-bg-base) 60%, transparent) 55%,
+    color-mix(in srgb, var(--clocky-bg-canvas) 60%, transparent) 55%,
     transparent 100%
   );
-  animation: clocky-reasoning-row-sweep 2.6s ease-out infinite;
+  animation: clocky-reasoning-row-sweep var(--clocky-duration-sweep) var(--clocky-ease-enter) infinite;
   pointer-events: none;
 }
 
@@ -34,7 +34,7 @@
 }
 
 .chevron {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .title {
@@ -46,17 +46,17 @@
   width: 2px;
   height: 2px;
   margin: 0 8px;
-  border-radius: 1px;
-  background: var(--clocky-alias-label-caption);
+  border-radius: var(--clocky-radius-xs);
+  background: var(--clocky-fg-tertiary);
 }
 
 .summary {
   min-width: 0;
   overflow: hidden;
   flex: 1 1 auto;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 14px;
-  line-height: 24px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -67,9 +67,9 @@
 
 .thinkBody {
   padding: 4px 0 4px 22px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 14px;
-  line-height: 24px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   white-space: pre-wrap;
   word-break: break-word;
 }

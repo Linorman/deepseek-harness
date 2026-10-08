@@ -107,9 +107,7 @@ export class ModelDirectory {
       })
       return value
     } catch (error: unknown) {
-      if (this.disposed || generation !== this.generation) throw error
-      const message = error instanceof Error ? error.message : String(error)
-      this.store.update((s) => { s.status = 'error'; s.error = message })
+      this.publishError(generation, error)
       throw error
     }
   }
@@ -133,11 +131,15 @@ export class ModelDirectory {
         s.error = null
       })
     } catch (error: unknown) {
-      if (this.disposed || generation !== this.generation) throw error
-      const message = error instanceof Error ? error.message : String(error)
-      this.store.update((s) => { s.status = 'error'; s.error = message })
+      this.publishError(generation, error)
       throw error
     }
+  }
+
+  private publishError(generation: number, error: unknown): void {
+    if (this.disposed || generation !== this.generation) return
+    const message = error instanceof Error ? error.message : String(error)
+    this.store.update((s) => { s.status = 'error'; s.error = message })
   }
 
   /**

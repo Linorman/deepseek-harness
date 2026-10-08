@@ -4,6 +4,7 @@ import { ownerFixture } from './company-owner-fixture.ts'
 import { call } from './fixtures.ts'
 import { simulationProductManageInputSchema } from '../src/control-schema.ts'
 import { simulationProductOperationRetryInputSchema } from '../src/operation-retry-schema.ts'
+import type { SimulationProductOperationRetryReader } from '../src/registration-types.ts'
 
 afterEach(() => { vi.restoreAllMocks() })
 
@@ -26,6 +27,29 @@ async function unknown(h: Awaited<ReturnType<typeof ownerFixture>>) {
   publication.mockRestore()
   return { runId, operation }
 }
+
+it('discards a retired administration retry hint after its reader finishes late', async () => {
+  const h = await ownerFixture()
+  const release = Promise.withResolvers<undefined>()
+  try {
+    const { runId, operation } = await unknown(h)
+    const products = h.ctx.simulationProducts
+    const entry = (products as unknown as { operationRetryReader?: { read: SimulationProductOperationRetryReader } }).operationRetryReader
+    if (entry === undefined) throw new Error('Administration did not register its retry reader')
+    const entered = Promise.withResolvers<undefined>()
+    vi.spyOn(entry, 'read').mockImplementation(async (_runId, _operationId, native) => {
+      entered.resolve(undefined)
+      await release.promise
+      return { ...native, allowed: false, reason: 'capacity-unavailable' }
+    })
+    const pending = products.inspectObject({ runId, collection: 'operations', id: operation.id, section: 'execution' }, call())
+    await entered.promise
+    await h.fiber.dispose()
+    release.resolve(undefined)
+    const result = await pending
+    expect(result.value).toMatchObject({ retry: { allowed: false, reason: 'recovery-required' } })
+  } finally { release.resolve(undefined); await h.close() }
+})
 
 it.each(['json', 'sqlite'] as const)('keeps one bounded native grant and original payload through lost responses and cold reads (%s)', async (backend) => {
   const h = await ownerFixture(backend)

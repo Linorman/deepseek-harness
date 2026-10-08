@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { activationBindingSnapshotSchema, activationIdSchema, channelIdSchema, channelPostIdempotencyKeySchema, envelopeIdSchema, taskAttemptIdSchema, teamClosureIdempotencyKeySchema, teamHumanActionIdSchema, teamHumanActionSnapshotSchema, teamHumanActionSourceIdSchema, teamInterruptIdSchema, teamTaskCreateIdempotencyKeySchema, teamUsageSampleIdSchema } from '@clocky/clocky-team'
 import type { ActivationBindingSnapshot, ChannelManifest, JsonValue, TeamChannelAdapter, TeamHumanActionSnapshot, TeamTaskSnapshot, TeamUsageSample } from '@clocky/clocky-team'
 import { SessionId } from '@clocky/clocky-session'
@@ -8,10 +8,12 @@ import {
   channelRecordCursor,
   channelProjectionData,
   channelProjectionFromData,
+  assertTaskRetirementEvidence,
   foldChannelRecord,
   foldTeamRecord,
   teamProjectionData,
   teamProjectionFromData,
+  taskUpdateFailure,
   usageFromSamples,
 } from '../src/fold.ts'
 import type { TeamJournalRecord, TeamProjection } from '../src/types.ts'
@@ -117,6 +119,57 @@ function taskBaseTeam(): TeamProjection {
     activations: new Map([[binding.activation.id, binding]]),
   }
 }
+
+it('rejects a reused agent task-create command across distinct task ids', () => {
+  const active = taskBaseTeam()
+  const first = foldTeamRecord(active, taskChanged({ task: task(), createdAt: 13 }), active.team.cursor + 1, teamId)
+  const original = first.tasks.get(taskId)
+  if (original === undefined) throw new Error('task fixture did not fold')
+  failure(() => foldTeamRecord(first, taskChanged({ task: task({ id: otherTaskId, createdAt: 14,
+    createCommand: original.createCommand }), createdAt: 14 }), first.team.cursor + 1, teamId),
+  'TEAM_JOURNAL_MALFORMED')
+})
+
+it('requires an activation binding for retained controller retirement evidence', () => {
+  const active = taskBaseTeam()
+  const terminal = task({ phase: 'cancelled', attemptCount: 1, attemptHistory: [{ ...settledAttempt(),
+    retirement: { source: 'quiesced' as const } }] })
+  active.tasks.set(terminal.id, terminal)
+  expect(failure(() => { assertTaskRetirementEvidence(active) }, 'TEAM_JOURNAL_MALFORMED').message)
+    .toContain('no matching controller quiescence')
+})
+
+it('accepts failed retirement evidence only for the owning Simulation task', () => {
+  const active = taskBaseTeam()
+  const originalBinding = active.activations.get(taskCreatorActivationId)
+  if (originalBinding === undefined) throw new Error('task fixture has no creator activation')
+  active.activations.set(taskCreatorActivationId, { ...originalBinding,
+    quiescedAt: 20, quiescenceSource: 'quiesced', quiescedWakeChannelIds: [] })
+  const failed = task({ phase: 'failed', attemptCount: 1, attemptHistory: [{ ...settledAttempt({
+    participantId: taskCreatorId, activationId: taskCreatorActivationId,
+    outcome: { kind: 'failed', failure: { code: 'FAILED', message: 'Task failed.' } },
+  }), retirement: { source: 'quiesced' as const } }] })
+  active.tasks.set(failed.id, failed)
+  expect(failure(() => { assertTaskRetirementEvidence(active) }, 'TEAM_JOURNAL_MALFORMED').message)
+    .toContain('no matching controller quiescence')
+  const simulation = { ...failed, createCommand: { ...failed.createCommand, creator: {
+    kind: 'simulation', teamId, runId: 'run-a', operationId: 'operation-a',
+  } as never } }
+  const simulationProjection = { ...active, tasks: new Map([[failed.id, simulation]]), rules: { simulationRunId: 'run-a' } }
+  expect(() => { assertTaskRetirementEvidence(simulationProjection) }).not.toThrow()
+  expect(() => { assertTaskRetirementEvidence({ ...simulationProjection, rules: { simulationRunId: 'run-b' } }) })
+    .toThrow(/no matching controller quiescence/)
+})
+
+it('propagates unexpected task-edit fold failures without converting them into a user refusal', () => {
+  const active = taskBaseTeam()
+  const retained = foldTeamRecord(active, taskChanged({ task: task(), createdAt: 13 }), active.team.cursor + 1, teamId)
+  const clone = vi.spyOn(globalThis, 'structuredClone').mockImplementationOnce(() => { throw new Error('clone failed') })
+  try {
+    expect(() => taskUpdateFailure(retained, { taskId, expectedRevision: 1, subject: 'Updated' } as never))
+      .toThrow('clone failed')
+  } finally { clone.mockRestore() }
+})
 
 /** Build one durable local activation binding for a fixture participant. */
 function activationBinding(overrides: Record<string, unknown> = {}): ActivationBindingSnapshot {
@@ -736,6 +789,9 @@ describe('Team journal fold', () => {
         outcome: { kind: 'released' },
       })],
     })
+    failure(() => foldTeamRecord(projection, rawTaskChanged({ ...released,
+      attemptHistory: [{ ...released.attemptHistory[0]!, retirement: { source: 'quiesced' } }],
+    }, 20), 10, teamId), 'TEAM_JOURNAL_MALFORMED')
     projection = foldTeamRecord(projection, taskChanged({ task: released, createdAt: 20 }), 10, teamId)
     const releasedProjection = projection
     expect(projection.tasks.get(taskId)).toMatchObject({

@@ -8,7 +8,7 @@ import type { SimulationCommand } from '../src/client/simulations/administration
 import { FakeApiClient, ok, err } from './fake-api.client.ts'
 import type { ProductAuthorizationScope } from '@clocky/clocky-host-apiproxy/api/rpc'
 
-const create: SimulationCommand = { kind: 'create', input: { commandId: 'original', templateId: 'company', templateVersion: '1',
+const create: SimulationCommand = { kind: 'create', input: { commandId: 'original', templateId: 'company', templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' },
   name: 'Company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } } } as SimulationCommand
 const receipt: SimulationProductRequestReceipt = { commandId: 'original' as never, runId: 'run' as never,
   kind: 'create', status: 'accepted', acceptedAt: 1 }
@@ -20,6 +20,8 @@ const cases: ReadonlyArray<[SimulationCommand, keyof FakeApiClient['simulations'
     reason: 'Reconcile persisted original target' } as never }, 'retryOperation', { ...receipt, kind: 'retry-operation' }],
   [{ kind: 'review', input: { ...call, operationId: 'operation', attemptId: 'attempt', expectedRevision: 2,
     nextPhase: 'completed', reason: 'Approve original attempt' } as never }, 'resolveTaskReview', { ...receipt, kind: 'review' }],
+  [{ kind: 'cancel-task', input: { ...call, operationId: 'operation' as never, expectedRevision: 2,
+    expectedAttemptId: null, reason: 'Cancel original task' } }, 'cancelTask', { ...receipt, kind: 'cancel-task' }],
   [{ kind: 'prepare', input: call }, 'prepare', { ...receipt, kind: 'prepare' }],
   [{ kind: 'checkpoint', input: call }, 'checkpoint', { ...receipt, kind: 'checkpoint', checkpointId: 'full' }],
   [{ kind: 'restore', input: { ...call, checkpointId: 'full' } as never }, 'restore', { ...receipt, kind: 'restore', checkpointId: 'full' }],
@@ -38,6 +40,74 @@ function fixture(maxCommands = 8, maxBytes = 65536) {
   return { ctx, api, source, admin,
     retain: (command: SimulationCommand) => admin.retain(command, source.state.getSnapshot().authorizationVersion) }
 }
+
+it('retires authorization reentrantly before a pending command can reach the API', async () => {
+  const h = fixture()
+  try {
+    const key = h.retain(create)
+    const send = vi.spyOn(h.api.simulations, 'create')
+    const dispose = h.admin.state.subscribe(() => {
+      if (h.admin.state.getSnapshot().commands[key]?.pending) h.source.clearAuthorization()
+    })
+    expect(await h.admin.submit(key)).toBeUndefined()
+    expect(send).not.toHaveBeenCalled()
+    expect(h.admin.state.getSnapshot().commands).toEqual({})
+    dispose()
+  } finally { await h.ctx.fiber.dispose() }
+})
+
+it('rejects new retained commands and ignores late queries after its owning context retires', async () => {
+  const h = fixture()
+  const key = h.retain(create)
+  const send = vi.spyOn(h.api.simulations, 'create')
+  await h.ctx.fiber.dispose()
+  expect(() => h.retain(create)).toThrow('Simulation connection is unavailable')
+  expect(await h.admin.query(key)).toBeUndefined()
+  expect(await h.admin.submit(key)).toBeUndefined()
+  expect(send).not.toHaveBeenCalled()
+})
+
+const lookupMutations = (['cancel-task', 'review', 'retry-operation'] as const).flatMap((kind) => {
+  const fields = ['runId', 'commandId', 'operationId', 'reason', 'missing',
+    ...kind === 'retry-operation' ? ['expectedAttemptCount']
+      : kind === 'review' ? ['expectedRevision', 'attemptId', 'nextPhase'] : ['expectedRevision', 'expectedAttemptId']]
+  return fields.map(field => ({ kind, field }))
+})
+it.each(lookupMutations)('retains $kind uncertainty when original lookup substitutes $field', async ({ kind, field }) => {
+  const h = fixture()
+  try {
+    const [command, method] = cases.find(([value]) => value.kind === kind)!
+    if (command.kind !== 'cancel-task' && command.kind !== 'review' && command.kind !== 'retry-operation') throw new Error('Expected an original mutation')
+    const key = h.retain(command)
+    const send = vi.spyOn(h.api.simulations, method).mockRejectedValueOnce(new Error('Response lost'))
+    await h.admin.submit(key)
+    const change = field === 'expectedRevision' || field === 'expectedAttemptCount' ? 3 : field === 'nextPhase' ? 'pending' : 'foreign'
+    const original = { ...command.input, [field]: change }
+    const originalField = kind === 'cancel-task' ? 'cancellation' : kind === 'review' ? 'review' : 'retryOperation'
+    vi.spyOn(h.api.simulations, 'request').mockResolvedValueOnce(ok({ status: 'found',
+      request: { ...receipt, kind, status: 'completed' },
+      ...field === 'missing' ? {} : { [originalField]: original },
+    }) as never)
+    expect(await h.admin.query(key)).toMatchObject({ unknown: true, error: 'network' })
+    expect(h.admin.state.getSnapshot().commands[key]?.receipt).toBeUndefined()
+    expect(h.admin.release(key)).toBe(false)
+    expect(send).toHaveBeenCalledOnce()
+  } finally { await h.ctx.fiber.dispose() }
+})
+
+it.each(['runId', 'commandId'] as const)('refuses retried request publication and lookup that substitutes %s', async (field) => {
+  const h = fixture()
+  try {
+    const command: Extract<SimulationCommand, { kind: 'retry-request' }> = { kind: 'retry-request', input: call }
+    const key = h.retain(command)
+    const changed = { ...receipt, [field]: 'foreign' }
+    vi.spyOn(h.api.simulations, 'retryRequest').mockResolvedValueOnce(ok(changed))
+    expect(await h.admin.submit(key)).toMatchObject({ unknown: true, error: 'network' })
+    vi.spyOn(h.api.simulations, 'request').mockResolvedValueOnce(ok({ status: 'found', request: changed }) as never)
+    expect(await h.admin.query(key)).toMatchObject({ unknown: true, error: 'network' })
+    expect(h.admin.state.getSnapshot().commands[key]?.receipt).toBeUndefined()
+  } finally { await h.ctx.fiber.dispose() }
+})
 
 it('preserves a refused review original and independent viewing until actual authentication retires', async () => {
   const h = fixture()
@@ -89,6 +159,7 @@ it.each(cases)('submits the retained %s to the existing authenticated API and in
     const found = command.kind === 'manage' ? { runId: 'run', managementId: 'original', status: 'found', operation: (result as { operation: unknown }).operation }
       : command.kind === 'ingress' ? { runId: 'run', ingressId: 'original', status: 'found', receipt: result } : { status: 'found', request: result,
         ...command.kind === 'retry-operation' ? { retryOperation: command.input } : {},
+        ...command.kind === 'cancel-task' ? { cancellation: command.input } : {},
         ...command.kind === 'review' ? { review: { ...command.input, reason: command.input.reason.trim() } } : {} }
     const query = vi.spyOn(h.api.simulations, queryMethod).mockResolvedValueOnce(ok(found) as never)
       .mockResolvedValueOnce(ok({ status: 'not-found' }) as never)
@@ -260,5 +331,20 @@ it('allows release of a known failed original but refuses in-progress results an
     await h.admin.submit(managed); expect(h.admin.release(managed)).toBe(false)
     expect(await h.admin.submit('missing' as never)).toBeUndefined()
     expect(await h.admin.query('missing' as never)).toBeUndefined()
+  } finally { await h.ctx.fiber.dispose() }
+})
+
+it('releases a definitive model-change refusal but preserves uncertainty after transport loss', async () => {
+  const h = fixture()
+  try {
+    const key = h.retain(create)
+    const send = vi.spyOn(h.api.simulations, 'create').mockResolvedValueOnce(err({
+      code: 'simulation-product-model-changed', message: 'Confirm the current model', details: {} }))
+    expect(await h.admin.submit(key)).toMatchObject({ error: 'model-changed', unknown: false, notAccepted: true })
+    expect(h.admin.release(key)).toBe(true)
+    const replacement = h.retain({ ...create, input: { ...create.input, commandId: 'after-confirmation' } } as SimulationCommand)
+    send.mockRejectedValueOnce(new Error('Response lost'))
+    expect(await h.admin.submit(replacement)).toMatchObject({ unknown: true, error: 'network' })
+    expect(h.admin.release(replacement)).toBe(false)
   } finally { await h.ctx.fiber.dispose() }
 })

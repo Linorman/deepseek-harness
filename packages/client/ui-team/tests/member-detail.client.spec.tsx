@@ -60,3 +60,38 @@ it('copies the exact member ID and reports clipboard denial without claiming suc
     else Object.defineProperty(navigator, 'clipboard', original)
   }
 })
+
+it('keeps loading and stale capability pages explicit and returns to the first bounded page', () => {
+  const read = vi.fn().mockResolvedValue(undefined)
+  const props = { teamId: detail.record.teamId, participantId: detail.record.id, read, closeDetail: vi.fn(),
+    translate: makeTranslate(en), onClose: vi.fn() }
+  const state: TeamMemberDetailState = { teamId: detail.record.teamId, participantId: detail.record.id,
+    value: undefined, loading: true, disconnected: false, hasNewer: false }
+  const view = render(<MemberDetail {...props} detail={state} />)
+  expect(view.getByText(en['memberDetail.loading'])).toBeTruthy()
+  view.rerender(<MemberDetail {...props} detail={{ ...state, loading: false, hasNewer: true,
+    value: { ...detail, startCursor: 1, nextCursor: undefined,
+      record: { ...detail.record, preset: 'worker', model: 'model', authScheme: 'scheme' } } }} />)
+  expect(view.getByText(en['memberDetail.stale'])).toBeTruthy()
+  for (const text of ['worker', 'model', 'scheme']) expect(view.getByText(text)).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: en['detail.firstPage'] }))
+  expect(read).toHaveBeenLastCalledWith(detail.record.teamId, detail.record.id, 'first')
+})
+
+it('reports host clipboard access failure without success feedback', async () => {
+  const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+  Object.defineProperty(navigator, 'clipboard', { configurable: true,
+    get() { throw new DOMException('Host clipboard is unavailable', 'SecurityError') } })
+  try {
+    const view = render(<MemberDetail teamId={detail.record.teamId} participantId={detail.record.id}
+      read={vi.fn().mockResolvedValue(undefined)} closeDetail={vi.fn()} translate={makeTranslate(en)} onClose={vi.fn()}
+      detail={{ teamId: detail.record.teamId, participantId: detail.record.id,
+        value: detail, loading: false, disconnected: false, hasNewer: false }} />)
+    fireEvent.click(view.getByRole('button', { name: en['memberDetail.copyId'] }))
+    await view.findByText(en['memberDetail.copyFailed'])
+    expect(view.queryByText(en['memberDetail.copiedId'])).toBeNull()
+  } finally {
+    if (original === undefined) Reflect.deleteProperty(navigator, 'clipboard')
+    else Object.defineProperty(navigator, 'clipboard', original)
+  }
+})

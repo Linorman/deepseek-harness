@@ -8,7 +8,7 @@ const teamId = 'refs-team' as TeamId
 const ids = ['first', 'second', 'third'].map(id => id as TeamTaskId)
 const options = { capacity: 8, batchSize: 2, refreshMs: 1_000_000 }
 const owners: TaskReferences[] = []
-afterEach(() => { owners.splice(0).forEach(owner => owner.close()); vi.useRealTimers() })
+afterEach(() => { owners.splice(0).forEach((owner) =>{  owner.close() }); vi.useRealTimers() })
 const page = (taskIds: readonly TeamTaskId[] = ids, cursor = 1): TeamTaskReferencesPage => ({ teamId, teamCursor: cursor,
   items: taskIds.map(taskId => ({ taskId, state: 'unavailable' })) })
 async function settled(state: () => TaskReferencesState | undefined) { await vi.waitFor(() => { expect(state()?.loading).toBe(false) }) }

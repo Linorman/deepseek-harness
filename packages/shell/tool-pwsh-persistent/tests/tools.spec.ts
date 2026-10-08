@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { join } from 'node:path'
 import { Context } from '@clocky/cordis'
 import { CallId } from '@clocky/clocky-llm'
 import { Session, SessionId } from '@clocky/clocky-session'
-import AgentRegistry, { Inbox } from '@clocky/clocky-agent'
+import AgentRegistry, { Inbox, openAgentWorkspaceLease } from '@clocky/clocky-agent'
 import type { Agent } from '@clocky/clocky-agent'
 import TerminalSessionService from '@clocky/clocky-terminal'
 import type {
@@ -326,6 +327,55 @@ async function setup(
 }
 
 describe('tool-pwsh-persistent', () => {
+  it('retires the cached shell when its live Agent workspace lease moves to another allocation', async () => {
+    const { ctx, owner, stub } = await setup()
+    const lease = openAgentWorkspaceLease(owner)
+    const firstRoot = join(process.cwd(), '.tmp', 'allocation-first')
+    const secondRoot = join(process.cwd(), '.tmp', 'allocation-second')
+    const roots: Array<string | undefined> = []
+    const spawn = stub.backend.spawn.bind(stub.backend)
+    stub.backend.spawn = async (spec) => { roots.push(spec.cwd); return await spawn(spec) }
+    try {
+      lease.publishRoot(firstRoot)
+      expect(text(await call(ctx, owner, 'Write-Output first'))).toBe('hello from stub')
+      lease.publishRoot(secondRoot)
+      expect(text(await call(ctx, owner, 'Write-Output second'))).toBe('hello from stub')
+      expect(text(await call(ctx, owner, 'Write-Output reused'))).toBe('hello from stub')
+      expect(roots).toEqual([firstRoot, secondRoot])
+      expect(stub.sessions[0]?.closed).toEqual(['Team workspace allocation changed'])
+      expect(stub.sessions[1]?.closed).toEqual([])
+    } finally { lease.dispose() }
+  })
+
+  it.each([0, 1, 2, 3, 4])('leaves no live owner shell when handoff overlaps disposal (queue turns: %s)', async (queueTurns) => {
+    const { ctx, owner, stub } = await setup()
+    const lease = openAgentWorkspaceLease(owner)
+    try {
+      lease.publishRoot(join(process.cwd(), '.tmp', 'allocation-first'))
+      await call(ctx, owner, 'Write-Output warmup')
+      lease.publishRoot(join(process.cwd(), '.tmp', 'allocation-second'))
+      ctx.on('tools/execute', async (_exec, next) => {
+        const running = next()
+        const closing = new Promise<void>((resolve, reject) => {
+          queueMicrotask(() => {
+            const dispose = async () => {
+              for (let turn = 0; turn < queueTurns; turn += 1) await Promise.resolve()
+              await owner.ctx.fiber.dispose()
+            }
+            dispose().then(resolve, reject)
+          })
+        })
+        const result = await running
+        await closing
+        return result
+      })
+      const result = await call(ctx, owner, 'Write-Output handoff')
+      if (!result.isError) expect(text(result)).toBe('hello from stub')
+      expect(ctx.terminals.list(owner)).toEqual([])
+      expect(stub.sessions.every(session => session.closed.length > 0)).toBe(true)
+    } finally { lease.dispose() }
+  })
+
   it('registers a configurable schema and reuses one owner shell', async () => {
     const { ctx, owner, stub, fiber } = await setup({
       backendType: 'stub',

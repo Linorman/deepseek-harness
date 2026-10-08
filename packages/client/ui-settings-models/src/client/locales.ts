@@ -2,6 +2,20 @@
 
 /** English strings (the key-set source of truth for this pair). */
 export const en = {
+  'defaultModel.title': 'Default model',
+  'defaultModel.hint': 'Choose the route used by new work and Simulation templates. Provider-default reasoning works with Simulation.',
+  'defaultModel.unavailable': 'The model directory is unavailable. Configure a provider or refresh this page.',
+  'defaultModel.changed': 'The saved default changed while you were editing. Review it before saving.',
+  'defaultModel.chooseProvider': 'Choose provider',
+  'defaultModel.model': 'Model',
+  'defaultModel.chooseModel': 'Choose model',
+  'defaultModel.reasoning': 'Reasoning effort',
+  'defaultModel.providerDefault': 'Provider default',
+  'defaultModel.save': 'Save default model',
+  'defaultModel.saved': 'Default model saved. Close Settings to return to your input.',
+  'defaultModel.failed': 'The default could not be saved. Your input is kept; review the current configuration and try again.',
+  'defaultModel.review': 'Review current default',
+  authorizationRequired: 'Renew browser access, then use Check access again in the connection banner.',
   nav: 'Models',
   title: 'Models',
   intro: 'Enter your API keys to use models from the following providers.',
@@ -94,6 +108,20 @@ export type ModelsKey = keyof typeof en
 
 /** Chinese strings (same keys as {@link en}). */
 export const zh: { [Key in keyof typeof en]: string } = {
+  'defaultModel.title': '默认模型',
+  'defaultModel.hint': '选择新任务与仿真模板使用的路由。仿真支持提供方默认推理行为。',
+  'defaultModel.unavailable': '模型目录不可用，请配置提供方或刷新此页。',
+  'defaultModel.changed': '编辑期间保存的默认值已变化，请查看当前默认值后再保存。',
+  'defaultModel.chooseProvider': '选择提供方',
+  'defaultModel.model': '模型',
+  'defaultModel.chooseModel': '选择模型',
+  'defaultModel.reasoning': '推理强度',
+  'defaultModel.providerDefault': '提供方默认',
+  'defaultModel.save': '保存默认模型',
+  'defaultModel.saved': '默认模型已保存。关闭设置即可返回输入。',
+  'defaultModel.failed': '无法保存默认值，输入已保留；请检查当前配置后重试。',
+  'defaultModel.review': '查看当前默认值',
+  authorizationRequired: '请更新浏览器访问凭据，再在连接提示中选择“重新检查访问”。',
   nav: '模型',
   title: '模型',
   intro: '填入各提供方的 API 密钥即可使用其模型。',

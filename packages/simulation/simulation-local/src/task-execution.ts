@@ -200,11 +200,7 @@ export function assertTaskResultEvidence(state: SimulationSnapshot,
   result: import('@clocky/clocky-simulation').SimulationTaskResultRequest): void {
   if (execution.request.reportContinuation !== undefined) {
     const report = taskReportContinuationEvidence(state, execution.request)
-    const acknowledged = execution.decisions?.some((association) => {
-      const decision = state.decisions[association.request.decisionId]
-      return association.input !== undefined && decision?.status === 'accepted' && decision.epoch === execution.request.epoch
-        && decision.entityId === execution.request.entityId && decision.operationIds.length === 0
-    })
+    const acknowledged = hasCurrentEmptyAcknowledgement(state, execution)
     if (report === undefined || !acknowledged || result.operations.length !== 1 || result.operations[0] !== report.id) {
       throw new Error('Simulation report continuation result requires its recorded acknowledgement and exact original report')
     }
@@ -212,11 +208,7 @@ export function assertTaskResultEvidence(state: SimulationSnapshot,
   }
   if (execution.request.interaction?.execution === 'continuation') {
     const evidence = taskContinuationEvidence(state, execution.request)
-    const acknowledged = execution.decisions?.some((association) => {
-      const decision = state.decisions[association.request.decisionId]
-      return association.input !== undefined && decision?.status === 'accepted' && decision.epoch === execution.request.epoch
-        && decision.entityId === execution.request.entityId && decision.operationIds.length === 0
-    })
+    const acknowledged = hasCurrentEmptyAcknowledgement(state, execution)
     if (evidence === undefined || !acknowledged || result.operations.length !== evidence.length
       || result.operations.some(id => !evidence.includes(id))) {
       throw new Error('Simulation task continuation result requires its recorded acknowledgement and exact original transfer evidence')
@@ -336,4 +328,15 @@ function assertTaskInteractionSource(request: import('@clocky/clocky-simulation'
     || task.executor !== undefined && (task.executor.outcome === undefined || task.executor.participantId !== request.participantId)) {
     throw new Error('Simulation task interaction differs from its original pending task')
   }
+}
+
+/** Require a current accepted empty-effect decision before acknowledging retained continuation evidence. */
+function hasCurrentEmptyAcknowledgement(
+  state: SimulationSnapshot, execution: import('@clocky/clocky-simulation').SimulationTaskExecution,
+): boolean {
+  return execution.decisions?.some((association) => {
+    const decision = state.decisions[association.request.decisionId]
+    return association.input !== undefined && decision?.status === 'accepted' && decision.epoch === execution.request.epoch
+      && decision.entityId === execution.request.entityId && decision.operationIds.length === 0
+  }) === true
 }

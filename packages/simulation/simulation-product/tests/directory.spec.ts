@@ -46,6 +46,17 @@ it('binds encrypted pages to every authenticated query fact and service lifetime
   expect(() => new DirectoryCursorCodec().decode(value, reader, query)).toThrow(/expired/)
 })
 
+it('rejects a watch continuation after its principal or run scope changes', () => {
+  const codec = new DirectoryCursorCodec()
+  const reader = call()
+  const scope = 'watch:run'
+  const value = codec.encode(reader, { scope, revision: 3, search: 'watch:policy', limit: 1, offset: 0 })
+  expect(codec.watchRevision(value, reader, scope)).toEqual({ revision: 3, readVersion: 'policy' })
+  expect(() => codec.watchRevision(value, { ...reader,
+    principal: { ...reader.principal, id: 'other' as never } }, scope)).toThrow(/watch continuation expired/)
+  expect(() => codec.watchRevision(value, reader, 'watch:other-run')).toThrow(/watch continuation expired/)
+})
+
 it('rejects browser-supplied authority, paths and inconsistent or imprecise observations', () => {
   expect(() => simulationProductImportSchema.parse({ ...registration(), secret: 'credential' })).toThrow()
   for (const bad of [{ limit: 0 }, { limit: 1.2 }, { provider: 'local' }, { principalId: 'reader' }]) {

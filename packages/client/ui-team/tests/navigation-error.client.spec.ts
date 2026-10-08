@@ -17,3 +17,11 @@ it('keeps invalid links and historical binding refusals explicit, while unknown 
   expect(describeNavigationFailure(new WorkspaceNavigationError('binding', 'Old Session')).reason).toBe('binding')
   expect(describeNavigationFailure(new TypeError('Failed to fetch')).reason).toBe('failed')
 })
+
+it('classifies ordinary transport errors with string codes while retaining malformed codes as failures', () => {
+  expect(describeNavigationFailure(Object.assign(new Error('Missing target'), { code: 'team-artifact-not-found' })))
+    .toEqual({ reason: 'missing', detail: 'Missing target' })
+  expect(describeNavigationFailure(Object.assign(new Error('Denied'), { code: 'TEAM_POLICY_DENIED' })).reason).toBe('forbidden')
+  expect(describeNavigationFailure(Object.assign(new Error('Invalid code'), { code: 42 })).reason).toBe('failed')
+  expect(describeNavigationFailure('transport rejected')).toEqual({ reason: 'failed', detail: 'Unknown navigation failure' })
+})

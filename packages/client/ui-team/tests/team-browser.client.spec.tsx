@@ -13,7 +13,7 @@ import { ArtifactInspector } from '../../runtime/src/client/teams/artifact-inspe
 import type { TeamArtifactDetailState, TeamArtifactReadResult } from '@clocky/clocky-client-runtime/client'
 import { bindSnapshotSelector, makeTranslate } from '@clocky/clocky-client-test-runtime'
 import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
-import type { ChannelId, TeamCollectionsState, TeamId, TeamManagementCommand, TeamTaskListState, TeamChannelState, WorkspaceListState } from '@clocky/clocky-client-runtime/client'
+import type { ChannelId, TeamCollectionsState, TeamId, TeamManagementCommand, TeamTaskListState, TeamChannelState, TeamInboxPage, WorkspaceListState } from '@clocky/clocky-client-runtime/client'
 import { TeamBrowser } from '../src/client/TeamBrowser.tsx'
 import { TeamPage as SourceTeamPage, type TeamPageProps } from '../src/client/TeamPage.tsx'
 import { TeamTaskDialog as SourceTaskDialog } from '../src/client/TeamTaskDialog.tsx'
@@ -80,6 +80,11 @@ it('keeps the selected Team visible outside the current sidebar page and offers 
   await waitFor(() => { expect(firstTeamPage).toHaveBeenCalledOnce() })
   expect(f.state.getSnapshot().items).toHaveLength(1)
   expect(view.getAllByRole('listitem')).toHaveLength(2)
+  act(() => { f.state.set({ ...f.state.getSnapshot(), selected: { teamId: full.team.id,
+    state: { ...selection, metadata: { kind: 'unavailable', reason: 'too-large' },
+      goal: { ...selection.goal, objective: { text: 'Partial objective', truncated: true } } },
+    coordinatorSessionId: sessionId } }) })
+  expect(view.getByRole('button', { name: /Partial objective…/ }).getAttribute('aria-current')).toBe('page')
 })
 
 
@@ -299,6 +304,46 @@ describe('TeamBrowser', () => {
     })
   })
 
+  it('reports a folder chooser failure and keeps the add action available for retry', async () => {
+    const pickDirectory = vi.fn().mockRejectedValueOnce(new Error('Folder access denied')).mockResolvedValueOnce('/tmp/project')
+    const b = props({ pickDirectory })
+    const view = render(<TeamBrowser {...b.props} />)
+    const add = view.getByRole('button', { name: 'Add working folder' })
+    fireEvent.click(add)
+    await waitFor(() => { expect(view.getByRole('alert').textContent).toBe('Error: Folder access denied') })
+    fireEvent.click(add)
+    await waitFor(() => { expect(pickDirectory).toHaveBeenCalledTimes(2) })
+    expect(add.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('treats an aborted folder chooser as a cancelled user action without a list error', async () => {
+    const pickDirectory = vi.fn().mockRejectedValueOnce(new DOMException('User cancelled', 'AbortError'))
+    const b = props({ pickDirectory })
+    const view = render(<TeamBrowser {...b.props} />)
+    const add = view.getByRole('button', { name: 'Add working folder' })
+    fireEvent.click(add)
+    await waitFor(() => { expect(pickDirectory).toHaveBeenCalledOnce() })
+    await waitFor(() => { expect(add.hasAttribute('disabled')).toBe(false) })
+    expect(view.queryByRole('alert')).toBeNull()
+  })
+
+  it('refreshes the visible Team recency label as the minute clock advances', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+      const b = props()
+      b.state.set({ ...b.state.getSnapshot(), items: [{ ...team('recent', 'active'), updatedAt: Date.now() }] })
+      const view = render(<TeamBrowser {...b.props} />)
+      const time = view.container.querySelector('[data-relative-time]')
+      expect(time?.textContent).toBe(b.props.t('time.justNow'))
+      act(() => { vi.advanceTimersByTime(60_000) })
+      expect(time?.textContent).toBe(b.props.t('time.minutes', { count: 1 }))
+    } finally {
+      cleanup()
+      vi.useRealTimers()
+    }
+  })
+
   it('groups Teams under registered Workspaces and starts a draft in one folder', async () => {
     const workspace = {
       workspaceId: 'workspace-one' as never,
@@ -326,6 +371,76 @@ describe('TeamBrowser', () => {
     expect(view.getByText('Objective one')).toBeTruthy()
     fireEvent.click(view.getByRole('button', { name: 'New team work in this folder Project one' }))
     expect(startDraft).toHaveBeenCalledWith({ cwd: workspace.path })
+    fireEvent.click(view.getByRole('button', { name: 'Project one1' }))
+    expect(startDraft).toHaveBeenCalledTimes(2)
+  })
+
+  it('selects a registered Workspace folder for an existing draft when no new-draft owner is installed', () => {
+    const workspace = { workspaceId: 'workspace-two' as never, path: '/tmp/existing', title: 'Existing project',
+      sessionIds: [], createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() }
+    const workspaces = createSnapshotStore<WorkspaceListState>({ items: [workspace], archivedSessionIds: [],
+      state: 'idle', phase: 'ready', error: null, baselinesReady: true, recentWorkspaceId: workspace.workspaceId })
+    const updateDraft = vi.fn()
+    const b = props({ useWorkspaces: bindSnapshotSelector(workspaces), updateDraft })
+    const view = render(<TeamBrowser {...b.props} />)
+    fireEvent.click(view.getByRole('button', { name: 'Existing project0' }))
+    expect(updateDraft).toHaveBeenCalledExactlyOnceWith({ cwd: workspace.path })
+    expect(view.getByText(en['workspace.empty'])).toBeTruthy()
+    act(() => { b.state.set({ ...b.state.getSnapshot(), nextCursor: 'next' as never }) })
+    expect(view.getByText(en['workspace.notLoaded'])).toBeTruthy()
+  })
+
+  it('keeps a Team whose folder is not in the registered Workspace list under Unassigned', () => {
+    const workspace = { workspaceId: 'known-workspace' as never, path: '/tmp/known', title: 'Known project',
+      sessionIds: [], createdAt: new Date(0).toISOString(), updatedAt: new Date(0).toISOString() }
+    const workspaces = createSnapshotStore<WorkspaceListState>({ items: [workspace], archivedSessionIds: [],
+      state: 'idle', phase: 'ready', error: null, baselinesReady: true, recentWorkspaceId: workspace.workspaceId })
+    const b = props({ useWorkspaces: bindSnapshotSelector(workspaces) })
+    b.state.set({ ...b.state.getSnapshot(), items: [{ ...team('detached', 'active'), workspacePath: '/tmp/other' }] })
+    const view = render(<TeamBrowser {...b.props} />)
+    const unassigned = view.getByRole('region', { name: en['workspace.unassigned'] })
+    expect(within(unassigned).getByRole('button', { name: /Objective detached/ })).toBeTruthy()
+    expect(view.getByRole('region', { name: 'Known project' })).toBeTruthy()
+  })
+
+  it('opens and closes the available principal Inbox from the wide Team list', () => {
+    const b = props({ refreshInbox: vi.fn(async () => {}), loadMoreInbox: vi.fn(async () => {}),
+      watchInbox: vi.fn(async (signal: AbortSignal) => await new Promise<never>((_resolve, reject) => {
+        signal.addEventListener('abort', () => { reject(new DOMException('closed', 'AbortError')) }, { once: true })
+      })),
+      acknowledgeInbox: vi.fn(async () => {}), readAction: vi.fn(async () => { throw new Error('No action selected') }),
+      respondAction: vi.fn(async () => { throw new Error('No action selected') }), openActionContext: vi.fn(async () => {}) })
+    b.state.set({ ...b.state.getSnapshot(), inbox: { connectionGeneration: 0, items: [], phase: 'ready',
+      displayCursor: -1, cursor: -1, nextCursor: undefined, loadingMore: false, acknowledging: false,
+      hasNewer: false, error: null } })
+    const view = render(<TeamBrowser {...b.props} />)
+    fireEvent.click(view.getByRole('button', { name: en['inbox.title'] }))
+    const dialog = view.getByRole('dialog', { name: en['inbox.title'] })
+    expect(dialog).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: en['inbox.close'] }))
+    expect(view.queryByRole('dialog', { name: en['inbox.title'] })).toBeNull()
+    view.rerender(<TeamBrowser {...b.props} wide={false} />)
+    fireEvent.click(view.getByRole('button', { name: en['inbox.title'] }))
+    expect(view.getByRole('dialog', { name: en['inbox.title'] })).toBeTruthy()
+    fireEvent.click(within(view.getByRole('dialog', { name: en['inbox.title'] }))
+      .getByRole('button', { name: en['inbox.close'] }))
+    const items: TeamInboxPage['items'] = Array.from({ length: 101 }, (_, index) => ({
+      kind: 'action' as const, sequence: index, teamId: 'badge-team' as never,
+      principalId: 'principal' as never, recipientId: 'human' as never,
+      action: { id: `request-${String(index)}` as never, teamId: 'badge-team' as never,
+        sessionId: 'session' as never, participantId: 'worker' as never, sourceId: 'source' as never,
+        kind: 'approval' as const, phase: 'pending' as const, createdAt: 1, updatedAt: 2,
+        details: { toolName: 'review', reason: 'Confirm this request', callId: `call-${String(index)}` } },
+      text: 'Review request',
+    }))
+    const inbox = b.state.getSnapshot().inbox
+    if (inbox === undefined) throw new Error('Inbox fixture disappeared')
+    act(() => { b.state.set({ ...b.state.getSnapshot(), inbox: { ...inbox, items: items.slice(0, 1) } }) })
+    expect(view.getByText('1')).toBeTruthy()
+    act(() => { b.state.set({ ...b.state.getSnapshot(), inbox: { ...inbox, items } }) })
+    expect(view.getByText('99+')).toBeTruthy()
+    view.rerender(<TeamBrowser {...b.props} wide />)
+    expect(view.getByText('99+')).toBeTruthy()
   })
 
   it('leaves collapsed domain navigation to the shared workspace entry', () => {
@@ -341,6 +456,20 @@ describe('TeamBrowser', () => {
     expect(view.getByText('Loading teams…')).toBeTruthy()
     act(() => { b.state.set({ ...b.state.getSnapshot(), phase: 'ready' }) })
     expect(view.getByText('No team work yet')).toBeTruthy()
+    act(() => { b.state.set({ ...b.state.getSnapshot(), nextCursor: 'next' as never }) })
+    expect(view.getByText(en['workspace.notLoaded'])).toBeTruthy()
+  })
+
+  it('leaves principal authentication errors to the connection banner while labeling other list failures', () => {
+    const b = props()
+    const view = render(<TeamBrowser {...b.props} />)
+    for (const code of ['PRODUCT_AUTH_INVALID', 'PRODUCT_AUTH_REQUIRED'] as const) {
+      act(() => { b.state.set({ ...b.state.getSnapshot(), error: { code, message: 'Credential rejected', details: {} } }) })
+      expect(view.queryByRole('alert')).toBeNull()
+    }
+    act(() => { b.state.set({ ...b.state.getSnapshot(), error: { code: 'internal', message: 'Host unavailable', details: {} } }) })
+    expect(view.getByRole('alert').textContent).toBe(en['list.loadFailed'])
+    expect(view.getByRole('alert').getAttribute('title')).toBe('Host unavailable')
   })
 
   it('renders every Team phase and resolves selection once while an open is pending', async () => {
@@ -378,6 +507,17 @@ describe('TeamBrowser', () => {
     await waitFor(() => {
       expect(view.getByRole('alert').textContent).toContain('coordinator unavailable')
     })
+  })
+
+  it('does not show an error when opening a Team is cancelled by an AbortError', async () => {
+    const b = props()
+    b.state.set({ ...b.state.getSnapshot(), items: [team('one', 'active')] })
+    b.openTeam.mockRejectedValueOnce(new DOMException('Navigation replaced', 'AbortError'))
+    const view = render(<TeamBrowser {...b.props} />)
+    fireEvent.click(view.getByText('Objective one'))
+    await waitFor(() => { expect(b.openTeam).toHaveBeenCalledOnce() })
+    await waitFor(() => { expect(view.getByText('Objective one').closest('button')?.hasAttribute('disabled')).toBe(false) })
+    expect(view.queryByRole('alert')).toBeNull()
   })
 
   it('archives only terminal Teams through the injected owner', async () => {
@@ -460,7 +600,13 @@ describe('TeamBrowser', () => {
       pendingActions={pendingActions}
     />)
 
-    expect(view.getByText('Coordinator needs recovery.')).toBeTruthy()
+    // Raw diagnostics stay behind the status popover's human summary.
+    expect(view.queryByText('Coordinator needs recovery.')).toBeNull()
+    fireEvent.click(view.getByRole('button', { name: 'Why' }))
+    const diagnosis = view.getByRole('dialog', { name: 'Stall diagnosis' })
+    expect(within(diagnosis).getByText('Coordinator needs recovery.')).toBeTruthy()
+    expect(within(diagnosis).getByRole('button', { name: 'Copy details' })).toBeTruthy()
+    fireEvent.keyDown(diagnosis, { key: 'Escape' })
     expect(view.getByText('Cancellation requested.')).toBeTruthy()
     expect(view.getAllByText('Review the patch').length).toBeGreaterThan(0)
     expect(view.queryByText(/Approval.*delete-file/)).toBeNull()
@@ -468,7 +614,7 @@ describe('TeamBrowser', () => {
     expect(view.queryByText('Question')).toBeNull()
     expect(view.queryByText('No Session available')).toBeNull()
     expect(view.getByRole('region', { name: 'Team members' })).toBeTruthy()
-    expect(view.getByText('Tokens').parentElement?.textContent).toContain('Tokens5')
+    expect(within(view.getByLabelText('Team progress')).getByText('Tokens').parentElement?.textContent).toBe('Tokens5')
 
     fireEvent.click(view.getByRole('button', { name: 'Resume' }))
     await waitFor(() => { expect(onResume).toHaveBeenCalledOnce() })

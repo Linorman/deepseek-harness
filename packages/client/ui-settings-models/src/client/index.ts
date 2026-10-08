@@ -82,7 +82,8 @@ export function apply(ctx: ClientContext): void {
       ctx.remote.$on('settings/document-updated', () => { refreshModels() }),
       ctx.remote.$on('credentials/reference-updated', refreshModels),
       ctx.remote.$on('llm/adapters-updated', refreshModels),
-      ctx.on('connection/reset', refreshModels),
+      ctx.on('connection/reset', () => { controller.resumeAuthorization(); refreshModels() }),
+      ctx.on('connection/authorization-cleared', () => { controller.clearAuthorization() }),
     ]
     return () => {
       for (const dispose of disposers) dispose()

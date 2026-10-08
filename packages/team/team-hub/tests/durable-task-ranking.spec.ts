@@ -1,6 +1,7 @@
 /** Ranking checkpoints remain derived from immutable attempts, including deleted-task tombstones. */
 import { describe, expect, it } from 'vitest'
 import { teamTaskRankingPolicySchema } from '@clocky/clocky-team'
+import { addTaskExecutionStats } from '../src/task-execution-stats.ts'
 import { taskOwnerRank } from '../../team-scheduler-dag/src/ranking.ts'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
 import { createdTeam, participant, participantChanged, task, taskChanged, taskCreatorActivationId, taskCreatorId,
@@ -94,3 +95,15 @@ for (const backend of ['json', 'sqlite'] as const) {
     })
   })
 }
+
+
+it('rejects a retained exact-integer histogram whose next accepted attempt would overflow', () => {
+  const candidate = task({ requiredCapabilities: ['worker'] })
+  const attempt = { id: 'attempt' as never, teamId, taskId: candidate.id, ordinal: 1, participantId: taskCreatorId,
+    assignedAt: 1, leaseExpiresAt: 3, settledAt: 2, outcome: { kind: 'completed' as const, result: { summary: 'Completed' } } }
+  const stats = { participantId: taskCreatorId, requiredCapabilities: ['worker'], completedAttempts: Number.MAX_SAFE_INTEGER,
+    failedAttempts: 0, totalLatencyMs: 0, latencyBucketCounts: [Number.MAX_SAFE_INTEGER] }
+  const previous = new Map([[JSON.stringify([taskCreatorId, ['worker']]), stats]])
+  expect(() => addTaskExecutionStats(previous, candidate, [attempt], {})).toThrow('exact integer range')
+  expect(previous.values().next().value).toBe(stats)
+})

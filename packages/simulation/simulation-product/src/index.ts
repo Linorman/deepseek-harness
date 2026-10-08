@@ -100,6 +100,7 @@ const contextReadersSchema = wire.array(wire.strictObject({ principalId: wire.st
 export class SimulationProductError extends Error {
   /** Stable public category. */
   readonly code: 'SIMULATION_PRODUCT_FORBIDDEN' | 'SIMULATION_PRODUCT_INVALID' | 'SIMULATION_PRODUCT_UNAVAILABLE' | 'SIMULATION_PRODUCT_STALE'
+    | 'SIMULATION_PRODUCT_MODEL_CHANGED'
   /** @param message - Public diagnostic. @param code - Stable failure category. */
   constructor(message: string, code: SimulationProductError['code']) { super(message); this.name = 'SimulationProductError'; this.code = code }
 }
@@ -323,6 +324,7 @@ export class SimulationProducts extends Service<Config> {
       for (const record of records) this.readable(record.id, call)
       const items: SimulationProductRunStatus[] = []
       for (const result of results) {
+        /* v8 ignore next -- Per-run errors become unavailable; monotonic authority failures fail the batch recheck above. */
         if (result.status === 'rejected') throw result.reason
         items.push(result.value)
       }

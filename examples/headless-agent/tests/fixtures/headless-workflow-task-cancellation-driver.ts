@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { Context } from '@clocky/cordis'
 import { CallId } from '@clocky/clocky-llm'
 import type { GenerateOptions, StreamChunk } from '@clocky/clocky-llm'
-import { InProcessApiClient, RpcId, toFetchHandler } from '@clocky/clocky-host-apiproxy'
+import { InProcessApiClient, RpcId, toFetchHandler, withAuthenticatedProductCall } from '@clocky/clocky-host-apiproxy'
 import type { RpcResponse } from '@clocky/clocky-host-apiproxy'
 import { teamWorkflowPlanSchema, teamWorkflowPlanIdSchema } from '@clocky/clocky-team'
 import type { TeamId, TeamStateSnapshot } from '@clocky/clocky-team'
@@ -132,11 +132,11 @@ async function run(ctx: Context, model: WorkflowCancellationModel) {
     })
   const stop = new AbortController()
   const approval = Promise.withResolvers<undefined>()
-  const pump = (async () => {
+  const pump = authentication.withCall(facts => withAuthenticatedProductCall(facts, async () => {
     for await (const frame of ctx.apiProxy.events.mux({ rpcId: RpcId('workflow-cancel-observer'), payload: {} }, stop.signal)) {
       if (frame.payload.type === 'approval/requested') approval.resolve(undefined)
     }
-  })()
+  }))
   try {
     const created = await call(async client => await client.teams.create({ objective: 'Cancel a workflow branch and preserve independent work.', cwd: process.cwd() }))
     const teamId = created.team.id

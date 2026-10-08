@@ -1,7 +1,7 @@
 /**
  * Sidebar slot contract: the registrant-side props composition for the
  * layout-owned `sidebar` slot, plus the holes this shell declares. The shell
- * owns column geometry (fold state machine, brand row, New Task);
+ * owns column geometry (fold state machine, brand row, new-team-work);
  * everything between the section header and the list bottom is the
  * `sidebar.teamTasks` registrant's (ui-team), with an optional legacy
  * `sidebar.workspaces` occupant for explicit custom compositions, and the
@@ -87,7 +87,7 @@ export interface SidebarFooterActionOwnerProps {
 /**
  * Registrant-private injected share (arrives via the register inject
  * factory). The shell keeps only its own controls: starting a Team task from
- * the New Task button and toggling the column.
+ * the new-team-work button and toggling the column.
  */
 export type SidebarRootInjected = {
   /**
@@ -96,6 +96,8 @@ export type SidebarRootInjected = {
   startTask: () => void
   /** Toggle the sidebar column through the layout service. */
   toggleSidebar: () => void
+  /** Open the shell command palette; absent when the layout service has none. */
+  openSearch?: (() => void) | undefined
 }
 
 /**

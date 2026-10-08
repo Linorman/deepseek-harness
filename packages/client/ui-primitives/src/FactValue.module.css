@@ -1,0 +1,90 @@
+.fact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--clocky-space-1);
+  min-width: 0;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.icon {
+  flex: none;
+}
+
+/* Unavailable: an empty dashed slot — never a digit. */
+.unavailable {
+  justify-content: center;
+  min-width: 28px;
+  padding: 0 var(--clocky-space-1);
+  border: 1px dashed var(--clocky-border-strong);
+  border-radius: var(--clocky-radius-xs);
+  color: var(--clocky-fg-tertiary);
+}
+
+/* Unknown outcome: hatched amber, the one state that asks for a person. */
+.unknown {
+  justify-content: center;
+  min-width: 28px;
+  padding: 0 var(--clocky-space-1);
+  border: 1px solid var(--clocky-status-needs-you-border);
+  border-radius: var(--clocky-radius-xs);
+  color: var(--clocky-status-needs-you-fg);
+  font-weight: 600;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--clocky-status-needs-you-bg) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+/* Stale: dimmed with a clock, neutral rather than error-colored. */
+.stale {
+  color: var(--clocky-fg-tertiary);
+}
+
+.withheld {
+  color: var(--clocky-fg-secondary);
+  font-style: italic;
+}
+
+.truncated .text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  /* Masks read alpha only; currentColor is opaque. */
+  mask-image: linear-gradient(90deg, currentColor calc(100% - 24px), transparent);
+}
+
+.truncated[data-expanded] .text {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  mask-image: none;
+}
+
+.expand {
+  flex: none;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--clocky-accent-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.expand:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--clocky-radius-xs);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

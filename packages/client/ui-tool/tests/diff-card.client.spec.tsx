@@ -203,7 +203,7 @@ describe('FileMutationRow diff card', () => {
     }), 'write')} />)
     // The footer counts live inside the collapsed diff card.
     toggleRow(view)
-    expect(view.getByText('└ +1 -0 · 1 file')).toBeTruthy()
+    expect(view.getByLabelText('+1 -0')).toBeTruthy()
   })
 
   it('reflects the run state on its leading slot', () => {

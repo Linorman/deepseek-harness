@@ -1,7 +1,7 @@
 import type { TeamStateSnapshot } from '@clocky/clocky-client-connection/client'
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react'
 import { makeTranslate } from '@clocky/clocky-client-test-runtime'
 import type { ChannelReadPageResult, TeamChannelAdmission, TeamChannelCatalogState, TeamManagementCommand, TeamTaskSelection } from '@clocky/clocky-client-runtime/client'
 import { TeamManagementDialog } from '../src/client/TeamManagementDialog.tsx'
@@ -33,6 +33,8 @@ describe('catalog-driven channel creation', () => {
   it('allows a direct channel with two humans and no coordinator role', async () => {
     const props = fixture()
     const view = render(<TeamManagementDialog {...props} />)
+    fireEvent.click(view.getByRole('button', { name: en['channel.refreshCatalog'] }))
+    expect(props.readCatalog).toHaveBeenCalledTimes(2)
     fireEvent.click(view.getByRole('radio', { name: 'Direct message v4' }))
     fireEvent.click(view.getByRole('radio', { name: 'recent-window v1' }))
     fireEvent.click(view.getByRole('checkbox', { name: /Worker/ }))
@@ -51,6 +53,11 @@ describe('catalog-driven channel creation', () => {
     expect(props.manage).not.toHaveBeenCalled()
     fireEvent.click(within(view.getByRole('group', { name: 'Initiator' })).getByRole('radio', { name: 'Human two' }))
     fireEvent.click(within(view.getByRole('group', { name: 'Respondent' })).getByRole('radio', { name: 'Worker' }))
+    fireEvent.click(within(view.getByRole('group', { name: 'Initiator' })).getByRole('radio', { name: 'Worker' }))
+    expect(within(view.getByRole('group', { name: 'Respondent' })).getByRole<HTMLInputElement>('radio', { name: 'Worker' }).checked).toBe(false)
+    fireEvent.click(within(view.getByRole('group', { name: 'Respondent' })).getByRole('radio', { name: 'Worker' }))
+    expect(within(view.getByRole('group', { name: 'Initiator' })).getByRole<HTMLInputElement>('radio', { name: 'Worker' }).checked).toBe(false)
+    fireEvent.click(within(view.getByRole('group', { name: 'Initiator' })).getByRole('radio', { name: 'Human two' }))
     fireEvent.click(view.getByRole('button', { name: 'Open channel' }))
     await waitFor(() => { expect(props.manage).toHaveBeenCalledOnce() })
     expect(props.manage.mock.calls[0]?.[0]).toMatchObject({ operation: 'channelOpen', input: { participants: [{ id: 'two', role: 'initiator' }, { id: 'worker', role: 'respondent' }], limits: {} } })
@@ -66,6 +73,8 @@ describe('catalog-driven channel creation', () => {
     fireEvent.change(view.getByLabelText('Maximum messages'), { target: { value: '3' } })
     fireEvent.click(view.getByRole('radio', { name: 'Free-form discussion' }))
     fireEvent.click(view.getByRole('button', { name: 'Move participant 3 up' }))
+    fireEvent.click(view.getByRole('button', { name: 'Move participant 1 down' }))
+    fireEvent.click(view.getByRole('button', { name: 'Move participant 2 up' }))
     fireEvent.click(view.getByRole('button', { name: 'Open channel' }))
     await waitFor(() => { expect(props.manage).toHaveBeenCalledOnce() })
     const command = props.manage.mock.calls[0]?.[0]
@@ -124,6 +133,77 @@ function summaryFixture(gap = false): ChannelReadPageResult {
 }
 
 describe('visible summary source selection', () => {
+  it('requires a displayed message and reports an empty displayed page', () => {
+    const props = fixture()
+    const original = summaryFixture()
+    const receiptOnly = { ...original, records: original.records.filter(record => record.type === 'channel/receipt') }
+    const view = render(<ChannelSummaryDialog page={receiptOnly} capabilities={capabilities}
+      translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    fireEvent.change(view.getByLabelText('First record sequence'), { target: { value: '11' } })
+    fireEvent.change(view.getByLabelText('Last record sequence'), { target: { value: '11' } })
+    fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
+    expect(view.getByRole('alert').textContent).toBe('The selected range must contain at least one message.')
+    expect(props.manage).not.toHaveBeenCalled()
+    view.rerender(<ChannelSummaryDialog page={{ ...original, records: [] }} capabilities={capabilities}
+      translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    expect(view.getByText('Source records —–—')).toBeTruthy()
+    fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
+    expect(view.getByRole('alert').textContent).toContain('contiguous')
+  })
+
+  it('keeps one summary request in flight and closes only after it succeeds', async () => {
+    const props = fixture()
+    let finish!: () => void
+    props.manage.mockImplementation(() => new Promise<void>((resolve) => { finish = resolve }))
+    const view = render(<ChannelSummaryDialog page={summaryFixture()} capabilities={capabilities}
+      readCatalog={props.readCatalog} translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    fireEvent.click(view.getByRole('button', { name: 'Refresh available options' }))
+    expect(props.readCatalog).toHaveBeenCalledOnce()
+    fireEvent.change(view.getByLabelText('First record sequence'), { target: { value: '10' } })
+    fireEvent.change(view.getByLabelText('Last record sequence'), { target: { value: '11' } })
+    fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
+    await waitFor(() => { expect(view.getByText('Submitting…')).toBeTruthy() })
+    fireEvent.submit(view.getByRole('dialog').querySelector('form')!)
+    expect(props.manage).toHaveBeenCalledOnce()
+    fireEvent.click(view.getAllByRole('button', { name: 'Cancel' })[0]!)
+    expect(props.onClose).not.toHaveBeenCalled()
+    finish()
+    await waitFor(() => { expect(props.onClose).toHaveBeenCalledOnce() })
+  })
+
+  it('shows a non-Error submission failure and permits an idle cancel', async () => {
+    const props = fixture()
+    const rejection: unknown = 'Summary service unavailable'
+    props.manage.mockRejectedValueOnce(rejection)
+    const view = render(<ChannelSummaryDialog page={summaryFixture()} capabilities={capabilities}
+      translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    fireEvent.change(view.getByLabelText('First record sequence'), { target: { value: '10' } })
+    fireEvent.change(view.getByLabelText('Last record sequence'), { target: { value: '11' } })
+    fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
+    await waitFor(() => { expect(view.getByRole('alert').textContent).toBe('Summary service unavailable') })
+    fireEvent.click(view.getAllByRole('button', { name: 'Cancel' })[0]!)
+    expect(props.onClose).toHaveBeenCalledOnce()
+  })
+
+  for (const outcome of ['success', 'failure'] as const) it(`ignores an aborted late summary ${outcome}`, async () => {
+    const props = fixture()
+    let settle!: () => void
+    props.manage.mockImplementation(() => new Promise<void>((resolve, reject) => {
+      settle = outcome === 'success' ? resolve : () => { reject(new Error('Late failure')) }
+    }))
+    const view = render(<ChannelSummaryDialog page={summaryFixture()} capabilities={capabilities}
+      translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    fireEvent.change(view.getByLabelText('First record sequence'), { target: { value: '10' } })
+    fireEvent.change(view.getByLabelText('Last record sequence'), { target: { value: '11' } })
+    fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
+    await waitFor(() => { expect(props.manage).toHaveBeenCalledOnce() })
+    const signal = props.manage.mock.calls[0]![1]!
+    view.unmount()
+    expect(signal.aborted).toBe(true)
+    await act(async () => { settle(); await Promise.resolve() })
+    expect(props.onClose).not.toHaveBeenCalled()
+  })
+
   it('keeps the displayed range and inputs after a text-only summary rejection', async () => {
     const props = fixture()
     props.manage.mockRejectedValueOnce(new Error('Extractive summaries require text-only source messages'))

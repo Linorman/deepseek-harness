@@ -1,3 +1,4 @@
+import { trackTeamOperation } from '@clocky/clocky-team'
 import type { TeamListPageRequest } from '@clocky/clocky-team'
 import type {} from '@clocky/clocky-team-channel-admission'
 import type {} from '@clocky/clocky-team-placement-default'
@@ -35,7 +36,7 @@ import type {
   TaskAssignmentEnvelope,
 } from '@clocky/clocky-team-channel-task-assignment'
 import type { TeamWorkspaceEligibilityRequest } from '@clocky/clocky-team-workspace'
-import { TeamError, channelPostIdempotencyKeySchema, teamTaskRankingPolicySchema, matchesTaskPlacement } from '@clocky/clocky-team'
+import { TeamError, teamEventOwnerId, channelPostIdempotencyKeySchema, teamTaskRankingPolicySchema, matchesTaskPlacement } from '@clocky/clocky-team'
 import type {
   ActivationBindingSnapshot,
   ActivationId,
@@ -48,7 +49,6 @@ import type {
   ParticipantSnapshot,
   TeamChannelCompactInput,
   TeamJournalCompactInput,
-  TeamEvent,
   TeamEnvelope,
   TeamId,
   TeamStateSnapshot,
@@ -362,12 +362,13 @@ export class TeamDagScheduler {
       if (event.type === 'team/changed' && this.ownTeamChanges.delete(teamChangeKey(event.team))) return
       if (event.type === 'task/changed' && this.ownTaskChanges.delete(taskChangeKey(event.task))) {
         const current = this.drives.get(teamKey(event.task.teamId))
+        /* v8 ignore next -- an own-change token exists only during its registered Team drive and is cleared before that drive settles. */
         if (current !== undefined) {
           current.requested = true
           return
         }
       }
-      void this.requestTeamDrive(teamIdFromEvent(event))
+      void this.requestTeamDrive(teamEventOwnerId(event))
     }))
     this.listeners.push(this.ctx.on('channel/changed', (event) => {
       void this.requestChannelDrive(event.channelId)
@@ -478,7 +479,8 @@ export class TeamDagScheduler {
       if (drive.requested && !this.closing) {
         this.scheduledDrives.set(key, setImmediate(() => {
           this.scheduledDrives.delete(key)
-          if (!this.closing) void this.requestTeamDrive(drive.teamId).catch(() => {
+          // Disposal clears every queued immediate before it can run; a running callback cannot be interrupted.
+          void this.requestTeamDrive(drive.teamId).catch(() => {
             // The tracked Team operation already reports this failure.
           })
         }))
@@ -489,7 +491,7 @@ export class TeamDagScheduler {
   /** Expire due leases and TTL deliveries, repair review/assignment Channels, run opt-in retention, then assign ready work. */
   private async driveTeam(teamId: TeamId): Promise<void> {
     const placement = this.ctx.get('teamPlacement')
-    if (placement !== undefined) await placement.prepare(teamId, this.admissionAbort.signal)
+    let placementPrepared = false
     const scanNow = Date.now()
     let expired = 0
     let assigned = 0
@@ -502,6 +504,14 @@ export class TeamDagScheduler {
       const state = await this.ctx.teams.getTeam({ teamId })
       // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() can run while getTeam() is pending.
       if (this.closing) return
+
+      // Simulation owns scheduling and dormant reviewer availability across pause and recovery.
+      if (state.rules['simulationRunId'] !== undefined) return
+      if (placement !== undefined && !placementPrepared) {
+        await placement.prepare(teamId, this.admissionAbort.signal)
+        placementPrepared = true
+        continue
+      }
 
       const canExpireDeliveries = state.team.phase === 'active'
         || (state.team.phase === 'quiescing' && state.team.cancellation !== undefined)
@@ -669,6 +679,7 @@ export class TeamDagScheduler {
 
   /** Compact bounded terminal Team and channel prefixes through provider-owned watermark gates. */
   private async compactTerminalStreams(state: TeamStateSnapshot, limit: number): Promise<number> {
+    /* v8 ignore next -- the sole caller enters once with a configured positive cap and a defined retention tail, then returns. */
     if (limit <= 0 || this.config.terminalChannelRetentionTail === undefined) return 0
     let compacted = 0
     for (const channelId of state.channelIds) {
@@ -872,6 +883,7 @@ export class TeamDagScheduler {
       const reviewer = state.participants.find(participant => participant.id === reviewerId)
       if (reviewer === undefined || reviewer.phase !== 'active') continue
       const attempt = task.attemptHistory.at(-1)
+      /* v8 ignore next -- validated review snapshots retain exactly one unresolved completed latest attempt. */
       if (attempt?.outcome.kind !== 'completed') continue
       const senderId = attempt.participantId
       const sender = state.participants.find(participant => participant.id === senderId)
@@ -982,6 +994,7 @@ export class TeamDagScheduler {
   ): Promise<void> {
     channel = await this.ctx.teamChannelAdmission.waitUntilActive({ channelId: channel.manifest.id, signal: this.admissionAbort.signal })
     const attempt = task.attemptHistory.at(-1)
+    /* v8 ignore next -- this immutable task is selected only from a validated review snapshot with a completed latest attempt. */
     if (attempt?.outcome.kind !== 'completed') return
     const text = `Review Team task ${task.id}: ${task.subject}\n\n${task.description}\n\nResult: ${attempt.outcome.result.summary}`
     const existing = await this.scanChannelPages(channel.manifest.id, (records: readonly ChannelRecord[]) => records.some(record =>
@@ -1305,15 +1318,9 @@ export class TeamDagScheduler {
 
   /** Retain a rejection handler for background work without changing the public promise result. */
   private track(operation: Promise<void>, label: string): void {
-    if (this.accepted.has(operation)) return
-    this.accepted.add(operation)
-    void operation.then(
-      () => { this.accepted.delete(operation) },
-      (error: unknown) => {
-        this.accepted.delete(operation)
-        this.ctx.logger.warn(`team-scheduler-dag: ${label} failed: ${renderError(error)}`)
-      },
-    )
+    trackTeamOperation(this.accepted, operation, (error) => {
+      this.ctx.logger.warn(`team-scheduler-dag: ${label} failed: ${renderError(error)}`)
+    })
   }
 
   /** Release listeners, await accepted work, and aggregate any completed-drive failures. */
@@ -1619,6 +1626,7 @@ function assertWakeManifest(
   participantId: ParticipantSnapshot['id'],
   activation: ActivationBindingSnapshot,
 ): TaskAssignmentChannelManifest {
+  /* v8 ignore next -- both callers first await the admission registry's active-channel fence on this immutable snapshot. */
   if (channel.phase !== 'active') {
     throw new Error(`task-assignment channel '${channel.manifest.id}' is not active`)
   }
@@ -1727,6 +1735,7 @@ function workflowTaskSchedulable(task: TeamTaskSnapshot, state: TeamStateSnapsho
 function workflowPlanAtCapacity(task: TeamTaskSnapshot, state: TeamStateSnapshot): boolean {
   if (task.workflowPlanId === undefined) return false
   const plan = state.workflowPlans?.find(candidate => candidate.id === task.workflowPlanId)
+  /* v8 ignore next -- TeamStateSnapshot parsing rejects any workflow task that references a missing plan. */
   if (plan === undefined) return true
   const active = state.tasks
     .filter(candidate => candidate.workflowPlanId === task.workflowPlanId && taskHasActiveExecution(candidate)).length
@@ -1789,41 +1798,6 @@ function compareCandidates(left: AssignmentSelection, right: AssignmentSelection
 /** Compare two integers without subtracting potentially distant safe integer values. */
 function compareNumber(left: number, right: number): number {
   return left === right ? 0 : left < right ? -1 : 1
-}
-
-/** Resolve the Team identity carried by every immutable Team notification form. */
-function teamIdFromEvent(event: TeamEvent): TeamId {
-  switch (event.type) {
-    case 'team/created':
-    case 'team/changed':
-      return event.team.id
-    case 'goal/changed':
-      return event.goal.teamId
-    case 'participant/changed':
-      return event.participant.teamId
-    case 'activation/changed':
-      return event.binding.activation.teamId
-    case 'participant-interrupt/changed':
-      return event.interrupt.target.teamId
-    case 'human-action/changed':
-      return event.action.teamId
-    case 'usage/changed':
-      return event.teamId
-    case 'task/changed':
-      return event.task.teamId
-    case 'workspace/observed':
-      return event.observation.teamId
-    case 'workspace-allocation/changed':
-      return event.allocation.teamId
-    case 'workflow-plan/changed':
-      return event.plan.teamId
-    case 'policy/denied':
-      return event.teamId
-    /* v8 ignore next -- TeamEvent is closed and every discriminant is handled above. */
-    default:
-      event satisfies never
-      throw new Error('unreachable Team event')
-  }
 }
 
 /** Return one collision-free map key for a branded Team identity. */

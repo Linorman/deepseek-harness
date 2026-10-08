@@ -8,6 +8,7 @@
  * presenter, which projects ctx.theme snapshots onto document.body.
  */
 import type { ClientContext } from '@clocky/clocky-client-runtime/client'
+import type { ConnectionHandle } from '@clocky/clocky-client-connection/client'
 import type {} from '@clocky/clocky-client-ui-theme/client'
 import type {} from '@clocky/clocky-client-locale/client'
 import type { PanelActions } from './service.ts'
@@ -23,6 +24,8 @@ import { ThemePresenter } from './theme-presenter.ts'
 // against; the frame components and the store factory are package-internal.
 export { LayoutController } from './service.ts'
 export type { ILayout } from './service.ts'
+export type { CommandItem, CommandProvider, LiveText, ShortcutSpec } from './commands.ts'
+export { ShortcutConflictError } from './commands.ts'
 export { teamInspectionUrl, readWorkspaceSource, restoreWorkspaceFocus, TEAM_ROUTE_KEYS, WORKSPACE_NAVIGATION_EVENT } from './navigation.ts'
 export type { TeamInspectionTarget } from './navigation.ts'
 
@@ -91,7 +94,11 @@ declare module '@clocky/clocky-client-ui-slots' {
   }
   interface LocaleNamespaceMap {
     /** Session inspection navigation owned by the application frame. */
-    layout: 'session' | 'newTeam' | 'coordinator' | 'back' | 'expand' | 'restore' | 'simulationUnavailable' | 'backToTeams'
+    layout: 'session' | 'newTeam' | 'coordinator' | 'close' | 'expand' | 'restore' | 'resizePane' | 'simulationUnavailable' | 'backToTeams'
+      | 'palette.title' | 'palette.placeholder' | 'palette.empty' | 'shortcuts.title' | 'shortcuts.close'
+      | 'shortcuts.group.general' | 'shortcuts.palette' | 'shortcuts.help'
+      | 'connection.reconnecting' | 'connection.unauthorized' | 'connection.unauthorizedHint'
+      | 'connection.retry'
   }
 }
 
@@ -129,10 +136,26 @@ export const inject = ['slots', 'theme', 'sessions', 'locale']
 export function apply(ctx: ClientContext): void {
   const layout = new LayoutController()
   ctx.effect(() => ctx.locale.register('layout', {
-    en: { newTeam: 'New team work', session: 'Execution record', coordinator: 'Talk to coordinator', back: 'Back to team', expand: 'Expand', restore: 'Restore',
-      simulationUnavailable: 'Simulation viewing is unavailable on this host.', backToTeams: 'Back to teams' },
-    zh: { newTeam: '新建团队工作', session: '执行记录', coordinator: '与协调者沟通', back: '返回团队', expand: '展开', restore: '还原',
-      simulationUnavailable: '此主机未提供仿真查看。', backToTeams: '返回团队' },
+    en: { newTeam: 'New team work', session: 'Execution record', coordinator: 'Talk to coordinator', close: 'Close conversation', expand: 'Expand conversation', restore: 'Restore split view',
+      resizePane: 'Resize conversation pane',
+      simulationUnavailable: 'Simulation viewing is unavailable on this host.', backToTeams: 'Back to teams',
+      'connection.reconnecting': 'Connection lost. Reconnecting…',
+      'connection.unauthorized': 'This browser’s local access credential has expired.',
+      'connection.unauthorizedHint': 'Run clocky web again in your terminal to open a new window.',
+      'connection.retry': 'Check access again',
+      'palette.title': 'Command palette', 'palette.placeholder': 'Search Teams, Sessions, simulations, or commands',
+      'palette.empty': 'No matching results', 'shortcuts.title': 'Keyboard shortcuts', 'shortcuts.close': 'Close',
+      'shortcuts.group.general': 'General', 'shortcuts.palette': 'Open the command palette', 'shortcuts.help': 'Show keyboard shortcuts' },
+    zh: { newTeam: '新建团队任务', session: '执行记录', coordinator: '与协调者沟通', close: '关闭对话', expand: '展开对话', restore: '恢复并排视图',
+      resizePane: '调整对话面板宽度',
+      simulationUnavailable: '此主机未提供仿真查看。', backToTeams: '返回团队',
+      'connection.reconnecting': '连接已断开，正在重连…',
+      'connection.unauthorized': '本地访问凭据已失效。',
+      'connection.unauthorizedHint': '请在终端重新运行 clocky web 打开新窗口。',
+      'connection.retry': '重新检查访问',
+      'palette.title': '命令面板', 'palette.placeholder': '搜索团队、会话、仿真或命令',
+      'palette.empty': '没有匹配结果', 'shortcuts.title': '键盘快捷键', 'shortcuts.close': '关闭',
+      'shortcuts.group.general': '通用', 'shortcuts.palette': '打开命令面板', 'shortcuts.help': '查看键盘快捷键' },
   }), 'ui-layout: dictionaries')
   ctx.effect(() => {
     const disposeService = ctx.reflect.provide('layout', layout)
@@ -154,7 +177,14 @@ export function apply(ctx: ClientContext): void {
       // conversation business actions belong to their registrants.
       inject: (actions: PanelActions) => {
         layout.attachPanels(actions)
-        return { closeSession: () => { ctx.sessions.clear() }, showTeams: () => { layout.showWorkspace('team') } }
+        const connection = ctx.get('connection') as ConnectionHandle | undefined
+        return {
+          closeSession: () => { ctx.sessions.clear() },
+          showTeams: () => { layout.showWorkspace('team') },
+          ...connection === undefined ? {} : { retryAuthorization: () => { connection.retryAuthorization() } },
+          readCommands: () => layout.commands.sections(),
+          readShortcuts: () => layout.commands.shortcuts(),
+        }
       },
     }, AppFrame)
     return () => {
@@ -163,6 +193,23 @@ export function apply(ctx: ClientContext): void {
       void disposeService()
     }
   }, 'ui-layout: service + root registration')
+
+  // One global key listener dispatches every registered shortcut.
+  ctx.effect(() => {
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform)
+    const onKey = (event: KeyboardEvent) => { layout.commands.handle(event, mac) }
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey) }
+  }, 'ui-layout: shortcut listener')
+  const tl = ctx.locale.bind('layout')
+  ctx.effect(() => layout.registerShortcut({
+    id: 'layout.palette', keys: 'mod+k', group: () => tl('shortcuts.group.general'),
+    label: () => tl('shortcuts.palette'), allowInInput: true, run: () => { layout.openCommandPalette() },
+  }), 'ui-layout: palette shortcut')
+  ctx.effect(() => layout.registerShortcut({
+    id: 'layout.help', keys: '?', group: () => tl('shortcuts.group.general'),
+    label: () => tl('shortcuts.help'), run: () => { layout.showShortcuts() },
+  }), 'ui-layout: shortcut help')
 
   ctx.effect(() => {
     const restore = () => { layout.restoreWorkspace() }

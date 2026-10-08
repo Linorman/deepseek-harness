@@ -3,18 +3,18 @@
 }
 
 .toggle {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-label-secondary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-secondary);
   padding: 2px 6px;
   border: none;
   background: transparent;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 .toggle:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .body {
@@ -22,11 +22,11 @@
   padding: 8px;
   max-height: 200px;
   overflow: auto;
-  background: var(--clocky-alias-markdown-code-block);
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 6px;
+  background: var(--clocky-bg-sunken);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-sm);
   font-family: var(--ds-font-family-code);
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
+  color: var(--clocky-fg-primary);
 }

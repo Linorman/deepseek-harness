@@ -12,6 +12,7 @@ import * as StorageLog from '@clocky/clocky-storage-log'
 import { channelInvitationIdempotencyKeySchema, channelSummaryIdempotencyKeySchema } from '@clocky/clocky-team'
 import type { ChannelId, ParticipantSnapshot, TeamEnvelope } from '@clocky/clocky-team'
 import * as Direct from '../../team-channel-direct/src/index.ts'
+import * as TaskAssignment from '../../team-channel-task-assignment/src/index.ts'
 import { createTestRootTeam, inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
 import { closeTestChannel, openTestChannel } from '../../../core/team/tests/channel-lifecycle-authority.ts'
 import { postActor } from './fixtures.ts'
@@ -95,6 +96,95 @@ async function expireThroughConsumer(f: Awaited<ReturnType<typeof setup>>, chann
 }
 
 describe('durable endpoint channel admission', () => {
+  it.each(['json', 'sqlite'] as const)('rejects inconsistent invitation options before creating a channel on %s', async (backend) => {
+    const f = await setup(backend)
+    const participants = [f.sender, f.fast].map(participant => ({ id: participant.id, role: participant.role }))
+    const before = await f.ctx.teams.getTeam({ teamId: f.teamId })
+    for (const invitations of [
+      [{ participantId: f.sender.id, required: true }, { participantId: f.sender.id, required: true }],
+      [{ participantId: f.slow.id, required: true }],
+      [{ participantId: f.sender.id, required: false }, { participantId: f.fast.id, required: false }],
+    ]) {
+      await expect(openTestChannel(f.ctx, {
+        teamId: f.teamId, expectedCursor: before.team.cursor,
+        adapter: Direct.DIRECT_CHANNEL_ADAPTER_V4,
+        viewPolicy: { type: 'directed', version: 1 }, participants, limits: {}, invitations,
+      })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+      expect((await f.ctx.teams.getTeam({ teamId: f.teamId })).channelIds).toEqual(before.channelIds)
+    }
+  })
+  it.each(['json', 'sqlite'] as const)('rejects a Session-bound human invitation on %s', async (backend) => {
+    const f = await setup(backend)
+    const { SessionId } = await import('@clocky/clocky-session')
+    const human = await inviteBootstrapParticipant(f.ctx, { teamId: f.teamId,
+      expectedCursor: (await f.ctx.teams.getTeam({ teamId: f.teamId })).team.cursor,
+      kind: 'human', role: 'human', displayName: 'Human endpoint', capabilities: [],
+      owner: { kind: 'system' } })
+    for (const phase of ['provisioning', 'active'] as const) {
+      await transitionBootstrapParticipant(f.ctx, { teamId: f.teamId, participantId: human.id,
+        expectedCursor: (await f.ctx.teams.getTeam({ teamId: f.teamId })).team.cursor, phase })
+    }
+    const before = await f.ctx.teams.getTeam({ teamId: f.teamId })
+    await expect(openTestChannel(f.ctx, { teamId: f.teamId, expectedCursor: before.team.cursor,
+      adapter: Direct.DIRECT_CHANNEL_ADAPTER_V4,
+      viewPolicy: { type: 'directed', version: 1 },
+      participants: [{ id: f.sender.id, role: 'coordinator' }, { id: human.id, role: 'human' }],
+      limits: {}, invitations: [{ participantId: human.id, required: true, sessionId: SessionId('not-a-human-session') }],
+    })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    expect((await f.ctx.teams.getTeam({ teamId: f.teamId })).channelIds).toEqual(before.channelIds)
+  })
+  it.each(['json', 'sqlite'] as const)('refuses an invitation deadline beyond the safe journal timestamp on %s', async (backend) => {
+    await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
+    const root = await mkdtemp(join(process.cwd(), '.tmp', 'invitation-deadline-'))
+    roots.push(root)
+    const ctx = await hub(backend, root)
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(Number.MAX_SAFE_INTEGER - 100_000)
+    try {
+      const created = await createTestRootTeam(ctx, { goal: { objective: 'Reject an unsafe invitation deadline.', budgets: {} },
+        rules: {}, budgets: {} })
+      const teamId = created.team.id
+      const members: ParticipantSnapshot[] = []
+      for (const role of ['sender', 'recipient']) {
+        const participant = await inviteBootstrapParticipant(ctx, { teamId,
+          expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor,
+          kind: 'local-agent', displayName: role, role, capabilities: [] })
+        for (const phase of ['provisioning', 'active'] as const) {
+          await transitionBootstrapParticipant(ctx, { teamId, participantId: participant.id,
+            expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor, phase })
+        }
+        members.push(participant)
+      }
+      const before = await ctx.teams.getTeam({ teamId })
+      clock.mockReturnValue(Number.MAX_SAFE_INTEGER - 10)
+      await expect(openTestChannel(ctx, { teamId, expectedCursor: before.team.cursor,
+        adapter: Direct.DIRECT_CHANNEL_ADAPTER_V4,
+        participants: members.map(participant => ({ id: participant.id, role: participant.role })),
+        limits: {} })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+      expect((await ctx.teams.getTeam({ teamId })).channelIds).toEqual(before.channelIds)
+    } finally { clock.mockRestore() }
+  })
+  it.each(['json', 'sqlite'] as const)('binds a task-assignment invitation to its frozen Agent Session on %s', async (backend) => {
+    const f = await setup(backend)
+    await f.ctx.plugin(TaskAssignment)
+    const { SessionId } = await import('@clocky/clocky-session')
+    const state = await f.ctx.teams.getTeam({ teamId: f.teamId })
+    const binding = state.activations.find(value => value.activation.participantId === f.sender.id)
+    if (binding === undefined) throw new Error('Task assignment needs its sender activation')
+    const input = { teamId: f.teamId, expectedCursor: state.team.cursor,
+      adapter: TaskAssignment.TASK_ASSIGNMENT_CHANNEL_ADAPTER,
+      participants: [{ id: f.sender.id, role: 'assignee' }],
+      limits: { taskId: 'assignment-task', activationId: binding.activation.id, sessionId: binding.sessionId } }
+    await expect(openTestChannel(f.ctx, { ...input,
+      invitations: [{ participantId: f.sender.id, required: true, sessionId: SessionId('foreign-assignment-session') }],
+    })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    expect((await f.ctx.teams.getTeam({ teamId: f.teamId })).channelIds).toEqual(state.channelIds)
+    const opened = await openTestChannel(f.ctx, { ...input,
+      invitations: [{ participantId: f.sender.id, required: true, sessionId: binding.sessionId }],
+    })
+    const admission = await f.ctx.teams.getChannelAdmission({ channelId: opened.manifest.id })
+    expect(admission.invitations[0]?.endpoint).toMatchObject({ kind: 'activation',
+      activationId: binding.activation.id, sessionId: binding.sessionId })
+  })
   for (const backend of ['json', 'sqlite'] as const) {
     it(`retains the historical broadcast recipients when an optional endpoint later acknowledges on ${backend}`, async () => {
       const f = await setup(backend, true)

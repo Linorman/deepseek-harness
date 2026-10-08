@@ -20,6 +20,7 @@ const call: AuthenticatedProductCall = { principal: { id: 'reader' as never, iss
 const client = new InProcessApiClient(toFetchHandler(createApiProxy(ctx, { cwd: process.cwd(), defaultModelSelection: () => undefined }),
   { authenticatedProductCall: call }))
 const create = simulationProductCreateInputSchema.parse({ commandId: 'control-create', templateId: 'company', templateVersion: '1',
+  expectedModel: { provider: 'company', name: 'scripted' },
   name: 'Controlled company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
 const management = (runId: SimulationProductRunId, managementId: string, phase: 'running' | 'paused' = 'running') =>
   simulationProductManageInputSchema.parse({ runId, managementId, phase })

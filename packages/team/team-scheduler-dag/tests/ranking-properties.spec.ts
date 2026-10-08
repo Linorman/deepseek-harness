@@ -55,3 +55,19 @@ describe('deterministic task-owner ranking properties', () => {
     expect(first.costBucket).toBe(1)
   })
 })
+
+
+it.each([null, 'not-a-table', [], {}])('places an absent or unusable frozen rate table after known rate buckets (%j)', (usageRates) => {
+  const constrained = task(['a'], true)
+  expect(taskOwnerRank(constrained, participant, binding(true), policy, { usageRates }).costBucket)
+    .toBe(policy.costRateUpperBounds.length + 1)
+})
+
+it('uses frozen provider and wildcard fallbacks and retains a separate known overflow bucket', () => {
+  const constrained = task(['a'], true)
+  const rate = { input: 100, output: 0, cacheRead: 0, cacheWrite: 0 }
+  for (const usageRates of [{ provider: rate }, { '*': rate }]) {
+    expect(taskOwnerRank(constrained, participant, binding(true), policy, { usageRates }).costBucket)
+      .toBe(policy.costRateUpperBounds.length)
+  }
+})

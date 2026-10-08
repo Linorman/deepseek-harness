@@ -23,6 +23,9 @@
     routes: {}
 
 - insert:
+    - id: human-question-actor
+      name: '@clocky/clocky-team-human-actor'
+
     - id: human-question-json
       name: '@clocky/clocky-storage-json'
       disabled: !!js process.env.CLOCKY_QUESTION_BACKEND !== 'json'

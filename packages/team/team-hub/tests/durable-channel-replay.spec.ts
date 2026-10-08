@@ -1,7 +1,7 @@
 import { fingerprintChannelSummarySources, teamEnvelopeSchema } from '@clocky/clocky-team'
 /** Channel receipt and summary provenance through real stored WAL/checkpoint recovery. @module */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { channelIdSchema, channelRecordSchema, channelManifestSchema } from '@clocky/clocky-team'
 import type { TeamChannelAdapter } from '@clocky/clocky-team'
 import { channelProjectionData, foldChannelRecord } from '../src/fold.ts'
@@ -97,6 +97,59 @@ for (const backend of ['json', 'sqlite'] as const) {
       const ctx = await recover(backend, journal(), undefined, teamId, [{ id: channelId, records }])
       ctx.teams.registerAdapter(adapter)
       await expect(ctx.teams.getChannel({ channelId })).rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' })
+    })
+
+    it('rejects a summary that names a different source Envelope', async () => {
+      const records = [...wal(), { ...summary(), sourceEnvelopeIds: ['other-message'] }]
+      const ctx = await recover(backend, journal(), undefined, teamId, [{ id: channelId, records }])
+      ctx.teams.registerAdapter(adapter)
+      await expect(ctx.teams.getChannel({ channelId })).rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' })
+    })
+
+    it('recovers a summary whose contiguous source range includes a delivery receipt', async () => {
+      const source = sourceEnvelope()
+      const receipt = { type: 'channel/receipt', sequence: source.sequence + 1, createdAt: source.createdAt + 1,
+        participantId: 'recipient', envelopeId: source.id, cursor: source.sequence }
+      const records = [...wal(), receipt, { ...summary(source.sequence + 2),
+        coveredSequenceRange: { from: source.sequence, to: receipt.sequence } }]
+      const ctx = await recover(backend, journal(), undefined, teamId, [{ id: channelId, records }])
+      ctx.teams.registerAdapter(adapter)
+      expect(await ctx.teams.getChannel({ channelId })).toMatchObject({ cursor: records.length - 1 })
+      const replay = await ctx.teams.readChannel({ channelId, afterCursor: -1 })
+      expect(replay.records.filter(record => record.type === 'channel/envelope')).toHaveLength(1)
+      expect(replay.records.filter(record => record.type === 'channel/summary')).toHaveLength(1)
+    })
+
+    it.each(['empty', 'short', 'gap', 'record-cursor'] as const)('rejects a %s in summary source storage reads', async (fault) => {
+      const source = sourceEnvelope()
+      const receipt = { type: 'channel/receipt', sequence: source.sequence + 1, createdAt: source.createdAt + 1,
+        participantId: 'recipient', envelopeId: source.id, cursor: source.sequence }
+      const records = fault === 'short'
+        ? [...wal(), receipt, { ...summary(source.sequence + 2),
+          coveredSequenceRange: { from: source.sequence, to: receipt.sequence } }]
+        : [...wal(), summary()]
+      const ctx = await recover(backend, journal(), undefined, teamId, [{ id: channelId, records }])
+      ctx.teams.registerAdapter(adapter)
+      const open = ctx.storageLog.open.bind(ctx.storageLog)
+      const observe = vi.spyOn(ctx.storageLog, 'open').mockImplementation(async (descriptor) => {
+        const stream = await open(descriptor)
+        if (descriptor.name === `channel/${channelId}`) {
+          const read = stream.read.bind(stream)
+          vi.spyOn(stream, 'read').mockImplementation(async (afterCursor, limit) => {
+            const rows = await read(afterCursor, limit)
+            if (afterCursor !== sourceEnvelope().sequence - 1) return rows
+            if (fault === 'empty') return []
+            if (fault === 'short') return rows.slice(0, 1)
+            return rows.map((row, index) => index !== 0 ? row : fault === 'gap'
+              ? { ...row, sequence: row.sequence + 1 }
+              : { ...row, value: { ...row.value as object,
+                envelope: { ...sourceEnvelope(), sequence: sourceEnvelope().sequence + 1 } } })
+          })
+        }
+        return stream
+      })
+      try { await expect(ctx.teams.getChannel({ channelId })).rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' }) }
+      finally { observe.mockRestore() }
     })
 
     it('rejects a private-source summary even when its stored fingerprint is accurate', async () => {

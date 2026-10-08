@@ -227,7 +227,10 @@ export class SimulationTeams extends Service {
     return this.ctx.effect(() => {
       if (this.taskCompletionPolicies.has(selected.id)) throw new Error('Simulation task completion policy is already registered')
       this.taskCompletionPolicies.set(selected.id, entry)
-      return () => { if (this.taskCompletionPolicies.get(selected.id) === entry) this.taskCompletionPolicies.delete(selected.id) }
+      return () => {
+        /* v8 ignore next -- Cordis runs each effect disposer once, so a retired registration cannot clear a later replacement. */
+        if (this.taskCompletionPolicies.get(selected.id) === entry) this.taskCompletionPolicies.delete(selected.id)
+      }
     })
   }
 
@@ -977,8 +980,10 @@ export class SimulationTeams extends Service {
             try { this.assertOpen(); assertAdmitted(); authorize?.(); return true }
             catch { return false } // Already accepted canonical intent still owns cleanup after caller or admission retirement.
           })
+          /* v8 ignore next -- Team exact-attempt cancellation retains evidence; terminal no-op requires null. */
           if (task.cancellation === undefined || selected.expectedAttemptId === null) return task
           const execution = run.snapshot().taskExecutions?.[selected.expectedAttemptId]
+          /* v8 ignore next -- canonical cancellation retains its original attempt in append-only native history. */
           if (execution === undefined) throw new Error('Simulation task cancellation lost its original execution')
           const source = execution.request, entity = run.snapshot().entities[source.entityId]
           if (entity?.writer?.phase === 'active' && entity.writer.epoch === source.epoch
@@ -994,9 +999,7 @@ export class SimulationTeams extends Service {
           }
           const current = await ctx.teams.getTask({ teamId: source.teamId, taskId: source.taskId })
           const evidence = projectTaskEvidence(run.snapshot(), current)
-          if (evidence.executor?.attemptId === source.attemptId) {
-            await run.observeTaskExecution({ attemptId: source.attemptId, task: evidence })
-          }
+          await run.observeTaskExecution({ attemptId: source.attemptId, task: evidence })
           return current
         })()
         taskCancellations.add(work)

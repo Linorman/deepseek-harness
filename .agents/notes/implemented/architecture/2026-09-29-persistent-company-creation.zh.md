@@ -10,6 +10,8 @@ Status: implemented
 
 ## Decision
 
+[已安装模型就绪与路由确认](2026-10-07-web-runtime-stability-and-default-simulation.zh.md)按当前可用性解析，不阻止无模型启动；结构部署引用仍在启动时校验，不进行推理。
+
 显式[行政入口](../../../../packages/simulation/simulation-product/src/administration.ts)拥有独立 format 1 命令日志。受理在目录登记或原生 IO 前持久记录原命令、已认证主体、分配的产品／原生身份及完整不可变模板解析结果。受信任模板固定版本、原生 policy、preset、模型 route、driver 偏移和采集额度。公开请求选择已安装身份／版本、允许的名称／库存及明确可编辑的额度降低。启动校验部署引用，不推理。
 
 精确重试比较原 owner 与规范化 payload，保留分配并返回原 accepted 或终态 receipt。传输取消只退役等待者。终态追加失败时，持久请求保持 accepted，不虚构成功或失败。结果查询只读；未知／私有请求统一返回 `not-found`，不能据此证明请求失败。后续准备在同一原运行上使用新命令和检查点身份，其成功不会改写早先失败结果。
@@ -62,6 +64,8 @@ Host 重启会轮换产品凭据，因此私有浏览器草稿和保留命令选
 
 源码 owner 测试覆盖 JSON／SQLite 分配、精确／改变重试、原失败保持、新准备检查点、等待者退役、并发容量、完整字节限制、初始化引用、原生所有权拒绝、终态写入失败及未确认关闭。日志测试拒绝损坏／不完整前缀、序列缺口、保留超限和终态改写。[真实 Loader snapshot](../../../../examples/simulation-company/tests/product-administration.snapshot.ts)在受理、目录登记、原生创建、实体写入、初始检查点和终态追加后终止进程。重启保留原身份，不推理地修复发现，完成同一请求，已完成重试不写入。
 
+创建恢复观察原命令的终态日志追加，并在 store fold 后读取同一 receipt。观察者在提交前安装，再次读取 receipt 以覆盖已经完成的重试。单元 fixture 在冷重挂载后绑定当前日志，并将观察者与故障注入 spy 分开。真实 Team attach 慢响应回归保持命令受理状态直至完成；失败终态仍导致断言失败。测试框架截止时间负责终止子进程并等待退出。并发受理检查遵循实际获准请求的原身份，即使 preset 解析完成顺序与调用顺序不同。
+
 [SDK Loader snapshot](../../../../examples/simulation-company/tests/sdk-product.snapshot.ts)通过生产 stdio 和产品服务、确定性凭据输入验证 JSON 与 SQLite。源码及构建入口在重启后保留同一 run，拒绝改变命令 payload，分页读取元数据，并在不推理的情况下发布独立准备检查点。
 
 [产品控制 Loader snapshot](../../../../examples/simulation-company/tests/product-control.snapshot.ts)通过已认证 Host fetch carrier 推进真实后台采购，暂停已受理推理，保持原重试意图，核对原生库存／效果事实，并重新启动进程读取历史结果而不调用模型。外部模型使用脚本；这不代表真实 provider 或跨 Host 验证。
@@ -71,3 +75,5 @@ Host 重启会轮换产品凭据，因此私有浏览器草稿和保留命令选
 [SDK 维护 Loader 场景](../../../../examples/simulation-company/tests/sdk-maintenance.snapshot.ts)通过生产 stdio 验证 JSON／SQLite 调度、暂停后的原开始重试、关联决策的输入消费、完整采集、冷结果查询及旧依据／当前后缀恢复。公开 DTO 删节输入正文；恢复保留已记录决策／时间，不创建新 Session 文件。
 
 [Web 维护场景](../../../../apps/web/tests/simulation-maintenance.snapshot.ts)验证 JSON／SQLite 输入响应丢失、后来原始编辑、原输入消费、完整检查点响应丢失及精确查询。它在明确恢复前禁用／重挂载真实 Loader 行政 owner，返回暂停状态并保留当前库存／输入／决策及模型调用数。这属于同一 Host 进程内的冷产品 owner 恢复；独立进程退出证据仍由原生维护场景提供。
+
+新增行政回归验证受理时间相同时按唯一命令 ID 排序、没有公司 owner 的导入目录状态、缺少规范 Team reader 时拒绝加载任务模板、原生完整包装字节上限、规范任务分页和来源核对，以及冷受理取消或审核重放前必须显式恢复 owner。恢复错误保留安全的 source-unavailable 诊断。

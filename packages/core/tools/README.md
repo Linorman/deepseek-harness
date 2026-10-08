@@ -26,6 +26,8 @@ tools:
 - `ctx.tools.execute(exec)` losslessly snapshots and freezes arguments, assigns an opaque token, runs the complete policy/dispatch/result pipeline, then independently snapshots the authoritative outcome before final observation. Invalid arguments use the same result path without reaching policy or the body. Around wrappers may replace only `signal`; the registry re-fuses the original caller signal immediately before the body.
 - `ctx.tools.executionMode(exec)` returns `parallel` only when the visible definition's `isConcurrencySafe(exec.arguments)` classifier returns exactly `true`; unknown, hidden, undeclared, invalid, or throwing classifications are exclusive.
 
+`requireScopedToolAgent(registry, execution, expected, toolName, failure)` verifies the calling Agent, its exact installed scope, registry residency, running state and active initiator. The consumer supplies stable refusal codes and retains its own operation authority checks. `bindAgentToolDisposal(ctx, registrations, label)` binds the consumer’s ordered installation map to Agent retirement and plugin teardown; installation eligibility remains consumer-owned.
+
 ### Injected services
 
 `SystemPrompt` — the registry automatically feeds its tool schemas into the system-prompt assembly via `ctx.systemPrompt.tools()`. The approval seam is consumed opportunistically instead (`ctx.get('approval')`, no static inject): a deployment without it keeps the ask→deny degrade, and the registry stays active either way.

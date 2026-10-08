@@ -97,8 +97,10 @@ export function MaintenanceDialog({ target, name, control, recovery, readRecover
         entityId: latest.entityId as never, text: latest.text, availableAt: latest.availableAt.trim() as never } }; break
       case 'checkpoint': case 'prepare': command = { kind: target.kind, input: { runId: target.runId, commandId: crypto.randomUUID() as never } }; break
       case 'restore':
+        /* v8 ignore next -- Restore submit is disabled until a Host recovery anchor is present. */
         if (anchor === undefined) return
         command = { kind: 'restore', input: { runId: target.runId, commandId: crypto.randomUUID() as never, checkpointId: anchor.checkpointId } }; break
+      /* v8 ignore next -- The maintenance target is a closed typed selection. */
       default: return assertNever(target.kind)
     }
     const originalSelector = simulationCommandKey(command)
@@ -114,15 +116,22 @@ export function MaintenanceDialog({ target, name, control, recovery, readRecover
   }
   const received = current?.receipt?.kind === 'ingress' && !current.unknown && !current.pending
   const acknowledgeInput = () => {
+    /* v8 ignore next -- A received ingress receipt belongs to its parsed ingress command. */
     const submitted = current?.command.kind === 'ingress' ? current.command.input : undefined
     const latest = raw.current
     const unchanged = submitted !== undefined && latest.entityId === submitted.entityId && latest.text === submitted.text
       && latest.availableAt.trim() === submitted.availableAt
     input(unchanged ? undefined : { ...latest, commandKey: undefined }); close()
   }
+  /* v8 ignore next -- The bundled CSS module always has formBody; fallback satisfies optional typings. */
+  const bodyClassName = css.formBody ?? ''
+  const recoveryRevision = (): number | string => {
+    /* v8 ignore next -- A published recovery anchor is carried only by a loaded control value. */
+    return control.value?.revision ?? t('unavailable')
+  }
   return <>
     <Modal open title={t(`maintenance.${target.kind}`)} closeLabel={t('closeKeepDraft')} onClose={close}
-      bodyClassName={css.formBody ?? ''} footer={<>
+      bodyClassName={bodyClassName} footer={<>
         {target.kind === 'ingress' && value !== undefined && <Button onClick={() => { setDiscard(true) }}>{t('discardDraft')}</Button>}
         <Button onClick={close}>{t('closeKeepDraft')}</Button>
         {received ? <Button onClick={acknowledgeInput}>{t('inputReceivedClose')}</Button>
@@ -136,14 +145,14 @@ export function MaintenanceDialog({ target, name, control, recovery, readRecover
         <dt>{t('checkpointId')}</dt><dd><code>{anchor.checkpointId}</code></dd>
         <dt>{t('checkpointPublishedAt')}</dt><dd>{date(anchor.publishedAt)}</dd>
         <dt>{t('time')}</dt><dd>{anchor.time}</dd><dt>{t('checkpointRevision')}</dt><dd>{anchor.revision}</dd>
-        <dt>{t('currentRevision')}</dt><dd>{control.value?.revision ?? t('unavailable')}</dd>
+        <dt>{t('currentRevision')}</dt><dd>{recoveryRevision()}</dd>
         <dt>{t('restoreSources')}</dt><dd>Run {anchor.references.runs} · Team {anchor.references.teams}
           · Channel {anchor.references.channels} · Session {anchor.references.sessions}</dd>
       </dl>}
       {target.kind === 'restore' && anchor !== undefined && <section aria-label={t('restoreSources')}>
         {recovery.loading && <p role="status">{t('loading')}</p>}
         {recovery.error !== undefined && <p role="alert">{t(recovery.error)}</p>}
-        {recovery.stale && <p role="status">{t('stale')}</p>}
+        {recovery.stale && <p role="status" className={css.stalePill}>{t('stale')}</p>}
         {sources?.references.items.map((reference, index) => <p key={index}>{reference.kind}: <code>
           {'id' in reference ? reference.id : reference.cursor}</code></p>)}
         <div className={css.actions}><Button disabled={!connected || recovery.loading}

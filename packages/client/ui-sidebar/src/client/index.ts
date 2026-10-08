@@ -38,6 +38,7 @@ export function apply(ctx: ClientContext): void {
       ctx.sessions.clear()
     },
     toggleSidebar: () => { ctx.layout.toggleSidebar() },
+    openSearch: () => { ctx.layout.openCommandPalette() },
   })
   ctx.effect(
     () => ctx.slots.register({

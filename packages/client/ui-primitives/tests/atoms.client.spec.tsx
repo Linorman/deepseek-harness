@@ -24,7 +24,7 @@ describe('Button', () => {
   })
 
   it('outline variant renders a bordered cancel-style button', () => {
-    render(<Button variant="outline">Cancel</Button>)
+    render(<Button variant="secondary">Cancel</Button>)
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDefined()
   })
 })
@@ -409,11 +409,21 @@ describe('Modal', () => {
 })
 
 describe('ConnectionBanner', () => {
-  it('renders only while reconnecting', () => {
-    const { container, rerender } = render(<ConnectionBanner reconnecting={false} />)
+  it('stays quiet while connecting or connected and reports reconnection as a status', () => {
+    const { container, rerender } = render(<ConnectionBanner state="connecting" />)
     expect(container.firstChild).toBeNull()
-    rerender(<ConnectionBanner reconnecting />)
-    expect(container.textContent).toContain('重连')
+    rerender(<ConnectionBanner state="connected" />)
+    expect(container.firstChild).toBeNull()
+    rerender(<ConnectionBanner state="reconnecting" />)
+    expect(screen.getByRole('status').textContent).toContain('重连')
+  })
+
+  it('explains an expired credential and how to recover, without transport text', () => {
+    render(<ConnectionBanner state="unauthorized" />)
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toContain('凭据已失效')
+    expect(alert.textContent).toContain('clocky web')
+    expect(alert.textContent).not.toMatch(/HTTP|transport/)
   })
 })
 

@@ -9,6 +9,33 @@ import { jsonObjectSchema } from '@clocky/clocky-team'
 import { createBusinessHarness } from '../../simulation-local/tests/business-harness.ts'
 import { fixture, registration, call } from './fixtures.ts'
 
+it('refuses source lookup when the registered native history is unavailable', async () => {
+  const h = await fixture()
+  const { products } = await h.mount()
+  await expect(products.inspectSource({ runId: registration().id, decisionId: 'missing-decision' as never,
+    sourceIndex: 0, limit: 1 }, call())).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_UNAVAILABLE' })
+  expect(h.open).not.toHaveBeenCalled()
+})
+
+it('invalidates an in-flight source lookup when its disclosure policy changes', async () => {
+  const native = await createBusinessHarness('json')
+  const h = await fixture('json', { imports: [{ ...registration(), spec: native.selection.spec }] })
+  try {
+    const { products } = await h.mount()
+    const entered = Promise.withResolvers<undefined>()
+    const release = Promise.withResolvers<{ snapshot: ReturnType<typeof native.run.snapshot>; owner: 'unowned' }>()
+    h.inspect.mockImplementationOnce(async () => { entered.resolve(undefined); return await release.promise })
+    const pending = products.inspectSource({ runId: registration().id, decisionId: 'missing-decision' as never,
+      sourceIndex: 0, limit: 1 }, call())
+    await entered.promise
+    const revoke = products.contextReaderRegistrar()([{ principalId: call().principal.id,
+      entityIds: ['actor' as never], content: ['sources'] }])
+    release.resolve({ snapshot: native.run.snapshot(), owner: 'unowned' })
+    await expect(pending).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_STALE' })
+    revoke()
+  } finally { await native.close() }
+})
+
 it.each(['json', 'sqlite'] as const)('locates exact originals and pages Unicode text only while both read authorities remain valid (%s)', async (backend) => {
   const native = await createBusinessHarness(backend)
   const h = await fixture(backend, { imports: [{ ...registration(), spec: native.selection.spec }],

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { RpcId, transportError } from '../src/api/rpc.ts'
+import { ApiAccessDeniedError, RpcId, rpcErrorFrom, transportError } from '../src/api/rpc.ts'
+import { teamCapabilitiesValueSchema } from '../src/api/teams.schema.ts'
 import {
   clientRequestSchema, clientResponseSchema, rpcErrorSchema, rpcIdSchema, rpcMessageSchema,
   rpcReceiptSchema, rpcResultSchema, serverRequestSchema, serverResponseSchema,
@@ -87,6 +88,20 @@ import {
   teamTaskWatchValueSchema,
 } from '../src/api/teams.schema.ts'
 
+it.each([
+  [null, 'internal', 'null'], ['carrier offline', 'internal', 'carrier offline'], [{ code: 'UNKNOWN' }, 'internal', '[object Object]'],
+  [{ code: 'PRODUCT_AUTH_REQUIRED' }, 'PRODUCT_AUTH_REQUIRED', '[object Object]'],
+] as const)('classifies thrown display failures without treating them as transport success (%j)', (failure, code, message) => {
+  expect(rpcErrorFrom(failure)).toEqual({ code, message, details: {} })
+  expect(transportError(failure)).toMatchObject({ ok: false, error: { code: 'internal' } })
+})
+
+it('rejects incomplete capability observations and actor-free inputs without content', () => {
+  expect(teamCapabilitiesValueSchema.safeParse({ observationId: 'a'.repeat(64), observedAt: 0 }).success).toBe(false)
+  expect(teamPostInputRequestSchema.safeParse({ teamId: 'team' }).success).toBe(false)
+  expect(teamPostInputRequestSchema.safeParse({ teamId: 'team', content: [{ type: 'text', text: 'Input' }] }).success).toBe(true)
+})
+
 describe('RpcId', () => {
   it('brands a raw string at zero runtime cost', () => {
     expect(RpcId('abc')).toBe('abc')
@@ -101,6 +116,17 @@ describe('transportError', () => {
   it('folds Error and non-Error throws into the internal error branch', () => {
     expect(transportError(new Error('wire down'))).toEqual({ ok: false, error: { code: 'internal', message: 'wire down', details: {} } })
     expect(transportError('raw')).toMatchObject({ ok: false, error: { code: 'internal', message: 'raw' } })
+    // Retry and outcome logic keeps every carrier failure internal, access refusals included.
+    expect(transportError(new ApiAccessDeniedError('/api/team.list', 401))).toMatchObject({ ok: false, error: { code: 'internal' } })
+  })
+})
+
+describe('rpcErrorFrom', () => {
+  it('keeps explicit access refusals for presentation and folds everything else to internal', () => {
+    expect(rpcErrorFrom(new ApiAccessDeniedError('/api/team.list', 401))).toEqual({
+      code: 'PRODUCT_AUTH_INVALID', message: 'transport failure for /api/team.list: HTTP 401', details: {},
+    })
+    expect(rpcErrorFrom(new Error('wire down'))).toEqual({ code: 'internal', message: 'wire down', details: {} })
   })
 })
 
@@ -762,6 +788,9 @@ describe('Team domain schemas', () => {
       execution: { ...delegatedCreate.execution, budget: { maxTurns: -1 } },
     })).toThrow()
     expect(() => teamTaskCreateRequestSchema.parse({ ...delegatedCreate, actor: 'forged' })).toThrow()
+    for (const field of ['priority', 'maxAttempts']) {
+      expect(teamTaskCreateRequestSchema.safeParse({ ...delegatedCreate, [field]: Number.MAX_SAFE_INTEGER + 1 }).success).toBe(false)
+    }
     expect(teamGoalUpdateRequestSchema.parse({ teamId: 'team-1', expectedRevision: 1, objective: 'Update the goal.' }))
       .toMatchObject({ objective: 'Update the goal.' })
     expect(teamGoalUpdateValueSchema.safeParse({}).success).toBe(false)

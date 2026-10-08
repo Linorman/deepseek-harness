@@ -25,7 +25,7 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     if (row.name === './model.ts') row.name = join(process.cwd(), 'examples/headless-agent/tests/fixtures/simulation/simulation-administration/model.ts')
   }
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(patches))
-  const scaffold = await launchWebScaffold({ extraOverlayPath: overlay, tempRoot: directory,
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: overlay, tempRoot: directory,
     productPrincipalId: 'simulation-browser-user', agentPresets: { default: 'simulation',
       roots: [{ path: join(process.cwd(), 'examples/simulation-company/presets'), trust: 'system' }] } })
   const probe = scaffold.ctx.simulationBrowserProbe
@@ -58,7 +58,7 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '仿真', exact: true }).click()
     const workspace = page.locator('[data-simulation-workspace-page]')
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: '新建仿真', exact: true })
     await dialog.getByRole('radio').check()
     await dialog.getByText('已安装配置', { exact: true }).click()
@@ -96,11 +96,11 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     expect(checks.every(check => !Object.hasOwn(check, 'commandId'))).toBe(true)
     expect(creates).toEqual([]); expect(probe.requests).toEqual([])
     await dialog.getByRole('button', { name: '关闭并保留输入', exact: true }).last().click()
-    const domains = page.getByRole('navigation', { name: '工作区', exact: true })
-    await domains.getByRole('button', { name: '团队工作', exact: true }).click()
+    const domains = page.getByRole('navigation', { name: '主导航', exact: true })
+    await domains.getByRole('button', { name: '团队任务', exact: true }).click()
     await workspace.waitFor({ state: 'hidden' })
     await domains.getByRole('button', { name: '仿真', exact: true }).click()
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     expect(await dialog.getByLabel('运行名称', { exact: true }).inputValue()).toBe('浏览器采购仿真')
     expect(await dialog.getByLabel('每个预算区间的 token 上限', { exact: true }).inputValue()).toBe('500000')
     const nameInput = dialog.getByLabel('运行名称', { exact: true })
@@ -127,7 +127,7 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     await expect.poll(async () => await dialog.getByRole('button', { name: '重试原操作', exact: true }).isEnabled()).toBe(true)
     expect(queries[0]?.commandId).toBe(creates[0]?.commandId)
     await dialog.getByRole('button', { name: '关闭并保留输入', exact: true }).last().click()
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     await dialog.getByRole('button', { name: '重试原操作', exact: true }).click()
     await dialog.getByRole('button', { name: '打开已登记运行', exact: true }).waitFor()
     expect(creates).toHaveLength(2); expect(creates[1]).toEqual(creates[0])
@@ -194,7 +194,7 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     await workspace.getByRole('button', { name: '返回运行列表', exact: true }).click()
     await expect.poll(async () => await workspace.locator('li').count()).toBe(1)
     const calls = probe.requests.length
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     await dialog.getByLabel('运行名称', { exact: true }).fill('撤权前的私有草稿')
     expect(errors.warnings).toEqual([])
     await scaffold.replaceBrowserAuthentication()
@@ -203,7 +203,7 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '仿真', exact: true }).click()
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     expect(await dialog.getByLabel('运行名称', { exact: true }).inputValue()).toBe('')
     await dialog.getByRole('button', { name: '关闭并保留输入', exact: true }).last().click()
     expect(probe.requests).toHaveLength(calls)

@@ -8,6 +8,25 @@ clocky 浏览器表层组合包。[`cordis.patch.yml`](cordis.patch.yml) 叠加�
 
 同一宿主组合还挂载本地 Team 路径：位于 `$CLOCKY_HOME/team-storage.sqlite` 的 SQLite 路由日志、持久 Hub、direct v3 channel、进程内 activation 与本地 Link 投递、作用域化 Team 工具以及 `ctx.teamRuns`。其 JSON domain storage 与 Team journal 保持分离。它还挂载 shared-workspace registry：`process.cwd()`作为 fallback，启用的 durable `workspacePath` 会选择每个 Team 使用的文件夹，另有 task-assignment adapter 和有界 scheduler。provider 会 canonicalize 所选 root，并拒绝 `cwd` 不同的 worker Session；它绝不会改写 Session 或替换另一个目录。`team-run`从 1 个惰性的 `minimal` worker 开始，coordinator 可以通过 `team_worker_pool_set` 将 pool 扩到 32 个；独立 task 会并行分配，超出当前 capacity 的 ready task 会排队且不会让 Team stalled。需要时才准备 reviewer，coordinator 保持 request-selected 或 default preset。带 mutation 的 task report 会通过显式 report-only publish 边界携带 provider-owned changed-path/artifact manifest。浏览器名录挂载 `ui-team`；客户端启动时进入本地 Team 草稿，`team.start` 是用户任务入口。objective、budget 与 phase 保留在 Team detail popover 中，而 `/goal`是 coordinator transcript 中作用域化的 Team command。base 的 same-Session Goal service、automatic driver、command、model tool 和 GoalBar 都不会挂载。默认 coordinator 会获得 `get_goal`、`update_goal`、`team_final`、`team_worker_pool_set`、`team_task_start`、`team_task_wait`、`team_task_list`、`team_task_watch`、`team_task_cancel`、`team_task_propose_owner`、`team_workflow_start` 与 `team_workflow_wait`；shipped Web 组合不包含 direct subagent、legacy workflow-script 或 Ralph tool。部署可在显式自定义组合中挂载 legacy workflow script。
 
+## 默认 Simulation
+
+稳定 group `web-simulation` 持有 `web-simulation-service`、`web-simulation-local`、`web-simulation-team`、`web-simulation-product`、`web-simulation-administration` 与 `web-ui-simulation`，复用已有 storage-log、Team、activation、principal、模型与 Session 服务。标准 profile 通过此 bundle 获得组合，无需改写 manifest 或用户 patch。原生工具定义仅在 `simulation-company` 角色预设的作用域内注册，不进入普通 Team／极简 agent 的目录。发布角色预设为 `simulation-company`，版本化生产模板为 `company-procurement-v1`。
+
+原生世界使用提供方 `web-local`、SQLite 和 `clockyHomePath('simulations')`；目录／命令流为 `web-simulation-directory-v1` 与 `web-simulation-commands-v1`。安装模型绑定实时 agent 默认选择。浏览与启动不分配运行或 writer、不推理，创建准备暂停世界。模型池并发为 1、队列为 16；管理保留 50 ms 有效批次和 1000 ms 重试观察默认，目录 watch 保留 2000 ms 轮询默认。
+
+全新 Web 安装无需模型提供方即可启动。打开仿真，选择已安装模板并填写草稿；在模型设置中配置提供方，再明确保存默认提供方／模型，不自动选择目录第一项。返回创建页会保留草稿并重新进行仅查询元数据的预检。明确创建会准备暂停世界，独立的启动操作才准入推理。公司 driver 支持提供方默认推理强度，不支持的显式强度会在就绪状态中说明。
+
+采购模板准备两个 actor，允许 16 个实体／两个驻留。每请求预留 16,384 token，每 60 仿真分钟预算 262,144 token，可准入 16 次完整预留，覆盖采购决策链及有界重试余量。上下文限制 65,536 字节，知识为 16,384 字节／16 条，输入为 16,384 字节，决策窗口为两个决策／16 个操作，时间上限 360 分钟，完成期限为 30。待处理事件／交互／决策上限为 64／32／32；检查点允许 32 轮清退与三次尝试。其余精确 policy 边界以生产 patch 为准。预设只暴露原生 Simulation 工具。
+
+接管自定义 Simulation 时，先显式关闭默认 group，再挂载自己的服务：
+
+```yaml
+- id: web-simulation
+  disabled: true
+```
+
+保留自定义 provider 身份、存储根和流名，不合并不同根或把默认流名用于无关数据。关闭 group 保留全部持久数据，Team 仍可用；headless 不包含该 Web bundle。
+
 ## 模型重试默认值
 
 Web 使用共享的有界 normal 默认值，在首次请求后最多再重试五次符合条件的失败。`test-provider` 与由 settings 新增的 pi-ai 路由在省略 `retryPolicy` 时使用该默认值；显式提供方策略仍然优先。Web 不再增加重试专用的组合覆盖，因此非 Web profile 的省略行为与之相同。

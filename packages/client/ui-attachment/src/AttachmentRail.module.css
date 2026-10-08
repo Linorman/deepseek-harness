@@ -17,8 +17,8 @@
   /* The rail scrolls on the composer's elevated input surface: bind the l2
      pair (ui-theme styles/scrollbar.css rebinding contract) so anything that
      does draw a thumb here matches the surface. */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .rail::-webkit-scrollbar {
@@ -37,9 +37,9 @@
   height: 64px;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
-  border-radius: 16px;
-  background: var(--clocky-alias-interactive-bg-hover);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-hover);
   cursor: zoom-in;
 }
 
@@ -54,19 +54,19 @@
   position: absolute;
   top: 4px;
   right: 4px;
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
   display: grid;
   place-items: center;
   width: 18px;
   height: 18px;
   padding: 0;
   border: none;
-  border-radius: 50%;
-  background: var(--clocky-alias-button-contrast-fill);
-  color: var(--clocky-alias-label-primary-inverted);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-fg-primary);
+  color: var(--clocky-fg-inverse);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity var(--clocky-duration-base) var(--clocky-ease-standard);
 }
 
 .item:hover .remove,
@@ -90,23 +90,23 @@
 .arrow {
   position: absolute;
   top: 50%;
-  z-index: 2;
+  z-index: var(--clocky-layer-local-2);
   display: grid;
   place-items: center;
   width: 24px;
   height: 24px;
   padding: 0;
-  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
-  border-radius: 999px;
-  background: var(--clocky-specific-input-major);
-  color: var(--clocky-alias-label-secondary);
-  box-shadow: var(--clocky-shadow-lv2);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-bg-surface);
+  color: var(--clocky-fg-secondary);
+  box-shadow: var(--clocky-elevation-2);
   cursor: pointer;
   transform: translateY(-50%);
 }
 
 .arrow:hover {
-  background: var(--clocky-alias-interactive-bg-hover-solid);
+  background: var(--clocky-bg-sunken);
 }
 
 .arrowLeft {

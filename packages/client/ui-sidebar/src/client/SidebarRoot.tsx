@@ -5,7 +5,7 @@
  * mid-slide. At settle the wide-only content unmounts and the four upper
  * controls enter the 56px rail from the same horizontal offset (one icon each,
  * same top-down order) on one fade that ends with the slide. The bottom-pinned
- * settings control only fades. The Team browsing region between the New Task
+ * settings control only fades. The Team browsing region between the new-team-work
  * button and the foot is the `sidebar.teamTasks` registrant's; an optional
  * `sidebar.workspaces` occupant is retained for explicit legacy/custom
  * compositions, and the foot holds `sidebar.settings` plus
@@ -20,8 +20,9 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  BrandPlaceholderMark, IconNewChatOutline16, IconPanelLeftOutline16, Tooltip,
+  BrandPlaceholderMark, IconNewChatOutline16, IconPanelLeftOutline16, IconSearchOutline16, Kbd, Tooltip,
 } from '@clocky/clocky-client-ui-primitives'
+import { useSlidingIndicator } from '@clocky/clocky-client-ui-viz'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import css from './SidebarRoot.module.css'
 
@@ -47,6 +48,7 @@ export function SidebarRoot({
   width,
   startTask,
   toggleSidebar,
+  openSearch,
   t,
   renderSlot,
 }: SidebarRootComponentProps) {
@@ -114,6 +116,11 @@ export function SidebarRoot({
     }
   }, [pointerInside])
 
+  // Product navigation reads as one segmented mode switch when more than one
+  // workspace registers an entry; the indicator slides to the active mode.
+  const navigation = useRef<HTMLElement>(null)
+  const modeIndicator = useSlidingIndicator(navigation, '[aria-current="page"]', `${workspace}:${String(wide)}`)
+
   return (
     <div
       ref={column}
@@ -121,7 +128,8 @@ export function SidebarRoot({
         css.root, !wide && css.collapsed, !wide && everWide.current && css.railIn,
         collapsed && wide && css.fading, !pointerInside && css.quietBars,
       )}
-      style={wide ? { width: collapsed ? lastWideWidth.current : width } : undefined}
+      // Named inline (CSS Modules would hash the ident) so page transitions hold the column still.
+      style={{ viewTransitionName: 'clocky-sidebar', ...wide ? { width: collapsed ? lastWideWidth.current : width } : {} }}
       onPointerEnter={() => {
         cancelLinger()
         setPointerInside(true)
@@ -129,7 +137,7 @@ export function SidebarRoot({
       onPointerLeave={() => { armLinger() }}
     >
       <div className={css.logoRow}>
-        {/* Expanded, the brand doubles as a New Task shortcut; the
+        {/* Expanded, the brand doubles as a new-team-work shortcut; the
             collapsed rail's logo is the expand toggle below instead. */}
         {wide && (
           <button
@@ -183,7 +191,21 @@ export function SidebarRoot({
         </button>
       </Tooltip>
 
-      <nav className={css.productNavigation} aria-label={t('workspace.navigation')}>
+      {openSearch !== undefined && <Tooltip label={t('search.label')} delayMs={500} disabled={wide}>
+        <button type="button" className={css.searchTrigger} aria-label={t('search.label')} aria-haspopup="dialog"
+          aria-keyshortcuts="Meta+K Control+K" onClick={() => { openSearch() }}>
+          <IconSearchOutline16 size={wide ? 14 : 18} />
+          {wide && <>
+            <span className={clsx(css.searchLabel, css.wide)}>{t('search.placeholder')}</span>
+            {/* Visual key caps; the platform-neutral chord is in aria-keyshortcuts. */}
+            <span aria-hidden="true"><Kbd keys={[/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl', 'K']} /></span>
+          </>}
+        </button>
+      </Tooltip>}
+
+      <nav ref={navigation} className={css.productNavigation} aria-label={t('workspace.navigation')} data-workspace={workspace}>
+        {wide && <span className={css.modeIndicator} data-ready={modeIndicator.ready || undefined} style={modeIndicator.style}
+          data-motion-tier={modeIndicator.ready ? 'L2' : undefined} aria-hidden="true" />}
         {renderSlot('sidebar.workspaceNavigation', { wide, workspace, expandSidebar: () => { if (collapsed) toggleSidebar() } })}
       </nav>
       {/* The Team browsing region fills the column between controls and foot. */}

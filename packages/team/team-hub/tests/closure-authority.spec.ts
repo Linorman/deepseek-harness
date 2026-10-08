@@ -2405,8 +2405,16 @@ describe('TeamHub closure authority', () => {
       const missing = await createTestRootTeam(harness.ctx, {
         goal: { objective: 'Persist a missing final.', budgets: {} }, rules: {}, budgets: {},
       })
+      const missingHuman = await activeParticipant(harness.ctx, missing.team.id, 'human', 'human', 'Human')
       const missingCoordinator = await activeParticipant(harness.ctx, missing.team.id, 'local-agent', 'coordinator', 'Coordinator')
       const missingBinding = await bindIdleActivation(harness.ctx, missing.team.id, missingCoordinator.id, 'missing-final')
+      const missingChannel = await openDirectV3(harness.ctx, missing.team.id, missingHuman.id, missingCoordinator.id)
+      const otherChannel = await openDirectV3(harness.ctx, missing.team.id, missingHuman.id, missingCoordinator.id)
+      const otherPost = issueActivation(harness.ctx, missingBinding)
+      await harness.ctx.teams.postChannelEnvelope({ actor: otherPost.proof, expectedCursor: otherChannel.cursor,
+        draft: { channelId: otherChannel.manifest.id, audience: [missingHuman.id], kind: 'final',
+          payload: { text: 'This final belongs to a different channel.' }, delivery: 'turn' } })
+      otherPost.revoke()
       let current = await harness.ctx.teams.getTeam({ teamId: missing.team.id })
       const missingScope: TeamSystemClosureDriverScope = {
         kind: 'closure-stall-missing-final',
@@ -2417,9 +2425,25 @@ describe('TeamHub closure authority', () => {
         sessionId: missingBinding.sessionId,
         provider: missingBinding.provider,
         turn: 2,
+        finalChannelId: missingChannel.manifest.id,
+        humanId: missingHuman.id,
         reason: { code: 'FINAL_ANSWER_MISSING', message: 'The coordinator ended without a final answer.' },
       }
       let issued = driver.issue(missingScope)
+      const sourceStream = harness.ctx.storageLog.get(`channel/${missingChannel.manifest.id}`)
+      if (sourceStream === undefined) throw new Error('Missing-final fixture did not retain its channel WAL')
+      const readSource = sourceStream.read.bind(sourceStream)
+      const corruptedRead = vi.spyOn(sourceStream, 'read').mockImplementationOnce(async (...args) => {
+        const rows = await readSource(...args)
+        const first = rows[0]
+        return first === undefined ? rows : [{ ...first, sequence: first.sequence + 1 }, ...rows.slice(1)]
+      })
+      try {
+        await expect(harness.ctx.teams.continueTeamClosure({
+          teamId: missing.team.id, expectedCursor: current.team.cursor, actor: issued.proof,
+        })).rejects.toMatchObject({ code: 'TEAM_CHANNEL_WAL_MALFORMED' })
+      } finally { corruptedRead.mockRestore() }
+      expect((await harness.ctx.teams.getTeam({ teamId: missing.team.id })).team.phase).toBe('active')
       await expect(harness.ctx.teams.continueTeamClosure({
         teamId: missing.team.id,
         expectedCursor: current.team.cursor,
@@ -2434,6 +2458,14 @@ describe('TeamHub closure authority', () => {
       })
       const failedCoordinator = await activeParticipant(harness.ctx, failed.team.id, 'local-agent', 'coordinator', 'Coordinator')
       const failedBinding = await bindIdleActivation(harness.ctx, failed.team.id, failedCoordinator.id, 'turn-failure')
+      current = await harness.ctx.teams.getTeam({ teamId: failed.team.id })
+      const pendingWork = await createTestCoordinatorTask(harness.ctx, {
+        teamId: failed.team.id, expectedCursor: current.team.cursor,
+        subject: 'Pending work before coordinator failure',
+        description: 'The closure driver must settle this unstarted task.',
+        blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [],
+        workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+      })
       current = await harness.ctx.teams.getTeam({ teamId: failed.team.id })
       const failureScope: TeamSystemClosureDriverScope = {
         kind: 'closure-fail-turn',
@@ -2458,10 +2490,87 @@ describe('TeamHub closure authority', () => {
         },
       })
       issued.revoke()
+      const accepted = await harness.ctx.teams.getTeam({ teamId: failed.team.id })
+      const closure = accepted.team.closure
+      if (closure?.kind !== 'fail') throw new Error('Coordinator failure did not retain its fail intent')
+      const failureRetry = driver.issue({ ...failureScope, expectedCursor: accepted.team.cursor })
+      await expect(harness.ctx.teams.continueTeamClosure({ actor: failureRetry.proof,
+        teamId: failed.team.id, expectedCursor: accepted.team.cursor })).resolves.toEqual(accepted)
+      failureRetry.revoke()
+      const cleanup = driver.issue({ kind: 'closure-recover-fail', teamId: failed.team.id,
+        expectedCursor: accepted.team.cursor, closureIdempotencyKey: closure.idempotencyKey,
+        closureRequestedAt: closure.requestedAt })
+      const cleaned = await harness.ctx.teams.continueTeamClosure({ actor: cleanup.proof,
+        teamId: failed.team.id, expectedCursor: accepted.team.cursor })
+      cleanup.revoke()
+      expect(cleaned.tasks.find(task => task.id === pendingWork.id)).toMatchObject({ phase: 'cancelled' })
+      expect(cleaned.team).toMatchObject({ phase: 'quiescing', closure: { kind: 'fail' } })
+      await updateActivationStatus(harness.ctx, failedBinding, 'offline')
+      const beforeTerminal = await harness.ctx.teams.getTeam({ teamId: failed.team.id })
+      const terminalProof = driver.issue({ kind: 'closure-recover-fail', teamId: failed.team.id,
+        expectedCursor: beforeTerminal.team.cursor, closureIdempotencyKey: closure.idempotencyKey,
+        closureRequestedAt: closure.requestedAt })
+      const terminal = await harness.ctx.teams.continueTeamClosure({ actor: terminalProof.proof,
+        teamId: failed.team.id, expectedCursor: beforeTerminal.team.cursor })
+      terminalProof.revoke()
+      expect(terminal.team).toMatchObject({ phase: 'failed', closure: { kind: 'fail' } })
+      expect(terminal.tasks.find(task => task.id === pendingWork.id)?.phase).toBe('cancelled')
+      const retry = driver.issue({ kind: 'closure-recover-fail', teamId: failed.team.id,
+        expectedCursor: terminal.team.cursor, closureIdempotencyKey: closure.idempotencyKey,
+        closureRequestedAt: closure.requestedAt })
+      await expect(harness.ctx.teams.continueTeamClosure({ actor: retry.proof,
+        teamId: failed.team.id, expectedCursor: terminal.team.cursor })).resolves.toEqual(terminal)
+      retry.revoke()
     } finally {
       driver.dispose()
       await harness.dispose()
     }
+  })
+
+  it('does not record a missing-final stall after the coordinator final is durable', async () => {
+    const harness = await setup()
+    const driver = closureDriverAuthority(harness.ctx, 'team-closure-driver')
+    try {
+      const created = await createTestRootTeam(harness.ctx, {
+        goal: { objective: 'Retain a committed final before closure observation.', budgets: {} }, rules: {}, budgets: {},
+      })
+      const human = await activeParticipant(harness.ctx, created.team.id, 'human', 'human', 'Human')
+      const coordinator = await activeParticipant(harness.ctx, created.team.id, 'local-agent', 'coordinator', 'Coordinator')
+      const binding = await bindIdleActivation(harness.ctx, created.team.id, coordinator.id, 'observed-final')
+      const channel = await openDirectV3(harness.ctx, created.team.id, human.id, coordinator.id)
+      const lease = issueActivation(harness.ctx, binding)
+      const ordinary = await harness.ctx.teams.postChannelEnvelope({ actor: lease.proof,
+        expectedCursor: channel.cursor,
+        draft: { channelId: channel.manifest.id, audience: [human.id], kind: 'message',
+          payload: { text: 'Work is complete.' }, delivery: 'context' } })
+      const final = await harness.ctx.teams.postChannelEnvelope({ actor: lease.proof,
+        expectedCursor: ordinary.sequence,
+        draft: { channelId: channel.manifest.id, audience: [human.id], kind: 'final',
+          payload: { text: 'The final result is durable.' }, delivery: 'turn' } })
+      lease.revoke()
+      const before = await harness.ctx.teams.getTeam({ teamId: created.team.id })
+      const scope: TeamSystemClosureDriverScope = { kind: 'closure-stall-missing-final',
+        teamId: created.team.id, expectedCursor: before.team.cursor,
+        coordinatorId: coordinator.id, activationId: binding.activation.id,
+        sessionId: binding.sessionId, provider: binding.provider, turn: 2,
+        finalChannelId: channel.manifest.id, humanId: human.id,
+        reason: { code: 'FINAL_ANSWER_MISSING', message: 'A final was supposedly missing.' } }
+      const issued = driver.issue(scope)
+      await expect(harness.ctx.teams.continueTeamClosure({ actor: issued.proof,
+        teamId: created.team.id, expectedCursor: before.team.cursor }))
+        .resolves.toEqual(before)
+      issued.revoke()
+      const failure = driver.issue({ ...scope, kind: 'closure-fail-turn', turn: 3,
+        reason: { code: 'MODEL_UNAVAILABLE', message: 'A final exists despite the failed turn.' } })
+      await expect(harness.ctx.teams.continueTeamClosure({ actor: failure.proof,
+        teamId: created.team.id, expectedCursor: before.team.cursor }))
+        .resolves.toEqual(before)
+      failure.revoke()
+      expect(await harness.ctx.teams.getTeam({ teamId: created.team.id })).toEqual(before)
+      expect((await harness.ctx.teams.readChannel({ channelId: channel.manifest.id, afterCursor: -1 })).records
+        .filter(record => record.type === 'channel/envelope')).toHaveLength(2)
+      expect(final.kind).toBe('final')
+    } finally { driver.dispose(); await harness.dispose() }
   })
 
   it('rejects a turn observation from an offline coordinator epoch after a replacement activation binds', async () => {
@@ -2521,11 +2630,17 @@ describe('TeamHub closure authority', () => {
       reason,
     })
     try {
-      await expect(harness.ctx.teams.continueTeamClosure({
+      const stalled = await harness.ctx.teams.continueTeamClosure({
         teamId: created.team.id,
         expectedCursor: before.team.cursor,
         actor: issued.proof,
-      })).resolves.toMatchObject({ team: { phase: 'stalled', stallReason: reason } })
+      })
+      expect(stalled.team).toMatchObject({ phase: 'stalled', stallReason: reason })
+      const retry = driver.issue({ kind: 'closure-stall-budget', teamId: created.team.id,
+        expectedCursor: stalled.team.cursor, reason })
+      await expect(harness.ctx.teams.continueTeamClosure({ actor: retry.proof,
+        teamId: created.team.id, expectedCursor: stalled.team.cursor })).resolves.toEqual(stalled)
+      retry.revoke()
     } finally {
       issued.revoke()
       driver.dispose()
@@ -2551,11 +2666,17 @@ describe('TeamHub closure authority', () => {
       reason,
     })
     try {
-      await expect(harness.ctx.teams.continueTeamClosure({
+      const stalled = await harness.ctx.teams.continueTeamClosure({
         teamId: created.team.id,
         expectedCursor: quiescing.team.cursor,
         actor: issued.proof,
-      })).resolves.toMatchObject({ team: { phase: 'stalled', stallReason: reason } })
+      })
+      expect(stalled.team).toMatchObject({ phase: 'stalled', stallReason: reason })
+      const retry = driver.issue({ kind: 'closure-stall-quiescing', teamId: created.team.id,
+        expectedCursor: stalled.team.cursor, reason })
+      await expect(harness.ctx.teams.continueTeamClosure({ actor: retry.proof,
+        teamId: created.team.id, expectedCursor: stalled.team.cursor })).resolves.toEqual(stalled)
+      retry.revoke()
     } finally {
       issued.revoke()
       driver.dispose()
@@ -2708,12 +2829,20 @@ describe('TeamHub closure authority', () => {
             append.mockRestore()
             expect(await finalAdmissions(recovered.ctx, final)).toHaveLength(1)
           }
-          await expect(recovered.ctx.teams.continueTeamClosure({
+          const completed = await recovered.ctx.teams.continueTeamClosure({
             teamId: created.team.id,
             expectedCursor: state.team.cursor,
             actor: issued.proof,
-          })).resolves.toMatchObject({ team: { phase: 'completed' } })
+          })
+          expect(completed.team.phase).toBe('completed')
           issued.revoke()
+          const replay = driver.issue({ kind: 'closure-recover-complete', teamId: created.team.id,
+            expectedCursor: completed.team.cursor, closureIdempotencyKey: closure.idempotencyKey,
+            closureRequestedAt: closure.requestedAt, finalChannelId: closure.finalChannelId,
+            finalEnvelopeId: closure.finalEnvelopeId })
+          await expect(recovered.ctx.teams.continueTeamClosure({ actor: replay.proof,
+            teamId: created.team.id, expectedCursor: completed.team.cursor })).resolves.toEqual(completed)
+          replay.revoke()
           const records = await recovered.ctx.teams.readChannel({ channelId: channel.manifest.id, afterCursor: -1 })
           expect(records.records.filter(record => record.type === 'channel/receipt')).toHaveLength(1)
           expect(await finalAdmissions(recovered.ctx, final)).toMatchObject([{ facts: { admission: {
@@ -3105,6 +3234,71 @@ describe('TeamHub closure authority', () => {
       driver.dispose()
       await harness.dispose()
     }
+  })
+
+  it.each(['json', 'sqlite'] as const)('retires the idle default worker with an exact TeamRun topology proof (%s)', async (backend) => {
+    const harness = await setup({}, undefined, backend)
+    const authority = topologyAuthority(harness.ctx, 'team-run')
+    let disposed = false
+    try {
+      const created = await createTestRootTeam(harness.ctx, {
+        goal: { objective: 'Resize the default worker pool to zero.', budgets: {} }, rules: {}, budgets: {},
+      })
+      const initial = await harness.ctx.teams.getTeam({ teamId: created.team.id })
+      const descriptor = { kind: 'local-agent' as const, role: 'worker', displayName: 'Default worker', capabilities: [] }
+      const inviteInput = { teamId: created.team.id, expectedCursor: initial.team.cursor, ...descriptor }
+      const invitation = authority.issue({ kind: 'team-run-worker-invite', teamId: created.team.id,
+        expectedCursor: inviteInput.expectedCursor, participant: descriptor })
+      const worker = await harness.ctx.teams.inviteParticipant({ actor: invitation.proof, ...inviteInput })
+      invitation.revoke()
+      for (const [expectedPhase, phase] of [['invited', 'provisioning'], ['provisioning', 'active']] as const) {
+        const current = await harness.ctx.teams.getTeam({ teamId: created.team.id })
+        const input = { teamId: created.team.id, participantId: worker.id, expectedCursor: current.team.cursor, phase }
+        const issued = authority.issue({ kind: 'team-run-worker-activate', ...input, expectedPhase })
+        await expect(harness.ctx.teams.transitionParticipantPhase({ actor: issued.proof, ...input }))
+          .resolves.toMatchObject({ id: worker.id, phase })
+        issued.revoke()
+      }
+      const current = await harness.ctx.teams.getTeam({ teamId: created.team.id })
+      const input = { teamId: created.team.id, participantId: worker.id,
+        expectedCursor: current.team.cursor, phase: 'left' as const }
+      await expect(harness.ctx.teams.transitionParticipantPhase({ actor: topologyProof(), ...input }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      const issued = authority.issue({ kind: 'team-run-worker-retire', ...input, expectedPhase: 'active' })
+      await expect(harness.ctx.teams.transitionParticipantPhase({ actor: issued.proof, ...input }))
+        .resolves.toMatchObject({ id: worker.id, role: 'worker', phase: 'left' })
+      issued.revoke()
+      expect((await harness.ctx.teams.getTeam({ teamId: created.team.id })).participants.find(member => member.id === worker.id))
+        .toMatchObject({ role: 'worker', phase: 'left' })
+      const afterRetirement = await harness.ctx.teams.getTeam({ teamId: created.team.id })
+      const coordinatorDescriptor = { kind: 'local-agent' as const, role: 'coordinator',
+        displayName: 'Coordinator', capabilities: [] }
+      const coordinatorInviteInput = { teamId: created.team.id, expectedCursor: afterRetirement.team.cursor,
+        ...coordinatorDescriptor }
+      const coordinatorInvite = authority.issue({ kind: 'team-run-bootstrap-participant-invite',
+        teamId: created.team.id, expectedCursor: coordinatorInviteInput.expectedCursor,
+        participant: coordinatorDescriptor })
+      const coordinator = await harness.ctx.teams.inviteParticipant({ actor: coordinatorInvite.proof, ...coordinatorInviteInput })
+      coordinatorInvite.revoke()
+      const beforeDenied = await harness.ctx.teams.getTeam({ teamId: created.team.id })
+      const wrongRoleInput = { teamId: created.team.id, participantId: coordinator.id,
+        expectedCursor: beforeDenied.team.cursor, phase: 'left' as const }
+      const wrongRoleProof = authority.issue({ kind: 'team-run-worker-retire', ...wrongRoleInput,
+        expectedPhase: 'invited' })
+      await expect(harness.ctx.teams.transitionParticipantPhase({ actor: wrongRoleProof.proof, ...wrongRoleInput }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      wrongRoleProof.revoke()
+      expect((await harness.ctx.teams.getTeam({ teamId: created.team.id })).participants.find(member => member.id === coordinator.id))
+        .toMatchObject({ role: 'coordinator', phase: 'invited' })
+      const root = harness.root
+      await harness.dispose()
+      disposed = true
+      const recovered = await setup({}, root, backend)
+      try {
+        expect((await recovered.ctx.teams.getTeam({ teamId: created.team.id })).participants.find(member => member.id === worker.id))
+          .toMatchObject({ role: 'worker', phase: 'left' })
+      } finally { await recovered.dispose() }
+    } finally { authority.dispose(); if (!disposed) await harness.dispose() }
   })
 
   it('requires exact one-shot TeamRun topology proofs before participant policy, Team journal, or bootstrap channel WAL admission', async () => {
@@ -4313,111 +4507,6 @@ describe('TeamHub closure authority', () => {
     unregister()
     teamRun.dispose()
     scheduler.dispose()
-    await harness.dispose()
-  })
-
-  it('fences final-result admission with an exact human-receipted TeamRun quiesce proof', async () => {
-    const harness = await setup()
-    const created = await createTestRootTeam(harness.ctx, {
-      goal: { objective: 'Fence new channel admission after an accepted final.', budgets: {} }, rules: {}, budgets: {},
-    })
-    const human = await activeParticipant(harness.ctx, created.team.id, 'human', 'human', 'Human')
-    const coordinator = await activeParticipant(harness.ctx, created.team.id, 'local-agent', 'coordinator', 'Coordinator')
-    const coordinatorBinding = await bindIdleActivation(harness.ctx, created.team.id, coordinator.id, 'finalization-phase-coordinator')
-    const channel = await openDirectV3(harness.ctx, created.team.id, human.id, coordinator.id)
-    const coordinatorLease = issueActivation(harness.ctx, coordinatorBinding)
-    const final = await harness.ctx.teams.postChannelEnvelope({
-      actor: coordinatorLease.proof,
-      expectedCursor: channel.cursor,
-      draft: {
-        channelId: channel.manifest.id,
-        audience: [human.id],
-        kind: 'final',
-        payload: { text: 'The final result is ready.' },
-        delivery: 'turn',
-      },
-    })
-    coordinatorLease.revoke()
-    const receipts = finalReceiptAuthority(harness.ctx, 'team-run')
-    const receipt = receipts.issue({
-      teamId: created.team.id,
-      channelId: channel.manifest.id,
-      humanId: human.id,
-      coordinatorId: coordinator.id,
-    })
-    await admitTestFinal(harness.ctx, receipt.proof, final)
-    await harness.ctx.teams.ackChannelEnvelope({
-      actor: receipt.proof,
-      channelId: channel.manifest.id,
-      envelopeId: final.id,
-      expectedCursor: (await harness.ctx.teams.getChannel({ channelId: channel.manifest.id })).cursor,
-    })
-    receipt.revoke()
-    const phases = phaseAuthority(harness.ctx, 'team-run')
-    const policies: unknown[] = []
-    const unregister = harness.ctx.teams.registerPolicy('close', {
-      name: 'observe-finalization-admission',
-      async apply(request, next) {
-        policies.push(request)
-        return await next()
-      },
-    })
-    const before = await harness.ctx.teams.getTeam({ teamId: created.team.id })
-    const input = {
-      teamId: created.team.id,
-      expectedCursor: before.team.cursor,
-      phase: 'quiescing' as const,
-    }
-    const scope: TeamSystemPhaseScope = {
-      kind: 'team-run-finalization-quiesce',
-      ...input,
-      finalChannelId: channel.manifest.id,
-      finalEnvelopeId: final.id,
-      humanId: human.id,
-      coordinatorId: coordinator.id,
-    }
-    const revoked = phases.issue(scope)
-    revoked.revoke()
-    await expect(harness.ctx.teams.transitionTeamPhase({ actor: revoked.proof, ...input }))
-      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
-    await expect(harness.ctx.teams.transitionTeamPhase({
-      actor: phases.issue({ ...scope, finalEnvelopeId: 'wrong-finalization-phase-envelope' as never }).proof,
-      ...input,
-    })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
-    expect(policies).toEqual([])
-
-    const admitted = phases.issue(scope)
-    const quiescing = await harness.ctx.teams.transitionTeamPhase({ actor: admitted.proof, ...input })
-    admitted.revoke()
-    expect(quiescing.team).toMatchObject({ phase: 'quiescing' })
-    expect(policies).toHaveLength(1)
-    expect((policies[0] as { readonly facts: Record<string, unknown> } | undefined)?.facts).toMatchObject({
-      operation: 'finalization-admission', finalEnvelopeId: final.id,
-    })
-    unregister()
-    await closeTestChannel(harness.ctx, {
-      channelId: channel.manifest.id,
-      expectedCursor: (await harness.ctx.teams.getChannel({ channelId: channel.manifest.id })).cursor,
-    })
-    const coalescedInput = {
-      teamId: created.team.id,
-      expectedCursor: quiescing.team.cursor,
-      phase: 'quiescing' as const,
-    }
-    const coalesced = phases.issue({
-      kind: 'team-run-finalization-quiesce',
-      ...coalescedInput,
-      finalChannelId: channel.manifest.id,
-      finalEnvelopeId: final.id,
-      humanId: human.id,
-      coordinatorId: coordinator.id,
-    })
-    await expect(harness.ctx.teams.transitionTeamPhase({ actor: coalesced.proof, ...coalescedInput }))
-      .resolves.toMatchObject({ team: { phase: 'quiescing', cursor: quiescing.team.cursor } })
-    coalesced.revoke()
-    expect(policies).toHaveLength(1)
-    phases.dispose()
-    receipts.dispose()
     await harness.dispose()
   })
 

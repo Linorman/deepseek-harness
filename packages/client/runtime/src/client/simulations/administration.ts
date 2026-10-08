@@ -36,6 +36,8 @@ export interface SimulationCommandState {
   readonly pending: boolean
   readonly unknown: boolean
   readonly notFound: boolean
+  /** Definitive Host refusal before acceptance; a mismatched creation model carries this proof. */
+  readonly notAccepted?: true | undefined
   readonly receipt?: SimulationCommandReceipt | undefined
   /** Separately observed request-journal metadata; it never overwrites the original receipt. */
   readonly requestObservation?: SimulationRequestObservation | undefined
@@ -186,7 +188,7 @@ export class SimulationAdministrationRuntime {
     if (current === undefined || current.pending) return current
     const observed = observeRequest(current, this.source.state.getSnapshot().persistentRequests)
     if (!query && (current.requestObservationUnavailable || observed !== undefined
-      && (observed.status !== 'accepted' || observed.comparison === 'conflict'))) return current
+      && observed.status !== 'accepted')) return current
     const epoch = this.epoch
     const request = new AbortController()
     this.requests.set(key, request)
@@ -211,12 +213,14 @@ export class SimulationAdministrationRuntime {
           else this.source.clearAuthorization()
           this.synchronize(); return undefined
         }
-        this.publish(key, { ...waiting, pending: false, error: category(response.result.error) })
+        this.publish(key, { ...waiting, pending: false, error: category(response.result.error),
+          ...!query && current.command.kind === 'create' && current.receipt === undefined && observed === undefined
+            && code === 'simulation-product-model-changed' ? { unknown: false, notAccepted: true } : {} })
       } else {
         const receipt = response.result.value
         const next: SimulationCommandState = { ...current, pending: false,
           unknown: receipt === undefined && (current.unknown || current.receipt === undefined), notFound: receipt === undefined,
-          ...receipt === undefined ? {} : { receipt }, error: undefined }
+          ...receipt === undefined ? {} : { receipt, notAccepted: undefined }, error: undefined }
         const commands = { ...this.state.getSnapshot().commands, [key]: next }
         if (this.bytes(commands) > this.options.maxBytes) {
           this.publish(key, { ...waiting, pending: false, error: 'unavailable' })
@@ -326,12 +330,14 @@ function map<T>(response: { result: { ok: true; value: T } | { ok: false; error:
 }
 function terminal(value: SimulationCommandState): boolean {
   if (value.requestObservationUnavailable || value.requestObservation?.comparison === 'conflict') return false
+  if (value.notAccepted) return true
   const receipt = value.receipt
   return !value.unknown && receipt !== undefined && (receipt.kind === 'ingress'
     ? receipt.value.status === 'consumed' || receipt.value.status === 'cancelled'
     : receipt.value.status === 'completed' || receipt.value.status === 'failed')
 }
 function category(error: RpcError): SimulationReadError {
+  if (error.code === 'simulation-product-model-changed') return 'model-changed'
   if (error.code === 'simulation-product-unavailable') return 'unavailable'
   if (error.code === 'simulation-product-stale') return 'stale'
   if (error.code === 'simulation-product-invalid' || error.code === 'bad-request') return 'invalid'

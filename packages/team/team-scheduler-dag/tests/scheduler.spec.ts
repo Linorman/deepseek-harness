@@ -34,6 +34,7 @@ import {
   teamStateSnapshotSchema,
   teamTaskIdSchema,
   teamTaskSnapshotSchema,
+  teamWorkflowPlanSnapshotSchema,
 } from '@clocky/clocky-team'
 import type {
   ActivationBindingSnapshot,
@@ -60,6 +61,7 @@ import type {
   TeamStateSnapshot,
   TeamTaskAssignRequest,
   TeamTaskAttemptExpireRequest,
+  TeamTaskCancellationReconcileRequest,
   TeamTaskReviewRecoverRequest,
   TeamTaskSnapshot,
   TeamTaskWorkspaceMode,
@@ -252,6 +254,7 @@ interface FakeTeams {
   readonly compactTeam: Mock<(request: TeamJournalCompactRequest) => Promise<TeamJournalCompactResult>>
   readonly assignTask: Mock<(request: TeamTaskAssignRequest) => Promise<TeamTaskSnapshot>>
   readonly expireTaskAttempt: Mock<(request: TeamTaskAttemptExpireRequest) => Promise<TeamTaskSnapshot>>
+  readonly reconcileTaskCancellation: Mock<(request: TeamTaskCancellationReconcileRequest) => Promise<TeamTaskSnapshot>>
   readonly expireSchedulerChannelDeliveries: Mock<(request: SchedulerChannelDeliveryExpireRequest) => Promise<ChannelDeliveryExpireResult>>
   readonly openChannel: Mock<(request: ChannelOpenRequest) => Promise<ChannelSnapshot>>
   readonly openSchedulerReviewChannel: Mock<(request: SchedulerReviewChannelOpenRequest) => Promise<ChannelSnapshot>>
@@ -384,6 +387,7 @@ function setup(initial: TeamStateSnapshot): FakeHarness {
       phaseScopes.push(scope)
       const { stallReason: _priorStallReason, ...team } = current.team
       current = state(current.tasks, current.participants, current.activations, {
+        ...current.workflowPlans === undefined ? {} : { workflowPlans: current.workflowPlans },
         team: {
           ...team,
           phase: input.phase,
@@ -450,6 +454,22 @@ function setup(initial: TeamStateSnapshot): FakeHarness {
       current = replaceTask(current, next)
       return next
     }),
+    reconcileTaskCancellation: vi.fn(async (input) => {
+      const scope = taskLeaseSource?.resolveTaskLeaseProof(input.actor)
+      if (scope === undefined || scope.kind !== 'scheduler-task-cancellation-reconcile'
+        || scope.teamId !== input.teamId || scope.taskId !== input.taskId
+        || scope.expectedRevision !== input.expectedRevision || scope.requestedRevision !== input.requestedRevision) {
+        throw new TeamError('scheduler task cancellation proof is unavailable', 'TEAM_ACTOR_PROOF_INVALID')
+      }
+      taskLeaseScopes.push(scope)
+      const prior = findTask(current, input.taskId)
+      if (prior.revision !== input.expectedRevision || prior.cancellation?.requestedRevision !== input.requestedRevision) {
+        throw new TeamError('stale cancellation', 'TEAM_TASK_STALE_REVISION')
+      }
+      const next = teamTaskSnapshotSchema.parse({ ...prior, phase: 'cancelled', revision: prior.revision + 1 })
+      current = replaceTask(current, next)
+      return next
+    }),
     expireSchedulerChannelDeliveries: vi.fn(async (input) => {
       const scope = schedulerChannelSource?.resolveSchedulerChannelProof(input.actor)
       if (schedulerChannelSource !== undefined && (scope === undefined
@@ -500,6 +520,7 @@ function setup(initial: TeamStateSnapshot): FakeHarness {
       })
       channels.set(id, { snapshot: channel, records: [] })
       current = state(current.tasks, current.participants, current.activations, {
+        ...current.workflowPlans === undefined ? {} : { workflowPlans: current.workflowPlans },
         team: { ...current.team, cursor: current.team.cursor + 1, updatedAt: current.team.updatedAt + 1 },
         goal: current.goal,
         channelIds: [...current.channelIds, id],
@@ -540,6 +561,7 @@ function setup(initial: TeamStateSnapshot): FakeHarness {
       })
       channels.set(id, { snapshot: channel, records: [] })
       current = state(current.tasks, current.participants, current.activations, {
+        ...current.workflowPlans === undefined ? {} : { workflowPlans: current.workflowPlans },
         team: { ...current.team, cursor: current.team.cursor + 1, updatedAt: current.team.updatedAt + 1 },
         goal: current.goal,
         channelIds: [...current.channelIds, id],
@@ -578,6 +600,7 @@ function setup(initial: TeamStateSnapshot): FakeHarness {
       })
       channels.set(id, { snapshot: channel, records: [] })
       current = state(current.tasks, current.participants, current.activations, {
+        ...current.workflowPlans === undefined ? {} : { workflowPlans: current.workflowPlans },
         team: { ...current.team, cursor: current.team.cursor + 1, updatedAt: current.team.updatedAt + 1 },
         goal: current.goal,
         channelIds: [...current.channelIds, id],
@@ -769,6 +792,7 @@ function replaceTask(current: TeamStateSnapshot, next: TeamTaskSnapshot): TeamSt
     current.participants,
     current.activations,
     {
+      ...current.workflowPlans === undefined ? {} : { workflowPlans: current.workflowPlans },
       team: { ...current.team, cursor: current.team.cursor + 1, updatedAt: current.team.updatedAt + 1 },
       goal: current.goal,
       channelIds: current.channelIds,
@@ -950,6 +974,260 @@ function mountScheduler(harness: ReturnType<typeof setup>, options: Config): () 
 }
 
 describe('TeamDagScheduler', () => {
+  it('withdraws supported workspace modes after close and refuses unsupported extra modes', async () => {
+    const harness = setup(state([], [], []))
+    expect(() => new TeamDagScheduler(harness.ctx, config({ permittedWorkspaceModes: ['shared', 'worktree'] })))
+      .toThrow('non-shared workspace modes require allowNonSharedWorkspaceModes')
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    expect(scheduler.supportedWorkspaceModes()).toEqual(['shared'])
+    await scheduler.close()
+    expect(scheduler.supportedWorkspaceModes()).toEqual([])
+    const opaque = Object.freeze({}) as never
+    expect(scheduler.envelopePostProofSource.resolveEnvelopePostProof(opaque)).toBeUndefined()
+    expect(scheduler.taskReviewProofSource.resolveTaskReviewProof(opaque)).toBeUndefined()
+    expect(scheduler.phaseProofSource.resolvePhaseProof(opaque)).toBeUndefined()
+    expect(scheduler.maintenanceProofSource.resolveMaintenanceProof(opaque)).toBeUndefined()
+    expect(scheduler.taskLeaseProofSource.resolveTaskLeaseProof(opaque)).toBeUndefined()
+    expect(scheduler.schedulerChannelProofSource.resolveSchedulerChannelProof(opaque)).toBeUndefined()
+    const before = harness.teams.listTeamsPage.mock.calls.length
+    scheduler.start()
+    await scheduler.drive()
+    expect(harness.teams.listTeamsPage).toHaveBeenCalledTimes(before)
+    expect(scheduler.close()).toBe(scheduler.close())
+  })
+
+  it('resets expired discovery cursors and refuses a nonadvancing Team page', async () => {
+    const harness = setup(state([], [], []))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    harness.teams.listTeamsPage.mockRejectedValueOnce(new TeamError('discovery cursor expired', 'TEAM_DISCOVERY_CURSOR_EXPIRED'))
+      .mockResolvedValueOnce({ items: [], scanned: 0, nextCursor: -1 as never })
+    await scheduler.drive()
+    await expect(scheduler.drive()).rejects.toMatchObject({ code: 'TEAM_CURSOR_CONFLICT' })
+    harness.teams.listTeamsPage.mockRejectedValueOnce(new Error('Team discovery store unavailable'))
+    await expect(scheduler.drive()).rejects.toThrow('Team discovery store unavailable')
+    expect(harness.teams.listTeamsPage.mock.calls.map(([input]) => input.afterCursor)).toEqual([-1, -1, -1])
+    await scheduler.close()
+  })
+
+  it('does not start a Team drive from a discovery page that arrives after retirement', async () => {
+    const harness = setup(state([], [], []))
+    const page = Promise.withResolvers<TeamListPage>()
+    harness.teams.listTeamsPage.mockImplementationOnce(() => page.promise)
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    const driving = scheduler.drive()
+    await vi.waitFor(() => { expect(harness.teams.listTeamsPage).toHaveBeenCalledOnce() })
+    const closing = scheduler.close()
+    page.resolve({ items: [harness.getState().team], scanned: 1 })
+    await Promise.all([driving, closing])
+    expect(harness.teams.getTeam).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed channel event lookup while keeping later Team drives available', async () => {
+    const harness = setup(state([], [], []))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    scheduler.start()
+    await scheduler.drive()
+    harness.teams.getChannel.mockRejectedValueOnce(new Error('channel lookup unavailable'))
+    const callback = harness.callbacks.get('channel/changed')?.[0]
+    if (callback === undefined) throw new Error('scheduler did not subscribe to channel changes')
+    callback({ channelId: channelIdSchema.parse('channel-lookup-failed'), record: {} } as never)
+    await vi.waitFor(() => { expect(harness.warnings).toHaveBeenCalledWith(
+      expect.stringContaining("channel 'channel-lookup-failed' drive request failed: Error: channel lookup unavailable")) })
+    await expect(scheduler.drive({ teamId })).resolves.toBeUndefined()
+    await scheduler.close()
+  })
+
+  it('coalesces its own task event and replaces the scheduled follow-up with an explicit drive', async () => {
+    const worker = participant('participant-own-task-event')
+    const ready = task('task-own-task-event')
+    const harness = setup(state([ready], [worker], [activation(worker)]))
+    const assign = harness.teams.assignTask.getMockImplementation()
+    if (assign === undefined) throw new Error('fake scheduler assignment is missing')
+    harness.teams.assignTask.mockImplementationOnce(async (input) => {
+      const assigned = await assign(input)
+      harness.emit(teamEventSchema.parse({ type: 'task/changed', task: assigned, cursor: 2, createdAt: 2 }))
+      return assigned
+    })
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxAssignmentsPerDrive: 1 }))
+    scheduler.start()
+    await scheduler.drive({ teamId })
+    await scheduler.drive({ teamId })
+    expect(harness.teams.assignTask).toHaveBeenCalledOnce()
+    await scheduler.close()
+  })
+
+  it('accepts a delayed own task event after the assignment drive has settled', async () => {
+    const worker = participant('participant-delayed-own-task-event')
+    const ready = task('task-delayed-own-task-event')
+    const harness = setup(state([ready], [worker], [activation(worker)]))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxAssignmentsPerDrive: 1 }))
+    scheduler.start()
+    await scheduler.drive({ teamId })
+    const assigned = harness.getState().tasks.find(value => value.id === ready.id)
+    if (assigned === undefined) throw new Error('scheduler did not retain its task assignment')
+    harness.emit(teamEventSchema.parse({ type: 'task/changed', task: assigned, cursor: 2, createdAt: 2 }))
+    await scheduler.drive({ teamId })
+    expect(harness.teams.assignTask).toHaveBeenCalledOnce()
+    await scheduler.close()
+  })
+
+  it('contains a scheduled follow-up drive failure after its own task event', async () => {
+    const worker = participant('participant-scheduled-follow-up')
+    const ready = task('task-scheduled-follow-up')
+    const harness = setup(state([ready], [worker], [activation(worker)]))
+    const assign = harness.teams.assignTask.getMockImplementation()
+    if (assign === undefined) throw new Error('fake scheduler assignment is missing')
+    harness.teams.assignTask.mockImplementationOnce(async (input) => {
+      const assigned = await assign(input)
+      harness.emit(teamEventSchema.parse({ type: 'task/changed', task: assigned, cursor: 2, createdAt: 2 }))
+      return assigned
+    })
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxAssignmentsPerDrive: 1 }))
+    scheduler.start()
+    await scheduler.drive({ teamId })
+    harness.teams.getTeam.mockRejectedValueOnce(new Error('scheduled Team reread unavailable'))
+    await vi.waitFor(() => { expect(harness.warnings.mock.calls.some(([message]) =>
+      String(message).includes('scheduled Team reread unavailable'))).toBe(true) })
+    await scheduler.close()
+  })
+
+  it('does not assign work from a Team projection that arrives after scheduler close', async () => {
+    const worker = participant('participant-late-team-read')
+    const ready = task('task-late-team-read')
+    const harness = setup(state([ready], [worker], [activation(worker)]))
+    const loaded = Promise.withResolvers<TeamStateSnapshot>()
+    harness.teams.getTeam.mockImplementationOnce(() => loaded.promise)
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    const driving = scheduler.drive({ teamId })
+    await vi.waitFor(() => { expect(harness.teams.getTeam).toHaveBeenCalledOnce() })
+    const closing = scheduler.close()
+    loaded.resolve(harness.getState())
+    await Promise.all([driving, closing])
+    expect(harness.teams.assignTask).not.toHaveBeenCalled()
+  })
+
+  it('drains placement preparation cancelled by the scheduler admission signal', async () => {
+    const harness = setup(state([], [], []))
+    const entered = Promise.withResolvers<AbortSignal>()
+    const placement = { prepare: vi.fn(async (_team: unknown, signal: AbortSignal): Promise<void> => {
+      entered.resolve(signal)
+      await new Promise<never>((_resolve, reject) => {
+        signal.addEventListener('abort', () => {
+          reject(signal.reason instanceof Error ? signal.reason : new Error('scheduler admission aborted'))
+        }, { once: true })
+      })
+    }) }
+    Object.assign(harness.ctx, { get: (name: string) => name === 'teamPlacement' ? placement : undefined })
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    const driving = scheduler.drive({ teamId })
+    await entered.promise
+    const closing = scheduler.close()
+    await expect(driving).resolves.toBeUndefined()
+    await closing
+    expect(placement.prepare).toHaveBeenCalledOnce()
+  })
+
+  it('does not open a wake channel when eligibility retires scheduler admission', async () => {
+    const worker = participant('participant-close-during-eligibility')
+    const ready = task('task-close-during-eligibility')
+    const harness = setup(state([ready], [worker], [activation(worker)]))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    harness.workspaces.eligible.mockImplementationOnce(async () => {
+      void scheduler.close()
+      return true
+    })
+    await expect(scheduler.drive({ teamId })).resolves.toBeUndefined()
+    await scheduler.close()
+    expect(harness.teams.openSchedulerWakeChannel).not.toHaveBeenCalled()
+    expect(harness.teams.assignTask).not.toHaveBeenCalled()
+  })
+
+  it('does not assign a task after its wake channel opens during scheduler retirement', async () => {
+    const worker = participant('participant-close-after-wake')
+    const ready = task('task-close-after-wake')
+    const harness = setup(state([ready], [worker], [activation(worker)]))
+    const wait = harness.ctx.teamChannelAdmission.waitUntilActive.bind(harness.ctx.teamChannelAdmission)
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    vi.spyOn(harness.ctx.teamChannelAdmission, 'waitUntilActive').mockImplementationOnce(async (request) => {
+      const channel = await wait(request)
+      void scheduler.close()
+      return channel
+    })
+    await expect(scheduler.drive({ teamId })).resolves.toBeUndefined()
+    await scheduler.close()
+    expect(harness.teams.openSchedulerWakeChannel).toHaveBeenCalledOnce()
+    expect(harness.teams.assignTask).not.toHaveBeenCalled()
+  })
+
+  it('prepares a configured placement owner once before scanning ready tasks', async () => {
+    const worker = participant('participant-placement-prepared')
+    const ready = task('task-placement-prepared')
+    const harness = setup(state([ready], [worker], [activation(worker)]))
+    const placement = { prepare: vi.fn(async () => {}) }
+    Object.assign(harness.ctx, { get: (name: string) => name === 'teamPlacement' ? placement : undefined })
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    try {
+      await scheduler.drive({ teamId })
+      expect(placement.prepare).toHaveBeenCalledOnce()
+      expect(harness.teams.assignTask).toHaveBeenCalledWith(expect.objectContaining({ taskId: ready.id }))
+    } finally { await scheduler.close() }
+  })
+
+  it.each(['empty', 'unstarted'] as const)
+  ('does not spend a zero-retry budget on %s work', async (work) => {
+    const pending = task('task-zero-retry-first-attempt')
+    const harness = setup(state(work === 'empty' ? [] : [pending], [], [], { budgets: { maxRetries: 0 } }))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.getState().team.phase).toBe('active')
+      expect(harness.teams.transitionTeamPhase).not.toHaveBeenCalled()
+    } finally { await scheduler.close() }
+  })
+
+  it('leaves a child-Team execution to its delegation owner when diagnosing stalled work', async () => {
+    const child = task('task-owned-by-child-delegation', { execution: { kind: 'child-team',
+      templateId: 'delegation-fixture', templateVersion: 1,
+      authorityGrant: { operations: ['dispatch'], workspaceModes: ['shared'], readScopes: [], writeScopes: [], budgets: {} },
+      budget: {},
+    }, maxAttempts: 1, delegation: { id: 'delegation:task-owned-by-child-delegation', phase: 'requested',
+      requestedAt: 1, updatedAt: 1 } })
+    const harness = setup(state([child], [], []))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ stallAfterUnassignableDrives: 1 }))
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.assignTask).not.toHaveBeenCalled()
+      expect(harness.teams.transitionTeamPhase).not.toHaveBeenCalled()
+      expect(harness.getState().tasks[0]?.phase).toBe('pending')
+    } finally { await scheduler.close() }
+  })
+
+  it.each(['returned', 'failed'] as const)('ignores a %s channel lookup after scheduler close', async (outcome) => {
+    const worker = participant(`participant-late-channel-${outcome}`)
+    const harness = setup(state([], [worker], [activation(worker)]))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    scheduler.start()
+    await scheduler.drive()
+    const before = harness.teams.getTeam.mock.calls.length
+    const selected = channelIdSchema.parse(`channel-late-${outcome}`)
+    const loaded = Promise.withResolvers<ChannelSnapshot>()
+    harness.teams.getChannel.mockImplementationOnce(() => loaded.promise)
+    const callback = harness.callbacks.get('channel/changed')?.[0]
+    if (callback === undefined) throw new Error('scheduler did not subscribe to channel changes')
+    callback({ channelId: selected, record: {} } as never)
+    await vi.waitFor(() => { expect(harness.teams.getChannel).toHaveBeenCalledOnce() })
+    const closing = scheduler.close()
+    if (outcome === 'failed') loaded.reject(new Error('late channel read failed'))
+    else loaded.resolve(channelSnapshotSchema.parse({ manifest: { id: selected, teamId,
+      adapter: TASK_ASSIGNMENT_CHANNEL_ADAPTER,
+      participants: [{ id: worker.id, role: TASK_ASSIGNMENT_ASSIGNEE_ROLE }], limits: {},
+    }, phase: 'active', cursor: 0 }))
+    await closing
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(harness.teams.getTeam).toHaveBeenCalledTimes(before)
+    expect(harness.warnings).not.toHaveBeenCalled()
+  })
+
   it('discovers Teams on the configured pulse and stops discovery after disposal', async () => {
     vi.useFakeTimers()
     const harness = setup(state([], [], []))
@@ -1205,6 +1483,77 @@ describe('TeamDagScheduler', () => {
     await scheduler.close()
   })
 
+  it('keeps a ready task pending when its active candidate violates placement restrictions', async () => {
+    const worker = participant('participant-placement-restricted')
+    const pending = task('task-placement-restricted', { placement: { providers: ['different-provider'] } })
+    const harness = setup(state([pending], [worker], [activation(worker)]))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.assignTask).not.toHaveBeenCalled()
+      expect(harness.getState().tasks[0]?.phase).toBe('pending')
+    } finally { await scheduler.close() }
+  })
+
+  it('honors a proposed owner that appears after an otherwise equal candidate', async () => {
+    const first = participant('participant-proposal-first')
+    const preferred = participant('participant-proposal-second')
+    const pending = task('task-proposal-second', { proposedOwnerId: preferred.id })
+    const harness = setup(state([pending], [first, preferred], [activation(first), activation(preferred)]))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.assignTask).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: pending.id, participantId: preferred.id,
+      }))
+    } finally { await scheduler.close() }
+  })
+
+  it('does not treat a human-only member as a possible automatic task owner', async () => {
+    const human = participant('participant-human-only-owner', { kind: 'human',
+      owner: { kind: 'product-principal', principalId: 'scheduler-human-only' } })
+    const pending = task('task-human-only-owner')
+    const harness = setup(state([pending], [human], []))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ stallAfterUnassignableDrives: 1 }))
+    const unregister = harness.teams.registerSystemPhaseProofSource(scheduler.phaseProofSource)
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.assignTask).not.toHaveBeenCalled()
+      expect(harness.getState().team.phase).toBe('stalled')
+    } finally { unregister(); await scheduler.close() }
+  })
+
+  it.each([
+    ['compiling', 2, false], ['ready', 1, false], ['ready', 2, true],
+  ] as const)('respects %s workflow readiness and a plan parallelism of %i', async (phase, maxParallelism, assign) => {
+    const worker = participant(`participant-workflow-${phase}-${maxParallelism}`)
+    const binding = activation(worker)
+    const planId = `workflow-${phase}-${maxParallelism}`
+    const active = task(`task-workflow-active-${phase}-${maxParallelism}`, { workflowPlanId: planId,
+      workflowTemplateId: 'first', phase: 'assigned', attemptCount: 1,
+      lease: lease(`workflow-active-${phase}-${maxParallelism}`, worker, binding.activation.id) })
+    const pending = task(`task-workflow-pending-${phase}-${maxParallelism}`, { workflowPlanId: planId,
+      workflowTemplateId: 'next' })
+    const template = (id: string) => ({ id, subject: id, description: `Perform ${id}.`, blockedBy: [],
+      requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {},
+      reviewPolicy: { kind: 'none' }, maxAttempts: 1 })
+    const plan = teamWorkflowPlanSnapshotSchema.parse({ id: planId, teamId, revision: 2, phase,
+      idempotencyKey: `workflow-key-${phase}-${maxParallelism}`,
+      taskBindings: [{ templateId: 'first', taskId: active.id }, { templateId: 'next', taskId: pending.id }],
+      plan: { version: 1, name: 'Scheduler workflow', tasks: [template('first'), template('next')],
+        bounds: { maxTasks: 2, maxParallelism, maxTotalAttempts: 2 },
+        channel: { participantRoles: ['coordinator', 'human'], graph: {
+          initial: { kind: 'participant', role: 'coordinator' },
+          transitions: [{ condition: { kind: 'always' }, target: { kind: 'terminate' } }], maxTurns: 1,
+        } }, result: { kind: 'task-results', taskTemplateIds: ['first', 'next'] } } })
+    const harness = setup(state([active, pending], [worker], [binding], { workflowPlans: [plan] }))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxActiveAttemptsPerParticipant: 2 }))
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.assignTask.mock.calls.some(([input]) => input.taskId === pending.id)).toBe(assign)
+    } finally { await scheduler.close() }
+  })
+
   it('expires due leases before assignment and stops assignment while an expiry cap leaves a due lease', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(100)
     const worker = participant('participant-expiry')
@@ -1237,6 +1586,102 @@ describe('TeamDagScheduler', () => {
     expect(harness.teams.expireTaskAttempt).toHaveBeenLastCalledWith(expect.objectContaining({ taskId: secondDue.id }))
     expect(harness.teams.assignTask).toHaveBeenCalledWith(expect.objectContaining({ taskId: ready.id }))
     await scheduler.close()
+  })
+
+  it('drains an in-flight lease expiry when scheduler close revokes admission', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(100)
+    const worker = participant('participant-closing-expiry')
+    const binding = activation(worker)
+    const due = task('task-closing-expiry', { phase: 'assigned', attemptCount: 1,
+      lease: lease('closing-expiry', worker, binding.activation.id,
+        { assignedAt: 1, renewedAt: 1, expiresAt: 50, durationMs: 49 }) })
+    const harness = setup(state([due], [worker], [binding]))
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    harness.teams.expireTaskAttempt.mockImplementationOnce(async () => {
+      entered.resolve(undefined)
+      await release.promise
+      throw new TeamError('scheduler admission retired', 'TEAM_DISPOSED')
+    })
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    const driving = scheduler.drive({ teamId })
+    await entered.promise
+    const closing = scheduler.close()
+    release.resolve(undefined)
+    await expect(driving).resolves.toBeUndefined()
+    await closing
+    expect(harness.teams.assignTask).not.toHaveBeenCalled()
+  })
+
+  it('reconciles a durable lease-free cancellation after one stale Team revision', async () => {
+    const worker = participant('participant-cancellation-recovery')
+    const pending = task('task-cancellation-recovery', { revision: 2, cancellation: {
+      requestedRevision: 1, requestedBy: worker.id, requestedAt: 10, target: { kind: 'pending' },
+    } })
+    const harness = setup(state([pending], [worker], [activation(worker)]))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    const unregister = harness.teams.registerSystemTaskLeaseProofSource(scheduler.taskLeaseProofSource)
+    const reconcile = harness.teams.reconcileTaskCancellation.getMockImplementation()
+    if (reconcile === undefined) throw new Error('fake scheduler cancellation reconciler is missing')
+    harness.teams.reconcileTaskCancellation.mockRejectedValueOnce(new TeamError('stale task', 'TEAM_TASK_STALE_REVISION'))
+      .mockImplementation(reconcile)
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.reconcileTaskCancellation).toHaveBeenCalledTimes(2)
+      expect(harness.getState().tasks.find(value => value.id === pending.id)?.phase).toBe('cancelled')
+      expect(harness.taskLeaseScopes).toContainEqual(expect.objectContaining({
+        kind: 'scheduler-task-cancellation-reconcile', taskId: pending.id, requestedRevision: 1,
+      }))
+    } finally { unregister(); await scheduler.close() }
+  })
+
+  it('stops lease-free cancellation recovery on a policy denial', async () => {
+    const worker = participant('participant-cancellation-denied')
+    const pending = task('task-cancellation-denied', { revision: 2, cancellation: {
+      requestedRevision: 1, requestedBy: worker.id, requestedAt: 10, target: { kind: 'pending' },
+    } })
+    const harness = setup(state([pending], [worker], [activation(worker)]))
+    harness.teams.reconcileTaskCancellation.mockRejectedValue(new TeamError('cancellation denied', 'TEAM_POLICY_DENIED'))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    const unregister = harness.teams.registerSystemTaskLeaseProofSource(scheduler.taskLeaseProofSource)
+    try {
+      await expect(scheduler.drive({ teamId })).resolves.toBeUndefined()
+      expect(harness.teams.reconcileTaskCancellation).toHaveBeenCalledOnce()
+      expect(harness.getState().tasks[0]?.phase).toBe('pending')
+    } finally { unregister(); await scheduler.close() }
+  })
+
+  it('bounds lease-free cancellation recovery before a second durable intent', async () => {
+    const worker = participant('participant-cancellation-budget')
+    const cancelledTask = (id: string) => task(id, { revision: 2, cancellation: {
+      requestedRevision: 1, requestedBy: worker.id, requestedAt: 10, target: { kind: 'pending' },
+    } })
+    const first = cancelledTask('task-cancellation-budget-first')
+    const second = cancelledTask('task-cancellation-budget-second')
+    const harness = setup(state([first, second], [worker], [activation(worker)]))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxExpirationsPerDrive: 1 }))
+    const unregister = harness.teams.registerSystemTaskLeaseProofSource(scheduler.taskLeaseProofSource)
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.reconcileTaskCancellation).toHaveBeenCalledOnce()
+      expect(harness.getState().tasks.map(value => value.phase)).toEqual(['cancelled', 'pending'])
+      await scheduler.drive({ teamId })
+      expect(harness.getState().tasks.map(value => value.phase)).toEqual(['cancelled', 'cancelled'])
+    } finally { unregister(); await scheduler.close() }
+  })
+
+  it('surfaces a non-retryable lease-free cancellation recovery failure', async () => {
+    const worker = participant('participant-cancellation-fault')
+    const pending = task('task-cancellation-fault', { revision: 2, cancellation: {
+      requestedRevision: 1, requestedBy: worker.id, requestedAt: 10, target: { kind: 'pending' },
+    } })
+    const harness = setup(state([pending], [worker], [activation(worker)]))
+    harness.teams.reconcileTaskCancellation.mockRejectedValue(new Error('cancellation ledger unavailable'))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    const unregister = harness.teams.registerSystemTaskLeaseProofSource(scheduler.taskLeaseProofSource)
+    try {
+      await expect(scheduler.drive({ teamId })).rejects.toThrow('cancellation ledger unavailable')
+      expect(harness.getState().tasks[0]?.phase).toBe('pending')
+    } finally { unregister(); await scheduler.close() }
   })
 
   it('drives TTL delivery expiry before selecting task work', async () => {
@@ -1284,6 +1729,57 @@ describe('TeamDagScheduler', () => {
       unregister()
       await scheduler.close()
     }
+  })
+
+  it('stops scanning later channels when the first due delivery consumes the expiry budget', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(100)
+    const worker = participant('participant-channel-expiry-budget')
+    const binding = activation(worker)
+    const first = task('task-channel-expiry-budget-first', { requiredCapabilities: ['unavailable'] })
+    const second = task('task-channel-expiry-budget-second', { requiredCapabilities: ['unavailable'] })
+    const harness = setup(state([first, second], [worker], [binding]))
+    const firstChannel = await openWakeChannel(harness, first, worker, binding)
+    await openWakeChannel(harness, second, worker, binding)
+    const expire = harness.teams.expireSchedulerChannelDeliveries.getMockImplementation()
+    if (expire === undefined) throw new Error('fake channel expiry owner is missing')
+    harness.teams.expireSchedulerChannelDeliveries.mockImplementationOnce(async (input) => {
+      await expire(input)
+      return { channel: firstChannel, expired: [{ type: 'channel/delivery-expired',
+        sequence: firstChannel.cursor + 1, createdAt: 100, participantId: worker.id,
+        envelopeId: 'expiry-budget-envelope' as never, envelopeSequence: 2 }] }
+    })
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxExpirationsPerDrive: 1 }))
+    const unregister = harness.teams.registerSystemSchedulerChannelProofSource(scheduler.schedulerChannelProofSource)
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.expireSchedulerChannelDeliveries).toHaveBeenCalledOnce()
+      expect(harness.teams.expireSchedulerChannelDeliveries.mock.calls[0]?.[0].channelId).toBe(firstChannel.manifest.id)
+    } finally { unregister(); await scheduler.close() }
+  })
+
+  it.each(['race', 'denied', 'unavailable'] as const)
+  ('handles a %s failure while expiring due channel deliveries', async (failure) => {
+    vi.spyOn(Date, 'now').mockReturnValue(100)
+    const worker = participant(`participant-channel-expiry-${failure}`)
+    const binding = activation(worker)
+    const pending = task(`task-channel-expiry-${failure}`, { requiredCapabilities: ['unavailable'] })
+    const harness = setup(state([pending], [worker], [binding]))
+    await openWakeChannel(harness, pending, worker, binding)
+    const expire = harness.teams.expireSchedulerChannelDeliveries.getMockImplementation()
+    if (expire === undefined) throw new Error('fake channel expiry owner is missing')
+    if (failure === 'race') harness.teams.expireSchedulerChannelDeliveries
+      .mockRejectedValueOnce(new TeamError('channel cursor changed', 'TEAM_CHANNEL_CURSOR_CONFLICT'))
+      .mockImplementation(expire)
+    else harness.teams.expireSchedulerChannelDeliveries.mockRejectedValue(
+      failure === 'denied' ? new TeamError('expiry denied', 'TEAM_POLICY_DENIED') : new Error('expiry store unavailable'))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxExpirationsPerDrive: 1 }))
+    const unregister = harness.teams.registerSystemSchedulerChannelProofSource(scheduler.schedulerChannelProofSource)
+    try {
+      const driving = scheduler.drive({ teamId })
+      if (failure === 'unavailable') await expect(driving).rejects.toThrow('expiry store unavailable')
+      else await expect(driving).resolves.toBeUndefined()
+      expect(harness.teams.expireSchedulerChannelDeliveries).toHaveBeenCalledTimes(failure === 'race' ? 2 : 1)
+    } finally { unregister(); await scheduler.close() }
   })
 
   it('drives only TTL delivery expiry while a cancellation remains quiescing', async () => {
@@ -1472,6 +1968,62 @@ describe('TeamDagScheduler', () => {
     }
   })
 
+  it('defers terminal retention while channel and Team owners report pending receipts', async () => {
+    const worker = participant('participant-retention-backpressure')
+    const channelId = channelIdSchema.parse('channel-retention-backpressure')
+    const channel = channelSnapshotSchema.parse({ manifest: {
+      id: channelId, teamId, adapter: TASK_ASSIGNMENT_CHANNEL_ADAPTER,
+      participants: [{ id: worker.id, role: TASK_ASSIGNMENT_ASSIGNEE_ROLE }], limits: {},
+    }, phase: 'closed', cursor: 8 })
+    const initial = state([], [worker], [])
+    const harness = setup(state([], [worker], [], {
+      team: { ...initial.team, phase: 'completed', cursor: 8 }, channelIds: [channelId],
+    }))
+    harness.channels.set(channelId, { snapshot: channel, records: [] })
+    harness.teams.compactChannel.mockRejectedValueOnce(new TeamError('recipient receipt pending', 'TEAM_CHANNEL_BACKPRESSURE'))
+    harness.teams.compactTeam.mockRejectedValueOnce(new TeamError('Team receipt pending', 'TEAM_CHANNEL_BACKPRESSURE'))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ terminalChannelRetentionTail: 2, maxCompactionsPerDrive: 2 }))
+    const unregister = harness.teams.registerSystemMaintenanceProofSource(scheduler.maintenanceProofSource)
+    try {
+      await expect(scheduler.drive({ teamId })).resolves.toBeUndefined()
+      expect(harness.teams.compactChannel).toHaveBeenCalledOnce()
+      expect(harness.teams.compactTeam).toHaveBeenCalledOnce()
+      await expect(scheduler.drive({ teamId })).resolves.toBeUndefined()
+      expect(harness.teams.compactChannel.mock.calls.length).toBeGreaterThan(1)
+      expect(harness.teams.compactTeam.mock.calls.length).toBeGreaterThan(1)
+    } finally { unregister(); await scheduler.close() }
+  })
+
+  it.each([
+    ['channel', 'TEAM_POLICY_DENIED'], ['channel', 'TEAM_TASK_STALE_REVISION'], ['channel', 'storage'],
+    ['team', 'TEAM_POLICY_DENIED'], ['team', 'TEAM_TASK_STALE_REVISION'], ['team', 'storage'],
+  ] as const)('handles terminal %s compaction failure %s without losing its bounded drive', async (owner, failure) => {
+    const worker = participant(`participant-retention-${owner}-${failure}`)
+    const channelId = channelIdSchema.parse(`channel-retention-${owner}-${failure}`)
+    const channel = channelSnapshotSchema.parse({ manifest: {
+      id: channelId, teamId, adapter: TASK_ASSIGNMENT_CHANNEL_ADAPTER,
+      participants: [{ id: worker.id, role: TASK_ASSIGNMENT_ASSIGNEE_ROLE }], limits: {},
+    }, phase: 'closed', cursor: 8 })
+    const initial = state([], [worker], [])
+    const harness = setup(state([], [worker], [], {
+      team: { ...initial.team, phase: 'completed', cursor: 8 }, channelIds: [channelId],
+    }))
+    harness.channels.set(channelId, { snapshot: channel, records: [] })
+    const failureError = failure === 'storage' ? new Error('terminal compaction store unavailable')
+      : new TeamError('terminal compaction changed', failure)
+    const compact = owner === 'channel' ? harness.teams.compactChannel : harness.teams.compactTeam
+    compact.mockRejectedValueOnce(failureError)
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ terminalChannelRetentionTail: 2,
+      maxCompactionsPerDrive: 2 }))
+    const unregister = harness.teams.registerSystemMaintenanceProofSource(scheduler.maintenanceProofSource)
+    try {
+      const driving = scheduler.drive({ teamId })
+      if (failure === 'storage') await expect(driving).rejects.toThrow('terminal compaction store unavailable')
+      else await expect(driving).resolves.toBeUndefined()
+      expect(compact).toHaveBeenCalledOnce()
+    } finally { unregister(); await scheduler.close() }
+  })
+
   it('repairs a missing assignment Envelope from its attached wake channel exactly once on later drives', async () => {
     const worker = participant('participant-wake-recovery')
     const binding = activation(worker)
@@ -1514,6 +2066,16 @@ describe('TeamDagScheduler', () => {
     expect(harness.teams.openChannel).toHaveBeenCalledTimes(1)
     expect(harness.teams.postChannelEnvelope).toHaveBeenCalledTimes(1)
     await scheduler.close()
+  })
+
+  it('rejects a nonadvancing wake-channel page before posting another assignment', async () => {
+    const { harness, channel } = await recoveryHarness('nonadvancing-wake-page')
+    harness.teams.readChannelPage.mockResolvedValue({ channel, records: [], nextCursor: -1 })
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    try {
+      await expect(scheduler.drive({ teamId })).rejects.toMatchObject({ code: 'TEAM_CHANNEL_CURSOR_CONFLICT' })
+      expect(harness.teams.postChannelEnvelope).not.toHaveBeenCalled()
+    } finally { await scheduler.close() }
   })
 
   it('rejects malformed wake bindings, duplicate task assignment Envelopes, and stale attempt facts', async () => {
@@ -1774,6 +2336,38 @@ describe('TeamDagScheduler', () => {
     expect(observed.warnings).toHaveBeenCalledWith(expect.stringContaining('assignment listener threw'))
     expect(observed.warnings).toHaveBeenCalledWith(expect.stringContaining('assignment listener rejected'))
     await Promise.all([scheduler.close(), observedScheduler.close()])
+  })
+
+  it.each(['cleanup-failed', 'already-closed'] as const)
+  ('preserves the original assignment failure when its wake channel is %s', async (outcome) => {
+    const worker = participant(`participant-failed-wake-${outcome}`)
+    const ready = task(`task-failed-wake-${outcome}`)
+    const harness = setup(state([ready], [worker], [activation(worker)]))
+    harness.teams.assignTask.mockImplementationOnce(async () => {
+      if (outcome === 'already-closed') {
+        const current = [...harness.channels.values()].at(-1)
+        if (current === undefined) throw new Error('scheduler did not open a wake channel')
+        current.snapshot = channelSnapshotSchema.parse({ ...current.snapshot, phase: 'closed' })
+      }
+      throw new Error('assignment store unavailable')
+    })
+    if (outcome === 'cleanup-failed') harness.teams.closeSchedulerFailedWakeChannel
+      .mockRejectedValueOnce(new Error('wake cleanup unavailable'))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxConflictsPerDrive: 1 }))
+    try {
+      const failure = await scheduler.drive({ teamId }).then(() => undefined, (error: unknown) => error)
+      expect(failure).toBeInstanceOf(Error)
+      if (outcome === 'cleanup-failed') {
+        expect(failure).toBeInstanceOf(AggregateError)
+        if (!(failure instanceof AggregateError)) throw new Error('cleanup failure did not retain both causes')
+        expect(failure.errors.map(String)).toEqual([
+          'Error: assignment store unavailable', 'Error: wake cleanup unavailable',
+        ])
+      } else {
+        expect(String(failure)).toContain('assignment store unavailable')
+        expect(harness.teams.closeSchedulerFailedWakeChannel).not.toHaveBeenCalled()
+      }
+    } finally { await scheduler.close() }
   })
 
   it('registers Team and channel observation before its initial scan, coalesces later changes, and stops on close', async () => {
@@ -2180,6 +2774,31 @@ describe('TeamDagScheduler', () => {
     expect(harness.taskLeaseSource()).toBeUndefined()
   })
 
+  it('leaves Simulation-owned tasks and dormant reviewers unchanged across repeated drives', async () => {
+    const reviewer = participant('simulation-reviewer')
+    const waiting = task('simulation-review', { revision: 2, phase: 'review',
+      reviewPolicy: { kind: 'participant', reviewerId: reviewer.id }, attemptCount: 1,
+      attemptHistory: [{ id: 'simulation-attempt', teamId, taskId: 'simulation-review', ordinal: 1,
+        participantId: reviewer.id, assignedAt: 1, leaseExpiresAt: 3, settledAt: 2,
+        outcome: { kind: 'completed', result: { summary: 'Ready for administrative review.' } } }],
+    })
+    const initial = state([task('simulation-pending'), waiting], [reviewer], [], {
+      rules: { simulationRunId: 'simulation-run', activationLifecycleOwner: 'simulation-owner' },
+    })
+    const harness = setup(initial)
+    const prepare = vi.fn()
+    vi.spyOn(harness.ctx, 'get').mockReturnValue({ prepare })
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ stallAfterUnassignableDrives: 1 }))
+    const unregister = harness.teams.registerSystemPhaseProofSource(scheduler.phaseProofSource)
+    try {
+      for (let drive = 0; drive < 4; drive++) await scheduler.drive({ teamId })
+      expect(harness.getState()).toEqual(initial)
+      expect(prepare).not.toHaveBeenCalled()
+      expect(harness.teams.transitionTeamPhase).not.toHaveBeenCalled()
+      expect(harness.teams.assignTask).not.toHaveBeenCalled()
+    } finally { await scheduler.close(); unregister() }
+  })
+
   it('registers a private scheduler phase source and stalls unassignable work through its exact proof', async () => {
     const unassignable = task('task-stall-proof')
     const harness = setup(state([unassignable], [], []))
@@ -2317,11 +2936,15 @@ describe('TeamDagScheduler', () => {
     const harness = setup(state([reviewTask], [initiator, reviewer], [], { channelIds: [reviewChannelId] }))
     harness.channels.set(reviewChannelId, {
       snapshot: channel,
-      records: [recordEnvelope(request), recordEnvelope(response)],
+      records: [recordEnvelope(request)],
     })
     const scheduler = new TeamDagScheduler(harness.ctx, config())
     const unregister = harness.teams.registerSystemTaskReviewProofSource(scheduler.taskReviewProofSource)
     try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.resolveTaskReviewFromResponse).not.toHaveBeenCalled()
+      expect(harness.teams.postChannelEnvelope).not.toHaveBeenCalled()
+      harness.channels.get(reviewChannelId)!.records.push(recordEnvelope(response))
       await scheduler.drive({ teamId })
       expect(harness.teams.resolveTaskReviewFromResponse).toHaveBeenCalledTimes(1)
       expect(() => JSON.stringify(harness.teams.resolveTaskReviewFromResponse.mock.calls[0]?.[0].actor)).toThrow('runtime-only')
@@ -2334,6 +2957,130 @@ describe('TeamDagScheduler', () => {
       unregister()
       await scheduler.close()
     }
+  })
+
+  it('reissues a review request when its original channel page disappears during recovery', async () => {
+    const initiator = participant('participant-review-page-initiator')
+    const reviewer = participant('participant-review-page-reviewer')
+    const reviewTaskId = teamTaskIdSchema.parse('task-review-page-race')
+    const attempt = taskAttemptSnapshotSchema.parse({ id: 'attempt-review-page-race', teamId, taskId: reviewTaskId,
+      ordinal: 1, participantId: initiator.id, assignedAt: 1, leaseExpiresAt: 3, settledAt: 2,
+      outcome: { kind: 'completed', result: { summary: 'Ready for review.' } } })
+    const reviewTask = task(String(reviewTaskId), { revision: 2, phase: 'review',
+      reviewPolicy: { kind: 'participant', reviewerId: reviewer.id }, attemptCount: 1, attemptHistory: [attempt] })
+    const reviewChannelId = channelIdSchema.parse('channel-review-page-race')
+    const channel = channelSnapshotSchema.parse({ manifest: { id: reviewChannelId, teamId,
+      adapter: CONSULT_CHANNEL_ADAPTER_V1,
+      participants: [{ id: initiator.id, role: CONSULT_INITIATOR_ROLE }, { id: reviewer.id, role: CONSULT_RESPONDENT_ROLE }],
+      limits: {},
+    }, phase: 'active', cursor: 2 })
+    const originalRequest = teamEnvelopeSchema.parse({ id: 'envelope-review-page-race', teamId, channelId: reviewChannelId,
+      sequence: 2, senderId: initiator.id, audience: [reviewer.id], kind: CONSULT_REVIEW_REQUEST_KIND,
+      payload: { text: 'Review the result.', taskId: reviewTaskId, attemptId: attempt.id, reviewRevision: reviewTask.revision,
+        reviewerId: reviewer.id, initiatorId: initiator.id, result: { summary: 'Ready for review.' } },
+      delivery: 'turn', taskId: reviewTaskId, priority: 'normal', createdAt: 1 })
+    const unrelatedTaskId = teamTaskIdSchema.parse('task-unrelated-review-page')
+    const unrelated = teamEnvelopeSchema.parse({ ...originalRequest, id: 'envelope-unrelated-review-page',
+      taskId: unrelatedTaskId, payload: { ...originalRequest.payload, taskId: unrelatedTaskId } })
+    const harness = setup(state([reviewTask], [initiator, reviewer], [activation(reviewer)],
+      { channelIds: [reviewChannelId] }))
+    harness.channels.set(reviewChannelId, { snapshot: channel, records: [recordEnvelope(originalRequest)] })
+    const read = harness.teams.readChannelPage.getMockImplementation()
+    if (read === undefined) throw new Error('fake channel reader is missing')
+    let reads = 0
+    harness.teams.readChannelPage.mockImplementation(async (request) => {
+      const page = await read(request)
+      return ++reads === 1 ? page : { ...page, records: [recordEnvelope(unrelated)] }
+    })
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxReviewDispatchesPerDrive: 1 }))
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.postChannelEnvelope).toHaveBeenCalledOnce()
+      expect(harness.teams.postChannelEnvelope.mock.calls[0]?.[0].draft).toMatchObject({
+        channelId: reviewChannelId, kind: CONSULT_REVIEW_REQUEST_KIND, taskId: reviewTaskId,
+      })
+    } finally { await scheduler.close() }
+
+    const dormant = setup(state([reviewTask], [initiator, reviewer], [], { channelIds: [reviewChannelId] }))
+    dormant.channels.set(reviewChannelId, { snapshot: channel, records: [recordEnvelope(originalRequest)] })
+    const dormantRead = dormant.teams.readChannelPage.getMockImplementation()
+    if (dormantRead === undefined) throw new Error('fake dormant channel reader is missing')
+    let dormantReads = 0
+    dormant.teams.readChannelPage.mockImplementation(async (request) => {
+      const page = await dormantRead(request)
+      return ++dormantReads === 1 ? page : { ...page, records: [] }
+    })
+    const dormantScheduler = new TeamDagScheduler(dormant.ctx, config())
+    try {
+      await dormantScheduler.drive({ teamId })
+      expect(dormant.teams.postChannelEnvelope).not.toHaveBeenCalled()
+    } finally { await dormantScheduler.close() }
+
+    const late = setup(state([reviewTask], [initiator, reviewer], [activation(reviewer)], { channelIds: [reviewChannelId] }))
+    late.channels.set(reviewChannelId, { snapshot: channel, records: [recordEnvelope(originalRequest)] })
+    const lateRead = late.teams.readChannelPage.getMockImplementation()
+    if (lateRead === undefined) throw new Error('fake late channel reader is missing')
+    let lateReads = 0
+    late.teams.readChannelPage.mockImplementation(async (request) => {
+      const page = await lateRead(request)
+      return ++lateReads === 2 ? { ...page, records: [] } : page
+    })
+    const lateScheduler = new TeamDagScheduler(late.ctx, config())
+    try {
+      await lateScheduler.drive({ teamId })
+      expect(late.teams.postChannelEnvelope).not.toHaveBeenCalled()
+    } finally { await lateScheduler.close() }
+  })
+
+  it.each(['adapter', 'participants', 'roles'] as const)
+  ('ignores a %s-mismatched channel before opening the canonical review route', async (mismatch) => {
+    const initiator = participant(`participant-review-route-initiator-${mismatch}`)
+    const reviewer = participant(`participant-review-route-reviewer-${mismatch}`)
+    const reviewTaskId = teamTaskIdSchema.parse(`task-review-route-${mismatch}`)
+    const attempt = taskAttemptSnapshotSchema.parse({ id: `attempt-review-route-${mismatch}`, teamId,
+      taskId: reviewTaskId, ordinal: 1, participantId: initiator.id, assignedAt: 1, leaseExpiresAt: 3, settledAt: 2,
+      outcome: { kind: 'completed', result: { summary: 'Review this result.' } } })
+    const pending = task(String(reviewTaskId), { revision: 2, phase: 'review',
+      reviewPolicy: { kind: 'participant', reviewerId: reviewer.id }, attemptCount: 1, attemptHistory: [attempt] })
+    const unrelatedId = channelIdSchema.parse(`channel-review-route-${mismatch}`)
+    const channel = channelSnapshotSchema.parse({ manifest: { id: unrelatedId, teamId,
+      adapter: mismatch === 'adapter' ? TASK_ASSIGNMENT_CHANNEL_ADAPTER : CONSULT_CHANNEL_ADAPTER_V1,
+      participants: mismatch === 'participants' ? [{ id: initiator.id, role: CONSULT_INITIATOR_ROLE }]
+        : [{ id: initiator.id, role: mismatch === 'roles' ? CONSULT_RESPONDENT_ROLE : CONSULT_INITIATOR_ROLE },
+          { id: reviewer.id, role: CONSULT_RESPONDENT_ROLE }],
+      limits: {},
+    }, phase: 'active', cursor: 0 })
+    const harness = setup(state([pending], [initiator, reviewer], [activation(reviewer)],
+      { channelIds: [unrelatedId] }))
+    harness.channels.set(unrelatedId, { snapshot: channel, records: [] })
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxReviewDispatchesPerDrive: 1 }))
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.openSchedulerReviewChannel).toHaveBeenCalledOnce()
+      expect(harness.teams.postChannelEnvelope).toHaveBeenCalledOnce()
+      expect(harness.teams.postChannelEnvelope.mock.calls[0]?.[0].draft.channelId).not.toBe(unrelatedId)
+    } finally { await scheduler.close() }
+  })
+
+  it.each(['reviewer', 'sender'] as const)('leaves a completed review waiting while its %s is inactive', async (inactive) => {
+    const initiator = participant(`participant-review-inactive-sender-${inactive}`,
+      inactive === 'sender' ? { phase: 'provisioning' } : {})
+    const reviewer = participant(`participant-review-inactive-reviewer-${inactive}`,
+      inactive === 'reviewer' ? { phase: 'provisioning' } : {})
+    const reviewTaskId = teamTaskIdSchema.parse(`task-review-inactive-${inactive}`)
+    const attempt = taskAttemptSnapshotSchema.parse({ id: `attempt-review-inactive-${inactive}`, teamId,
+      taskId: reviewTaskId, ordinal: 1, participantId: initiator.id, assignedAt: 1, leaseExpiresAt: 3, settledAt: 2,
+      outcome: { kind: 'completed', result: { summary: 'Await the reviewer.' } } })
+    const pending = task(String(reviewTaskId), { revision: 2, phase: 'review',
+      reviewPolicy: { kind: 'participant', reviewerId: reviewer.id }, attemptCount: 1, attemptHistory: [attempt] })
+    const harness = setup(state([pending], [initiator, reviewer], [activation(reviewer)]))
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    try {
+      await scheduler.drive({ teamId })
+      expect(harness.teams.openSchedulerReviewChannel).not.toHaveBeenCalled()
+      expect(harness.teams.postChannelEnvelope).not.toHaveBeenCalled()
+      expect(harness.getState().tasks[0]?.phase).toBe('review')
+    } finally { await scheduler.close() }
   })
 
   it('rejects malformed direct configuration before Team operations begin', async () => {

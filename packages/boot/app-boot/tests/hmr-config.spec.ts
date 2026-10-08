@@ -1,6 +1,6 @@
 import { observeHmrConfig } from './hmr-observation.ts'
 import type { EventEmitter } from 'node:events'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -195,11 +195,17 @@ describe('HMR exact config paths', () => {
       for (const { watcher } of owner.configs.values()) {
         watcher.removeAllListeners('add'); watcher.removeAllListeners('change'); watcher.removeAllListeners('unlink')
       }
-      writeFileSync(filename, 'created')
+      // Atomic replacement exposes one metadata transition; an in-place write can expose its empty open first.
+      const replace = (content: string) => {
+        const next = join(dir, 'next.yml')
+        writeFileSync(next, content)
+        renameSync(next, filename)
+      }
+      replace('created')
       await eventually(() => observed.includes('created'), 'Metadata reconciliation missed creation')
       await new Promise(resolve => setTimeout(resolve, 60))
       expect(observed).toEqual(['created'])
-      writeFileSync(filename, 'changed')
+      replace('changed')
       await eventually(() => observed.includes('changed'), 'Metadata reconciliation missed change')
       unlinkSync(filename)
       await eventually(() => observed.includes('removed'), 'Metadata reconciliation missed removal')

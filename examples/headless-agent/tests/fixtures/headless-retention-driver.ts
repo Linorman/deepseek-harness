@@ -1,4 +1,5 @@
 /** Real terminal channels share one manual retention slot before their owning Team journal. */
+import { withFixturePrincipal } from './authenticated-host.ts'
 import assert from 'node:assert/strict'
 import type { Context } from '@clocky/cordis'
 import { TeamDagScheduler } from '@clocky/clocky-team-scheduler-dag'
@@ -59,9 +60,15 @@ async function run(ctx: Context, model: QuestionModel): Promise<Record<string, u
     ordinary.scheduler.start()
     producer = await runQuestionProducer(ctx, model)
   } finally { await ordinary.close() }
-  const teams = await ctx.teams.listTeamsPage({ afterCursor: -1, limit: 2 })
-  assert.equal(teams.items.length, 1)
-  const teamId = teams.items[0]!.id
+  const teams = []
+  let page = await ctx.teams.listTeamsPage({ afterCursor: -1, limit: 2 })
+  for (;;) {
+    teams.push(...page.items)
+    if (page.nextCursor === undefined) break
+    page = await ctx.teams.listTeamsPage({ afterCursor: page.nextCursor, limit: 2 })
+  }
+  assert.equal(teams.length, 1)
+  const teamId = teams[0]!.id
   const originalState = await ctx.teams.getTeam({ teamId })
   assert.equal(originalState.team.phase, 'cancelled')
   const initial = await watermarks(ctx, teamId)
@@ -118,14 +125,14 @@ async function run(ctx: Context, model: QuestionModel): Promise<Record<string, u
 /** Test-only Loader identity. */
 export const name = 'retention-driver'
 /** Formal Host and scheduler dependencies precede ordinary production. */
-export const inject = ['apiProxy', 'teamRuns', 'teams', 'teamWorkspaces', 'storageLog', 'llm', 'agents', 'sessions']
+export const inject = ['apiProxy', 'teamRuns', 'teams', 'teamWorkspaces', 'storageLog', 'llm', 'agents', 'sessions', 'teamChannelAdmission']
 /** Complete ordinary work before starting explicit retention. @param ctx - Loader context. */
 export function apply(ctx: Context): void {
   const model = new QuestionModel()
   ctx.llm.registerAdapter([MODEL], model)
   const exit = ctx.get('appExit')
   assert(exit !== undefined)
-  void run(ctx, model).then((output) => { process.stdout.write(`${JSON.stringify(output, null, 2)}\n`); exit(0) }, (error: unknown) => {
+  void withFixturePrincipal(ctx, () => run(ctx, model)).then((output) => { process.stdout.write(`${JSON.stringify(output, null, 2)}\n`); exit(0) }, (error: unknown) => {
     process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`)
     exit(1)
   })

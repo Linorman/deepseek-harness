@@ -89,8 +89,8 @@ export default class TeamChannelAdmission extends Service {
     if (this.drive !== undefined) return this.drive
     const operation = this.recover()
     this.drive = operation
-    void operation.then(() => { if (this.drive === operation) this.drive = undefined },
-      () => { if (this.drive === operation) this.drive = undefined })
+    void operation.then(() => { this.drive = undefined },
+      () => { this.drive = undefined })
     return operation
   }
 

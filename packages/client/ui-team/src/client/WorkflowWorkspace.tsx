@@ -49,18 +49,24 @@ export function WorkflowWorkspace({ plans, detail, read, close, translate: t, op
         <div><span className={css.badge}>{t(`detail.workflow.phase.${record.phase}`)}</span></div>
         <small className={css.taskMeta}>{t('detail.workflow.bounds')}: {record.bounds.maxTasks} · {record.bounds.maxParallelism} · {record.bounds.maxTotalAttempts}</small>
         <ol className={css.list} aria-label={t('detail.workflow.tasks')}>
-          {value?.items.map(task => <li key={task.templateId} className={css.record}>
-            {task.taskId === undefined ? <strong>{task.subject.text || task.templateId}</strong>
-              : <a className={workspaceCss.textLink} href={`#team-task-${task.taskId}`} onClick={(event) => { if (task.taskId !== undefined) openTask(event, task.taskId) }}>{task.subject.text || task.templateId}</a>}
-            {task.blockedBy.length > 0 && <small className={css.taskMeta}>{t('detail.workflow.dependsOn')}: {' '}
-              {task.blockedBy.map((dependency, index) => <span key={dependency.templateId}>{index > 0 ? ' · ' : null}
-                {dependency.taskId === undefined ? dependency.subject.text
-                  : <a className={workspaceCss.textLink} href={`#team-task-${dependency.taskId}`} onClick={(event) => {
-                    if (dependency.taskId !== undefined) openTask(event, dependency.taskId)
-                  }}>{dependency.subject.text}</a>}
-              </span>)}
-            </small>}
-          </li>)}
+          {value?.items.map((task) => {
+            const taskId = task.taskId
+            return <li key={task.templateId} className={css.record}>
+              {taskId === undefined ? <strong>{task.subject.text || task.templateId}</strong>
+                : <a className={workspaceCss.textLink} href={`#team-task-${taskId}`} onClick={(event) => { openTask(event, taskId) }}>{task.subject.text || task.templateId}</a>}
+              {task.blockedBy.length > 0 && <small className={css.taskMeta}>{t('detail.workflow.dependsOn')}: {' '}
+                {task.blockedBy.map((dependency, index) => {
+                  const dependencyId = dependency.taskId
+                  return <span key={dependency.templateId}>{index > 0 ? ' · ' : null}
+                    {dependencyId === undefined ? dependency.subject.text
+                      : <a className={workspaceCss.textLink} href={`#team-task-${dependencyId}`} onClick={(event) => {
+                        openTask(event, dependencyId)
+                      }}>{dependency.subject.text}</a>}
+                  </span>
+                })}
+              </small>}
+            </li>
+          })}
         </ol>
         {record.failure !== undefined && <p className={css.error}>{t('detail.workflow.failure')}: {record.failure.message}</p>}
         {record.cancellation !== undefined && <p className={css.notice}>{t('detail.workflow.cancellation')}: {record.cancellation.message}</p>}

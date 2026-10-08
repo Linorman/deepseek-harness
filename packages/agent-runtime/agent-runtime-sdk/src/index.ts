@@ -1,3 +1,5 @@
+import { retainActivationPublication,subscribeActivationStatus } from '@clocky/clocky-agent-runtime'
+import { raceWithAbort } from '@clocky/clocky-timeout'
 /**
  * SDK-backed AgentRuntime provider. Each accepted remote Participant epoch
  * owns a fresh SDK runtime subprocess, its complete wire target, and the
@@ -312,9 +314,7 @@ class RemoteActivationHandle implements ActivationHandle {
 
   /** Subscribe to later status changes without replaying the current snapshot. */
   onStatus(listener: (activation: ActivationSnapshot) => void): () => void {
-    if (this.offline) return () => {}
-    this.statusListeners.add(listener)
-    return () => { this.statusListeners.delete(listener) }
+    return subscribeActivationStatus(this.statusListeners, listener, this.offline)
   }
 
   /** Forward an interruption request to the exact remote epoch. */
@@ -564,6 +564,7 @@ class RemoteActivationHandle implements ActivationHandle {
     binding: ActivationBindingSnapshot,
     reserve: () => Promise<TeamLinkEnrollment>,
   ): Promise<void> {
+    /* v8 ignore next -- the sole caller enrollBoundLink filters this exact binding and deliverable status before invoking the handle. */
     if (!matchesLinkBinding(this.target, binding) || !isDeliverableStatus(binding.activation.status)) {
       throw new AgentRuntimeSdkError(
         `Team Link binding does not match remote activation '${this.target.activationId}'`,
@@ -899,6 +900,7 @@ class SdkRuntimeProvider implements SdkAgentRuntimeProvider {
   ) {
     this.processInspector = processInspector
     if (config.recovery === undefined) return
+    /* v8 ignore next -- createSdkAgentRuntimeProvider supplies a host inspector whenever recovery is configured. */
     if (processInspector === undefined) throw new TypeError('agent-runtime-sdk recovery requires a local process inspector')
     if (processInspector.hasExactIdentity !== true) {
       throw new TypeError('agent-runtime-sdk recovery requires exact local process creation identities')
@@ -949,13 +951,7 @@ class SdkRuntimeProvider implements SdkAgentRuntimeProvider {
       // v8 ignore next -- this exact entry is removed only by its own terminal callback or rejected operation.
       if (this.activations.get(key) === entry) this.activations.delete(key)
     })
-    entry.operation = operation
-    this.activations.set(key, entry)
-    void operation.catch(() => {
-      /* v8 ignore next -- the exact entry remains sole owner until the unpublished operation rejects. */
-      if (this.activations.get(key) === entry) this.activations.delete(key)
-    })
-    return await operation
+    return await retainActivationPublication(this.activations, key, entry, operation)
   }
 
   /** Start, initialize, open, and transfer one private runtime process into a returned handle. */
@@ -1115,6 +1111,7 @@ class SdkRuntimeProvider implements SdkAgentRuntimeProvider {
     binding: ActivationBindingSnapshot,
     reserve: (binding: ActivationBindingSnapshot) => Promise<TeamLinkEnrollment>,
   ): void {
+    /* v8 ignore next -- only a matching deliverable binding is retained for issuer replacement; terminal events clear it. */
     if (!matchesLinkBinding(target, binding)
       || binding.provider !== this.name
       || !isDeliverableStatus(binding.activation.status)) return
@@ -1132,6 +1129,7 @@ class SdkRuntimeProvider implements SdkAgentRuntimeProvider {
       throw new AgentRuntimeSdkError('SDK runtime client did not expose its child process id for recovery', 'AGENT_RUNTIME_SDK_RECOVERY_UNAVAILABLE')
     }
     const inspector = this.processInspector
+    /* v8 ignore next -- the provider constructor requires an inspector for every recovery-enabled instance. */
     if (inspector === undefined) {
       throw new AgentRuntimeSdkError('SDK runtime has no local process inspector for recovery', 'AGENT_RUNTIME_SDK_RECOVERY_UNAVAILABLE')
     }
@@ -1363,18 +1361,7 @@ function assertInitialStatus(status: ActivationStatus): void {
 
 /** Race a startup operation against activation cancellation without exposing an accepted process on abort. */
 async function raceAbort<T>(signal: AbortSignal, operation: () => Promise<T>): Promise<T> {
-  throwIfAborted(signal)
-  let removeAbort!: () => void
-  const aborted = new Promise<never>((_resolve, reject) => {
-    const onAbort = (): void => { reject(abortError(signal)) }
-    signal.addEventListener('abort', onAbort, { once: true })
-    removeAbort = () => { signal.removeEventListener('abort', onAbort) }
-  })
-  try {
-    return await Promise.race([operation(), aborted])
-  } finally {
-    removeAbort()
-  }
+  return await raceWithAbort(signal, operation, abortError)
 }
 
 /** Reject a cancellation signal before allocating or publishing a child process. */

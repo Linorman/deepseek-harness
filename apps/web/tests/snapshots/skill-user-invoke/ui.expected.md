@@ -8,6 +8,9 @@
 - text: /user-invoke-demo and confirm the fixture wiring {{clock}}
 - button "Copy":
   - img
+- button "Worked for {{duration}} · 2 steps" [expanded]:
+  - img
+  - text: Worked for {{duration}} · 2 steps
 - button "Context injection @clocky/clocky-system-prompt":
   - img
   - img
@@ -33,4 +36,5 @@
   - img
 - button "0% of context used"
 - button "Send message" [disabled]
-- text: 1 turns · 1 steps LLM {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 0% Input 256 tok · Output 16 tok
+- text: 1 turns · 1 steps
+- button "Session statistics": ⓘ

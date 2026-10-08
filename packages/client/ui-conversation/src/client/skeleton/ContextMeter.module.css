@@ -14,25 +14,25 @@
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   background: transparent;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   cursor: pointer;
 }
 
 .trigger:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .track {
   fill: none;
-  stroke: var(--clocky-alias-border-l3);
+  stroke: var(--clocky-border-default);
   stroke-width: 2;
 }
 
 .fill {
   fill: none;
-  stroke: var(--clocky-alias-label-tertiary);
+  stroke: var(--clocky-fg-tertiary);
   stroke-width: 2;
   stroke-linecap: round;
 }
@@ -41,17 +41,17 @@
   position: absolute;
   bottom: calc(100% + 8px);
   right: 0;
-  z-index: 100;
+  z-index: var(--clocky-layer-dropdown);
   box-sizing: border-box;
   width: 264px;
   padding: 12px;
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 12px;
-  background: var(--clocky-specific-menu);
-  box-shadow: var(--clocky-shadow-lv3);
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--clocky-alias-label-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-secondary);
   cursor: default;
 }
 
@@ -65,16 +65,16 @@
   margin-left: auto;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .percent {
   font-weight: 500;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .headline {
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* The headline brackets the reading, so the side a locale leaves empty must
@@ -88,8 +88,8 @@
   gap: 1px;
   margin: 10px 0 12px;
   height: 4px;
-  border-radius: 999px;
-  background: var(--clocky-alias-interactive-bg-hover);
+  border-radius: var(--clocky-radius-full);
+  background: var(--clocky-bg-hover);
   overflow: hidden;
 }
 
@@ -97,8 +97,8 @@
   flex: none;
   min-width: 2px;
   height: 100%;
-  border-radius: 1px;
-  background: var(--meter-tint, var(--clocky-alias-label-tertiary));
+  border-radius: var(--clocky-radius-xs);
+  background: var(--meter-tint, var(--clocky-fg-tertiary));
 }
 
 .swatch {
@@ -106,22 +106,22 @@
   margin-right: 6px;
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--clocky-radius-xs);
   background: var(--meter-tint);
   vertical-align: baseline;
 }
 
 .colorSystem {
-  --meter-tint: var(--clocky-static-neutral-bluish-400);
+  --meter-tint: var(--clocky-border-strong);
 }
 
 .colorTools {
   /* The design platform ships no purple static token; violet-400 literal. */
-  --meter-tint: rgb(167, 139, 250);
+  --meter-tint: var(--clocky-status-waiting-fg);
 }
 
 .colorMessages {
-  --meter-tint: var(--clocky-static-blue-450);
+  --meter-tint: var(--clocky-status-running-fg);
 }
 
 .rows {
@@ -137,11 +137,11 @@
 }
 
 .row dt {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .row dd {
   margin: 0;
   font-variant-numeric: tabular-nums;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }

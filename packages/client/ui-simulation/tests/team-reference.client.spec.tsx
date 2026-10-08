@@ -35,3 +35,22 @@ it('keeps unmaterialized checkpoint Session references inert while linking compl
   expect(view.queryByRole('link', { name: /absent/ })).toBeNull()
   expect(view.getByText('absent')).toBeDefined()
 })
+
+it('labels exact Team task targets while preserving native modified-click behavior', () => {
+  const navigateApplication = vi.fn()
+  const view = render(<TeamReference target={{ kind: 'task', teamId: 'team' as never, taskId: 'task' as never }}
+    id="task" navigateApplication={navigateApplication} t={key => en[key]} />)
+  const link = view.getByRole('link', { name: `${en.inspectTeamTask}: task` }) as HTMLAnchorElement
+  expect(new URL(link.getAttribute('href')!).searchParams.get('task')).toBe('task')
+  fireEvent.click(link, { metaKey: true })
+  expect(navigateApplication).not.toHaveBeenCalled()
+})
+
+it('labels exact Team targets without requiring a member-specific binding', () => {
+  const view = render(<TeamReference target={{ kind: 'channel', teamId: 'team' as never,
+    channelId: 'channel' as never }} id="channel" t={key => en[key]} />)
+  expect(view.getByRole('link', { name: `${en.inspectTeamChannel}: channel` })).toBeDefined()
+  const plain = render(<TeamReference target={{ kind: 'team', teamId: 'team' as never }} id="team" t={key => en[key]} />)
+  const link = plain.getByRole('link', { name: `${en.inspectTeam}: team` }) as HTMLAnchorElement
+  expect(new URL(link.getAttribute('href')!).searchParams.get('team')).toBe('team')
+})

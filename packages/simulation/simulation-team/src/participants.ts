@@ -1,3 +1,4 @@
+import { ProvisioningQueue } from './provisioning-queue.ts'
 /** Recoverable canonical participant provisioning without model execution. @module @clocky/clocky-simulation-team/participants */
 import type { Context } from '@clocky/cordis'
 import { isDeepStrictEqual } from 'node:util'
@@ -8,7 +9,7 @@ import type { ParticipantSnapshot, TeamId, TeamSystemTopologyProof, TeamSystemTo
 /** Serializes topology writes for each attached run and retains exact proofs only during target IO. */
 export class SimulationParticipantAuthority {
   private readonly proofs = new WeakMap<TeamSystemTopologyProof, () => TeamSystemTopologyScope | undefined>()
-  private readonly pending = new Map<SimulationRun, Promise<unknown>>()
+  private readonly pending = new ProvisioningQueue()
 
   constructor(private readonly ctx: Context) {
     ctx.teams.registerSystemTopologyProofSource({ name: 'simulation-team', resolveTopologyProof: proof => this.proofs.get(proof)?.() })
@@ -28,7 +29,7 @@ export class SimulationParticipantAuthority {
     lifecycleOwner: string, assertAdmitted: () => void): Promise<SimulationEntityBinding> {
     const accepted = simulationParticipantSpecSchema.parse(participant)
     assertAdmitted()
-    const work = (this.pending.get(run) ?? Promise.resolve()).then(async () => {
+    return this.pending.enqueue(run, async () => {
       assertAdmitted()
       await run.reserveParticipant(entityId, accepted, run.inspectEntity(entityId).revision)
       const observed = run.inspectEntity(entityId)
@@ -65,10 +66,7 @@ export class SimulationParticipantAuthority {
       await run.bindEntity(entityId, reservation.binding, run.inspectEntity(entityId).revision)
       return reservation.binding
     })
-    const settled = work.then(() => {}, () => {})
-    this.pending.set(run, settled)
-    void settled.then(() => { if (this.pending.get(run) === settled) this.pending.delete(run) })
-    return work
+
   }
 
   /**
@@ -76,7 +74,7 @@ export class SimulationParticipantAuthority {
    * @param run - Closing run whose admission has already stopped.
    * @returns completion after every queued provisioning attempt settles.
    */
-  async drain(run: SimulationRun): Promise<void> { await this.pending.get(run) }
+  async drain(run: SimulationRun): Promise<void> { await this.pending.drain(run) }
 
   private async withProof<T>(scope: TeamSystemTopologyScope, check: () => void,
     operation: (actor: TeamSystemTopologyProof) => Promise<T>): Promise<T> {

@@ -19,6 +19,7 @@ import type {
   ActivationRecoverySnapshot,
   ActivationStatus,
   ParticipantSnapshot,
+  TeamMemberExecutionSources,
   TeamHumanResumeAuthorization,
   TeamStateSnapshot,
 } from '@clocky/clocky-team'
@@ -347,6 +348,55 @@ function configureDurableBinding(
 }
 
 describe('Team activation controller edges', () => {
+  it('projects pending, attached, stopping, and recovery-required execution ownership', async () => {
+    const fake = fakeContext()
+    const controller = new TeamActivationController(fake.ctx)
+    const internals = controller as unknown as Internals & {
+      staleFences: Map<string, unknown>
+      unpublishedStarts: Map<string, unknown>
+    }
+    const listener = fake.callbacks.get('team/member-execution-observe')?.[0] as unknown as (
+      query: { teamId: typeof teamId; participant: typeof participant },
+      next: () => Promise<TeamMemberExecutionSources>,
+    ) => Promise<TeamMemberExecutionSources>
+    if (listener === undefined) throw new Error('execution observer was not installed')
+    const observe = async (sources: TeamMemberExecutionSources = {}) =>
+      await listener({ teamId, participant }, async () => sources)
+    const key = JSON.stringify([teamId, participant.id])
+    expect(await observe()).toEqual({})
+    const sessionId = SessionId('controller-observer')
+    internals.pending.set(key, { sessionId, operation: Promise.resolve() })
+    expect(await observe()).toEqual({ activation: { state: 'starting' } })
+    internals.closing = true
+    expect(await observe()).toEqual({ activation: { state: 'stopping' } })
+    internals.closing = false
+    internals.pending.delete(key)
+
+    const raw = rawHandle(sessionId)
+    const entry: Entry = { key, raw, localAgent: undefined, binding: binding(sessionId),
+      statusTail: Promise.resolve(), statusUnsubscribe: () => {}, stopping: false, disposal: undefined, lease: undefined }
+    internals.entries.set(key, entry)
+    expect(await observe()).toEqual({ activation: { state: 'attached', activationId: entry.binding.activation.id } })
+    entry.stopping = true
+    expect(await observe()).toEqual({ activation: { state: 'stopping', activationId: entry.binding.activation.id } })
+    entry.stopping = false
+    internals.closing = true
+    expect(await observe()).toEqual({ activation: { state: 'stopping', activationId: entry.binding.activation.id } })
+    internals.closing = false
+    internals.recoveries.set(key, Promise.resolve())
+    expect(await observe()).toEqual({ activation: { state: 'recovery-required' } })
+    internals.recoveries.delete(key)
+    internals.staleFences.set(key, {})
+    expect(await observe()).toEqual({ activation: { state: 'recovery-required' } })
+    internals.staleFences.delete(key)
+    internals.unpublishedStarts.set(key, {})
+    expect(await observe()).toEqual({ activation: { state: 'recovery-required' } })
+    internals.unpublishedStarts.delete(key)
+    await expect(observe({ activation: { state: 'attached' } })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    internals.entries.delete(key)
+    await controller.close()
+  })
+
   it('retains cleanup when readback names another binding and retries only after the exact binding is restored', async () => {
     const fake = fakeContext()
     const raw = rawHandle(SessionId('foreign-bind-readback'))
@@ -373,7 +423,7 @@ describe('Team activation controller edges', () => {
     expect(raw.disposeSpy).toHaveBeenCalledOnce()
   })
 
-  it.each(['AGENT_RUNTIME_PROVIDER_CHANGED', 'AGENT_RUNTIME_PROVIDER_NOT_FOUND'] as const)
+  it.each(['AGENT_RUNTIME_PROVIDER_CHANGED', 'AGENT_RUNTIME_PROVIDER_NOT_FOUND', 'AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED'] as const)
   ('rejects pre-start provider changes without inventing an unreserved activation: %s', async (code) => {
     const fake = fakeContext()
     const raw = rawHandle(SessionId('provider-before-start'))

@@ -19,6 +19,9 @@ export interface WorkflowTerminalOutcome {
   readonly failure?: TeamStallReason | undefined
 }
 
+type TerminalTask = TeamTaskSnapshot & { readonly phase: 'completed' | 'failed' | 'cancelled' | 'deleted' }
+type FailedDependency = TeamTaskSnapshot & { readonly phase: 'failed' | 'cancelled' | 'deleted' }
+
 /**
  * Derive the exact terminal result from one fully compiled workflow and its Task facts.
  * @param plan - immutable bindings and configured result selection.
@@ -37,23 +40,23 @@ export function workflowTerminalOutcome(
     const binding = plan.taskBindings.find(item => item.templateId === templateId)
     const task = binding === undefined ? undefined : tasks.get(binding.taskId)
     if (task === undefined) return undefined
+    // Every bound task passed terminal() above; selection only re-reads one of those bindings.
+    const settled = task as TerminalTask
     const outcome = task.attemptHistory.at(-1)?.outcome
-    switch (task.phase) {
+    switch (settled.phase) {
       case 'completed':
         if (outcome?.kind !== 'completed') return undefined
-        projected.push({ templateId, taskId: task.id, phase: task.phase, result: structuredClone(outcome.result) })
+        projected.push({ templateId, taskId: settled.id, phase: settled.phase, result: structuredClone(outcome.result) })
         break
       case 'failed':
-        projected.push({ templateId, taskId: task.id, phase: task.phase,
+        projected.push({ templateId, taskId: settled.id, phase: settled.phase,
           ...outcome?.kind === 'failed' ? { failure: structuredClone(outcome.failure) } : {} })
         break
       case 'cancelled':
       case 'deleted':
-        projected.push({ templateId, taskId: task.id, phase: task.phase,
-          ...task.blockedByOutcome === undefined ? {} : { blockedByOutcome: { ...task.blockedByOutcome } } })
+        projected.push({ templateId, taskId: settled.id, phase: settled.phase,
+          ...settled.blockedByOutcome === undefined ? {} : { blockedByOutcome: { ...settled.blockedByOutcome } } })
         break
-      default:
-        return undefined
     }
   }
   const failed = bound.find(task => task?.phase === 'failed')
@@ -81,9 +84,9 @@ export function workflowOutcomeRecords(projection: TeamProjection): TeamJournalR
       for (const binding of plan.taskBindings) {
         const task = tasks.get(binding.taskId)
         if (task === undefined || task.phase !== 'pending' || task.cancellation !== undefined || task.attemptCount !== 0) continue
-        const blocker = task.blockedBy.map(id => tasks.get(id)).find(candidate => candidate?.workflowPlanId === plan.id
-          && (candidate.phase === 'failed' || candidate.phase === 'cancelled' || candidate.phase === 'deleted'))
-        if (blocker === undefined || (blocker.phase !== 'failed' && blocker.phase !== 'cancelled' && blocker.phase !== 'deleted')) continue
+        const blocker = task.blockedBy.map(id => tasks.get(id)).find((candidate): candidate is FailedDependency =>
+          candidate?.workflowPlanId === plan.id && isFailedDependency(candidate))
+        if (blocker === undefined) continue
         const cancelled: TeamTaskSnapshot = { ...task, revision: task.revision + 1, phase: 'cancelled',
           blockedByOutcome: { taskId: blocker.id, revision: blocker.revision, phase: blocker.phase } }
         tasks.set(task.id, cancelled)
@@ -103,9 +106,8 @@ export function workflowOutcomeRecords(projection: TeamProjection): TeamJournalR
       if (task.execution.kind !== 'child-team' || task.phase !== 'pending' || task.attemptCount !== 0
         || task.cancellation !== undefined || task.blockedByOutcome !== undefined
         || task.delegation?.phase !== 'requested' || task.delegation.childTeamId !== undefined) continue
-      const blocker = task.blockedBy.map(id => tasks.get(id)).find(candidate =>
-        candidate?.phase === 'failed' || candidate?.phase === 'cancelled' || candidate?.phase === 'deleted')
-      if (blocker === undefined || (blocker.phase !== 'failed' && blocker.phase !== 'cancelled' && blocker.phase !== 'deleted')) continue
+      const blocker = task.blockedBy.map(id => tasks.get(id)).find(isFailedDependency)
+      if (blocker === undefined) continue
       const cancelled: TeamTaskSnapshot = { ...task, revision: task.revision + 1, phase: 'cancelled',
         blockedByOutcome: { taskId: blocker.id, revision: blocker.revision, phase: blocker.phase },
         delegation: { ...task.delegation, phase: 'cancelled', updatedAt: createdAt } }
@@ -120,4 +122,9 @@ export function workflowOutcomeRecords(projection: TeamProjection): TeamJournalR
 /** Whether a task can never satisfy another attempt or dependency transition. */
 function terminal(task: TeamTaskSnapshot): boolean {
   return task.phase === 'completed' || task.phase === 'failed' || task.phase === 'cancelled' || task.phase === 'deleted'
+}
+
+/** Narrow a retained prerequisite to a terminal outcome that cannot satisfy dependent work. */
+function isFailedDependency(task: TeamTaskSnapshot | undefined): task is FailedDependency {
+  return task?.phase === 'failed' || task?.phase === 'cancelled' || task?.phase === 'deleted'
 }

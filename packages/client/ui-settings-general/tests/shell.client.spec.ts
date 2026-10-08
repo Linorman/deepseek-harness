@@ -6,6 +6,7 @@ import { apply as settingsApply, inject as settingsInject } from '@clocky/clocky
 import { apply, inject } from '../src/client/index.ts'
 import type { SettingsRootInjected } from '../src/client/shell-contract.ts'
 import { SettingsRoot } from '../src/client/SettingsRoot.tsx'
+import { CommandRegistry } from '@clocky/clocky-client-ui-layout/src/client/commands.ts'
 
 async function bench() {
   const ctx = new Context()
@@ -50,6 +51,26 @@ const CHILD_SPECS = {
 } as const
 
 describe('ui-settings apply', () => {
+  it('publishes subscribed open requests from palette actions and filters an unlabeled section', async () => {
+    const b = await bench()
+    const commands = new CommandRegistry()
+    b.ctx.provide('layout', { registerCommands: commands.registerProvider.bind(commands) } as never)
+    declare(b.slots)
+    await b.ctx.plugin({ inject: [...inject], apply }).await()
+    b.slots.register({ name: 'settings.section', id: 'unlabeled' } as never, () => null)
+    const source = injectedOf(b.slots).hooks.openRequests
+    const listener = vi.fn()
+    const off = source.subscribe(listener)
+    const settings = commands.sections().find(section => section.id === 'settings')!
+    expect(settings.items.some(item => item.id === 'unlabeled')).toBe(false)
+    settings.items.find(item => item.id === 'open')!.run()
+    expect(source.getSnapshot()).toEqual({ seq: 1, section: undefined })
+    settings.items.find(item => item.id === 'general')!.run()
+    expect(source.getSnapshot()).toEqual({ seq: 2, section: 'general' })
+    expect(listener).toHaveBeenCalledTimes(2)
+    off()
+    await b.ctx.fiber.dispose()
+  })
   it('declares only the slot registry (a pure composition face, no locale)', () => {
     expect(inject).toEqual(['slots', 'locale', 'connection', 'settingsScope'])
   })

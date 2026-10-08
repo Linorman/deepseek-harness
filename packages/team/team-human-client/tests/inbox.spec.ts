@@ -1,6 +1,7 @@
-import { indexInboxAdmission, readInboxAdmission } from '../src/admission-index.ts'
+import { indexInboxAdmission, inboxAdmissionBytes, readInboxAdmission } from '../src/admission-index.ts'
 import { teamDiscoveryCursorSchema, teamHumanActionResponseInputSchema, teamHumanMessageInputSchema, teamSnapshotSchema } from '@clocky/clocky-team'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { Context } from '@clocky/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -8,9 +9,10 @@ import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
 import * as StorageLog from '@clocky/clocky-storage-log'
+import { StorageLogError } from '@clocky/clocky-storage-log'
 import ProductPrincipals, { productPrincipalId } from '@clocky/clocky-product-principal'
 import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
-import { TeamRuntime, fingerprintTeamFinalContent, jsonObjectSchema, teamHumanFinalInputSchema, teamHumanInboxActionSchema } from '@clocky/clocky-team'
+import { TeamError, TeamRuntime, fingerprintTeamFinalContent, jsonObjectSchema, teamHumanFinalInputSchema, teamHumanInboxActionSchema } from '@clocky/clocky-team'
 import type { ParticipantSnapshot, TeamSnapshot, TeamStateSnapshot } from '@clocky/clocky-team'
 import * as Inbox from '../src/index.ts'
 
@@ -30,6 +32,19 @@ abstract class TestTeamRuntime extends (TeamRuntime as unknown as new (ctx: Cont
   override getTeam(): Promise<TeamStateSnapshot> {
     return Promise.resolve({ participants: this.participants, humanActions: [], channelIds: [] } as unknown as TeamStateSnapshot)
   }
+  override getChannel(_request: Parameters<TeamRuntime['getChannel']>[0]): ReturnType<TeamRuntime['getChannel']> {
+    return Promise.reject(new Error('Test channel was not configured'))
+  }
+  override listChannelPendingDeliveries(
+    _request: Parameters<TeamRuntime['listChannelPendingDeliveries']>[0],
+  ): ReturnType<TeamRuntime['listChannelPendingDeliveries']> {
+    return Promise.reject(new Error('Test channel deliveries were not configured'))
+  }
+  override admitHumanChannelDelivery(
+    _request: Parameters<TeamRuntime['admitHumanChannelDelivery']>[0],
+  ): ReturnType<TeamRuntime['admitHumanChannelDelivery']> {
+    return Promise.reject(new Error('Test channel admission was not configured'))
+  }
 }
 const contexts = new Set<Context>()
 const roots: string[] = []
@@ -38,9 +53,20 @@ afterEach(async () => {
   contexts.clear()
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
 })
+
 const config: Inbox.Config = {
   storagePageSize: 1, maxPageSize: 1, maxDeliveryBytes: 4096, maxPendingOperations: 16, watchTimeoutMs: 100, pollIntervalMs: 5,
 }
+it('direct plugin disposal waits for its scheduled consumer drive to close', async () => {
+  const ctx = new Context()
+  contexts.add(ctx)
+  ctx.provide('teams', {
+    registerSystemHumanDeliveryProofSource: () => () => {},
+    listTeamsPage: async () => ({ items: [], scanned: 0 }),
+  } as never)
+  const dispose = Inbox.apply(ctx, Object.assign({}, config, { pollIntervalMs: 60000 }))
+  await dispose()
+})
 const principalId = productPrincipalId('principal/with-partition-separator')
 function call(id = principalId): AuthenticatedProductCall {
   return { principal: { id, issuer: 'test', subject: id, assurance: 'test', credentialGeneration: 1 }, credentialGeneration: 1, signal: new AbortController().signal }
@@ -83,6 +109,232 @@ async function retainedFirst(ctx: Context): Promise<number> {
 const retention: Inbox.InboxRetentionConfig = { tailRecords: 1, maxStreamsPerDrive: 32, maxRecordsPerDrive: 4, maxBytesPerDrive: 8192 }
 
 describe.each(['json', 'sqlite'] as const)('%s principal inbox', (backend) => {
+  it('retires the consumer and refuses a new authenticated watch', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000 })
+    await (f.inbox as Inbox.TeamHumanClient).close()
+    await expect(f.inbox.watch(call(), {})).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  })
+
+  it('restarts expired Team and inbox stream discovery cursors on the next drive', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000, retention })
+    const service = f.inbox as Inbox.TeamHumanClient
+    await service.runOnce()
+    const teams = vi.spyOn(f.runtime, 'listTeamsPage').mockRejectedValueOnce(
+      new TeamError('Team discovery expired', 'TEAM_DISCOVERY_CURSOR_EXPIRED'))
+    const names = vi.spyOn(f.ctx.storageLog, 'scanNames').mockRejectedValueOnce(
+      new StorageLogError('scan-expired', 'Inbox stream discovery expired'))
+    await service.runOnce()
+    expect(teams).toHaveBeenCalled()
+    expect(names).toHaveBeenCalled()
+    await service.runOnce()
+  })
+
+  it('continues bounded stream discovery and propagates a non-expired scan failure', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000,
+      retention: { ...retention, maxStreamsPerDrive: 1 } })
+    const service = f.inbox as Inbox.TeamHumanClient
+    const scan = vi.spyOn(f.ctx.storageLog, 'scanNames')
+    for (let attempt = 0; attempt < 3; attempt++) await service.runOnce()
+    expect(scan.mock.calls.some(([request]) => request.afterCursor !== undefined)).toBe(true)
+    const failure = new StorageLogError('scan-limit', 'No discovery scan slot is free')
+    scan.mockRejectedValueOnce(failure)
+    await expect(service.runOnce()).rejects.toBe(failure)
+  })
+
+  it('stops background drives quietly after shutdown and reports an active drive failure', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000 })
+    const service = f.inbox as Inbox.TeamHumanClient
+    await service.runOnce()
+    const warn = vi.spyOn(f.ctx.logger, 'warn').mockImplementation(() => {})
+    const listing = vi.spyOn(f.runtime, 'listTeamsPage').mockRejectedValueOnce(new Error('background Team read failed'))
+    f.ctx.emit('team/changed', {} as never)
+    await vi.waitFor(() => { expect(warn).toHaveBeenCalledOnce() })
+    expect(String(warn.mock.calls[0]?.[0])).toContain('background Team read failed')
+
+    const held = Promise.withResolvers<Awaited<ReturnType<TeamRuntime['listTeamsPage']>>>()
+    listing.mockReturnValueOnce(held.promise)
+    f.ctx.emit('team/changed', {} as never)
+    await vi.waitFor(() => { expect(listing).toHaveBeenCalledTimes(2) })
+    const closing = service.close()
+    held.reject(new Error('late Team read failed'))
+    await closing
+    expect(warn).toHaveBeenCalledOnce()
+    f.ctx.emit('team/changed', {} as never)
+    expect(listing).toHaveBeenCalledTimes(2)
+    await expect(service.runOnce()).resolves.toBeUndefined()
+  })
+
+  it('bounds concurrent watches and refuses new inbox storage after close', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000, watchTimeoutMs: 5000,
+      maxPendingOperations: 1 })
+    const service = f.inbox as Inbox.TeamHumanClient
+    await service.runOnce()
+    const stopped = new AbortController()
+    const waiting = f.inbox.watch({ ...call(), signal: stopped.signal }, {})
+    await expect(f.inbox.watch(call(), {})).rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+    stopped.abort(new Error('caller stopped waiting'))
+    await expect(waiting).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    await service.close()
+    await expect(f.runtime.admitFinal(f.inbox, final())).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  })
+
+  it('bounds queued inbox operations while one storage open is pending', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000, maxPendingOperations: 1 })
+    await (f.inbox as Inbox.TeamHumanClient).runOnce()
+    const open = f.ctx.storageLog.open.bind(f.ctx.storageLog)
+    const entered = Promise.withResolvers<undefined>()
+    const proceed = Promise.withResolvers<undefined>()
+    const opening = vi.spyOn(f.ctx.storageLog, 'open').mockImplementationOnce(async (descriptor) => {
+      entered.resolve(undefined)
+      await proceed.promise
+      return await open(descriptor)
+    })
+    try {
+      const first = f.inbox.read(call(), {})
+      await entered.promise
+      await expect(f.inbox.read(call(), {})).rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+      proceed.resolve(undefined)
+      await expect(first).resolves.toMatchObject({ items: [] })
+    } finally { proceed.resolve(undefined); opening.mockRestore() }
+  })
+
+  it('rejects a checkpoint that changes the authenticated inbox owner', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000 })
+    const item = await f.runtime.admitFinal(f.inbox, final())
+    await f.inbox.acknowledge(call(), { throughCursor: item.sequence })
+    const info = (await f.ctx.storageLog.list()).find(value => value.name.startsWith('principal-inbox/'))
+    if (info === undefined) throw new Error('inbox checkpoint stream was not retained')
+    const stream = await f.ctx.storageLog.open({ name: info.name, version: info.version })
+    try {
+      const checkpoint = await stream.readCheckpoint()
+      if (checkpoint === undefined) throw new Error('display checkpoint was not written')
+      await stream.writeCheckpoint({ sequence: checkpoint.sequence,
+        value: { ...checkpoint.value as object, principalId: productPrincipalId('other') } })
+    } finally { await stream.close() }
+    await expect(f.inbox.read(call(), {})).rejects.toThrow('display checkpoint is invalid')
+  })
+
+  it('rejects a retained item from another principal and an action without its human-action grant', async () => {
+    const wrong = await setup(backend, await root(), { pollIntervalMs: 60000 })
+    await wrong.runtime.admitFinal(wrong.inbox, final())
+    const info = (await wrong.ctx.storageLog.list()).find(value => value.name.startsWith('principal-inbox/'))
+    if (info === undefined) throw new Error('inbox stream was not retained')
+    const stream = await wrong.ctx.storageLog.open({ name: info.name, version: info.version })
+    try { await stream.append(stream.tailSequence, [{ ...final(1), kind: 'final', sequence: 1,
+      principalId: productPrincipalId('other') }]) } finally { await stream.close() }
+    await expect(wrong.inbox.read(call(), {})).rejects.toThrow('invalid ownership or sequence')
+
+    const noActionGrant = await setup(backend, await root(), { pollIntervalMs: 60000 })
+    const actionStream = await noActionGrant.ctx.storageLog.open({
+      name: `principal-inbox/${createHash('sha256').update(principalId).digest('hex')}`, version: 1,
+    })
+    try { await actionStream.append(-1, [actionItem(0)]) } finally { await actionStream.close() }
+    await expect(noActionGrant.inbox.read(call(), {})).rejects.toMatchObject({ code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' })
+  })
+
+  it('rejects a display append whose selected delivery was compacted away', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000 })
+    const first = await f.runtime.admitFinal(f.inbox, final())
+    await f.inbox.acknowledge(call(), { throughCursor: first.sequence })
+    const info = (await f.ctx.storageLog.list()).find(value => value.name.startsWith('principal-inbox/'))
+    if (info === undefined) throw new Error('inbox stream was not retained')
+    const stream = await f.ctx.storageLog.open({ name: info.name, version: info.version })
+    try {
+      const checkpoint = await stream.readCheckpoint()
+      if (checkpoint === undefined) throw new Error('display checkpoint was not written')
+      await stream.compact({ throughSequence: first.sequence, expectedCheckpointSequence: checkpoint.sequence })
+      await stream.append(stream.tailSequence, [{ kind: 'display', principalId, throughCursor: first.sequence }])
+    } finally { await stream.close() }
+    const open = f.ctx.storageLog.open.bind(f.ctx.storageLog)
+    const opening = vi.spyOn(f.ctx.storageLog, 'open').mockImplementationOnce(async (descriptor) => {
+      const selected = await open(descriptor)
+      const read = selected.read.bind(selected)
+      vi.spyOn(selected, 'read').mockImplementation(async (afterCursor, limit) =>
+        afterCursor === -1 && limit === 1 ? [] : await read(afterCursor, limit))
+      return selected
+    })
+    try { await expect(f.inbox.read(call(), {})).rejects.toThrow('display record does not select') }
+    finally { opening.mockRestore() }
+  })
+
+  it('rejects a retained display record pointing to another display record', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000, maxPageSize: 4 })
+    const first = await f.runtime.admitFinal(f.inbox, final())
+    await f.inbox.acknowledge(call(), { throughCursor: first.sequence })
+    const info = (await f.ctx.storageLog.list()).find(value => value.name.startsWith('principal-inbox/'))
+    if (info === undefined) throw new Error('inbox stream was not retained')
+    const stream = await f.ctx.storageLog.open({ name: info.name, version: info.version })
+    try {
+      const displaySequence = stream.tailSequence
+      await stream.append(displaySequence, [{ kind: 'display', principalId, throughCursor: displaySequence }])
+      await stream.writeCheckpoint({ sequence: stream.tailSequence,
+        value: { version: 1, principalId, displayCursor: first.sequence } })
+    } finally { await stream.close() }
+    await expect(f.inbox.read(call(), { afterCursor: -1 })).rejects.toThrow('display record does not select')
+  })
+
+  it('refuses an indexed compacted admission whose checkpoint disappears on read', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000 })
+    const first = await f.runtime.admitFinal(f.inbox, final())
+    await f.runtime.admitFinal(f.inbox, final(1))
+    await f.inbox.acknowledge(call(), { throughCursor: first.sequence })
+    const info = (await f.ctx.storageLog.list()).find(value => value.name.startsWith('principal-inbox/'))
+    if (info === undefined) throw new Error('inbox stream was not retained')
+    const stream = await f.ctx.storageLog.open({ name: info.name, version: info.version })
+    try {
+      const checkpoint = await stream.readCheckpoint()
+      if (checkpoint === undefined) throw new Error('display checkpoint was not written')
+      await stream.compact({ throughSequence: first.sequence, expectedCheckpointSequence: checkpoint.sequence })
+    } finally { await stream.close() }
+    const open = f.ctx.storageLog.open.bind(f.ctx.storageLog)
+    const opening = vi.spyOn(f.ctx.storageLog, 'open').mockImplementationOnce(async (descriptor) => {
+      const selected = await open(descriptor)
+      vi.spyOn(selected, 'readCheckpoint').mockResolvedValueOnce(undefined)
+      return selected
+    })
+    try { await expect(f.runtime.admitFinal(f.inbox, final())).rejects.toThrow('no admission reference checkpoint') }
+    finally { opening.mockRestore() }
+  })
+
+  it('retries a failed channel delivery but skips closed, inactive, and cancelled outboxes', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000 })
+    const service = f.inbox as Inbox.TeamHumanClient
+    await service.runOnce()
+    const team = teamSnapshotSchema.parse({ id: 'team', cursor: 1, createdAt: 1, updatedAt: 1,
+      phase: 'active', depth: 0, maxTeamDepth: 1,
+      goal: { teamId: 'team', revision: 1, objective: 'Deliver pending reply', phase: 'active', budgets: {} } })
+    let state = { ...await f.runtime.getTeam(), team, channelIds: ['channel' as never] } as TeamStateSnapshot
+    vi.spyOn(f.runtime, 'listTeamsPage').mockResolvedValue({ items: [team], scanned: 1 })
+    vi.spyOn(f.runtime, 'getTeam').mockImplementation(async () => state)
+    const channel: Awaited<ReturnType<TeamRuntime['getChannel']>> = {
+      phase: 'closed', cursor: 1, manifest: { participants: [{ id: 'human' }] },
+    } as never
+    const getChannel = vi.spyOn(f.runtime, 'getChannel').mockResolvedValue(channel)
+    const pending = vi.spyOn(f.runtime, 'listChannelPendingDeliveries')
+      .mockRejectedValueOnce(new TeamError('closed channel has no pending view', 'TEAM_INVALID_ARGUMENT'))
+    await service.runOnce()
+    expect(pending).toHaveBeenCalledOnce()
+
+    state = { ...state, team: { ...team, phase: 'stalled' } } as never
+    await service.runOnce()
+    expect(pending).toHaveBeenCalledOnce()
+    state = { ...state, team }
+    getChannel.mockResolvedValue({ ...channel, phase: 'opening' } as never)
+    await service.runOnce()
+    expect(pending).toHaveBeenCalledOnce()
+
+    getChannel.mockResolvedValue({ ...channel, phase: 'active' } as never)
+    pending.mockRejectedValueOnce(new TeamError('transient channel read', 'TEAM_INVALID_ARGUMENT'))
+    await expect(service.runOnce()).rejects.toThrow('transient channel read')
+    pending.mockResolvedValueOnce({ deliveries: [{ envelope: { id: 'message-retry', kind: 'message' } }] } as never)
+    const admitted = vi.spyOn(f.runtime, 'admitHumanChannelDelivery').mockImplementation(async (input) => {
+      expect(() => JSON.stringify(input.actor)).toThrow('runtime-only')
+      return {} as never
+    })
+    await service.runOnce()
+    expect(admitted).toHaveBeenCalledOnce()
+  })
+
   it('deduplicates ordinary message admission and rejects changed retries or oversized content', async () => {
     const f = await setup(backend, await root(), { pollIntervalMs: 60000 })
     const input = teamHumanMessageInputSchema.parse({ principalId, recipientId: 'human', teamId: 'team', channelId: 'channel',
@@ -110,6 +362,14 @@ describe.each(['json', 'sqlite'] as const)('%s principal inbox', (backend) => {
     vi.spyOn(f.runtime, 'getTeam').mockImplementation(async () => state)
     vi.spyOn(f.runtime, 'listTeamsPage').mockResolvedValue({ items: [team], scanned: 1 })
     const policy = vi.spyOn(f.runtime, 'authorize').mockResolvedValue({ kind: 'deny', code: 'DENIED', message: 'Not visible' })
+    state = { ...state, humanActions: undefined } as never
+    await service.runOnce()
+    state = { ...state, humanActions: [action], participants: [{ ...human, authorityGrant: {
+      ...human.authorityGrant, operations: ['dispatch'] as const,
+    } }] } as never
+    await service.runOnce()
+    expect(policy).not.toHaveBeenCalled()
+    state = { ...state, participants: [human] }
     await service.runOnce()
     expect((await f.inbox.read(call(), {})).items).toEqual([])
     policy.mockResolvedValue({ kind: 'allow' })
@@ -550,6 +810,54 @@ describe.each(['json', 'sqlite'] as const)('%s principal inbox', (backend) => {
     expect((await f.ctx.storageLog.list()).some(item => item.name.startsWith('principal-inbox-admission/'))).toBe(false)
   })
 
+  it('defers a later displayed record when the drive has too few bytes left', async () => {
+    const sample = { ...final(), kind: 'final' as const, sequence: 0 }
+    const bytes = Math.max(Buffer.byteLength(JSON.stringify(sample), 'utf8'), inboxAdmissionBytes(sample))
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000,
+      retention: { ...retention, maxBytesPerDrive: bytes + 1 } })
+    const service = f.inbox as Inbox.TeamHumanClient
+    await service.runOnce()
+    await f.runtime.admitFinal(f.inbox, final())
+    const second = await f.runtime.admitFinal(f.inbox, final(1))
+    await f.inbox.acknowledge(call(), { throughCursor: second.sequence })
+    await service.runOnce()
+    expect(await retainedFirst(f.ctx)).toBe(1)
+    await service.runOnce()
+    expect(await retainedFirst(f.ctx)).toBe(2)
+  })
+
+  it('defers the next principal stream until its full first admission fits the drive budget', async () => {
+    const other = productPrincipalId('principal/with-partition-separatoz')
+    const sample = { ...final(), kind: 'final' as const, sequence: 0 }
+    const bytes = Math.max(Buffer.byteLength(JSON.stringify(sample), 'utf8'), inboxAdmissionBytes(sample))
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000,
+      retention: { ...retention, maxStreamsPerDrive: 4, maxBytesPerDrive: bytes + 1 } })
+    const service = f.inbox as Inbox.TeamHumanClient
+    await service.runOnce()
+    const first = await f.runtime.admitFinal(f.inbox, final())
+    expect(Math.max(Buffer.byteLength(JSON.stringify(first), 'utf8'), inboxAdmissionBytes(first))).toBe(bytes)
+    await f.inbox.acknowledge(call(), { throughCursor: first.sequence })
+    const otherItem = await f.runtime.admitFinal(f.inbox, { ...final(), principalId: other })
+    expect(Math.max(Buffer.byteLength(JSON.stringify(otherItem), 'utf8'), inboxAdmissionBytes(otherItem))).toBe(bytes)
+    f.runtime.participants = f.runtime.participants.map(member => ({ ...member,
+      owner: { kind: 'product-principal' as const, principalId: other } }))
+    await f.inbox.acknowledge(call(other), { throughCursor: otherItem.sequence })
+    const names = (await f.ctx.storageLog.list()).filter(item => item.name.startsWith('principal-inbox/'))
+    const firstSequences = async () => await Promise.all(names.map(async (info) => {
+      const stream = await f.ctx.storageLog.open({ name: info.name, version: info.version })
+      try { return stream.firstSequence } finally { await stream.close() }
+    }))
+    let positions: number[] = []
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await service.runOnce()
+      positions = (await firstSequences()).sort()
+      if (positions[1] === 1) break
+    }
+    expect(positions).toEqual([0, 1])
+    await service.runOnce()
+    expect((await firstSequences()).sort()).toEqual([1, 1])
+  })
+
   it('pins an unanswered action even after display acknowledgement, then releases its history after resolution', async () => {
     const f = await setup(backend, await root(), { pollIntervalMs: 60000, retention })
     const service = f.inbox as Inbox.TeamHumanClient
@@ -571,6 +879,52 @@ describe.each(['json', 'sqlite'] as const)('%s principal inbox', (backend) => {
     await service.runOnce()
     expect(await retainedFirst(f.ctx)).toBe(last.sequence + 1)
     expect(await readInboxAdmission(f.ctx, item)).toEqual(item)
+  })
+
+  it('pins an unanswered first action and rejects a source revision behind its inbox copy', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000, retention })
+    const service = f.inbox as Inbox.TeamHumanClient
+    await service.runOnce()
+    f.runtime.participants = f.runtime.participants.map(member => ({ ...member, authorityGrant: {
+      operations: ['dispatch', 'human-action'], workspaceModes: [], readScopes: [], writeScopes: [], budgets: {},
+    } }))
+    const item = actionItem(0)
+    const stream = await f.ctx.storageLog.open({ name: `principal-inbox/${createHash('sha256').update(principalId).digest('hex')}`, version: 1 })
+    try { await stream.append(-1, [item]) } finally { await stream.close() }
+    const last = await f.runtime.admitFinal(f.inbox, final())
+    const action = vi.spyOn(f.runtime, 'getHumanAction').mockResolvedValue(item.action)
+    await f.inbox.acknowledge(call(), { throughCursor: last.sequence })
+    await service.runOnce()
+    expect(await retainedFirst(f.ctx)).toBe(0)
+    action.mockResolvedValue({ ...item.action, updatedAt: 0 })
+    await expect(service.runOnce()).rejects.toThrow('ahead of its source revision')
+    action.mockResolvedValue({ ...item.action, phase: 'resolved', updatedAt: 2 })
+    await service.runOnce()
+    expect(await retainedFirst(f.ctx)).toBe(last.sequence + 1)
+  })
+
+  it('rechecks the observed inbox tail before compacting after an action source read', async () => {
+    const f = await setup(backend, await root(), { pollIntervalMs: 60000, retention })
+    const service = f.inbox as Inbox.TeamHumanClient
+    await service.runOnce()
+    f.runtime.participants = f.runtime.participants.map(member => ({ ...member, authorityGrant: {
+      operations: ['dispatch', 'human-action'], workspaceModes: [], readScopes: [], writeScopes: [], budgets: {},
+    } }))
+    const item = actionItem(0)
+    const name = `principal-inbox/${createHash('sha256').update(principalId).digest('hex')}`
+    const stream = await f.ctx.storageLog.open({ name, version: 1 })
+    try { await stream.append(-1, [item]) } finally { await stream.close() }
+    const last = await f.runtime.admitFinal(f.inbox, final())
+    await f.inbox.acknowledge(call(), { throughCursor: last.sequence })
+    const action = vi.spyOn(f.runtime, 'getHumanAction').mockImplementationOnce(async () => {
+      await f.runtime.admitFinal(f.inbox, final(1))
+      return { ...item.action, phase: 'resolved', updatedAt: 2 }
+    })
+    vi.spyOn(f.ctx.storageLog, 'scanNames').mockResolvedValueOnce({ names: [name], scanned: 1 })
+    await service.runOnce()
+    expect(action).toHaveBeenCalledOnce()
+    expect(await retainedFirst(f.ctx)).toBe(0)
+    expect((await f.inbox.read(call(), { afterCursor: last.sequence })).items).toHaveLength(1)
   })
 
   it('keeps history and its checkpoint unchanged when an admission-anchor write fails, and retries the copy', async () => {

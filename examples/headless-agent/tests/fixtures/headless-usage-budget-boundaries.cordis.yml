@@ -7,6 +7,9 @@
 # Typed root budgets are supplied by the fixture's explicit deployment consumer.
 - id: team-run
   disabled: true
+
+- id: team-delegation
+  disabled: true
 - id: tool-team-channel-summary
   disabled: true
 

@@ -29,6 +29,7 @@
     "@clocky/cordis-plugin-group": "workspace:^",
     "@clocky/clocky-client-modules": "workspace:^",
     "@clocky/clocky-client-ui-primitives": "workspace:^",
+    "@clocky/clocky-client-ui-viz": "workspace:^",
     "@clocky/clocky-client-ui-slots": "workspace:^",
     "@clocky/clocky-client-web": "workspace:^",
     "@clocky/clocky-cmdline": "workspace:^",

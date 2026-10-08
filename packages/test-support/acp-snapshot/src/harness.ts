@@ -16,7 +16,7 @@
  * @module @clocky/clocky-acp-snapshot/harness
  */
 
-import { cp, mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { existsSync, realpathSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
@@ -265,6 +265,8 @@ export async function runScenario(input: InputScript, opts: RunOptions): Promise
   let session: ActiveSession | undefined
   let sessionLogs: HarvestedLog[] = []
   const outcome = await (async (): Promise<RunResult> => {
+    // Bound project discovery even when TMPDIR sits inside a developer's checkout.
+    await mkdir(join(cwd, '.git'), { recursive: true })
     // Seed the workspace if the scenario ships one (a file the agent reads/edits).
     // Copied into the generated cwd so the agent's bash tools see it; the expected outputs
     // normalize the cwd, so the seeded paths stay stable across runs.

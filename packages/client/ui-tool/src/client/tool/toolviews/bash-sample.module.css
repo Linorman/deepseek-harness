@@ -17,7 +17,7 @@
   --dsl-terminal-line-height: 18px;
   --dsl-terminal-output-max-height: 224px;
   margin: 4px 0 4px 4px;
-  border: 1px solid var(--clocky-alias-border-l1);
+  border: 1px solid var(--clocky-border-subtle);
 }
 
 /* A bash execution error can settle without terminal-card material (for
@@ -27,9 +27,9 @@
   display: flex;
   flex-direction: column;
   margin: 4px 0 4px 4px;
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 12px;
-  background: var(--clocky-alias-markdown-code-block);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-sunken);
   font: var(--clocky-font-markdown-code-block-small);
 }
 
@@ -46,7 +46,7 @@
 .ioSection::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   background-clip: padding-box;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 .ioSection::-webkit-scrollbar-track {
@@ -57,24 +57,24 @@
   position: sticky;
   top: 0;
   align-self: start;
-  color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
 }
 
 .ioDivider {
   flex: none;
   height: 1px;
-  background: var(--clocky-alias-border-l2);
+  background: var(--clocky-border-default);
 }
 
 .ioText {
   min-width: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .ioText[data-error] {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 /* ToolRow's unified expand interaction, replicated per the registrant
@@ -104,10 +104,10 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--clocky-alias-bg-base) 60%, transparent) 55%,
+    color-mix(in srgb, var(--clocky-bg-canvas) 60%, transparent) 55%,
     transparent 100%
   );
-  animation: clocky-bash-row-sweep 2.6s ease-out infinite;
+  animation: clocky-bash-row-sweep var(--clocky-duration-sweep) var(--clocky-ease-enter) infinite;
   pointer-events: none;
 }
 
@@ -125,11 +125,11 @@
   align-items: center;
   justify-content: center;
   margin-right: 6px;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .chevron {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 /* Hover preview on the expandable row: the idle icon crossfades (100ms) into
@@ -137,7 +137,7 @@
 .iconIdle {
   display: inline-flex;
   opacity: 1;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .chevronHover {
@@ -145,7 +145,7 @@
   inset: 0;
   margin: auto;
   opacity: 0;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .root:hover .iconIdle {
@@ -158,18 +158,18 @@
 
 .title {
   flex: none;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-secondary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-secondary);
 }
 
 .sep {
   flex: none;
   width: 2px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: var(--clocky-radius-xs);
   margin: 0 8px;
-  background: var(--clocky-alias-label-caption);
+  background: var(--clocky-fg-tertiary);
 }
 
 .summary {
@@ -178,14 +178,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* Error row's collapsed summary: the failure's first line in the error color. */
 .errorSummary {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 /* Hover-revealed Inspect pill under the expanded terminal's bottom-left —
@@ -204,16 +204,16 @@
   gap: 4px;
   margin: 4px 0 2px 4px;
   padding: 2px 8px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 999px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-full);
   /* Base background, not bg-overlay: the overlay token reads too heavy. */
-  background: var(--clocky-alias-bg-base);
-  color: var(--clocky-alias-label-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  background: var(--clocky-bg-canvas);
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 100ms ease;
+  transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
 }
 
 .card:hover .inspectButton,
@@ -224,8 +224,8 @@
 /* Solid hover fill: the pill floats over terminal output, so a translucent
    hover token would let the text underneath bleed through. */
 .inspectButton:hover {
-  background: var(--clocky-alias-interactive-bg-hover-solid);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-sunken);
+  color: var(--clocky-fg-primary);
 }
 
 

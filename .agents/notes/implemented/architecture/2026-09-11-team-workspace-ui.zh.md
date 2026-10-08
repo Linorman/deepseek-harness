@@ -22,6 +22,8 @@ Status: implemented
 
 URL 恢复等待连接所有者完成握手。初次认证 scope 与主体变化一样，都会作废先前的 Team 读取，因此选择不能与 scope 发布竞态。断线中止尚未完成的恢复并保留 URL；下次握手后通过 Host 重新验证路由。全 Team 任务搜索和状态筛选使用独立的有界 runtime 查询，保留已提交 URL 状态并遵守输入法组合状态。查询翻页不会替换依赖草稿或任务详情。
 
+取消 Team 选择或目录选择不属于列表失败。浏览器取消可能以名称为 `AbortError` 的 `DOMException` 或 `Error` 传达；两者都不会在 Team 目录显示错误提示，其他失败仍会显示。
+
 Session 查看在原生 dialog 内使用唯一且稳定的 conversation 子树，包括已有 details slot。打开、关闭和展开视图保留挂载状态；关闭只清除查看选择，不停止执行。任务 attempt 链接解析记录中的 activation，成员链接选择最新 activation。选择 Team 不会恢复离线 coordinator；Resume 是独立命令。
 
 [设计上下文](../../../../DESIGN.md) 定义石墨色导航、冷中性工作区表面、字体层级和克制的过渡。共享主题 token 支持两种外观及减少动态效果。有界读取和预览避免为展示加载每个频道日志或成员 transcript。
@@ -54,5 +56,7 @@ Session 查看在原生 dialog 内使用唯一且稳定的 conversation 子树�
 ## Testing
 
 Client 测试覆盖有界预览、精确 attempt 选择、离线 Resume、导航取消、草稿重试身份、IME 处理、变更错误和稳定的 Session 挂载。真实 Host 的无密钥浏览器场景覆盖频道协议、65 行分页与读取恢复、子 Team 导航、Session 返回及浏览器历史、长目标、两种语言与外观、窄屏和减少动态效果。[实现报告](../../../../design/team-workspace-2026-09-11/implementation-report.md) 记录验证命令、截图及仓库级检查限制。
+
+无密钥 Team 工作区浏览器场景先用浏览器 `DOMException` 取消一次选择，确认目录没有错误提示，再通过真实 Host 打开同一个 Team。
 
 任务表单草稿的字段、容量、关闭、revision 与重试身份由[草稿生命周期决策](2026-09-29-team-form-draft-lifetime.zh.md)负责。

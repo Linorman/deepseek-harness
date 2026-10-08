@@ -251,13 +251,17 @@ function loadRelative(world: World, from: FileCtx, specifier: string): FileCtx {
   return loadFile(abs, rel, world.cache)
 }
 
-/** Find a type declaration EXPORTED (directly or via re-export chains) from a
+/** Find a named declaration (directly or via re-export chains) from a
  * file, following `export … from './x.ts'` and `export * from './x.ts'`. */
-function findExportedTypeDecl(world: World, ctx: FileCtx, name: string, seen = new Set<string>()): { decl: TypeDecl; ctx: FileCtx } | null {
+function findExportedDeclaration<T extends ts.Node>(
+  world: World, ctx: FileCtx, name: string,
+  find: (file: FileCtx, name: string) => T | null,
+  seen = new Set<string>(),
+): { decl: T; ctx: FileCtx } | null {
   const key = `${ctx.abs}#${name}`
   if (seen.has(key)) return null
   seen.add(key)
-  const local = findTypeDecl(ctx, name)
+  const local = find(ctx, name)
   if (local) return { decl: local, ctx }
   for (const stmt of ctx.sf.statements) {
     if (!ts.isExportDeclaration(stmt) || !stmt.moduleSpecifier || !ts.isStringLiteral(stmt.moduleSpecifier)) continue
@@ -271,10 +275,15 @@ function findExportedTypeDecl(world: World, ctx: FileCtx, name: string, seen = n
       if (el) lookFor = (el.propertyName ?? el.name).text
     }
     if (lookFor === null) continue
-    const hit = findExportedTypeDecl(world, loadRelative(world, ctx, spec), lookFor, seen)
+    const hit = findExportedDeclaration(world, loadRelative(world, ctx, spec), lookFor, find, seen)
     if (hit) return hit
   }
   return null
+}
+
+/** Resolve a named type through workspace-local re-export chains. */
+function findExportedTypeDecl(world: World, ctx: FileCtx, name: string): { decl: TypeDecl; ctx: FileCtx } | null {
+  return findExportedDeclaration(world, ctx, name, findTypeDecl)
 }
 
 /** Resolve a referenced type NAME to its declaration: declared locally, via a
@@ -409,17 +418,77 @@ function unwrapExpr(expr: ts.Expression): ts.Expression {
   return e
 }
 
+/** Plain object/type-member keys; computed keys cannot establish a fixed schema field set. */
+function plainKey(name: ts.PropertyName): string | null {
+  return ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name) ? name.text : null
+}
+
+/** Resolve a factory's literal return only when its explicit type proves every fixed validator key. */
+function staticSchemaFields(
+  world: World, ctx: FileCtx, expression: ts.Expression,
+): { ctx: FileCtx; fields: ts.ObjectLiteralExpression } | null {
+  const call = unwrapExpr(expression)
+  if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return null
+  const find = (file: FileCtx, name: string): ts.FunctionDeclaration | null =>
+    file.sf.statements.find((stmt): stmt is ts.FunctionDeclaration => ts.isFunctionDeclaration(stmt) && stmt.name?.text === name) ?? null
+  const local = find(ctx, call.expression.text)
+  let factory = local ? { decl: local, ctx } : null
+  if (!factory) {
+    const imported = ctx.imports.get(call.expression.text)
+    if (!imported) return null
+    const dir = world.pkgDirByName.get(imported.specifier)
+    const target = imported.specifier.startsWith('.') && imported.specifier.endsWith('.ts')
+      ? loadRelative(world, ctx, imported.specifier)
+      : dir === undefined ? null : loadFile(resolve(world.scanRoot, dir, 'src/index.ts'), `${dir}/src/index.ts`, world.cache)
+    if (!target) return null
+    factory = findExportedDeclaration(world, target, imported.imported, find)
+  }
+  if (!factory?.decl.type || factory.decl.typeParameters?.length || factory.decl.body?.statements.length !== 1) return null
+  let type: ts.Node = factory.decl.type
+  let typeCtx = factory.ctx
+  if (ts.isTypeReferenceNode(type) && ts.isIdentifier(type.typeName) && !type.typeArguments?.length) {
+    const resolved = declForTypeName(world, typeCtx, type.typeName.text)
+    if (resolved === 'unknown') return null
+    type = resolved.decl
+    typeCtx = resolved.ctx
+  }
+  if (ts.isTypeAliasDeclaration(type)) type = type.type
+  if (!ts.isInterfaceDeclaration(type) && !ts.isTypeLiteralNode(type)) return null
+  if (ts.isInterfaceDeclaration(type) && (type.heritageClauses?.length || type.typeParameters?.length)) return null
+  const declared = new Set<string>()
+  for (const member of type.members) {
+    if (!ts.isPropertySignature(member) || member.questionToken || !member.type) return null
+    const key = plainKey(member.name)
+    const schema = member.type
+    if (key === null || !ts.isTypeReferenceNode(schema) || !ts.isIdentifier(schema.typeName)
+      || schema.typeArguments?.length !== 1 || typeCtx.imports.get(schema.typeName.text)?.specifier !== '@clocky/schemastery') return null
+    if (declared.has(key)) return null
+    declared.add(key)
+  }
+  const returned = factory.decl.body.statements[0]
+  if (!returned || !ts.isReturnStatement(returned) || !returned.expression) return null
+  const fields = unwrapExpr(returned.expression)
+  if (!ts.isObjectLiteralExpression(fields) || fields.properties.length !== declared.size) return null
+  for (const property of fields.properties) {
+    if (!ts.isPropertyAssignment(property)) return null
+    const key = plainKey(property.name)
+    if (key === null || !declared.delete(key)) return null
+  }
+  return declared.size === 0 ? { ctx: factory.ctx, fields } : null
+}
+
 /**
  * Statically walk a schemastery schema expression to its key paths plus the
  * packages whose schemas an intersect composes. A key path is the top-level
  * key or a nested path through object/array compositions (`agents[].id`).
  * Handles the declaration forms the repo uses — `z.object({…})` (possibly behind
- * chained calls) and `z.intersect([X.Config, …])` — and hard-errors on
+ * chained calls), fixed typed validator-field factory spreads and `z.intersect([X.Config, …])` — and hard-errors on
  * anything else, so a schema the walk cannot see fails the gate instead of
  * silently thinning it. Nested values that are neither `object` nor `array`
  * compositions (primitives, unions, dynamic-key dicts) contribute no paths.
  */
 function walkSchemaExpr(
+  world: World,
   ctx: FileCtx,
   expr: ts.Expression,
   where: string,
@@ -427,27 +496,47 @@ function walkSchemaExpr(
 ): { keys: string[]; composes: string[] } {
   const keys: string[] = []
   const composes: string[] = []
+  const activeObjects = new Set<ts.ObjectLiteralExpression>()
+  const collectObjectPaths = (file: FileCtx, object: ts.ObjectLiteralExpression, base = ''): void => {
+    if (activeObjects.has(object)) {
+      violations.push(`${where}: schema field factory composition is recursive.`)
+      return
+    }
+    activeObjects.add(object)
+    for (const prop of object.properties) {
+      if (ts.isSpreadAssignment(prop)) {
+        const fields = staticSchemaFields(world, file, prop.expression)
+        if (fields) collectObjectPaths(fields.ctx, fields.fields, base)
+        else violations.push(`${where}: schema spread '${prop.getText(file.sf)}' is not a fixed typed validator-field factory.`)
+        continue
+      }
+      const key = ts.isPropertyAssignment(prop) || ts.isShorthandPropertyAssignment(prop) ? plainKey(prop.name) : null
+      if (key === null) {
+        violations.push(`${where}: schema object property '${prop.getText(file.sf)}' is not a plain key.`)
+        continue
+      }
+      const path = base === '' ? key : `${base}.${key}`
+      keys.push(path)
+      if (ts.isPropertyAssignment(prop)) collectValuePaths(file, prop.initializer, path)
+    }
+    activeObjects.delete(object)
+  }
   // Nested paths under one object property's VALUE expression: recurse through
   // chained refinements toward the base call, descending into object/array.
-  const collectValuePaths = (value: ts.Expression, base: string): void => {
+  const collectValuePaths = (file: FileCtx, value: ts.Expression, base: string): void => {
     const call = unwrapExpr(value)
     if (!ts.isCallExpression(call) || !ts.isPropertyAccessExpression(call.expression)) return
     const method = call.expression.name.text
     if (method === 'object' && call.arguments[0] && ts.isObjectLiteralExpression(call.arguments[0])) {
-      for (const prop of call.arguments[0].properties) {
-        if (!ts.isPropertyAssignment(prop)) continue
-        const key = ts.isStringLiteral(prop.name) ? prop.name.text : prop.name.getText(ctx.sf)
-        keys.push(`${base}.${key}`)
-        collectValuePaths(prop.initializer, `${base}.${key}`)
-      }
+      collectObjectPaths(file, call.arguments[0], base)
       return
     }
     if (method === 'array' && call.arguments[0]) {
-      collectValuePaths(call.arguments[0], `${base}[]`)
+      collectValuePaths(file, call.arguments[0], `${base}[]`)
       return
     }
     const inner = unwrapExpr(call.expression.expression)
-    if (ts.isCallExpression(inner)) collectValuePaths(inner, base)
+    if (ts.isCallExpression(inner)) collectValuePaths(file, inner, base)
   }
   const visit = (e: ts.Expression): void => {
     const call = unwrapExpr(e)
@@ -457,15 +546,7 @@ function walkSchemaExpr(
     }
     const method = call.expression.name.text
     if (method === 'object' && call.arguments[0] && ts.isObjectLiteralExpression(call.arguments[0])) {
-      for (const prop of call.arguments[0].properties) {
-        if (ts.isPropertyAssignment(prop) || ts.isShorthandPropertyAssignment(prop)) {
-          const key = ts.isStringLiteral(prop.name) ? prop.name.text : prop.name.getText(ctx.sf)
-          keys.push(key)
-          if (ts.isPropertyAssignment(prop)) collectValuePaths(prop.initializer, key)
-        } else {
-          violations.push(`${where}: schema object property '${prop.getText(ctx.sf)}' is not a plain key.`)
-        }
-      }
+      collectObjectPaths(ctx, call.arguments[0])
       return
     }
     if (method === 'intersect' && call.arguments[0] && ts.isArrayLiteralExpression(call.arguments[0])) {
@@ -720,7 +801,7 @@ export function collectConfigCatalog(scanRoot: string = root): CatalogEntry[] {
     // Statically walk the runtime schema (when one exists) for the subset check.
     const schemaExpr = findSchemaExpr(ctx, pluginClass)
     if (schemaExpr) {
-      const { keys, composes } = walkSchemaExpr(ctx, unwrapExpr(schemaExpr), `${pkg} (${entryRel})`, violations)
+      const { keys, composes } = walkSchemaExpr(world, ctx, unwrapExpr(schemaExpr), `${pkg} (${entryRel})`, violations)
       entry.schemaKeys = keys
       entry.schemaComposes = composes
     } else {

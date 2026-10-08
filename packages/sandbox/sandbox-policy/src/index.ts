@@ -117,13 +117,9 @@ export class SandboxPolicyService extends Service {
         name: 'sandbox:policy',
         order: 110,
         text: (context) => {
-          const session = context.agent?.session
-          return session === undefined
-            ? ''
-            : renderPolicyContext(this.resolve({
-              session,
-              ...context.agent === undefined ? {} : { agent: context.agent },
-            }))
+          const agent = context.agent
+          if (agent === undefined) return ''
+          return renderPolicyContext(this.resolve({ session: agent.session, agent }))
         },
       })
     })

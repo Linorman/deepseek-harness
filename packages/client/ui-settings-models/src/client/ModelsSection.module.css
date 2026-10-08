@@ -1,48 +1,43 @@
-/* Models settings section, in the settings-panel design language: 14/22 body,
- * 12/18 caption, capsule controls (h36 r18; h28 r14 where a row is dense),
- * 32px fields, and `border-l2` hairlines — the vocabulary GeneralSection and
- * the Button/Input primitives already use.
- *
- * Every color resolves through a `--clocky-alias-*` token. Bare `--border` /
- * `--surface` / `--text-*` names, which nothing in this app defines, would
- * render the light-mode literals written as their fallbacks and stay light
- * under the dark theme. */
+/* Models settings section, in the settings-panel design language: body and
+ * caption type roles, capsule controls, 32px fields, and default-border
+ * hairlines — the vocabulary GeneralSection and the Button/Input primitives
+ * already use. Every color resolves through a ui-theme role token. */
 
 .section {
   display: flex;
   flex-direction: column;
   gap: 12px;
   max-width: 720px;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .title {
   margin: 0;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: var(--clocky-type-heading-size);
+  line-height: var(--clocky-type-heading-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .intro {
   margin: 0;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .notice {
   margin: 0;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-state-warn-label);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-status-needs-you-fg);
 }
 
 .savedNotice {
   margin: 0;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-state-success-primary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-status-done-fg);
 }
 
 .rows {
@@ -58,8 +53,8 @@
 /* A configured provider: outlined on the panel fill, so the filled editor
    card it expands into reads as the nested object. */
 .rowCard {
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 12px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-lg);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -80,10 +75,10 @@
 }
 
 .rowName {
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 /* Reads as an annotation on the name, not as a second name: caption size and
@@ -93,11 +88,11 @@
 .rowTag {
   flex: none;
   padding: 1px 6px;
-  border: 1px solid var(--clocky-alias-border-l3);
-  border-radius: 4px;
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--clocky-alias-label-secondary);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-xs);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
+  color: var(--clocky-fg-secondary);
 }
 
 .credentialDot {
@@ -106,15 +101,15 @@
   flex: none;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--clocky-radius-full);
 }
 
 .credentialDotConfigured {
-  background: var(--clocky-alias-state-success-primary);
+  background: var(--clocky-status-done-fg);
 }
 
 .credentialDotMissing {
-  background: var(--clocky-alias-state-error-primary);
+  background: var(--clocky-status-failed-fg);
 }
 
 .rowActions {
@@ -138,36 +133,36 @@
   height: 36px;
   padding: 0 14px;
   border: none;
-  border-radius: 18px;
+  border-radius: var(--clocky-radius-xl);
   font: inherit;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   cursor: pointer;
 }
 
 .primaryButton {
-  background: var(--clocky-alias-button-primary-fill);
-  color: var(--clocky-alias-label-primary-foreground);
+  background: var(--clocky-accent-bg);
+  color: var(--clocky-fg-on-accent);
 }
 
 .primaryButton:hover:not(:disabled) {
-  background: var(--clocky-alias-button-primary-hover);
+  background: var(--clocky-accent-bg-hover);
 }
 
 .secondaryButton,
 .addButton {
-  border: 1px solid var(--clocky-alias-border-l2);
+  border: 1px solid var(--clocky-border-default);
   background: transparent;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .secondaryButton:hover:not(:disabled),
 .addButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .secondaryButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-solid);
+  background: var(--clocky-bg-sunken);
 }
 
 .dangerButton {
@@ -178,17 +173,17 @@
   height: 36px;
   padding: 0 14px;
   border: none;
-  border-radius: 18px;
+  border-radius: var(--clocky-radius-xl);
   background: transparent;
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
   font: inherit;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   cursor: pointer;
 }
 
 .dangerButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
+  background: var(--clocky-status-failed-bg);
 }
 
 /* Provider-row controls take the dense capsule (Button `.sm`). */
@@ -196,9 +191,9 @@
 .rowActions .dangerButton {
   height: 28px;
   padding: 0 10px;
-  border-radius: 14px;
-  font-size: 12px;
-  line-height: 18px;
+  border-radius: var(--clocky-radius-lg);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .primaryButton:disabled,
@@ -220,14 +215,14 @@
 .iconButton:focus-visible,
 .customizedSummary:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--clocky-alias-border-l3);
+  box-shadow: 0 0 0 2px var(--clocky-border-default);
 }
 
 /* Editing surface: a filled module on the panel, matching the settings
    selector fill rather than adding another outline inside the row. */
 .editor {
-  border-radius: 12px;
-  background: var(--clocky-alias-bg-module-platform);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-sunken);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
@@ -241,16 +236,16 @@
 }
 
 .editorTitle {
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .editorRoute {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .field {
@@ -263,10 +258,10 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .linkButton {
@@ -276,25 +271,25 @@
   height: 28px;
   padding: 0 10px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--clocky-radius-lg);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   font: inherit;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   cursor: pointer;
 }
 
 .linkButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-secondary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-secondary);
 }
 
 .advancedHint {
   margin: 0;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .editorActions {
@@ -327,13 +322,13 @@
   min-width: 180px;
   gap: 6px;
   height: 44px;
-  border: 1px dashed var(--clocky-alias-border-l3);
-  border-radius: 12px;
+  border: 1px dashed var(--clocky-border-default);
+  border-radius: var(--clocky-radius-lg);
 }
 
 .addCard {
-  border-radius: 12px;
-  background: var(--clocky-alias-bg-module-platform);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-sunken);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
@@ -348,7 +343,7 @@
 }
 
 .customized {
-  border-top: 1px solid var(--clocky-alias-border-l2);
+  border-top: 1px solid var(--clocky-border-default);
   padding-top: 10px;
 }
 
@@ -361,12 +356,12 @@
   width: fit-content;
   padding: 2px 4px;
   margin-left: -4px;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
   cursor: pointer;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   list-style: none;
 }
 
@@ -381,7 +376,7 @@
   border-right: 1.5px solid currentcolor;
   border-bottom: 1.5px solid currentcolor;
   transform: rotate(-45deg) translate(-1px, -1px);
-  transition: transform 120ms ease;
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .customized[open] > .customizedSummary::before {
@@ -389,7 +384,7 @@
 }
 
 .customizedSummary:hover {
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .customizedBody {
@@ -409,7 +404,7 @@
   flex-direction: column;
   gap: 10px;
   padding-top: 12px;
-  border-top: 1px solid var(--clocky-alias-border-l2);
+  border-top: 1px solid var(--clocky-border-default);
 }
 
 .modelCatalogHeading {
@@ -419,26 +414,23 @@
 }
 
 .modelCatalogTitle {
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .modelCatalogMeta,
 .modelEmpty {
   margin: 0;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 /* Model list, shared with the pi-ai provider form: one bordered
    entry per model, id and display name on the row, capacities behind the
-   row's own disclosure. The rules use this stylesheet's token vocabulary —
-   `--clocky-alias-border-subtle`, `--clocky-alias-text-tertiary`, and
-   `--clocky-alias-text-primary` are undefined here and would resolve to their
-   light-mode literals. */
+   row's own disclosure. */
 .modelList {
   display: flex;
   flex-direction: column;
@@ -453,8 +445,8 @@
 }
 
 .modelEntry {
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 8px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
   padding: 6px;
 }
 
@@ -475,15 +467,15 @@
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
 .iconButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
 }
 
 .iconButton:disabled {
@@ -493,8 +485,8 @@
 
 /* The delete glyph keeps the danger tint the rest of the section uses. */
 .iconButtonDanger:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
-  color: var(--clocky-alias-state-error-primary);
+  background: var(--clocky-status-failed-bg);
+  color: var(--clocky-status-failed-fg);
 }
 
 .modelAdvanced {
@@ -511,15 +503,15 @@
 }
 
 .modelFieldLabel {
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .modelEmpty {
   padding: 12px;
-  border: 1px dashed var(--clocky-alias-border-l3);
-  border-radius: 8px;
+  border: 1px dashed var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
   text-align: center;
 }
 
@@ -531,18 +523,18 @@
   gap: 4px;
   height: 28px;
   padding: 0 10px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 14px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-lg);
   background: transparent;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   font: inherit;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
   cursor: pointer;
 }
 
 .addModelButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .input {
@@ -550,13 +542,13 @@
   width: 100%;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 8px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
   font: inherit;
-  font-size: 14px;
-  line-height: 22px;
-  background: var(--clocky-alias-bg-layer-1);
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  background: var(--clocky-bg-surface);
+  color: var(--clocky-fg-primary);
 }
 
 /* Enum pickers hold a handful of short options; a field-width dropdown reads
@@ -568,11 +560,11 @@ select.input {
 
 .input:focus {
   outline: none;
-  border-color: var(--clocky-alias-brand-primary);
+  border-color: var(--clocky-accent-bg);
 }
 
 .input::placeholder {
-  color: var(--clocky-alias-label-dimmed);
+  color: var(--clocky-fg-disabled);
 }
 
 .input:disabled {
@@ -596,9 +588,9 @@ select.input {
 
 .error {
   margin: 0;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--clocky-alias-state-error-primary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-status-failed-fg);
 }
 
 .deleteDialog {
@@ -606,12 +598,12 @@ select.input {
 }
 
 .deleteConfirm:not(:disabled) {
-  border-color: var(--clocky-alias-state-error-primary);
-  color: var(--clocky-alias-state-error-primary);
+  border-color: var(--clocky-status-failed-fg);
+  color: var(--clocky-status-failed-fg);
 }
 
 .deleteConfirm:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
+  background: var(--clocky-status-failed-bg);
 }
 
 /* Icon-button label seat: named for assistive tech and for the tests that
@@ -638,8 +630,8 @@ select.input {
      scrollbar indirection is rebound here rather than on the scrolling child:
      the elevation choice belongs with the surface and inherits down (see
      ui-theme styles/scrollbar.css for the contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .candidateActions {
@@ -660,7 +652,7 @@ select.input {
 }
 
 .candidate {
-  border-radius: 6px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 .candidateLabel {
@@ -674,6 +666,11 @@ select.input {
 .candidateId {
   flex: 1 1 auto;
   font-family: var(--ds-font-family-code);
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
   overflow-wrap: anywhere;
 }
+
+/* Default-route controls occupy their own rows at narrow widths and native zoom. */
+.defaultForm { display: flex; flex-direction: column; gap: var(--clocky-space-2); min-width: 0; }
+.defaultForm .input { box-sizing: border-box; max-width: 100%; min-width: 0; }
+.defaultForm > button { align-self: flex-start; max-width: 100%; }

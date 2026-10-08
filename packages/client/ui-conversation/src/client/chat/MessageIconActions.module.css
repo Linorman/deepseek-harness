@@ -1,6 +1,7 @@
 /* Shared message IconActions row (user + assistant). Parent modules own
-   layout offsets via the composed className. Icons stay visible when mounted;
-   the time label is hover-revealed inside a data-time-hover-root scope. */
+   layout offsets via the composed className. Inside a data-time-hover-root
+   scope, the actions and time label appear on hover and whenever focus is
+   inside the message, so they stay keyboard reachable. */
 
 .actions {
   display: flex;
@@ -12,17 +13,17 @@
 /* Clock before icons (user figma 388:20051) / after (assistant 43:32997). */
 .timeStart {
   padding-right: 12px;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-tertiary);
   white-space: nowrap;
 }
 
 .timeEnd {
   padding-left: 12px;
-  font-size: 14px;
-  line-height: 24px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-tertiary);
   white-space: nowrap;
 }
 
@@ -37,11 +38,22 @@
 @media (hover: hover) {
   [data-time-hover-root] :is(.timeStart, .timeEnd) {
     opacity: 0;
-    transition: opacity 80ms ease;
+    transition: opacity var(--clocky-duration-instant) var(--clocky-ease-standard);
   }
 
   [data-time-hover-root]:hover :is(.timeStart, .timeEnd),
   [data-time-hover-root]:focus-within :is(.timeStart, .timeEnd) {
+    opacity: 1;
+  }
+
+  [data-time-hover-root] .action {
+    opacity: 0;
+    transition: opacity var(--clocky-duration-fast) var(--clocky-ease-standard);
+  }
+
+  [data-time-hover-root]:hover .action,
+  [data-time-hover-root]:focus-within .action,
+  .action:focus-visible {
     opacity: 1;
   }
 }
@@ -54,13 +66,13 @@
   height: 28px;
   padding: 6px;
   border: none;
-  border-radius: 28px;
+  border-radius: var(--clocky-radius-xl);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
 .action:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-secondary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-secondary);
 }

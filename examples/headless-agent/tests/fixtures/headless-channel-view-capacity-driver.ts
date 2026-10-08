@@ -7,7 +7,7 @@ import { CallId, LlmAdapter } from '@clocky/clocky-llm'
 import type { GenerateOptions, LlmResolvedModelInfo, StreamChunk } from '@clocky/clocky-llm'
 import { TeamError, channelPostIdempotencyKeySchema } from '@clocky/clocky-team'
 import type { ChannelId, EnvelopeId, TeamId } from '@clocky/clocky-team'
-import { DIRECTED_VIEW_POLICY, directChannelAdapter, directChannelV2Adapter, directChannelV3Adapter, directChannelV4Adapter } from '@clocky/clocky-team-channel-direct'
+import { DIRECTED_VIEW_POLICY, RECENT_WINDOW_VIEW_POLICY, directChannelAdapter, directChannelV2Adapter, directChannelV3Adapter, directChannelV4Adapter } from '@clocky/clocky-team-channel-direct'
 import type {} from '@clocky/clocky-team-run'
 import type {} from '@clocky/clocky-team-link'
 
@@ -217,10 +217,10 @@ export function apply(ctx: Context): void {
   ctx.teams.registerAdapter(directChannelV2Adapter)
   ctx.teams.registerAdapter(directChannelV3Adapter)
   ctx.teams.registerAdapter(directChannelV4Adapter)
-  ctx.teams.registerViewPolicy({ ...DIRECTED_VIEW_POLICY, project(input) {
+  for (const policy of [DIRECTED_VIEW_POLICY, RECENT_WINDOW_VIEW_POLICY]) ctx.teams.registerViewPolicy({ ...policy, project(input) {
     const large = input.records.some(record => record.type === 'channel/envelope'
       && record.envelope.kind === 'review-request' && JSON.stringify(record.envelope.payload).includes('CAPACITY_LARGE_RESULT'))
-    const view = { ...DIRECTED_VIEW_POLICY.project(input), padding: large ? '中'.repeat(LIMIT / 2) : '' }
+    const view = { ...policy.project(input), padding: large ? '中'.repeat(LIMIT / 2) : '' }
     if (large) {
       const text = JSON.stringify(view)
       assert(text.length < LIMIT && Buffer.byteLength(text, 'utf8') > LIMIT)

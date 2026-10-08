@@ -80,7 +80,7 @@ export function PlanReviewPanel({ pending, review, t }: PlanReviewPanelProps) {
             </Button>
             {decline !== undefined && (
               <Button
-                variant="outline" {...tooltip(decline.description)}
+                variant="secondary" {...tooltip(decline.description)}
                 disabled={busy} onClick={() => { decide(decline.label) }}
               >
                 {t('plan.decline')}

@@ -1,14 +1,13 @@
-- banner:
-  - text: {{workspace}}
+- text: {{workspace}}
+- img
+- text: Standard mode
+- button "Session log":
+  - text: Session log
   - img
-  - text: Standard mode
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
-- text: "Direct message from participant-{{uuid}}: Reply with the single word LIGHTHOUSE and stop. {{clock}}"
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
+- text: From a Team member Reply with the single word LIGHTHOUSE and stop. {{clock}}
 - button "Copy":
   - img
 - button "Context injection @clocky/clocky-system-prompt":
@@ -27,8 +26,8 @@
 - button "Bad response":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
-- button "Tool call team_final · channel-{{uuid}}":
+- button "Tool call team_final · channel-{{uuid}} {{duration}}":
   - img
   - img
-  - text: Tool call team_final · channel-{{uuid}}
+  - text: Tool call team_final · channel-{{uuid}} {{duration}}
 - status: This execution record is read-only. Return to the team to manage tasks or talk to the coordinator.

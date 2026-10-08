@@ -1,0 +1,43 @@
+/**
+ * `@clocky/clocky-client-ui-viz`: presentational visualization layer shared
+ * by Team and Simulation views. Pure functions and props-in components; no
+ * Cordis context and no services. Feature packages build view models and
+ * pass them through props.
+ * @module @clocky/clocky-client-ui-viz
+ */
+export { layoutLayered, countCrossings, longestChain } from './layout/layered.ts'
+export type { LayeredLayout, LayeredOptions, LayeredPosition } from './layout/layered.ts'
+export { layoutRadialSwarm } from './layout/radial-swarm.ts'
+export type { SwarmLayout, SwarmLayoutInput, SwarmLinkInput, SwarmNodeInput } from './layout/radial-swarm.ts'
+export { layoutLanes, decimalTimeScale, decimalToFixed } from './layout/lanes.ts'
+export type { LaneItemInput, LaneItemPlacement, LaneLayout, LaneLayoutInput, LanePlacement } from './layout/lanes.ts'
+export { boundsOf } from './layout/space.ts'
+export type { Bounds, LayoutEdge, Point } from './layout/space.ts'
+export { hashSeed, seededRandom } from './layout/random.ts'
+export { fitTransform, hitTest, nextSpatialFocus, readingOrder, toLayout } from './interaction/spatial.ts'
+export type { SpatialDirection, SpatialMark, ViewTransform } from './interaction/spatial.ts'
+export { describeVisualization } from './interaction/describe.ts'
+export type { DescribeWords, LoadedCount, VizItem, VizState } from './interaction/describe.ts'
+export { MAX_PARTICLES, prefersReducedMotion, useAnimationActive, useDocumentVisible, useInViewport, useLiveChanges, useLiveTransition, usePrefersReducedMotion } from './motion/hooks.ts'
+export type { LiveTransition, MotionTier } from './motion/hooks.ts'
+export { tokenDuration } from './motion/tokens.ts'
+export { edgeCurve, curvePath, pointOnCurve, sampleCurve } from './geometry.ts'
+export type { Curve } from './geometry.ts'
+export { GraphView } from './GraphView.tsx'
+export type { GraphClusterView, GraphControlLabels, GraphEdgeView, GraphNodeView, GraphSignal, GraphViewProps } from './GraphView.tsx'
+export { LaneView } from './LaneView.tsx'
+export type { LaneArrowView, LaneItemView, LaneRowView, LaneRuleView } from './LaneView.tsx'
+export { VizListView, ViewSwitch, useSlidingIndicator, segmentedClassNames } from './Views.tsx'
+export type { ListWords } from './Views.tsx'
+export { Odometer, RadialProgress, Sparkline } from './Metrics.tsx'
+export type { RingSegment } from './Metrics.tsx'
+export { AmbientBackdrop } from './AmbientBackdrop.tsx'
+export { Moment } from './Moment.tsx'
+export type { MomentKind } from './Moment.tsx'
+export { ModeTile, SwarmGlyph, ConstellationGlyph } from './ModeTile.tsx'
+export type { ModeTileStat } from './ModeTile.tsx'
+export { navigateWithTransition, transitionDirection, transitionName } from './motion/view-transition.ts'
+export type { TransitionDirection } from './motion/view-transition.ts'
+export { usePointerLight } from './motion/pointer-light.ts'
+export type { PointerLightOptions } from './motion/pointer-light.ts'
+export { PointerLight } from './PointerLight.tsx'

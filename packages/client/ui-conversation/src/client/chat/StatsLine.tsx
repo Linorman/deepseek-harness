@@ -1,17 +1,19 @@
+import { formatTokens, formatDuration, billedInputTokens } from '../contract/stat-format.ts'
+export { formatTokens, formatDuration, contextOccupancy, billedInputTokens } from '../contract/stat-format.ts'
 // Settled-node identity prevents stream-delta updates from rerendering this row.
 // Mounted on 'conversation.composer.dock' so it sticks with the composer in the
 // active conversation scrollport (see ConversationRoot data-conversation-scroll).
 
-import { Fragment, memo, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Tooltip } from '@clocky/clocky-client-ui-primitives'
+import { memo, useMemo, useRef, useState } from 'react'
+import { Popover } from '@clocky/clocky-client-ui-primitives'
 import type { ConversationSnapshot, UseProjection } from '@clocky/clocky-client-runtime/client'
 import type { SnapshotSelectorHook } from '@clocky/clocky-client-ui-slots'
 // Type-only: merges the sessionStats key into SessionProjectionMap for useProjection.
 import type {} from '@clocky/clocky-session-stats/client'
-import type { ContextPressureProjection, TokenUsageProjection } from '@clocky/clocky-token-meter/client'
+import type { TokenUsageProjection } from '@clocky/clocky-token-meter/client'
 import type { ComposerBarProps } from '../contract/slots.ts'
 import { formatTokensPerSecond } from './message-chrome.ts'
-import { assistantStepReading } from './turn-metrics.ts'
+import { assistantStepReading } from '../contract/turn-metrics.ts'
 import css from './StatsLine.module.css'
 
 interface WindowStats {
@@ -76,31 +78,6 @@ export function deriveStats(nodes: ConversationSnapshot['nodes']): WindowStats {
   return { turns: turns.size, steps, llmMs, toolMs, ttftMs, ttftSteps, decodeMs, decodeTokens }
 }
 
-/**
- * Compact token count: 517 / 12.2K / 517K / 1.2M (one decimal under three digits).
- * @param n - token count.
- * @returns display string.
- */
-export function formatTokens(n: number): string {
-  const scaled = (v: number): string =>
-    v >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10)
-  if (n < 1_000) return String(n)
-  if (n < 1_000_000) return `${scaled(n / 1_000)}K`
-  return `${scaled(n / 1_000_000)}M`
-}
-
-/**
- * Compact duration: 45.2s under a minute, 2m42s from there on.
- * @param ms - duration in milliseconds.
- * @returns display string.
- */
-export function formatDuration(ms: number): string {
-  const s = ms / 1_000
-  if (s < 60) return `${Math.round(s * 10) / 10}s`
-  const whole = Math.round(s)
-  return `${Math.floor(whole / 60)}m${whole % 60}s`
-}
-
 /** Round a cache-read ratio to an integer percentage, with positive ties rounded up. */
 function roundedIntegerPercent(cacheReadTokens: number, denominator: number): number {
   const denominatorQuotient = Math.floor(denominator / 200)
@@ -161,45 +138,6 @@ export function cacheHitPercent(usage: TokenUsageProjection): string | null {
   return `99.${'9'.repeat(decimalPlaces - 1)}${10 - roundedLoss}`
 }
 
-/**
- * Sum the three disjoint prompt-side billing buckets.
- * @param usage - the session's token-usage projection value.
- * @returns billed input tokens.
- */
-export function billedInputTokens(usage: TokenUsageProjection): number {
-  return usage.uncachedInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
-}
-
-interface ContextOccupancy {
-  percent: number
-  usedTokens: number
-  contextWindow: number
-}
-
-/**
- * Approximate context occupancy, using the TUI's integer rounding and upper
- * clamp. The numerator is `projectedTokens` — the provider sample carried
- * forward over the surface's movement since — so compaction shows immediately
- * instead of waiting for the next request to report usage; it falls back to the
- * bare sample only for a log whose projection predates that field. Numerator
- * and capacity remain independent last-wins projection fields, so this is a
- * reference figure rather than an exact measurement of one request (see the
- * token-meter README).
- * @param pressure - the session's context-pressure projection value.
- * @returns occupancy with its numerator and denominator, or null until both values are known.
- */
-export function contextOccupancy(
-  pressure: ContextPressureProjection | undefined,
-): ContextOccupancy | null {
-  const usedTokens = pressure?.projectedTokens ?? pressure?.pressureTokens
-  if (usedTokens === undefined || pressure?.contextWindow === undefined) return null
-  return {
-    percent: Math.min(100, Math.round(usedTokens / pressure.contextWindow * 100)),
-    usedTokens,
-    contextWindow: pressure.contextWindow,
-  }
-}
-
 /** Props: the conversation-snapshot selector plus the projection read seat. */
 export interface StatsLineProps {
   useSession: SnapshotSelectorHook<ConversationSnapshot>
@@ -251,32 +189,22 @@ export const StatsLine = memo(function StatsLine({ useSession, useProjection, t 
       output: formatTokens(usage.outputTokens),
     }))
   }
-  const line = groups.join(' | ')
-  // The row elides with ellipsis when overlong; a delayed hover tooltip carries
-  // the full line, enabled only while content is actually clipped.
-  const rootRef = useRef<HTMLDivElement | null>(null)
-  const [truncated, setTruncated] = useState(false)
-  useLayoutEffect(() => {
-    const el = rootRef.current
-    if (el === null) return
-    const measure = () => { setTruncated(el.scrollWidth > el.clientWidth) }
-    measure()
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    return () => { observer.disconnect() }
-  }, [line])
+  // Only the turn and step counts stay on screen; timing, speed, cache, and
+  // token figures open from the info button so the composer stays quiet.
+  const [open, setOpen] = useState(false)
+  const anchorRef = useRef<HTMLButtonElement>(null)
   if (groups.length === 0) return null
+  const [lead, ...details] = groups
   return (
-    <Tooltip label={line} side="top" delayMs={500} disabled={!truncated}>
-      <div ref={rootRef} className={css.root}>
-        {groups.map((group, i) => (
-          <Fragment key={group}>
-            {i > 0 && <><span className={css.sep} aria-hidden>|</span>{' '}</>}
-            <span>{group}</span>
-          </Fragment>
-        ))}
-      </div>
-    </Tooltip>
+    <div className={css.root}>
+      <span>{lead}</span>
+      {details.length > 0 && <>
+        <button ref={anchorRef} type="button" className={css.info} aria-label={t('stats.details')} aria-expanded={open}
+          onClick={() => { setOpen(value => !value) }}>ⓘ</button>
+        <Popover open={open} anchorRef={anchorRef} label={t('stats.details')} onClose={() => { setOpen(false) }}>
+          <ul className={css.details}>{details.map(group => <li key={group}>{group}</li>)}</ul>
+        </Popover>
+      </>}
+    </div>
   )
 })

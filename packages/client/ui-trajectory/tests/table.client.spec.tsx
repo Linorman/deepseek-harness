@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { TrajectoryTable } from '../src/client/TrajectoryTable.tsx'
+import { tEn, tZh } from './locales.client.ts'
 import type { TrajectoryTurnModel } from '../src/client/layout.ts'
 
 afterEach(() => {
@@ -58,6 +59,7 @@ const TURNS: readonly TrajectoryTurnModel[] = [{
 }]
 
 const FOLD_PROPS = {
+  t: tZh,
   collapsedTurns: new Set<number>(),
   onToggleTurn: () => {},
   collapsedAssistants: new Set<string>(),
@@ -65,6 +67,43 @@ const FOLD_PROPS = {
 }
 
 describe('TrajectoryTable', () => {
+  it.each([
+    { t: tZh, row: '请求 1，助手，Checking files', details: '事件详情', preview: '预览' },
+    { t: tEn, row: 'Request 1, Assistant, Checking files', details: 'Event details', preview: 'Preview' },
+  ])('localizes request row names and inspector tabs: $details', ({ t, row, details, preview }) => {
+    render(<TrajectoryTable turns={TURNS} {...FOLD_PROPS} t={t} />)
+    fireEvent.keyDown(screen.getByRole('row', { name: row }), { key: 'Enter' })
+    expect(screen.getByRole('complementary', { name: details })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: preview })).toBeTruthy()
+  })
+
+  it('updates the selected row and folded summaries when the locale seat changes', () => {
+    const props = { ...FOLD_PROPS, collapsedAssistants: new Set(['message\u0000index\u00001']) }
+    const view = render(<TrajectoryTable turns={TURNS} {...props} />)
+    fireEvent.click(screen.getByRole('row', { name: '请求 1，助手，Checking files' }))
+    expect(screen.getByRole('row', { name: '已折叠助手概述，2 次工具调用 · bash' })).toBeTruthy()
+
+    view.rerender(<TrajectoryTable turns={TURNS} {...props} t={tEn} />)
+    expect(screen.getByRole('row', { name: 'Request 1, Assistant, Checking files' })
+      .getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('row', { name: 'Collapsed assistant summary, 2 tool calls · bash' })).toBeTruthy()
+    expect(screen.getByRole('complementary', { name: 'Event details' })).toBeTruthy()
+  })
+
+  it.each([
+    { t: tZh, kinds: ['系统', '用户', '上下文', '已压缩', '助手', '工具', '子工具'], empty: '无内容' },
+    { t: tEn, kinds: ['System', 'User', 'Context', 'Compacted', 'Assistant', 'Tool', 'Subtool'], empty: 'no content' },
+  ])('names every empty record kind in the active locale: $empty', ({ t, kinds, empty }) => {
+    const cells = (['system', 'user', 'context', 'compacted', 'message', 'tool', 'subtool'] as const)
+      .map((kind, index) => ({ index: index + 1, kind, text: '', timeSeconds: 0 }))
+    render(<TrajectoryTable turns={[{ turn: 1, groups: [{ title: 'Prelude', cells }] }]}
+      {...FOLD_PROPS} t={t} />)
+    for (const kind of kinds) {
+      expect(screen.getByRole('row', { name: `${kind}${empty === '无内容' ? '，' : ', '}${empty}` }))
+        .toBeTruthy()
+    }
+  })
+
   it('shows a muted placeholder for an assistant response containing only tool calls', () => {
     const turns: readonly TrajectoryTurnModel[] = [{
       turn: 1,
@@ -84,13 +123,13 @@ describe('TrajectoryTable', () => {
 
     render(<TrajectoryTable turns={turns} {...FOLD_PROPS} />)
 
-    expect(screen.getByText('(tool call only)')).toBeTruthy()
+    expect(screen.getByText('（仅工具调用）')).toBeTruthy()
   })
 
   it('shows assistant timing facts after keyboard selection', () => {
     render(<TrajectoryTable turns={TURNS} {...FOLD_PROPS} />)
-    fireEvent.keyDown(screen.getByRole('row', { name: /ASSISTANT/ }), { key: 'Enter' })
-    fireEvent.click(screen.getByRole('button', { name: 'Request Timing' }))
+    fireEvent.keyDown(screen.getByRole('row', { name: /助手/ }), { key: 'Enter' })
+    fireEvent.click(screen.getByRole('button', { name: '请求计时' }))
 
     expect(screen.getByText('500 ms')).toBeTruthy()
     expect(screen.getByText('1.00 s')).toBeTruthy()
@@ -113,31 +152,31 @@ describe('TrajectoryTable', () => {
     }]
 
     render(<TrajectoryTable turns={turns} {...FOLD_PROPS} />)
-    fireEvent.click(screen.getByRole('row', { name: /TOOL/ }))
+    fireEvent.click(screen.getByRole('row', { name: /工具/ }))
 
     expect(screen.getByText('1,500 ms', { selector: 'dd' })).toBeTruthy()
   })
 
   it('breaks output tokens into labeled reasoning and content rows', () => {
     render(<TrajectoryTable turns={TURNS} {...FOLD_PROPS} />)
-    fireEvent.click(screen.getByRole('row', { name: /ASSISTANT/ }))
+    fireEvent.click(screen.getByRole('row', { name: /助手/ }))
 
-    expect(screen.getByText('Tokens')).toBeTruthy()
+    expect(screen.getByText('token 数')).toBeTruthy()
     expect(screen.getByText('20 tok')).toBeTruthy()
-    expect(screen.getByText('Reasoning')).toBeTruthy()
+    expect(screen.getByText('推理')).toBeTruthy()
     expect(screen.getByText('5 tok')).toBeTruthy()
-    expect(screen.getByText('Content')).toBeTruthy()
+    expect(screen.getByText('内容')).toBeTruthy()
     expect(screen.getByText('15 tok')).toBeTruthy()
   })
 
   it('marks Summary scroll regions for interaction-only scrollbar thumbs', () => {
     render(<TrajectoryTable turns={TURNS} {...FOLD_PROPS} />)
-    fireEvent.click(screen.getByRole('row', { name: /ASSISTANT/ }))
+    fireEvent.click(screen.getByRole('row', { name: /助手/ }))
 
     const panel = screen.getByRole('tabpanel')
     expect(panel.querySelectorAll('[data-summary-scroll-region]').length).toBeGreaterThan(1)
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Preview' }))
+    fireEvent.click(screen.getByRole('tab', { name: '预览' }))
     expect(panel.querySelector('[data-summary-scroll-region]')).toBeNull()
   })
 
@@ -158,13 +197,13 @@ describe('TrajectoryTable', () => {
     }]
     render(<TrajectoryTable turns={turns} {...FOLD_PROPS} />)
 
-    fireEvent.click(screen.getByRole('row', { name: /ASSISTANT/ }))
-    const toggle = screen.getByRole('button', { name: 'Thinking' })
+    fireEvent.click(screen.getByRole('row', { name: /助手/ }))
+    const toggle = screen.getByRole('button', { name: '思考' })
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
     expect(screen.queryByText(thinking)).toBeNull()
 
     fireEvent.click(toggle)
-    expect(screen.getByRole('button', { name: 'Thinking' })).toBe(toggle)
+    expect(screen.getByRole('button', { name: '思考' })).toBe(toggle)
     expect(toggle.getAttribute('aria-expanded')).toBe('true')
     expect(toggle.parentElement?.textContent?.length).toBeGreaterThan(thinking.length)
   })
@@ -206,18 +245,18 @@ describe('TrajectoryTable', () => {
         onClearSelection={onClearSelection}
       />,
     )
-    const row = screen.getByRole('row', { name: /ASSISTANT/ })
+    const row = screen.getByRole('row', { name: /助手/ })
     fireEvent.click(row)
 
     expect(row.getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByRole('complementary', { name: 'Event details' })).toBeTruthy()
+    expect(screen.getByRole('complementary', { name: '事件详情' })).toBeTruthy()
 
     const tablePane = screen.getByRole('table').parentElement
     expect(tablePane).not.toBeNull()
     fireEvent.click(tablePane as HTMLElement)
 
     expect(row.getAttribute('aria-selected')).toBe('false')
-    expect(screen.queryByRole('complementary', { name: 'Event details' })).toBeNull()
+    expect(screen.queryByRole('complementary', { name: '事件详情' })).toBeNull()
     expect(onClearSelection).toHaveBeenCalledOnce()
   })
 
@@ -282,7 +321,7 @@ describe('TrajectoryTable', () => {
     const view = render(
       <TrajectoryTable turns={[tail(1)]} {...FOLD_PROPS} />,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Request #1' }))
+    fireEvent.click(screen.getByRole('button', { name: '请求 #1' }))
 
     view.rerender(
       <TrajectoryTable
@@ -303,9 +342,9 @@ describe('TrajectoryTable', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Request #2' })
+    expect(screen.getByRole('button', { name: '请求 #2' })
       .getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByText('Request #2')).toBeTruthy()
+    expect(screen.getByText('请求 #2')).toBeTruthy()
   })
 
   it('places the request boundary after leading steering input', () => {
@@ -341,8 +380,8 @@ describe('TrajectoryTable', () => {
       {...FOLD_PROPS}
     />)
 
-    const request = screen.getByRole('button', { name: 'Request #1' })
-    expect(request.closest('tr')?.getAttribute('aria-label')).toContain('ASSISTANT')
+    const request = screen.getByRole('button', { name: '请求 #1' })
+    expect(request.closest('tr')?.getAttribute('aria-label')).toContain('助手')
   })
 
   it('follows appended records only while the ledger is already at the bottom', () => {
@@ -416,7 +455,7 @@ describe('TrajectoryTable', () => {
     fireEvent.scroll(tablePane)
 
     await waitFor(() => { expect(onLoadOlder).toHaveBeenCalledOnce() })
-    expect(screen.getByRole('status').textContent).toContain('Loading earlier history…')
+    expect(screen.getByRole('status').textContent).toContain('正在加载更早历史…')
     resolveOlder?.(true)
     await waitFor(() => {
       expect(screen.getByRole('status').textContent).toBe('')
@@ -459,30 +498,30 @@ describe('TrajectoryTable', () => {
     )
 
     const table = screen.getByRole('table')
-    const loadButton = screen.getByRole('button', { name: 'Load earlier history' })
+    const loadButton = screen.getByRole('button', { name: '加载更早历史' })
     const loadRow = table.querySelector('tbody > tr:first-child')
     expect(loadRow?.contains(loadButton)).toBe(true)
     expect(loadRow?.getAttribute('aria-rowindex')).toBe('1')
     expect(screen.getByRole('status').textContent).toBe('')
     expect(table.getAttribute('aria-rowcount')).toBe('4')
-    expect((await screen.findByRole('row', { name: /ASSISTANT/ })).getAttribute('aria-rowindex'))
+    expect((await screen.findByRole('row', { name: /助手/ })).getAttribute('aria-rowindex'))
       .toBe('2')
 
     fireEvent.click(loadButton)
     expect(onLoadOlder).toHaveBeenCalledOnce()
     expect(loadButton.hasAttribute('disabled')).toBe(true)
-    expect(screen.getByRole('status').textContent).toBe('Loading earlier history…')
+    expect(screen.getByRole('status').textContent).toBe('正在加载更早历史…')
 
     resolveOlder?.(false)
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Load earlier history' })
+      expect(screen.getByRole('button', { name: '加载更早历史' })
         .hasAttribute('disabled')).toBe(false)
     })
 
     view.rerender(
       <TrajectoryTable turns={TURNS} {...FOLD_PROPS} />,
     )
-    expect(screen.queryByRole('button', { name: 'Load earlier history' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '加载更早历史' })).toBeNull()
     expect(table.getAttribute('aria-rowcount')).toBe('3')
   })
 
@@ -497,9 +536,9 @@ describe('TrajectoryTable', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Loading earlier history…' })
+    expect(screen.getByRole('button', { name: '正在加载更早历史…' })
       .hasAttribute('disabled')).toBe(true)
-    expect(screen.getByRole('status').textContent).toBe('Loading earlier history…')
+    expect(screen.getByRole('status').textContent).toBe('正在加载更早历史…')
   })
 
   it('covers the ledger while the initial tail is loading', () => {
@@ -507,7 +546,7 @@ describe('TrajectoryTable', () => {
       <TrajectoryTable turns={TURNS} {...FOLD_PROPS} historyLoading />,
     )
 
-    expect(screen.getByRole('status').textContent).toContain('Loading trajectory…')
+    expect(screen.getByRole('status').textContent).toContain('正在加载轨迹…')
     expect(screen.getByRole('table').getAttribute('data-scroll-ready')).toBeNull()
 
     view.rerender(<TrajectoryTable turns={TURNS} {...FOLD_PROPS} />)
@@ -546,7 +585,7 @@ describe('TrajectoryTable', () => {
     }))
     const turns: readonly TrajectoryTurnModel[] = [{
       turn: 1,
-      groups: [{ title: 'Context', cells }],
+      groups: [{ title: '上下文', cells }],
     }]
     const view = render(<TrajectoryTable turns={turns} {...FOLD_PROPS} />)
 
@@ -592,7 +631,7 @@ describe('TrajectoryTable', () => {
     }))
     const turns: readonly TrajectoryTurnModel[] = [{
       turn: 1,
-      groups: [{ title: 'Context', cells }],
+      groups: [{ title: '上下文', cells }],
     }]
     const view = render(
       <TrajectoryTable
@@ -670,13 +709,17 @@ describe('TrajectoryTable', () => {
     const view = render(<TrajectoryTable turns={TURNS} {...FOLD_PROPS} />)
     expect(view.container.querySelector('tr[data-kind="tool"][data-running="true"]')).toBeTruthy()
     expect(view.container.querySelector('tr[data-kind="tool"][data-error="true"]')).toBeTruthy()
+    // Kind chips carry categorical tints; running and failure stay on the row's own state.
+    const toolChip = view.container.querySelector('tr[data-kind="tool"] [data-role-kind="tool"]')
+    expect(toolChip?.className).toContain('tintOlive')
+    expect(toolChip?.className).not.toMatch(/amber|needs/i)
 
-    fireEvent.click(screen.getByRole('row', { name: /TOOL, bash \{"command":"pwd"\}/ }))
-    expect(screen.getByText('Pending')).toBeTruthy()
-    fireEvent.click(screen.getByRole('row', { name: /TOOL, bash \{"command":"false"\}/ }))
-    expect(screen.getByText('Failed')).toBeTruthy()
-    expect(screen.getByText('Failed').className).toContain('error')
-    fireEvent.click(screen.getByRole('tab', { name: 'Result' }))
+    fireEvent.click(screen.getByRole('row', { name: /工具，bash \{"command":"pwd"\}/ }))
+    expect(screen.getByText('进行中')).toBeTruthy()
+    fireEvent.click(screen.getByRole('row', { name: /工具，bash \{"command":"false"\}/ }))
+    expect(screen.getByText('失败')).toBeTruthy()
+    expect(screen.getByText('失败').className).toContain('error')
+    fireEvent.click(screen.getByRole('tab', { name: '结果' }))
     const errorResult = screen.getByText('ToolError: non_zero_exit')
     expect(errorResult.closest('[class*="errorPayload"]')).toBeTruthy()
   })
@@ -726,9 +769,9 @@ describe('TrajectoryTable', () => {
     ]
     render(<TrajectoryTable turns={turns} {...FOLD_PROPS} />)
 
-    const failed = screen.getByRole('button', { name: 'Request #1' })
-    const retry = screen.getByRole('button', { name: 'Request #2' })
-    const recovered = screen.getByRole('button', { name: 'Request #3' })
+    const failed = screen.getByRole('button', { name: '请求 #1' })
+    const retry = screen.getByRole('button', { name: '请求 #2' })
+    const recovered = screen.getByRole('button', { name: '请求 #3' })
     expect(failed.getAttribute('data-request-status')).toBe('error')
     expect(failed.getAttribute('data-request-run-index')).toBe('0')
     expect(failed.style.getPropertyValue('--request-boundary-offset')).toBe('0px')
@@ -751,7 +794,7 @@ describe('TrajectoryTable', () => {
     expect(screen.queryByRole('tooltip')).toBeNull()
     fireEvent.mouseEnter(toolIcon as HTMLElement)
     const tooltip = screen.getByRole('tooltip')
-    expect(tooltip.textContent).toBe('TOOL')
+    expect(tooltip.textContent).toBe('工具')
     expect(tooltip.getAttribute('data-side')).toBe('right')
     fireEvent.mouseLeave(toolIcon as HTMLElement)
     expect(screen.queryByRole('tooltip')).toBeNull()
@@ -761,7 +804,7 @@ describe('TrajectoryTable', () => {
     const turns: readonly TrajectoryTurnModel[] = [{
       turn: 1,
       groups: [{
-        title: 'Context',
+        title: '上下文',
         cells: [
           { index: 1, kind: 'context', text: 'Workspace context', timeSeconds: 0 },
           { index: 2, kind: 'compacted', text: 'Compacted history', timeSeconds: 0 },
@@ -780,9 +823,9 @@ describe('TrajectoryTable', () => {
 
   it('keeps a compact turn label available for narrow layouts', () => {
     render(<TrajectoryTable turns={TURNS} {...FOLD_PROPS} />)
-    const turnLabel = screen.getByLabelText('Turn 1')
+    const turnLabel = screen.getByLabelText('轮次 1')
 
-    expect(turnLabel.textContent).toContain('Turn 1')
+    expect(turnLabel.textContent).toContain('轮次 1')
     expect(turnLabel.textContent).toContain('#1')
   })
 
@@ -806,10 +849,10 @@ describe('TrajectoryTable', () => {
     }]
 
     render(<TrajectoryTable turns={turns} {...FOLD_PROPS} />)
-    fireEvent.click(screen.getByRole('row', { name: /TOOL/ }))
-    fireEvent.click(screen.getByRole('tab', { name: 'Result' }))
+    fireEvent.click(screen.getByRole('row', { name: /工具/ }))
+    fireEvent.click(screen.getByRole('tab', { name: '结果' }))
 
-    expect(screen.getByRole('tree', { name: 'Result JSON' })).toBeTruthy()
+    expect(screen.getByRole('tree', { name: '结果 JSON' })).toBeTruthy()
     expect(screen.getByText('value:')).toBeTruthy()
   })
 
@@ -822,8 +865,8 @@ describe('TrajectoryTable', () => {
       />,
     )
     expect(screen.queryByRole('columnheader')).toBeNull()
-    expect(screen.getByRole('row', { name: /ASSISTANT/ })).toBeTruthy()
-    expect(screen.getByRole('row', { name: /Collapsed turn summary/ })).toBeTruthy()
+    expect(screen.getByRole('row', { name: /助手/ })).toBeTruthy()
+    expect(screen.getByRole('row', { name: /已折叠轮次概述/ })).toBeTruthy()
   })
 
   const CALL_TURNS: readonly TrajectoryTurnModel[] = [{
@@ -852,8 +895,8 @@ describe('TrajectoryTable', () => {
       />,
     )
 
-    expect(screen.getByRole('row', { name: /TOOL/ }).getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByRole('complementary', { name: 'Event details' })).toBeTruthy()
+    expect(screen.getByRole('row', { name: /工具/ }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('complementary', { name: '事件详情' })).toBeTruthy()
     expect(onInspectApplied).toHaveBeenCalledOnce()
   })
 
@@ -868,7 +911,7 @@ describe('TrajectoryTable', () => {
       />,
     )
 
-    expect(screen.getByRole('row', { name: /TOOL/ }).getAttribute('aria-selected')).toBe('false')
+    expect(screen.getByRole('row', { name: /工具/ }).getAttribute('aria-selected')).toBe('false')
     expect(onInspectApplied).not.toHaveBeenCalled()
   })
 })

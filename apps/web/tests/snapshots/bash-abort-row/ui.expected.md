@@ -5,9 +5,12 @@
 - tablist:
   - tab "Chat" [selected]
   - tab "Trajectory"
-- text: "Direct message from participant-{{uuid}}: Run two shell commands: wait for cancellation, then write skipped.txt. {{clock}}"
+- text: "From a Team member Run two shell commands: wait for cancellation, then write skipped.txt. {{clock}}"
 - button "Copy":
   - img
+- button "Worked for {{duration}} · 3 steps" [disabled] [expanded]:
+  - img
+  - text: Worked for {{duration}} · 3 steps
 - button "Context injection @clocky/clocky-system-prompt":
   - img
   - img
@@ -28,4 +31,5 @@
   - text: Test Model
   - img
 - button "Send message" [disabled]
-- text: 1 turns · 1 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 0% Input 10 tok · Output 10 tok
+- text: 1 turns · 1 steps
+- button "Session statistics": ⓘ

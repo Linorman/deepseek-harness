@@ -8,26 +8,26 @@
   padding: 0 4px 0 8px;
   border: none;
   /* Rounded chip chrome, matching the sibling model trigger. */
-  border-radius: 24px;
+  border-radius: var(--clocky-radius-xl);
   outline: none;
   background: transparent;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 13px;
-  line-height: 20px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   font-weight: 500;
   cursor: pointer;
 }
 
 .trigger:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .trigger:focus-visible {
-  box-shadow: 0 0 0 2px var(--clocky-alias-border-l3);
+  box-shadow: 0 0 0 2px var(--clocky-border-default);
 }
 
 .trigger:disabled {
-  color: var(--clocky-alias-label-dimmed);
+  color: var(--clocky-fg-disabled);
   cursor: default;
 }
 
@@ -55,8 +55,8 @@
      the svg and floats the glyph off-center in the 28px trigger. */
   display: inline-flex;
   flex: 0 0 auto;
-  color: var(--clocky-alias-label-caption);
-  transition: transform 120ms ease;
+  color: var(--clocky-fg-tertiary);
+  transition: transform var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 /* Narrow composer: the trigger collapses to icon + chevron so the row keeps

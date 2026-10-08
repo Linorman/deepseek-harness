@@ -148,3 +148,20 @@ function base64ByteLength(value: string): number {
   const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0
   return value.length / 4 * 3 - padding
 }
+
+/** Encode a provider-selected patch only when its complete content is representable within the bound.
+ * @param value - Complete producer provenance and selected portable changes.
+ * @param maxBytes - Provider-resolved aggregate encoded and decoded byte allowance.
+ * @returns canonical JSON, or undefined when empty, unsupported or above the protocol byte bound.
+ */
+export function encodeTeamWorkspaceChangeSetIfSupported(
+  value: Omit<TeamWorkspaceChangeSet, 'version'>, maxBytes: number,
+): string | undefined {
+  if (value.changes.length === 0) return undefined
+  try {
+    return encodeTeamWorkspaceChangeSet(value, maxBytes)
+  } catch (error: unknown) {
+    if (error instanceof TeamError && error.code === 'TEAM_INVALID_ARGUMENT') return undefined
+    throw error
+  }
+}

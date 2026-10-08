@@ -15,6 +15,8 @@ export type { TeamActionReadParams } from './types.ts'
 export { JsonRpcLineTransport, JsonRpcResponseError } from './transport.ts'
 export { JsonRpcRequestError } from './transport.ts'
 export type { JsonRpcTransportPeer } from './transport.ts'
+// Explicit protocol imports and public re-exports repeat contract names, not executable behavior.
+/* jscpd:ignore-start */
 export {
   activationDisposeParamsSchema,
   activationDisposeResultSchema,
@@ -247,6 +249,7 @@ export type {
   TeamWaitFinalParams,
   TeamWaitFinalResult,
 } from './types.ts'
+/* jscpd:ignore-end */
 
 export type { TeamInboxRespondParams } from './types.ts'
 

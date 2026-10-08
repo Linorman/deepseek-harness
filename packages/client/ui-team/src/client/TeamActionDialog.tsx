@@ -38,9 +38,11 @@ export function TeamActionDialog({ teamId, actionId, detail, draft, changeDraft,
   }, [teamId, actionId, inspect, closeDetail])
   const allowed = value?.handling.kind === 'actionable' && !current?.loading && !current?.disconnected
     && !current?.hasNewer && current?.error === undefined && respond !== undefined
+  /* v8 ignore next -- The bundled CSS module always defines managementContent; fallback satisfies optional typings. */
+  const bodyClassName = css.managementContent ?? ''
   return <>
     <Modal open title={t('human.detail')} closeLabel={t('cancel')} onClose={() => { if (!busy) onClose() }}
-      bodyClassName={css.managementContent ?? ''} footer={<>
+      bodyClassName={bodyClassName} footer={<>
         {draft !== undefined && <Button disabled={busy} onClick={() => { setDiscard(true) }}>{t('human.discardDraft')}</Button>}
         <Button disabled={busy} onClick={onClose}>{t('human.closeKeepDraft')}</Button>
       </>}>
@@ -56,6 +58,7 @@ export function TeamActionDialog({ teamId, actionId, detail, draft, changeDraft,
         disabled={!allowed} draft={draft ?? EMPTY_ACTION_DRAFT} onDraftChange={changeDraft} onAccepted={discardDraft}
         onBusyChange={setBusy}
         respond={async (input, signal) => {
+          /* v8 ignore next -- HumanActionCard refuses disabled answers before calling respond. */
           if (!allowed) throw new Error(t('human.changed'))
           return await respond(input, signal)
         }}

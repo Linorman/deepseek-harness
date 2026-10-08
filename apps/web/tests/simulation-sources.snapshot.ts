@@ -24,7 +24,7 @@ it.each(['json', 'sqlite'] as const)('reads frozen source links and clears text 
   const imported = (product.config.imports as { id: string; spec: unknown }[])[0]!
   const spec = simulationRunSpecSchema.parse(imported.spec)
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(config))
-  const scaffold = await launchWebScaffold({ extraOverlayPath: overlay, tempRoot: directory, productPrincipalId: 'simulation-browser-user' })
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: overlay, tempRoot: directory, productPrincipalId: 'simulation-browser-user' })
   const { context, setNativeZoom } = await createNativeZoomContext(root, { viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const page = await context.newPage()
   const errors = watchConsole(page)
@@ -42,11 +42,26 @@ it.each(['json', 'sqlite'] as const)('reads frozen source links and clears text 
     const binding = team.activations.find(value => value.activation.participantId === coordinator.id)!
     const channelId = team.channelIds[0]!
     let original: TeamEnvelope | undefined
-    for (const text of ['无关消息', '授权原文🙂第一段。授权原文第二段。']) original = await rpc<TeamEnvelope>('team.channel.post', {
-      channelId, expectedCursor: (await scaffold.ctx.teams.getChannel({ channelId })).cursor,
-      audience: [coordinator.id], delivery: 'context', kind: 'message', payload: { content: [{ type: 'text', text }] },
-    })
+    for (const text of ['无关消息', '授权原文🙂第一段。授权原文第二段。']) {
+      // Independent Team startup may append between observation and admission; only a rejected cursor fence is safe to refresh.
+      let refusal: string | undefined
+      await expect.poll(async () => {
+        const response = await scaffold.authenticatedRpc<TeamEnvelope>('team.channel.post', {
+          channelId, expectedCursor: (await scaffold.ctx.teams.getChannel({ channelId })).cursor,
+          audience: [coordinator.id], delivery: 'context', kind: 'message', payload: { content: [{ type: 'text', text }] },
+        })
+        if (!response.result.ok) {
+          if (response.result.error.code === 'team-channel-cursor-conflict') return false
+          refusal = response.result.error.message
+          return true
+        }
+        original = response.result.value
+        return true
+      }).toBe(true)
+      if (refusal !== undefined) throw new Error(`team.channel.post: ${refusal}`)
+    }
     if (original === undefined) throw new Error('No original message')
+    const originalEnvelope = original
     run = await scaffold.ctx.simulations.open(scaffold.ctx.simulations.resolve({ provider: 'local', spec, mode: 'create' }))
     await run.setPhase('running', 0)
     const entityId = 'source-reader' as never
@@ -72,7 +87,7 @@ it.each(['json', 'sqlite'] as const)('reads frozen source links and clears text 
     const workspace = page.locator('[data-simulation-workspace-page]')
     const contextPane = workspace.getByRole('complementary', { name: '查看详情', exact: true })
     for (let round = 0; round < 30; round++) {
-      await expect.poll(async () => await contextPane.getByRole('button', { name: original.id, exact: true }).count() > 0
+      await expect.poll(async () => await contextPane.getByRole('button', { name: originalEnvelope.id, exact: true }).count() > 0
         || await contextPane.getByRole('button', { name: '下一页', exact: true }).isEnabled().catch(() => false)).toBe(true)
       if (await contextPane.getByRole('button', { name: original.id, exact: true }).count() > 0) break
       await contextPane.getByRole('button', { name: '下一页', exact: true }).click()
@@ -111,6 +126,7 @@ it.each(['json', 'sqlite'] as const)('reads frozen source links and clears text 
     expect(new URL(page.url()).searchParams.get('team')).toBe(team.team.id)
     expect(new URL(page.url()).searchParams.has('simulation')).toBe(false)
     await page.goBack()
+    expect(page.url()).toBe(sourceUrl)
     await locate()
     expect(page.url()).toBe(sourceUrl)
     await expect.poll(() => source.getByRole('link', { name: `查看关联 Team: ${team.team.id}`, exact: true })
@@ -127,7 +143,7 @@ it.each(['json', 'sqlite'] as const)('reads frozen source links and clears text 
     const entityPane = workspace.getByRole('complementary', { name: '查看详情', exact: true })
     const entityUrl = page.url()
     await entityPane.getByRole('link', { name: `查看精确 Team Session: ${binding.sessionId}`, exact: true }).click()
-    await page.locator('dialog[data-inspecting][open]').waitFor()
+    await page.locator('[data-conversation-pane]').waitFor()
     expect(new URL(page.url()).searchParams.get('session')).toBe(binding.sessionId)
     expect(new URL(page.url()).searchParams.get('participant')).toBe(coordinator.id)
     await page.goBack()
@@ -137,7 +153,7 @@ it.each(['json', 'sqlite'] as const)('reads frozen source links and clears text 
     historical.searchParams.set('session', 'historical-binding-mismatch')
     await page.goto(historical.href, { waitUntil: 'load' })
     await page.getByText('此历史会话与所选成员的当前绑定不匹配，未打开其他会话。', { exact: true }).waitFor()
-    expect(await page.locator('dialog[data-inspecting][open]').count()).toBe(0)
+    expect(await page.locator('[data-conversation-pane]').count()).toBe(0)
     await page.screenshot({ path: join(root, 'historical-binding-refused.png') })
     await page.goBack()
     await entityPane.getByRole('link', { name: `查看精确 Team Session: ${binding.sessionId}`, exact: true }).waitFor()

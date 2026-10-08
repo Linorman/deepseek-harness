@@ -4,7 +4,7 @@
 
 import { isTokenDelta } from '@clocky/clocky-llm/message'
 import type { SessionEvent } from '@clocky/clocky-session/types'
-import type { AssistantTiming } from './conversation.ts'
+import type { AssistantTiming } from '../contract/conversation-snapshot.ts'
 
 // The first-token predicate lives beside the StreamChunk type in clocky-llm;
 // re-exported here so Chat Definitions keep their client-runtime import.

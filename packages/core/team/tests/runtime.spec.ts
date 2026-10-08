@@ -951,6 +951,10 @@ describe('TeamRuntime service definition', () => {
     const admissionActor = retainedProof() as import('../src/types.ts').TeamSystemChannelAdmissionProof
     const unsupported: Array<() => Promise<unknown>> = [
       () => ctx.teams.getPersistenceReference({ kind: 'team', teamId, expectedCursor: 1 }),
+      () => ctx.teams.getTeamAttention({ teamId, actor: humanActor }),
+      () => ctx.teams.cancelRuntimeTask({ teamId, taskId, expectedRevision: 1, actor: systemTaskControlProof(),
+        runId: 'simulation-run' as never, operationId: 'simulation-operation' as never, expectedAttemptId: null }),
+      () => ctx.teams.resolveSimulationTaskReview({ actor: systemTaskReviewProof() }),
       () => ctx.teams.getHumanAction({ teamId, actionId: teamHumanActionIdSchema.parse('action-1') }),
       () => ctx.teams.inspectHumanAction({ teamId, actionId: teamHumanActionIdSchema.parse('action-1'), actor: humanActor }),
       () => ctx.teams.resolveTaskReferences({ teamId, taskIds: [] }),

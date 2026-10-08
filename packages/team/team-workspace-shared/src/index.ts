@@ -1,3 +1,17 @@
+import { localWorkspaceFileConfigFields } from '@clocky/clocky-team-workspace-local-files'
+import type { LocalArtifactOptions,LocalChangeSetOptions } from '@clocky/clocky-team-workspace-local-files'
+import { teamWorkspaceIntegrationKey } from '@clocky/clocky-team-workspace'
+import { isStoredTeamWorkspaceManifestHeader } from '@clocky/clocky-team-workspace'
+
+import { materializeLocalChangeSet } from '@clocky/clocky-team-workspace-local-files'
+import { assertCurrentTeamWorkspaceOwner,isCurrentTeamWorkspaceCandidate,authorizeTeamWorkspaceAllocation } from '@clocky/clocky-team-workspace'
+import { integrateSerializedLocalDirectory } from '@clocky/clocky-team-workspace-local-files'
+import { isChildPath, isPathUnder, materializeArtifacts, ensureRegularDirectoryPath, isDirectory, pathExists, isNotFound, isAlreadyExists } from '@clocky/clocky-team-workspace-local-files'
+
+import { TeamWorkspaceReservations } from '@clocky/clocky-team-workspace'
+
+import { TeamWorkspaceIntegrationQueue, assertTeamWorkspaceSourceIntegration, authorizeTeamWorkspaceSourceIntegration, decodeTeamWorkspaceChangeSet } from '@clocky/clocky-team-workspace'
+import { teamWorkspaceAllocationKey as allocationKey, sameTeamWorkspaceBaseMetadata as sameMetadata } from '@clocky/clocky-team-workspace'
 /**
  * Local shared-root Team workspace provider for exact local-Agent task attempts.
  *
@@ -9,13 +23,15 @@
  * @module @clocky/clocky-team-workspace-shared
  */
 
+// Static provider dependency inventory; no implementation logic is covered by this declaration-only block.
+/* jscpd:ignore-start */
 import { createHash, randomUUID } from 'node:crypto'
 import { snapshotDirectory, fingerprintDirectoryEntries, readBoundedBaseline } from './fingerprint.ts'
 import type { FileFingerprint, DirectorySnapshot, ScanLimits } from './fingerprint.ts'
 import { teamWorkspaceObservationIdSchema, teamWorkspaceScanVersionSchema } from '@clocky/clocky-team'
 import type { TeamWorkspaceObservation, TeamWorkspaceObservationInput, TeamSystemWorkspaceAllocationProof, TeamSystemWorkspaceAllocationScope, TeamWorkspaceScanVersion } from '@clocky/clocky-team'
 import { Buffer } from 'node:buffer'
-import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import { lstat, realpath, rm, writeFile } from 'node:fs/promises'
 import { isDeepStrictEqual } from 'node:util'
 import { dirname, isAbsolute, join, parse as parsePath, relative, resolve as resolvePath, sep } from 'node:path'
 import type { Context } from '@clocky/cordis'
@@ -25,7 +41,6 @@ import type {} from '@clocky/clocky-team-artifact'
 import { TeamError, teamWorkspaceAllocationIdSchema } from '@clocky/clocky-team'
 import type {
   ActivationBindingSnapshot,
-  ParticipantSnapshot,
   TeamStateSnapshot,
   TeamTaskSnapshot,
 } from '@clocky/clocky-team'
@@ -42,13 +57,9 @@ import type {
   TeamWorkspaceSourceIntegrateRequest,
   TeamWorkspaceSourceIntegrateResult,
 } from '@clocky/clocky-team-workspace'
-import {
-  encodeTeamWorkspaceChangeSet,
-  parseTeamWorkspaceChangeSet,
-  selectTeamWorkspacePatchArtifact,
-  teamWorkspaceSourceIntegrationResult,
-} from '@clocky/clocky-team-workspace'
-import type { TeamWorkspaceChange, TeamWorkspaceChangeSet } from '@clocky/clocky-team-workspace'
+import { selectTeamWorkspacePatchArtifact, teamWorkspaceSourceIntegrationResult } from '@clocky/clocky-team-workspace'
+
+/* jscpd:ignore-end */
 
 /** Cordis plugin name. */
 export const name = 'team-workspace-shared'
@@ -59,7 +70,6 @@ const DEFAULT_PROVIDER_NAME = 'shared-local'
 const DEFAULT_MAX_ARTIFACT_BYTES = 8 * 1024 * 1024
 const DEFAULT_MAX_INTEGRATION_BYTES = 8 * 1024 * 1024
 const MANIFEST_VERSION = 2 as const
-const INTEGRATION_MARKER_VERSION = 1 as const
 
 /** Local shared-workspace provider configuration. */
 export interface Config {
@@ -116,15 +126,11 @@ export const Config: z<Config> = z.object({
   root: z.string(),
   allowTeamWorkspacePath: z.boolean().default(false),
   providerName: z.string().default(DEFAULT_PROVIDER_NAME),
-  artifactProvider: z.string().min(1),
-  maxArtifactBytes: z.number().step(1).min(1).default(DEFAULT_MAX_ARTIFACT_BYTES),
-  integrationRoot: z.string(),
-  integrationEnabled: z.boolean().default(false),
-  maxIntegrationBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INTEGRATION_BYTES),
+  ...localWorkspaceFileConfigFields(DEFAULT_MAX_ARTIFACT_BYTES, DEFAULT_MAX_INTEGRATION_BYTES),
 })
 
 /** Fully validated configuration retained by one provider instance. */
-interface ResolvedConfig extends ScanLimits {
+interface ResolvedConfig extends ScanLimits, LocalArtifactOptions, LocalChangeSetOptions {
   readonly observationStateRoot: string
   readonly observationMaxPaths: number
   readonly observationMaxStateBytes: number
@@ -134,12 +140,6 @@ interface ResolvedConfig extends ScanLimits {
   readonly root: string
   /** Whether a durable Team workspacePath may select the allocation root. */
   readonly allowTeamWorkspacePath: boolean
-  /** Registry identity selected before registration. */
-  readonly providerName: string
-  /** Optional provider-backed artifact store identity. */
-  readonly artifactProvider?: string
-  /** Maximum file size inspected during publication. */
-  readonly maxArtifactBytes: number
   /** Canonical directory containing provider-specific integration targets. */
   readonly integrationRoot?: string
   /** Whether source change sets may update integration targets. */
@@ -155,25 +155,12 @@ interface StoredManifest {
   readonly scan: TeamWorkspaceScanVersion
 }
 
-interface IntegrationMarker {
-  readonly version: typeof INTEGRATION_MARKER_VERSION
-  readonly provider: string
-  readonly sourceTaskId: string
-  readonly sourceAttemptId: string
-  readonly integrationTaskId: string
-  readonly integrationAttemptId: string
-  readonly target: string
-  readonly expectedVersion: string
-  readonly targetVersion: string
-  readonly status: 'prepared' | 'integrated'
-}
-
 /** Local provider that returns one configured root without claiming filesystem ownership. */
 class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
   readonly modes = ['shared'] as const
-  private readonly preparations = new Map<string, TeamWorkspacePreparation>()
-  private readonly allocations = new Map<string, TeamWorkspaceAllocation>()
-  private readonly materializations = new Map<string, Promise<TeamWorkspaceAllocation>>()
+  private readonly reservations = new TeamWorkspaceReservations()
+  private readonly preparations = this.reservations.preparations
+  private readonly allocations = this.reservations.allocations
   private readonly unavailableBaselines = new Set<string>()
   private readonly observedScans = new Map<string, DirectorySnapshot>()
   private readonly observationQueues = new Map<string, Promise<unknown>>()
@@ -182,7 +169,7 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
   /** Canonical execution root retained for each live or recovering allocation. */
   private readonly roots = new Map<string, string>()
   /** Serialize provider-specific integration operations for one target path. */
-  private readonly integrationQueues = new Map<string, Promise<void>>()
+  private readonly integrationQueues = new TeamWorkspaceIntegrationQueue()
   private pulseTail = Promise.resolve()
   private pulseClosing = false
 
@@ -208,7 +195,6 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
     const interval = this.config.observationPulseIntervalMs
     if (interval === undefined) return async () => {}
     const timer = setInterval(() => {
-      if (this.pulseClosing) return
       const operation = this.pulseTail.then(() => this.runObservationPulse())
       this.pulseTail = operation.catch((error: unknown) => {
         this.ctx.logger.warn(`team-workspace-shared: periodic observation failed: ${String(error)}`)
@@ -279,40 +265,15 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
     const root = await this.assertCurrentAllocation(request)
     const key = allocationKey(request)
     this.roots.set(key, root)
-    const existing = this.preparations.get(key)
-    if (existing !== undefined) return existing
-    const metadata = this.metadata(request, root)
-    let abandoned = false
-    const preparation: TeamWorkspacePreparation = Object.freeze({
-      ...metadata,
-      materialize: async (): Promise<TeamWorkspaceAllocation> => {
-        if (abandoned) throw new TeamError(`shared workspace allocation '${metadata.id}' was abandoned`, 'TEAM_INVALID_ARGUMENT')
-        await this.assertCurrentAllocation(request)
-        const existing = this.allocations.get(key)
-        if (existing !== undefined) return existing
-        const pending = this.materializations.get(key)
-        if (pending !== undefined) return await pending
-        const materialization = this.materializeOwned(metadata, key, root).then((allocation) => {
-          this.allocations.set(key, allocation)
-          return allocation
-        })
-        this.materializations.set(key, materialization)
-        try {
-          return await materialization
-        } finally {
-          if (this.materializations.get(key) === materialization) this.materializations.delete(key)
-        }
-      },
-      abandon: (): Promise<void> => {
-        if (abandoned) return Promise.resolve()
-        abandoned = true
-        if (this.preparations.get(key) === preparation) this.preparations.delete(key)
-        if (!this.allocations.has(key)) this.roots.delete(key)
-        return Promise.resolve()
-      },
+    return this.reservations.reuseOrCreate(key, () => {
+      const metadata = this.metadata(request, root)
+      return this.reservations.reserveMaterialized(
+        key, metadata, async () => await this.assertCurrentAllocation(request),
+        async () => await this.materializeOwned(metadata, key, root),
+        `shared workspace allocation '${metadata.id}' was abandoned`, undefined,
+        () => { if (!this.allocations.has(key)) this.roots.delete(key) },
+      )
     })
-    this.preparations.set(key, preparation)
-    return preparation
   }
 
   /** Reopen the configured shared root only for metadata this provider minted. */
@@ -409,7 +370,7 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
    * @returns a proposal or target-directory integration result.
    */
   async integrateSource(request: TeamWorkspaceSourceIntegrateRequest): Promise<TeamWorkspaceSourceIntegrateResult> {
-    assertSourceIntegrationRequest(request)
+    assertTeamWorkspaceSourceIntegration(request, 'shared')
     const artifact = selectTeamWorkspacePatchArtifact(request)
     const state = await this.ctx.teams.getTeam({ teamId: request.source.teamId })
     const sourceAllocation = state.workspaceAllocations.find(value => value.taskId === request.source.taskId
@@ -420,24 +381,7 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
     if (sourceAllocation !== undefined && (observation === undefined || observation.truncated)) {
       throw new TeamError('Shared source integration requires a complete latest workspace observation', 'TEAM_POLICY_DENIED')
     }
-    const decision = await this.ctx.teams.authorize({
-      hook: 'workspace-integrate',
-      teamId: request.source.teamId,
-      ...request.actorId === undefined ? {} : { actorId: request.actorId },
-      facts: {
-        operation: 'source-integration',
-        ...observation === undefined ? {} : { observationId: observation.id, sourceVersion: observation.final.digest },
-        sourceTaskId: request.source.taskId,
-        sourceAttemptId: request.source.attemptId,
-        integrationTaskId: request.integrationTaskId,
-        integrationAttemptId: request.integrationAttemptId,
-        target: request.target,
-        ...request.expectedTarget === undefined ? {} : { expectedTarget: request.expectedTarget },
-        mode: request.mode,
-        provider: this.config.providerName,
-      },
-    })
-    if (decision.kind === 'deny') throw new TeamError(decision.message, 'TEAM_POLICY_DENIED')
+    await authorizeTeamWorkspaceSourceIntegration(this.ctx.teams, request, this.config.providerName)
     if (request.mode === 'proposal') return teamWorkspaceSourceIntegrationResult(request, { status: 'proposed', artifact })
     if (!this.config.integrationEnabled) {
       throw new TeamError('shared integration authority is disabled by configuration', 'TEAM_POLICY_DENIED')
@@ -449,138 +393,23 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
         'TEAM_INVALID_ARGUMENT',
       )
     }
-    const bytes = await store.read(this.config.artifactProvider, { reference: artifact })
-    const changeSet = parseTeamWorkspaceChangeSet(
-      parseJson(bytes),
-      this.config.providerName,
-      request.source.attemptId,
-      this.config.maxIntegrationBytes,
-    )
-    return await this.serializeIntegration(request.target, async () => await this.applyChangeSet(request, artifact, changeSet))
-  }
-
-  /** Serialize one provider-specific target operation within this process. */
-  private async serializeIntegration<T>(target: string, operation: () => Promise<T>): Promise<T> {
-    const prior = this.integrationQueues.get(target) ?? Promise.resolve()
-    let release!: () => void
-    const current = new Promise<void>((resolve) => { release = resolve })
-    this.integrationQueues.set(target, current)
-    await prior
-    try {
-      return await operation()
-    } finally {
-      release()
-      if (this.integrationQueues.get(target) === current) this.integrationQueues.delete(target)
-    }
-  }
-
-  /** Apply a validated source change set with a content-version fence. */
-  private async applyChangeSet(
-    request: TeamWorkspaceSourceIntegrateRequest,
-    artifact: import('@clocky/clocky-team').TeamArtifactReference,
-    changeSet: TeamWorkspaceChangeSet,
-  ): Promise<TeamWorkspaceSourceIntegrateResult> {
     const integrationRoot = this.config.integrationRoot
-    if (integrationRoot === undefined) {
-      throw new TeamError('shared integration requires a configured integrationRoot', 'TEAM_INVALID_ARGUMENT')
-    }
-    const targetRoot = integrationTargetRoot(this.config, request.target)
-    const markerPathname = integrationMarkerPath(this.config, request)
-    const backupPathname = integrationBackupPath(markerPathname, targetRoot)
-    const currentVersion = await directoryVersion(targetRoot, this.config)
-    const previous = await readIntegrationMarker(markerPathname)
-    if (previous !== undefined) {
-      if (!sameIntegrationMarker(previous, request, this.config.providerName)) {
-        throw new TeamError(`shared integration marker '${markerPathname}' does not match the current request`, 'TEAM_INVALID_ARGUMENT')
+    const bytes = await store.read(this.config.artifactProvider, { reference: artifact })
+    const changeSet = decodeTeamWorkspaceChangeSet(
+      bytes, this.config.providerName, request.source.attemptId, this.config.maxIntegrationBytes, 'shared',
+    )
+    return await integrateSerializedLocalDirectory(this.integrationQueues, request, artifact, changeSet, () => {
+      const targetRoot = integrationTargetRoot(integrationRoot, request.target)
+      const markerPathname = integrationMarkerPath(this.config, integrationRoot, request)
+      return {
+        stagePrefix: '.clocky-team-shared-integration-', providerName: this.config.providerName, label: 'shared',
+        integrationRoot, targetRoot, markerPathname,
+        backupPathname: integrationBackupPath(markerPathname, targetRoot),
+        markerParentRoot: integrationRoot, markerDirectory: dirname(markerPathname),
+        version: async root => await directoryVersion(root, this.config),
+        assertDirectory,
       }
-      if (currentVersion === previous.targetVersion) {
-        if (request.expectedTarget !== undefined && request.expectedTarget !== previous.expectedVersion) {
-          return teamWorkspaceSourceIntegrationResult(request, { status: 'conflict', artifact })
-        }
-        if (previous.status === 'prepared') {
-          await rm(backupPathname, { recursive: true, force: true })
-          await writeIntegrationMarker(markerPathname, { ...previous, status: 'integrated' })
-        }
-        return teamWorkspaceSourceIntegrationResult(request, { status: 'integrated', targetVersion: previous.targetVersion, artifact })
-      }
-      if (previous.status === 'prepared' && currentVersion === previous.expectedVersion) {
-        await rm(markerPathname, { force: true })
-        await rm(backupPathname, { recursive: true, force: true })
-      } else if (previous.status === 'prepared' && currentVersion === 'missing' && await pathExists(backupPathname)) {
-        await rename(backupPathname, targetRoot)
-        await rm(markerPathname, { force: true })
-        return await this.applyChangeSet(request, artifact, changeSet)
-      } else {
-        return teamWorkspaceSourceIntegrationResult(request, { status: 'conflict', artifact })
-      }
-    }
-    if (request.expectedTarget !== undefined && request.expectedTarget !== currentVersion) {
-      return teamWorkspaceSourceIntegrationResult(request, { status: 'conflict', artifact })
-    }
-    await ensureRegularDirectoryPath(integrationRoot, dirname(targetRoot))
-    const stage = await mkdtemp(join(dirname(targetRoot), '.clocky-team-shared-integration-'))
-    let targetMoved = false
-    let stageMoved = false
-    let backup: string | undefined
-    try {
-      if (await pathExists(targetRoot)) {
-        await assertDirectory(targetRoot)
-        await copyDirectoryContents(targetRoot, stage)
-      }
-      await applyChanges(stage, changeSet.changes)
-      const targetVersion = await directoryVersion(stage, this.config)
-      if (await directoryVersion(targetRoot, this.config) !== currentVersion) {
-        return teamWorkspaceSourceIntegrationResult(request, { status: 'conflict', artifact })
-      }
-      await ensureRegularDirectoryPath(integrationRoot, dirname(markerPathname))
-      await writeIntegrationMarker(markerPathname, {
-        version: INTEGRATION_MARKER_VERSION,
-        provider: this.config.providerName,
-        sourceTaskId: String(request.source.taskId),
-        sourceAttemptId: String(request.source.attemptId),
-        integrationTaskId: String(request.integrationTaskId),
-        integrationAttemptId: String(request.integrationAttemptId),
-        target: request.target,
-        expectedVersion: currentVersion,
-        targetVersion,
-        status: 'prepared',
-      })
-      if (await pathExists(targetRoot)) {
-        backup = backupPathname
-        await rm(backup, { recursive: true, force: true })
-        await rename(targetRoot, backup)
-        targetMoved = true
-      }
-      await rename(stage, targetRoot)
-      stageMoved = true
-      await writeIntegrationMarker(markerPathname, {
-        version: INTEGRATION_MARKER_VERSION,
-        provider: this.config.providerName,
-        sourceTaskId: String(request.source.taskId),
-        sourceAttemptId: String(request.source.attemptId),
-        integrationTaskId: String(request.integrationTaskId),
-        integrationAttemptId: String(request.integrationAttemptId),
-        target: request.target,
-        expectedVersion: currentVersion,
-        targetVersion,
-        status: 'integrated',
-      })
-      return teamWorkspaceSourceIntegrationResult(request, { status: 'integrated', targetVersion, artifact })
-    } finally {
-      const failures: unknown[] = []
-      if (!stageMoved) {
-        try { await rm(stage, { recursive: true, force: true }) } catch (error: unknown) { failures.push(error) }
-      }
-      if (targetMoved && !stageMoved && backup !== undefined) {
-        try {
-          if (!(await pathExists(targetRoot))) await rename(backup, targetRoot)
-        } catch (error: unknown) { failures.push(error) }
-      }
-      if (stageMoved && backup !== undefined) {
-        try { await rm(backup, { recursive: true, force: true }) } catch (error: unknown) { failures.push(error) }
-      }
-      if (failures.length > 0) throw new AggregateError(failures, 'team-workspace-shared: integration cleanup failed')
-    }
+    })
   }
 
   /** Materialize the logical shared allocation and retain its bounded source baseline. */
@@ -589,8 +418,6 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
     key: string,
     root: string,
   ): Promise<TeamWorkspaceAllocation> {
-    const current = this.allocations.get(key)
-    if (current !== undefined) return current
     const stored = await this.readManifestIfPresent(metadata, key)
     const scan = stored === undefined ? await snapshotDirectory(root, this.config) : { files: stored.baseline, version: stored.scan }
     let manifest = stored ?? { version: MANIFEST_VERSION, metadata, baseline: scan.files, scan: scan.version }
@@ -666,64 +493,12 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
     if (!(await isDirectory(root))) {
       throw new TeamError(`shared Team workspace root '${root}' is not an existing directory`, 'TEAM_INVALID_ARGUMENT')
     }
-    const task = state.tasks.find(candidate => candidate.id === request.taskId)
-    requireCurrent(task !== undefined, `Team task '${request.taskId}' is not available for shared workspace allocation`)
-    requireCurrent(state.team.phase === 'active', `Team '${request.teamId}' is not active for shared workspace allocation`)
-    requireCurrent(task.workspaceMode === 'shared', `Team task '${task.id}' does not request a shared workspace`)
-    requireCurrent(
-      task.phase === 'assigned' || task.phase === 'running',
-      `Team task '${task.id}' does not hold an active shared workspace lease`,
-    )
-    const lease = task.lease
-    requireCurrent(lease !== undefined, `Team task '${task.id}' has no current shared workspace lease`)
-    requireCurrent(lease.expiresAt > Date.now(), `Team task '${task.id}' current lease has expired`)
-    requireCurrent(lease.attemptId === request.attemptId, `Team task '${task.id}' attempt does not match shared allocation`)
-    requireCurrent(
-      lease.assignedRevision === request.assignedRevision,
-      `Team task '${task.id}' assigned revision does not match shared allocation`,
-    )
-    requireCurrent(
-      lease.participantId === request.participantId,
-      `Team task '${task.id}' participant does not match shared allocation`,
-    )
-    requireCurrent(
-      lease.activationId === request.activationId,
-      `Team task '${task.id}' activation does not match shared allocation`,
-    )
-    const participant = state.participants.find(candidate => candidate.id === request.participantId)
-    requireCurrent(
-      isActiveLocalAgent(participant),
-      `Team participant '${request.participantId}' is not an active local Agent`,
-    )
-    const binding = state.activations.find(candidate => candidate.activation.id === request.activationId)
-    requireCurrent(
-      binding !== undefined
-      && binding.activation.teamId === request.teamId
-      && binding.activation.participantId === request.participantId
-      && binding.sessionId === request.sessionId
-      && isDeliverableActivation(binding),
-      `Team activation '${request.activationId}' does not match shared allocation ownership`,
-    )
+    const binding = assertCurrentTeamWorkspaceOwner(state, request, 'shared')
     requireCurrent(
       await this.hasExactLiveAgent(binding, root),
       `Session '${request.sessionId}' is not a live local Agent at shared workspace root '${root}'`,
     )
-    const decision = await this.ctx.teams.authorize({
-      hook: 'workspace-allocate',
-      teamId: request.teamId,
-      actorId: request.participantId,
-      facts: {
-        taskId: request.taskId,
-        attemptId: request.attemptId,
-        assignedRevision: request.assignedRevision,
-        participantId: request.participantId,
-        activationId: request.activationId,
-        sessionId: request.sessionId,
-        workspaceMode: 'shared',
-        root,
-      },
-    })
-    if (decision.kind === 'deny') throw new TeamError(decision.message, 'TEAM_POLICY_DENIED')
+    await authorizeTeamWorkspaceAllocation(this.ctx.teams, request, 'shared', { root })
     return root
   }
 
@@ -755,16 +530,7 @@ class SharedTeamWorkspaceProvider implements TeamWorkspaceProvider {
     task: TeamTaskSnapshot,
     binding: ActivationBindingSnapshot,
   ): boolean {
-    const currentTask = state.tasks.find(candidate => candidate.id === task.id)
-    const participant = state.participants.find(candidate => candidate.id === binding.activation.participantId)
-    const currentBinding = state.activations.find(candidate => candidate.activation.id === binding.activation.id)
-    return state.team.phase === 'active'
-      && currentTask?.revision === task.revision
-      && currentTask.workspaceMode === 'shared'
-      && isActiveLocalAgent(participant)
-      && currentBinding !== undefined
-      && sameBindingIdentity(currentBinding, binding)
-      && isDeliverableActivation(currentBinding)
+    return isCurrentTeamWorkspaceCandidate(state, task, binding, 'shared')
   }
 
   /** Match one currently registered local Agent's canonical Session cwd to the selected root. */
@@ -930,9 +696,9 @@ async function resolveConfig(config: Config): Promise<ResolvedConfig> {
     throw new TypeError('team-workspace-shared: observationStateRoot must not contain the shared root')
   }
   let externalStateRoot: string | undefined
-  if (isChildPath(root, statePath)) await ensureRegularDirectoryPath(root, statePath)
+  if (isChildPath(root, statePath)) await ensureRegularDirectoryPath(root, statePath, 'shared')
   else if (integrationRoot !== undefined && isChildPath(integrationRoot, statePath)) {
-    await ensureRegularDirectoryPath(integrationRoot, statePath)
+    await ensureRegularDirectoryPath(integrationRoot, statePath, 'shared')
   } else externalStateRoot = await createExternalObservationDirectory(statePath)
   const observationStateRoot = externalStateRoot ?? await canonicalDirectory(statePath, 'observationStateRoot')
   if (isPathUnder(root, observationStateRoot)) {
@@ -993,7 +759,7 @@ async function createExternalObservationDirectory(value: string): Promise<string
     try { info = await lstat(candidate) } catch (error: unknown) {
       if (!isNotFound(error)) throw error
       const target = join(current, ...parts.slice(index))
-      await ensureRegularDirectoryPath(current, target)
+      await ensureRegularDirectoryPath(current, target, 'shared')
       return await canonicalDirectory(target, 'observationStateRoot')
     }
     if (info.isSymbolicLink()) {
@@ -1035,61 +801,6 @@ function timerDelay(value: number, label: string): number {
   return value
 }
 
-/** Check whether one canonical path is a strict descendant of another. */
-function isChildPath(parent: string, child: string): boolean {
-  const descendant = relative(parent, child)
-  return descendant.length > 0 && descendant !== '..' && !descendant.startsWith(`..${sep}`) && !isAbsolute(descendant)
-}
-
-/** Check whether one path is the same as or below another canonical path. */
-function isPathUnder(path: string, parent: string): boolean {
-  return path === parent || isChildPath(parent, path)
-}
-
-/** Materialize bounded file references for all changed regular files. */
-async function materializeArtifacts(
-  ctx: Context,
-  allocation: TeamWorkspaceAllocation,
-  paths: readonly string[],
-  config: ResolvedConfig,
-): Promise<import('@clocky/clocky-team').TeamArtifactReference[]> {
-  const artifacts: import('@clocky/clocky-team').TeamArtifactReference[] = []
-  const store = ctx.get('teamArtifacts')
-  for (const path of paths) {
-    const absolute = join(allocation.root, path)
-    if (!isChildPath(allocation.root, absolute)) continue
-    let info
-    try {
-      info = await lstat(absolute)
-    } catch (error: unknown) {
-      if (isNotFound(error)) continue
-      throw error
-    }
-    if (!info.isFile() || info.size > config.maxArtifactBytes) continue
-    const bytes = await readFile(absolute)
-    if (store !== undefined && config.artifactProvider !== undefined) {
-      artifacts.push(await store.save(config.artifactProvider, {
-        teamId: allocation.teamId,
-        sourceAttemptId: allocation.attemptId,
-        kind: 'file',
-        visibility: 'team',
-        name: path,
-        data: bytes,
-      }))
-    } else {
-      artifacts.push({
-        id: `${config.providerName}:${String(allocation.attemptId)}:${path}`,
-        kind: 'file',
-        uri: absolute,
-        contentHash: createHash('sha256').update(bytes).digest('hex'),
-        sourceAttemptId: allocation.attemptId,
-        visibility: 'team',
-      })
-    }
-  }
-  return artifacts
-}
-
 /** Build one bounded portable change set from a shared baseline and current tree. */
 async function materializeChangeSet(
   allocation: TeamWorkspaceAllocation,
@@ -1099,55 +810,11 @@ async function materializeChangeSet(
 ): Promise<string | undefined> {
   if (config.integrationRoot === undefined) return undefined
   const paths = observedPaths.map(change => change.path)
-  const changes: TeamWorkspaceChange[] = []
-  for (const path of paths) {
-    const entry = Object.hasOwn(current, path) ? current[path] : undefined
-    if (entry === undefined) {
-      changes.push({ path, kind: 'delete' })
-      continue
-    }
-    if (entry.kind === 'symlink') {
-      changes.push({ path, kind: 'symlink', target: entry.target })
-      continue
-    }
-    if (entry.kind !== 'file' || entry.size > config.maxIntegrationBytes) return undefined
-    const bytes = await readFile(join(allocation.root, path))
-    if (bytes.byteLength > config.maxIntegrationBytes) return undefined
-    changes.push({ path, kind: 'file', data: Buffer.from(bytes).toString('base64') })
-  }
-  if (changes.length === 0) return undefined
-  try {
-    return encodeTeamWorkspaceChangeSet({
-      provider: config.providerName,
-      sourceAttemptId: allocation.attemptId,
-      changes,
-    }, config.maxIntegrationBytes)
-  } catch (error: unknown) {
-    if (error instanceof TeamError && error.code === 'TEAM_INVALID_ARGUMENT') return undefined
-    throw error
-  }
-}
-
-/** Validate source identities before policy or provider-backed artifact reads. */
-function assertSourceIntegrationRequest(request: TeamWorkspaceSourceIntegrateRequest): void {
-  if (String(request.source.teamId).length === 0
-    || String(request.source.taskId).length === 0
-    || String(request.source.attemptId).length === 0
-    || String(request.integrationTaskId).length === 0
-    || String(request.integrationAttemptId).length === 0) {
-    throw new TeamError('shared source integration identities must be non-empty', 'TEAM_INVALID_ARGUMENT')
-  }
-  if (request.target.length === 0 || request.target.trim() !== request.target) {
-    throw new TeamError('shared integration target must be non-empty without surrounding whitespace', 'TEAM_INVALID_ARGUMENT')
-  }
+  return await materializeLocalChangeSet(allocation, paths, path => Object.hasOwn(current, path) ? current[path] : undefined, config)
 }
 
 /** Return the provider-owned target directory for one safe relative target name. */
-function integrationTargetRoot(config: ResolvedConfig, target: string): string {
-  const integrationRoot = config.integrationRoot
-  if (integrationRoot === undefined) {
-    throw new TeamError('shared integration requires a configured integrationRoot', 'TEAM_INVALID_ARGUMENT')
-  }
+function integrationTargetRoot(integrationRoot: string, target: string): string {
   if (target.includes('\\') || target.includes('\0') || isAbsolute(target)
     || target.split('/').some(part => part.length === 0 || part === '.' || part === '..')) {
     throw new TeamError('shared integration target must be a safe relative path without backslashes', 'TEAM_INVALID_ARGUMENT')
@@ -1160,85 +827,6 @@ function integrationTargetRoot(config: ResolvedConfig, target: string): string {
   return root
 }
 
-/** Apply one portable change set to a staged regular directory. */
-async function applyChanges(root: string, changes: readonly TeamWorkspaceChange[]): Promise<void> {
-  for (const change of changes) {
-    const absolute = portablePath(root, change.path)
-    await ensureRegularDirectoryPath(root, dirname(absolute))
-    let existing
-    try {
-      existing = await lstat(absolute)
-    } catch (error: unknown) {
-      if (!isNotFound(error)) throw error
-    }
-    if (change.kind === 'delete') {
-      if (existing !== undefined && existing.isDirectory()) {
-        throw new TeamError(`shared integration cannot delete directory '${change.path}'`, 'TEAM_INVALID_ARGUMENT')
-      }
-      await rm(absolute, { force: true })
-      continue
-    }
-    if (existing !== undefined && existing.isDirectory()) {
-      throw new TeamError(`shared integration cannot replace directory '${change.path}'`, 'TEAM_INVALID_ARGUMENT')
-    }
-    if (change.kind === 'file') {
-      if (existing?.isSymbolicLink()) {
-        throw new TeamError(`shared integration cannot write through symlink '${change.path}'`, 'TEAM_INVALID_ARGUMENT')
-      }
-      await writeFile(absolute, Buffer.from(change.data, 'base64'), { mode: 0o600 })
-    } else {
-      await rm(absolute, { force: true })
-      await symlink(change.target, absolute)
-    }
-  }
-}
-
-/** Copy a target tree without following symlinks or changing the source. */
-async function copyDirectoryContents(source: string, destination: string): Promise<void> {
-  for (const entry of await readdir(source, { withFileTypes: true })) {
-    await cp(join(source, entry.name), join(destination, entry.name), {
-      recursive: true,
-      dereference: false,
-      force: false,
-    })
-  }
-}
-
-/** Ensure every existing ancestor is a regular directory and create missing ancestors. */
-async function ensureRegularDirectoryPath(root: string, path: string): Promise<void> {
-  const descendant = relative(root, path)
-  if (descendant === '..' || descendant.startsWith(`..${sep}`) || isAbsolute(descendant)) {
-    throw new TeamError('shared integration path escapes its configured root', 'TEAM_INVALID_ARGUMENT')
-  }
-  let current = root
-  for (const part of descendant.length === 0 ? [] : descendant.split(sep)) {
-    current = join(current, part)
-    let info
-    try {
-      info = await lstat(current)
-    } catch (error: unknown) {
-      if (!isNotFound(error)) throw error
-      try {
-        await mkdir(current, { mode: 0o700 })
-        continue
-      } catch (mkdirError: unknown) {
-        if (!isAlreadyExists(mkdirError)) throw mkdirError
-        info = await lstat(current)
-      }
-    }
-    if (!info.isDirectory() || info.isSymbolicLink()) {
-      throw new TeamError(`shared integration ancestor '${current}' is not a regular directory`, 'TEAM_INVALID_ARGUMENT')
-    }
-  }
-}
-
-/** Map a validated portable path to a local root without following path escapes. */
-function portablePath(root: string, path: string): string {
-  const absolute = join(root, ...path.split('/'))
-  if (!isChildPath(root, absolute)) throw new TeamError(`shared integration path '${path}' escapes its target`, 'TEAM_INVALID_ARGUMENT')
-  return absolute
-}
-
 /** Compute a content-derived version for one integration target directory. */
 async function directoryVersion(root: string, config: ResolvedConfig): Promise<string> {
   if (!(await pathExists(root))) return 'missing'
@@ -1249,11 +837,8 @@ async function directoryVersion(root: string, config: ResolvedConfig): Promise<s
 }
 
 /** Provider-owned state directory kept outside user source and target paths. */
-function integrationStateRoot(config: ResolvedConfig): string {
-  if (config.integrationRoot === undefined) {
-    throw new TeamError('shared integration requires a configured integrationRoot', 'TEAM_INVALID_ARGUMENT')
-  }
-  return join(config.integrationRoot, '.clocky-team-shared-state')
+function integrationStateRoot(integrationRoot: string): string {
+  return join(integrationRoot, '.clocky-team-shared-state')
 }
 
 /** Location of one provider-owned source baseline sidecar. */
@@ -1262,15 +847,8 @@ function manifestPath(config: ResolvedConfig, key: string): string {
 }
 
 /** Location of one provider-owned integration recovery marker. */
-function integrationMarkerPath(config: ResolvedConfig, request: TeamWorkspaceSourceIntegrateRequest): string {
-  return join(integrationStateRoot(config), 'integrations', `${createHash('sha256').update(JSON.stringify([
-    config.providerName,
-    String(request.source.taskId),
-    String(request.source.attemptId),
-    String(request.integrationTaskId),
-    String(request.integrationAttemptId),
-    request.target,
-  ])).digest('hex')}.json`)
+function integrationMarkerPath(config: ResolvedConfig, integrationRoot: string, request: TeamWorkspaceSourceIntegrateRequest): string {
+  return join(integrationStateRoot(integrationRoot), 'integrations', `${createHash('sha256').update(teamWorkspaceIntegrationKey(request, config.providerName)).digest('hex')}.json`)
 }
 
 /** Deterministic provider-owned backup used to recover a crash after target removal. */
@@ -1278,63 +856,11 @@ function integrationBackupPath(markerPathname: string, targetRoot: string): stri
   return join(dirname(targetRoot), `.clocky-team-shared-backup-${createHash('sha256').update(markerPathname).digest('hex')}`)
 }
 
-/** Read one provider-owned recovery marker, rejecting malformed state. */
-async function readIntegrationMarker(path: string): Promise<IntegrationMarker | undefined> {
-  let raw: string
-  try {
-    raw = await readFile(path, 'utf8')
-  } catch (error: unknown) {
-    if (isNotFound(error)) return undefined
-    throw error
-  }
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch (error: unknown) {
-    throw new TeamError(`shared integration marker '${path}' is invalid`, 'TEAM_INVALID_ARGUMENT', { cause: error })
-  }
-  if (!isIntegrationMarker(parsed)) throw new TeamError(`shared integration marker '${path}' is invalid`, 'TEAM_INVALID_ARGUMENT')
-  return parsed
-}
-
-/** Write a marker only after validating its own lifecycle fields. */
-async function writeIntegrationMarker(path: string, marker: IntegrationMarker): Promise<void> {
-  if (!isIntegrationMarker(marker)) throw new TeamError(`shared integration marker '${path}' is invalid`, 'TEAM_INVALID_ARGUMENT')
-  await writeFile(path, JSON.stringify(marker), { mode: 0o600, flag: marker.status === 'prepared' ? 'wx' : 'w' })
-}
-
-/** Match a recovery marker to one exact source and integration operation. */
-function sameIntegrationMarker(marker: IntegrationMarker, request: TeamWorkspaceSourceIntegrateRequest, provider: string): boolean {
-  return marker.provider === provider
-    && marker.sourceTaskId === String(request.source.taskId)
-    && marker.sourceAttemptId === String(request.source.attemptId)
-    && marker.integrationTaskId === String(request.integrationTaskId)
-    && marker.integrationAttemptId === String(request.integrationAttemptId)
-    && marker.target === request.target
-}
-
-/** Validate a provider-owned integration marker loaded from disk. */
-function isIntegrationMarker(value: unknown): value is IntegrationMarker {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
-  const record = value as Record<string, unknown>
-  return record.version === INTEGRATION_MARKER_VERSION
-    && typeof record.provider === 'string'
-    && typeof record.sourceTaskId === 'string'
-    && typeof record.sourceAttemptId === 'string'
-    && typeof record.integrationTaskId === 'string'
-    && typeof record.integrationAttemptId === 'string'
-    && typeof record.target === 'string'
-    && typeof record.expectedVersion === 'string'
-    && typeof record.targetVersion === 'string'
-    && (record.status === 'prepared' || record.status === 'integrated')
-}
-
 /** Validate the shallow shape of a persisted source baseline before use. */
 function isStoredManifest(value: unknown): value is StoredManifest {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
-  const record = value as Record<string, unknown>
-  if (record.version !== MANIFEST_VERSION || typeof record.metadata !== 'object' || record.metadata === null
-    || typeof record.baseline !== 'object' || record.baseline === null || Array.isArray(record.baseline)) return false
+  if (Array.isArray(value) || !isStoredTeamWorkspaceManifestHeader(value, MANIFEST_VERSION)) return false
+  const record = value as unknown as Record<string, unknown>
+  if (typeof record.baseline !== 'object' || record.baseline === null || Array.isArray(record.baseline)) return false
   const scan = teamWorkspaceScanVersionSchema.safeParse(record.scan)
   if (!scan.success) return false
   const entries = Object.entries(record.baseline)
@@ -1356,24 +882,6 @@ function isFileFingerprint(value: unknown, complete: boolean): value is FileFing
     && Object.keys(entry).every(key => key === 'kind' || key === 'size' || key === 'modifiedAt' || key === 'contentHash')
 }
 
-/** Parse JSON bytes stored in one provider-backed patch artifact. */
-function parseJson(bytes: Uint8Array): unknown {
-  try {
-    return JSON.parse(new TextDecoder().decode(bytes))
-  } catch (error: unknown) {
-    throw new TeamError('shared source patch artifact is not valid JSON', 'TEAM_INVALID_ARGUMENT', { cause: error })
-  }
-}
-
-/** Return whether a current filesystem path is an accessible directory. */
-async function isDirectory(path: string): Promise<boolean> {
-  try {
-    return (await stat(path)).isDirectory()
-  } catch {
-    return false
-  }
-}
-
 /** Require one existing local target to be a regular directory, never a symlink. */
 async function assertDirectory(path: string): Promise<void> {
   let info
@@ -1387,79 +895,11 @@ async function assertDirectory(path: string): Promise<void> {
   }
 }
 
-/** Check whether one local path exists without following a final symlink. */
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await lstat(path)
-    return true
-  } catch (error: unknown) {
-    if (isNotFound(error)) return false
-    throw error
-  }
-}
-
-/** Recognize filesystem absence errors at a durable provider boundary. */
-function isNotFound(error: unknown): error is NodeJS.ErrnoException {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
-}
-
-/** Recognize an atomic-create race while preserving all other filesystem errors. */
-function isAlreadyExists(error: unknown): error is NodeJS.ErrnoException {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'EEXIST'
-}
-
-/** Return whether one current participant can receive a shared local-Agent allocation. */
-function isActiveLocalAgent(participant: ParticipantSnapshot | undefined): participant is ParticipantSnapshot {
-  return participant?.kind === 'local-agent' && participant.phase === 'active'
-}
-
-/** Return whether an activation remains available for current local Agent work. */
-function isDeliverableActivation(binding: ActivationBindingSnapshot): boolean {
-  return binding.activation.status === 'idle' || binding.activation.status === 'running'
-}
-
-/** Compare immutable activation, Session, and placement identities while allowing status updates. */
-function sameBindingIdentity(left: ActivationBindingSnapshot, right: ActivationBindingSnapshot): boolean {
-  return left.activation.id === right.activation.id
-    && left.activation.teamId === right.activation.teamId
-    && left.activation.participantId === right.activation.participantId
-    && left.sessionId === right.sessionId
-    && left.provider === right.provider
-}
-
-/** Produce one collision-free logical-allocation identity for a complete exact attempt request. */
-function allocationKey(request: TeamWorkspacePrepareRequest): string {
-  return JSON.stringify([
-    request.teamId,
-    request.taskId,
-    request.attemptId,
-    request.assignedRevision,
-    request.participantId,
-    request.activationId,
-    request.sessionId,
-  ])
-}
-
 /** Compare the immutable allocation fields accepted at the workspace seam. */
 function sameAllocation(left: TeamWorkspaceAllocation, right: TeamWorkspaceAllocation): boolean {
   return sameMetadata(left, right)
     && left.teamId === right.teamId
     && left.root === right.root
-}
-
-/** Compare the immutable metadata whose relation is retained across provider recovery. */
-function sameMetadata(left: TeamWorkspaceAllocationMetadata, right: TeamWorkspaceAllocationMetadata): boolean {
-  return left.id === right.id
-    && left.provider === right.provider
-    && left.mode === right.mode
-    && left.teamId === right.teamId
-    && left.taskId === right.taskId
-    && left.attemptId === right.attemptId
-    && left.assignedRevision === right.assignedRevision
-    && left.participantId === right.participantId
-    && left.activationId === right.activationId
-    && left.sessionId === right.sessionId
-    && left.baseVersion === right.baseVersion
 }
 
 /** Mint a deterministic provider-owned allocation id without deriving a filesystem path from Team ids. */

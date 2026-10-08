@@ -936,15 +936,10 @@ export class PersistenceCoordinator<TornMarker = unknown> {
    * @returns true only without live, tracked, prepared or stored ownership.
    */
   isUnmaterialized(id: SessionId, signal?: AbortSignal): Promise<boolean> {
-    const retired = Promise.resolve(this.retirements.get(id))
-    const waited = signal === undefined ? retired : observeQueuedAbort(retired, signal, () => false)
-    return waited.then(() => this.serialize(id, async () => {
-      signal?.throwIfAborted()
-      const stored = await this.backend.loadStored(id, signal)
-      signal?.throwIfAborted()
+    return this.withRetiredStored(id, (stored) => {
       return stored === undefined && this.ctx.sessions.get(id) === undefined
         && !this.states.has(id) && !this.preparations.has(id)
-    }, signal))
+    }, signal)
   }
 
   /**
@@ -979,12 +974,7 @@ export class PersistenceCoordinator<TornMarker = unknown> {
 
   private persistenceReference(id: SessionId, expectedSequence: number | undefined, throughSequence: number | undefined,
     signal?: AbortSignal): Promise<import('./index.ts').SessionPersistenceReference> {
-    const retired = Promise.resolve(this.retirements.get(id))
-    const waited = signal === undefined ? retired : observeQueuedAbort(retired, signal, () => false)
-    return waited.then(() => this.serialize(id, async () => {
-      signal?.throwIfAborted()
-      const stored = await this.backend.loadStored(id, signal)
-      signal?.throwIfAborted()
+    return this.withRetiredStored(id, async (stored) => {
       if (stored === undefined) throw new Error(`session "${id}" not found`)
       this.assertStoredId(id, stored.meta)
       this.assertVersion(stored.meta)
@@ -1001,6 +991,20 @@ export class PersistenceCoordinator<TornMarker = unknown> {
       const digest = createHash('sha256').update(JSON.stringify({ header, events: events.slice(0, sequence + 1) }), 'utf8').digest('hex')
       const fingerprint = `sha256:${digest}` as import('@clocky/clocky-brand').Branded<'SessionPersistenceFingerprint'>
       return { header, revision, sequence, fingerprint, retention: 'full' as const }
+    }, signal)
+  }
+
+  /** Observe storage only after retirement drains and under the exact Session serializer. */
+  private withRetiredStored<T>(
+    id: SessionId, consume: (stored: StoredPrefix<TornMarker> | undefined) => T | Promise<T>, signal?: AbortSignal,
+  ): Promise<T> {
+    const retired = Promise.resolve(this.retirements.get(id))
+    const waited = signal === undefined ? retired : observeQueuedAbort(retired, signal, () => false)
+    return waited.then(() => this.serialize(id, async () => {
+      signal?.throwIfAborted()
+      const stored = await this.backend.loadStored(id, signal)
+      signal?.throwIfAborted()
+      return await consume(stored)
     }, signal))
   }
 

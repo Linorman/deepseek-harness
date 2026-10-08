@@ -29,7 +29,8 @@ export interface AnchoredPositionOptions {
 /**
  * Track an anchor and return the panel's fixed coordinates.
  * @param options - the open state, the two refs, and the gap/margin distances.
- * @returns `left`/`top` for the panel, or `null` before the first measurement.
+ * @returns `left`/`top` and the trigger-facing `transformOrigin` for the
+ * panel, or `null` before the first measurement.
  */
 export function useAnchoredPosition(options: AnchoredPositionOptions): CSSProperties | null {
   const { open, anchorRef, panelRef, gap, margin } = options
@@ -53,7 +54,7 @@ export function useAnchoredPosition(options: AnchoredPositionOptions): CSSProper
       if (width > 0) left = Math.min(Math.max(left, margin), window.innerWidth - width - margin)
       if (height > 0) top = Math.min(Math.max(top, margin), window.innerHeight - height - margin)
       /* v8 ignore stop */
-      setPosition({ left, top })
+      setPosition({ left, top, transformOrigin: transformOriginFor(rect, left, top) })
     }
     // The first run measures the panel in the same commit that opened it, so
     // the clamp uses real dimensions before anything paints.
@@ -78,4 +79,17 @@ export function useAnchoredPosition(options: AnchoredPositionOptions): CSSProper
     }
   }, [open, anchorRef, panelRef, gap, margin])
   return position
+}
+
+/**
+ * The point of a floating panel nearest its trigger, so an entrance scale
+ * grows out of the control that opened it.
+ * @param anchor - the trigger's viewport rect.
+ * @param left - the panel's resolved left edge.
+ * @param top - the panel's resolved top edge.
+ * @returns a CSS `transform-origin` value in panel coordinates.
+ */
+export function transformOriginFor(anchor: Pick<DOMRect, 'left' | 'width' | 'top'>, left: number, top: number): string {
+  const x = Math.max(0, Math.round(anchor.left + anchor.width / 2 - left))
+  return `${String(x)}px ${top < anchor.top ? '100%' : '0'}`
 }

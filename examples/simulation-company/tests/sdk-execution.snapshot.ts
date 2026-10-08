@@ -32,7 +32,7 @@ it.each(['json', 'sqlite'])('preserves original report inputs across actual Type
   }
   try {
     await initialize()
-    const created = await sdk.createSimulation({ commandId: 'sdk-execution-create', templateId: 'company', templateVersion: '1',
+    const created = await sdk.createSimulation({ commandId: 'sdk-execution-create', templateId: 'company', templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' },
       name: 'SDK report continuation', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
     const runId = created.runId; await finished(created.commandId)
     await sdk.manageSimulation({ runId, managementId: 'first-start', phase: 'running' })

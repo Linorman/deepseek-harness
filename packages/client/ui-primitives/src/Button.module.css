@@ -1,73 +1,122 @@
-/* Capsule geometry from the figma Button component (1:155 instances:
- * h36, pad 14/7, gap 4, r18; the wide New Session form is r24 at h38 —
- * owners with the wide form set their own radius/width). */
+/* Buttons: one geometry per size, one color family per variant. Owners with a
+ * wide form (the sidebar's new-work action) set their own width and radius. */
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  border: none;
-  border-radius: var(--clocky-control-radius, 18px);
+  gap: var(--clocky-space-1);
+  flex: none;
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-md);
   cursor: pointer;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--clocky-alias-label-primary);
+  font: var(--clocky-type-label);
+  color: var(--clocky-fg-primary);
   background: transparent;
-  padding: 0 14px;
+  white-space: nowrap;
+  transition:
+    background-color var(--clocky-duration-fast) var(--clocky-ease-standard),
+    border-color var(--clocky-duration-fast) var(--clocky-ease-standard),
+    color var(--clocky-duration-fast) var(--clocky-ease-standard),
+    transform var(--clocky-duration-fast) var(--clocky-ease-enter);
+}
+
+/* Press feedback: the button settles under the pointer and springs back on release. */
+.button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button:active:not(:disabled) { transform: none; }
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--clocky-border-focus);
+  outline-offset: 2px;
 }
 
 .button:disabled {
   cursor: not-allowed;
-  opacity: 0.4;
+  opacity: 0.45;
+}
+
+.button[data-loading] {
+  cursor: progress;
+  opacity: 1;
+}
+
+.sm {
+  height: 28px;
+  padding: 0 var(--clocky-space-2);
+  font: var(--clocky-type-caption);
+  font-weight: 500;
+  border-radius: var(--clocky-radius-sm);
 }
 
 .md {
   height: 36px;
+  padding: 0 var(--clocky-space-3);
 }
 
-/* Compact height for dense rows; no dedicated figma node (Icon_container
- * 28x28 is the icon-only form) — geometry is ours. */
-.sm {
-  height: 28px;
-  font-size: 12px;
-  line-height: 18px;
-  padding: 0 10px;
-  border-radius: var(--clocky-control-radius, 14px);
+.lg {
+  height: 44px;
+  padding: 0 var(--clocky-space-5);
+  font: var(--clocky-type-body-strong);
+  border-radius: var(--clocky-radius-lg);
 }
+
+.iconOnly {
+  padding: 0;
+}
+
+.iconOnly.sm { width: 28px; }
+.iconOnly.md { width: 36px; }
+.iconOnly.lg { width: 44px; }
 
 .primary {
-  background: var(--clocky-alias-button-primary-fill);
-  color: var(--clocky-alias-label-primary-foreground);
+  background: var(--clocky-accent-bg);
+  color: var(--clocky-fg-on-accent);
 }
 
 .primary:hover:not(:disabled) {
-  background: var(--clocky-alias-button-primary-hover);
+  background: var(--clocky-accent-bg-hover);
+}
+
+.secondary {
+  border-color: var(--clocky-border-default);
+  background: var(--clocky-bg-surface);
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: var(--clocky-border-strong);
+  background: var(--clocky-bg-hover);
 }
 
 .ghost:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
-.ghost:active:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-active);
+.ghost:active:not(:disabled),
+.secondary:active:not(:disabled) {
+  background: var(--clocky-bg-active);
 }
 
-/* Dialog Cancel (figma 451:18655): bordered capsule on transparent fill. */
-.outline {
-  border: 1px solid var(--clocky-alias-border-l2);
-  background: transparent;
+.danger {
+  border-color: var(--clocky-status-failed-border);
+  background: var(--clocky-status-failed-bg);
+  color: var(--clocky-status-failed-fg);
 }
 
-.outline:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+.danger:hover:not(:disabled) {
+  border-color: var(--clocky-status-failed-fg);
 }
 
 .toolbar {
-  background: var(--clocky-alias-button-tool-bar-fill);
+  background: var(--clocky-media-control-bg);
+  color: var(--clocky-fg-inverse);
 }
 
 .toolbar:hover:not(:disabled) {
-  background: var(--clocky-alias-button-tool-bar-hover);
+  background: var(--clocky-media-control-bg-hover);
 }
 
 .icon {
@@ -76,4 +125,17 @@
   height: 16px;
   align-items: center;
   justify-content: center;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--clocky-radius-full);
+  animation: button-spin var(--clocky-duration-spin) var(--clocky-ease-linear) infinite;
+}
+
+@keyframes button-spin {
+  to { transform: rotate(360deg); }
 }

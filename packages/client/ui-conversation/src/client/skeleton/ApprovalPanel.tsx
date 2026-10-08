@@ -16,7 +16,7 @@ import { useMemo, useState } from 'react'
 import { Button } from '@clocky/clocky-client-ui-primitives'
 import type { RunningToolCall } from '@clocky/clocky-client-runtime/client'
 import { PendingApproval, type ApprovalComposerProps } from '../contract/slots.ts'
-import { rootToolCall } from '../chat/tool-node-reader.ts'
+import { rootToolCall } from '../contract/tool-node-reader.ts'
 import css from './ApprovalPanel.module.css'
 
 /** Extract the shell command from an approval's paired running call (bash-family args carry `command`); undefined hides the line. */
@@ -74,7 +74,7 @@ function ApprovalFlow({ pending, command, t }: {
           {command !== undefined && <div className={css.command}>{command}</div>}
         </div>
         <div className={css.actionRow}>
-          <Button variant="outline" className={css.reject} disabled={answered} onClick={() => { answer('rejected') }}>
+          <Button variant="secondary" className={css.reject} disabled={answered} onClick={() => { answer('rejected') }}>
             {t('approval.reject')}
           </Button>
           <Button variant="primary" disabled={answered} onClick={() => { answer('allowed-once') }}>

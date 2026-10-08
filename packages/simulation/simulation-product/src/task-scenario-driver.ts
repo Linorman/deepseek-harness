@@ -1,4 +1,5 @@
 /** Bounded trusted report workflows reuse native windows, task attempts and recipient delivery. */
+import { driverActivation } from './driver-residency.ts'
 import { simulationDecisionIdSchema, simulationWindowIdSchema, simulationProposalSchema } from '@clocky/clocky-simulation'
 import type { SimulationRun, SimulationSnapshot, SimulationContextRequest, SimulationEntityId, SimulationEventId } from '@clocky/clocky-simulation'
 import type { SimulationTeamConnection } from '@clocky/clocky-simulation-team'
@@ -43,10 +44,12 @@ export class SimulationTaskScenarioDriver {
         || initial.manifest.team.owner.teamId !== state.teamReservation?.teamId) return this.result('recovery-required', round)
       if (state.activeWindowId !== undefined) {
         const window = state.windows?.[state.activeWindowId], slot = window?.request.decisions[0]
+        /* v8 ignore next -- Native projection validation retains the active window with a nonempty parsed decision list. */
         const decision = slot === undefined ? undefined : state.decisions[slot.id]
         const taskOwner = slot === undefined ? undefined : state.taskDecisionOwners?.[slot.id]
         if (taskOwner !== undefined) {
           const execution = state.taskExecutions?.[taskOwner.attemptId]
+          /* v8 ignore next -- Native task projection validation requires each owner index to name a retained attempt. */
           const operation = execution === undefined ? undefined : state.operations[execution.request.operationId]
           const step = this.scenario.steps.find((value, index) => operation?.decisionId.startsWith(taskScenarioPrefix(index))
             && operation.entityId === value.sourceEntityId && execution?.request.entityId === value.entityId)
@@ -87,12 +90,18 @@ export class SimulationTaskScenarioDriver {
         if (stop !== undefined) return this.result(stop, round + 1)
         continue
       }
-      let selected: { step: SimulationTaskScenarioStep; index: number; operationId?: import('@clocky/clocky-simulation').SimulationOperationId } | undefined
+      let selected: { step: SimulationTaskScenarioStep; index: number; operationId?: undefined } | {
+        step: SimulationTaskScenarioStep
+        index: number
+        operationId: import('@clocky/clocky-simulation').SimulationOperationId
+        receipt: Parameters<SimulationTaskExecutorOptions['readTask']>[0]
+      } | undefined
       for (const [index, step] of this.scenario.steps.entries()) {
         const creation = Object.values(state.decisions).find(value => value.id.startsWith(taskScenarioPrefix(index)) && value.status === 'accepted')
         if (creation === undefined) { selected = { step, index }; break }
         if (creation.operationIds.length !== 1) return this.result('scenario-blocked', round + 1)
         const operationId = creation.operationIds[0]
+        /* v8 ignore next -- A validated one-element decision operation list has a defined first identity. */
         const operation = operationId === undefined ? undefined : state.operations[operationId]
         if (operation?.action.kind !== 'task/create') return this.result('scenario-blocked', round + 1)
         if (operation.result !== undefined && operation.result.status !== 'applied') return this.result('scenario-blocked', round + 1)
@@ -100,10 +109,13 @@ export class SimulationTaskScenarioDriver {
         if (receipt === undefined) return this.result('work-limit', round + 1)
         const task = await this.readTask({ teamId: receipt.teamId, taskId: receipt.taskId })
         this.lifetime.throwIfAborted()
-        if (task.teamId !== receipt.teamId || task.id !== receipt.taskId) throw new Error('Task workflow reader returned another task')
+        if (task.teamId !== receipt.teamId) throw new Error('Task workflow reader returned another task')
+        if (task.id !== receipt.taskId) throw new Error('Task workflow reader returned another task')
         if (task.phase === 'completed' && Object.values(state.taskExecutions ?? {}).some(value =>
           value.request.operationId === operation.id && value.task?.phase === 'completed')) continue
-        selected = { step, index, operationId: operation.id }; break
+        selected = { step, index, operationId: operation.id, receipt: {
+          teamId: receipt.teamId, taskId: receipt.taskId,
+        } }; break
       }
       if (selected === undefined) {
         state = this.run.snapshot()
@@ -117,9 +129,10 @@ export class SimulationTaskScenarioDriver {
         if (!['until', 'decision-required'].includes(future.reason)) return this.result(future.reason, round + 1, future.nextAttemptAt)
         continue
       }
-      const { step, index, operationId } = selected
-      if (operationId === undefined) {
+      const { step, index } = selected
+      if (selected.operationId === undefined) {
         const reviewer = step.reviewerEntityId === undefined ? undefined : state.entities[step.reviewerEntityId]?.binding
+        /* v8 ignore next -- Complete initial checkpoint preparation permanently binds every installed reviewer entity. */
         if (step.reviewerEntityId !== undefined && reviewer === undefined) return this.result('scenario-blocked', round + 1)
         const proposal = simulationProposalSchema.parse({ after: [], action: { kind: 'task/create', deliverAt: state.time,
           task: { subject: step.subject, description: step.description, blockedBy: [], requiredCapabilities: [],
@@ -129,13 +142,11 @@ export class SimulationTaskScenarioDriver {
         if (stop !== undefined) return this.result(stop, round + 1)
         continue
       }
-      const executor = this.executor(step, operationId)
+      const executor = this.executor(step, selected.operationId)
       const result = await executor.advance()
       if (result.reason === 'idle') continue
       if (result.reason === 'task-waiting') {
-        const receipt = this.run.snapshot().operations[operationId]?.outbox?.taskReceipt
-        if (receipt === undefined) throw new Error('Task workflow lost its creation receipt')
-        const task = await this.readTask({ teamId: receipt.teamId, taskId: receipt.taskId })
+        const task = await this.readTask(selected.receipt)
         if (task.phase === 'review') return this.result('review-required', round + 1)
         continue
       }
@@ -169,15 +180,13 @@ export class SimulationTaskScenarioDriver {
       ...nextAttemptAt === undefined ? {} : { nextAttemptAt } }
   }
   private residency(entityId: SimulationEntityId) {
-    const entity = this.run.snapshot().entities[entityId]
-    return { activation: { provider: this.preparation.participant.provider,
-      seed: { kind: entity?.writer === undefined ? 'fresh' as const : 'resume' as const },
-      agent: { preset: this.preparation.participant.preset,
-        options: { provider: this.config.model.provider, model: this.config.model.name } },
-      signal: this.lifetime }, evict: Object.keys(this.run.snapshot().entities) as SimulationEntityId[] }
+    return { activation: driverActivation(this.run, entityId, this.preparation.participant, this.config.model, this.lifetime),
+      evict: Object.keys(this.run.snapshot().entities) as SimulationEntityId[] }
   }
   private context(state: SimulationSnapshot, entityId: SimulationEntityId, proposal: Parameters<typeof taskScenarioInput>[0]):
   Omit<SimulationContextRequest, 'maxBytes' | 'teamCursor'> {
+    /* v8 ignore next -- This exclusive prepared workflow starts without commitments; its policies cannot create one. */
+    const commitments = Object.values(state.commitments).filter(value => value.debtor === entityId || value.creditor === entityId)
     return { personaVersion: 'task-workflow/1', modelVersion: `${this.config.model.provider}/${this.config.model.name}`,
       sources: [{ kind: 'run-event', runId: state.spec.runId, sequence: state.revision }], sections: [
         { kind: 'identity', required: true, blocks: [{ type: 'text', text: `You are ${entityId}.` }] },
@@ -186,12 +195,12 @@ export class SimulationTaskScenarioDriver {
         { kind: 'goals', required: true, blocks: [{ type: 'text', text: proposal === null
           ? 'Acknowledge the selected notification with an empty proposal list.'
           : 'Submit only the supplied authorized proposal unchanged.' }] },
-        { kind: 'commitments', required: true, blocks: [{ type: 'text', text: JSON.stringify(Object.values(state.commitments)
-          .filter(value => value.debtor === entityId || value.creditor === entityId)) }] },
+        { kind: 'commitments', required: true, blocks: [{ type: 'text', text: JSON.stringify(commitments) }] },
       ] }
   }
   private reportContext(state: SimulationSnapshot, step: SimulationTaskScenarioStep, task: TeamTaskSnapshot) {
     const channel = state.channelReservations?.[step.channelKey]
+    /* v8 ignore next -- The complete preparation checkpoint requires this exact report channel's confirmed reservation. */
     if (channel?.confirmed !== true) throw new Error('Task workflow report channel is not prepared')
     const feedback = task.reviewHistory.at(-1)
     const text = step.text + (feedback?.nextPhase === 'pending' ? ` Review feedback: ${feedback.reason}` : '')

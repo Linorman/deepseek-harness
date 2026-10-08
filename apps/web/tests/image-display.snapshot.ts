@@ -130,7 +130,8 @@ it('accepts pasted images into the composer rail in order and removes them', asy
   })
 
   // An unsupported file announces a transient toast (the inline strip is
-  // gone) and the banner dismisses itself after its hold-and-fade lifetime.
+  // gone) and the banner dismisses itself when its exit fade ends. jsdom runs
+  // no CSS animations, so the test ends the fade by name.
   fireEvent.paste(textarea, {
     clipboardData: {
       items: [{ kind: 'file', type: 'text/plain', getAsFile: () => new File(['x'], 'notes.txt', { type: 'text/plain' }) }],
@@ -139,10 +140,14 @@ it('accepts pasted images into the composer rail in order and removes them', asy
   })
   const unsupportedMessage = 'Only PNG, JPG, WebP, and GIF images are supported'
   const toast = await screen.findByText(unsupportedMessage)
-  expect(toast.closest('[role="alert"]')).not.toBeNull()
+  const alert = toast.closest('[role="alert"]')
+  if (alert === null) throw new Error('the unsupported-file toast is not an alert')
+  const fade = new Event('animationend', { bubbles: true })
+  Object.defineProperty(fade, 'animationName', { value: 'clocky-toast-fade' })
+  alert.dispatchEvent(fade)
   await waitFor(() => {
     expect(screen.queryByText(unsupportedMessage)).toBeNull()
-  }, { timeout: 6_000 })
+  })
 })
 
 it('accepts a whole-page drop under the limits-labeled overlay and refuses an over-limit batch at intake', async () => {

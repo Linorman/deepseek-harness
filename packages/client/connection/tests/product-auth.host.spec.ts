@@ -1,6 +1,6 @@
 /** Local browser bootstrap and in-memory product-auth session behavior. */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { PRODUCT_AUTH_BOOTSTRAP_PATH } from '../src/product-auth-contract.ts'
 import { ProductAuthSessions } from '../src/product-auth.ts'
 
@@ -11,6 +11,7 @@ class Lease {
   readonly revoked = { count: 0 }
   failCall = false
   generation = 1
+  afterCall: (() => void) | undefined
 
   async withCall<T>(
     operation: (call: {
@@ -21,11 +22,13 @@ class Lease {
     signal?: AbortSignal,
   ): Promise<T> {
     if (this.failCall) throw invalidAuthentication
-    return await operation({
+    const result = await operation({
       principal: { id: 'test-principal', issuer: 'test', subject: 'test-user', assurance: 'test', credentialGeneration: this.generation },
       credentialGeneration: this.generation,
       signal: signal ?? new AbortController().signal,
     })
+    this.afterCall?.()
+    return result
   }
 
   async revoke(): Promise<void> {
@@ -59,6 +62,54 @@ function cookie(response: Response): string {
 }
 
 describe('ProductAuthSessions', () => {
+  it('refuses bootstrap after shutdown and remains closed after repeated disposal', async () => {
+    const auth = sessions()
+    await auth.close(); await auth.close()
+    expect((await auth.bootstrap(new Request('http://x/api/bootstrap', { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ credential }) }))).status).toBe(401)
+  })
+
+  it('rejects failed form body reads before acquiring a credential lease', async () => {
+    const lease = new Lease(), auth = sessions({ leases: [lease] })
+    const request = new Request('http://x/api/bootstrap', { method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'credential=value&handoffId=' + 'h'.repeat(43) })
+    vi.spyOn(request, 'text').mockRejectedValueOnce(new Error('Request body disconnected'))
+    expect((await auth.bootstrap(request)).status).toBe(400)
+    expect(lease.revoked.count).toBe(0)
+    await auth.close()
+  })
+
+  it('revokes an admitted lease when its request retires while reading the provider generation', async () => {
+    const lease = new Lease(), auth = sessions({ leases: [lease] }), controller = new AbortController()
+    lease.afterCall = () => { controller.abort() }
+    const response = await auth.bootstrap(new Request('http://x/api/bootstrap', { method: 'POST', signal: controller.signal,
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ credential }) }))
+    expect(response.status).toBe(401)
+    expect(response.headers.get('set-cookie')).toBeNull()
+    expect(lease.revoked.count).toBe(1)
+    await auth.close()
+  })
+
+  it.each(['failure', 'abort'] as const)('revokes the new lease when replacing the old cookie encounters %s', async (outcome) => {
+    const first = new Lease(), second = new Lease(); second.generation = 2
+    const auth = sessions({ leases: [first, second] }), controller = new AbortController()
+    const initial = await auth.bootstrap(new Request('http://x/api/bootstrap', { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ credential }) }))
+    const revoke = first.revoke.bind(first)
+    vi.spyOn(first, 'revoke').mockImplementationOnce(async () => {
+      await revoke()
+      if (outcome === 'failure') throw new Error('Lease revocation failed')
+      controller.abort()
+    })
+    const replacement = auth.bootstrap(new Request('http://x/api/bootstrap', { method: 'POST', signal: controller.signal,
+      headers: { 'content-type': 'application/json', cookie: cookie(initial) }, body: JSON.stringify({ credential }) }))
+    if (outcome === 'failure') await expect(replacement).rejects.toThrow('Lease revocation failed')
+    else expect((await replacement).status).toBe(401)
+    expect(second.revoked.count).toBe(1)
+    expect(await auth.withCall({ headers: { cookie: cookie(initial) } }, async () => 'old')).toEqual({ kind: 'invalid' })
+    await auth.close()
+  })
+
   it('accepts only the exact JSON bootstrap shape and returns credential-safe failures', async () => {
     const auth = sessions({ rejectAuthenticate: true })
     expect(auth.isBootstrapPath(PRODUCT_AUTH_BOOTSTRAP_PATH)).toBe(true)
@@ -180,6 +231,9 @@ describe('ProductAuthSessions', () => {
     })).rejects.toThrow('ordinary operation failure')
     await expect(auth.withCall({ headers: { cookie: sessionCookie } }, () => Promise.reject(new Error('operation failure'))))
       .rejects.toThrow('operation failure')
+    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Opaque caller failures must preserve authentication.
+    await expect(auth.withCall({ headers: { cookie: sessionCookie } }, () => Promise.reject('raw operation failure')))
+      .rejects.toBe('raw operation failure')
 
     lease.failCall = true
     await expect(auth.withCall({ headers: { cookie: sessionCookie } }, async () => 'unreachable'))

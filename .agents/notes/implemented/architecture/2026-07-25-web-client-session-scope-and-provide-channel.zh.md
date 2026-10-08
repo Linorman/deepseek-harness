@@ -27,7 +27,7 @@ client 接收作为持久列表行的参与者 Session，并为其铸对应的 A
 
 ### Agent scope：actx 是 client 侧 cordis 世界的唯一会话载体
 
-运行时 `agents/scope.ts` 与 host `clocky-scope` 机制层一致（fiber + tag + filter 过滤；不 value-import：host 包携带 scoped-events 的 `Events` merge，进 client program 撞 Context merge）：
+运行时 `sessions/scope.ts` 与 host `clocky-scope` 机制层一致（fiber + tag + filter 过滤；不 value-import：host 包携带 scoped-events 的 `Events` merge，进 client program 撞 Context merge）：
 
 - `createScope(ctx, key)`：no-op 插件 fiber + `extend({[kScope]: key, [Context.filter]: …})`——filter 直接住 actx：untagged listener 全局可收，tagged 只收本 scope。
 - 派发就是 cordis 原语，thisArg = actx 本身：`actx.bail(actx, event, req)` / `actx.emit(actx, event, payload)`。

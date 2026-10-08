@@ -6,6 +6,7 @@ import { companyConfig } from './company-driver-fixture.ts'
 import { simulationCompanyDriverSchema } from '../src/company-driver.ts'
 import { call } from './fixtures.ts'
 import { SimulationTaskExecutor } from '../src/task-executor.ts'
+import { taskScenarioReportContinuation } from '../src/task-scenario-policies.ts'
 
 afterEach(() => { vi.restoreAllMocks() })
 
@@ -16,7 +17,8 @@ const driver = simulationCompanyDriverSchema.parse({ ...companyConfig, scenario:
     reviewerEntityId: 'auditor', subject: 'Report', description: 'Publish exactly one report', text: '原始审计报告',
     cognition: 'deterministic', leaseDurationMs: 60000, maxAttempts: 3, retry: 'before-effects' }] } })
 
-it.each(['json', 'sqlite'] as const)('continues an owned delivered report after cold retirement without a second publication (%s)', async (backend) => {
+it.each([['json', false], ['sqlite', false], ['json', true]] as const)
+('continues an owned delivered report after cold retirement without a second publication (%s, repeated interruption %s)', async (backend, secondInterrupted) => {
   const h = await ownerFixture(backend, {}, driver, { maxTokensPerInterval: 0 })
   const advance = Object.getOwnPropertyDescriptor(SimulationTaskExecutor.prototype, 'advance')?.value as
     SimulationTaskExecutor['advance']
@@ -77,7 +79,22 @@ it.each(['json', 'sqlite'] as const)('continues an owned delivered report after 
       }
       return await reserve(request, revision)
     })
+    const secondLoss = secondInterrupted ? vi.spyOn(h.owned(), 'recordTaskResult').mockRejectedValueOnce(
+      new Error('Interrupted after the source-backed acknowledgement and before native result')) : undefined
     await current.manage({ runId, managementId: 'continue-report' as never, phase: 'running' }, call())
+    if (secondLoss !== undefined) {
+      await vi.waitFor(() => { expect(secondLoss).toHaveBeenCalledOnce() }, { timeout: 5000 })
+      secondLoss.mockRestore()
+      const secondCut = { runId, commandId: 'interrupted-continuation-cut' as never }
+      await current.checkpoint(secondCut, call()); expect((await h.finished(secondCut.commandId)).status).toBe('completed')
+      const interrupted = h.owned().snapshot()
+      const continued = Object.values(interrupted.taskExecutions ?? {}).find(value => value.request.reportContinuation !== undefined)
+      expect(continued?.retired).toBeDefined()
+      if (continued === undefined) throw new Error('Interrupted continuation was not retained')
+      expect(taskScenarioReportContinuation(interrupted, continued)).toEqual(continued.request.reportContinuation)
+      expect(Object.values(interrupted.operations).filter(value => value.action.kind === 'communication/post')).toHaveLength(1)
+      return
+    }
     const review = await vi.waitFor(async () => {
       const item = (await current.listTaskReviews({ runId }, call())).items.find(value => value.action.allowed)
       expect(failure).toBeUndefined()
@@ -97,6 +114,17 @@ it.each(['json', 'sqlite'] as const)('continues an owned delivered report after 
     expect(acknowledgement).toMatchObject({ status: 'accepted', operationIds: [] })
     expect(JSON.stringify(acknowledgement?.context)).toContain('reportContinuation')
     expect(taskReportContinuationEvidence(after, continued.request)?.id).toBe(report.id)
+    const withoutExecutions = { ...after }
+    delete withoutExecutions.taskExecutions
+    expect(taskReportContinuationEvidence(withoutExecutions, continued.request)).toBeUndefined()
+    const source = after.taskExecutions?.[continued.request.reportContinuation!.attemptId]
+    if (source === undefined) throw new Error('Original report attempt is missing')
+    expect(taskScenarioReportContinuation(after, source)).toEqual(continued.request.reportContinuation)
+    const older = { ...source, reservedSequence: source.reservedSequence - 1,
+      request: { ...source.request, attemptId: 'older-report-attempt' as never } }
+    expect(taskReportContinuationEvidence({ ...after, taskExecutions: {
+      ...after.taskExecutions, [older.request.attemptId]: older,
+    } }, continued.request)?.id).toBe(report.id)
     const { delivery: _delivery, ...withoutDelivery } = report
     const { outbox: _outbox, ...withoutOutbox } = report
     for (const changed of [

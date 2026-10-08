@@ -13,17 +13,24 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 12px;
-  background: var(--clocky-specific-menu);
-  box-shadow: var(--clocky-shadow-lv3);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
   /* Elevated surface: the scrollbar thumb takes the l2 elevation tokens. The
      declaration sits on the card rather than on `.scrollable .viewport`
      because the elevation is a property of this surface, and the custom
      properties inherit down to whichever descendant actually scrolls (see
      ui-theme styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
+  /* Fades in place: a scaling box would delay pointer actionability on
+     every menu item until it settles. */
+  animation: menu-in var(--clocky-duration-fast) var(--clocky-ease-enter);
+}
+
+@keyframes menu-in {
+  from { opacity: 0; }
 }
 
 /* Primary card is 218 wide in the design across both hosts. */
@@ -31,7 +38,7 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 100;
+  z-index: var(--clocky-layer-dropdown);
   min-width: 218px;
   max-width: 360px;
 }
@@ -44,7 +51,7 @@
   position: fixed;
   top: auto;
   left: auto;
-  z-index: 1100;
+  z-index: var(--clocky-layer-popover);
 }
 
 /* Open above the anchor (empty-state workspace chip: figma 122:9481). */
@@ -85,7 +92,7 @@
   flex-direction: column;
   margin-top: 4px;
   padding-top: 4px;
-  border-top: 1px solid var(--clocky-alias-border-l2);
+  border-top: 1px solid var(--clocky-border-default);
 }
 
 .itemWrap {
@@ -102,17 +109,17 @@
   min-height: 40px;
   padding: 8px 10px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--clocky-radius-md);
   background: transparent;
   cursor: pointer;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-primary);
   text-align: left;
 }
 
 .item:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .denseList .item {
@@ -128,16 +135,16 @@
 .submenu.compactList {
   min-width: 164px;
   padding: 2px;
-  border-radius: 7px;
+  border-radius: var(--clocky-radius-sm);
 }
 
 .compactList .item {
   min-height: 26px;
   gap: 6px;
   padding: 3px 7px;
-  border-radius: 5px;
-  font-size: 12px;
-  line-height: 18px;
+  border-radius: var(--clocky-radius-xs);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 .compactList .itemIcon {
@@ -151,8 +158,8 @@
 
 .compactList .label {
   padding: 4px 7px;
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .item:disabled {
@@ -167,7 +174,7 @@
   height: 16px;
   align-items: center;
   justify-content: center;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .itemLabel {
@@ -180,7 +187,7 @@
 
 .check {
   flex: none;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 /* Selected cell keeps the plain fill (marker is the trailing check); the
@@ -191,30 +198,30 @@
 
 /* Destructive row: error text/icon, danger hover fill. */
 .danger {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .danger .itemIcon {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .danger:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
+  background: var(--clocky-status-failed-bg);
 }
 
 /* Heading row: non-interactive small grey text, padding aligned with items. */
 .label {
   padding: 8px 10px;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* Separator cell (figma 122:9481): py 4 / px 2 around the hairline. */
 .separator {
   height: 1px;
   margin: 4px 2px;
-  background: var(--clocky-alias-border-l1);
+  background: var(--clocky-border-subtle);
 }
 
 /* Nested card to the right of the parent row (figma 419:16920).
@@ -228,7 +235,7 @@
   top: auto;
   bottom: -4px;
   left: calc(100% + 10px);
-  z-index: 101;
+  z-index: calc(var(--clocky-layer-dropdown) + var(--clocky-layer-local-1));
   min-width: 163px;
 }
 
@@ -239,4 +246,12 @@
   bottom: 0;
   left: -10px;
   width: 10px;
+}
+
+/* Reduced motion: menus appear without the fade. */
+@media (prefers-reduced-motion: reduce) {
+  .list,
+  .submenu {
+    animation: none;
+  }
 }

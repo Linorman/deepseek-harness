@@ -15,15 +15,19 @@ describe('coordinator review facts through the real Loader', () => {
     { mode: 'none' }, { mode: 'review' }, { mode: 'rework' },
     { mode: 'rework', maxRetriesPerTeam: 1 },
     { mode: 'rework', reassign: true },
+    { mode: 'review', promptRetry: true },
     { mode: 'review', fail: true },
     { mode: 'review', fail: true, watch: true },
+    { mode: 'rework', cancelPreserved: true },
   ] as const) {
     const { mode } = scenario
     const reassign = 'reassign' in scenario && scenario.reassign
+    const promptRetry = 'promptRetry' in scenario && scenario.promptRetry
     const fail = 'fail' in scenario && scenario.fail
     const watch = 'watch' in scenario && scenario.watch
+    const cancelPreserved = 'cancelPreserved' in scenario && scenario.cancelPreserved
     const maxRetriesPerTeam = 'maxRetriesPerTeam' in scenario ? scenario.maxRetriesPerTeam : undefined
-    it(`reports the matching attempt decision for ${mode}${reassign ? ' with a replacement worker' : ''}${fail ? ' with a failed reviewer' : ''}${watch ? ' through watch' : ''}${maxRetriesPerTeam === undefined ? '' : ' at the retry limit'}`, async () => {
+    it(`reports the matching attempt decision for ${mode}${reassign ? ' with a replacement worker' : ''}${promptRetry ? ' after reviewer prompt retry' : ''}${fail ? ' with a failed reviewer' : ''}${watch ? ' through watch' : ''}${cancelPreserved ? ' with preserved-workspace cancellation' : ''}${maxRetriesPerTeam === undefined ? '' : ' at the retry limit'}`, async () => {
       await mkdir(join(repository, '.tmp'), { recursive: true })
       const root = await mkdtemp(join(repository, '.tmp/rp-'))
       const work = join(root, 'work')
@@ -41,13 +45,19 @@ describe('coordinator review facts through the real Loader', () => {
         }
         const poolPatch = join(target, 'pool.patch.yml')
         if (reassign) await writeFile(poolPatch, '- id: team-run\n  config:\n    workerCount: 2\n    workerPreset: minimal\n    reviewerPreset: minimal\n    workerTaskMaxAttempts: 2\n')
+        const cancelPatch = join(target, 'cancel.patch.yml')
+        if (cancelPreserved) await writeFile(cancelPatch, '- id: team-run\n  config:\n    workerPreset: minimal\n    reviewerPreset: minimal\n    workerTaskMaxAttempts: 1\n')
         const launch = resolveExampleLaunch({ srcBin: join(repository, 'apps/cli/src/bin.ts'),
           configArgs: ['--profile', 'headless', '--patch', join(fixtures, 'headless-review-projection.cordis.yml'),
             ...maxRetriesPerTeam === undefined ? [] : ['--patch', budgetPatch],
-            ...reassign ? ['--patch', poolPatch] : []],
+            ...reassign ? ['--patch', poolPatch] : [],
+            ...cancelPreserved ? ['--patch', cancelPatch] : []],
           tsconfigPath: join(repository, 'tsconfig.json'), env: {
             CLOCKY_HOME: join(root, '.clocky'), CLOCKY_AGENTS_HOME: join(root, '.agents'), CLOCKY_REVIEW_MODE: mode,
-            CLOCKY_TELEMETRY_DISABLED: '1', TSX_DISABLE_CACHE: '1', CLOCKY_REVIEW_REASSIGN: reassign ? '1' : '0', CLOCKY_REVIEW_FAIL: fail ? '1' : '0', CLOCKY_REVIEW_WAIT_MODE: watch ? 'watch' : 'wait',
+            CLOCKY_TELEMETRY_DISABLED: '1', TSX_DISABLE_CACHE: '1', CLOCKY_REVIEW_REASSIGN: reassign ? '1' : '0',
+            CLOCKY_REVIEW_PROMPT_RETRY: promptRetry ? '1' : '0', CLOCKY_REVIEW_FAIL: fail ? '1' : '0',
+            CLOCKY_REVIEW_CANCEL_PRESERVED: cancelPreserved ? '1' : '0',
+            CLOCKY_REVIEW_WAIT_MODE: watch ? 'watch' : 'wait',
             NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
           },
         })
@@ -76,13 +86,25 @@ describe('coordinator review facts through the real Loader', () => {
             })
               .filter(entry => entry.type === 'task/changed').map(entry => entry.task!)
             if (fail) expect(tasks.at(-1)?.phase).not.toBe('completed')
-            else expect(tasks.at(-1)?.phase).toBe('completed')
+            else expect(tasks.at(-1)?.phase).toBe(cancelPreserved ? 'cancelled' : 'completed')
             expect(tasks[0]?.reviewPolicy.kind).toBe(mode === 'none' ? 'none' : 'participant')
-            expect(tasks.at(-1)?.reviewHistory.map(review => review.nextPhase)).toEqual(fail || mode === 'none' ? [] : mode === 'rework' ? ['pending', 'completed'] : ['completed'])
+            expect(tasks.at(-1)?.reviewHistory.map(review => review.nextPhase)).toEqual(fail || mode === 'none' ? []
+              : cancelPreserved ? ['pending'] : mode === 'rework' ? ['pending', 'completed'] : ['completed'])
+            if (promptRetry) {
+              const reviewerId = (tasks[0]?.reviewPolicy as { reviewerId?: string }).reviewerId
+              const epochs = entries.map(entry => entry.value as {
+                type?: string
+                binding?: { activation?: { id: string; participantId: string; status: string } }
+              }).filter(entry => entry.type === 'activation/changed')
+                .map(entry => entry.binding?.activation)
+                .filter(activation => activation?.participantId === reviewerId)
+              expect(new Set(epochs.map(activation => activation?.id)).size).toBe(2)
+              expect(epochs.some(activation => activation?.status === 'offline')).toBe(true)
+            }
           } finally { await stream.close() }
         } finally { await backend.close() }
         if (fail) { expect(result.stdout).toBe(''); return }
-        const expected = join(import.meta.dirname, `snapshots/review-projection/${mode}${reassign ? '-reassigned' : ''}.expected.json`)
+        const expected = join(import.meta.dirname, `snapshots/review-projection/${mode}${reassign ? '-reassigned' : ''}${cancelPreserved ? '-preserved-cancel' : ''}.expected.json`)
         if (process.env.CLOCKY_SNAPSHOT === 'refresh') { await mkdir(dirname(expected), { recursive: true }); await writeFile(expected, result.stdout) }
         else expect(result.stdout).toBe(await readFile(expected, 'utf8'))
       } catch (error: unknown) {

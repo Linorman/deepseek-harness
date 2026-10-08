@@ -1,9 +1,115 @@
 // @vitest-environment jsdom
 /** View-only deep links clear dismissed identities and remain independent across registration lifetimes. */
-import { expect, it } from 'vitest'
-import { createSimulationStore, route, writeRoute, reviewDraftKey, operationRetryDraftKey } from '../src/client/store.ts'
+import { expect, it, vi } from 'vitest'
+import { createSimulationStore, route, writeRoute, reviewDraftKey, operationRetryDraftKey, taskCancelDraftKey } from '../src/client/store.ts'
 import { Config } from '../src/config.ts'
 import { collectionInput, objectInput, normalize } from '../src/client/selection.ts'
+import type { Route } from '../src/client/store.ts'
+
+it('replaces explicit history state without duplicating an already committed location', () => {
+  const replace = vi.spyOn(window.history, 'replaceState')
+  const push = vi.spyOn(window.history, 'pushState')
+  try {
+    const target: Route = { module: 'entities', search: 'History target' }
+    writeRoute(target, false)
+    expect(replace).toHaveBeenCalledOnce()
+    writeRoute(target)
+    expect(push).not.toHaveBeenCalled()
+    window.history.replaceState(null, '', '?simulationModule=decisions&simulationObject=decision&simulationSection=context&simulationSource=0')
+    expect(route().sourceIndex).toBe(0)
+    window.history.replaceState(null, '', '?simulationModule=decisions&simulationObject=decision&simulationSection=knowledge&simulationKnowledge=knowledge&simulationKnowledgeRevision=1')
+    expect(route().knowledgeRevision).toBe(1)
+  } finally { replace.mockRestore(); push.mockRestore() }
+})
+
+it('shares bounded retry, cancellation, input and creation capacity without erasing admitted drafts', () => {
+  const view = createSimulationStore(4096, 1).create()
+  const runId = 'run' as never
+  const retry = { runId, operationId: 'operation', expectedAttemptCount: 1, reason: 'Retained retry' }
+  view.actions.operationRetry('retry', retry)
+  const before = view.getSnapshot()
+  expect(() => { view.actions.operationRetry('other', { ...retry, operationId: 'other' }) }).toThrow('capacity')
+  expect(() => { view.actions.input(runId, { entityId: 'entity', text: 'Input', availableAt: '0' }) }).toThrow('capacity')
+  expect(() => { view.actions.cancel('cancel', { runId, operationId: 'operation', expectedRevision: 1,
+    expectedAttemptId: null, reason: 'Cancel' }) }).toThrow('capacity')
+  expect(view.getSnapshot()).toBe(before)
+  view.actions.operationRetry('retry', undefined)
+  view.actions.input(runId, { entityId: 'entity', text: 'Input', availableAt: '0' })
+  view.actions.input(runId, undefined)
+  const cancel = { runId, operationId: 'operation', expectedRevision: 1, expectedAttemptId: null, reason: 'Cancel' }
+  view.actions.cancel('cancel', cancel)
+  expect(taskCancelDraftKey(cancel)).toBe('["run","operation"]')
+  expect(() => { view.actions.cancel('cancel', { ...cancel, reason: '界'.repeat(2000) }) }).toThrow('capacity')
+  view.actions.cancel('cancel', undefined)
+  view.actions.review('review', { runId, operationId: 'operation', attemptId: 'attempt', expectedRevision: 1,
+    nextPhase: 'completed', reason: 'Review' })
+  view.actions.review('review', undefined)
+  view.actions.creation({ templateId: 'template', name: 'Name', buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '0' })
+  view.actions.creation(undefined)
+  view.actions.creating(true)
+  view.actions.active(true)
+  view.actions.maintenance({ runId, kind: 'checkpoint' })
+  expect(view.getSnapshot().maintenance).toEqual({ runId, kind: 'checkpoint' })
+  view.actions.maintenance(undefined)
+  expect(view.getSnapshot()).toMatchObject({ creating: true, active: true, inputDrafts: {},
+    reviewDrafts: {}, cancelDrafts: {}, operationRetryDrafts: {} })
+})
+
+it('does not retain unrelated draft fields in exact dialog targets or scroll identities', () => {
+  const view = createSimulationStore(4096, 4).create()
+  const target = { runId: 'run' as never, operationId: 'operation', reason: 'Private' }
+  view.actions.operationRetryTarget(target)
+  view.actions.cancelTarget(target)
+  expect(view.getSnapshot().operationRetryTarget).toEqual({ runId: 'run', operationId: 'operation' })
+  expect(view.getSnapshot().cancelTarget).toEqual({ runId: 'run', operationId: 'operation' })
+  view.actions.operationRetryTarget(undefined)
+  view.actions.cancelTarget(undefined)
+  view.actions.reviewTarget(undefined)
+  view.actions.object('object')
+  view.actions.scroll('directory', 40)
+  view.actions.search('Committed')
+  expect(view.getSnapshot()).toMatchObject({ operationRetryTarget: undefined, cancelTarget: undefined, objectId: 'object', directoryScroll: 0 })
+})
+
+it('refuses complete serialized byte overflows for retry, input and creation atomically', () => {
+  const view = createSimulationStore(128, 10).create()
+  const before = view.getSnapshot()
+  expect(() => { view.actions.operationRetry('retry', { runId: 'run' as never, operationId: 'operation', expectedAttemptCount: 1,
+    reason: '界'.repeat(200) }) }).toThrow('capacity')
+  expect(() => { view.actions.input('run' as never, { entityId: 'entity', text: '界'.repeat(200), availableAt: '0' }) }).toThrow('capacity')
+  expect(() => { view.actions.creation({ templateId: 'template', name: '界'.repeat(200), buyerName: '', supplierName: '', initialStock: '' }) }).toThrow('capacity')
+  expect(view.getSnapshot()).toBe(before)
+})
+
+it('retains valid record ordinals and clears only changed list scroll identities', () => {
+  window.history.replaceState(null, '', '?simulationModule=records&simulationSequence=0')
+  expect(route().recordSequence).toBe(0)
+  const view = createSimulationStore(4096, 4).create()
+  const base: Route = { runId: 'run', module: 'operations', search: 'one', status: 'pending', cognition: undefined,
+    entityId: 'entity', decisionId: 'decision' }
+  view.actions.restore(base)
+  view.actions.scroll('directory', 30)
+  view.actions.scroll('collection', 50)
+  view.actions.restore(base)
+  expect(view.getSnapshot()).toMatchObject({ directoryScroll: 30, collectionScroll: 50 })
+  for (const change of [{ entityId: 'other' }, { decisionId: 'other' }]) {
+    view.actions.scroll('collection', 50)
+    view.actions.restore({ ...base, ...change })
+    expect(view.getSnapshot().collectionScroll).toBe(0)
+    view.actions.restore(base)
+  }
+  const entities: Route = { ...base, module: 'entities', status: 'active', cognition: 'none' }
+  view.actions.restore(entities)
+  view.actions.scroll('collection', 50)
+  view.actions.restore({ ...entities, cognition: 'agent' })
+  expect(view.getSnapshot().collectionScroll).toBe(0)
+  view.actions.restore({ ...base, search: 'two' })
+  expect(view.getSnapshot().directoryScroll).toBe(0)
+  view.actions.authorization(1)
+  view.actions.authorization(1)
+  const retry = { runId: 'run' as never, operationId: 'operation', expectedAttemptCount: 1, reason: '界'.repeat(2000) }
+  expect(() => { view.actions.operationRetry('large', retry) }).toThrow('capacity')
+})
 
 it('retains operation-specific raw reasons across navigation within shared private-input capacity', () => {
   const view = createSimulationStore(1024, 2).create()

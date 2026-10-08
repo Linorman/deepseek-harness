@@ -112,7 +112,7 @@ describe('ACP Team bridge edge cases', () => {
         message: {
           id: 'outside-output' as never,
           role: 'assistant',
-          content: [{
+          content: [{ type: 'text', text: 'Historical output outside a prompt.' }, {
             type: 'image',
             attachment: {
               attachmentId: 'missing' as never,
@@ -127,6 +127,8 @@ describe('ACP Team bridge edge cases', () => {
     } as never)
 
     await vi.waitFor(() => { expect(warn).toHaveBeenCalledWith(expect.stringContaining('assistant output conversion failed')) })
+    expect(harness.updates).toContainEqual({ sessionUpdate: 'agent_message_chunk',
+      content: { type: 'text', text: 'Historical output outside a prompt.' } })
   })
 
   it('maps invalid, internal, request, and generic prompt failures without retaining the slot', async () => {

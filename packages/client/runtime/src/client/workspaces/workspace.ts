@@ -5,7 +5,7 @@ import type {
 } from '@clocky/clocky-api-remotes/client'
 import { transportError } from '@clocky/clocky-host-apiproxy/api'
 import type { ObservableSnapshot } from '../contract/store.ts'
-import { Notifier } from '../sessions/notifier.ts'
+import { Notifier } from '../contract/notifier.ts'
 
 /** Host input retained by a local Workspace until materialization succeeds. */
 export type WorkspaceCreateInput = { path: string }

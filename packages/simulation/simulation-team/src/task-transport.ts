@@ -38,6 +38,7 @@ export class SimulationTaskAuthority {
     }
     const resolve = (): SimulationTaskCancelScope | undefined => {
       const state = run.snapshot(), source = state.operations[selected.operationId]
+      /* v8 ignore next -- the accepted creation above is append-only; a later snapshot cannot lose that operation. */
       const creator = source === undefined ? undefined : state.entities[source.entityId]?.binding
       if (!accepting() || creator?.teamId !== receipt.teamId || source?.action.kind !== 'task/create'
         || source.result?.status !== 'applied' || source.outbox?.taskReceipt?.taskId !== receipt.taskId) return undefined

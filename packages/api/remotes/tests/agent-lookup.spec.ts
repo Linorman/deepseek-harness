@@ -47,6 +47,36 @@ function markSubagent(session: Session): void {
 }
 
 describe('API Remote Agent resolver races', () => {
+  it.each(['session', 'agent', 'setup'] as const)('keeps a Team-owned %s out of generic Agent publication', async (winner) => {
+    const ctx = await createContext()
+    const sessionId = sid(`team-${winner}-winner`)
+    const meta = header(sessionId)
+    const publish = () => {
+      const session = ctx.sessions.create(sessionId, { meta: { cwd: '/proj', teamId: 'team', participantId: 'participant' } })
+      if (winner === 'agent') ctx.agents.register(stubAgent(ctx, session))
+    }
+    provideSession(ctx, meta, () => Promise.resolve({ meta, events: [] }))
+    if (winner !== 'setup') publish()
+    const resume = vi.spyOn(ctx.agents, 'resume')
+    const resolver = createApiRemoteAgentResolver(ctx, winner === 'setup' ? { setup: () => { publish(); return () => {} } } : {})
+    await expect(resolver(sessionId)).resolves.toMatchObject({ error: { code: 'team-run-unavailable', details: {} } })
+    expect(resume).not.toHaveBeenCalled()
+    await ctx.fiber.dispose()
+  })
+
+  it('retains an ordinary resume failure when no competing Agent or owner publishes', async () => {
+    const ctx = await createContext()
+    const sessionId = sid('unavailable-resume')
+    const meta = header(sessionId)
+    provideSession(ctx, meta, () => Promise.resolve({ meta, events: [] }))
+    vi.spyOn(ctx.agents, 'resume').mockRejectedValueOnce(new Error('Resume service unavailable'))
+    const result = await createApiRemoteAgentResolver(ctx, {})(sessionId)
+    if (!('error' in result)) throw new Error('Expected unavailable resume to remain rejected')
+    expect(result.error).toMatchObject({ code: 'internal', details: {} })
+    expect(result.error.message).toContain('Resume service unavailable')
+    await ctx.fiber.dispose()
+  })
+
   it('maps an inspected session without a cwd to session-not-found', async () => {
     const ctx = await createContext()
     const sessionId = sid('missing-after-inspect')

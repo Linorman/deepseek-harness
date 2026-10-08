@@ -21,6 +21,7 @@ const call: AuthenticatedProductCall = { principal: { id: 'reader' as never, iss
 const client = new InProcessApiClient(toFetchHandler(createApiProxy(ctx, { cwd: process.cwd(), defaultModelSelection: () => undefined }),
   { authenticatedProductCall: call }))
 const create = simulationProductCreateInputSchema.parse({ commandId: 'maintenance-create', templateId: 'company', templateVersion: '1',
+  expectedModel: { provider: 'company', name: 'scripted' },
   name: 'Maintained company', parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } })
 const proof = resolve(process.env.SIMULATION_COMPANY_ROOT!, 'maintenance-id.json')
 const settled = async (commandId: SimulationProductCommandId) => {

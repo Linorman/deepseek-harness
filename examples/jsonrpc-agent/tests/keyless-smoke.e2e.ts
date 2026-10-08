@@ -43,7 +43,7 @@ function waitForLine(
 }
 
 describe('jsonrpc-agent keyless smoke', () => {
-  it('creates a Team, routes coordinator input, and rejects an unauthenticated Team write without mutation', async () => {
+  it('creates a Team, routes coordinator input, and rejects an unauthorized task write without mutation', async () => {
     const root = await mkdtemp(join(repoRoot, '.tmp-jsonrpc-agent-smoke-'))
     const modelRequests: Record<string, unknown>[] = []
     const modelServer = createServer((request, response) => {
@@ -192,8 +192,8 @@ describe('jsonrpc-agent keyless smoke', () => {
         jsonrpc: '2.0',
         id: 4,
         error: {
-          code: -32_002,
-          data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+          code: -32_603,
+          message: 'Human task actor is invalid for this command',
         },
       })
 

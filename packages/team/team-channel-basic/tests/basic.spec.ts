@@ -46,6 +46,7 @@ import {
   parseConsultChannelManifest,
   parseConsultReviewAssignmentPayload,
   parseConsultReviewResponsePayload,
+  parseConsultTextPayload,
   parseDiscussionChannelManifest,
 } from '../src/basic.ts'
 import {
@@ -132,13 +133,61 @@ describe('basic Team-channel adapters', () => {
     const request = resolveConsultTextDraft({ manifest: channel, senderId: first, text: 'Question', delivery: 'turn' })
     expect(request).toMatchObject({ kind: 'request', audience: [second], payload: { text: 'Question' } })
     const anchor = { teamId, channelId: channel.id, envelopeId: envelope().id, taskId: teamTaskIdSchema.parse('linked-task'), review: false }
-    const response = resolveConsultTextDraft({ manifest: channel, senderId: second, text: 'Answer', delivery: 'turn', request: anchor })
+    const response = resolveConsultTextDraft({
+      manifest: channel, senderId: second, text: 'Answer', delivery: 'turn', request: anchor,
+    })
     expect(response).toMatchObject({ kind: 'response', audience: [first], causationId: anchor.envelopeId, taskId: anchor.taskId })
     expect(() => resolveConsultTextDraft({ manifest: channel, senderId: second, text: 'No source', delivery: 'turn' })).toThrow('logged request')
-    expect(() => resolveConsultTextDraft({ manifest: channel, senderId: second, text: 'Not a decision', delivery: 'turn', request: { ...anchor, review: true } })).toThrow('review operation')
-    expect(() => resolveConsultTextDraft({ manifest: channel, senderId: second, text: 'Wrong delivery', delivery: 'context', request: anchor })).toThrow('turn delivery')
-    expect(consultChannelAdapter.allowsClosedDelivery?.({ manifest: channel, state: consultChannelAdapter.initialState(channel) })).toBe(false)
+    expect(() => resolveConsultTextDraft({
+      manifest: channel, senderId: second, text: 'Not a decision', delivery: 'turn', request: { ...anchor, review: true },
+    })).toThrow('review operation')
+    expect(() => resolveConsultTextDraft({
+      manifest: channel, senderId: second, text: 'Wrong delivery', delivery: 'context', request: anchor,
+    })).toThrow('turn delivery')
+    expect(consultChannelAdapter.allowsClosedDelivery?.({
+      manifest: channel, state: consultChannelAdapter.initialState(channel),
+    })).toBe(false)
   })
+
+  it('rejects nonmember consult text and invalid review payload fields', () => {
+    const channel = manifest(CONSULT_CHANNEL_ADAPTER, consultParticipants)
+    const anchor = { teamId, channelId: channel.id, envelopeId: envelope().id,
+      taskId: teamTaskIdSchema.parse('consult-linked-task'), review: false }
+    expect(resolveConsultTextDraft({ manifest: channel, senderId: first, text: 'Ask', delivery: 'turn', request: anchor }))
+      .toMatchObject({ kind: 'request', taskId: anchor.taskId })
+    expect(resolveConsultTextDraft({ manifest: channel, senderId: second, text: 'Answer', delivery: 'turn',
+      request: { ...anchor, taskId: undefined } })).not.toHaveProperty('taskId')
+    expect(() => resolveConsultTextDraft({ manifest: channel, senderId: outsiderId, text: 'Spoofed', delivery: 'turn' }))
+      .toThrow(/not an immutable channel member/)
+    for (const audience of [[], [first], [second, third]]) {
+      expect(() => resolveConsultTextDraft({ manifest: channel, senderId: first, text: 'Ask', delivery: 'turn', audience }))
+        .toThrow(/exact protocol peer/)
+    }
+    for (const payload of [{ text: '', decision: 'accepted' }, { text: 1, decision: 'accepted' },
+      { text: 'Review', decision: 'unknown' }]) {
+      expect(() => parseConsultReviewResponsePayload(payload)).toThrow()
+    }
+    expect(parseConsultTextPayload({ text: 'Accepted.', decision: 'accepted' })).toEqual({
+      text: 'Accepted.', decision: 'accepted',
+    })
+    const assignment = { text: 'Review', taskId: 'task-review', attemptId: 'attempt-review', reviewRevision: 1,
+      reviewerId: second, initiatorId: first, result: { summary: 'Done' } }
+    for (const payload of [{ ...assignment, text: '' }, { ...assignment, text: 1 },
+      { ...assignment, reviewRevision: 0 }, { ...assignment, reviewRevision: 1.5 }]) {
+      expect(() => parseConsultReviewAssignmentPayload(payload)).toThrow()
+    }
+  })
+
+  it('allows delivery on a closed discussion only after its exact turn bound', () => {
+    const channel = manifest(DISCUSSION_CHANNEL_ADAPTER, discussionParticipants,
+      { maxTurns: 1, speakerPolicy: 'free-form' })
+    const initial = discussionChannelAdapter.initialState(channel)
+    expect(discussionChannelAdapter.allowsClosedDelivery?.({ manifest: channel, state: initial })).toBe(false)
+    const next = discussionChannelAdapter.fold(initial, recordEnvelope(envelope({ audience: null }),
+      channel.participants.map(member => member.id)))
+    expect(discussionChannelAdapter.allowsClosedDelivery?.({ manifest: channel, state: next })).toBe(true)
+  })
+
 
   it('retains structured review revision and result evidence in consult payloads', () => {
     const assignment = parseConsultReviewAssignmentPayload({

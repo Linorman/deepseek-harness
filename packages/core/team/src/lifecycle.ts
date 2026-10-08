@@ -1,6 +1,6 @@
 /** Pure closed-lifecycle transition checks for durable Team records. @module @clocky/clocky-team/lifecycle */
 
-import type { ActivationStatus, ChannelPhase, ParticipantPhase, TeamGoalPhase, TeamPhase, TeamTaskPhase } from './types.ts'
+import type { ActivationBindingSnapshot, ActivationStatus, ChannelPhase, ParticipantPhase, TeamGoalPhase, TeamPhase, TeamTaskPhase } from './types.ts'
 
 /**
  * Assert one activation residency edge accepted by the durable Team journal.
@@ -117,4 +117,17 @@ function assertTransition<T extends string>(
   if (!permitted.includes(next)) {
     throw new Error(`${subject} lifecycle rejects ${previous ?? 'initial'} -> ${next}`)
   }
+}
+
+/** Compare immutable activation, Session and provider identity while allowing residency status updates.
+ * @param left - Previously observed durable binding.
+ * @param right - Current candidate binding.
+ * @returns whether both bindings address the same activation placement.
+ */
+export function sameActivationBinding(left: ActivationBindingSnapshot, right: ActivationBindingSnapshot): boolean {
+  return left.activation.id === right.activation.id
+    && left.activation.teamId === right.activation.teamId
+    && left.activation.participantId === right.activation.participantId
+    && left.sessionId === right.sessionId
+    && left.provider === right.provider
 }

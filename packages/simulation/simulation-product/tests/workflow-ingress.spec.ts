@@ -8,6 +8,7 @@ import { call } from './fixtures.ts'
 
 afterEach(() => { vi.restoreAllMocks() })
 const availableAt = '9007199254740993'
+const earlierAt = '9007199254740992'
 const driver = simulationCompanyDriverSchema.parse({ ...companyConfig, scenario: { kind: 'task-workflow', version: '1',
   topology: { actors: [{ id: 'auditor', name: 'Independent auditor' }], channels: [{ key: 'audit', members: [
     { entityId: 'buyer', role: 'author' }, { entityId: 'auditor', role: 'receiver' },
@@ -16,6 +17,18 @@ const driver = simulationCompanyDriverSchema.parse({ ...companyConfig, scenario:
       subject: 'Final audit report', description: 'Publish the installed audit report', text: 'Audit complete',
       cognition: 'deterministic', leaseDurationMs: 60000, maxAttempts: 1, retry: 'never' },
   ] } })
+
+it('rejects an ingress whose native wrapper exceeds the installed run byte allowance', async () => {
+  const h = await ownerFixture('json', {}, driver, { maxIngressBytes: 128 })
+  try {
+    const runId = await h.create()
+    const before = h.owned().snapshot()
+    const input = simulationProductIngressInputSchema.parse({ runId, ingressId: 'oversized-native-ingress',
+      entityId: 'auditor', text: 'x'.repeat(256), availableAt: '1' })
+    await expect(h.ctx.simulationAdministration.ingress(input, call())).rejects.toThrow('native complete-byte allowance')
+    expect(h.owned().snapshot()).toEqual(before)
+  } finally { await h.close() }
+})
 
 it.each(['json', 'sqlite'] as const)('consumes a post-completion future auditor input at its exact tick after explicit resume (%s)', async (backend) => {
   const h = await ownerFixture(backend, {}, driver, { maxTime: '9007199254741000', maxTokensPerInterval: 0 })
@@ -30,7 +43,11 @@ it.each(['json', 'sqlite'] as const)('consumes a post-completion future auditor 
     const input = simulationProductIngressInputSchema.parse({ runId, ingressId: 'future-audit', entityId: 'auditor',
       text: '延迟审计通知：保留完成报告，不重复发布。', availableAt })
     const receipt = await service.ingress(input, call())
+    const earlier = simulationProductIngressInputSchema.parse({ runId, ingressId: 'earlier-audit', entityId: 'auditor',
+      text: 'Earlier retained audit input.', availableAt: earlierAt })
+    const earlierReceipt = await service.ingress(earlier, call())
     expect(receipt.status).toBe('pending')
+    expect(earlierReceipt.status).toBe('pending')
     expect(await service.ingress(input, call())).toEqual(receipt)
     expect(h.owned().snapshot().phase).toBe('paused')
     expect(h.owned().snapshot().time).toBe(before.time)
@@ -38,6 +55,8 @@ it.each(['json', 'sqlite'] as const)('consumes a post-completion future auditor 
     const consumed = await vi.waitFor(async () => {
       const result = await service.ingressRequest({ runId, ingressId: input.ingressId }, call())
       if (result.status !== 'found' || result.receipt.status !== 'consumed') throw new Error('The original future input is not consumed')
+      const previous = await service.ingressRequest({ runId, ingressId: earlier.ingressId }, call())
+      if (previous.status !== 'found' || previous.receipt.status !== 'consumed') throw new Error('The earlier input is not consumed')
       expect((await service.control({ runId }, call())).stop).toBe('completed')
       return result.receipt
     }, { timeout: 5000, interval: 5 })
@@ -46,6 +65,9 @@ it.each(['json', 'sqlite'] as const)('consumes a post-completion future auditor 
     expect(consumed.eventId).toBe(receipt.eventId)
     expect(consumed.decisionId).toBeDefined()
     const decision = after.decisions[consumed.decisionId!]
+    const earlierDecision = Object.values(after.decisions).find(value => value.ingressId === earlier.ingressId)
+    expect(earlierDecision?.status).toBe('accepted')
+    expect(BigInt(earlierDecision!.slot) < BigInt(decision!.slot)).toBe(true)
     expect(decision).toMatchObject({ status: 'accepted', entityId: 'auditor', ingressId: input.ingressId, operationIds: [] })
     expect(JSON.stringify(decision?.context)).toContain(input.text)
     expect(Object.values(after.decisions).filter(value => value.ingressId === input.ingressId)).toHaveLength(1)

@@ -16,6 +16,7 @@ import type {
   AgentRuntimeFencer,
   AgentRuntimeProvider,
 } from '../src/index.ts'
+import { retainActivationPublication } from '../src/publication.ts'
 
 const teamId = teamIdSchema.parse('team-runtime')
 const participant = participantSnapshotSchema.parse({
@@ -67,6 +68,19 @@ function provider(overrides: Partial<AgentRuntimeProvider> = {}): AgentRuntimePr
     ...overrides,
   }
 }
+
+it('keeps a replacement activation slot when a superseded materialization rejects', async () => {
+  const first = Promise.withResolvers<ActivationHandle>()
+  const entries = new Map<string, { operation: Promise<ActivationHandle> }>()
+  const initial = { operation: first.promise }
+  void retainActivationPublication(entries, 'participant', initial, first.promise)
+  const replacement = { operation: Promise.resolve(handle()) }
+  void retainActivationPublication(entries, 'participant', replacement, replacement.operation)
+  first.reject(new Error('Superseded materialization failed'))
+  await expect(first.promise).rejects.toThrow('Superseded materialization failed')
+  expect(entries.get('participant')).toBe(replacement)
+  await expect(replacement.operation).resolves.toMatchObject({ sessionId: request().sessionId })
+})
 
 async function setup(): Promise<{ ctx: Context; fiber: Context['fiber'] }> {
   const ctx = new Context()

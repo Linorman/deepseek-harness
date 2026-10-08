@@ -12,6 +12,8 @@ Team task result 可以命名类似文件的 artifact，但没有 provider-indep
 
 `@clocky/clocky-team-artifact` 定义 effect-scoped 的 `ctx.teamArtifacts` provider registry。provider 保存有界 bytes，返回 content-addressed `TeamArtifactReference`，并在读取时校验 hash。`team-artifact-local` 在 owner-only root 下为 file、patch、log、screenshot 和 report reference 保存 regular file。配置 provider 后，worktree `publish()` 会保存有界 changed file 和 tracked binary patch；未配置时明确保留 provider-local reference。Content-addressed deletion 在 reachability owner 出现前是 retention no-op。
 
+Artifact registry 在同步注册时捕获并校验一个 provider name，拒绝重复的 live name。Cordis effect cleanup 只执行一次，因此撤销会先删除准确注册，replacement 才能取得该名字；重复 disposal 不会删除 replacement。已接受的 bytes operation 保留选定的 provider，新 operation 则要求当前已注册的 capability。Registry 测试覆盖无效名字、重复注册、replacement 生命周期、bytes dispatch 和不支持的删除。
+
 Provider-backed reference 会携带读取所用的命名 provider。Host 的 `team.artifact.read` operation 会从持久 Team result 中选择准确的 reference，拒绝 private 或有歧义的 id，要求该 provider 已挂载，执行固定的 response bytes 上限，并以 base64 返回经过校验的 bytes；没有 provider provenance 的 reference 仍只能作为 metadata。
 
 SDK server 以 `team/artifact-read` 暴露同一个只读 operation，TypeScript 与 Python client 会让 Team id、artifact id、visibility、provider、byte bound 和 base64 response 与 Host path 保持一致。SDK error 会区分隐藏或缺失 artifact 与不可用 provider，且不会接纳 caller 提供的 URI。

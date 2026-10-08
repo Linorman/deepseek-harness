@@ -1,9 +1,16 @@
 /** Canonical payload binding for authenticated human proofs and durable Team results. @module @clocky/clocky-team/human-actor */
 
 import { createHash } from 'node:crypto'
-import { channelManifestSchema, teamHumanActorProofInputSchema } from './schema.ts'
+import { channelManifestSchema, jsonObjectSchema, teamHumanActorProofInputSchema } from './schema.ts'
 import type {
   ChannelManifest,
+  ChannelOpenInput,
+  ChannelCloseInput,
+  TeamTaskCreateInput,
+  TeamTaskDetailsUpdateInput,
+  TeamTaskCancelInput,
+  TeamTaskDeleteInput,
+  TeamTaskReviewResolveInput,
   ChannelManifestFingerprint,
   JsonObject,
   JsonValue,
@@ -94,4 +101,59 @@ export function fingerprintTeamChildResultContent(payload: JsonObject): import('
  */
 export function fingerprintTeamPersistenceProjection(payload: JsonValue): import('./persistence-reference.ts').TeamPersistenceFingerprint {
   return `sha256:${createHash('sha256').update(canonicalJson(payload), 'utf8').digest('hex')}` as import('./persistence-reference.ts').TeamPersistenceFingerprint
+}
+
+/** Bind the complete actor-free channel-open facts to the current authenticated human.
+ * @param input - Parsed channel request, including the owning Team and cursor fence.
+ * @returns the exact payload admitted by the human proof binder.
+ */
+export function channelOpenHumanProofInput(input: ChannelOpenInput): TeamHumanActorProofInput {
+  return channelCursorProofInput(input.teamId, 'channel-open', input)
+}
+
+/** Bind channel-close facts to the Team resolved by the serving transport.
+ * @param teamId - Server-resolved channel owner.
+ * @param input - Parsed actor-free close request and cursor fence.
+ * @returns the exact payload admitted by the human proof binder.
+ */
+export function channelCloseHumanProofInput(teamId: TeamId, input: ChannelCloseInput): TeamHumanActorProofInput {
+  return channelCursorProofInput(teamId, 'close', input)
+}
+
+/** Capture the complete parsed payload; transport-specific lookup stays with the caller. */
+function channelCursorProofInput(
+  teamId: TeamId, operation: 'channel-open' | 'close', input: ChannelOpenInput | ChannelCloseInput,
+): TeamHumanActorProofInput {
+  return { teamId, operation, fence: { kind: 'cursor', cursor: input.expectedCursor },
+    payload: jsonObjectSchema.parse(structuredClone(input)) }
+}
+
+/** Bind the complete parsed task creation to the current authenticated human.
+ * @param input - Actor-free task creation and Team cursor fence.
+ * @returns exact complete payload for task-mutation admission.
+ */
+export function taskCreateHumanProofInput(input: TeamTaskCreateInput): TeamHumanActorProofInput {
+  return { teamId: input.teamId, operation: 'task-mutate', fence: { kind: 'cursor', cursor: input.expectedCursor },
+    payload: jsonObjectSchema.parse(structuredClone(input)) }
+}
+
+/** Bind the complete parsed revision-fenced task mutation to the current authenticated human.
+ * @param input - Actor-free details update, cancellation or tombstone.
+ * @returns exact payload and task revision fence for admission.
+ */
+export function taskRevisionHumanProofInput(
+  input: TeamTaskDetailsUpdateInput | TeamTaskCancelInput | TeamTaskDeleteInput,
+): TeamHumanActorProofInput {
+  return { teamId: input.teamId, operation: 'task-mutate', fence: { kind: 'revision', revision: input.expectedRevision },
+    payload: jsonObjectSchema.parse(structuredClone(input)) }
+}
+
+/** Bind the server-selected Team together with every parsed task-review fact.
+ * @param teamId - Team selected by the authenticated serving transport.
+ * @param input - Actor-free review decision and task revision fence.
+ * @returns exact Team-qualified payload for review admission.
+ */
+export function taskReviewHumanProofInput(teamId: TeamId, input: TeamTaskReviewResolveInput): TeamHumanActorProofInput {
+  return { teamId, operation: 'task-mutate', fence: { kind: 'revision', revision: input.expectedRevision },
+    payload: jsonObjectSchema.parse({ teamId, ...structuredClone(input) }) }
 }

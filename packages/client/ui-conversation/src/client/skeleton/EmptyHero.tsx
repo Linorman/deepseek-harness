@@ -41,7 +41,9 @@ export function HeroGlow({ className }: { className?: string | undefined }) {
         </filter>
       </defs>
       <g filter={`url(#${glowFilterId})`}>
-        <ellipse cx="525.5" cy="234" rx="425.5" ry="134" fill="#6187D8" fillOpacity="0.08" />
+        {/* Two mode-tinted lobes: the Team ramp on the left, the Simulation ramp on the right. */}
+        <ellipse cx="360" cy="234" rx="300" ry="124" style={{ fill: 'var(--clocky-mode-team-fg)' }} fillOpacity="0.09" />
+        <ellipse cx="700" cy="234" rx="300" ry="124" style={{ fill: 'var(--clocky-mode-simulation-fg)' }} fillOpacity="0.08" />
       </g>
     </svg>
   )
@@ -77,6 +79,7 @@ export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
           <span className={css.headlineText}>{t('hero.headline')}</span>
           <span className={css.previewBadge}>{t('hero.preview')}</span>
         </div>
+        <p className={css.subtitle}>{t('hero.subtitle')}</p>
         <div className={css.body}>
           {/* The resident composer is CSS-centered in this scroll body during hero. */}
         </div>

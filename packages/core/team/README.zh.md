@@ -2,6 +2,14 @@
 
 [English](README.md) | 中文
 
+`withTeamOperationTimeout()` 为 provider 等待设置期限，并在两种结果下清除计时器。它保留 provider 提供的错误，不取消或排空底层操作；调用者继续拥有该操作。
+
+`parseTeamParticipantHeader()` 返回完整且已验证的 Team／Participant header 标识对，或返回无引用。它不证明当前 activation、Link 连接或 operation authority；这些活动状态检查仍由消费者负责。
+
+`trackTeamOperation()` 对每个原始 accepted promise 只观察一次，在拒绝诊断前将其从 provider 集合中移除。诊断失败会被包含；operation 自身的结果保持不变。取消、关闭期间的排空与警告策略仍由消费者负责。
+
+`channelEnvelopeMessages()` 返回冻结的有序消息列表，保留原始 Envelope payload。Adapter 状态验证和记录可见性仍由调用者负责。
+
 `resolveSimulationTaskReview()` 仅接受当前有效的 `simulation-team` proof，选择原生已记录的完成结果及任务配置的 Participant reviewer。调用方不能选择 actor，reviewer 无需 activation。`TeamTaskReviewDecision.simulationCommand` 保留运行内 command 身份、原 task/create operation 与选定任务 revision。相同的授权重试返回保留该历史决定的当前任务；变更载荷会拒绝，不能审核后续 attempt。参见[审核权限决策](../../../.agents/notes/implemented/architecture/2026-10-01-simulation-task-review-authority.zh.md)。
 
 任务详情更新要求调用方提供 `commandId`。`TeamTaskDetailsUpdateResult` 将原受理信息与当前任务分开。提供方提交语义拒绝后才抛出 `TeamTaskUpdateRejectedError`；解析、权限、容量或存储失败本身不能证明拒绝。`getTaskUpdateResult()` 返回 `applied`、`rejected` 或 `not-found`。原生读取方负责鉴权；未找到不能确定延迟请求的结果。参见[更新身份决策](../../../.agents/notes/implemented/architecture/2026-09-29-task-update-command-admission.zh.md)。
@@ -28,7 +36,7 @@ Team 工作系统的 Service Definition。它提供独立的 Team、带 revision
 
 创建频道时可用显式 `sessionId` 冻结 Agent 邀请端点。Simulation 邀请 scope 另行绑定 run、生命周期所有者、Team、参与者与 Session；只有注册的 `simulation-team` 所有者可在没有驻留 activation 时确认该精确 direct-v4 端点。
 
-`TeamRuntime`是抽象类。应加载本地 [`@clocky/clocky-team-hub`](../../team/team-hub/README.zh.md) 提供方，而不是单独加载这个包。Hub 实现持久 Team journal、channel WAL、恢复、成员和任务变更、游标 watch、quiescence 诊断，以及不删除状态的终态 Team 归档；投递、调度和 Agent placement 仍是独立提供方工作。本包不导入 Hub、投递、调度或 storage 实现；可选的 `TeamTelemetryCoordinator` 会观察类型化的 Team/channel feed 与 Session event，但不持有任何 Agent loop。
+`TeamRuntime`是抽象类。应加载本地 [`@clocky/clocky-team-hub`](../../team/team-hub/README.zh.md) 提供方，而不是单独加载这个包。Hub 实现持久 Team journal、channel WAL、恢复、成员和任务变更、游标 watch、quiescence 诊断，以及不删除状态的终态 Team 归档；投递、调度和 Agent placement 仍是独立提供方工作。本包不导入 Hub、投递、调度或 storage 实现；可选的 `TeamTelemetryCoordinator` 会观察类型化的 Team/channel feed 与 Session event，但不持有任何 Agent loop。失败的 `channel/closed` phase 以 error severity 导出；channel WAL record 提供 Envelope 和 receipt correlation，event carrier 提供 channel 身份。
 
 浏览器安全 consumer 从 `@clocky/clocky-team/types`导入记录类型，并从 `@clocky/clocky-team/schema`导入运行时 parser；包根还会加载 `ctx.teams` Service Definition。
 

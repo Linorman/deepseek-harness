@@ -41,7 +41,7 @@ describe('SidebarRoot.module.css', () => {
   })
 
   it('moves the four upper controls while the settings seat only fades', () => {
-    const animation = 'rail-in 150ms var(--ds-ease-in-out) backwards'
+    const animation = 'rail-in var(--clocky-duration-fast) var(--clocky-ease-standard) backwards'
     for (const selector of [
       '.railIn .iconButton',
       '.railIn .newSession',
@@ -50,7 +50,7 @@ describe('SidebarRoot.module.css', () => {
       expect(declarations(selector)?.get('animation')).toBe(animation)
     }
     expect(declarations('.railIn .footArea')?.get('animation')).toBe(
-      'rail-fade-in 150ms var(--ds-ease-in-out) backwards',
+      'rail-fade-in var(--clocky-duration-fast) var(--clocky-ease-standard) backwards',
     )
     expect(css).toMatch(
       /@keyframes rail-in\s*\{\s*from\s*\{\s*opacity: 0;\s*transform: translateX\(49px\);\s*}\s*}/,
@@ -68,6 +68,6 @@ describe('SidebarRoot.module.css', () => {
     expect(declarations('.brandIdentity')?.get('height')).toBe('24px')
     expect(declarations('.brandName')?.get('height')).toBe('24px')
     expect(declarations('.brandName')?.get('line-height')).toBe('24px')
-    expect(declarations('.brandName')?.get('font-size')).toBe('18px')
+    expect(declarations('.brandName')?.get('font-size')).toBe('var(--clocky-type-title-size)')
   })
 })

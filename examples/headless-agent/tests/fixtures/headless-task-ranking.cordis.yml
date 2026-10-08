@@ -12,6 +12,7 @@
   config:
     workerPreset: standard
     workerCount: 2
+    maxWorkerCount: 2
 - id: team-hub
   config:
     rankingLatencyBucketsMs: !!js >-

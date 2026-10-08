@@ -44,6 +44,8 @@ Bounded task collection 在首个 page 加载后也会保留显式 refresh 操�
 
 ## Verification
 
+Child-run 授权回归使用真实的 parent／child 保留状态，拒绝错误 proof kind、在 proof 解析期间或 token 的同步与异步检查之间退役的来源、变化的冻结 workspace、未保留的 child 身份，以及在 token 签发前或签发后超出 task 壁钟预算的请求。Parent 接纳 failure 或 cancellation 而未给仍在运行的 child task 标记取消时，该 child 仍可获得取消授权；先前的 startup token 则拒绝继续使用。结算会拒绝 child 已出现后过期的“缺失 child”读取，以及把 binding proof 复用于结算。已完成 child 的跨日志检查仍保留；公开完成流程先要求准确的 parent result，而 parent fold 禁止移除或改换该结果的绑定。
+
 ### 当前 candidate 补充（2026-09-09）
 
 Python SDK runtime 的默认组合现在在 `team_task_delegate` 旁挂载 Team workspace registry 与 shared provider。通过 `python/sdk-runtime/node_modules/.bin/clocky-jsonrpc-agent` 运行的 `sdk-child-team` smoke 已通过，覆盖 parent delegation、child completion、result admission 和 parent final acceptance。独立 Loader crash snapshot 已在 SQLite 与 JSON 两种 backend 上通过 13 个窗口：child creation、child-run binding、child response、parent result-admission、child result admission、child response receipt、child closure、child terminal phase、parent charge pending、parent charge accepted、parent charge settled、parent settlement 以及 child cancellation 后注入 SIGKILL。重启后保留 durable result/cancellation intent 且不重新进入模型；pre-terminal 窗口对 in-process provider 返回明确的 `ACTIVATION_TERMINATION_UNCONFIRMED` stall，child-terminal/parent-settled 窗口保留 parent task completed、parent Team active 的 coordinator finalization pending 状态。Charge window 的 append race 可能在 selected charge record 前或后保留 parent result，但两个 backend 都保持不重复和不重新进入模型。本次配置变更后的最新 full-repository run 为 16,022 个通过、1 个失败、116 个跳过；失败属于已有的 Team Agent Client link-lifecycle 时序用例。该文件第二次隔离重跑为 80/80，而第一次隔离重跑触发了另一条时序失败，因此该 lane 保留为 flaky evidence，不记为全仓绿色结果。

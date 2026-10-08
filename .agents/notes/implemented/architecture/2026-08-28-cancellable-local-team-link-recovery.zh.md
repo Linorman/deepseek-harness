@@ -14,7 +14,9 @@ Status: implemented
 
 `clocky-team-link-local`会在读取 pending-delivery page 前启动 Team 和 channel cursor watch。它会读取每个不可变 channel manifest，忽略不包含其绑定 Participant 的 channel，因此一个 Participant 的 Link 不会因另一个 Participant 的 channel 而失败。它会在推进到下一个 page item 前等待每个 subscriber handoff，因此 `pageSize`限制单个 channel 的 in-flight replay。rejected listener 只保留该 subscriber 与 Envelope，按 `notificationRetryDelayMs`延迟重试；它不会推进 receipt state、重新扫描完整 WAL，或中断其他 subscriber。unsubscribe、Link failure 和 Link close 都会取消待处理 retry 与 wait。
 
-`FixedBindingTeamAgentLinkDelivery`接收一个准确 Agent 和持久 binding，不读取 `ctx.teams`，也不监听 `team/changed`。它打开已配置的 Link，并拥有 claim、inbox admission、source flush、receipt、soft-interrupt acknowledgement、reconnect 和 close。connection failure 或被 reject 的 `done`仅会在该 Agent 与 binding 仍然 current 时安排有界的延迟 reconnect。只有当 Team Envelope 到达 `user/message`、仍存在于 live inbox，或已完成 flush 正等待 receipt 时，它才把该 Envelope 视为已接纳；rejected claimed splice 会在 retry 时重新接纳。close、Agent disposal 和 inbox discard 都会拒绝未完成的 source barrier，使 owner 消失后没有 pre-step 被永久阻塞。`TeamAgentClient`仍是本地 Session-provenance 与 Team-change discovery 包装层：它会为每个已接纳 binding 创建一个固定投递消费方。
+本地频道发现、中断回放和任务取消回放共享一个游标监听循环。每轮先建立监听，再执行回放；原生 Promise settlement 承接提前发生的监听拒绝，拒绝重复或倒退的游标，随后重新读取权威 Team 快照。各订阅仍保留独立的取消信号和回放回调。
+
+`FixedBindingTeamAgentLinkDelivery`接收一个准确 Agent 和持久 binding，不读取 `ctx.teams`，也不监听 `team/changed`。它打开已配置的 Link，并拥有 claim、inbox admission、source flush、receipt、soft-interrupt acknowledgement、reconnect 和 close。connection failure 或被 reject 的 `done`仅会在该 Agent 与 binding 仍然 current 时安排有界的延迟 reconnect。只有当 Team Envelope 到达 `user/message`、仍存在于 live inbox，或已完成 flush 正等待 receipt 时，它才把该 Envelope 视为已接纳；rejected claimed splice 会在 retry 时重新接纳。Link 退役后被拒绝的 Envelope claim 或后续 task-start claim 不会接纳输入，其 Envelope 保持待投递状态，供新 Link 回放；仍有效 Link 的错误继续作为 delivery failure 报告。close、Agent disposal 和 inbox discard 都会拒绝未完成的 source barrier，使 owner 消失后没有 pre-step 被永久阻塞。`TeamAgentClient`仍是本地 Session-provenance 与 Team-change discovery 包装层：它会为每个已接纳 binding 创建一个固定投递消费方。
 
 ## Alternatives considered
 

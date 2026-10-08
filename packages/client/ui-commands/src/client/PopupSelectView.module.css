@@ -8,7 +8,7 @@
   position: absolute;
   bottom: calc(100% + 4px);
   left: 0;
-  z-index: 100;
+  z-index: var(--clocky-layer-dropdown);
   padding: 4px;
   display: flex;
   flex-direction: column;
@@ -22,12 +22,12 @@
   overflow: hidden;
   /* Elevated surface: the scrollbar thumb takes the l2 elevation tokens
      (see ui-theme styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 12px;
-  background: var(--clocky-specific-menu);
-  box-shadow: var(--clocky-shadow-lv3);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-overlay);
+  box-shadow: var(--clocky-elevation-3);
   outline: none;
 }
 
@@ -43,14 +43,14 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
   cursor: pointer;
-  font-size: 13px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-label-size);
+  color: var(--clocky-fg-primary);
 }
 
 .rowActive {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .label {
@@ -62,8 +62,8 @@
 }
 
 .detail {
-  font-size: 12px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-caption-size);
+  color: var(--clocky-fg-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -72,23 +72,23 @@
 .check {
   display: inline-flex;
   flex: none;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .status {
   padding: 8px 10px;
-  font-size: 13px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-label-size);
+  color: var(--clocky-fg-tertiary);
 }
 
 .search {
   margin: 2px 2px 4px;
   padding: 6px 8px;
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-md);
   background: transparent;
-  font-size: 13px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-label-size);
+  color: var(--clocky-fg-primary);
   outline: none;
 }
 
@@ -97,8 +97,8 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  font-size: 12px;
-  color: var(--clocky-alias-state-error-primary);
+  font-size: var(--clocky-type-caption-size);
+  color: var(--clocky-status-failed-fg);
 }
 
 .errorText {
@@ -109,10 +109,10 @@
 
 .retry {
   padding: 2px 8px;
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-sm);
   background: transparent;
-  font-size: 12px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-caption-size);
+  color: var(--clocky-fg-primary);
   cursor: pointer;
 }

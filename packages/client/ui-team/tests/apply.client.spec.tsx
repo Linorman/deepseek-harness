@@ -11,6 +11,12 @@ import { apply as applySidebar, inject as sidebarInject } from '@clocky/clocky-c
 import type { TeamBrowserInjected } from '../src/client/TeamBrowser.tsx'
 import type { TeamWorkspaceProps } from '../src/client/TeamWorkspace.tsx'
 import { apply, inject } from '../src/client/index.ts'
+import { CommandRegistry } from '@clocky/clocky-client-ui-layout/src/client/commands.ts'
+
+/** Layout face with a real palette registry so provider disposal is observable. */
+function layoutFake(commands = new CommandRegistry()) {
+  return { showWorkspace: vi.fn(), toggleSidebar: vi.fn(), registerCommands: commands.registerProvider.bind(commands) }
+}
 
 const coordinator = 'team-coordinator' as SessionId
 
@@ -20,7 +26,7 @@ describe('ui-team apply', () => {
     const originalUrl = window.location.href
     const hostDescription = createSnapshotStore<HostDescription | undefined>(undefined)
     runtime.provide('connection', { hostDescription })
-    runtime.provide('layout', { showWorkspace: vi.fn(), toggleSidebar: vi.fn() })
+    runtime.provide('layout', layoutFake())
     const locale = new LocaleRuntime(runtime.ctx)
     runtime.provide('locale', locale)
     runtime.slots.installLocale(locale)
@@ -59,7 +65,8 @@ describe('ui-team apply', () => {
   it('registers the Team workspace and selects a Team without opening a Session', async () => {
     const runtime = await SlotTestRuntime.create()
     runtime.provide('connection', { hostDescription: createSnapshotStore(undefined) })
-    runtime.provide('layout', { toggleSidebar: vi.fn(), showWorkspace: vi.fn() })
+    const commands = new CommandRegistry()
+    runtime.provide('layout', layoutFake(commands))
     const locale = new LocaleRuntime(runtime.ctx)
     locale.setLocale('en')
     runtime.provide('locale', locale)
@@ -94,6 +101,10 @@ describe('ui-team apply', () => {
     const feature = await runtime.mount({ inject: [...inject], apply })
     expect(runtime.slots.entries('sidebar.teamTasks')).toHaveLength(1)
     expect(runtime.slots.entries('team.workspace')).toHaveLength(1)
+    const teams = commands.sections().find(section => section.id === 'team.teams')
+    expect(teams).toMatchObject({ label: 'Teams', items: [{ id: selection.teamId, label: 'Open this Team', hint: 'In progress' }] })
+    // Member Sessions follow the selected Team; nothing is offered before one is selected.
+    expect(commands.sections().find(section => section.id === 'team.members')).toMatchObject({ label: 'Member sessions', items: [] })
     const view = runtime.renderRoot()
     fireEvent.click(view.getByText('Open this Team'))
     await waitFor(() => {
@@ -102,6 +113,7 @@ describe('ui-team apply', () => {
       expect(runtime.sessions.calls).not.toContainEqual({ method: 'open', args: [coordinator] })
     })
     await feature.dispose()
+    expect(commands.sections()).toEqual([])
     expect(runtime.slots.entries('sidebar.teamTasks')).toHaveLength(0)
     expect(runtime.slots.entries('team.workspace')).toHaveLength(0)
     await runtime.dispose()
@@ -110,7 +122,7 @@ describe('ui-team apply', () => {
   it('forwards optional Team detail operations and fails closed when a reader is unavailable', async () => {
     const runtime = await SlotTestRuntime.create()
     runtime.provide('connection', { hostDescription: createSnapshotStore(undefined) })
-    runtime.provide('layout', { toggleSidebar: vi.fn(), showWorkspace: vi.fn() })
+    runtime.provide('layout', layoutFake())
     const locale = new LocaleRuntime(runtime.ctx)
     locale.setLocale('en')
     runtime.provide('locale', locale)
@@ -157,7 +169,7 @@ describe('ui-team apply', () => {
     if (workspace?.inject === undefined) throw new Error('ui-team did not publish its workspace')
     const updateView = vi.fn()
     const bindWorkspace = workspace.inject as unknown as
-      (actions: { update: typeof updateView }) => Pick<TeamWorkspaceProps, 'restoreNavigation'>
+      (actions: { update: typeof updateView }) => Pick<TeamWorkspaceProps, 'restoreNavigation' | 'openCoordinator'>
     const workspaceControls = bindWorkspace({ update: updateView })
     const signal = new AbortController().signal
 
@@ -202,6 +214,11 @@ describe('ui-team apply', () => {
     await workspaceControls.restoreNavigation(route, signal)
     expect(resolveMember).toHaveBeenCalledWith(teamId, participantId, expect.any(AbortSignal))
     expect(runtime.sessions.list.getSnapshot().current).toBe(memberSession)
+    await workspaceControls.openCoordinator()
+    expect(runtime.sessions.list.getSnapshot().current).toBe(coordinator)
+    runtime.teamTasks.list.set({ ...runtime.teamTasks.list.getSnapshot(), selected: { ...selection, coordinatorSessionId: undefined } })
+    await expect(workspaceControls.openCoordinator()).rejects.toThrow('no bound coordinator Session')
+    runtime.teamTasks.list.set({ ...runtime.teamTasks.list.getSnapshot(), selected: selection })
 
     teamTasks.participantSession = undefined
     teamTasks.readAudit = undefined
@@ -211,6 +228,9 @@ describe('ui-team apply', () => {
     await expect(injected.readAudit?.(teamId)).resolves.toEqual({ teamId, items: [] })
     await expect(injected.readChannel?.(channelId)).rejects.toThrow('cannot be read')
     await expect(injected.readArtifact?.(teamId, 'missing')).rejects.toThrow('cannot be read')
+    await workspaceControls.restoreNavigation(undefined, signal)
+    expect(runtime.sessions.list.getSnapshot().current).toBeUndefined()
+    expect(runtime.teamTasks.list.getSnapshot().current).toBeUndefined()
 
     await feature.dispose()
     expect(watchStop).toHaveBeenCalledOnce()

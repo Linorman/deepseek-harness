@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { channelReceiptRecordSchema, envelopeIdSchema, taskAttemptIdSchema } from '@clocky/clocky-team'
 import { simulationTaskExecutionRequestSchema, simulationTaskEvidenceSchema, simulationTaskDecisionRequestSchema,
-  simulationPolicyRefSchema, simulationTaskResultRequestSchema, simulationDecisionIdSchema } from '@clocky/clocky-simulation'
+  simulationPolicyRefSchema, simulationTaskResultRequestSchema, simulationDecisionIdSchema,
+  simulationTaskCancellationSchema } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from './business-harness.ts'
 import { createTaskReceipt } from './task-evidence-fixture.ts'
 import { contextRequest } from './context-fixture.ts'
@@ -80,12 +81,32 @@ describe.each(['json', 'sqlite'] as const)('%s task result acceptance', (backend
         operationId: message.operationId, fingerprint: message.fingerprint, channelId: message.channelId,
         envelopeId: envelopeIdSchema.parse('delivered'), sequence: 1,
       } }) }, () => 100)
+      const pendingState = h.run.snapshot()
+      const pendingExecution = pendingState.taskExecutions![h.request.attemptId]!
+      expect(() => { assertTaskResultEvidence(pendingState, pendingExecution, h.result) })
+        .toThrow(/recipient persistence evidence/)
       await expect(h.run.recordTaskResult(h.result, h.run.snapshot().revision)).rejects.toThrow(/recipient persistence evidence/)
       await h.run.recordDelivery(h.effectId, h.recipient!.lease.epoch, h.run.snapshot().revision)
       await expect(h.run.recordTaskResult(h.result, h.run.snapshot().revision)).rejects.toThrow(/recipient persistence evidence/)
       await h.run.confirmDelivery(h.effectId, channelReceiptRecordSchema.parse({ type: 'channel/receipt', sequence: 2,
         createdAt: 100, participantId: h.recipient!.id, envelopeId: 'delivered', cursor: 1 }), h.run.snapshot().revision)
       expect((await h.run.recordTaskResult(h.result, h.run.snapshot().revision)).request).toEqual(h.result)
+    } finally { await h.close() }
+  })
+
+  it('refuses a completed result after a durable cancellation of the same accepted attempt', async () => {
+    const h = await fixture(backend)
+    try {
+      await h.run.selectTaskCompletionPolicy(h.request.attemptId, h.policy)
+      await h.run.executeOperation(h.effectId)
+      await h.run.recordTaskCancellation(simulationTaskCancellationSchema.parse({
+        operationId: h.request.operationId, teamId: h.request.teamId, taskId: h.request.taskId,
+        cancellation: { requestedRevision: 2, requestedBy: h.actor.id, requestedAt: 10,
+          target: { kind: 'attempt', attemptId: h.request.attemptId, participantId: h.request.participantId,
+            activationId: h.request.activationId } },
+      }))
+      await expect(h.run.recordTaskResult(h.result, h.run.snapshot().revision))
+        .rejects.toThrow(/cancelled task cannot accept a new completed result/)
     } finally { await h.close() }
   })
 

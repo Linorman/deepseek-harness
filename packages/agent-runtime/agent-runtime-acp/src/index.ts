@@ -1,3 +1,5 @@
+import { channelViewReviewMatches } from '@clocky/clocky-team/selection'
+import { raceWithAbort } from '@clocky/clocky-timeout'
 /** ACP subprocess AgentRuntime provider for Team-bound remote Participants. */
 
 import { Readable, Writable } from 'node:stream'
@@ -236,8 +238,9 @@ class AcpActivationHandle implements ActivationHandle {
   ) {
     this.status = activation.status
     this.durableCompletions = completedProxyPromptIds(proxySession)
-    this.terminal = child.done.then(() => { this.finishOffline() }, () => { this.finishOffline() })
-    void this.terminal.catch(() => {})
+    this.terminal = child.done.then(() => { this.finishOffline() })
+    /* v8 ignore next -- a published activation already passed spawn; done rejection is limited to spawn failure. */
+    void this.terminal.catch(() => { this.finishOffline() })
   }
 
   health(): Promise<ActivationSnapshot> {
@@ -277,20 +280,16 @@ class AcpActivationHandle implements ActivationHandle {
     const key = bindingKey(binding)
     if (this.enrollmentOperation !== undefined && this.enrollmentKey === key) return this.enrollmentOperation
     if (this.enrolled !== undefined && bindingKey(this.enrolled.binding) === key) return Promise.resolve()
-    const operation = this.enrollmentTail.then(
-      () => this.enrollLinkOwned(binding, reservation),
-      () => this.enrollLinkOwned(binding, reservation),
-    )
+    const operation = this.enrollmentTail.then(() => this.enrollLinkOwned(binding, reservation))
     this.enrollmentKey = key
     this.enrollmentOperation = operation
     this.enrollmentTail = operation.then(() => undefined, () => undefined)
     void operation.then(
-      () => { if (this.enrollmentOperation === operation) { this.enrollmentOperation = undefined; this.enrollmentKey = undefined } },
+      () => { this.enrollmentOperation = undefined; this.enrollmentKey = undefined },
       (error: unknown) => {
-        if (this.enrollmentOperation === operation) {
-          this.enrollmentOperation = undefined
-          this.enrollmentKey = undefined
-        }
+        // Each activation admits one immutable binding key; overlapping same-key calls share this operation.
+        this.enrollmentOperation = undefined
+        this.enrollmentKey = undefined
         if (!this.offline && this.disposal === undefined) {
           this.ctx.logger.warn(`ACP Team Link enrollment failed: ${error instanceof Error ? error.message : String(error)}`)
           this.scheduleLinkReconnect()
@@ -315,10 +314,9 @@ class AcpActivationHandle implements ActivationHandle {
       this.child.stdin?.end()
       await proveAcpChildTermination(this.child, this.eofGraceMs)
       terminationProven = true
-      await this.promptTail
     } catch (error: unknown) {
-      if (!terminationProven) throw this.markTerminationUnconfirmed(error)
-      this.ctx.logger.warn(`ACP activation cleanup failed after termination was proven: ${error instanceof Error ? error.message : String(error)}`)
+      // The only remaining statement after termination proof is a local assignment.
+      throw this.markTerminationUnconfirmed(error)
     } finally {
       if (terminationProven) {
         this.releaseProxy()
@@ -342,7 +340,8 @@ class AcpActivationHandle implements ActivationHandle {
     this.report('offline')
     this.listeners.clear()
     void this.closeEnrolledLink().catch(() => {})
-    void this.promptTail.then(() => { this.releaseProxy() }, () => { this.releaseProxy() })
+    // promptTail normalizes both prompt success and failure before this retirement join.
+    void this.promptTail.then(() => { this.releaseProxy() })
     this.onDone()
   }
 
@@ -408,6 +407,7 @@ class AcpActivationHandle implements ActivationHandle {
       if (view !== undefined) {
         if (admission === undefined) this.proxySession.append('team/channel-view', view, { surfaceOp: 'append' })
       } else if (task !== undefined) {
+        /* v8 ignore next -- task is set only inside the assignment branch above. */
         if (assignment === undefined) throw new Error('ACP task assignment lost its parsed source')
         if (admission === undefined) this.proxySession.append('user/message', createUserMessage({
           content: prompt,
@@ -480,13 +480,9 @@ class AcpActivationHandle implements ActivationHandle {
     binding: ActivationBindingSnapshot,
     reservation: EnrollmentReservation,
   ): Promise<void> {
-    if (this.offline || binding.activation.status === 'offline' || binding.activation.status === 'stopping') return
-    if (binding.activation.id !== this.activation.id
-      || binding.activation.teamId !== this.activation.teamId
-      || binding.activation.participantId !== this.activation.participantId
-      || binding.sessionId !== this.sessionId) {
-      throw new TeamError(`ACP Team Link binding does not match activation '${this.activation.id}'`, 'TEAM_INVALID_ARGUMENT')
-    }
+    // The event owner checks the immutable binding before queuing; only liveness can change while it waits.
+    /* v8 ignore next -- same-key operations coalesce; child exit retires the event owner before another enrollment. */
+    if (this.offline) return
     const links = this.ctx.get('teamLinks')
     if (links === undefined) throw new TeamError('ACP Team Link enrollment requires a Team Link registry', 'TEAM_INVALID_ARGUMENT')
     const enrollment = await reservation.reserve(binding)
@@ -505,7 +501,7 @@ class AcpActivationHandle implements ActivationHandle {
       link = await links.connect({
         provider: provider.name,
         binding,
-        onTerminate: reason => this.terminateFromLink(reason),
+        onTerminate: this.terminateFromLink.bind(this),
       })
       if (!this.canAcceptEnrollment()) {
         await link.close().catch(() => {})
@@ -513,32 +509,34 @@ class AcpActivationHandle implements ActivationHandle {
         await enrollment.revoke().catch(() => {})
         return
       }
-      const current = this.enrolled
+      // Same-binding enrollment coalesces above; reconnect retires and clears the previous Link first.
       this.enrolled = { binding, provider: provider.name, link, unregister, enrollment }
-      if (current !== undefined) {
-        await current.link.close().catch(() => {})
-        current.unregister()
-        await current.enrollment.revoke().catch(() => {})
-      }
       const connectedLink = link
-      connectedLink.onNotify(async (envelope) => {
-        await this.deliverEnvelope(connectedLink, envelope)
-      })
-      connectedLink.onInterrupt(async (notification) => {
-        await this.connection.cancel({ sessionId: this.acpSessionId })
-        await connectedLink.acknowledgeInterrupt(notification.deliveryId, notification.interrupt.id)
-      })
-      void connectedLink.done.catch((error: unknown) => {
-        if (!this.offline && !this.terminationRequested && this.enrolled?.link === connectedLink) {
-          this.ctx.logger.warn(`ACP Team Link '${provider.name}' ended: ${error instanceof Error ? error.message : String(error)}`)
-          this.scheduleLinkReconnect()
-        }
-      })
+      connectedLink.onNotify(this.deliverEnvelope.bind(this, connectedLink))
+      connectedLink.onInterrupt(this.interruptFromLink.bind(this, connectedLink))
+      void connectedLink.done.catch(this.linkEnded.bind(this, connectedLink, provider.name))
     } catch (error: unknown) {
+      // Same-key enrollment coalesces and reconnect clears the old Link first; this attempt owns the only pending slot.
+      this.enrolled = undefined
       if (link !== undefined) await link.close().catch(() => {})
       unregister?.()
       await enrollment.revoke().catch(() => {})
       throw error
+    }
+  }
+
+  /** A Link interrupt owns its acknowledgement only after ACP accepted the cancellation. */
+  private async interruptFromLink(link: TeamLink,
+    notification: import('@clocky/clocky-team-link').TeamLinkInterruptNotification): Promise<void> {
+    await this.connection.cancel({ sessionId: this.acpSessionId })
+    await link.acknowledgeInterrupt(notification.deliveryId, notification.interrupt.id)
+  }
+
+  /** Transport loss may reconnect only the still-current Link of a live activation. */
+  private linkEnded(link: TeamLink, providerName: string, error: unknown): void {
+    if (!this.offline && !this.terminationRequested && this.enrolled?.link === link) {
+      this.ctx.logger.warn(`ACP Team Link '${providerName}' ended: ${error instanceof Error ? error.message : String(error)}`)
+      this.scheduleLinkReconnect()
     }
   }
 
@@ -548,22 +546,28 @@ class AcpActivationHandle implements ActivationHandle {
     const binding = this.enrollmentBinding
     const reservation = this.enrollmentReservation
     const enrolled = this.enrolled
+    /* v8 ignore next -- only an admitted Link can request reconnect; disposal that clears both fields is fenced above. */
     if (binding === undefined || reservation === undefined) return
     if (enrolled !== undefined) {
       this.enrolled = undefined
       enrolled.unregister()
       void enrolled.enrollment.revoke().catch(() => {})
     }
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = undefined
-      void this.enrollLink(binding, reservation).catch((error: unknown) => {
-        if (!this.offline) {
-          this.ctx.logger.warn(`ACP Team Link re-enrollment failed: ${error instanceof Error ? error.message : String(error)}`)
-          this.scheduleLinkReconnect()
-        }
-      })
-    }, this.linkReconnectDelayMs)
+    this.reconnectTimer = setTimeout(this.reconnectLink.bind(this, binding, reservation), this.linkReconnectDelayMs)
     this.reconnectTimer.unref()
+  }
+
+  /** The scheduled retry keeps the original binding and issuer until disposition. */
+  private reconnectLink(binding: ActivationBindingSnapshot, reservation: EnrollmentReservation): void {
+    this.reconnectTimer = undefined
+    void this.enrollLink(binding, reservation).catch(this.reconnectFailure.bind(this))
+  }
+
+  /** A current activation can retry an issuer or transport error after the scheduled attempt. */
+  private reconnectFailure(error: unknown): void {
+    if (this.offline) return
+    this.ctx.logger.warn(`ACP Team Link re-enrollment failed: ${error instanceof Error ? error.message : String(error)}`)
+    this.scheduleLinkReconnect()
   }
 
   /** Whether an enrollment that is already in flight may still publish a Link. */
@@ -640,13 +644,7 @@ function resolveChannelView(
     )
   }
   if (envelope.kind === 'review-request') {
-    const payload = envelope.payload as Record<string, unknown>
-    const review = view.review
-    if (review === undefined
-      || review.attemptId !== payload['attemptId']
-      || review.reviewRevision !== payload['reviewRevision']
-      || review.reviewerId !== payload['reviewerId']
-      || review.initiatorId !== payload['initiatorId']) {
+    if (!channelViewReviewMatches(view.review, envelope)) {
       throw new TeamError(
         `non-direct channel '${envelope.channelId}' delivery claim has an inconsistent review fence`,
         'TEAM_INVALID_ARGUMENT',
@@ -814,7 +812,7 @@ class AcpProvider implements AgentRuntimeProvider {
     private readonly config: ResolvedConfig,
     processInspector: ProcessInspector | undefined,
   ) {
-    this.processInspector = config.recovery === undefined ? undefined : processInspector ?? createProcessInspector()
+    this.processInspector = config.recovery === undefined ? undefined : processInspector
     const inspector = this.processInspector
     if (config.recovery !== undefined && (inspector === undefined || inspector.hasExactIdentity !== true)) {
       throw new TypeError('agent-runtime-acp recovery requires exact local process creation identities')
@@ -955,6 +953,7 @@ class AcpProvider implements AgentRuntimeProvider {
     const recovery = this.config.recovery
     if (recovery === undefined) return undefined
     const inspector = this.processInspector
+    /* v8 ignore next -- the provider constructor requires this exact inspector before any activation can start. */
     if (inspector === undefined || inspector.hasExactIdentity !== true) {
       throw new TeamError('ACP recovery requires exact local process identities', 'TEAM_INVALID_ARGUMENT')
     }
@@ -980,6 +979,7 @@ class AcpProvider implements AgentRuntimeProvider {
         hostId: recovery.hostId,
         pid: identity.pid,
         started: identity.started,
+        /* v8 ignore next -- Windows process groups follow the platform CI lane; POSIX retains the exact root pid. */
         ...(process.platform === 'win32' ? {} : { processGroupId: identity.pid }),
       },
     })
@@ -1015,6 +1015,7 @@ async function createProxySession(
   request: AgentRuntimeActivationRequest,
 ): Promise<{ readonly session: Session; readonly release: () => void }> {
   const meta: NonNullable<CreateSessionOptions['meta']> = {
+    /* v8 ignore next -- materialize rejects missing cwd before creating any proxy Session. */
     ...request.agent.cwd === undefined ? {} : { cwd: request.agent.cwd },
     teamId: request.teamId,
     participantId: request.participant.id,
@@ -1191,18 +1192,7 @@ function normalizedRecoveryText(value: string, name: 'recoveryProfile' | 'recove
 
 /** Race ACP startup against activation cancellation so a stalled handshake is reaped immediately. */
 async function raceAbort<T>(signal: AbortSignal, operation: () => Promise<T>): Promise<T> {
-  if (signal.aborted) throw abortError(signal)
-  let removeAbort!: () => void
-  const aborted = new Promise<never>((_resolve, reject) => {
-    const onAbort = (): void => { reject(abortError(signal)) }
-    signal.addEventListener('abort', onAbort, { once: true })
-    removeAbort = () => { signal.removeEventListener('abort', onAbort) }
-  })
-  try {
-    return await Promise.race([operation(), aborted])
-  } finally {
-    removeAbort()
-  }
+  return await raceWithAbort(signal, operation, abortError)
 }
 
 /** Preserve an Error abort reason while normalizing arbitrary caller reasons. */

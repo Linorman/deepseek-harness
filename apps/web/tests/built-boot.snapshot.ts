@@ -81,10 +81,9 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
   // (the keyed FileMutationRow composing ToolRow + DiffBlock), not just the
   // fixture's raw text. The card is collapsed by default, so expand each edit/
   // write row first. The write turn's `hello fixture\n` proves the terminator
-  // rule end to end: a trailing newline terminates its line, so the footer reads
-  // `+1` (not a phantom `+2`) and one distinct file. The `+ ` prefix is a CSS
-  // ::before, so it is absent from textContent — assert on the line body and the
-  // footer.
+  // rule end to end: a trailing newline terminates its line, so the summary
+  // reads `+1` (not a phantom `+2`). The `+ ` prefix is a CSS ::before, so it is
+  // absent from textContent — assert on the line body and the summary.
   const mutationRows = [...document.querySelectorAll('[data-variant="write"],[data-variant="edit"]')]
   expect(mutationRows.length).toBeGreaterThan(0)
   for (const row of mutationRows) {
@@ -93,8 +92,9 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
   }
   const diffCards = [...document.querySelectorAll('[data-diff]')]
   expect(diffCards.length).toBeGreaterThan(0)
-  const footers = diffCards.map(card => card.textContent ?? '')
-  expect(footers.some(text => text.includes('hello fixture') && text.includes('+1 -0 · 1 file'))).toBe(true)
+  // The header bar carries the change summary (`+1 −0`, labelled `+1 -0`) beside the one file's path.
+  expect(diffCards.some(card => (card.textContent ?? '').includes('hello fixture')
+    && card.querySelector('[aria-label="+1 -0"]') !== null)).toBe(true)
 
   // The web render intent reaches the assembled boot graph: the fixture's
   // web_search / web_fetch turns render their keyed WebRow cards, proving the

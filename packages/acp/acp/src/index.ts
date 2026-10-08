@@ -185,8 +185,7 @@ export function apply(ctx: Context, config: AcpConfig = {}): void {
   const requestInterrupt = async (record: SessionRecord): Promise<void> => {
     for (let attempt = 0; attempt < interruptRetryAttempts; attempt += 1) {
       try {
-        const interrupt = await teamRuns.requestCoordinatorInterrupt(record.run.teamId)
-        if (interrupt === undefined) return
+        await teamRuns.requestCoordinatorInterrupt(record.run.teamId)
         return
       } catch (error: unknown) {
         if (!isTeamCursorConflict(error) || attempt + 1 === interruptRetryAttempts) throw error

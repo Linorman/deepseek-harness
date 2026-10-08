@@ -1,8 +1,10 @@
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { createHash } from 'node:crypto'
 import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
+import { defineLogStream } from '@clocky/clocky-storage-log'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import { FileNotFoundError, FileType, SandboxNotFoundError } from '@clocky/clocky-e2b'
@@ -218,6 +220,8 @@ async function setup(options: {
   readonly maxEntriesPerPublish?: number
   readonly maxIntegrationBytes?: number
   readonly lossPollIntervalMs?: number
+  readonly maxRetainedArtifacts?: number
+  readonly artifactProvider?: boolean
 } = {}) {
   const remote = new FakeRemoteFilesystem()
   const sandbox = { sandboxId: 'fake-sandbox', files: remote.files, getInfo: vi.fn(async () => ({ sandboxId: 'fake-sandbox' })) }
@@ -232,7 +236,7 @@ async function setup(options: {
   ctx.effect(() => async () => { await rm(logRoot, { recursive: true, force: true }) }, 'test E2B artifact ledger directory')
   await ctx.plugin(Storage)
   await ctx.plugin(StorageJson, { root: logRoot })
-  await ctx.plugin(StorageLog, { backend: 'json', routes: {} })
+  const storageLogFiber = await ctx.plugin(StorageLog, { backend: 'json', routes: {} })
   ctx.provide('teams', harness.teams as never)
   ctx.provide('agents', harness.agents as never)
   ctx.provide('e2b', e2b as never)
@@ -241,7 +245,7 @@ async function setup(options: {
   }
   await ctx.plugin(TeamWorkspaceRegistry)
   const providerFiber = await ctx.plugin(RemoteWorkspace, {
-    artifactProvider: 'remote-artifacts',
+    ...(options.artifactProvider === false ? {} : { artifactProvider: 'remote-artifacts' }),
     maxArtifactBytes: options.maxArtifactBytes ?? 128,
     ...(options.maxEntriesPerPublish === undefined ? {} : { maxEntriesPerPublish: options.maxEntriesPerPublish }),
     ...(options.integration === true ? {
@@ -250,8 +254,9 @@ async function setup(options: {
     } : {}),
     maxIntegrationBytes: options.maxIntegrationBytes ?? 4096,
     lossPollIntervalMs: options.lossPollIntervalMs ?? 5000,
+    ...(options.maxRetainedArtifacts === undefined ? {} : { maxRetainedArtifacts: options.maxRetainedArtifacts }),
   })
-  return { ctx, harness, remote, e2b, sandbox, providerFiber }
+  return { ctx, harness, remote, e2b, sandbox, providerFiber, storageLogFiber }
 }
 
 describe('E2B remote Team workspace provider', () => {
@@ -298,6 +303,111 @@ describe('E2B remote Team workspace provider', () => {
     await test.ctx.fiber.dispose()
   })
 
+  it('serializes loss polling and distinguishes transient E2B errors from definite expiry', async () => {
+    const test = await setup({ lossPollIntervalMs: 5 })
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    let checks = 0
+    const info = vi.spyOn(test.sandbox, 'getInfo').mockImplementation(async () => {
+      checks += 1
+      if (checks === 1) { entered.resolve(undefined); await release.promise }
+      return { sandboxId: test.sandbox.sandboxId }
+    })
+    const listener = vi.fn(async () => {})
+    const stop = allocation.onLoss?.(listener)
+    const another = vi.fn(async () => {})
+    const stopAnother = allocation.onLoss?.(another)
+    try {
+      await entered.promise
+      await new Promise((resolve) => { setTimeout(resolve, 25) })
+      expect(checks).toBe(1)
+      release.resolve(undefined)
+      await vi.waitFor(() => { expect(checks).toBeGreaterThan(1) })
+      info.mockRejectedValueOnce(new Error('temporary E2B network failure'))
+      await new Promise((resolve) => { setTimeout(resolve, 25) })
+      expect(listener).not.toHaveBeenCalled()
+      info.mockRejectedValue(new SandboxNotFoundError('expired execution world'))
+      await vi.waitFor(() => { expect(listener).toHaveBeenCalledWith(expect.objectContaining({
+        reason: 'sandbox-expired', terminationProven: true,
+      })) })
+      const notified = listener.mock.calls.length
+      const otherNotified = another.mock.calls.length
+      stop?.()
+      await vi.waitFor(() => { expect(another.mock.calls.length).toBeGreaterThan(otherNotified) })
+      expect(listener).toHaveBeenCalledTimes(notified)
+      stopAnother?.()
+      await new Promise((resolve) => { setTimeout(resolve, 25) })
+    } finally {
+      release.resolve(undefined)
+      stop?.()
+      stopAnother?.()
+      info.mockRestore()
+      await allocation.release()
+      await test.ctx.fiber.dispose()
+    }
+  })
+
+  it('drains an accepted E2B health observation before provider unload finishes', async () => {
+    const test = await setup({ lossPollIntervalMs: 5 })
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    await preparation.materialize()
+    const second = { ...test.harness.request, taskId: 'unload-second-task' as never,
+      attemptId: 'unload-second-attempt' as never }
+    test.harness.state.tasks.push({ ...test.harness.task, id: second.taskId,
+      lease: { ...test.harness.task.lease!, attemptId: second.attemptId } })
+    const secondPreparation = await test.ctx.teamWorkspaces.prepare('remote', second)
+    await secondPreparation.materialize()
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    vi.spyOn(test.sandbox, 'getInfo').mockImplementationOnce(async () => {
+      entered.resolve(undefined)
+      await release.promise
+      return { sandboxId: test.sandbox.sandboxId }
+    })
+    try {
+      await entered.promise
+      const unloaded = test.providerFiber.dispose()
+      let finished = false
+      void unloaded.then(() => { finished = true })
+      await Promise.resolve()
+      expect(finished).toBe(false)
+      release.resolve(undefined)
+      await unloaded
+      expect(finished).toBe(true)
+    } finally { release.resolve(undefined); await test.ctx.fiber.dispose() }
+  })
+
+  it('keeps loss observation active while a second canonical attempt still owns a remote allocation', async () => {
+    const test = await setup({ lossPollIntervalMs: 5 })
+    const second = { ...test.harness.request, taskId: 'second-remote-task' as never,
+      attemptId: 'second-remote-attempt' as never }
+    test.harness.state.tasks.push({ ...test.harness.task, id: second.taskId,
+      lease: { ...test.harness.task.lease!, attemptId: second.attemptId } })
+    const firstPreparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const secondPreparation = await test.ctx.teamWorkspaces.prepare('remote', second)
+    const first = await firstPreparation.materialize(), survivor = await secondPreparation.materialize()
+    expect(first.root).not.toBe(survivor.root)
+    await first.release()
+    const provider = test.ctx.teamWorkspaces.getProvider('remote-e2b')
+    if (provider === undefined) throw new Error('E2B provider was not registered')
+    await expect(provider.eligible({ task: test.harness.state.tasks[1]!, binding: test.harness.binding })).resolves.toBe(true)
+    await survivor.release()
+    await test.ctx.fiber.dispose()
+  })
+
+  it('contains a diagnostic sink failure while polling a rejected loss listener', async () => {
+    const test = await setup({ lossPollIntervalMs: 5 })
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    const stop = allocation.onLoss?.(async () => { throw new Error('consumer cursor conflict') })
+    const warn = vi.spyOn(test.ctx.logger, 'warn').mockImplementationOnce(() => { throw new Error('diagnostic sink unavailable') })
+    test.sandbox.getInfo.mockRejectedValue(new SandboxNotFoundError('expired execution world'))
+    try {
+      await vi.waitFor(() => { expect(warn.mock.calls.length).toBeGreaterThanOrEqual(2) })
+      expect(warn.mock.calls.some(([message]) => String(message).includes('loss observation did not settle'))).toBe(true)
+    } finally { stop?.(); warn.mockRestore(); await allocation.release(); await test.ctx.fiber.dispose() }
+  })
+
   it('keeps network uncertainty distinct from loss and refuses to restore an allocation in another sandbox', async () => {
     const test = await setup()
     const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
@@ -312,6 +422,21 @@ describe('E2B remote Team workspace provider', () => {
       code: 'TEAM_WORKSPACE_LOST', loss: { reason: 'world-changed', terminationProven: false,
         executionWorld: { id: 'fake-sandbox' } },
     })
+    await test.ctx.fiber.dispose()
+  })
+
+  it('reconciles a definitely expired world without re-entering its remote directory or requiring artifacts', async () => {
+    const test = await setup({ artifactProvider: false })
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    test.sandbox.getInfo.mockRejectedValue(new SandboxNotFoundError('expired execution world'))
+    await expect(test.ctx.teamWorkspaces.publish('remote', { allocation })).rejects.toMatchObject({
+      code: 'TEAM_WORKSPACE_LOST', loss: { reason: 'sandbox-expired', terminationProven: true, artifacts: [] },
+    })
+    const provider = test.ctx.teamWorkspaces.getProvider('remote-e2b')
+    if (provider === undefined) throw new Error('E2B provider was not registered')
+    await allocation.release()
+    await expect(provider.reconcileRelease?.(test.harness.request, allocation)).resolves.toBeUndefined()
     await test.ctx.fiber.dispose()
   })
 
@@ -345,6 +470,13 @@ describe('E2B remote Team workspace provider', () => {
     const config = provider as unknown as { readonly config: { readonly workspaceParent: string } }
     expect(config.config.workspaceParent).toBe('/runtime/.clocky-e2b/workspaces')
     await ctx.fiber.dispose()
+
+    const trailing = new Context()
+    trailing.provide('e2b', { ...e2b, runtimeRoot: '/runtime/.clocky-e2b/' } as never)
+    await trailing.plugin(TeamWorkspaceRegistry)
+    RemoteWorkspace.apply(trailing, { workspaceParent: '/runtime/.clocky-e2b/workspaces' })
+    expect(trailing.teamWorkspaces.getProvider('remote-e2b')).toBeDefined()
+    await trailing.fiber.dispose()
   })
 
   it('rejects invalid provider configuration before registration', () => {
@@ -370,6 +502,10 @@ describe('E2B remote Team workspace provider', () => {
     }) }).toThrow('artifactProvider must be non-empty')
     expect(() => { RemoteWorkspace.apply(ctx, {
       workspaceParent: '/runtime/.clocky-e2b/workspaces',
+      artifactProvider: 'remote-artifacts',
+    }) }).toThrow('artifactProvider requires storageLog')
+    expect(() => { RemoteWorkspace.apply(ctx, {
+      workspaceParent: '/runtime/.clocky-e2b/workspaces',
       maxArtifactBytes: 0,
     }) }).toThrow('maxArtifactBytes must be a positive safe integer')
     expect(() => { RemoteWorkspace.apply(ctx, {
@@ -377,10 +513,49 @@ describe('E2B remote Team workspace provider', () => {
     }) }).toThrow('workspaceParent must not contain a NUL byte')
   })
 
+  it('rejects new reservations after provider disposal', async () => {
+    const test = await setup()
+    const provider = test.ctx.teamWorkspaces.getProvider('remote-e2b')
+    if (provider === undefined) throw new Error('E2B provider was not registered')
+    await test.providerFiber.dispose()
+    await expect(provider.prepare(test.harness.request)).rejects.toThrow('provider is retired')
+    await test.ctx.fiber.dispose()
+  })
+
+  it('refuses allocation when the canonical Session has no live local Agent', async () => {
+    const test = await setup()
+    test.harness.agents.get.mockReturnValue(undefined as never)
+    await expect(test.ctx.teamWorkspaces.prepare('remote', test.harness.request)).rejects.toThrow('not a live local Agent')
+    expect(test.e2b.getSandbox).toHaveBeenCalled()
+    await test.ctx.fiber.dispose()
+  })
+
+  it('refuses restored or reconciled metadata that omits its execution-world identity', async () => {
+    const test = await setup()
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    const provider = test.ctx.teamWorkspaces.getProvider('remote-e2b')
+    if (provider === undefined) throw new Error('E2B provider was not registered')
+    const { executionWorld: _executionWorld, ...withoutWorld } = allocation
+    await expect(provider.restore(test.harness.request, withoutWorld)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(provider.reconcileRelease?.(test.harness.request, withoutWorld)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await allocation.release()
+    await test.ctx.fiber.dispose()
+  })
+
   it('covers eligibility fences, fallback artifacts, abandonment, and provider-owned reconciliation', async () => {
-    const { ctx, harness, remote } = await setup({ artifact: false })
+    const { ctx, harness, remote, e2b, sandbox } = await setup({ artifact: false })
     const provider = ctx.teamWorkspaces.getProvider('remote-e2b')
     if (provider === undefined) throw new Error('E2B remote provider was not registered')
+    const preflight = { task: harness.task, participant: harness.state.participants[0]!,
+      route: { provider: 'e2b-agent', model: 'fixture', cwd: '/runtime' } }
+    await expect(provider.preflight?.(preflight as never)).resolves.toBe(true)
+    await expect(provider.preflight?.({ ...preflight, task: { ...harness.task, workspaceMode: 'sandbox' } } as never)).resolves.toBe(false)
+    await expect(provider.preflight?.({ ...preflight, participant: { ...preflight.participant, phase: 'left' } } as never)).resolves.toBe(false)
+    e2b.getSandbox.mockRejectedValueOnce(new Error('remote network unavailable'))
+    await expect(provider.preflight?.(preflight as never)).resolves.toBe(false)
+    sandbox.getInfo.mockRejectedValueOnce(new Error('sandbox is unavailable'))
+    await expect(provider.preflight?.(preflight as never)).resolves.toBe(false)
     await expect(provider.eligible({ task: harness.task, binding: harness.binding })).resolves.toBe(true)
     await expect(provider.eligible({ task: { ...harness.task, workspaceMode: 'sandbox' } as never, binding: harness.binding })).resolves.toBe(false)
 
@@ -463,6 +638,85 @@ describe('E2B remote Team workspace provider', () => {
     })
     await sizedAllocation.release()
     await sized.ctx.fiber.dispose()
+  })
+
+  it('retains each artifact identity once and refuses a second distinct artifact beyond the ledger bound', async () => {
+    const test = await setup({ maxRetainedArtifacts: 1 })
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    test.remote.file(`${allocation.root}/first.txt`, 'first')
+    const [first, repeated] = await Promise.all([
+      test.ctx.teamWorkspaces.publish('remote', { allocation }),
+      test.ctx.teamWorkspaces.publish('remote', { allocation }),
+    ])
+    expect(repeated.artifacts.map(value => value.id)).toEqual(first.artifacts.map(value => value.id))
+    test.remote.file(`${allocation.root}/second.txt`, 'second')
+    await expect(test.ctx.teamWorkspaces.publish('remote', { allocation })).rejects.toThrow('artifact retention exceeds the configured bound')
+    await allocation.release()
+    await test.ctx.fiber.dispose()
+  })
+
+  it.each(['overfull', 'foreign-attempt', 'compacted-prefix'] as const)('refuses a %s durable artifact ledger during loss recovery', async (damage) => {
+    const test = await setup({ maxRetainedArtifacts: 1 })
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    const logs = test.ctx.get('storageLog')
+    if (logs === undefined) throw new Error('Fixture has no durable artifact log owner')
+    const key = createHash('sha256').update(`${allocation.provider}:${allocation.id}`).digest('hex')
+    const stream = await logs.open(defineLogStream({ name: `e2b-workspace-artifacts/${key}`, version: 1 }))
+    const sourceAttemptId = damage === 'foreign-attempt' ? 'foreign-attempt' as never : test.harness.request.attemptId
+    const first = await test.harness.saves('remote-artifacts', { name: 'first.txt', kind: 'file', visibility: 'team',
+      sourceAttemptId, data: 'first' })
+    const records = damage === 'foreign-attempt' ? [first] : [first, await test.harness.saves('remote-artifacts', {
+      name: 'second.txt', kind: 'file', visibility: 'team', sourceAttemptId, data: 'second',
+    })]
+    await stream.append(-1, records)
+    if (damage === 'compacted-prefix') {
+      await stream.writeCheckpoint({ sequence: 1, value: { retained: true } })
+      await stream.compact({ throughSequence: 0, expectedCheckpointSequence: 1 })
+    }
+    await stream.close()
+    test.sandbox.getInfo.mockRejectedValue(new SandboxNotFoundError('expired execution world'))
+    await expect(test.ctx.teamWorkspaces.publish('remote', { allocation })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await test.ctx.fiber.dispose()
+  })
+
+  it('refuses to publish provider-backed artifacts after durable storage unloads', async () => {
+    const test = await setup()
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    test.remote.file(`${allocation.root}/result.txt`, 'durable artifact')
+    await test.storageLogFiber.dispose()
+    await expect(test.ctx.teamWorkspaces.publish('remote', { allocation }))
+      .rejects.toThrow('require storageLog for loss recovery')
+    await allocation.release()
+    await test.ctx.fiber.dispose()
+  })
+
+  it('drains a failing durable artifact append during provider unload', async () => {
+    const test = await setup()
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    test.remote.file(`${allocation.root}/result.txt`, 'artifact awaiting durable append')
+    const logs = test.ctx.get('storageLog')
+    if (logs === undefined) throw new Error('Fixture has no artifact log owner')
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    vi.spyOn(logs, 'open').mockImplementation(async () => {
+      entered.resolve(undefined)
+      await release.promise
+      throw new Error('artifact log unavailable')
+    })
+    const provider = test.ctx.teamWorkspaces.getProvider('remote-e2b')
+    if (provider === undefined) throw new Error('E2B provider was not registered')
+    try {
+      const publishing = test.ctx.teamWorkspaces.publish('remote', { allocation })
+      await entered.promise
+      const closing = (provider as unknown as { close(): Promise<void> }).close()
+      release.resolve(undefined)
+      await expect(publishing).rejects.toThrow('artifact log unavailable')
+      await expect(closing).rejects.toThrow('observation teardown failed')
+      await test.providerFiber.dispose()
+    } finally { release.resolve(undefined); await test.ctx.fiber.dispose() }
   })
 
   it('rejects disabled integration and integration without an artifact store', async () => {
@@ -607,6 +861,8 @@ describe('E2B remote Team workspace provider', () => {
       mode: 'integrate',
       actorId: harness.request.participantId,
     }
+    await expect(ctx.teamWorkspaces.integrateSource('remote-e2b', { ...request, mode: 'proposal' }))
+      .resolves.toMatchObject({ status: 'proposed', artifact: patch })
     const integrated = await ctx.teamWorkspaces.integrateSource('remote-e2b', request)
     expect(integrated).toMatchObject({ status: 'integrated', target: 'main', artifact: patch })
     expect(new TextDecoder().decode(remote.nodes.get('/runtime/.clocky-e2b/team-integrations/main/result.txt')?.data)).toBe('remote result\n')
@@ -741,6 +997,18 @@ describe('E2B remote Team workspace provider', () => {
     const symlinkTarget = '/runtime/.clocky-e2b/team-integrations/symlink-target'
     remote.symlink(symlinkTarget, '/outside')
     await expect(integrate(patch, 'symlink-target', 'symlink-target')).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    const racedTarget = '/runtime/.clocky-e2b/team-integrations/raced-target'
+    await remote.files.makeDir(racedTarget)
+    const getInfo = remote.files.getInfo
+    let targetReads = 0
+    const replaceDuringApply = vi.spyOn(remote.files, 'getInfo').mockImplementation(async (path) => {
+      if (path === racedTarget && ++targetReads === 4) remote.symlink(racedTarget, '/outside')
+      return await getInfo(path)
+    })
+    try {
+      await expect(integrate(patch, 'raced-target', 'raced-target')).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+      expect(targetReads).toBeGreaterThanOrEqual(4)
+    } finally { replaceDuringApply.mockRestore() }
     const childSymlinkTarget = '/runtime/.clocky-e2b/team-integrations/child-symlink'
     await remote.files.makeDir(childSymlinkTarget)
     remote.symlink(`${childSymlinkTarget}/output.txt`, '/outside/output.txt', FileType.FILE)
@@ -752,6 +1020,14 @@ describe('E2B remote Team workspace provider', () => {
 
     const symlinkChange = await makePatch('symlink-change', [{ path: 'link', kind: 'symlink', target: 'output.txt' }])
     await expect(integrate(symlinkChange, 'symlink-change', 'symlink-change')).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    const nestedChange = await makePatch('nested-change', [{ path: 'nested/output.txt', kind: 'file', data: 'bmV3' }])
+    const regularNestedTarget = '/runtime/.clocky-e2b/team-integrations/regular-nested'
+    await remote.files.makeDir(`${regularNestedTarget}/nested`)
+    await expect(integrate(nestedChange, 'regular-nested', 'regular-nested')).resolves.toMatchObject({ status: 'integrated' })
+    const nestedTarget = '/runtime/.clocky-e2b/team-integrations/nested-ancestor'
+    await remote.files.makeDir(nestedTarget)
+    remote.symlink(`${nestedTarget}/nested`, '/outside')
+    await expect(integrate(nestedChange, 'nested-ancestor', 'nested-ancestor')).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
     const deleteDirectory = await makePatch('delete-directory', [{ path: 'dir', kind: 'delete' }])
     const deleteTarget = '/runtime/.clocky-e2b/team-integrations/delete-target'
     await remote.files.makeDir(`${deleteTarget}/dir`)
@@ -911,6 +1187,8 @@ describe('E2B remote Team workspace provider', () => {
     await expect(integrate(markerRequest)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
     await remote.files.write(markerPath, 'not-json')
     await expect(integrate(markerRequest)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await remote.files.write(markerPath, JSON.stringify({ unknown: 'foreign marker' }))
+    await expect(integrate(markerRequest)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
     await remote.files.write(markerPath, JSON.stringify({ ...marker, status: 'prepared', targetVersion: undefined, targetCreated: true }))
     await expect(integrate(markerRequest)).resolves.toMatchObject({ status: 'conflict', artifact: patch })
 
@@ -940,6 +1218,9 @@ describe('E2B remote Team workspace provider', () => {
     await expect(integrate(makeRequest('nested/main', 'nested'))).resolves.toMatchObject({ status: 'integrated' })
     remote.file('/runtime/.clocky-e2b/team-integrations/ancestor', 'not a directory')
     await expect(integrate(makeRequest('ancestor/main', 'ancestor'))).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await remote.files.remove('/runtime/.clocky-e2b/team-integrations/ancestor')
+    remote.symlink('/runtime/.clocky-e2b/team-integrations/ancestor', '/outside')
+    await expect(integrate(makeRequest('ancestor/main', 'ancestor-symlink'))).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
     await remote.files.remove('/runtime/.clocky-e2b/team-integrations')
     remote.file('/runtime/.clocky-e2b/team-integrations', 'not a directory')
     await expect(integrate(makeRequest('root-failure', 'root-failure'))).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
@@ -1143,5 +1424,26 @@ describe('E2B remote Team workspace provider', () => {
     expect(config.config.maxEntriesPerPublish).toBeGreaterThan(0)
     await allocation.release()
     await ctx.fiber.dispose()
+  })
+
+  it('ignores malformed paths from a remote file listing without publishing outside the allocation root', async () => {
+    const test = await setup()
+    const preparation = await test.ctx.teamWorkspaces.prepare('remote', test.harness.request)
+    const allocation = await preparation.materialize()
+    test.remote.file(`${allocation.root}/safe.txt`, 'safe')
+    const listed = await test.remote.files.list(allocation.root)
+    const entry = listed[0]
+    if (entry === undefined) throw new Error('Remote listing fixture has no file')
+    vi.spyOn(test.remote.files, 'list').mockResolvedValueOnce([
+      entry,
+      { ...entry, path: '/outside/foreign.txt', name: 'foreign.txt' },
+      { ...entry, path: `${allocation.root}/`, name: '' },
+      { ...entry, path: `${allocation.root}/bad\0name`, name: 'bad\0name' },
+    ])
+    const result = await test.ctx.teamWorkspaces.publish('remote', { allocation })
+    expect(result.changedPaths).toEqual(['safe.txt'])
+    expect(result.artifacts.map(value => value.kind)).toEqual(['file'])
+    await allocation.release()
+    await test.ctx.fiber.dispose()
   })
 })

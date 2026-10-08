@@ -2,20 +2,31 @@
 .root {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--clocky-layer-modal);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
 }
 
-/* User/spec mask: rgba(0,0,0,0.24) + blur(2px) via --clocky-alias-bg-mask-1 /
+/* User/spec mask: rgba(0,0,0,0.24) + blur(2px) via --clocky-bg-scrim /
    --clocky-mask-blur (light); dark theme raises mask opacity. */
 .mask {
   position: absolute;
   inset: 0;
-  background: var(--clocky-alias-bg-mask-1);
+  background: var(--clocky-bg-scrim);
   backdrop-filter: var(--clocky-mask-blur);
+  animation: modal-fade var(--clocky-duration-base) var(--clocky-ease-standard);
+}
+
+@keyframes modal-fade {
+  from { opacity: 0; }
+}
+
+/* Opacity only: a moving box delays pointer actionability until it settles,
+   which turns every confirmation into a timing change for its caller. */
+@keyframes modal-in {
+  from { opacity: 0; }
 }
 
 /* Dialog card: r24, shadow-lv3, layer-2 fill, inverted border, pb 24. */
@@ -26,17 +37,18 @@
   height: fit-content;
   max-height: calc(100dvh - 48px);
   color: inherit;
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: min(380px, calc(100% - 48px));
   padding: 0 0 24px;
   overflow: hidden;
-  border: 1px solid var(--clocky-alias-border-inverted);
-  border-radius: 24px;
-  background: var(--clocky-alias-bg-layer-2);
-  box-shadow: var(--clocky-shadow-lv3);
+  border: 1px solid transparent;
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-raised);
+  box-shadow: var(--clocky-elevation-3);
+  animation: modal-in var(--clocky-duration-base) var(--clocky-ease-enter);
 }
 
 .content {
@@ -59,10 +71,10 @@
 
 .title {
   margin: 0;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: var(--clocky-type-heading-size);
+  line-height: var(--clocky-type-heading-line-height);
   font-weight: 500; /* figma wt510, rendered 500 */
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .close {
@@ -73,24 +85,24 @@
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--clocky-radius-md);
   background: transparent;
   cursor: pointer;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .close:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 /* Description and body share the 332px content column (24px side pads). */
 .description {
   margin: 0;
   padding: 0 24px;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   font-weight: 400;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .body {
@@ -122,14 +134,14 @@
 
 /* Long configuration forms retain their heading/actions while only fields scroll. */
 .formDialog {
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
   box-sizing: border-box;
   max-width: none;
   width: min(800px, calc(100% - 32px));
   height: min(800px, calc(100dvh - 32px));
   max-height: calc(100dvh - 32px);
-  border-radius: 12px;
+  border-radius: var(--clocky-radius-lg);
 }
 .formDialog .content { flex: 1; }
 .formDialog .body { flex: 1; overflow: auto; scrollbar-gutter: stable; }
@@ -150,4 +162,11 @@
   .dialog .content { display: block; max-height: none; overflow: visible; }
   .dialog .body { max-height: none; overflow: visible; }
   .dialog .footer { flex-wrap: wrap; margin-top: 20px; }
+}
+
+/* Reduced motion: the dialog appears without its fade; the scrim keeps its own. */
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    animation: none;
+  }
 }

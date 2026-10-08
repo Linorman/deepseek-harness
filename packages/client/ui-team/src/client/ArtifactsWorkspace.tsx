@@ -93,7 +93,8 @@ function downloadArtifact(result: TeamArtifactReadResult): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `artifact-${result.artifact.id.replace(/[^A-Za-z0-9._-]+/g, '-') || 'download'}`
+  // The admitted reference ID is nonempty; every unsupported run becomes a nonempty hyphen.
+  anchor.download = `artifact-${result.artifact.id.replace(/[^A-Za-z0-9._-]+/g, '-')}`
   anchor.click()
   setTimeout(() => { URL.revokeObjectURL(url) }, 0)
 }

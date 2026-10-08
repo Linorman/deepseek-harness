@@ -16,6 +16,10 @@ Neither surface keeps run state in component state — settling a define call mo
 
 The `/client` export surface is the plugin body (`apply`/`inject`) plus the injected face, run-state, port and event payload types.
 
+The inventory retires rows and removed-ID history on authorization clearing without refetching. It ignores old responses and suppresses new reads until a successful connection reset.
+
+The footer lifecycle panel portals outside sidebar clipping and stacking contexts. Its owned portal counts as inside the dismissal boundary, so approving from the panel is a real pointer action.
+
 ## Model Experience
 
 Indirectly, through the run and stop verbs these surfaces drive — the browser-side runner's orchestration for a run, and `dynamicCordisRunner.stop` for a stop, the same host verbs the model's `cordis_run` and `cordis_stop` tools reach — so whatever a running definition then contributes is the runner's effect while nothing model-visible originates in this package, which renders logged call/result slices and a host inventory read, adds no prompt content, writes no session event, and deliberately leaves no session-log trace of a person approving, declining, running or stopping anything.

@@ -1,0 +1,41 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--clocky-space-3);
+  padding: var(--clocky-space-8) var(--clocky-space-4);
+  text-align: center;
+}
+
+.compact {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--clocky-space-2);
+  padding: var(--clocky-space-2) 0;
+  text-align: left;
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--clocky-fg-tertiary);
+}
+
+.title {
+  margin: 0;
+  max-width: 48ch;
+  color: var(--clocky-fg-secondary);
+  font: var(--clocky-type-body);
+}
+
+.compact .title {
+  font: var(--clocky-type-body-small);
+  color: var(--clocky-fg-tertiary);
+}
+
+.action {
+  display: flex;
+}
+
+.compact .action {
+  margin-left: auto;
+}

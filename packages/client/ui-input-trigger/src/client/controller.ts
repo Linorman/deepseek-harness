@@ -61,6 +61,8 @@ export class InputTriggerController {
 
   /** The authoritative hit: single truth for span CAS material (menu snapshot never carries it alone). */
   private hit: TriggerHit | null = null
+  /** Explicit dismissal suppresses late source registration; an empty candidate result does not. */
+  private dismissed = false
   private fetch: AbortController | null = null
   private disposed = false
   /** Per-source lexicon unsubscribers (sources without the hook never enter). */
@@ -88,6 +90,7 @@ export class InputTriggerController {
    */
   track(draft: string, caret: number, guard: TriggerGuard, draftRev: number): void {
     if (this.disposed) return
+    this.dismissed = false
     const launched = this.launcher.getSnapshot() !== null
     this.clearLauncher()
     const raw = detectTrigger(draft, caret, guard)
@@ -168,6 +171,7 @@ export class InputTriggerController {
       span: hit.span,
     })
     this.stopFetch()
+    this.dismissed = true
     this.reduce({ type: 'close' })
     this.execute(outcome, hit.span)
   }
@@ -192,8 +196,7 @@ export class InputTriggerController {
         return 'consumed'
       }
       case 'escape': {
-        this.stopFetch()
-        this.reduce({ type: 'close' })
+        this.dismiss()
         return 'consumed'
       }
       case 'enter': {
@@ -283,7 +286,8 @@ export class InputTriggerController {
 
   /**
    * Admit a source registered after this controller's birth (root registry
-   * change notification): warm it and fold its roll into the live lexicon —
+   * change notification): warm it, fold its roll into the live lexicon and
+   * refresh the current token's candidates unless explicitly dismissed or launched for one source —
    * the constructor-time prewarm covers only the roster present at scope
    * birth.
    * @param source - the newly registered source.
@@ -293,11 +297,18 @@ export class InputTriggerController {
     source.warm?.(projection)
     this.watchLexicon(source, projection)
     this.refreshLexicon()
+    const hit = this.hit
+    if (this.disposed || this.dismissed || hit === null || hit.trigger !== source.trigger || this.launcher.getSnapshot() !== null) return
+    const roster = this.deps.roster.sources(hit.trigger)
+    this.menu.set(seedGroups(this.menu.getSnapshot(), roster))
+    this.reduce({ type: 'hit', hit })
+    this.fetchCandidates(hit, roster)
   }
 
   /** External dismiss (e.g. pointer outside the composer area). */
   dismiss(): void {
     if (this.disposed) return
+    this.dismissed = true
     this.stopFetch()
     this.reduce({ type: 'close' })
   }

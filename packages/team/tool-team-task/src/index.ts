@@ -29,7 +29,7 @@ import type {
   TeamRunWorkerPoolStatus,
   TeamRunWorkflowPlanTerminal,
 } from '@clocky/clocky-team-run'
-import { defineTool } from '@clocky/clocky-tools'
+import { bindAgentToolDisposal, defineTool, requireScopedToolAgent } from '@clocky/clocky-tools'
 import { WORKFLOW_PLAN_PARAMETER } from './workflow-schema.ts'
 import type { GenericCallView, ToolRunContext } from '@clocky/clocky-tools'
 
@@ -149,6 +149,12 @@ const REVIEW_PROPERTIES = {
   },
 } as const
 
+/** Stable task and workflow failure carrier. */
+const FAILURE_SCHEMA = {
+  type: 'object', additionalProperties: false,
+  properties: { code: { type: 'string', required: true }, message: { type: 'string', required: true } },
+} as const
+
 const TASK_START_VALUE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -184,14 +190,7 @@ const TASK_WAIT_VALUE_SCHEMA = {
         task_id: { type: 'string', required: true },
         phase: { type: 'string', required: true, const: 'failed' },
         outcome: { type: 'string', required: true, enum: ['failed', 'released', 'lease-expired'] },
-        failure: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            code: { type: 'string', required: true },
-            message: { type: 'string', required: true },
-          },
-        },
+        failure: FAILURE_SCHEMA,
       },
     },
     {
@@ -331,14 +330,7 @@ const WORKFLOW_WAIT_VALUE_SCHEMA = {
         plan_id: { type: 'string', required: true },
         phase: { type: 'string', required: true, const: 'failed' },
         result: { type: 'json' },
-        failure: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            code: { type: 'string', required: true },
-            message: { type: 'string', required: true },
-          },
-        },
+        failure: FAILURE_SCHEMA,
       },
     },
     {
@@ -674,14 +666,7 @@ export function apply(ctx: Context): void {
   ctx.on('channel/changed', () => {
     for (const agent of ctx.agents.list()) reconcile(agent)
   })
-  ctx.on('agent/disposed', ({ agent }) => {
-    installed.get(agent)?.()
-    installed.delete(agent)
-  })
-  ctx.effect(() => () => {
-    for (const dispose of installed.values()) dispose()
-    installed.clear()
-  }, 'toolTeamTask.scopedTools()')
+  bindAgentToolDisposal(ctx, installed, 'toolTeamTask.scopedTools()')
 }
 
 /** Derive the durable default-worker task-create identity from the complete model-call lineage. */
@@ -882,13 +867,7 @@ function requireExecution(
   scopedAgent: Agent,
   tool: TeamTaskToolName,
 ): Agent {
-  const agent = exec.agent
-  if (agent === undefined) throw executionError(tool, `${tool} requires a calling Agent`, 'AGENT_REQUIRED')
-  if (agent !== scopedAgent || ctx.agents.get(agent.id) !== agent || agent.status !== 'running'
-    || ctx.agents.currentInitiator() !== agent) {
-    throw executionError(tool, `${tool} requires its exact live scoped Agent inside an active driver`, 'DRIVER_REQUIRED')
-  }
-  return agent
+  return requireScopedToolAgent(ctx.agents, exec, scopedAgent, tool, (message, kind) => executionError(tool, message, kind))
 }
 
 /** Build one stable execution-authentication failure for a scoped default-worker task tool. */
@@ -903,20 +882,20 @@ function executionError(
 
 /** Map one model-facing Team task tool to its stable execution-error prefix. */
 function executionPrefix(tool: TeamTaskToolName): string {
-  switch (tool) {
-    case 'team_worker_pool_set': return 'TEAM_WORKER_POOL_SET'
-    case 'team_task_start': return 'TEAM_TASK_START'
-    case 'team_task_delegate': return 'TEAM_TASK_DELEGATE'
-    case 'team_task_wait': return 'TEAM_TASK_WAIT'
-    case 'team_task_list': return 'TEAM_TASK_LIST'
-    case 'team_task_watch': return 'TEAM_TASK_WATCH'
-    case 'team_task_cancel': return 'TEAM_TASK_CANCEL'
-    case 'team_task_propose_owner': return 'TEAM_TASK_PROPOSE_OWNER'
-    case 'team_workflow_start': return 'TEAM_WORKFLOW_START'
-    case 'team_workflow_wait': return 'TEAM_WORKFLOW_WAIT'
-    case 'team_workflow_task_cancel': return 'TEAM_WORKFLOW_TASK_CANCEL'
-    default: return assertNever(tool, 'Team task tool name')
-  }
+  const prefixes = {
+    team_worker_pool_set: 'TEAM_WORKER_POOL_SET',
+    team_task_start: 'TEAM_TASK_START',
+    team_task_delegate: 'TEAM_TASK_DELEGATE',
+    team_task_wait: 'TEAM_TASK_WAIT',
+    team_task_list: 'TEAM_TASK_LIST',
+    team_task_watch: 'TEAM_TASK_WATCH',
+    team_task_cancel: 'TEAM_TASK_CANCEL',
+    team_task_propose_owner: 'TEAM_TASK_PROPOSE_OWNER',
+    team_workflow_start: 'TEAM_WORKFLOW_START',
+    team_workflow_wait: 'TEAM_WORKFLOW_WAIT',
+    team_workflow_task_cancel: 'TEAM_WORKFLOW_TASK_CANCEL',
+  } as const satisfies Record<TeamTaskToolName, string>
+  return prefixes[tool]
 }
 
 /** Distinguish a normal non-coordinator discovery result from a TeamRun failure that must surface. */

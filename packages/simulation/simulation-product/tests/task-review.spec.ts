@@ -7,6 +7,8 @@ import { companyConfig } from './company-driver-fixture.ts'
 import { call } from './fixtures.ts'
 import { simulationProductTaskReviewResolveInputSchema } from '../src/review-schema.ts'
 import { simulationProductManageInputSchema } from '../src/control-schema.ts'
+import type { Context } from '@clocky/cordis'
+import { SimulationCompanyOwner } from '../src/company-owner.ts'
 
 afterEach(() => { vi.restoreAllMocks() })
 const driver = simulationCompanyDriverSchema.parse({ ...companyConfig, tasks: { version: '1', cognition: 'deterministic',
@@ -80,6 +82,10 @@ it('keeps a committed review with lost terminal publication accepted, explicitly
     expect(await h.ctx.simulationAdministration.request({ commandId: input.commandId }, call())).toMatchObject({ status: 'found', request: { status: 'accepted' }, review: input })
     publication.mockRestore()
     await h.fiber.dispose(); const cold = h.mount(); await cold
+    expect((await h.ctx.simulationAdministration.listTaskReviews({ runId }, call())).items[0]?.action.reason)
+      .toBe('recovery-required')
+    await expect(h.ctx.simulationAdministration.retryRequest({ runId, commandId: input.commandId }, call()))
+      .rejects.toThrow('explicit restore')
     const restore = { runId, commandId: 'restore-review' as never, checkpointId: `product-initial/${h.input.commandId}` as never }
     await h.ctx.simulationAdministration.restore(restore, call())
     expect(await h.finished(restore.commandId)).toMatchObject({ status: 'completed' })
@@ -109,6 +115,38 @@ it('rechecks revocation after the owner waits for canonical task metadata', asyn
   } finally { release.resolve(undefined); await h.close() }
 })
 
+it('keeps review pending when canonical task metadata cannot be read', async () => {
+  const h = await ownerFixture('json', {}, driver)
+  try {
+    const runId = await h.create(), item = await pending(h, runId)
+    const reader = vi.spyOn(h.ctx.teams, 'getTask').mockRejectedValue(new Error('Team reader unavailable'))
+    await expect(h.ctx.simulationAdministration.listTaskReviews({ runId }, call()))
+      .rejects.toThrow('canonical task review metadata is unavailable')
+    const input = intent(runId, item, 'metadata-unavailable')
+    await h.ctx.simulationAdministration.resolveTaskReview(input, call())
+    expect(await h.finished(input.commandId)).toMatchObject({ status: 'failed', failure: 'review-failed' })
+    reader.mockRestore()
+    expect((await h.ctx.teams.getTask({ teamId: item.teamId, taskId: item.taskId })).phase).toBe('review')
+  } finally { await h.close() }
+})
+
+it('rejects a Team task whose immutable creation source differs from the run', async () => {
+  const h = await ownerFixture('json', {}, driver)
+  try {
+    const runId = await h.create(), item = await pending(h, runId)
+    const original = h.ctx.teams.getTask.bind(h.ctx.teams)
+    const task = await original({ teamId: item.teamId, taskId: item.taskId })
+    const reader = vi.spyOn(h.ctx.teams, 'getTask').mockResolvedValue({ ...task,
+      createCommand: { ...task.createCommand, idempotencyKey: 'foreign-run-task' as never },
+    })
+    const input = intent(runId, item, 'foreign-source-review')
+    await h.ctx.simulationAdministration.resolveTaskReview(input, call())
+    expect(await h.finished(input.commandId)).toMatchObject({ status: 'failed', failure: 'review-failed' })
+    reader.mockRestore()
+    expect((await original({ teamId: item.teamId, taskId: item.taskId })).phase).toBe('review')
+  } finally { await h.close() }
+})
+
 it('refuses a canonical single-row review response that exceeds its complete byte allowance', async () => {
   const options: { maxBytes?: number } = {}
   const h = await ownerFixture('json', options, driver)
@@ -120,6 +158,101 @@ it('refuses a canonical single-row review response that exceeds its complete byt
     await expect(h.ctx.simulationAdministration.listTaskReviews({ runId }, call())).rejects.toThrow('complete byte allowance')
     expect(await h.ctx.simulationAdministration.request({ commandId: h.input.commandId }, call())).toMatchObject({ status: 'found', request: { status: 'completed' } })
   } finally { await h.close() }
+})
+
+it('rejects stale review revisions and tampered continuations without disclosing task metadata', async () => {
+  const h = await ownerFixture('json', {}, driver)
+  try {
+    const runId = await h.create(); await pending(h, runId)
+    const service = h.ctx.simulationAdministration
+    const page = await service.listTaskReviews({ runId }, call())
+    await expect(service.listTaskReviews({ runId, expectedRevision: page.snapshotRevision + 1 }, call()))
+      .rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_STALE' })
+    await expect(service.listTaskReviews({ runId, cursor: 'tampered-review-cursor' as never }, call()))
+      .rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_STALE' })
+    await h.fiber.dispose(); await h.mount()
+    const absent = vi.spyOn(h.ctx.simulations, 'inspect').mockResolvedValueOnce(undefined)
+    await expect(h.ctx.simulationAdministration.listTaskReviews({ runId }, call()))
+      .rejects.toThrow('review history is not materialized')
+    absent.mockRestore()
+  } finally { await h.close() }
+})
+
+it('marks review and task cancellation unavailable while accepted checkpoint work owns the run', async () => {
+  const h = await ownerFixture('json', {}, driver)
+  const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+  try {
+    const attach = h.ctx.simulationTeams.attach.bind(h.ctx.simulationTeams)
+    let connection: Awaited<ReturnType<typeof attach>> | undefined
+    vi.spyOn(h.ctx.simulationTeams, 'attach').mockImplementation(async (...args) => {
+      connection = await attach(...args); return connection
+    })
+    const runId = await h.create(); await pending(h, runId)
+    if (connection === undefined) throw new Error('Checkpoint test has no canonical Team connection')
+    const checkpoint = connection.checkpoint.bind(connection)
+    vi.spyOn(connection, 'checkpoint').mockImplementationOnce(async (...args) => {
+      entered.resolve(undefined); await release.promise; return checkpoint(...args)
+    })
+    const commandId = 'review-maintenance-cut' as never
+    await h.ctx.simulationAdministration.checkpoint({ runId, commandId }, call())
+    await entered.promise
+    expect((await h.ctx.simulationAdministration.listTaskReviews({ runId }, call())).items[0]?.action)
+      .toMatchObject({ allowed: false, reason: 'maintenance-in-progress' })
+    expect((await h.ctx.simulationAdministration.listTasks({ runId }, call())).items[0]?.cancel)
+      .toMatchObject({ allowed: false, reason: 'maintenance-in-progress' })
+    release.resolve(undefined)
+    expect((await h.finished(commandId)).status).toBe('completed')
+  } finally { release.resolve(undefined); await h.close() }
+})
+
+it('explains that a task route without an installed reviewer cannot accept administrative review', async () => {
+  if (driver.tasks === undefined) throw new Error('Company fixture has no task route')
+  const noReview = simulationCompanyDriverSchema.parse({ ...driver, tasks: { ...driver.tasks, review: 'none' } })
+  const h = await ownerFixture('json', {}, noReview)
+  try {
+    const runId = await h.create()
+    await h.ctx.simulationAdministration.manage({ runId, managementId: 'no-review-start' as never, phase: 'running' }, call())
+    const page = await vi.waitFor(async () => {
+      const result = await h.ctx.simulationAdministration.listTaskReviews({ runId }, call())
+      if (result.items.length === 0) throw new Error('Task execution has not been recorded')
+      return result
+    }, { timeout: 5000, interval: 10 })
+    expect(page.items[0]?.action).toMatchObject({ allowed: false, reason: 'review-disabled' })
+  } finally { await h.close() }
+})
+
+it('refuses review metadata after the canonical Team reader becomes unavailable', async () => {
+  const h = await ownerFixture('json', {}, driver)
+  try {
+    const runId = await h.create(); await pending(h, runId)
+    const service = h.ctx.simulationAdministration
+    const scope = (service as unknown as { ctx: Context }).ctx
+    const getService = scope.get.bind(scope)
+    const missing = vi.spyOn(scope, 'get').mockImplementation(name => name === 'teams' ? undefined : getService(name) as unknown)
+    await expect(service.listTaskReviews({ runId }, call())).rejects.toThrow('no canonical Team reader')
+    missing.mockRestore()
+    expect((await service.listTaskReviews({ runId }, call())).items).toHaveLength(1)
+  } finally { await h.close() }
+})
+
+it('retires an accepted review before its owner authority check without publishing a canonical decision', async () => {
+  const h = await ownerFixture('json', {}, driver)
+  const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+  try {
+    const runId = await h.create(), item = await pending(h, runId)
+    const input = intent(runId, item, 'retiring-review')
+    vi.spyOn(SimulationCompanyOwner.prototype, 'review').mockImplementationOnce(async (_request, authorize) => {
+      entered.resolve(undefined); await release.promise; authorize()
+    })
+    expect((await h.ctx.simulationAdministration.resolveTaskReview(input, call())).status).toBe('accepted')
+    await entered.promise
+    const retiring = h.fiber.dispose()
+    release.resolve(undefined)
+    await retiring; await h.mount()
+    expect(await h.ctx.simulationAdministration.request({ commandId: input.commandId }, call()))
+      .toMatchObject({ status: 'found', request: { status: 'failed', failure: 'review-failed' } })
+    expect((await h.ctx.teams.getTask({ teamId: item.teamId, taskId: item.taskId })).phase).toBe('review')
+  } finally { release.resolve(undefined); await h.close() }
 })
 
 

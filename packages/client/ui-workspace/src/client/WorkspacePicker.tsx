@@ -203,7 +203,7 @@ export function WorkspacePickFlow({
         title={t('folderError.title')}
         footer={(
           <>
-            <Button variant="outline" className={css.modalAction} onClick={closeModal}>{t('cancel')}</Button>
+            <Button variant="secondary" className={css.modalAction} onClick={closeModal}>{t('cancel')}</Button>
             {/* Retrying needs an occupant to serve the flow; without one the
               * button would open a flow nobody can answer or cancel. */}
             <Button variant="primary" className={css.modalAction} disabled={!flowAvailable} onClick={openDirectoryFlow}>{t('folderError.retry')}</Button>

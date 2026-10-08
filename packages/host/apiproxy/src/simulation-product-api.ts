@@ -29,6 +29,7 @@ import { currentAuthenticatedProductCall } from './authenticated-product-call.ts
 const codes = {
   SIMULATION_PRODUCT_FORBIDDEN: 'simulation-product-forbidden', SIMULATION_PRODUCT_INVALID: 'simulation-product-invalid',
   SIMULATION_PRODUCT_UNAVAILABLE: 'simulation-product-unavailable', SIMULATION_PRODUCT_STALE: 'simulation-product-stale',
+  SIMULATION_PRODUCT_MODEL_CHANGED: 'simulation-product-model-changed',
 } as const satisfies Record<SimulationProductError['code'], string>
 
 /**

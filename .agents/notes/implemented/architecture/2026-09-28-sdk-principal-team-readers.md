@@ -31,3 +31,5 @@ Reader calls may hydrate Team journals; response bounds establish no performance
 ## Verification
 
 Real-Hub tests exercise principal-filtered discovery, direct selection, cross-principal body refusal and withholding successful/failed results after authority withdrawal. SDK forwarding, media, client/schema and Python regressions cover the protocol changes. The real JSON-RPC Team-final keyless scenario reads safe discovery and authorized selection without additional model requests.
+
+SDK Server tests also cover canonical parent-inspection selection, provider retirement between proof and read, missing channel and artifact owners, artifact verification failures and byte bounds, and bounded page defaults. Direct-channel media tests exercise owner withdrawal, ordinary unkeyed text, older direct-version refusal and text admission without image storage. Activation tests cover JSON-RPC routing and combined Link/Agent cleanup failures.

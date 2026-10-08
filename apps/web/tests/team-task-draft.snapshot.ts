@@ -300,6 +300,7 @@ it('retains task drafts across closing, modules, Teams and history, with exact c
     await scaffold.replaceBrowserAuthentication()
     await form.waitFor({ state: 'hidden' })
     await scaffold.authenticateBrowserPage(page)
+    await page.getByRole('button', { name: '重新检查访问', exact: true }).click()
     await form.getByLabel('任务名称', { exact: true }).waitFor()
     expect(await form.getByLabel('任务名称', { exact: true }).inputValue()).toBe('')
     await form.locator('[data-task-dialog-cancel]').click()

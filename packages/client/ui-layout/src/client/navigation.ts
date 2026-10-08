@@ -4,11 +4,11 @@ import type { TeamId, TeamTaskId, ParticipantId, SessionId, ChannelId } from '@c
 /** Same-document navigation notification consumed by workspace route owners. */
 export const WORKSPACE_NAVIGATION_EVENT = 'clocky:workspace-navigation'
 /** Team-owned URL fields, including forms which an inspection link must never inherit. */
-export const TEAM_ROUTE_KEYS = ['team', 'view', 'task', 'plan', 'action', 'form', 'formTask', 'channel', 'session', 'participant', 'q', 'status'] as const
+export const TEAM_ROUTE_KEYS = ['team', 'view', 'viz', 'task', 'plan', 'action', 'form', 'formTask', 'channel', 'session', 'participant', 'q', 'status'] as const
 /** Simulation-owned viewing fields; no command identity or private draft is included. */
 export const SIMULATION_ROUTE_KEYS = ['simulation', 'simulationModule', 'simulationObject', 'simulationSearch', 'simulationStatus',
   'simulationCognition', 'simulationEntity', 'simulationDecision', 'simulationRecordKind', 'simulationSequence',
-  'simulationSource', 'simulationSection', 'simulationKnowledge', 'simulationKnowledgeRevision'] as const
+  'simulationSource', 'simulationSection', 'simulationKnowledge', 'simulationKnowledgeRevision', 'simulationDisplay'] as const
 
 /**
  * Read a single bounded source route from browser history without trusting its contents.

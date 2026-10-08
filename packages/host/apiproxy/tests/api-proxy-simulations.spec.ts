@@ -9,6 +9,8 @@ import { InProcessApiClient } from '../src/fetch/client.ts'
 import { RpcId } from '../src/api/rpc.ts'
 import { withAuthenticatedProductCall } from '../src/authenticated-product-call.ts'
 import { worldFixture, browseInput, decision } from '../../../simulation/simulation-product/tests/collection-fixtures.ts'
+import { ownerFixture } from '../../../simulation/simulation-product/tests/company-owner-fixture.ts'
+import { simulationProductCommandIdSchema, simulationProductPreflightInputSchema } from '../../../simulation/simulation-product/src/administration-schema.ts'
 
 it('refuses unauthenticated and undeployed reads through direct and fetch dispatch', async () => {
   const ctx = new Context()
@@ -19,6 +21,20 @@ it('refuses unauthenticated and undeployed reads through direct and fetch dispat
     const client = new InProcessApiClient(toFetchHandler(api, { authenticatedProductCall: call() }))
     expect(await client.simulations.list({})).toMatchObject({ result: { ok: false, error: { code: 'simulation-product-unavailable' } } })
     expect(await client.simulations.inspect({ runId: registration().id })).toMatchObject({ result: { ok: false, error: { code: 'simulation-product-unavailable' } } })
+    const draft = simulationProductPreflightInputSchema.parse({ templateId: 'company', templateVersion: '1', name: 'Company',
+      parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '1' } })
+    for (const operation of [
+      () => client.simulations.catalog({}),
+      () => client.simulations.preflight(draft),
+      () => client.simulations.create({ ...draft, expectedModel: { provider: 'company', name: 'scripted' },
+        commandId: simulationProductCommandIdSchema.parse('create') }),
+      () => client.simulations.prepare({ runId: registration().id, commandId: simulationProductCommandIdSchema.parse('prepare') }),
+      () => client.simulations.listRequests({ runId: registration().id }),
+      () => client.simulations.retryRequest({ runId: registration().id, commandId: simulationProductCommandIdSchema.parse('retry') }),
+      () => client.simulations.request({ commandId: simulationProductCommandIdSchema.parse('original') }),
+    ]) {
+      expect(await operation()).toMatchObject({ result: { ok: false, error: { code: 'simulation-product-unavailable' } } })
+    }
     delete api.simulations
     expect(await client.simulations.list({})).toMatchObject({ result: { ok: false, error: { code: 'simulation-product-unavailable' } } })
     expect(await client.simulations.inspect({ runId: registration().id })).toMatchObject({ result: { ok: false, error: { code: 'simulation-product-unavailable' } } })
@@ -148,7 +164,32 @@ it('exposes journal metadata and separately granted original text through the au
   const allowed = await client.simulations.records(input)
   expect(allowed.result.ok).toBe(true)
   expect(JSON.stringify(allowed)).toContain('historical secret')
+  expect((await client.simulations.inspectSource({ runId: registration().id,
+    decisionId: 'missing-decision' as never, sourceIndex: 0 })).result)
+    .toMatchObject({ ok: true, value: { status: 'missing' } })
+  expect((await client.simulations.watch({ runId: registration().id, waitMs: 0 })).result)
+    .toMatchObject({ ok: true, value: { runId: registration().id } })
+  expect((await client.simulations.runStatuses({ runIds: [registration().id] })).result)
+    .toMatchObject({ ok: true, value: { items: [{ run: { id: registration().id } }] } })
   remove()
   expect(JSON.stringify(await client.simulations.records(input))).not.toContain('historical secret')
   expect(h.open).not.toHaveBeenCalled()
+})
+
+it('routes catalog, creation, preparation and original receipt reads through the authenticated fetch carrier', async () => {
+  const h = await ownerFixture('json')
+  try {
+    await h.ctx.plugin(UserQuestions)
+    const api = createApiProxy(h.ctx, { cwd: process.cwd(), defaultModelSelection: () => undefined })
+    const client = new InProcessApiClient(toFetchHandler(api, { authenticatedProductCall: call() }))
+    expect((await client.simulations.catalog({})).result).toMatchObject({ ok: true, value: { items: [{ id: 'company' }] } })
+    const created = await client.simulations.create(h.input)
+    if (!created.result.ok) throw new Error('Host creation was not accepted')
+    const runId = created.result.value.runId
+    expect((await h.finished()).status).toBe('completed')
+    const preparation = await client.simulations.prepare({ runId, commandId: simulationProductCommandIdSchema.parse('host-prepare') })
+    expect(preparation.result.ok).toBe(true)
+    expect((await client.simulations.request({ commandId: h.input.commandId })).result)
+      .toMatchObject({ ok: true, value: { status: 'found', request: { runId, kind: 'create' } } })
+  } finally { await h.close() }
 })

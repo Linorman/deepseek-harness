@@ -27,13 +27,14 @@ async function bench() {
   // seam for persistence; model this bench as a remote, memory-only browser.
   ctx.provide('locale', new LocaleRuntime(ctx))
   ctx.provide('sessions', { clear: vi.fn() } as never)
-  ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
+  const retryAuthorization = vi.fn()
+  ctx.provide('connection', { api: { settings: {} }, isLoopback: false, retryAuthorization } as never)
   // ui-theme's Appearance row binds a durable scope through these two.
   ctx.provide('remote', { $on: () => () => {} } as never)
   ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
   await ctx.plugin({ inject: themeInject, apply: themeApply }).await()
   await slotsFiber.await()
-  return { ctx, slots: ctx.get('slots') as SlotRegistry }
+  return { ctx, slots: ctx.get('slots') as SlotRegistry, retryAuthorization }
 }
 
 describe('ui-layout client apply', () => {
@@ -55,15 +56,17 @@ describe('ui-layout client apply', () => {
   })
 
   it('injects Session closing and attaches the layout actions', async () => {
-    const { ctx, slots } = await bench()
+    const { ctx, slots, retryAuthorization } = await bench()
     const fiber = ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
     const actions = {
       setSidebar: vi.fn(), setDetails: vi.fn(), toggleSidebar: vi.fn(), openDetails: vi.fn(), closeDetails: vi.fn(),
     }
     const injected = (slots.entries('root')[0]!.inject as (actions: never) => object)(actions as never)
-    expect(Object.keys(injected)).toEqual(['closeSession', 'showTeams'])
+    expect(Object.keys(injected)).toEqual(['closeSession', 'showTeams', 'retryAuthorization', 'readCommands', 'readShortcuts'])
     expect(injected).toHaveProperty('closeSession', expect.any(Function))
+    ;(injected as { retryAuthorization: () => void }).retryAuthorization()
+    expect(retryAuthorization).toHaveBeenCalledOnce()
     const layout = ctx.get('layout') as LayoutController
     layout.toggleSidebar()
     expect(actions.toggleSidebar).toHaveBeenCalledOnce()

@@ -2,7 +2,7 @@
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { snapshotDirectory } from '../src/fingerprint.ts'
+import { fingerprintDirectoryEntries, readBoundedBaseline, snapshotDirectory } from '../src/fingerprint.ts'
 
 const roots: string[] = []
 const bounds = { observationMaxEntries: 32, observationMaxHashBytes: 4096, observationMaxFileBytes: 4096, observationTimeoutMs: 5000 }
@@ -15,6 +15,28 @@ async function root(): Promise<string> {
 afterEach(async () => { for (const path of roots.splice(0)) await rm(path, { recursive: true, force: true }) })
 
 describe('bounded shared fingerprint traversal', () => {
+  it('reads only a bounded regular baseline without following a symlink', async () => {
+    const path = await root()
+    const baseline = join(path, 'baseline.json')
+    await writeFile(baseline, '{"ok":true}')
+    expect((await readBoundedBaseline(baseline, 11)).toString('utf8')).toBe('{"ok":true}')
+    await expect(readBoundedBaseline(baseline, 10)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    const directory = join(path, 'directory')
+    await mkdir(directory)
+    await expect(readBoundedBaseline(directory, 100)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await symlink(baseline, join(path, 'link'))
+    await expect(readBoundedBaseline(join(path, 'link'), 100)).rejects.toBeDefined()
+  })
+
+  it('fingerprints canonical content order and never equates complete with partial trees', () => {
+    const entries = { z: { kind: 'file' as const, size: 1, modifiedAt: 0, contentHash: 'hash' },
+      a: { kind: 'symlink' as const, target: 'z' }, b: { kind: 'other' as const, type: 'socket' } }
+    expect(fingerprintDirectoryEntries(entries, true)).toBe(fingerprintDirectoryEntries({
+      b: entries.b, a: entries.a, z: entries.z,
+    }, true))
+    expect(fingerprintDirectoryEntries(entries, false)).not.toBe(fingerprintDirectoryEntries(entries, true))
+  })
+
   it('excludes configured runtime directories without hiding neighboring user changes', async () => {
     const path = await root()
     const runtime = join(path, 'runtime')

@@ -88,6 +88,8 @@
 
 ## Async and resilience
 
+- Explicit authentication refusal terminates automatic reconnect and retires each principal projection once. Clearing does not request data. Renewed browser access requires one explicit check; only a successful handshake restarts loading. Different-principal handshakes clear old settings, provider/preset directories and private drafts before restoring reads. Ordinary domain refusals stay local, while temporary network failures retain backoff recovery.
+
 - Team pending totals and previews come from the [pending read projection](.agents/notes/implemented/architecture/2026-09-29-team-pending-read-projection.md), independent of principal inbox acknowledgement. Nonzero totals retain all-pending navigation after preview failure. The pending module pages one revision at a time and keeps readable content on failure; human links open one runtime-owned current request inspection. The dedicated dialog requires an explicit current check before an answer, marks changed/disconnected facts and disables submission, and leaves Session context inspection explicit.
 - Human-answer drafts retain only input and retry identity in the bounded registration store. Close, module/Team navigation and reconnect preserve them. Explicit discard confirms; page departure warns. Reload, account replacement and permission withdrawal clear them. Request URLs carry only an opaque action ID, which the Host revalidates. Processed requests remain readable and offer no new answer.
 

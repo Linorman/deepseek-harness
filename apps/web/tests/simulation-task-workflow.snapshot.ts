@@ -48,7 +48,7 @@ it.each([
     if (row.name === './model.ts') row.name = join(process.cwd(), 'examples/headless-agent/tests/fixtures/simulation/simulation-administration/model.ts')
   }
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(patches))
-  const scaffold = await launchWebScaffold({ extraOverlayPath: overlay, tempRoot: directory,
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: overlay, tempRoot: directory,
     productPrincipalId: 'simulation-browser-user', agentPresets: { default: 'simulation',
       roots: [{ path: join(process.cwd(), 'examples/simulation-company/presets'), trust: 'system' }] } })
   const probe = scaffold.ctx.simulationBrowserProbe
@@ -84,7 +84,7 @@ it.each([
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '仿真', exact: true }).click()
     const workspace = page.locator('[data-simulation-workspace-page]')
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     const creation = page.getByRole('dialog', { name: '新建仿真', exact: true })
     await creation.getByRole('radio').check()
     await creation.getByText('自动执行 Team 任务，仅使用受限仿真操作', { exact: true }).waitFor()

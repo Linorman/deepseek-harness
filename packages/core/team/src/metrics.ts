@@ -1,6 +1,6 @@
 /** Fixed-boundary Team latency histogram helpers. */
 
-import type { TeamLatencyBucket, TeamLatencyHistogram } from './types.ts'
+import type { TeamLatencyBucket, TeamLatencyHistogram, TeamMetricsSnapshot } from './types.ts'
 
 /** Stable latency boundaries in milliseconds; the final `null` bucket is +Inf. */
 export const TEAM_LATENCY_BUCKETS_MS = [
@@ -41,4 +41,37 @@ export function addTeamLatencySample(histogram: TeamLatencyHistogram, latencyMs:
     return { ...bucket, count: bucket.count + (included ? 1 : 0) }
   })
   return Object.freeze({ count, sumMs, buckets: Object.freeze(buckets) })
+}
+
+/** Create the protocol's complete zero-valued metrics state with explicit clock ownership.
+ * @param updatedAt - Runtime clock or deterministic fixture timestamp.
+ * @returns independent scalar metrics and frozen zero-sample histograms.
+ */
+export function emptyTeamMetricsSnapshot(updatedAt: number): TeamMetricsSnapshot {
+  return {
+    activeAdmissions: 0,
+    pendingDeliveries: 0,
+    activeActivations: 0,
+    activeTasks: 0,
+    stalledTeams: 0,
+    replayLag: 0,
+    lastTaskLatencyMs: 0,
+    lastReceiptLatencyMs: 0,
+    taskLatency: emptyTeamLatencyHistogram(),
+    receiptLatency: emptyTeamLatencyHistogram(),
+    workspaceConflicts: 0,
+    teamEvents: 0,
+    channelEvents: 0,
+    policyDenials: 0,
+    adapterFailures: 0,
+    deliveryClaims: 0,
+    taskAssignments: 0,
+    taskRetries: 0,
+    teamCompactions: 0,
+    channelCompactions: 0,
+    checkpointFailures: 0,
+    auditProjectionRepairs: 0,
+    auditProjectionFailures: 0,
+    updatedAt,
+  }
 }

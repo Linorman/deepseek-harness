@@ -24,16 +24,16 @@
     var(--clocky-composer-dock-inset) -
     var(--clocky-composer-dock-inset)
   );
-  border: 1px solid var(--clocky-alias-border-l1);
-  border-radius: 12px;
-  background: var(--clocky-specific-tip);
-  /* Elevated surface: `--clocky-specific-tip` is the same dark rung as the menu
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-lg);
+  background: var(--clocky-bg-sunken);
+  /* Elevated surface: `--clocky-bg-sunken` is the same dark rung as the menu
      surface, and `.list` scrolls inside this card, so the thumb takes the l2
      elevation tokens. Declared here because the elevation belongs to the
      surface, and the custom properties inherit down to `.list` (see ui-theme
      styles/scrollbar.css for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .body {
@@ -59,25 +59,25 @@
   display: grid;
   flex: none;
   place-items: center;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .title {
   flex: none;
-  font-size: 13px;
-  line-height: 24px;
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   font-weight: 500;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .progress {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
   font-weight: 400;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -86,7 +86,7 @@
   display: grid;
   flex: none;
   place-items: center;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .list {
@@ -105,9 +105,9 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--clocky-alias-label-secondary);
+  font-size: var(--clocky-type-label-size);
+  line-height: var(--clocky-type-label-line-height);
+  color: var(--clocky-fg-secondary);
 }
 
 .glyph {
@@ -119,16 +119,16 @@
 }
 
 .glyphCompleted {
-  color: var(--clocky-alias-state-success-primary);
+  color: var(--clocky-status-done-fg);
 }
 
 .glyphPending {
-  color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
 }
 
 .glyphProgress {
-  color: var(--clocky-alias-state-business-primary);
-  animation: todo-progress-spin 1s linear infinite;
+  color: var(--clocky-accent-fg);
+  animation: todo-progress-spin var(--clocky-duration-spin) linear infinite;
 }
 
 @keyframes todo-progress-spin {

@@ -16,7 +16,7 @@ export class SimulationCreationStore {
   private tail: Promise<unknown> = Promise.resolve()
   private closing = false
 
-  /** @param stream - Caller-owned version 1 administration journal. @param options - Validated recovery/count/byte bounds. */
+  /** @param stream - Caller-owned version 2 administration journal. @param options - Validated recovery/count/byte bounds. */
   constructor(private readonly stream: LogStream, private readonly options: SimulationCreationStoreOptions) {}
 
   /**

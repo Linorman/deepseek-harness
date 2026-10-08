@@ -99,11 +99,7 @@ function install(agent: Agent, ctx: Context, authority: TeamRunCoordinatorGoalAu
       if (!Number.isSafeInteger(args.revision) || args.revision < 1) {
         throw new ToolArgsError(['"revision" must be a positive safe integer'])
       }
-      const rawPhase: unknown = args.phase
-      if (rawPhase !== 'active' && rawPhase !== 'paused' && rawPhase !== 'blocked' && rawPhase !== 'complete') {
-        throw new ToolArgsError(['"phase" is not a supported Team objective phase'])
-      }
-      const phase = rawPhase
+      const phase = args.phase
       const code = typeof args.blocker_code === 'string' ? args.blocker_code.trim() : ''
       const message = typeof args.blocker_message === 'string' ? args.blocker_message.trim() : ''
       if (phase === 'blocked' && (code.length === 0 || message.length === 0)) {

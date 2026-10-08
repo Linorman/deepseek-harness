@@ -1,3 +1,5 @@
+import { disconnectedRead, failedRead } from './read-state.ts'
+import { ReadRequest } from './read-request.ts'
 /** One selected human-request body with current handling and independent cancellation. */
 import type { IApiClient, TeamId, TeamHumanActionId, TeamHumanActionSnapshot, TeamActionInspection } from '@clocky/clocky-client-connection/client'
 import type { TeamActionDetailState } from '../contract/team-tasks.ts'
@@ -6,8 +8,7 @@ import { isTeamAuthorizationError } from './access.ts'
 /** Keep authority-sensitive records outside React and its draft store. */
 export class ActionInspector {
   private state: TeamActionDetailState | undefined
-  private request: AbortController | undefined
-  private generation = 0
+  private readonly requests = new ReadRequest()
   private connected = true
   private minimumCursor = 0
 
@@ -29,16 +30,16 @@ export class ActionInspector {
     const previous = this.state
     const same = previous?.teamId === teamId && previous.actionId === actionId
     this.minimumCursor = same ? Math.max(this.minimumCursor, previous.value?.teamCursor ?? 0) : 0
-    const generation = this.cancel()
-    if (generation !== this.generation) return
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
     const controller = new AbortController()
-    this.request = controller
+    this.requests.begin(controller)
     this.set({ teamId, actionId, value: same ? previous.value : undefined, loading: true,
       hasNewer: same && previous.hasNewer, disconnected: false })
     try {
-      if (!this.current(generation, controller)) return
+      if (!this.requests.current(generation, controller)) return
       const response = await this.api.teams.actionInspect({ teamId, actionId }, controller.signal)
-      if (!this.current(generation, controller)) return
+      if (!this.requests.current(generation, controller)) return
       if (!response.result.ok) {
         if (isTeamAuthorizationError(response.result.error)) { this.close(); this.denied(teamId); return }
         this.set({ ...this.active(), loading: false, error: response.result.error.message })
@@ -51,11 +52,10 @@ export class ActionInspector {
         throw new Error('Request inspection does not match its current identity or revision')
       }
       this.set({ teamId, actionId, value, loading: false, hasNewer: false, disconnected: false })
-      return this.current(generation, controller) && this.state?.value === value && !this.state.hasNewer ? value : undefined
+      return this.requests.current(generation, controller) && this.state?.value === value && !this.state.hasNewer ? value : undefined
     } catch (error: unknown) {
-      if (this.current(generation, controller)) this.set({ ...this.active(), loading: false,
-        error: error instanceof Error ? error.message : String(error) })
-    } finally { if (this.request === controller) this.request = undefined }
+      if (this.requests.current(generation, controller)) this.set(failedRead(this.active(), error))
+    } finally { if (this.requests.request === controller) this.requests.finish(controller) }
   }
 
   /** Reflect an authorized answer/read receipt for the already selected request.
@@ -85,9 +85,9 @@ export class ActionInspector {
   /** Stop old connection IO while retaining visibly stale content. */
   disconnect(): void {
     this.connected = false
-    const generation = this.cancel()
-    if (generation !== this.generation) return
-    if (this.state !== undefined) this.set({ ...this.state, loading: false, disconnected: true, hasNewer: true })
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
+    if (this.state !== undefined) this.set(disconnectedRead(this.state))
   }
 
   /** Revalidate the retained identity after a fresh connection handshake. */
@@ -99,23 +99,13 @@ export class ActionInspector {
 
   /** Release its body and prevent late responses from recreating it. */
   close(): void {
-    const generation = this.cancel()
-    if (generation !== this.generation) return
+    const generation = this.requests.cancel()
+    if (generation !== this.requests.generation) return
     this.state = undefined
     this.publish(undefined)
   }
 
-  private cancel(): number {
-    const generation = ++this.generation
-    const request = this.request
-    this.request = undefined
-    request?.abort()
-    return generation
-  }
 
-  private current(generation: number, controller: AbortController): boolean {
-    return generation === this.generation && !controller.signal.aborted
-  }
 
   private active(): TeamActionDetailState {
     // v8 ignore next -- a current request retains its state between publication and response handling.

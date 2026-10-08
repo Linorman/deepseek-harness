@@ -1,30 +1,20 @@
 .root {
-  --json-tree-property: #881391;
-  --json-tree-string: #c41a16;
-  --json-tree-number: #1c00cf;
-  --json-tree-keyword: #1c00cf;
-  --json-tree-punctuation: #202124;
-  --json-tree-icon: #5f6368;
-  --json-tree-hover: rgb(60 64 67 / 4%);
+  --json-tree-property: var(--shiki-token-function);
+  --json-tree-string: var(--shiki-token-string);
+  --json-tree-number: var(--shiki-token-constant);
+  --json-tree-keyword: var(--shiki-token-constant);
+  --json-tree-punctuation: var(--shiki-token-punctuation);
+  --json-tree-icon: var(--clocky-fg-tertiary);
+  --json-tree-hover: var(--clocky-bg-hover);
 
   min-width: 0;
   overflow: auto;
   position: relative;
-  color: var(--clocky-alias-label-primary);
-  background: var(--clocky-alias-bg-layer-1);
-  font: 12px/16px var(--ds-font-family-code);
+  color: var(--clocky-fg-primary);
+  background: var(--clocky-bg-surface);
+  font: var(--clocky-type-mono-small);
   overscroll-behavior-x: contain;
   overscroll-behavior-y: auto;
-}
-
-:global(body[data-ds-dark-theme]) .root {
-  --json-tree-property: #5db0d7;
-  --json-tree-string: #f28b82;
-  --json-tree-number: #99c8ff;
-  --json-tree-keyword: #99c8ff;
-  --json-tree-punctuation: #e8eaed;
-  --json-tree-icon: #9aa0a6;
-  --json-tree-hover: rgb(232 234 237 / 5%);
 }
 
 .container {
@@ -89,7 +79,7 @@
 
 .row > span:not(.expander) {
   position: relative;
-  z-index: 1;
+  z-index: var(--clocky-layer-local-1);
 }
 
 .label {
@@ -115,7 +105,7 @@
 }
 
 .otherValue {
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .punctuation {
@@ -131,12 +121,12 @@
 }
 
 .previewEllipsis {
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .copyAnchor {
   position: fixed;
-  z-index: 3;
+  z-index: var(--clocky-layer-local-3);
   display: inline-flex;
 }
 
@@ -150,30 +140,30 @@
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 3px;
-  color: var(--clocky-alias-label-secondary);
-  background: var(--clocky-alias-bg-layer-1);
-  box-shadow: -5px 0 5px var(--clocky-alias-bg-layer-1);
+  border-radius: var(--clocky-radius-xs);
+  color: var(--clocky-fg-secondary);
+  background: var(--clocky-bg-surface);
+  box-shadow: -5px 0 5px var(--clocky-bg-surface);
   cursor: pointer;
 }
 
 .copyButton:hover {
-  color: var(--clocky-alias-label-primary);
-  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-fg-primary);
+  background: var(--clocky-bg-hover);
 }
 
 .copyButton:focus-visible {
-  outline: 1px solid var(--clocky-alias-state-business-primary);
+  outline: 1px solid var(--clocky-accent-bg);
   outline-offset: -1px;
 }
 
 .copyButton[data-state='failed'] {
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
 }
 
 .expander {
   position: absolute;
-  z-index: 2;
+  z-index: var(--clocky-layer-local-2);
   top: 0;
   left: 0;
   display: inline-flex;
@@ -204,7 +194,7 @@
 }
 
 .expander:hover {
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .expander:focus-visible {

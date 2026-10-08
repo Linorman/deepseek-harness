@@ -3,19 +3,19 @@
   flex-direction: column;
   gap: 12px;
   max-width: 720px;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
 }
 
 .title {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--clocky-type-title-size);
   font-weight: 600;
 }
 
 .intro {
   margin: 0;
-  font-size: 13px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-label-size);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* Cards, not rows: a preset is a thing you pick, and the description is the
@@ -34,11 +34,11 @@
 
 .groupHead {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--clocky-type-caption-size);
   font-weight: 600;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
 }
 
 .cards {
@@ -54,51 +54,51 @@
 }
 
 .card {
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 12px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-lg);
   display: flex;
   flex-direction: column;
-  background: var(--clocky-alias-bg-layer-3);
-  transition: border-color .16s, background .16s;
+  background: var(--clocky-bg-overlay);
+  transition: border-color var(--clocky-duration-fast), background var(--clocky-duration-fast);
 }
 
 
 .card:hover:not(.cardActive) {
-  border-color: var(--clocky-alias-label-dimmed);
+  border-color: var(--clocky-fg-disabled);
 }
 
 /* The default preset reads as selected, not merely badged. */
 .cardActive {
-  background: var(--clocky-alias-bg-layer-2);
-  border-color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-raised);
+  border-color: var(--clocky-fg-primary);
 }
 
 /* A broken preset reads as damaged before anything else: the card cannot be
    picked, so its border carries the warning the disabled body cannot. */
 .cardBroken {
-  border-color: var(--clocky-alias-state-error-primary);
+  border-color: var(--clocky-status-failed-fg);
 }
 
 .cardBroken:hover {
-  border-color: var(--clocky-alias-state-error-primary);
+  border-color: var(--clocky-status-failed-fg);
 }
 
 .brokenBadge {
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   padding: 1px 8px;
-  font-size: 11px;
-  line-height: 17px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   white-space: nowrap;
   font-weight: 500;
-  background: var(--clocky-alias-state-error-primary);
-  color: var(--clocky-alias-bg-layer-3);
+  background: var(--clocky-status-failed-fg);
+  color: var(--clocky-bg-overlay);
 }
 
 /* The discovery-reported reason, verbatim: it names the file and the fix. */
 .cardBrokenReason {
-  font-size: 12px;
+  font-size: var(--clocky-type-caption-size);
   line-height: 1.5;
-  color: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-status-failed-fg);
   overflow-wrap: anywhere;
 }
 
@@ -116,7 +116,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 14px 16px 12px;
-  border-radius: 12px 12px 0 0;
+  border-radius: var(--clocky-radius-lg) var(--clocky-radius-lg) 0 0;
 }
 
 .cardMain:disabled {
@@ -124,7 +124,7 @@
 }
 
 .cardMain:focus-visible {
-  outline: 2px solid var(--clocky-alias-brand-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: -2px;
 }
 
@@ -135,30 +135,30 @@
 }
 
 .cardName {
-  font-size: 15px;
+  font-size: var(--clocky-type-body-reading-size);
   font-weight: 600;
   line-height: 1.4;
 }
 
 .badge,
 .inUse {
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   padding: 1px 8px;
-  font-size: 11px;
-  line-height: 17px;
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   white-space: nowrap;
   font-weight: 500;
 }
 
 .badge {
-  border: 1px solid var(--clocky-alias-border-l2);
-  color: var(--clocky-alias-label-tertiary);
+  border: 1px solid var(--clocky-border-default);
+  color: var(--clocky-fg-tertiary);
 }
 
 .inUse {
   margin-left: auto;
-  background: var(--clocky-alias-label-primary);
-  color: var(--clocky-alias-bg-layer-3);
+  background: var(--clocky-fg-primary);
+  color: var(--clocky-bg-overlay);
 }
 
 /* Bounded to four lines. A preset publishes its own description, so one long
@@ -169,9 +169,9 @@
    flex-stretched box leaves the clamp height and the box height disagreeing,
    so `.cardId` takes the free space with an auto margin instead. */
 .cardDesc {
-  font-size: 13px;
+  font-size: var(--clocky-type-label-size);
   line-height: 1.55;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   min-height: 42px;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -183,9 +183,9 @@
 
 .cardId {
   margin-top: auto;
-  font-family: var(--clocky-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px;
-  color: var(--clocky-alias-label-dimmed);
+  font-family: var(--ds-font-family-code);
+  font-size: var(--clocky-type-micro-size);
+  color: var(--clocky-fg-disabled);
 }
 
 .cardFoot {
@@ -193,7 +193,7 @@
   justify-content: flex-end;
   gap: 2px;
   padding: 6px 10px;
-  border-top: 1px solid var(--clocky-alias-border-l2);
+  border-top: 1px solid var(--clocky-border-default);
 }
 
 /* Icon-only actions: the label rides `title` so the row stays quiet until
@@ -202,10 +202,10 @@
   position: relative;
   appearance: none;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--clocky-radius-sm);
   padding: 6px;
   background: none;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -217,12 +217,12 @@
 }
 
 .iconButton:hover:not(:disabled) {
-  background: var(--clocky-alias-bg-layer-1);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-surface);
+  color: var(--clocky-fg-primary);
 }
 
 .iconButton:focus-visible {
-  outline: 2px solid var(--clocky-alias-brand-primary);
+  outline: 2px solid var(--clocky-accent-bg);
   outline-offset: -1px;
 }
 
@@ -233,15 +233,15 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--clocky-alias-label-primary);
-  color: var(--clocky-alias-bg-layer-3);
-  font-size: 11px;
-  line-height: 17px;
+  border-radius: var(--clocky-radius-sm);
+  background: var(--clocky-fg-primary);
+  color: var(--clocky-bg-overlay);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .12s;
+  transition: opacity var(--clocky-duration-fast);
 }
 
 .iconButton:hover::after,
@@ -250,8 +250,8 @@
 }
 
 .iconDanger:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
-  color: var(--clocky-alias-state-error-primary);
+  background: var(--clocky-status-failed-bg);
+  color: var(--clocky-status-failed-fg);
 }
 
 /* Where the host has no desktop opener, the row answers with the directory
@@ -259,16 +259,16 @@
 .revealedPath {
   margin: 0;
   padding: 6px 16px 10px;
-  font-size: 11px;
-  color: var(--clocky-alias-label-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  color: var(--clocky-fg-tertiary);
   display: flex;
   gap: 6px;
   align-items: baseline;
 }
 
 .revealedPath code {
-  font-family: var(--clocky-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  color: var(--clocky-alias-label-secondary);
+  font-family: var(--ds-font-family-code);
+  color: var(--clocky-fg-secondary);
   user-select: all;
   overflow-wrap: anywhere;
 }
@@ -279,18 +279,18 @@
 
 .secondaryButton {
   border: none;
-  border-radius: 7px;
+  border-radius: var(--clocky-radius-sm);
   padding: 5px 8px;
   background: none;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--clocky-type-caption-size);
   cursor: pointer;
 }
 
 
 .secondaryButton:hover:not(:disabled) {
-  background: var(--clocky-alias-bg-layer-1);
+  background: var(--clocky-bg-surface);
 }
 
 .secondaryButton:disabled {
@@ -305,29 +305,29 @@
 }
 
 .fieldLabel {
-  font-size: 12px;
+  font-size: var(--clocky-type-caption-size);
   font-weight: 500;
-  color: var(--clocky-alias-label-secondary);
+  color: var(--clocky-fg-secondary);
 }
 
 .input {
   box-sizing: border-box;
   padding: 9px 12px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 10px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
   font: inherit;
-  font-size: 13px;
-  background: var(--clocky-alias-bg-layer-1);
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-label-size);
+  background: var(--clocky-bg-surface);
+  color: var(--clocky-fg-primary);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--clocky-alias-brand-primary);
+  border-color: var(--clocky-accent-bg);
 }
 
 .input::placeholder {
-  color: var(--clocky-alias-label-dimmed);
+  color: var(--clocky-fg-disabled);
 }
 
 .dialog {
@@ -346,23 +346,23 @@
   padding: 12px;
   max-height: min(52vh, 480px);
   overflow: auto;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 10px;
-  background: var(--clocky-alias-bg-layer-2);
-  color: var(--clocky-alias-label-secondary);
-  font-family: var(--clocky-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 12.5px;
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-raised);
+  color: var(--clocky-fg-secondary);
+  font-family: var(--ds-font-family-code);
+  font-size: var(--clocky-type-caption-size);
   line-height: 1.5;
   white-space: pre;
   tab-size: 2;
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .error {
   margin: 0;
-  font-size: 12px;
-  color: var(--clocky-alias-state-error-primary);
+  font-size: var(--clocky-type-caption-size);
+  color: var(--clocky-status-failed-fg);
 }
 
 .deleteDialog {
@@ -370,12 +370,12 @@
 }
 
 .deleteConfirm:not(:disabled) {
-  border-color: var(--clocky-alias-state-error-primary);
-  color: var(--clocky-alias-state-error-primary);
+  border-color: var(--clocky-status-failed-fg);
+  color: var(--clocky-status-failed-fg);
 }
 
 .deleteConfirm:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover-danger);
+  background: var(--clocky-status-failed-bg);
 }
 
 /* The conversational authoring entry, after the card grid in the spot the
@@ -389,18 +389,18 @@
   justify-content: center;
   gap: 6px;
   height: 44px;
-  border: 1px dashed var(--clocky-alias-border-l3);
-  border-radius: 12px;
+  border: 1px dashed var(--clocky-border-default);
+  border-radius: var(--clocky-radius-lg);
   font: inherit;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   background: transparent;
-  color: var(--clocky-alias-label-primary);
+  color: var(--clocky-fg-primary);
   cursor: pointer;
 }
 
 .creatorButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .creatorButton:disabled {

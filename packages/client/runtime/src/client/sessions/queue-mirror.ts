@@ -1,7 +1,7 @@
 import type { ContentBlock } from '@clocky/clocky-llm/types'
 import type { MuxFrame } from '@clocky/clocky-api-remotes/client'
 import type { SessionEvent } from '@clocky/clocky-session/types'
-import type { QueuedMessage } from './conversation.ts'
+import type { QueuedMessage } from '../contract/conversation-snapshot.ts'
 
 const QUEUE_PREVIEW_CHARS = 200
 

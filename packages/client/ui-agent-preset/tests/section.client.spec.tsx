@@ -309,7 +309,8 @@ describe('the preset list', () => {
   it('offers a retry when the roster could not be read', () => {
     const actions = renderSection({ status: 'error', error: 'roster unavailable' })
 
-    expect(screen.getByRole('alert').textContent).toContain('roster unavailable')
+    expect(screen.getByRole('alert').textContent).toBe(en.error)
+    expect(screen.getByRole('alert').getAttribute('title')).toContain('roster unavailable')
     fireEvent.click(screen.getByText(en.retry))
 
     expect(actions.load).toHaveBeenCalledTimes(2)

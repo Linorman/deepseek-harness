@@ -87,7 +87,7 @@ export type {
 } from './rpc.ts'
 
 // ---- Errors and ids ----
-export { RpcId, transportError, ApiAccessDeniedError, PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE } from './rpc.ts'
+export { RpcId, transportError, rpcErrorFrom, ApiAccessDeniedError, PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE } from './rpc.ts'
 export type { RpcError, RpcErrorCode, RpcErrorDetailsMap, RpcResult } from './rpc.ts'
 export {
   clientRequestSchema,

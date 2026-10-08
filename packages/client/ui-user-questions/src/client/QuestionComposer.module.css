@@ -19,19 +19,19 @@
      so header and footer actions stay reachable on long batches. */
   max-height: min(60vh, 520px);
   padding: 0 0 10px;
-  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
-  border-radius: 20px;
-  background: var(--clocky-specific-input-major);
-  box-shadow: var(--clocky-shadow-lv2);
-  color: var(--clocky-alias-label-primary);
+  border: 1px solid var(--clocky-border-subtle);
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-surface);
+  box-shadow: var(--clocky-elevation-2);
+  color: var(--clocky-fg-primary);
   overflow: hidden;
   /* Elevated surface in dark, same as the menus: the body inside scrolls
      once the card hits the cap above, so the thumb takes the l2 pair. Declared
      on the card because the elevation belongs to the surface, and the custom
      properties inherit down to `.body` (see ui-theme styles/scrollbar.css
      for the rebinding contract). */
-  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
-  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-thumb-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-thumb-l2-hover);
 }
 
 .card,
@@ -79,15 +79,15 @@
 .eyebrow {
   /* Eyebrow-to-title gap widened from the figma 2px (user-tuned). */
   margin-bottom: 5px;
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
 }
 
 .title {
   margin: 0;
-  font-size: 16px;
-  line-height: 22px;
+  font-size: var(--clocky-type-heading-size);
+  line-height: var(--clocky-type-heading-line-height);
   font-weight: 500;
 }
 
@@ -111,9 +111,9 @@
 
 .progress {
   padding: 0 4px;
-  color: var(--clocky-alias-label-secondary);
-  font-size: 14px;
-  line-height: 24px;
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   font-weight: 500;
   white-space: nowrap;
   /* Narrow the plain spaces around the slash without touching glyph tracking. */
@@ -127,19 +127,19 @@
   height: 24px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--clocky-radius-full);
   background: transparent;
-  color: var(--clocky-alias-label-tertiary);
+  color: var(--clocky-fg-tertiary);
   cursor: pointer;
 }
 
 .iconButton:hover:not(:disabled) {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-bg-hover);
+  color: var(--clocky-fg-primary);
 }
 
 .iconButton:disabled {
-  color: var(--clocky-alias-label-dimmed);
+  color: var(--clocky-fg-disabled);
   cursor: default;
 }
 
@@ -177,21 +177,21 @@
   flex-shrink: 0;
   padding: 8px 12px 8px 8px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--clocky-radius-lg);
   background: transparent;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: background-color var(--clocky-duration-fast) var(--clocky-ease-standard), border-color var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .option:hover:not(:disabled),
 .optionSelected {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .optionSelected {
-  border-color: var(--clocky-alias-border-l2);
+  border-color: var(--clocky-border-default);
 }
 
 .option:disabled {
@@ -210,12 +210,12 @@
   /* (24px first-line box − 20px indicator) / 2: centers the indicator against
      the first text line under the row's flex-start alignment. */
   margin-top: 2px;
-  border-radius: 6px;
-  background: var(--clocky-alias-bg-overlay);
-  color: var(--clocky-alias-label-secondary);
-  font-size: 12px;
+  border-radius: var(--clocky-radius-sm);
+  background: var(--clocky-bg-sunken);
+  color: var(--clocky-fg-secondary);
+  font-size: var(--clocky-type-caption-size);
   font-weight: 500;
-  line-height: 18px;
+  line-height: var(--clocky-type-caption-line-height);
 }
 
 /* Multi-select box (figma 1055:41594, user-tuned down to 14×14): a radius-4
@@ -236,9 +236,9 @@
   grid-area: 1 / 1;
   width: 14px;
   height: 14px;
-  border: 1px solid var(--clocky-alias-border-l4);
-  border-radius: 4px;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  border: 1px solid var(--clocky-border-strong);
+  border-radius: var(--clocky-radius-xs);
+  transition: background-color var(--clocky-duration-fast) var(--clocky-ease-standard), border-color var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .checkbox > svg {
@@ -248,12 +248,12 @@
 /* Checked: label-primary fill with a primary-foreground check — the pair
    inverts with the theme (dark fill in light mode, light fill in dark mode). */
 .checkboxChecked {
-  color: var(--clocky-alias-label-primary-foreground);
+  color: var(--clocky-fg-on-accent);
 }
 
 .checkboxChecked::before {
-  border-color: var(--clocky-alias-label-primary);
-  background: var(--clocky-alias-label-primary);
+  border-color: var(--clocky-fg-primary);
+  background: var(--clocky-fg-primary);
 }
 
 .optionCopy {
@@ -269,25 +269,25 @@
 }
 
 .optionLabel {
-  font-size: 14px;
-  line-height: 24px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   font-weight: 500;
 }
 
 .badge {
   padding: 0 4px;
-  border-radius: 6px;
-  background: var(--clocky-specific-sidebar-nav-item-active-accent);
-  color: var(--clocky-alias-button-info-fill);
-  font-size: 11px;
-  line-height: 18px;
+  border-radius: var(--clocky-radius-sm);
+  background: var(--clocky-accent-subtle);
+  color: var(--clocky-accent-bg);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   font-weight: 600;
 }
 
 .description {
-  color: var(--clocky-alias-label-tertiary);
-  font-size: 14px;
-  line-height: 24px;
+  color: var(--clocky-fg-tertiary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   font-weight: 400;
 }
 
@@ -306,19 +306,19 @@
   flex-shrink: 0;
   padding: 8px 12px 8px 8px;
   border: 1px solid transparent;
-  border-radius: 12px;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  border-radius: var(--clocky-radius-lg);
+  transition: background-color var(--clocky-duration-fast) var(--clocky-ease-standard), border-color var(--clocky-duration-fast) var(--clocky-ease-standard);
 }
 
 .customRow:hover,
 .customRow:focus-within,
 .customRowActive {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .customRow:focus-within,
 .customRowActive {
-  border-color: var(--clocky-alias-border-l2);
+  border-color: var(--clocky-border-default);
 }
 
 /* Auto-growing free-text answer (see AnswerField): mirror and textarea share
@@ -336,8 +336,8 @@
   min-width: 0;
   padding: var(--clocky-answer-field-padding);
   font: inherit;
-  font-size: 14px;
-  line-height: 24px;
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -354,7 +354,7 @@
    track, not from this box-sizing. */
 .fieldMirror {
   box-sizing: content-box;
-  max-height: 144px;
+  max-height: calc(6 * var(--clocky-type-body-line-height));
   overflow: hidden;
   visibility: hidden;
 }
@@ -367,12 +367,12 @@
   border: none;
   outline: none;
   background: transparent;
-  color: var(--clocky-alias-label-primary);
-  caret-color: var(--clocky-alias-state-business-primary);
+  color: var(--clocky-fg-primary);
+  caret-color: var(--clocky-accent-fg);
 }
 
 .fieldInput::placeholder {
-  color: var(--clocky-alias-label-caption);
+  color: var(--clocky-fg-tertiary);
 }
 
 /* Inline variant: the custom row's copy column, borrowing the row's chrome. */
@@ -388,14 +388,14 @@
   min-height: 64px;
   flex-shrink: 0;
   margin: 0 12px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 10px;
-  background: var(--clocky-alias-bg-module-platform);
+  border: 1px solid var(--clocky-border-default);
+  border-radius: var(--clocky-radius-md);
+  background: var(--clocky-bg-sunken);
   --clocky-answer-field-padding: 8px 12px;
 }
 
 .customBlock:focus-within {
-  border-color: var(--clocky-alias-state-business-primary);
+  border-color: var(--clocky-accent-bg);
 }
 
 .footer {
@@ -411,15 +411,15 @@
 .feedback {
   flex: 1;
   min-height: 16px;
-  color: var(--clocky-alias-state-error-primary);
-  font-size: 11px;
-  line-height: 16px;
+  color: var(--clocky-status-failed-fg);
+  font-size: var(--clocky-type-micro-size);
+  line-height: var(--clocky-type-micro-line-height);
   text-align: right;
 }
 
 @media (max-width: 720px) {
   .card {
-    border-radius: 16px;
+    border-radius: var(--clocky-radius-xl);
   }
 
   .header {
@@ -431,8 +431,8 @@
   }
 
   .title {
-    font-size: 15px;
-    line-height: 21px;
+    font-size: var(--clocky-type-body-reading-size);
+    line-height: var(--clocky-type-body-reading-line-height);
   }
 
   .option,

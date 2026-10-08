@@ -12,11 +12,15 @@ Credential inputs are write-only. The page resolves the profile's credential ref
 
 The page refreshes after settings, credential, provider-topology, or connection-reset notifications. A failed credential read degrades the badge while preserving the settings page; a failed settings or provider read preserves the last usable snapshot and reports the failure. Read-only settings disable edits without hiding the provider directory.
 
+The default-model editor uses the existing `agent-default-model` namespace and the metadata-only `llm.models` catalog. Provider and model selections start blank until the user chooses them; no first catalog row is selected automatically. Saving replaces only that namespace under its captured revision and folds the authoritative response into the shared mirror. A newer revision requires explicit review before another save. Reasoning defaults remain provider-controlled unless the user chooses an explicit value; Simulation reports unsupported explicit reasoning instead of silently dropping it.
+
 ## Model list and endpoint interrogation
 
 The model list editor shows one row per model, with optional context-window and output-cap fields. A configured provider can ask its adapter for models using the endpoint and key currently shown in the form; returned candidates remain staged until the user selects and adds them.
 
 Adding a custom provider requires a unique route id, a supported protocol, an endpoint, and at least one model. The profile write and credential write use separate operations, so a failed credential write can be retried without replaying a stale settings revision.
+
+Authentication clearing cancels provider/credential reads, empties namespace and row caches, and destroys private editor state. The section shows a localized access-recovery message rather than retrying raw transport errors. A successful authenticated handshake resumes the existing refresh budget; late replies from the previous principal are ignored.
 
 ## Model Experience
 

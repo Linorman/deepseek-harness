@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-// DiffBlock: the per-file hunk rows (path header, removed block, added block),
-// the same-file second-hunk gap separator, the `+A -R · N file(s)` footer and
-// its singular/plural, the head/tail height cap and its expand control, the
+// DiffBlock: the header bar (one file's path or the file count, the `+A −R`
+// summary, copy), the per-file hunk rows (removed block, added block, and a
+// path row per file when several changed), the same-file second-hunk gap, the head/tail height cap and its expand control, the
 // empty-diffs null render, and the copy control writing the prefixed diff text
 // on both the accepted and the refused clipboard paths. writeClipboard's own
 // return contract is pinned in terminal-block.spec.tsx (the shared return contract), so
@@ -33,10 +33,12 @@ function added(count: number): string {
 }
 
 describe('DiffBlock structure', () => {
-  it('renders a create as a path header and an added block (no removed side)', () => {
+  it('renders a create under its path header bar with an added block (no removed side)', () => {
     const diffs: DiffHunk[] = [{ path: 'notes/new.txt', oldText: null, newText: 'hello\nworld' }]
     const { container } = render(<DiffBlock diffs={diffs} />)
-    expect(screen.getByText('notes/new.txt')).toBeTruthy()
+    // One file: the path heads the card instead of repeating as a body row.
+    expect(screen.getByText('notes/new.txt').closest('[class*="_banner_"]')).toBeTruthy()
+    expect(container.querySelectorAll('[class*="_path_"]').length).toBe(0)
     // No removed rows: both change lines are added.
     expect(changeRows(container)).toEqual(['hello', 'world'])
     expect(container.querySelectorAll('[class*="_del_"]').length).toBe(0)
@@ -57,12 +59,13 @@ describe('DiffBlock structure', () => {
       { path: 'a.ts', oldText: 'p', newText: 'q' },
     ]
     const { container } = render(<DiffBlock diffs={diffs} />)
-    // One path header, one gap row.
-    expect(container.querySelectorAll('[class*="_path_"]').length).toBe(1)
+    // The path heads the card once; the second hunk opens with a gap row.
+    expect(container.querySelectorAll('[class*="_path_"]').length).toBe(0)
+    expect(screen.getByText('a.ts')).toBeTruthy()
     expect(container.querySelectorAll('[class*="_gap_"]').length).toBe(1)
   })
 
-  it('opens a new file with its own path header', () => {
+  it('opens each file with its own path row when several files changed', () => {
     const diffs: DiffHunk[] = [
       { path: 'a.ts', oldText: 'x', newText: 'y' },
       { path: 'b.ts', oldText: 'p', newText: 'q' },
@@ -70,6 +73,7 @@ describe('DiffBlock structure', () => {
     const { container } = render(<DiffBlock diffs={diffs} />)
     expect(container.querySelectorAll('[class*="_path_"]').length).toBe(2)
     expect(container.querySelectorAll('[class*="_gap_"]').length).toBe(0)
+    expect(screen.getByText('2 files')).toBeTruthy()
   })
 
   it('renders nothing for empty diffs', () => {
@@ -82,14 +86,14 @@ describe('DiffBlock structure', () => {
     // the footer counts one — the phantom `+ ` empty line the naive split drew.
     const { container } = render(<DiffBlock diffs={[{ path: 'n.txt', oldText: null, newText: 'hello\n' }]} />)
     expect(changeRows(container)).toEqual(['hello'])
-    expect(screen.getByText('└ +1 -0 · 1 file')).toBeTruthy()
+    expect(screen.getByLabelText('+1 -0')).toBeTruthy()
   })
 
   it('renders a full deletion as removed-only with no phantom added line', () => {
     // newText '' is zero added lines: an empty string must contribute nothing.
     const { container } = render(<DiffBlock diffs={[{ path: 'gone.ts', oldText: 'a\nb', newText: '' }]} />)
     expect(container.querySelectorAll('[class*="_add_"]').length).toBe(0)
-    expect(screen.getByText('└ +0 -2 · 1 file')).toBeTruthy()
+    expect(screen.getByLabelText('+0 -2')).toBeTruthy()
   })
 
   it('keeps a genuine interior blank line', () => {
@@ -98,29 +102,29 @@ describe('DiffBlock structure', () => {
   })
 })
 
-describe('DiffBlock footer', () => {
-  it('counts added and removed lines and one file', () => {
+describe('DiffBlock header bar', () => {
+  it('summarizes added and removed lines next to one file path', () => {
     const diffs: DiffHunk[] = [{ path: 'a.ts', oldText: 'a\nb', newText: 'c' }]
     render(<DiffBlock diffs={diffs} />)
-    expect(screen.getByText('└ +1 -2 · 1 file')).toBeTruthy()
+    expect(screen.getByLabelText('+1 -2').closest('[class*="_banner_"]')?.textContent).toContain('a.ts')
   })
 
-  it('pluralizes the distinct-file count', () => {
+  it('counts distinct files when several changed', () => {
     const diffs: DiffHunk[] = [
       { path: 'a.ts', oldText: null, newText: 'x' },
       { path: 'b.ts', oldText: null, newText: 'y' },
     ]
     render(<DiffBlock diffs={diffs} />)
-    expect(screen.getByText('└ +2 -0 · 2 files')).toBeTruthy()
+    expect(screen.getByLabelText('+2 -0')).toBeTruthy()
+    expect(screen.getByText('2 files')).toBeTruthy()
   })
 })
 
 describe('DiffBlock height cap', () => {
   it('shows head and tail with an expand control past the cap, then all lines expanded', () => {
     // One added line over the default cap forces the collapse.
-    const diffs: DiffHunk[] = [{ path: 'a.ts', oldText: null, newText: added(DEFAULT_DIFF_MAX_LINES) }]
-    // The path header counts as a row, so a body of maxLines added lines plus
-    // the header is one over the cap.
+    const diffs: DiffHunk[] = [{ path: 'a.ts', oldText: null, newText: added(DEFAULT_DIFF_MAX_LINES + 1) }]
+    // One file's path heads the card, so a body of maxLines + 1 added lines is one over the cap.
     const { container } = render(<DiffBlock diffs={diffs} />)
     const toggle = screen.getByRole('button', { name: /展开其余/ })
     expect(toggle.getAttribute('aria-expanded')).toBe('false')

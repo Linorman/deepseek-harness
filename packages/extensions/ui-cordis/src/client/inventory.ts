@@ -43,6 +43,10 @@ export interface CordisInventory extends HostObservable<CordisInventorySnapshot>
   retire(pluginId: CordisDynamicPluginId): void
   /** Drop what was read; the next refresh starts from nothing (a reconnect may be a new host). */
   reset(): void
+  /** Retire principal-scoped rows and stop reads until a successful handshake. */
+  clearAuthorization(): void
+  /** Restore reads after a successful handshake. */
+  resumeAuthorization(): void
 }
 
 /**
@@ -60,6 +64,7 @@ export function createCordisInventory(
   let inFlight: Promise<void> | undefined
   // Bumped by reset; a read whose generation is stale publishes nothing.
   let generation = 0
+  let authorized = true
 
   const publish = (next: CordisInventorySnapshot): void => {
     snapshot = next
@@ -73,7 +78,7 @@ export function createCordisInventory(
       return () => { listeners.delete(fn) }
     },
     refresh: () => {
-      if (inFlight !== undefined) return
+      if (!authorized || inFlight !== undefined) return
       const issued = generation
       inFlight = port.inventory().then(
         (rows) => {
@@ -109,5 +114,12 @@ export function createCordisInventory(
       inFlight = undefined
       publish({ rows: [], removed: snapshot.removed, read: false })
     },
+    clearAuthorization: () => {
+      authorized = false
+      generation += 1
+      inFlight = undefined
+      publish({ rows: [], removed: new Set(), read: true })
+    },
+    resumeAuthorization: () => { authorized = true },
   }
 }

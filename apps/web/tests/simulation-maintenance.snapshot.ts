@@ -27,13 +27,17 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
   patches[0]!.insert!.push({ name: '@clocky/clocky-simulation-product/context-readers',
     config: { readers: [{ principalId: 'simulation-browser-user', entityIds: ['buyer'], content: ['context', 'knowledge', 'sources'] }] } })
   const overlay = join(directory, 'overlay.json'); await writeFile(overlay, JSON.stringify(patches))
-  const scaffold = await launchWebScaffold({ extraOverlayPath: overlay, tempRoot: directory,
+  const scaffold = await launchWebScaffold({ disableDefaultSimulation: true, extraOverlayPath: overlay, tempRoot: directory,
     productPrincipalId: 'simulation-browser-user', agentPresets: { default: 'simulation',
       roots: [{ path: join(process.cwd(), 'examples/simulation-company/presets'), trust: 'system' }] } })
   const probe = scaffold.ctx.simulationBrowserProbe
   const browser = await chromium.launch()
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const errors = watchConsole(page)
+  const preparationWrites: unknown[] = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/simulation.runs.prepare') preparationWrites.push(request.postDataJSON())
+  })
   const readEvidence: unknown[] = []
   page.on('response', (response) => {
     const path = new URL(response.url()).pathname
@@ -57,7 +61,7 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '仿真', exact: true }).click()
     const workspace = page.locator('[data-simulation-workspace-page]')
-    await workspace.getByRole('button', { name: '新建仿真', exact: true }).click()
+    await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
     const creation = page.getByRole('dialog', { name: '新建仿真', exact: true })
     await creation.getByRole('radio').check()
     await creation.getByLabel('运行名称', { exact: true }).fill('维护中的采购仿真')
@@ -105,7 +109,22 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
       if (await query.count() > 0 && await query.isEnabled()) await query.click()
       return await preparation.getByText('原结果: 请求已完成', { exact: true }).count()
     }).toBe(1)
+    const originalPreparationId = await preparation.getByRole('region', { name: '原操作', exact: true }).locator('code').first().innerText()
+    const originalRunId = new URL(page.url()).searchParams.get('simulation')
     await preparation.getByRole('button', { name: '关闭并保留输入', exact: true }).last().click()
+    await workspace.getByRole('button', { name: '返回运行列表', exact: true }).click()
+    const retainedOriginals = workspace.locator('details').filter({ has: page.getByText(/^保留操作/) }).first()
+    await retainedOriginals.locator('summary').first().click()
+    await retainedOriginals.getByText(originalPreparationId, { exact: true }).waitFor({ state: 'visible' })
+    await retainedOriginals.getByRole('button', { name: '检查原操作', exact: true }).click()
+    await expect.poll(() => new URL(page.url()).searchParams.get('simulation'), { timeout: 3000 }).toBe(originalRunId)
+    const reopenedPreparation = page.getByRole('dialog', { name: '对账并完成准备', exact: true })
+    await reopenedPreparation.waitFor()
+    expect(new URL(page.url()).searchParams.get('simulation')).toBe(originalRunId)
+    await reopenedPreparation.getByRole('region', { name: '原操作', exact: true })
+      .getByText(originalPreparationId, { exact: true }).waitFor({ state: 'visible' })
+    expect(preparationWrites).toHaveLength(1)
+    await reopenedPreparation.getByRole('button', { name: '关闭并保留输入', exact: true }).last().click()
     expect(Object.keys(probe.run!.snapshot().checkpoints ?? {})).toHaveLength(2)
     expect(probe.requests).toEqual([])
     await showSimulationMaintenance(workspace)
@@ -169,14 +188,14 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
     const entityInspector = workspace.getByRole('complementary', { name: '查看详情', exact: true })
     const entityUrl = page.url()
     await entityInspector.getByRole('link', { name: /^查看精确 Team Session:/ }).click()
-    const sessionInspector = page.locator('dialog[data-inspecting][open]')
+    const sessionInspector = page.locator('[data-conversation-pane]')
     await sessionInspector.getByText('此会话由仿真管理执行，仅供查看记录。请在仿真运行页输入事件或控制调度。', { exact: true }).waitFor()
     expect(await sessionInspector.locator('textarea').count()).toBe(0)
     const linkedPage = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' })
     try {
       await scaffold.authenticateBrowserPage(linkedPage)
       await linkedPage.goto(page.url(), { waitUntil: 'load' })
-      const linkedSession = linkedPage.locator('dialog[data-inspecting][open]')
+      const linkedSession = linkedPage.locator('[data-conversation-pane]')
       await linkedSession.getByText('此会话由仿真管理执行，仅供查看记录。请在仿真运行页输入事件或控制调度。', { exact: true }).waitFor()
       expect(await linkedSession.locator('textarea').count()).toBe(0)
       expect(new URL(linkedPage.url()).searchParams.get('session')).toBe(new URL(page.url()).searchParams.get('session'))
@@ -187,7 +206,7 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
       throw cause
     } finally { await linkedPage.close() }
     const teamWorkspace = page.locator('[data-team-workspace-page]')
-    await sessionInspector.getByRole('button', { name: '返回团队', exact: true }).click()
+    await sessionInspector.getByRole('button', { name: '关闭对话', exact: true }).click()
     await teamWorkspace.getByText('由仿真管理执行。此处仅供检查；请在仿真页面进行调度、恢复和输入事件。', { exact: true }).waitFor()
     expect(await teamWorkspace.getByRole('button', { name: '邀请成员', exact: true }).count()).toBe(0)
     expect(await teamWorkspace.getByRole('button', { name: '恢复', exact: true }).count()).toBe(0)
@@ -243,7 +262,36 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
     await expect.poll(async () => await inspector.locator('li').allTextContents()).toEqual(firstContext)
     const policyEntry = [...scaffold.ctx.loader.entries()].find(entry => entry.options.name === '@clocky/clocky-simulation-product/context-readers')
     if (policyEntry === undefined) throw new Error('No independently owned context policy')
-    await policyEntry.update({ disabled: true })
+    const oldReadEntered = Promise.withResolvers<undefined>(), oldReadRelease = Promise.withResolvers<undefined>()
+    const oldReadSettled = Promise.withResolvers<undefined>()
+    let holdNextContext = true, policyRetired = false
+    const holdContext = async (route: import('playwright').Route) => {
+      if (!holdNextContext) { await route.continue(); return }
+      holdNextContext = false
+      const response = await route.fetch()
+      oldReadEntered.resolve(undefined)
+      await oldReadRelease.promise
+      try { await route.fulfill({ response }) }
+      catch (cause: unknown) { if (!policyRetired) throw cause }
+      finally { oldReadSettled.resolve(undefined) }
+    }
+    await page.route('**/api/simulation.objects.inspect', holdContext)
+    try {
+      const refreshDetail = inspector.getByRole('button', { name: '刷新详情', exact: true })
+      await refreshDetail.click()
+      await oldReadEntered.promise
+      await inspector.getByText('读取中…', { exact: true }).waitFor()
+      expect(await refreshDetail.isDisabled()).toBe(true)
+      await policyEntry.update({ disabled: true })
+      policyRetired = true
+      await inspector.getByText('上下文正文未公开；读取需要部署显式授予此实体的正文权限。', { exact: true }).first().waitFor()
+      await expect.poll(async () => await refreshDetail.isEnabled()).toBe(true)
+      expect(await inspector.getByText('读取中…', { exact: true }).count()).toBe(0)
+      oldReadRelease.resolve(undefined)
+      await oldReadSettled.promise
+      expect(await inspector.locator('pre').count()).toBe(0)
+      await page.screenshot({ path: join(root, '06a-watch-retired-pending-context.png'), animations: 'disabled' })
+    } finally { oldReadRelease.resolve(undefined); await page.unroute('**/api/simulation.objects.inspect', holdContext) }
     await inspector.getByText('上下文正文未公开；读取需要部署显式授予此实体的正文权限。', { exact: true }).first().waitFor()
     expect(await inspector.locator('pre').count()).toBe(0)
     expect(probe.run!.snapshot()).toEqual(before)
@@ -347,7 +395,7 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
     expect(errors.warnings).toEqual([])
   } catch (cause: unknown) {
     await page.screenshot({ path: join(root, 'failure.png') })
-    await writeFile(join(root, 'failure.txt'), JSON.stringify({ body: await page.locator('body').innerText(), errors, readEvidence, world: probe.run?.snapshot() }, null, 2))
+    await writeFile(join(root, 'failure.txt'), JSON.stringify({ url: page.url(), body: await page.locator('body').innerText(), errors, readEvidence, world: probe.run?.snapshot() }, null, 2))
     throw cause
   } finally { probe.release(); await page.close(); await browser.close(); await scaffold.close() }
 }, 120000)

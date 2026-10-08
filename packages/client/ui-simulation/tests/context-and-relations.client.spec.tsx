@@ -45,3 +45,53 @@ it('keeps relation endpoints, scope and exact historical ticks available without
   fireEvent.click(view.getByRole('button', { name: 'scope' }))
   expect(navigate).toHaveBeenCalledWith({ runId: 'run', module: 'entities', search: '', objectId: 'scope' })
 })
+
+it('routes every frozen context reference to its exact owning read surface', () => {
+  const navigate = vi.fn(), navigateApplication = vi.fn()
+  const versions = { rules: { text: 'rules:1', truncated: false }, policy: { text: 'policy:1', truncated: false },
+    persona: { text: 'persona:1', truncated: false }, model: { text: 'model:1', truncated: false } }
+  const value: Extract<SimulationProductObjectDetail, { section: 'context' }> = { collection: 'decisions', section: 'context',
+    id: 'decision' as never, readVersion: 'v1' as never, accounting: { status: 'absent' }, bodyAccess: 'withheld',
+    frozen: { entityId: 'entity' as never, time: '1' as never, slot: '2' as never, epoch: '3' as never,
+      projections: { run: 4, entity: 5, team: 6 }, versions },
+    items: { total: 4, items: [
+      { kind: 'section', index: 0, block: 1, section: { text: 'optional', truncated: false }, required: false,
+        body: { status: 'unsupported' as never } },
+      { kind: 'knowledge', id: 'knowledge' as never, revision: 7 },
+      { kind: 'run-event', sequence: 11 },
+      { kind: 'team-envelope', sourceIndex: 2, teamId: 'team' as never, channelId: 'channel' as never, envelopeId: 'envelope' as never },
+    ] } }
+  const view = render(<ContextAndRelations value={value} view={{ runId: 'run', module: 'decisions', search: 'saved', objectId: 'decision' }}
+    navigate={navigate} readPage={vi.fn()} blocked={false} canContinue navigateApplication={navigateApplication} t={key => en[key]} />)
+  expect(view.getByText(en.contextBodyUnsupported)).toBeDefined()
+  fireEvent.click(view.getByRole('button', { name: 'knowledge' }))
+  expect(navigate).toHaveBeenLastCalledWith({ runId: 'run', module: 'decisions', search: 'saved', objectId: 'decision',
+    section: 'knowledge', knowledgeId: 'knowledge', knowledgeRevision: 7 })
+  fireEvent.click(view.getByRole('button', { name: '11' }))
+  expect(navigate).toHaveBeenLastCalledWith({ runId: 'run', module: 'records', search: 'saved', recordSequence: 11 })
+  fireEvent.click(view.getByRole('button', { name: 'envelope' }))
+  expect(navigate).toHaveBeenLastCalledWith({ runId: 'run', module: 'decisions', search: 'saved', objectId: 'decision', sourceIndex: 2 })
+  fireEvent.click(view.getByRole('link', { name: `${en.inspectTeam}: team` }))
+  expect(navigateApplication).toHaveBeenLastCalledWith(expect.stringContaining('team=team'))
+  fireEvent.click(view.getByRole('link', { name: `${en.inspectTeamChannel}: channel` }))
+  expect(navigateApplication).toHaveBeenLastCalledWith(expect.stringContaining('channel=channel'))
+  expect(view.container.textContent).toContain(versions.model.text)
+})
+
+it('renders optional relation fields and an empty continuation page without losing navigation identity', () => {
+  const navigate = vi.fn(), readPage = vi.fn()
+  const value: Extract<SimulationProductObjectDetail, { section: 'relationships' }> = { collection: 'entities', section: 'relationships',
+    id: 'entity' as never, time: '1' as never, relationships: { total: 1, items: [{ id: 'relation' as never,
+      subject: 'entity' as never, object: 'org' as never, relation: { text: 'member-of', truncated: false },
+      scope: undefined, validFrom: '1' as never, validUntil: null, revision: 2, active: true }] } }
+  const view = render(<ContextAndRelations value={value} view={{ runId: 'run', module: 'entities', search: '' }} navigate={navigate}
+    readPage={readPage} blocked={false} canContinue t={key => en[key]} />)
+  expect(view.getByText(en.none)).toBeDefined()
+  expect(view.getByText(en.noUpperBound)).toBeDefined()
+  expect(view.getByText(en.yes)).toBeDefined()
+  view.rerender(<ContextAndRelations value={{ ...value, relationships: { total: 0, items: [] } }} view={{ runId: 'run', module: 'entities', search: '' }}
+    navigate={navigate} readPage={readPage} blocked={false} canContinue t={key => en[key]} />)
+  expect(view.getByText(en.emptyCollection)).toBeDefined()
+  fireEvent.click(view.getByRole('button', { name: en.first }))
+  expect(readPage).toHaveBeenLastCalledWith()
+})

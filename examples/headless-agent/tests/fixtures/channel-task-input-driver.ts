@@ -5,7 +5,7 @@ import type { Context } from '@clocky/cordis'
 import { InProcessApiClient, toFetchHandler } from '@clocky/clocky-host-apiproxy'
 import type { RpcResponse } from '@clocky/clocky-host-apiproxy'
 import { LlmAdapter } from '@clocky/clocky-llm'
-import type { LlmResolvedModelInfo, StreamChunk } from '@clocky/clocky-llm'
+import type { GenerateOptions, LlmResolvedModelInfo, StreamChunk } from '@clocky/clocky-llm'
 import { channelInvitationIdempotencyKeySchema, channelPostIdempotencyKeySchema, teamTaskCreateIdempotencyKeySchema,
   teamTaskIdSchema, teamEnvelopeSchema, channelIdSchema, teamIdSchema } from '@clocky/clocky-team'
 
@@ -13,7 +13,18 @@ class QuietModel extends LlmAdapter {
   override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
     return { provider, id: model, name: model }
   }
-  async *stream(): AsyncIterable<StreamChunk> { yield { type: 'finish', reason: { kind: 'stop' } } }
+  async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    if (options.purpose === 'session-title') {
+      yield { type: 'finish', reason: { kind: 'stop' } }
+      return
+    }
+    // The consult test keeps its Team active; an empty completed coordinator turn would fail it
+    // for lacking an explicit final Envelope. Loader teardown owns this quiet turn's cancellation.
+    const signal = options.signal
+    assert(signal !== undefined)
+    if (signal.aborted) return
+    await new Promise<void>((resolve) => { signal.addEventListener('abort', () => { resolve() }, { once: true }) })
+  }
 }
 
 function value<T>(response: RpcResponse<T>): T {
@@ -75,6 +86,7 @@ async function run(ctx: Context) {
       const changed = await client.teams.channelInput({ ...input, taskId: teamTaskIdSchema.parse('another-task') })
       assert(!changed.result.ok && changed.result.error.code === 'team-channel-idempotency-conflict')
       value(await client.teams.channelClose({ channelId, expectedCursor: (await ctx.teams.getChannel({ channelId })).cursor }))
+      assert.equal((await ctx.teams.getTeam({ teamId })).team.phase, 'active')
       assert.deepEqual(value(await client.teams.channelInput(input)), envelope)
       await writeFile(stateFile, `${JSON.stringify({ teamId, channelId, envelope })}\n`)
       return { phase: 'create', retainedTask: true, retryAfterAdvance: true, retryAfterClose: true, changedTask: 'conflict' }

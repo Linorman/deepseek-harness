@@ -12,6 +12,8 @@ The Team telemetry seam could correlate authoritative Team/channel facts with Pa
 
 The repository now ships an explicit `@clocky/clocky-team-telemetry-otel` provider for deployments that need OTLP/HTTP Team telemetry. It composes the OpenTelemetry JS logger pipeline (`LoggerProvider`, `BatchLogRecordProcessor`, and `OTLPLogExporter`) and consumes the detached records produced by `TeamTelemetryCoordinator`. The provider defaults to `DISABLED`; `FULL` requires an HTTP(S) logs endpoint and validates the outer shutdown deadline before constructing SDK state.
 
+Channel severity derives from the authoritative `channel/closed` phase: `failed` exports as `error`, while `closed` and `expired` remain `info`. Optional explanatory text never determines failure. Correlation walks the channel WAL record itself, so accepted Envelope and receipt identities reach the exporter; the event carrier still supplies the exact channel identity and the WAL supplies its cursor and timestamp. Capture tests use parsed records and real Session events, and backend failures remain contained.
+
 Alerting is a provider-owned concern. Configured rules match the record channel, exact `event.type`, and minimum severity, then count matches in a rolling `windowMillis`. The provider emits one `ops` alert record when `threshold` is crossed and rearms only after the window falls below that threshold. This keeps alert policy deployment-configurable without making alerts part of Team authority or durable business state.
 
 The OpenTelemetry SDK retains ownership of batching, retry, queueing, export timeout, and transport loss. Team Hub commits and the Team telemetry coordinator remain unaffected by exporter failure; shutdown is bounded by the provider's outer deadline and late SDK rejection remains observed. The package is an explicit provider and is not added to default product bundles.
@@ -33,5 +35,6 @@ The OpenTelemetry SDK retains ownership of batching, retry, queueing, export tim
 
 ## Evidence
 
+- `packages/core/team/tests/telemetry.spec.ts`
 - `packages/team/team-telemetry-otel/tests/alerts.spec.ts`
 - `packages/team/team-telemetry-otel/tests/otel.spec.ts`

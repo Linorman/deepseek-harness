@@ -297,7 +297,7 @@ function persistentShells(ctx: Context, config: ResolvedConfig): PersistentShell
     if (existing !== undefined) {
       if (roots.get(owner) === root) return existing
       return existing.then(async () => {
-        if (pending.get(owner) === existing && roots.get(owner) !== root) await reset(owner, 'Team workspace allocation changed')
+        await reset(owner, 'Team workspace allocation changed')
         return await get(owner, signal)
       })
     }

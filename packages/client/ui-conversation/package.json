@@ -76,7 +76,6 @@
     "@clocky/clocky-tool-todo": "workspace:^"
   },
   "devDependencies": {
-    "@clocky/cordis": "workspace:^",
     "@clocky/clocky-agent": "workspace:^",
     "@clocky/clocky-api-remotes": "workspace:^",
     "@clocky/clocky-attachment": "workspace:^",
@@ -85,11 +84,12 @@
     "@clocky/clocky-client-locale": "workspace:^",
     "@clocky/clocky-client-runtime": "workspace:^",
     "@clocky/clocky-client-test-runtime": "workspace:^",
+    "@clocky/clocky-client-ui-input-trigger": "workspace:^",
     "@clocky/clocky-client-ui-layout": "workspace:^",
     "@clocky/clocky-client-ui-primitives": "workspace:^",
     "@clocky/clocky-client-ui-settings": "workspace:^",
-    "@clocky/clocky-client-ui-input-trigger": "workspace:^",
     "@clocky/clocky-client-ui-slots": "workspace:^",
+    "@clocky/clocky-client-ui-viz": "workspace:^",
     "@clocky/clocky-commands": "workspace:^",
     "@clocky/clocky-compaction": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
@@ -98,12 +98,13 @@
     "@clocky/clocky-plan-mode": "workspace:^",
     "@clocky/clocky-session-projection": "workspace:^",
     "@clocky/clocky-session-stats": "workspace:^",
+    "@clocky/clocky-settings": "workspace:^",
     "@clocky/clocky-token-meter": "workspace:^",
     "@clocky/clocky-tool-todo": "workspace:^",
     "@clocky/clocky-tools": "workspace:^",
+    "@clocky/cordis": "workspace:^",
     "@types/react": "~18.3.1",
-    "react": "^18.2.0",
-    "@clocky/clocky-settings": "workspace:^"
+    "react": "^18.2.0"
   },
   "files": [
     "lib/index.js",

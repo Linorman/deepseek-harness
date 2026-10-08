@@ -12,6 +12,7 @@ import { GeneralSection } from '../src/client/GeneralSection.tsx'
 import { SettingsDocumentAction } from '../src/client/SettingsDocumentAction.tsx'
 import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocumentAction.tsx'
 import { apply as hostApply } from '../src/index.ts'
+import { CommandRegistry } from '@clocky/clocky-client-ui-layout/src/client/commands.ts'
 
 // These specs assert the shipped Chinese copy. The lane has no jsdom `window`,
 // so browser-language detection never runs and a fresh LocaleRuntime opens on
@@ -215,5 +216,20 @@ describe('ui-settings-general apply', () => {
     await fiber.dispose()
     for (const [name] of SEATS) expect(b.slots.entries(name)).toHaveLength(0)
     expect(b.slots.spec('settings.general.item')).toBeUndefined()
+  })
+
+  it('offers Settings and each registered section in the command palette while the layout service exists', async () => {
+    const b = await bench()
+    const commands = new CommandRegistry()
+    b.ctx.provide('layout', { registerCommands: commands.registerProvider.bind(commands) } as never)
+    declare(b.slots)
+    const fiber = b.ctx.plugin({ inject: [...inject], apply })
+    await fiber.await()
+    const section = commands.sections().find(item => item.id === 'settings')
+    expect(section?.label).toBe('设置')
+    expect(section?.items.map(item => item.label)).toEqual(['打开设置', '通用设置'])
+    expect(() => { section?.items[1]?.run() }).not.toThrow()
+    await fiber.dispose()
+    expect(commands.sections()).toEqual([])
   })
 })

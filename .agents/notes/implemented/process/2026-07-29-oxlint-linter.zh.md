@@ -20,6 +20,8 @@ Oxlint 的 JavaScript 插件兼容层运行 `@stylistic/eslint-plugin` 和 `esli
 
 CI 不恢复或保存 lint 结果缓存。`CLOCKY_OXLINT_THREADS` 使共享运行器将同一上限传给 Oxlint 的 `--threads` 选项和类型感知后端的 `GOMAXPROCS` 环境变量；普通本地运行对两者均采用默认值。Pre-commit 运行不加载项目的 Oxlint 验证，应用带一次有界重试的安全修复，接受仅含已忽略文件的文件选择，并通过 lefthook 重新暂存结果。公共 `lint` 和 CI 会先准备生成的声明，并保留完整的类型感知规则。
 
+两个 lint 配置都排除仓库的 `.tmp/` 和 `.tmp-*/` 运行目录。Git 也忽略 `.tmp-*/`，因此通过 `git ls-files --cached --others --exclude-standard` 发现测试文件时，会排除临时会话日志，同时保留新增的未跟踪源码测试文件。这个边界防止运行产物扩大 lint 遍历、基准测试源码清单和规范测试文件检查的范围。
+
 ## 验证
 
 解决两处分析器差异后，迁移后的配置报告与迁移前一致的自有源码无问题基线：移除了一项冗余测试断言，而 `tsc` 要求的一处结构性类型转换使用了窄范围的 Oxlint 抑制指令。以已删除 ESLint 配置的精确 blob 为基准进行的一次性审核在完成规则名映射后确认：源码为 88 项对 88 项，示例为 87 项对 87 项，测试为 83 项对 83 项。已提交的指纹锁定这些经审核的 Oxlint 规则配置及完整的覆盖结构；它既不执行已删除的配置，也不纳入后续的上游预设变更。对 `typescript-eslint@8.61.0` 的评估还确认，`strictTypeChecked` 并未启用 `@typescript-eslint/no-empty-function`；已删除、仅用于测试的 `off` 条目不起作用。

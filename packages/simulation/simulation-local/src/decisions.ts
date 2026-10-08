@@ -228,11 +228,7 @@ export function foldBusinessRecord(state: SimulationSnapshot, record: BusinessRe
         throw new Error('Simulation report presentation has no current decision authority')
       }
       const context = materializeReports(state, decision, record.reports)
-      const next = replaceDecision(state, { ...decision, context }, false)
-      return context.status === 'prepared' ? next : { ...next, phase: 'stalled', stall: {
-        code: 'SIM_CONTEXT_REQUIRED_ITEM_OVERFLOW', decisionId: decision.id, requiredBytes: context.requiredBytes,
-        maxBytes: context.maxBytes, recovery: 'cancel-decision-adjust-budget-and-resume',
-      } }
+      return preparedDecisionContext(state, decision, context)
     }
     case 'decision/context': {
       const decision = requireDecision(state, record.id)
@@ -241,11 +237,7 @@ export function foldBusinessRecord(state: SimulationSnapshot, record: BusinessRe
         || entity.writer?.phase !== 'active' || entity.phase !== 'active' || entity.revision !== decision.entityRevision
         || decision.context !== undefined) throw new Error('Simulation context does not belong to a current unprepared decision')
       const context = prepareContext(state, decision, record.request)
-      const next = replaceDecision(state, { ...decision, context }, false)
-      return context.status === 'prepared' ? next : { ...next, phase: 'stalled', stall: {
-        code: 'SIM_CONTEXT_REQUIRED_ITEM_OVERFLOW', decisionId: decision.id,
-        requiredBytes: context.requiredBytes, maxBytes: context.maxBytes, recovery: 'cancel-decision-adjust-budget-and-resume',
-      } }
+      return preparedDecisionContext(state, decision, context)
     }
     case 'decision/opened': {
       const entity = requireWriterEpoch(state, record.entityId, record.epoch)
@@ -516,3 +508,14 @@ export function nextLocalOperation(state: SimulationSnapshot): SimulationOperati
 }
 /* v8 ignore next 3 -- only the closed-union default calls this helper. */
 function assertNever(value: never): never { throw new Error(`Unknown business record: ${String(value)}`) }
+
+/** Publish prepared context or its exact bounded-context stall through one decision fold. */
+function preparedDecisionContext(
+  state: SimulationSnapshot, decision: SimulationDecision, context: ReturnType<typeof prepareContext>,
+): SimulationSnapshot {
+  const next = replaceDecision(state, { ...decision, context }, false)
+  return context.status === 'prepared' ? next : { ...next, phase: 'stalled', stall: {
+    code: 'SIM_CONTEXT_REQUIRED_ITEM_OVERFLOW', decisionId: decision.id, requiredBytes: context.requiredBytes,
+    maxBytes: context.maxBytes, recovery: 'cancel-decision-adjust-budget-and-resume',
+  } }
+}

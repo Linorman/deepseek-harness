@@ -214,3 +214,26 @@ describe('SettingsDescribeMirror', () => {
     expect(mirror.namespace('theme')?.revision).toBe(2)
   })
 })
+
+it('retires a slow principal document without reading again until authenticated recovery', async () => {
+  const gate = deferred<RpcResponse<SettingsDescribeView>>()
+  const describeCall = vi.fn().mockReturnValueOnce(gate.promise)
+    .mockResolvedValue(described([view('new-principal')]))
+  const mirror = new SettingsDescribeMirror({ settings: { describe: describeCall } } as never)
+  const pending = mirror.load()
+  await Promise.resolve()
+  const signal = describeCall.mock.calls[0]?.[1] as AbortSignal
+  mirror.clearAuthorization()
+  expect(signal.aborted).toBe(true)
+  await mirror.ensure()
+  await mirror.load()
+  mirror.acceptView(view('private-old'))
+  expect(describeCall).toHaveBeenCalledOnce()
+  gate.resolve(described([view('private-old')]))
+  await pending
+  expect(mirror.getSnapshot()).toEqual({ status: 'unavailable', view: undefined, error: null })
+  mirror.resumeAuthorization()
+  await mirror.load()
+  expect(mirror.namespace('new-principal')).toBeDefined()
+  expect(mirror.namespace('private-old')).toBeUndefined()
+})

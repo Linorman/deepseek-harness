@@ -241,50 +241,52 @@ describe('Team channel-view delivery recovery', () => {
     } finally { vi.useRealTimers() }
   })
 
-  it.each([256, 16_384])('includes the prior worker review in the replacement assignment within %i bytes', async (maxBytes) => {
-    const mounted = await harness('turn', undefined, undefined, 3, maxBytes)
-    const { teamId, participantId, id: activationId } = mounted.binding.activation
-    const taskId = 'rework-task'
-    const attemptId = 'replacement-attempt'
-    const channel = channelSnapshotSchema.parse({
-      manifest: { id: 'rework-channel', teamId, adapter: { type: 'task-assignment', version: 1 },
-        participants: [{ id: participantId, role: 'assignee' }],
-        limits: { taskId, activationId, sessionId: mounted.session.id } }, phase: 'active', cursor: 2,
+  it.each([{ maxBytes: 256, review: true }, { maxBytes: 16_384, review: true }, { maxBytes: 16_384, review: false }])(
+    'includes prior attempt evidence in the replacement assignment within $maxBytes bytes, review=$review', async ({ maxBytes, review }) => {
+      const mounted = await harness('turn', undefined, undefined, 3, maxBytes)
+      const { teamId, participantId, id: activationId } = mounted.binding.activation
+      const taskId = 'rework-task'
+      const attemptId = 'replacement-attempt'
+      const channel = channelSnapshotSchema.parse({
+        manifest: { id: 'rework-channel', teamId, adapter: { type: 'task-assignment', version: 1 },
+          participants: [{ id: participantId, role: 'assignee' }],
+          limits: { taskId, activationId, sessionId: mounted.session.id } }, phase: 'active', cursor: 2,
+      })
+      const envelope = teamEnvelopeSchema.parse({
+        id: 'rework-envelope', teamId, channelId: channel.manifest.id, sequence: 2,
+        senderId: participantId, audience: [participantId], kind: 'assignment', taskId,
+        payload: { taskId, attemptId, assignedRevision: 3, activationId, sessionId: mounted.session.id },
+        delivery: 'turn', priority: 'normal', createdAt: 1,
+      })
+      mounted.claim.mockResolvedValue(channelDeliveryClaimSchema.parse({ binding: mounted.binding,
+        channel, envelopeId: envelope.id, delivery: 'turn' }))
+      mounted.claimTaskAttemptStart.mockResolvedValue({
+        id: taskId, teamId, subject: 'Revise report', description: 'Complete the requested report.', phase: 'running', revision: 4,
+        lease: { attemptId, assignedRevision: 3, participantId, activationId, wakeChannelId: channel.manifest.id, startedAt: 2 },
+        attemptHistory: [{ id: 'prior-attempt', participantId: 'another-worker', outcome: {
+          kind: 'completed', result: { summary: 'Prior report', evidence: ['中文 evidence '.repeat(50)],
+            artifacts: [{ id: 'prior-report', uri: 'file:///report.md', kind: 'report', visibility: 'team' }] },
+        } }],
+        reviewHistory: review ? [{ attemptId: 'prior-attempt', reason: 'Cite the missing source.', nextPhase: 'pending' }] : [],
+      })
+      await mounted.emit(envelope)
+      const message = mounted.followup.mock.calls[0]?.[0]
+      const block = message?.content[0]
+      if (block?.type !== 'text') throw new Error('assignment has no model input')
+      expect(message?.source).toMatchObject({ taskId, attemptId, activationId })
+      const handoff = block.text.slice(block.text.indexOf('\n\nPrevious attempt'))
+      expect(Buffer.byteLength(handoff)).toBeLessThanOrEqual(maxBytes)
+      expect(handoff).not.toContain('�')
+      if (review) expect(handoff).toContain('Cite the missing source.')
+      else expect(handoff).not.toContain('Cite the missing source.')
+      if (maxBytes === 256) expect(handoff).toContain('Handoff truncated')
+      else {
+        expect(handoff).toContain('Prior report')
+        expect(handoff).toContain('file:///report.md')
+      }
+      expect(mounted.flush).toHaveBeenCalled()
+      expect(mounted.acknowledge).toHaveBeenCalled()
     })
-    const envelope = teamEnvelopeSchema.parse({
-      id: 'rework-envelope', teamId, channelId: channel.manifest.id, sequence: 2,
-      senderId: participantId, audience: [participantId], kind: 'assignment', taskId,
-      payload: { taskId, attemptId, assignedRevision: 3, activationId, sessionId: mounted.session.id },
-      delivery: 'turn', priority: 'normal', createdAt: 1,
-    })
-    mounted.claim.mockResolvedValue(channelDeliveryClaimSchema.parse({ binding: mounted.binding,
-      channel, envelopeId: envelope.id, delivery: 'turn' }))
-    mounted.claimTaskAttemptStart.mockResolvedValue({
-      id: taskId, teamId, subject: 'Revise report', description: 'Complete the requested report.', phase: 'running', revision: 4,
-      lease: { attemptId, assignedRevision: 3, participantId, activationId, wakeChannelId: channel.manifest.id, startedAt: 2 },
-      attemptHistory: [{ id: 'prior-attempt', participantId: 'another-worker', outcome: {
-        kind: 'completed', result: { summary: 'Prior report', evidence: ['中文 evidence '.repeat(50)],
-          artifacts: [{ id: 'prior-report', uri: 'file:///report.md', kind: 'report', visibility: 'team' }] },
-      } }],
-      reviewHistory: [{ attemptId: 'prior-attempt', reason: 'Cite the missing source.', nextPhase: 'pending' }],
-    })
-    await mounted.emit(envelope)
-    const message = mounted.followup.mock.calls[0]?.[0]
-    const block = message?.content[0]
-    if (block?.type !== 'text') throw new Error('assignment has no model input')
-    expect(message?.source).toMatchObject({ taskId, attemptId, activationId })
-    const handoff = block.text.slice(block.text.indexOf('\n\nPrevious attempt'))
-    expect(Buffer.byteLength(handoff)).toBeLessThanOrEqual(maxBytes)
-    expect(handoff).not.toContain('�')
-    expect(handoff).toContain('Cite the missing source.')
-    if (maxBytes === 256) expect(handoff).toContain('Handoff truncated')
-    else {
-      expect(handoff).toContain('Prior report')
-      expect(handoff).toContain('file:///report.md')
-    }
-    expect(mounted.flush).toHaveBeenCalled()
-    expect(mounted.acknowledge).toHaveBeenCalled()
-  })
 
   it.each([{ limit: 1, reason: 'max-tokens' }, { limit: 3, reason: 'max-tokens' }, { limit: 1, reason: 'completed' }] as const)('preserves attempt ownership across $limit $reason continuation turns and delivery restart', async ({ limit, reason }) => {
     const mounted = await harness('turn', undefined, undefined, limit)

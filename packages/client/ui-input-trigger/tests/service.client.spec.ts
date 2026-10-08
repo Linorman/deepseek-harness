@@ -138,6 +138,36 @@ describe('registerSource', () => {
     expect(cb.lexicon.getSnapshot().get('/')).toEqual(['fresh'])
   })
 
+  it.each([false, true])('shows a late source for the existing token after the earlier roster is empty (%s)', async (emptyRoster) => {
+    const { inputTriggers, mint } = await serviceBench()
+    if (!emptyRoster) inputTriggers.registerSource(readySource('/', 'command', []).source)
+    const controller = inputTriggers.sessionOf(mint('a').actx)
+    controller.track('/policy', 7, { tier: 'plain' }, 1)
+    await tick()
+    expect(controller.menu.getSnapshot().open).toBe(false)
+    inputTriggers.registerSource(readySource('/', 'skill', [{ name: 'policy-shared' }]).source)
+    await tick()
+    expect(controller.menu.getSnapshot().groups.find(group => group.source === 'skill')?.items).toEqual([{ name: 'policy-shared' }])
+    expect(controller.menu.getSnapshot().open).toBe(true)
+  })
+
+  it('keeps explicit dismissal and a command launcher closed to late unrelated sources', async () => {
+    const { inputTriggers, mint } = await serviceBench()
+    inputTriggers.registerSource(readySource('/', 'command', [{ name: 'goal' }]).source)
+    const controller = inputTriggers.sessionOf(mint('a').actx)
+    controller.track('/g', 2, { tier: 'plain' }, 1)
+    await tick()
+    controller.arbitrate('escape', false)
+    inputTriggers.registerSource(readySource('/', 'skill', [{ name: 'guide' }]).source)
+    await tick()
+    expect(controller.menu.getSnapshot().open).toBe(false)
+    controller.toggleSource('command', { trigger: '/', query: '', quoted: false, position: 'leading',
+      span: { start: 0, end: 2, draftRev: 1 } })
+    inputTriggers.registerSource(readySource('/', 'other', [{ name: 'guest' }]).source)
+    await tick()
+    expect(controller.menu.getSnapshot().groups.map(group => group.source)).toEqual(['command'])
+  })
+
   it('HMR shape: dispose of the registering fiber removes the source', async () => {
     const { root, inputTriggers, mint } = await serviceBench()
     const controller = inputTriggers.sessionOf(mint('a').actx)

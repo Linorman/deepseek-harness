@@ -5,7 +5,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px 0;
-  border-bottom: 1px solid var(--clocky-alias-border-l2);
+  border-bottom: 1px solid var(--clocky-border-default);
 }
 
 .rowText {
@@ -18,17 +18,17 @@
 }
 
 .title {
-  font-size: 14px;
+  font-size: var(--clocky-type-body-size);
   font-weight: 400;
-  line-height: 22px;
-  color: var(--clocky-alias-label-primary);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-primary);
 }
 
 .desc {
-  font-size: 12px;
+  font-size: var(--clocky-type-caption-size);
   font-weight: 400;
-  line-height: 18px;
-  color: var(--clocky-alias-label-tertiary);
+  line-height: var(--clocky-type-caption-line-height);
+  color: var(--clocky-fg-tertiary);
 }
 
 .selector {
@@ -38,17 +38,17 @@
   height: 36px;
   padding: 0 14px;
   border: none;
-  border-radius: 18px;
-  background: var(--clocky-alias-bg-module-platform);
+  border-radius: var(--clocky-radius-xl);
+  background: var(--clocky-bg-sunken);
   font: inherit;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--clocky-alias-label-primary);
+  font-size: var(--clocky-type-body-size);
+  line-height: var(--clocky-type-body-line-height);
+  color: var(--clocky-fg-primary);
   cursor: pointer;
 }
 
 .selector:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
+  background: var(--clocky-bg-hover);
 }
 
 .chevron {
