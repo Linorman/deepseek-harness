@@ -93,7 +93,7 @@ it('shows a loading source, a stale result and an explicit read error distinctly
   expect(view.getByText(en.loading)).toBeDefined()
   view.rerender(<SourceDetails {...common} data={{ ...baseData, source: { ...baseData.source,
     loading: false, stale: true, value: undefined } }} />)
-  expect(view.getByText(en.stale)).toBeDefined()
+  expect(view.queryByText(en.stale)).toBeNull()
   view.rerender(<SourceDetails {...common} data={{ ...baseData, source: { ...baseData.source,
     loading: false, stale: false, error: 'network' } }} />)
   expect(view.getByRole('alert').textContent).toBe(en.network)

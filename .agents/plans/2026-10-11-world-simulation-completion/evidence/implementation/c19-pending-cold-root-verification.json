@@ -1,0 +1,23 @@
+{
+  "nativeStream": 73,
+  "frozenInputDirectory": ".local/world-completion/c19-external-cleanup/consumed-inputs-native73",
+  "verifiedSources": 1963,
+  "verifiedBuilt": 2572,
+  "verifiedFixtures": 4,
+  "verifiedArtifacts": 610,
+  "totals": {
+    "cases": 72,
+    "processes": 216,
+    "intentionalKills": 24,
+    "normalExit0": 192,
+    "cold0Model": 144,
+    "coldPending": 16,
+    "coldTerminal": 128,
+    "rawArtifacts": 608,
+    "logs": 2
+  },
+  "manifestSha256": "ecef6ff4a30accb6b2378606891281592d9a78bd2fd5da636c6aaaceff9520ad",
+  "reportSha256": "dae2620f821c478f1bb69bdf86e4d0363823a3604c2b8fa22865d40a599f6775",
+  "currentNative74IsNotConsumedInput": true,
+  "checkedX12": false
+}

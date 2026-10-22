@@ -813,10 +813,23 @@ const schedulerChannelCompactionScopeSchema = z.object({
   throughSequence: nonNegativeSafeIntegerSchema,
 }).strict()
 
-/** Parse the closed durable scope a system Team-maintenance proof may select. */
+/** Parse one exact Simulation-owned personnel cut; all selected channels require distinct identities and observed cursors. */
+export const simulationPersonnelSettlementCutScopeSchema = z.object({
+  kind: z.literal('simulation-personnel-cut'),
+  teamId: teamIdSchema,
+  runId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'SimulationRunId'>),
+  lifecycleOwner: trimmedNameSchema,
+  personnelIntentId: nonEmptyStringSchema.transform(value => value as import('@clocky/clocky-brand').Branded<'WorldIntentId'>),
+  expectedTeamCursor: nonNegativeSafeIntegerSchema,
+  channels: z.array(z.object({ channelId: channelIdSchema, cursor: nonNegativeSafeIntegerSchema }).strict())
+    .refine(values => new Set(values.map(value => value.channelId)).size === values.length, 'Cut channels must be distinct'),
+}).strict() satisfies z.ZodType<import('./types.ts').SimulationPersonnelSettlementCutScope>
+
+/** Parse the closed scope a system Team-maintenance proof may select. */
 export const teamSystemMaintenanceScopeSchema = z.discriminatedUnion('kind', [
   schedulerTeamJournalCompactionScopeSchema,
   schedulerChannelCompactionScopeSchema,
+  simulationPersonnelSettlementCutScopeSchema,
 ]) satisfies z.ZodType<TeamSystemMaintenanceScope>
 
 /** Parse one detached source attribution resolved from a runtime-only Team-maintenance proof. */
@@ -3404,6 +3417,22 @@ export const teamEnvelopeDraftSchema = z.object({
   ttlMs: positiveSafeIntegerSchema.optional(),
 }).strict() as z.ZodType<TeamEnvelopeDraft>
 
+/** A full Envelope rejected before adapter admission and WAL append, after sender-keyed committed replay lookup. */
+export const teamEnvelopeByteLimitDetailsSchema = z.strictObject({
+  kind: z.literal('envelope-byte-limit'),
+  teamId: teamIdSchema,
+  teamCursor: nonNegativeSafeIntegerSchema,
+  channelId: channelIdSchema,
+  channelCursor: nonNegativeSafeIntegerSchema,
+  senderId: participantIdSchema,
+  idempotencyKey: channelPostIdempotencyKeySchema.optional(),
+  traceId: nonEmptyStringSchema.optional(),
+  correlationId: nonEmptyStringSchema.optional(),
+  draftFingerprint: z.string().regex(/^sha256:[0-9a-f]{64}$/),
+  bytes: positiveSafeIntegerSchema,
+  limit: positiveSafeIntegerSchema,
+}).refine(value => value.bytes > value.limit, 'Envelope byte refusal requires complete size above its limit')
+
 /** Parse a Hub-stamped immutable channel envelope. */
 export const teamEnvelopeSchema = z.object({
   id: envelopeIdSchema,
@@ -3771,10 +3800,25 @@ export const teamJournalCompactResultSchema = z.object({
   auditCompactedThrough: nonNegativeSafeIntegerSchema.optional(),
 }).strict() satisfies z.ZodType<TeamJournalCompactResult>
 
+/** Complete immutable Team history, delivery and usage ceilings; partial or unknown fields reject. */
+export const teamLimitsSchema = z.strictObject({
+  maxParticipants: positiveSafeIntegerSchema, maxActivations: positiveSafeIntegerSchema,
+  maxTasks: positiveSafeIntegerSchema, maxChannels: positiveSafeIntegerSchema,
+  maxEnvelopeBytes: positiveSafeIntegerSchema, maxChannelViewBytes: positiveSafeIntegerSchema,
+  maxPendingDeliveriesPerChannel: positiveSafeIntegerSchema, maxPendingDeliveriesPerParticipant: positiveSafeIntegerSchema,
+  maxPendingDeliveryPageSize: positiveSafeIntegerSchema, maxPostIdempotencyEntriesPerChannel: positiveSafeIntegerSchema,
+  maxTaskAttemptsPerTask: positiveSafeIntegerSchema, maxTaskLeaseDurationMs: positiveSafeIntegerSchema,
+  maxTurnsPerTeam: positiveSafeIntegerSchema, maxModelTokensPerTeam: positiveSafeIntegerSchema,
+  maxWallTimeMsPerTeam: positiveSafeIntegerSchema, maxCostUnitsPerTeam: positiveSafeIntegerSchema,
+  maxRetriesPerTeam: positiveSafeIntegerSchema, maxInboxItemsPerParticipant: positiveSafeIntegerSchema,
+  maxRatePerParticipantPerMinute: positiveSafeIntegerSchema,
+})
+
 const teamRootCreateInputFields = {
   goal: teamGoalSeedSchema,
   rules: jsonObjectSchema,
   budgets: jsonObjectSchema,
+  limits: teamLimitsSchema.optional(),
   authorityGrant: teamAuthorityGrantSchema.optional(),
 }
 
@@ -4092,6 +4136,20 @@ export const activationBindInputSchema = z.object({
   expectedCursor: nonNegativeSafeIntegerSchema,
   binding: activationBindingSnapshotSchema,
 }).strict() satisfies z.ZodType<ActivationBindInput>
+
+/** Historical activation refusal; only the controller can attest completion of the rejected startup's cleanup. */
+export const teamActivationHistoryLimitDetailsSchema = z.strictObject({
+  kind: z.literal('activation-history-limit'),
+  teamId: teamIdSchema,
+  teamCursor: nonNegativeSafeIntegerSchema,
+  used: positiveSafeIntegerSchema,
+  limit: positiveSafeIntegerSchema,
+  participantId: participantIdSchema,
+  activationId: activationIdSchema,
+  sessionId: sessionIdSchema,
+  reservationId: activationReservationIdSchema.optional(),
+  cleanup: z.enum(['pending', 'confirmed', 'unconfirmed']),
+}).refine(value => value.used >= value.limit, 'Historical activation refusal requires exhausted capacity')
 
 /** Parse JSON-only fields for one activation residency-status update. */
 export const activationStatusUpdateInputSchema = z.object({
@@ -4488,6 +4546,11 @@ export const teamSystemChannelLifecycleScopeSchema = z.discriminatedUnion('kind'
   z.object({
     kind: z.literal('channel-close'), teamId: teamIdSchema, channelId: channelIdSchema,
     expectedCursor: nonNegativeSafeIntegerSchema, reason: nonEmptyStringSchema.optional(),
+  }).strict(),
+  z.object({
+    kind: z.literal('simulation-channel-close'), teamId: teamIdSchema, channelId: channelIdSchema,
+    expectedCursor: nonNegativeSafeIntegerSchema, reason: nonEmptyStringSchema.optional(),
+    runId: nonEmptyStringSchema, lifecycleOwner: trimmedTextSchema,
   }).strict(),
 ]) as z.ZodType<TeamSystemChannelLifecycleScope>
 /** Parse immutable source attribution for one generic channel lifecycle proof. */
@@ -4979,6 +5042,8 @@ export const teamSystemTopologyScopeSchema = z.discriminatedUnion('kind', [
     runId: nonEmptyStringSchema, lifecycleOwner: trimmedTextSchema, participantId: participantIdSchema }),
   z.object({ ...teamRunBootstrapParticipantPhaseScopeSchema.shape, kind: z.literal('simulation-participant-phase'),
     runId: nonEmptyStringSchema, lifecycleOwner: trimmedTextSchema }).strict().superRefine(topologyPhaseScope),
+  teamRunWorkerRetireScopeSchema.extend({ kind: z.literal('simulation-participant-retire'),
+    runId: nonEmptyStringSchema, lifecycleOwner: trimmedTextSchema }),
   teamRunBootstrapParticipantInviteScopeSchema,
   teamRunBootstrapParticipantPhaseScopeSchema,
   teamRunBootstrapChannelOpenScopeSchema,

@@ -1,0 +1,33 @@
+{
+  "method": "TypeScript ESNext emit with comments removed, compare complete emitted executable syntax tree",
+  "files": [
+    {
+      "path": "examples/simulation-company/tests/world-external-boundary-cases.ts",
+      "frozenSha256": "0912ffd29e262d6ebc4223ad636520a69411edb37bd6f23cbd11b8b7ac216dda",
+      "currentSha256": "878275922b3097b368811406e32ff2c541ff1009018a60cef7e4d54c2d81a63b",
+      "emittedAstHash": "c34d0ffc68e352ad4f448c9378c8a5012eae6989bf16b27214dff4d765bf259d",
+      "sameExecutableAst": true
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-boundary-model.ts",
+      "frozenSha256": "bd91c3caa49ec42bcdfd113fe82eaf0ff15476d3d9fbdd86e15448723f064089",
+      "currentSha256": "851b1b798d32f9378a38c805246ea05b321b5cdf956cc11483dc7f8a06f14e99",
+      "emittedAstHash": "cdb7b53f98fd40031fd0c5ca5425df901b9d9f22b2a2cde6b93f409e6db79d7d",
+      "sameExecutableAst": true
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-boundary-scenario.ts",
+      "frozenSha256": "de241772bdfdb1391696cda5318bcc1ddc7f71a03a2128a798f559cba037b485",
+      "currentSha256": "5065359e7b0cff71d6044d331249a106bf8c88678391d48c01d050cf1f7b6e39",
+      "emittedAstHash": "b1a839ee33799de047221bba7395bf7114257fb3bda9107926fa16f2615f9678",
+      "sameExecutableAst": true
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-boundary.snapshot.ts",
+      "frozenSha256": "bb4471af0c21f5fbe34ad7c4b8397c004fa2ce0650024e9d0143a24fe67ca996",
+      "currentSha256": "bb4471af0c21f5fbe34ad7c4b8397c004fa2ce0650024e9d0143a24fe67ca996",
+      "emittedAstHash": "1d7a1d3de92111f64ce27bdeb3b3679dfc636a880da83a1b66959be7e98b5f07",
+      "sameExecutableAst": true
+    }
+  ]
+}

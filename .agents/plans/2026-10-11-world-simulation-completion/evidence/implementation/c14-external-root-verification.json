@@ -1,0 +1,175 @@
+{
+  "date": "2026-10-12",
+  "recordedEvaluations": 24,
+  "allOriginalInputsAndResultsMatch": true,
+  "checks": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-company-json-original.json",
+      "intentId": "world-intent:061d0b90b5fae9074b6336369156fa1b36950a683b805fe99358dc5849f7f963",
+      "sequence": 79,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-company-json-original.json",
+      "intentId": "world-intent:f6a7501d544991e5643e6694b166906dd45e70f84a7d57ac896ab34ea32969ed",
+      "sequence": 165,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-company-json-original.json",
+      "intentId": "world-intent:fb08faa3241a43699f231e207a834b770653faf1eebcbd7170bf456fd7982bd6",
+      "sequence": 251,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-company-sqlite-original.json",
+      "intentId": "world-intent:061d0b90b5fae9074b6336369156fa1b36950a683b805fe99358dc5849f7f963",
+      "sequence": 79,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-company-sqlite-original.json",
+      "intentId": "world-intent:f6a7501d544991e5643e6694b166906dd45e70f84a7d57ac896ab34ea32969ed",
+      "sequence": 165,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-company-sqlite-original.json",
+      "intentId": "world-intent:fb08faa3241a43699f231e207a834b770653faf1eebcbd7170bf456fd7982bd6",
+      "sequence": 251,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-laboratory-json-original.json",
+      "intentId": "world-intent:5af0e57ab503bb456f4caf6efa87f43aeb31823a87557bc0d4c9e74294b674c3",
+      "sequence": 79,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-laboratory-json-original.json",
+      "intentId": "world-intent:491492e4442ede44542f51c2ca1c8fd4c49254ed571adc3a6a689fb42a044ac4",
+      "sequence": 165,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-laboratory-json-original.json",
+      "intentId": "world-intent:2d650d6087c8f391a0c647d93dfc31594a1bf53a6cf28fc22ed3ba776f56b4c3",
+      "sequence": 251,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-laboratory-sqlite-original.json",
+      "intentId": "world-intent:5af0e57ab503bb456f4caf6efa87f43aeb31823a87557bc0d4c9e74294b674c3",
+      "sequence": 79,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-laboratory-sqlite-original.json",
+      "intentId": "world-intent:491492e4442ede44542f51c2ca1c8fd4c49254ed571adc3a6a689fb42a044ac4",
+      "sequence": 165,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-lib-laboratory-sqlite-original.json",
+      "intentId": "world-intent:2d650d6087c8f391a0c647d93dfc31594a1bf53a6cf28fc22ed3ba776f56b4c3",
+      "sequence": 251,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-company-json-original.json",
+      "intentId": "world-intent:061d0b90b5fae9074b6336369156fa1b36950a683b805fe99358dc5849f7f963",
+      "sequence": 79,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-company-json-original.json",
+      "intentId": "world-intent:f6a7501d544991e5643e6694b166906dd45e70f84a7d57ac896ab34ea32969ed",
+      "sequence": 165,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-company-json-original.json",
+      "intentId": "world-intent:fb08faa3241a43699f231e207a834b770653faf1eebcbd7170bf456fd7982bd6",
+      "sequence": 251,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-company-sqlite-original.json",
+      "intentId": "world-intent:061d0b90b5fae9074b6336369156fa1b36950a683b805fe99358dc5849f7f963",
+      "sequence": 79,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-company-sqlite-original.json",
+      "intentId": "world-intent:f6a7501d544991e5643e6694b166906dd45e70f84a7d57ac896ab34ea32969ed",
+      "sequence": 165,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-company-sqlite-original.json",
+      "intentId": "world-intent:fb08faa3241a43699f231e207a834b770653faf1eebcbd7170bf456fd7982bd6",
+      "sequence": 251,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-laboratory-json-original.json",
+      "intentId": "world-intent:5af0e57ab503bb456f4caf6efa87f43aeb31823a87557bc0d4c9e74294b674c3",
+      "sequence": 79,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-laboratory-json-original.json",
+      "intentId": "world-intent:491492e4442ede44542f51c2ca1c8fd4c49254ed571adc3a6a689fb42a044ac4",
+      "sequence": 165,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-laboratory-json-original.json",
+      "intentId": "world-intent:2d650d6087c8f391a0c647d93dfc31594a1bf53a6cf28fc22ed3ba776f56b4c3",
+      "sequence": 251,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-laboratory-sqlite-original.json",
+      "intentId": "world-intent:5af0e57ab503bb456f4caf6efa87f43aeb31823a87557bc0d4c9e74294b674c3",
+      "sequence": 79,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-laboratory-sqlite-original.json",
+      "intentId": "world-intent:491492e4442ede44542f51c2ca1c8fd4c49254ed571adc3a6a689fb42a044ac4",
+      "sequence": 165,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-external-raw/c14-external-source-laboratory-sqlite-original.json",
+      "intentId": "world-intent:2d650d6087c8f391a0c647d93dfc31594a1bf53a6cf28fc22ed3ba776f56b4c3",
+      "sequence": 251,
+      "exactResourceInputs": true,
+      "originalOutcome": true
+    }
+  ]
+}

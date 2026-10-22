@@ -1,16 +1,18 @@
+import { worldEvidenceChallengeIdSchema } from './world-evidence.ts'
 /** Durable simulation event keys and bounded drive requests. @module @clocky/clocky-simulation/scheduler */
 import { z } from 'zod'
-import type { Branded } from '@clocky/clocky-brand'
+import { simulationEventIdSchema, simulationEventSlotSchema } from './event-identities.ts'
+export { simulationEventIdSchema, simulationEventSlotSchema } from './event-identities.ts'
+import { simulationWorldCalendarSourceSchema } from './world-calendar.ts'
 import { simulationOperationIdSchema, simulationDecisionIdSchema } from './business.ts'
 import { simTimeSchema } from './time.ts'
+import { simulationResourceReservationIdSchema } from './resource-reservation.ts'
 import { simulationEntityIdSchema } from './entity.ts'
 import { simulationInteractionIdSchema, simulationCommitmentIdSchema } from './interaction.ts'
 import { simulationIngressIdSchema } from './ingress.ts'
+import { worldProposalIdSchema, worldIntentIdSchema } from './world-domain.ts'
+import { simulationNormReferenceSchema } from './world-norms.ts'
 
-/** Stable event identity within a run. */
-export const simulationEventIdSchema = z.string().min(1).transform(value => value as Branded<'SimulationEventId'>)
-/** Canonical decimal event counter, independent of storage and decision cursors. */
-export const simulationEventSlotSchema = z.string().regex(/^(0|[1-9][0-9]*)$/).transform(value => value as Branded<'SimulationEventSlot'>)
 /** Phases whose order is fixed in the run configuration. */
 export const simulationEventPhaseSchema = z.enum(['delivery', 'decision', 'deadline'])
 /** An exact persisted ordering key; phase order comes from the run policy. */
@@ -19,9 +21,22 @@ export const simulationEventKeySchema = z.strictObject({
   microstep: simulationEventSlotSchema,
   phase: simulationEventPhaseSchema,
   slot: simulationEventSlotSchema,
+  priority: z.number().int().min(-1000).max(1000).optional(),
 })
 /** Scheduled domain work; consumption must create a durable fact or responsibility. */
 export const simulationEventActionSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('resource-reservation-expiry'), id: simulationResourceReservationIdSchema,
+    revision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER) }),
+  z.strictObject({ kind: z.literal('world-calendar'), source: simulationWorldCalendarSourceSchema,
+    occurrence: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER) }),
+  z.strictObject({ kind: z.literal('external-adjudicated-event'), intentId: worldIntentIdSchema,
+    leafHash: z.string().regex(/^sha256:[a-f0-9]{64}$/) }),
+  z.strictObject({ kind: z.literal('world-evidence-deadline'), challengeId: worldEvidenceChallengeIdSchema }),
+  z.strictObject({ kind: z.literal('world-execution-time'), intentId: worldIntentIdSchema }),
+  z.strictObject({ kind: z.literal('norm-boundary'), norm: simulationNormReferenceSchema,
+    edge: z.enum(['from', 'until']), bodyHash: z.string().regex(/^sha256:[a-f0-9]{64}$/) }),
+  z.strictObject({ kind: z.literal('governance-deadline'), proposalId: worldProposalIdSchema,
+    bodyHash: z.string().regex(/^sha256:[a-f0-9]{64}$/) }),
   z.strictObject({ kind: z.literal('ingress'), ingressId: simulationIngressIdSchema }),
   z.strictObject({ kind: z.literal('conflict-retry'), operationId: simulationOperationIdSchema,
     rootDecisionId: simulationDecisionIdSchema, attempt: z.number().int().positive() }),

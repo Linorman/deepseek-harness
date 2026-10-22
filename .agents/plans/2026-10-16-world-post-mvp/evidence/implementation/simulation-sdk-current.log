@@ -1,0 +1,615 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-product/tests/company-tasks.spec.ts (15 tests | 4 failed) 39707ms
+   × passes the task executor’s technical retry deadline to the product scheduling owner 5007ms
+   × continues original applied task effects after writer retirement without another transfer ('json', 'model') 5002ms
+   × continues original applied task effects after writer retirement without another transfer ('json', 'deterministic') 5002ms
+   × lets the product-held background scheduler complete model task cognition 5001ms
+ ❯ |thread-safe| packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts (10 tests | 1 failed) 39873ms
+     × serializes two incompatible accepted plans before a single original fee and assignment commit 12753ms
+ ❯ |thread-safe| packages/simulation/simulation-product/tests/company-owner.spec.ts (39 tests | 2 failed) 39305ms
+   × keeps an accepted running intent after the carrier retires and rejects other principals 5001ms
+   × allows a new completed preparation anchor after initial checkpoint failure without rewriting that failure 5001ms
+ ❯ |thread-safe| packages/simulation/simulation-product/tests/world-replanning.spec.ts (6 tests | 1 failed) 13125ms
+   × continues a json stale case only with a new scheduling intent and commits one successor plan 5049ms
+ ❯ |thread-safe| packages/simulation/simulation-local/tests/world-catalog-admission.spec.ts (2 tests | 2 failed) 1171ms
+   × json Loader admits exact built-in versions and rejects injected request fields before effects 587ms
+   × sqlite Loader admits exact built-in versions and rejects injected request fields before effects 583ms
+ ❯ |thread-safe| packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts (6 tests | 1 failed) 11467ms
+     × rejects malformed actual three-tool request and plan payloads with the same schema category 5004ms
+ ❯ |thread-safe| packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts (3 tests | 3 failed) 76ms
+   × company: retains every supported field, exact dependencies and semantic refusal across author views 42ms
+   × laboratory: retains every supported field, exact dependencies and semantic refusal across author views 22ms
+   × association: retains every supported field, exact dependencies and semantic refusal across author views 12ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 14 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts > company: retains every supported field, exact dependencies and semantic refusal across author views
+Error: Snapshot `company: retains every supported field, exact dependencies and semantic refusal across author views 1` mismatched
+
+- Expected
++ Received
+
+@@ -4,37 +4,37 @@
+    "committees": 1,
+    "domains": [
+      {
+        "domain": "organization",
+        "generation": 1,
+-       "implementationRef": "clocky.organization.generate-and-hire/native/4",
++       "implementationRef": "clocky.organization.generate-and-hire/native/5",
+        "operation": "generate-and-hire",
+        "schemaRef": "clocky.organization.generate-and-hire/schema/3",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+-       "generation": 2,
++       "generation": 3,
+-       "implementationRef": "clocky.governance.propose-norm/native/3",
++       "implementationRef": "clocky.governance.propose-norm/native/4",
+        "operation": "propose-norm",
+-       "schemaRef": "clocky.governance.propose-norm/schema/3",
++       "schemaRef": "clocky.governance.propose-norm/schema/4",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+-       "generation": 3,
++       "generation": 4,
+-       "implementationRef": "clocky.governance.vote/native/4",
++       "implementationRef": "clocky.governance.vote/native/5",
+        "operation": "vote",
+        "schemaRef": "clocky.governance.vote/schema/3",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+-       "generation": 1,
++       "generation": 2,
+-       "implementationRef": "clocky.governance.enact-norm/native/1",
++       "implementationRef": "clocky.governance.enact-norm/native/2",
+        "operation": "enact-norm",
+-       "schemaRef": "clocky.governance.enact-norm/schema/1",
++       "schemaRef": "clocky.governance.enact-norm/schema/2",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+        "generation": 1,
+
+ ❯ packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts:33:63
+     31|       positions: compiled.preview.positionCount, domains: compiled.pre…
+     32|       committees: definition.governance.committees.length, calendars: …
+     33|       external: definition.externalWorld.identities.length }).toMatchS…
+       |                                                               ^
+     34|     const bad = structuredClone(definition)
+     35|     bad.organization.positions[0]!.unitId = 'missing-unit'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts > laboratory: retains every supported field, exact dependencies and semantic refusal across author views
+Error: Snapshot `laboratory: retains every supported field, exact dependencies and semantic refusal across author views 1` mismatched
+
+- Expected
++ Received
+
+@@ -4,37 +4,37 @@
+    "committees": 1,
+    "domains": [
+      {
+        "domain": "organization",
+        "generation": 1,
+-       "implementationRef": "clocky.organization.generate-and-hire/native/4",
++       "implementationRef": "clocky.organization.generate-and-hire/native/5",
+        "operation": "generate-and-hire",
+        "schemaRef": "clocky.organization.generate-and-hire/schema/3",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+-       "generation": 2,
++       "generation": 3,
+-       "implementationRef": "clocky.governance.propose-norm/native/3",
++       "implementationRef": "clocky.governance.propose-norm/native/4",
+        "operation": "propose-norm",
+-       "schemaRef": "clocky.governance.propose-norm/schema/3",
++       "schemaRef": "clocky.governance.propose-norm/schema/4",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+-       "generation": 3,
++       "generation": 4,
+-       "implementationRef": "clocky.governance.vote/native/4",
++       "implementationRef": "clocky.governance.vote/native/5",
+        "operation": "vote",
+        "schemaRef": "clocky.governance.vote/schema/3",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+-       "generation": 1,
++       "generation": 2,
+-       "implementationRef": "clocky.governance.enact-norm/native/1",
++       "implementationRef": "clocky.governance.enact-norm/native/2",
+        "operation": "enact-norm",
+-       "schemaRef": "clocky.governance.enact-norm/schema/1",
++       "schemaRef": "clocky.governance.enact-norm/schema/2",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+        "generation": 1,
+
+ ❯ packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts:33:63
+     31|       positions: compiled.preview.positionCount, domains: compiled.pre…
+     32|       committees: definition.governance.committees.length, calendars: …
+     33|       external: definition.externalWorld.identities.length }).toMatchS…
+       |                                                               ^
+     34|     const bad = structuredClone(definition)
+     35|     bad.organization.positions[0]!.unitId = 'missing-unit'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts > association: retains every supported field, exact dependencies and semantic refusal across author views
+Error: Snapshot `association: retains every supported field, exact dependencies and semantic refusal across author views 1` mismatched
+
+- Expected
++ Received
+
+@@ -11,12 +11,12 @@
+        "schemaRef": "clocky.governance.propose-hire-approval/schema/2",
+        "version": "1",
+      },
+      {
+        "domain": "governance",
+-       "generation": 3,
++       "generation": 4,
+-       "implementationRef": "clocky.governance.vote/native/4",
++       "implementationRef": "clocky.governance.vote/native/5",
+        "operation": "vote",
+        "schemaRef": "clocky.governance.vote/schema/3",
+        "version": "1",
+      },
+      {
+
+ ❯ packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts:33:63
+     31|       positions: compiled.preview.positionCount, domains: compiled.pre…
+     32|       committees: definition.governance.committees.length, calendars: …
+     33|       external: definition.externalWorld.identities.length }).toMatchS…
+       |                                                               ^
+     34|     const bad = structuredClone(definition)
+     35|     bad.organization.positions[0]!.unitId = 'missing-unit'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/company-owner.spec.ts > keeps an accepted running intent after the carrier retires and rejects other principals
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-product/tests/company-owner.spec.ts:126:1
+    124| })
+    125|
+    126| it('keeps an accepted running intent after the carrier retires and rej…
+       | ^
+    127|   const h = await ownerFixture()
+    128|   try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/company-owner.spec.ts > allows a new completed preparation anchor after initial checkpoint failure without rewriting that failure
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-product/tests/company-owner.spec.ts:147:1
+    145| })
+    146|
+    147| it('allows a new completed preparation anchor after initial checkpoint…
+       | ^
+    148|   const h = await ownerFixture()
+    149|   try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/company-tasks.spec.ts > passes the task executor’s technical retry deadline to the product scheduling owner
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-product/tests/company-tasks.spec.ts:107:1
+    105| })
+    106|
+    107| it('passes the task executor’s technical retry deadline to the product…
+       | ^
+    108|   const h = await companyFixture()
+    109|   try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/company-tasks.spec.ts > continues original applied task effects after writer retirement without another transfer ('json', 'model')
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/company-tasks.spec.ts > continues original applied task effects after writer retirement without another transfer ('json', 'deterministic')
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-product/tests/company-tasks.spec.ts:123:139
+    121| })
+    122|
+    123| it.each((['json', 'sqlite'] as const).flatMap(backend => (['model', 'd…
+       |                                                                                                                                           ^
+    124| ('continues original applied task effects after writer retirement with…
+    125|   const h = await companyFixture(backend)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/company-tasks.spec.ts > lets the product-held background scheduler complete model task cognition
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-product/tests/company-tasks.spec.ts:164:44
+    162| })
+    163|
+    164| it.each(['model', 'deterministic'] as const)('lets the product-held ba…
+       |                                            ^
+    165|   const h = await ownerFixture('json', {}, taskConfig(cognition))
+    166|   try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/world-replanning.spec.ts > continues a json stale case only with a new scheduling intent and commits one successor plan
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-product/tests/world-replanning.spec.ts:92:36
+     90| }
+     91|
+     92| it.each(['json', 'sqlite'] as const)('continues a %s stale case only w…
+       |                                    ^
+     93|   const h = await fixture(backend, 'once')
+     94|   try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-local/tests/world-catalog-admission.spec.ts > json Loader admits exact built-in versions and rejects injected request fields before effects
+ FAIL  |thread-safe| packages/simulation/simulation-local/tests/world-catalog-admission.spec.ts > sqlite Loader admits exact built-in versions and rejects injected request fields before effects
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+... Skipped lines
+
++ Set(12) {
+- Set(15) {
+    {
+      domain: 'external',
+      generation: 1,
+      implementationRef: 'clocky.external.interact-actor/native/4',
+      operation: 'interact',
+...
+      generation: 1,
+-     implementationRef: 'clocky.governance.delegate-vote/native/1',
+-     operation: 'delegate-vote',
+-     schemaRef: 'clocky.governance.delegate-vote/schema/1',
+-     version: '1'
+-   },
+-   {
+-     domain: 'governance',
+-     generation: 1,
+      implementationRef: 'clocky.governance.propose-hire-approval/native/2',
+      operation: 'propose-hire-approval',
+      schemaRef: 'clocky.governance.propose-hire-approval/schema/2',
+      version: '1'
+    },
+    {
+      domain: 'governance',
+-     generation: 1,
+-     implementationRef: 'clocky.governance.review-route/native/1',
+-     operation: 'define-review-route',
+-     schemaRef: 'clocky.governance.review-route/schema/1',
+-     version: '1'
+-   },
+-   {
+-     domain: 'governance',
+      generation: 2,
+      implementationRef: 'clocky.governance.enact-norm/native/2',
+      operation: 'enact-norm',
+      schemaRef: 'clocky.governance.enact-norm/schema/2',
+      version: '1'
+...
+      generation: 1,
+-     implementationRef: 'clocky.organization.hiring-market/native/2',
+-     operation: 'hiring-market',
+-     schemaRef: 'clocky.organization.hiring-market/schema/2',
+-     version: '1'
+-   },
+-   {
+-     domain: 'organization',
+-     generation: 1,
+      implementationRef: 'clocky.organization.transfer/native/1',
+      operation: 'transfer',
+      schemaRef: 'clocky.organization.transfer/schema/1',
+      version: '1'
+    }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/tests/fixtures/world-catalog-admission.ts:67:8)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: Set(12) {
+    {
+      domain: 'organization',
+      operation: 'generate-and-hire',
+      version: '1',
+      schemaRef: 'clocky.organization.generate-and-hire/schema/3',
+      implementationRef: 'clocky.organization.generate-and-hire/native/5',
+      generation: 1
+    },
+    {
+      domain: 'organization',
+      operation: 'hire-existing',
+      version: '1',
+      schemaRef: 'clocky.organization.hire-existing/schema/1',
+      implementationRef: 'clocky.organization.hire-existing/native/1',
+      generation: 1
+    },
+    {
+      domain: 'organization',
+      operation: 'transfer',
+      version: '1',
+      schemaRef: 'clocky.organization.transfer/schema/1',
+      implementationRef: 'clocky.organization.transfer/native/1',
+      generation: 1
+    },
+    {
+      domain: 'organization',
+      operation: 'depart',
+      version: '1',
+      schemaRef: 'clocky.organization.depart/schema/1',
+      implementationRef: 'clocky.organization.depart/native/1',
+      generation: 1
+    },
+    {
+      domain: 'governance',
+      operation: 'propose-norm',
+      version: '1',
+      schemaRef: 'clocky.governance.propose-norm/schema/4',
+      implementationRef: 'clocky.governance.propose-norm/native/4',
+      generation: 3
+    },
+    {
+      domain: 'governance',
+      operation: 'vote',
+      version: '1',
+      schemaRef: 'clocky.governance.vote/schema/3',
+      implementationRef: 'clocky.governance.vote/native/5',
+      generation: 4
+    },
+    {
+      domain: 'governance',
+      operation: 'propose-hire-approval',
+      version: '1',
+      schemaRef: 'clocky.governance.propose-hire-approval/schema/2',
+      implementationRef: 'clocky.governance.propose-hire-approval/native/2',
+      generation: 1
+    },
+    {
+      domain: 'governance',
+      operation: 'enact-norm',
+      version: '1',
+      schemaRef: 'clocky.governance.enact-norm/schema/2',
+      implementationRef: 'clocky.governance.enact-norm/native/2',
+      generation: 2
+    },
+    {
+      domain: 'governance',
+      operation: 'revoke-norm',
+      version: '1',
+      schemaRef: 'clocky.governance.revoke-norm/schema/2',
+      implementationRef: 'clocky.governance.revoke-norm/native/2',
+      generation: 2
+    },
+    {
+      domain: 'external',
+      operation: 'interact',
+      version: '1',
+      schemaRef: 'clocky.external.interact/schema/1',
+      implementationRef: 'clocky.external.interact/native/1',
+      generation: 1
+    },
+    {
+      domain: 'external',
+      operation: 'interact',
+      version: '2',
+      schemaRef: 'clocky.external.interact-actor/schema/2',
+      implementationRef: 'clocky.external.interact-actor/native/4',
+      generation: 1
+    },
+    {
+      domain: 'external',
+      operation: 'interact',
+      version: '3',
+      schemaRef: 'clocky.external.interact.mediated/schema/1',
+      implementationRef: 'clocky.external.interact.mediated/native/1',
+      generation: 1
+    }
+  },
+  expected: Set(15) {
+    {
+      domain: 'organization',
+      operation: 'depart',
+      version: '1',
+      schemaRef: 'clocky.organization.depart/schema/1',
+      implementationRef: 'clocky.organization.depart/native/1',
+      generation: 1
+    },
+    {
+      domain: 'external',
+      operation: 'interact',
+      version: '2',
+      schemaRef: 'clocky.external.interact-actor/schema/2',
+      implementationRef: 'clocky.external.interact-actor/native/4',
+      generation: 1
+    },
+    {
+      domain: 'external',
+      operation: 'interact',
+      version: '1',
+      schemaRef: 'clocky.external.interact/schema/1',
+      implementationRef: 'clocky.external.interact/native/1',
+      generation: 1
+    },
+    {
+      domain: 'external',
+      operation: 'interact',
+      version: '3',
+      schemaRef: 'clocky.external.interact.mediated/schema/1',
+      implementationRef: 'clocky.external.interact.mediated/native/1',
+      generation: 1
+    },
+    {
+      domain: 'organization',
+      operation: 'generate-and-hire',
+      version: '1',
+      schemaRef: 'clocky.organization.generate-and-hire/schema/3',
+      implementationRef: 'clocky.organization.generate-and-hire/native/5',
+      generation: 1
+    },
+    {
+      domain: 'governance',
+      operation: 'delegate-vote',
+      version: '1',
+      schemaRef: 'clocky.governance.delegate-vote/schema/1',
+      implementationRef: 'clocky.governance.delegate-vote/native/1',
+      generation: 1
+    },
+    {
+      domain: 'governance',
+      operation: 'propose-hire-approval',
+      version: '1',
+      schemaRef: 'clocky.governance.propose-hire-approval/schema/2',
+      implementationRef: 'clocky.governance.propose-hire-approval/native/2',
+      generation: 1
+    },
+    {
+      domain: 'governance',
+      operation: 'propose-norm',
+      version: '1',
+      schemaRef: 'clocky.governance.propose-norm/schema/4',
+      implementationRef: 'clocky.governance.propose-norm/native/4',
+      generation: 3
+    },
+    {
+      domain: 'governance',
+      operation: 'define-review-route',
+      version: '1',
+      schemaRef: 'clocky.governance.review-route/schema/1',
+      implementationRef: 'clocky.governance.review-route/native/1',
+      generation: 1
+    },
+    {
+      domain: 'governance',
+      operation: 'vote',
+      version: '1',
+      schemaRef: 'clocky.governance.vote/schema/3',
+      implementationRef: 'clocky.governance.vote/native/5',
+      generation: 4
+    },
+    {
+      domain: 'organization',
+      operation: 'hire-existing',
+      version: '1',
+      schemaRef: 'clocky.organization.hire-existing/schema/1',
+      implementationRef: 'clocky.organization.hire-existing/native/1',
+      generation: 1
+    },
+    {
+      domain: 'organization',
+      operation: 'hiring-market',
+      version: '1',
+      schemaRef: 'clocky.organization.hiring-market/schema/2',
+      implementationRef: 'clocky.organization.hiring-market/native/2',
+      generation: 1
+    },
+    {
+      domain: 'governance',
+      operation: 'enact-norm',
+      version: '1',
+      schemaRef: 'clocky.governance.enact-norm/schema/2',
+      implementationRef: 'clocky.governance.enact-norm/native/2',
+      generation: 2
+    },
+    {
+      domain: 'governance',
+      operation: 'revoke-norm',
+      version: '1',
+      schemaRef: 'clocky.governance.revoke-norm/schema/2',
+      implementationRef: 'clocky.governance.revoke-norm/native/2',
+      generation: 2
+    },
+    {
+      domain: 'organization',
+      operation: 'transfer',
+      version: '1',
+      schemaRef: 'clocky.organization.transfer/schema/1',
+      implementationRef: 'clocky.organization.transfer/native/1',
+      generation: 1
+    }
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ <anonymous> packages/simulation/simulation-local/tests/fixtures/world-catalog-admission.ts:67:8
+ ❯ packages/simulation/simulation-local/tests/world-catalog-admission.spec.ts:27:26
+     25|     const [code, signal] = await exited
+     26|     expect({ timedOut, signal }).toEqual({ timedOut: false, signal: nu…
+     27|     expect(code, stderr).toBe(0)
+       |                          ^
+     28|     const report = JSON.parse(stdout) as { rows: unknown[] }
+     29|     expect(report).toMatchObject({ backend, commits: 0, unloaded: true…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts > json original hiring owner queue > serializes two incompatible accepted plans before a single original fee and assignment commit
+Error: Team activation controller disposal exceeded 5000ms
+ ❯ packages/team/team-activation-controller/src/index.ts:1825:63
+    1823| /** Bound one controller shutdown without abandoning accepted handles …
+    1824| function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Pro…
+    1825|   return withTeamOperationTimeout(operation, timeoutMs, () => new Erro…
+       |                                                               ^
+    1826| }
+    1827|
+ ❯ Timeout.<anonymous> packages/core/team/src/operation-timeout.ts:14:39
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/14]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts > json World schema boundaries > rejects malformed actual three-tool request and plan payloads with the same schema category
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:53:3
+     51|   })
+     52|
+     53|   it('rejects malformed actual three-tool request and plan payloads wi…
+       |   ^
+     54|     const h = await hiringResourceHarness(backend, 'hire-existing', { …
+     55|     try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/14]⎯
+
+
+  Snapshots  3 failed
+ Test Files  7 failed | 252 passed | 1 skipped (260)
+      Tests  14 failed | 4446 passed | 1 skipped (4461)
+   Start at  21:54:14
+   Duration  731.75s (transform 7.61s, setup 4.54s, import 67.06s, tests 1531.00s, environment 12ms)
+

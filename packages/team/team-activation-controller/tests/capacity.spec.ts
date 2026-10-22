@@ -10,7 +10,8 @@ import * as StorageLog from '@clocky/clocky-storage-log'
 import AgentRuntime from '@clocky/clocky-agent-runtime'
 import type { AgentRuntimeActivationRequest } from '@clocky/clocky-agent-runtime'
 import { SessionId } from '@clocky/clocky-session'
-import { activationIdSchema, liveActivationCapacity, teamClosureIdempotencyKeySchema } from '@clocky/clocky-team'
+import { activationIdSchema, liveActivationCapacity, teamClosureIdempotencyKeySchema,
+  activationHistoryLimitDetails, TeamError } from '@clocky/clocky-team'
 import type { ParticipantSnapshot, TeamSystemActivationProof, TeamSystemClosureProof, TeamSystemClosureDriverProof, TeamSystemClosureDriverScope } from '@clocky/clocky-team'
 import TeamHub from '@clocky/clocky-team-hub'
 import * as Controller from '../src/index.ts'
@@ -30,6 +31,7 @@ async function setup(backend: 'json' | 'sqlite', ceiling: number | undefined, ho
   grantLimit?: number
   rules?: import('@clocky/clocky-team').JsonObject
   statusSyncAttempts?: number
+  historicalLimit?: number
 } = {}) {
   await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
   const root = await mkdtemp(join(process.cwd(), '.tmp/live-capacity-'))
@@ -39,7 +41,8 @@ async function setup(backend: 'json' | 'sqlite', ceiling: number | undefined, ho
   if (backend === 'json') await ctx.plugin(StorageJson, { root })
   else await ctx.plugin(StorageSqlite, { path: join(root, 'team.db') })
   await ctx.plugin(StorageLog, { backend, routes: {} })
-  const hub = await ctx.plugin(TeamHub, { maxTeamDepth: 3 })
+  const hub = await ctx.plugin(TeamHub, { maxTeamDepth: 3,
+    ...hooks.historicalLimit === undefined ? {} : { maxActivationsPerTeam: hooks.historicalLimit } })
   await ctx.plugin(AgentRuntime)
   const starts: AgentRuntimeActivationRequest[] = []
   const stops: string[] = []
@@ -93,6 +96,92 @@ async function setup(backend: 'json' | 'sqlite', ceiling: number | undefined, ho
   }
   return { ctx, hub, controller, teamId, starts, stops, member, activate, capacity }
 }
+
+it.each(['json', 'sqlite'] as const)('retires a cohort without sibling cursor conflicts on %s', async (backend) => {
+  const h = await setup(backend, undefined, { statusSyncAttempts: 1 })
+  const leases: Awaited<ReturnType<typeof h.activate>>[] = []
+  for (let index = 0; index < 10; index++) leases.push(await h.activate(await h.member(`worker-${index}`)))
+  await Promise.all(leases.map(lease => lease.dispose()))
+  expect(h.stops).toHaveLength(10)
+  expect(new Set(h.stops).size).toBe(10)
+  expect(await h.capacity()).toBe(0)
+  const state = await h.ctx.teams.getTeam({ teamId: h.teamId })
+  expect(state.activations.every(binding => binding.quiescedAt !== undefined)).toBe(true)
+})
+
+describe.each(['json', 'sqlite'] as const)('%s historical activation rejection cleanup', (backend) => {
+  it('reports confirmation only after raw termination and the complete startup release finish', async () => {
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    let hold = false
+    const h = await setup(backend, 1, { historicalLimit: 1, dispose: async () => {
+      if (hold) { entered.resolve(undefined); await release.promise }
+    } })
+    const member = await h.member('worker')
+    const first = await h.activate(member)
+    await first.dispose()
+    hold = true
+    const starting = h.activate(member).catch((reason: unknown) => reason)
+    try {
+      await entered.promise
+      expect(await h.capacity()).toBe(1)
+      const pending = (await h.ctx.teams.getTeam({ teamId: h.teamId })).participants[0]!.activationReservation!
+      expect(pending.releasedAt).toBeUndefined()
+    } finally { release.resolve(undefined) }
+    const error = await starting
+    const details = activationHistoryLimitDetails(error)
+    const state = await h.ctx.teams.getTeam({ teamId: h.teamId })
+    expect(details).toMatchObject({ kind: 'activation-history-limit', teamId: h.teamId, used: 1, limit: 1,
+      participantId: member.id, activationId: 'capacity-2', sessionId: `capacity-session-${member.id}`,
+      reservationId: state.participants[0]!.activationReservation!.id, cleanup: 'confirmed' })
+    expect(error).toBeInstanceOf(TeamError)
+    expect(activationHistoryLimitDetails((error as TeamError).cause)?.cleanup).toBe('pending')
+    expect(details!.teamCursor).toBeLessThan(state.team.cursor)
+    expect(state.activations).toHaveLength(1)
+    expect(state.activations[0]!.activation.id).toBe(first.binding.activation.id)
+    expect(state.participants[0]!.activationReservation!.releasedAt).toBeDefined()
+    expect(await h.capacity()).toBe(0)
+    expect(h.stops).toEqual(['capacity-1', 'capacity-2'])
+  })
+
+  it.each(['termination', 'reservation-release', 'domain-release'] as const)(
+    'retains explicit unconfirmed responsibility after %s fails without classifying aggregate causes', async (failure) => {
+      let fail = false, owned = false
+      const h = await setup(backend, 1, { historicalLimit: 1, rules: { activationLifecycleOwner: 'history-domain' },
+        dispose: async () => { if (fail && failure === 'termination') throw new Error('Raw termination remains unknown') } })
+      const receipt = { ...coordinationReceipt(() => true), release: vi.fn(async () => {
+        if (fail && failure === 'domain-release') throw new Error('Domain release unconfirmed')
+        owned = false
+      }) }
+      h.ctx.teamActivations.registerLifecycleOwner({ name: 'history-domain', reserve: async () => { owned = true; return receipt },
+        recover: async () => receipt, recoverReservation: async () => receipt })
+      const member = await h.member('worker')
+      const first = await h.activate(member)
+      await first.dispose()
+      const releaseReservation = h.ctx.teams.releaseActivationReservation.bind(h.ctx.teams)
+      vi.spyOn(h.ctx.teams, 'releaseActivationReservation').mockImplementation(async (...args) => {
+        if (fail && failure === 'reservation-release') throw new Error('Reservation release unconfirmed')
+        return await releaseReservation(...args)
+      })
+      fail = true
+      const error: unknown = await h.activate(member).catch((reason: unknown) => reason)
+      expect(activationHistoryLimitDetails(error)).toMatchObject({ teamId: h.teamId, used: 1, limit: 1,
+        participantId: member.id, activationId: 'capacity-2', sessionId: `capacity-session-${member.id}`, cleanup: 'unconfirmed' })
+      expect(error).toBeInstanceOf(TeamError)
+      expect((error as TeamError).cause).toBeInstanceOf(AggregateError)
+      expect(owned).toBe(true)
+      const state = await h.ctx.teams.getTeam({ teamId: h.teamId })
+      expect(state.activations).toHaveLength(1)
+      expect(state.participants[0]!.activationReservation!.releasedAt !== undefined).toBe(failure === 'domain-release')
+      expect(await h.capacity()).toBe(failure === 'domain-release' ? 0 : 1)
+      expect(h.stops).toHaveLength(failure === 'termination' ? 1 : 2)
+      fail = false
+      await h.ctx.teamActivations.close()
+      expect(owned).toBe(false)
+      expect(await h.capacity()).toBe(0)
+      expect(h.stops).toEqual(['capacity-1', 'capacity-2'])
+      expect((await h.ctx.teams.getTeam({ teamId: h.teamId })).activations).toHaveLength(1)
+    })
+})
 
 describe('live Activation startup capacity', () => {
   it('quiesces a committed reserved activation when domain binding rejects it', async () => {

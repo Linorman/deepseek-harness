@@ -1,0 +1,2564 @@
+{
+  "nativeStream": 74,
+  "date": "2026-10-12",
+  "sources": [
+    {
+      "path": "examples/simulation-company/tests/world-external-crash-scenario.ts",
+      "sha256": "72e89eaf8df223d080c1f07d3eb4fbf4b29c29fa736c3ba758a6b3f591670c9a",
+      "bytes": 16567
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-crash-model.ts",
+      "sha256": "4634e62bf45bb58f2d59c9ee6e0f866fcb722134fc8dd914d251260e76fff854",
+      "bytes": 476
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-crash.snapshot.ts",
+      "sha256": "159f5fd7a7a3dfa3ba0102529e8ad3c579398d917e5d43ba42b22076d198acfd",
+      "bytes": 3773
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-external-crash/cordis.yml",
+      "sha256": "682b6dcff070c55e3667bc5c2d75515502d814da723630ca4f7366eae091613a",
+      "bytes": 107
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/external-actor.ts",
+      "sha256": "5dd73893db80aa7f5842d946ddafa9b7c0c6fe1a7144c320e6efe0614e565f5a",
+      "bytes": 12045
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-accepted-after-prefix.json",
+      "bytes": 28343,
+      "sha256": "f627ff4793c608936b028bb7124a2ccd0c79a20ec16bcc8d0cc129c0e85a0e68"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-accepted-after-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-accepted-after-cold-1.json",
+      "bytes": 40450,
+      "sha256": "87c1de4e2fc45a41a78d862272d28a091113a64535fed8cb8ec675b128435d5a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-accepted-after-cold-2.json",
+      "bytes": 40450,
+      "sha256": "87c1de4e2fc45a41a78d862272d28a091113a64535fed8cb8ec675b128435d5a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-accepted-after-process-0.json",
+      "bytes": 755,
+      "sha256": "dbc85c62095737bab6388424a08c8ada5214022f81286916fd640f05473788a7"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-accepted-after-process-1.json",
+      "bytes": 860,
+      "sha256": "f3a866f5f93757842859dcc231ed9e49db7565b249f6ac478d61f7b5d8feefb8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-accepted-after-process-2.json",
+      "bytes": 860,
+      "sha256": "b595577607dad3a468d1736c8d55d51393dd3df356e21ee1a78a82f54b7d9ef0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-notification-lost-prefix.json",
+      "bytes": 26485,
+      "sha256": "e52d77536e6e067c7903fc8905d9bd10eaa424d8289c78853f55a40331989a8b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-notification-lost-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-notification-lost-cold-1.json",
+      "bytes": 42527,
+      "sha256": "3c433e6b57e8fac6c4b0bf2624cb5871b2939ae4fd9b8102a4cad1fe894bb269"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-notification-lost-cold-2.json",
+      "bytes": 42527,
+      "sha256": "3c433e6b57e8fac6c4b0bf2624cb5871b2939ae4fd9b8102a4cad1fe894bb269"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-notification-lost-process-0.json",
+      "bytes": 758,
+      "sha256": "697f9943f4a3b95a6fadf845392bfdbeca92521950c9c18ccfa9d4db68f3853b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-notification-lost-process-1.json",
+      "bytes": 866,
+      "sha256": "517cb8938acbff8a9003afeff17f4b633e86542df9eca414645e7e4eddab6c9b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-request-notification-lost-process-2.json",
+      "bytes": 866,
+      "sha256": "cf419b4e816da45712262945743a9c5a204c0e6819dc6d793c43b7f2083cf436"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-before-prefix.json",
+      "bytes": 40983,
+      "sha256": "3359f56f2da8346bf5b3579e5c5a75fb27b287533ddb9b8549a9b0ee5c61314c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-before-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-before-cold-1.json",
+      "bytes": 65457,
+      "sha256": "ce98363a0b84612d27c72535fceee00a59cf1e180152e8b46df81fff41318c01"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-before-cold-2.json",
+      "bytes": 68826,
+      "sha256": "ebb12a3ed617df97b668674c1b7b864fbfa075f2bbf537d17297d63833008b73"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-before-process-0.json",
+      "bytes": 744,
+      "sha256": "7866f1441f228868e5d561e824fbe42d6a2752b882cf49b67e9db9127d2c8151"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-before-process-1.json",
+      "bytes": 838,
+      "sha256": "11cff2e7d8b930f16f000e3da418c8dd2c11f32208863059407c4d2dc7590d99"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-before-process-2.json",
+      "bytes": 838,
+      "sha256": "09ccfe2df312920caf4231d981e376511577ca462e069923ada4b8bf480a89cc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-after-prefix.json",
+      "bytes": 44337,
+      "sha256": "1f4de48b42bfe2a607311dedbcdf89400f495eeaf70a304915a1a972e42860fd"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-after-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-after-cold-1.json",
+      "bytes": 72174,
+      "sha256": "b34602c7b515691b2b7b8d466980df53122d79a5e557f6b986d5c522f4c9873b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-after-cold-2.json",
+      "bytes": 72174,
+      "sha256": "b34602c7b515691b2b7b8d466980df53122d79a5e557f6b986d5c522f4c9873b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-after-process-0.json",
+      "bytes": 743,
+      "sha256": "e3d9b8bb55fb5a787420937e3238649c569c85e0985caa056e5cd2c4e719688c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-after-process-1.json",
+      "bytes": 836,
+      "sha256": "eb09b1751d3ee92a23f6907c01170f16bec6ee39cdaeda091f3756579b4602ce"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-rule-after-process-2.json",
+      "bytes": 836,
+      "sha256": "9a3221c8b7d1f210e1ed65bf6846dfc29d059490edaed2df4339cd939843a9c7"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-result-notification-lost-prefix.json",
+      "bytes": 52148,
+      "sha256": "9a925534f400c0b54d805dde025610d0c0e206ac4b43c3841e3f3c719bb97eea"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-result-notification-lost-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-result-notification-lost-cold-1.json",
+      "bytes": 92568,
+      "sha256": "38a15c0fdb6a4d2c237a825977a53c0b276275cf15e1ce443a8ce7b73959042d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-result-notification-lost-cold-2.json",
+      "bytes": 92568,
+      "sha256": "38a15c0fdb6a4d2c237a825977a53c0b276275cf15e1ce443a8ce7b73959042d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-result-notification-lost-process-0.json",
+      "bytes": 757,
+      "sha256": "476d55e53eb491a4153ff73652c4d39cb0adacf28abfb235e574d18643df1d93"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-result-notification-lost-process-1.json",
+      "bytes": 864,
+      "sha256": "2fb96a818988256b8e37effcc9eca3cea413a878aa76bfdda77c986947686710"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-result-notification-lost-process-2.json",
+      "bytes": 864,
+      "sha256": "7a289da2a8b9f81790e02ce9a51d39ece0d8e5db2c2d6dfb051570be799563a3"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-before-prefix.json",
+      "bytes": 40886,
+      "sha256": "eccb94b7ce220cb04ee21565e7443e86cc4be2977c5a68405eacc80c7ddd4f45"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-before-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-before-cold-1.json",
+      "bytes": 67096,
+      "sha256": "d0cf25950778509b4e106caf8b5b2960ed08301de6d79ce9549fe71fefca65c1"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-before-cold-2.json",
+      "bytes": 67096,
+      "sha256": "d0cf25950778509b4e106caf8b5b2960ed08301de6d79ce9549fe71fefca65c1"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-before-process-0.json",
+      "bytes": 753,
+      "sha256": "f553c7ba9157e3f5fd0ee645175658f333c3b9e1569115cde19e4c6e49750960"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-before-process-1.json",
+      "bytes": 856,
+      "sha256": "d525a029966996da73fff4213b1c63d27d0832aaa18d1f02aa2f0ce60b5ae7bc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-before-process-2.json",
+      "bytes": 856,
+      "sha256": "42bb8d8a4e9df4d95fc726a7ee2c6af9d1af8e4aef1958493ed71d89d1407941"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-after-prefix.json",
+      "bytes": 42625,
+      "sha256": "83d6417f95576cd170bf762f5cef31611e656a4642f455803f1aa0ce8861379d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-after-cold-1.json",
+      "bytes": 70583,
+      "sha256": "4a00a7e9a442e7b0008949d5e49a7c58cbff21c30b88fb2d65869be26b6892ca"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-after-cold-2.json",
+      "bytes": 74793,
+      "sha256": "e292fb185deb1886bde79602940f07e5b3e34dfc6760e12f372486a7842ed588"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-after-process-0.json",
+      "bytes": 752,
+      "sha256": "4dc3b5cc30964941f3dd30c19d49980637f1d569368980de86820a921fd0ca01"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-after-process-1.json",
+      "bytes": 854,
+      "sha256": "b088c03d08026eae8d7f355c707addbceed92c6a752db2c8f38cfc00e58074c3"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-reserve-after-process-2.json",
+      "bytes": 854,
+      "sha256": "24b0d83b2953d8264eedd13b24bf4cdb8b7eedd5d1bef67118f0233e5826d051"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-preparing-after-prefix.json",
+      "bytes": 42829,
+      "sha256": "7f36395797e14dfbd49c1f8335eeb837dfcdc88590a3acc6ecc188bf989e64d8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-preparing-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-preparing-after-cold-1.json",
+      "bytes": 73103,
+      "sha256": "0360da7fc2beb772152c411b7af197e7f9a0b9b6696eeae44fb0d38f841d7867"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-preparing-after-cold-2.json",
+      "bytes": 76078,
+      "sha256": "3ccaa894654033aee7cdcbf97ffb2feb866c2ad17689e5ce82e4182815e133e8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-preparing-after-process-0.json",
+      "bytes": 754,
+      "sha256": "079025210f6f6dde533257d1c472a2b03669a32b1af84fd5de2d354e430ffe76"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-preparing-after-process-1.json",
+      "bytes": 858,
+      "sha256": "87697aa8b633b64100025982cfcfd7203f4fbb7b02d6388e4715ff8ffafc8870"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-preparing-after-process-2.json",
+      "bytes": 858,
+      "sha256": "859372452d60352d41baf6ebe5acfb50cc08b850d60d8ba5a238ecb52c84aa7e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-participant-unconfirmed-prefix.json",
+      "bytes": 43870,
+      "sha256": "e907f35f5d3c071dac3108c3d21d3328fb8d98626c2c4fb2afb71fada16aec05"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-participant-unconfirmed-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-participant-unconfirmed-cold-1.json",
+      "bytes": 73303,
+      "sha256": "5a9e76dca0068ed118f0d069e5a61a91065ff8f140ebf307da3e926cfa035891"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-participant-unconfirmed-cold-2.json",
+      "bytes": 76278,
+      "sha256": "3116de16fe42a32ad23a917d47649bbbc6507faf9b1c580ece85d80239495815"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-participant-unconfirmed-process-0.json",
+      "bytes": 762,
+      "sha256": "18c1afae785ad5cddec8b89fc7783bc66df408c9fe0dda63ca9a3cdd70860d80"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-participant-unconfirmed-process-1.json",
+      "bytes": 874,
+      "sha256": "debbffd8327b85ee6d0cf0b67461539a708fc887a73ce3e82f6c00824b1d59ef"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-participant-unconfirmed-process-2.json",
+      "bytes": 874,
+      "sha256": "4dbde16e11bb838841525ae889f45051283a11fe89c422eae19d96eab6d5cfd2"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-before-prefix.json",
+      "bytes": 44330,
+      "sha256": "5794ddc1ac2047ae0e6aa09b532ec9117e2b7f5f3d6d54d856e39eec572a8a47"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-before-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-before-cold-1.json",
+      "bytes": 73419,
+      "sha256": "947d6ab78a73eef3755ca2c219344e080a46199f31facded8457854af2138d0a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-before-cold-2.json",
+      "bytes": 76211,
+      "sha256": "a8557231b781db6cb599129126af7b21c85770f0a22e00fecd3371ec7e8ed5eb"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-before-process-0.json",
+      "bytes": 752,
+      "sha256": "e0a9226cb3465829122bfb31cc40c970f6a8bf7ce2b152ee3b5bd7366b850837"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-before-process-1.json",
+      "bytes": 854,
+      "sha256": "586103d016693239c64f9c8183254eb1b05dd50a0a3a99e383dad6cca8a8e873"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-before-process-2.json",
+      "bytes": 854,
+      "sha256": "f75cb33205eb3459c44a5cb0cf3e0ee9a068da61c45151ec46b16d7abe827a9c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-after-prefix.json",
+      "bytes": 47083,
+      "sha256": "d89261d54a24489922e61cff56300e8876eb60171d3f16b921705f96d315e594"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-after-cold-1.json",
+      "bytes": 78934,
+      "sha256": "bf6edbde7b557e6cc8661d9fc915b1d595924ea78b22041ec30480fc6577d86b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-after-cold-2.json",
+      "bytes": 78934,
+      "sha256": "bf6edbde7b557e6cc8661d9fc915b1d595924ea78b22041ec30480fc6577d86b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-after-process-0.json",
+      "bytes": 751,
+      "sha256": "8af50669a4d98193200a49092911c3aa2febcbcab8d707d241dfa624cc29020a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-after-process-1.json",
+      "bytes": 852,
+      "sha256": "8d646f9191fede68e39ca6411066595b72fa19cfc913938925ab18c65d3063fa"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-commit-after-process-2.json",
+      "bytes": 852,
+      "sha256": "3f69dacbcae582fe665be0835be5f836253795418436a1d433f8781f503f4523"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-accepted-after-prefix.json",
+      "bytes": 28536,
+      "sha256": "4ebb4893c5f4704d51f9d5d6f99d3279a68b19d353c28f7426b2430971163444"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-accepted-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-accepted-after-cold-1.json",
+      "bytes": 40690,
+      "sha256": "c262f1b6d7ee638043530fa4fd92883be09c993de24f16e008870bb51724026b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-accepted-after-cold-2.json",
+      "bytes": 40690,
+      "sha256": "c262f1b6d7ee638043530fa4fd92883be09c993de24f16e008870bb51724026b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-accepted-after-process-0.json",
+      "bytes": 761,
+      "sha256": "f6dae530399d3fce711eaca3f3153a7735e07c30914b85aeb7b95113182104d0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-accepted-after-process-1.json",
+      "bytes": 872,
+      "sha256": "cb6d8e3fc09f84168a578cded749619aef4388504f7d9a0519b55b74ce7683cc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-accepted-after-process-2.json",
+      "bytes": 872,
+      "sha256": "94e81ceef0fd0ca227ca5101b127b27a65c5b35ac9ca512139dd453966b09d42"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-notification-lost-prefix.json",
+      "bytes": 26656,
+      "sha256": "4c63e39d115b7b07ab55707a8bd9f7f2738d11d36dda1feccc51ba584c31ca3f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-notification-lost-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-notification-lost-cold-1.json",
+      "bytes": 42779,
+      "sha256": "c9d7a3030ea1d8070aa4d623fa0c26bf1f1c9e855dd92492d59378356a634185"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-notification-lost-cold-2.json",
+      "bytes": 42779,
+      "sha256": "c9d7a3030ea1d8070aa4d623fa0c26bf1f1c9e855dd92492d59378356a634185"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-notification-lost-process-0.json",
+      "bytes": 764,
+      "sha256": "9315511fe3168c5803f343a464485c0a3e1b2e3952dad71424a38663731402ec"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-notification-lost-process-1.json",
+      "bytes": 878,
+      "sha256": "ed77bbd9314046f9b861658c19929e5b5bc9e9b30a5cd2ce8cc67846ce94de09"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-request-notification-lost-process-2.json",
+      "bytes": 878,
+      "sha256": "5c5c535c854ee396584d1fe632af8ec5c68dcf800568118471146c9eca006a96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-result-notification-lost-prefix.json",
+      "bytes": 58448,
+      "sha256": "33eb123fecc9acca6ca0c94b71ce7e2bf84c3590c3c19187554449c735148234"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-result-notification-lost-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-result-notification-lost-cold-1.json",
+      "bytes": 102072,
+      "sha256": "f6431d05d996b9fe0eb5100ee2cbf18a5026ba5ee2ccea405b46b2e2659796eb"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-result-notification-lost-cold-2.json",
+      "bytes": 102072,
+      "sha256": "f6431d05d996b9fe0eb5100ee2cbf18a5026ba5ee2ccea405b46b2e2659796eb"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-result-notification-lost-process-0.json",
+      "bytes": 763,
+      "sha256": "b32f57500654415e2a6f75e9320a32d0374cd9db471e1cc74d2704553d8d809e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-result-notification-lost-process-1.json",
+      "bytes": 876,
+      "sha256": "88e333a62b48cadc433322cdb72388acbd810ca9afda5777c8f9a1bf0fe9a33c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-result-notification-lost-process-2.json",
+      "bytes": 876,
+      "sha256": "f112a830b345bb47d5d42f96abd059c55f80839350c445d887257f406bf65026"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-channel-unconfirmed-prefix.json",
+      "bytes": 43923,
+      "sha256": "9684b725cadcd8469b7fc5af4a25fea29f3e38702ef4cd2ee3b0d16f96d4ea65"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-channel-unconfirmed-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-channel-unconfirmed-cold-1.json",
+      "bytes": 73569,
+      "sha256": "3306c443c880b15d1487922622705573c600278cadfca9e35fa1c6d400786f76"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-channel-unconfirmed-cold-2.json",
+      "bytes": 76361,
+      "sha256": "327a8226b820b42fc9770cb7fb79d016419f425abd29967b62860d74a426192b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-channel-unconfirmed-process-0.json",
+      "bytes": 758,
+      "sha256": "8d8cc4730100be6ba7da2c73730335cec28d35031a822c6b3311e33ba8d6f502"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-channel-unconfirmed-process-1.json",
+      "bytes": 866,
+      "sha256": "5afd059a0bb3a46a0f67d023afd8cd2eaaa563d716135579ad39f1ed0f1114fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-json-actor-channel-unconfirmed-process-2.json",
+      "bytes": 866,
+      "sha256": "58169c421b721ca33f5925d2aa1579235202d5d6fe05cd44ad8a57309cc16b8b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-accepted-after-prefix.json",
+      "bytes": 28343,
+      "sha256": "f7d2af63af25dfffb0811f5416620c5b722b7f20ccd91671ca076ae2edb790f3"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-accepted-after-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-accepted-after-cold-1.json",
+      "bytes": 40450,
+      "sha256": "ca50c20ce1d9af1b7f065e1960b5d1cd3f9437551948be0f1da7557203998873"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-accepted-after-cold-2.json",
+      "bytes": 40450,
+      "sha256": "ca50c20ce1d9af1b7f065e1960b5d1cd3f9437551948be0f1da7557203998873"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-accepted-after-process-0.json",
+      "bytes": 757,
+      "sha256": "c5dad90e840615045ae604c4114531936bdadb4895244d1260d31b18223acb1f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-accepted-after-process-1.json",
+      "bytes": 862,
+      "sha256": "240b1d666a29de06893ced96fe1663480c372b9f4185e1906b3f70221a145d5c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-accepted-after-process-2.json",
+      "bytes": 862,
+      "sha256": "6bc2e7771aaaed6dc32343f0f18808a15b420fb733eec4458769c4d982435855"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-notification-lost-prefix.json",
+      "bytes": 26485,
+      "sha256": "cb0c127c2c2218ca3c6fae740a7f6ef339c9e9cae2283206a8fd1327fdc4cae3"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-notification-lost-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-notification-lost-cold-1.json",
+      "bytes": 42527,
+      "sha256": "40c286fd3263c484f8e4d986f136d1a4eb1eb3239a70d72c36922b30969dc28d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-notification-lost-cold-2.json",
+      "bytes": 42527,
+      "sha256": "40c286fd3263c484f8e4d986f136d1a4eb1eb3239a70d72c36922b30969dc28d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-notification-lost-process-0.json",
+      "bytes": 760,
+      "sha256": "88f62e859c6861708c7d9e252337d1c89994c874ed7389c83f1987b88958bda3"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-notification-lost-process-1.json",
+      "bytes": 868,
+      "sha256": "335f8d50485352b31fc5212b3c9e305884f8d902ab2dd6d5a697ccc0a47b77bb"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-request-notification-lost-process-2.json",
+      "bytes": 868,
+      "sha256": "68699a063b9b1b2865748c0a6b8c31dd7cdc2c03ae66f24a5a7fa9c0b82b25b1"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-before-prefix.json",
+      "bytes": 40983,
+      "sha256": "e8e228b87761671ec1f4ec55dcd4bbc524de22cde6981cdc73de45c96aafd9fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-before-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-before-cold-1.json",
+      "bytes": 65457,
+      "sha256": "eb0b8b3be31ade0256786f71a5efa909fc1c0185067fbee5a4cf383a7c6f98d6"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-before-cold-2.json",
+      "bytes": 68826,
+      "sha256": "af9a282e76f677806c3434b1954cee046c3386f2ca24b6416d3ffe1c18572ef8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-before-process-0.json",
+      "bytes": 746,
+      "sha256": "564f0197a49dc183cd75964748befce3efbd81834b314279c7ab82fe84a379d5"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-before-process-1.json",
+      "bytes": 840,
+      "sha256": "39a2a7cd071725a3aea08a33b207b2bcb9ffc347245dd0966994e75d37059473"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-before-process-2.json",
+      "bytes": 840,
+      "sha256": "7063545a2a735084494e0a1c394cc3336091e5ec00de639815f878922685c44b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-after-prefix.json",
+      "bytes": 44337,
+      "sha256": "9dca1808bc495a73177030bdd77c4ed35e6befee1db468d25a85b62bf3159ca2"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-after-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-after-cold-1.json",
+      "bytes": 72174,
+      "sha256": "89b9b11f83bfabdc011b2a16cf4fe2408c4794fddd65264acc9de412ffe48faf"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-after-cold-2.json",
+      "bytes": 72174,
+      "sha256": "89b9b11f83bfabdc011b2a16cf4fe2408c4794fddd65264acc9de412ffe48faf"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-after-process-0.json",
+      "bytes": 745,
+      "sha256": "58b41912693df85b42c3f2447645820435f66c52bcff3786c5b0a4f9eb918fc0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-after-process-1.json",
+      "bytes": 838,
+      "sha256": "83a1069b9fa3363a10478eb1a36b695d87217694e043832cb338b6d02d9984ff"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-rule-after-process-2.json",
+      "bytes": 838,
+      "sha256": "9c54409c4c5d9c6a9e3e1413fa47d31349ee1d26ada3171e799e4e763b4ea52c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-result-notification-lost-prefix.json",
+      "bytes": 52148,
+      "sha256": "7c0a4d8e3e76bf4cfd37bd600757b48ffe5dc4b48a917167f9cb2583c24d72ba"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-result-notification-lost-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-result-notification-lost-cold-1.json",
+      "bytes": 92568,
+      "sha256": "0244d9636d60d662f981f655ed2b8dfd92b611129f5b8ce1bc57ccd71d9dd21b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-result-notification-lost-cold-2.json",
+      "bytes": 92568,
+      "sha256": "0244d9636d60d662f981f655ed2b8dfd92b611129f5b8ce1bc57ccd71d9dd21b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-result-notification-lost-process-0.json",
+      "bytes": 759,
+      "sha256": "a2c25af8399aefe10e0cf07a1b7a881e9afa38fe48516122cd60fed40bcb9a32"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-result-notification-lost-process-1.json",
+      "bytes": 866,
+      "sha256": "9f9cbd32e632a853527b97acfb1f9a5aeec62070b52f9b1a8bc5ea87a1c187d8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-result-notification-lost-process-2.json",
+      "bytes": 866,
+      "sha256": "726ce15882e28df0b7c05b918e8b238e5416b0ef22eb500da67dc426340f7cd2"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-before-prefix.json",
+      "bytes": 40886,
+      "sha256": "6512bea1dae596aaab6898566dcdcb6158d1f749d99da7e654949d77afd4ad92"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-before-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-before-cold-1.json",
+      "bytes": 67096,
+      "sha256": "dc142f677fe7c38bedc39e0a7f7187ca8a7e9a4815346e029564a42828f56cf5"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-before-cold-2.json",
+      "bytes": 67096,
+      "sha256": "dc142f677fe7c38bedc39e0a7f7187ca8a7e9a4815346e029564a42828f56cf5"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-before-process-0.json",
+      "bytes": 755,
+      "sha256": "e42d4242e245ddcca55fd7f6aedb2fbc94cf275f345f3bf126426b9701f38152"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-before-process-1.json",
+      "bytes": 858,
+      "sha256": "3885862176951f7413d2827ec886549dab4dbadf7f416198a33186feff395970"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-before-process-2.json",
+      "bytes": 858,
+      "sha256": "bc3cb171b1ac089ce4df045daaff52bd5b0acefc809a17830268574b27898b18"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-after-prefix.json",
+      "bytes": 42625,
+      "sha256": "803aba1266c2fd3539eded5bdc06632d59bc0c9750a1e54b0de828f004b6bbc5"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-after-cold-1.json",
+      "bytes": 70583,
+      "sha256": "348428f11f39a2baf8fc3d6db86a50b5698fa93cafcac731833ff29f6cec7757"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-after-cold-2.json",
+      "bytes": 74793,
+      "sha256": "b0e88c44be8ccb3dd8d4ee8eb888ea5f751630ac2a5736a14e4da44c6f066500"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-after-process-0.json",
+      "bytes": 754,
+      "sha256": "02813e6dcd7eb7e6d228c5979fea58769b98b8e422d421fe0715e715e604a5b8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-after-process-1.json",
+      "bytes": 856,
+      "sha256": "6aeff2008fbd4f06e5495cef33f66d2ff1f9bd530d2c847373550f1644fbd10a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-reserve-after-process-2.json",
+      "bytes": 856,
+      "sha256": "28f153bb2c2708777ec335f85fe7cbe69030b55c15b4d87cdd4542c925e0e8ce"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-preparing-after-prefix.json",
+      "bytes": 42829,
+      "sha256": "119343d12c8f3b40ee2791eb9cf1d4109cabbb37e80f3173b9297312b4a14caf"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-preparing-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-preparing-after-cold-1.json",
+      "bytes": 73103,
+      "sha256": "f4252e00278301ff69754bc5ecf5401ba5cf90596b8fc04d3c7027e6ae46de88"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-preparing-after-cold-2.json",
+      "bytes": 76078,
+      "sha256": "725e16798f6853356ded56f33eb01f465425889f3d74486f2e2f499b7a5d5902"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-preparing-after-process-0.json",
+      "bytes": 756,
+      "sha256": "e69ad5d3697d1600e296b778b5157373c2907599c6c4df42daad471cbe9fecf6"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-preparing-after-process-1.json",
+      "bytes": 860,
+      "sha256": "5a6bcdd75c5eea8aed33c59165a564a7a9cb67be74ebe312abbba34b8ee9945f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-preparing-after-process-2.json",
+      "bytes": 860,
+      "sha256": "42427c09e4592e84777b858cd2b573fda5db8c23ada9dac273762438e064e213"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-participant-unconfirmed-prefix.json",
+      "bytes": 43870,
+      "sha256": "9135f02c2f139cd78b4a1fd381f5f2a644eb761e3a25cea2b4fa25eef8b5877f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-participant-unconfirmed-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-participant-unconfirmed-cold-1.json",
+      "bytes": 73303,
+      "sha256": "2959600c1c3d8b5093f5de93f68090bebafebfad5b4800e230193d8b059979e7"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-participant-unconfirmed-cold-2.json",
+      "bytes": 76278,
+      "sha256": "4574ad477f59c1c3cff271db1cda1fa2b9c574c281cccc5b94d9842c35903b3e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-participant-unconfirmed-process-0.json",
+      "bytes": 764,
+      "sha256": "32d9b95ea1f7f58ffaa67b1ba200915a4d9eda00f7ef1ab3ac9e66e04a1f394a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-participant-unconfirmed-process-1.json",
+      "bytes": 876,
+      "sha256": "2bbcf652ab31bdc3462230186a7a1ffdc0b1211b1ab3e0932d9d054a40844bbc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-participant-unconfirmed-process-2.json",
+      "bytes": 876,
+      "sha256": "d563ae79fdecc11fa35c6cacda4fc39f646988b5b9a270269e9f07838adfc254"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-before-prefix.json",
+      "bytes": 44330,
+      "sha256": "ac15c366fceae4dbcc7b8d6662e9de51b33b3b26ff43bcfc1b6a2dd17a5ed4d9"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-before-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-before-cold-1.json",
+      "bytes": 73419,
+      "sha256": "a65c40592101ddd5e82c7c36992e8c94021edaa02a285c58f28972ec8727dc62"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-before-cold-2.json",
+      "bytes": 76211,
+      "sha256": "1799ebac7497996bdf2b35411d3d2f1c921384f74707859e6d62a9e26ff8b3c8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-before-process-0.json",
+      "bytes": 754,
+      "sha256": "145e019804f438182474384d4dd6344cc18145e1cd99628f2c7f5078460af4b4"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-before-process-1.json",
+      "bytes": 856,
+      "sha256": "5f55bca3ecf1537c5d27ea1102f142f03daece8473fc71704dd0a6e4198b359f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-before-process-2.json",
+      "bytes": 856,
+      "sha256": "33c771263877db4976b00304cd71bdfb37e9f4011f7168e81838246f1845cb13"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-after-prefix.json",
+      "bytes": 47083,
+      "sha256": "3b8397828870010b20969fb5e8c21efb482fe7f6835b4dfe1c81ec366e00c52d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-after-cold-1.json",
+      "bytes": 78934,
+      "sha256": "e87d45f47daa5b74753ecd6a3792e528e4eaf5d82f0dd6216a5471449bcaf253"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-after-cold-2.json",
+      "bytes": 78934,
+      "sha256": "e87d45f47daa5b74753ecd6a3792e528e4eaf5d82f0dd6216a5471449bcaf253"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-after-process-0.json",
+      "bytes": 753,
+      "sha256": "7fae1c38ef4f449aa19e48db8a7cb304b7cf5bdff2db60e800935ad835f36c6f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-after-process-1.json",
+      "bytes": 854,
+      "sha256": "d98d274322c533f47b1fc6e97850cb679906703c11b00c0f63b9ed56eec1b844"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-commit-after-process-2.json",
+      "bytes": 854,
+      "sha256": "a1b39ee04d6f6f6c715137c7fe8051e7ad52e20a3dbafdb8b697ed5fc5aa9366"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-accepted-after-prefix.json",
+      "bytes": 28536,
+      "sha256": "352ab28a0ffe425aef3ff6a309101ae1926eeacdfc95eaa6ff2302079b1c3e20"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-accepted-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-accepted-after-cold-1.json",
+      "bytes": 40690,
+      "sha256": "be997fff746e8e049d62ae6d912d73efc0e7a55358eb73d70ad34bf7f8340e4e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-accepted-after-cold-2.json",
+      "bytes": 40690,
+      "sha256": "be997fff746e8e049d62ae6d912d73efc0e7a55358eb73d70ad34bf7f8340e4e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-accepted-after-process-0.json",
+      "bytes": 763,
+      "sha256": "2c953088aff54538d827232b7074eefd2868ff7cfb88accd999788ba72b05f69"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-accepted-after-process-1.json",
+      "bytes": 874,
+      "sha256": "26749d60a17dcc4f8d675f945b70a7fc6058ac79b8535ec3e41ba061c8b659db"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-accepted-after-process-2.json",
+      "bytes": 874,
+      "sha256": "1e129eb39e373a2588e777b542285bbf91901de4c64ed230cf3e0eaa5911e3b7"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-notification-lost-prefix.json",
+      "bytes": 26656,
+      "sha256": "7b31c7f10f2a978bdbefd049efe4cfd7d37065d49c866504a75e0ca355b35566"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-notification-lost-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-notification-lost-cold-1.json",
+      "bytes": 42779,
+      "sha256": "44006d69516eb06f689924489a1c0ea170a630f855d40ac992316944e773a9ae"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-notification-lost-cold-2.json",
+      "bytes": 42779,
+      "sha256": "44006d69516eb06f689924489a1c0ea170a630f855d40ac992316944e773a9ae"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-notification-lost-process-0.json",
+      "bytes": 766,
+      "sha256": "9781f2451833ede9a7e52a6b257daf7d92fb358b9c67a74e9766d49a3cedf627"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-notification-lost-process-1.json",
+      "bytes": 880,
+      "sha256": "9ab99cff64e54c7edf9c81364011df4ce26eab708ecfbc5f45a9274b012c2351"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-request-notification-lost-process-2.json",
+      "bytes": 880,
+      "sha256": "ed48ab0e4bf4df0cf30b8a1f468bd7a40df0d62787edeae5af4c5532fc7e4ceb"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-result-notification-lost-prefix.json",
+      "bytes": 58448,
+      "sha256": "7d46586a6af7d1569e7a2639a1e799c77c39064212ac37b00da9e053f1300b7b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-result-notification-lost-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-result-notification-lost-cold-1.json",
+      "bytes": 102072,
+      "sha256": "0ecd2f3e9fe8804023fae79636c456f7fb24b5f73fefa4f061635da7a0ef0a3f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-result-notification-lost-cold-2.json",
+      "bytes": 102072,
+      "sha256": "0ecd2f3e9fe8804023fae79636c456f7fb24b5f73fefa4f061635da7a0ef0a3f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-result-notification-lost-process-0.json",
+      "bytes": 765,
+      "sha256": "871fec7be495de1c18e42ad0a64fe0be4a771e607de4e9bc9f04a08f48b24437"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-result-notification-lost-process-1.json",
+      "bytes": 878,
+      "sha256": "1b526c54eecf6ad93fb9bd9beccc1534509937d36ef933ad6bc16da5c1bae150"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-result-notification-lost-process-2.json",
+      "bytes": 878,
+      "sha256": "8cb2064eb77c8f856f0fc442b3cca74779e906ed6b8bbfcf7b7c2942302001f0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-channel-unconfirmed-prefix.json",
+      "bytes": 43923,
+      "sha256": "4b29f8fb42cfcb9d4fa8c038ea43529723d1c8c0ad9aabf63f65ca02566a7685"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-channel-unconfirmed-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-channel-unconfirmed-cold-1.json",
+      "bytes": 73569,
+      "sha256": "1245afb1413784b3a61106aec6f4a5ba46a973acd8172e841014d909ac416394"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-channel-unconfirmed-cold-2.json",
+      "bytes": 76361,
+      "sha256": "8bdebe2215ca53816c9eb3915c485f006145a2ffd910430f7e4bf31c7180f10f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-channel-unconfirmed-process-0.json",
+      "bytes": 760,
+      "sha256": "8ac75fe64d603a576d6e135b8247a4695a3adfd23812524c660bce6cf8e449b8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-channel-unconfirmed-process-1.json",
+      "bytes": 868,
+      "sha256": "23cc938e644ffe789e50d4d3067fba03a81dceede33913148b92506c9333347d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/src-sqlite-actor-channel-unconfirmed-process-2.json",
+      "bytes": 868,
+      "sha256": "3b30dd39121e3b92a3ed68f1df72ae4e444c78a8138fc79ddb199fe10276d80c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-accepted-after-prefix.json",
+      "bytes": 28343,
+      "sha256": "539ef76bc8a1a0aa25ca003b972fc74dc900083fb1c8ce6c472b978d114442f6"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-accepted-after-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-accepted-after-cold-1.json",
+      "bytes": 40450,
+      "sha256": "303ba1470657d192c3b79d6db5f8495019ddafc5f23f4a24d8d90a2e569bad9d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-accepted-after-cold-2.json",
+      "bytes": 40450,
+      "sha256": "303ba1470657d192c3b79d6db5f8495019ddafc5f23f4a24d8d90a2e569bad9d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-accepted-after-process-0.json",
+      "bytes": 623,
+      "sha256": "08776684226f0864eb2c2de9895116c73afcf555b87a6806137cb74883bddfab"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-accepted-after-process-1.json",
+      "bytes": 728,
+      "sha256": "d1a13560712c62ff5a9f02d999a28f1465f79e06f272163cf4bdbba8e779460c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-accepted-after-process-2.json",
+      "bytes": 728,
+      "sha256": "065493cd856865f3cda3ff2653957f4636d3e29bbdd41cafc26de66338db360e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-notification-lost-prefix.json",
+      "bytes": 26485,
+      "sha256": "cd0224dd53a050aca7b235654d996b0d14da0cb070804ddfdfde221d1d715647"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-notification-lost-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-notification-lost-cold-1.json",
+      "bytes": 42527,
+      "sha256": "4b973d69f944c4a61c66cfad2df105207a5ea4de6f3fc072c892207ed8a5aebd"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-notification-lost-cold-2.json",
+      "bytes": 42527,
+      "sha256": "4b973d69f944c4a61c66cfad2df105207a5ea4de6f3fc072c892207ed8a5aebd"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-notification-lost-process-0.json",
+      "bytes": 626,
+      "sha256": "ae06a264cb554ac1abf8efb79620988d67ca20fb4c7c80a5d1368c53ed6e69c7"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-notification-lost-process-1.json",
+      "bytes": 734,
+      "sha256": "e1273f00d9cf4707217e4a6032a98adeee6cabf35594bf769b2635325a3cd63d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-request-notification-lost-process-2.json",
+      "bytes": 734,
+      "sha256": "c94aa95ac3db0d19654dd0b6de63104e93413eb14125b09306cfce5ff8f39a37"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-before-prefix.json",
+      "bytes": 40983,
+      "sha256": "ccf84d90f5d2c464214a45ca9390d600797595dfeb83026309a7bf197758435f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-before-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-before-cold-1.json",
+      "bytes": 65457,
+      "sha256": "3c0457805733c2a4c7b622c452ce7b5f3b9752eaaac298bf2f043a6d965117f1"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-before-cold-2.json",
+      "bytes": 68826,
+      "sha256": "88cdee9f5b6e798893fac292c7cfea30c218a230a470904965b5d9a111815c9d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-before-process-0.json",
+      "bytes": 612,
+      "sha256": "ff36ad37d1ea64e0ac0eb0acaffff07fa49e71b28928ac09452793fceb72564e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-before-process-1.json",
+      "bytes": 706,
+      "sha256": "e43f0d9eaaaf1020954640e7e57b2282591464b6c17cfc997ebf54b6e4fe7485"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-before-process-2.json",
+      "bytes": 706,
+      "sha256": "ceefd5e92ee84ff44ae247235c0a48942f18721f92ff399e6d4ce19960584dfd"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-after-prefix.json",
+      "bytes": 44337,
+      "sha256": "e01b28e9935af02db24bb403280737f6c3c6b82b7c86303d8a94e4c5b587c06d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-after-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-after-cold-1.json",
+      "bytes": 72174,
+      "sha256": "9b7cc2f6a240355b122cc023211f2fcdca61630cead6899b1f17a9b4b48d0e86"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-after-cold-2.json",
+      "bytes": 72174,
+      "sha256": "9b7cc2f6a240355b122cc023211f2fcdca61630cead6899b1f17a9b4b48d0e86"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-after-process-0.json",
+      "bytes": 611,
+      "sha256": "ba7324e4b842109c1ecf7cb9ad11ee342e758822b56bb5d1e29fd24bb46feff4"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-after-process-1.json",
+      "bytes": 704,
+      "sha256": "c95a378d94f90e2e5fd58cd68e0b206ee804e647915e55154ce6cdf8edc9abe1"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-rule-after-process-2.json",
+      "bytes": 704,
+      "sha256": "93299393d4ca2c8fadec5947cc28df8d51ef78735cb2e52e77cb167c3b140f8e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-result-notification-lost-prefix.json",
+      "bytes": 52148,
+      "sha256": "d0aa49d768aa838d4f2af9d3d79251ab989af2a57190ec0abaa802da5e50cf1a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-result-notification-lost-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-result-notification-lost-cold-1.json",
+      "bytes": 92568,
+      "sha256": "c0f0e562b7731f3400825a4c25a9dc230f1e4f37c941630e663b7a4eb5f9a6fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-result-notification-lost-cold-2.json",
+      "bytes": 92568,
+      "sha256": "c0f0e562b7731f3400825a4c25a9dc230f1e4f37c941630e663b7a4eb5f9a6fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-result-notification-lost-process-0.json",
+      "bytes": 625,
+      "sha256": "4918503b0ae97a25e9e77766e445e54247743c2a75be2bf279bb355b65404672"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-result-notification-lost-process-1.json",
+      "bytes": 732,
+      "sha256": "5eba243fd9f3e188c5c3048b69dd79de4a3aae91390067605bc9d59a8381c6de"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-result-notification-lost-process-2.json",
+      "bytes": 732,
+      "sha256": "86b92c234e6b6893db39a807d2506384aeb65cf487e710e10fea669dd6ff0227"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-before-prefix.json",
+      "bytes": 40886,
+      "sha256": "225b1938df8d139a04f41fb500c962e53bfa311a2fbea93dad55f023d658d1d8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-before-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-before-cold-1.json",
+      "bytes": 67096,
+      "sha256": "728ab7366d0030261549074cbc77d6758277464c6f8bcac6c03bc514ac5e2d12"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-before-cold-2.json",
+      "bytes": 67096,
+      "sha256": "728ab7366d0030261549074cbc77d6758277464c6f8bcac6c03bc514ac5e2d12"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-before-process-0.json",
+      "bytes": 621,
+      "sha256": "302a4ccea563109f2fdb93ecd2e3e64f01d3f61b57639c65e08eaef28ebadbb8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-before-process-1.json",
+      "bytes": 724,
+      "sha256": "9a0577662a34f627cdc9e7f5a2e4067af0fbe0634ad5539d54670b8dc6fe1b1d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-before-process-2.json",
+      "bytes": 724,
+      "sha256": "11af118c36b75365f9d0be1f7960ed503c552ba2d6837d51a16cd17dcd8b7fb0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-after-prefix.json",
+      "bytes": 42625,
+      "sha256": "dfc107871956dfc038bbd2010d4c71cce29be6bcde751c1da053c01d74a15374"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-after-cold-1.json",
+      "bytes": 70583,
+      "sha256": "bdb47cabcc8c01cdb5b1c13715342f474244797fa89fae798b2c83e3bf59f0fb"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-after-cold-2.json",
+      "bytes": 74793,
+      "sha256": "3489ec66999780a71ae39e5e8d45d9900786435805da1ed916bcf3dfafbb43b7"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-after-process-0.json",
+      "bytes": 620,
+      "sha256": "2e908cd27a914609a31c901e77f9d81c3ec93c77731eef8f23efdaba312369cd"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-after-process-1.json",
+      "bytes": 722,
+      "sha256": "cfa675b6b91f2709b9388877ea21cc6ee9696ca4cc9d90907118d0833b98eb66"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-reserve-after-process-2.json",
+      "bytes": 722,
+      "sha256": "611c2d07d5d5da94d5a3d2676b0398c3ee509785aec8332679a3db1b6e832df3"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-preparing-after-prefix.json",
+      "bytes": 42829,
+      "sha256": "5de9bdc69c6615e6b0df42fee97e7ecb3372977152750530791fb1830148b0a2"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-preparing-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-preparing-after-cold-1.json",
+      "bytes": 73103,
+      "sha256": "16ced85048ea85695b5feabfc0478ce2a4dfa693554984ec71bbb061bfc0bacf"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-preparing-after-cold-2.json",
+      "bytes": 76078,
+      "sha256": "be5fe667d6796fd75ce9cbd9139afbd188e13dec57d63db409e85a913502b4de"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-preparing-after-process-0.json",
+      "bytes": 622,
+      "sha256": "933566bef113c2d340bf53b40d204b58419353ab339c5fecd22117e352ef157a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-preparing-after-process-1.json",
+      "bytes": 726,
+      "sha256": "37a94d629d1d7f0dd4d5d715426d8708c5a285b66a6ca7af0d52ba99d7681e72"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-preparing-after-process-2.json",
+      "bytes": 726,
+      "sha256": "524d8885d36eb7d4716af13d112a86856bd367bb894b4d03863936614e1daec6"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-participant-unconfirmed-prefix.json",
+      "bytes": 43870,
+      "sha256": "446ddc0dfc2cb2ddc357b15330c760dd0fd520c50b1442add89cc4fe203c0ac1"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-participant-unconfirmed-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-participant-unconfirmed-cold-1.json",
+      "bytes": 73303,
+      "sha256": "a10fe5ba64458809878335b6b07129c4cf520a8d896c0c578657c049b41f4c98"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-participant-unconfirmed-cold-2.json",
+      "bytes": 76278,
+      "sha256": "eda3cbd0b2f5c2edec49d7d40552f69f475e678e746c2ac89a5303c032f7bd9f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-participant-unconfirmed-process-0.json",
+      "bytes": 630,
+      "sha256": "c1c404e07e2a06a8abf6f75b7e7daf39d2785b828efb6f4f8f3b6770a64e8f6d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-participant-unconfirmed-process-1.json",
+      "bytes": 742,
+      "sha256": "9aa2b6d7b19ee10cc1a6ec8117b66c2f6f29d864f8197c2b51f6c062b7722076"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-participant-unconfirmed-process-2.json",
+      "bytes": 742,
+      "sha256": "0a55aaa77b7b959409558c211be8fad51b68505055c26ed54ca8524c5a4705c1"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-before-prefix.json",
+      "bytes": 44330,
+      "sha256": "77ec3f66b27abc9b91edf8d021326406df61512810f9c121d0b47321f70cca4f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-before-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-before-cold-1.json",
+      "bytes": 73419,
+      "sha256": "ec4a0d0d8fe6fdeaecf79cc4e4467b0092b18003c1082ee69ca2c1a7618dbb70"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-before-cold-2.json",
+      "bytes": 76211,
+      "sha256": "04f75ddbb7f15bc9aafad5c24f7f6cb8dbea2d512f4ae784c2c737fb999f3e78"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-before-process-0.json",
+      "bytes": 620,
+      "sha256": "2280d83041b38f3ccc37b1db1900052b9c02034ba0b33d421635d90f69fc7e51"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-before-process-1.json",
+      "bytes": 722,
+      "sha256": "5ac89ae02e4661a1eb9011008fab932636ed97360de949c3e43d5aac0ae00486"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-before-process-2.json",
+      "bytes": 722,
+      "sha256": "d0aa59158a96b103313737bb0a70a9acf867a3b235ec945335c58c322f0b5788"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-after-prefix.json",
+      "bytes": 47083,
+      "sha256": "b365a7eb04a7fd3fa8f442de4f40009660e2a35f27e58daee86cd9e6b5aff511"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-after-cold-1.json",
+      "bytes": 78934,
+      "sha256": "8d37819c8bb485096f9ec76699be464c31176debcdb39bbdaaf7be85f979576d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-after-cold-2.json",
+      "bytes": 78934,
+      "sha256": "8d37819c8bb485096f9ec76699be464c31176debcdb39bbdaaf7be85f979576d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-after-process-0.json",
+      "bytes": 619,
+      "sha256": "458588c726311045bc5a416251afbb42ba1ca98df513cbe44da210cc2c584cb6"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-after-process-1.json",
+      "bytes": 720,
+      "sha256": "ef5cda7688748ec9ffc9471f165ddb346579b5e3252e7ee9343d85a19935ff21"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-commit-after-process-2.json",
+      "bytes": 720,
+      "sha256": "772e2bd65cbb8536a2259f5d0f43099c6479fd485ed832544944f390b4e15a91"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-accepted-after-prefix.json",
+      "bytes": 28536,
+      "sha256": "186eee902f5c5cf84de3706798108d0b0bd58a7618f52223d57b86a1f92c342a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-accepted-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-accepted-after-cold-1.json",
+      "bytes": 40690,
+      "sha256": "7f48c8890234c5fd6a2792a5dd42b8defbd2e4f3e155f7430432d0ed5423472d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-accepted-after-cold-2.json",
+      "bytes": 40690,
+      "sha256": "7f48c8890234c5fd6a2792a5dd42b8defbd2e4f3e155f7430432d0ed5423472d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-accepted-after-process-0.json",
+      "bytes": 629,
+      "sha256": "261389761725d8ccf30c60341ae5bde6cc7f6db932a6857a41411b0f64a4a733"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-accepted-after-process-1.json",
+      "bytes": 740,
+      "sha256": "3429e0c8d469463e3adbe3e50cc0a3570af71fb07177c712460fff2a38b45ca8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-accepted-after-process-2.json",
+      "bytes": 740,
+      "sha256": "02dd9b87df5c9f2508c5cfb59e2a086cca180a5e160fd69f52a8b6816e93d012"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-notification-lost-prefix.json",
+      "bytes": 26656,
+      "sha256": "1ecd227cf2c58ae2ccb30872a6c94079e96384bb83a14b611af65d5bd83bb051"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-notification-lost-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-notification-lost-cold-1.json",
+      "bytes": 42779,
+      "sha256": "3f7bb0bcd7c19293e9ed44b68cf9f126d005b55e37abe7da9b85daa48822486d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-notification-lost-cold-2.json",
+      "bytes": 42779,
+      "sha256": "3f7bb0bcd7c19293e9ed44b68cf9f126d005b55e37abe7da9b85daa48822486d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-notification-lost-process-0.json",
+      "bytes": 632,
+      "sha256": "d0baa82154da483deef4a98040ce45ca27a7ed94c320c5de648c7aa90fd31aee"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-notification-lost-process-1.json",
+      "bytes": 746,
+      "sha256": "cbf2902a73c35dae039c9e9a471fee7da3faf9ed7beaecdc99f9b8ff1a407a67"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-request-notification-lost-process-2.json",
+      "bytes": 746,
+      "sha256": "c78a1f7ff710fdee8d20e6dbcdc0f17cf16349ee2df02c6f97d2f95fb422c8cd"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-result-notification-lost-prefix.json",
+      "bytes": 58448,
+      "sha256": "374a968d16b1fde330bced6846c0736baedbc48c14e190832adc21bb3ddf05fe"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-result-notification-lost-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-result-notification-lost-cold-1.json",
+      "bytes": 102072,
+      "sha256": "b65b7b950766a79424dfc06eda541c21f7ca1b2a2179e6376c0a164e6d035a28"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-result-notification-lost-cold-2.json",
+      "bytes": 102072,
+      "sha256": "b65b7b950766a79424dfc06eda541c21f7ca1b2a2179e6376c0a164e6d035a28"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-result-notification-lost-process-0.json",
+      "bytes": 631,
+      "sha256": "0eff6379b1af0852d08a469fa274629a21ffe2785eafdc1b5cf2e91cc4d2079b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-result-notification-lost-process-1.json",
+      "bytes": 744,
+      "sha256": "d5713712da3a0833284668a2a5d6c2415c0c6086cb751be1b5180e352651a604"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-result-notification-lost-process-2.json",
+      "bytes": 744,
+      "sha256": "5a39b114270f11d2ac181e2575b1425636a88c142f51dadff807c742d2744991"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-channel-unconfirmed-prefix.json",
+      "bytes": 43923,
+      "sha256": "335f623e4a28fc26fb1ba442d66590ea2c50ff3c7a9e1d9c1881401655a8e9ae"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-channel-unconfirmed-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-channel-unconfirmed-cold-1.json",
+      "bytes": 73569,
+      "sha256": "acce3cb774915e6d1274ec52a2346ba6f004e5c2d31632e69b0480fab3362dfa"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-channel-unconfirmed-cold-2.json",
+      "bytes": 76361,
+      "sha256": "7df3b782f88d2eac69be362057ab21b29c301c9b3e4fe475db5e769919103e27"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-channel-unconfirmed-process-0.json",
+      "bytes": 626,
+      "sha256": "f50725c77c777612da5f57b71bd0efc054b038630b6367bce799d26ceb4705e8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-channel-unconfirmed-process-1.json",
+      "bytes": 734,
+      "sha256": "7e2d968097cfdcdc170f7290d94723a4e87726fde01f600000859917d7a7ef71"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-json-actor-channel-unconfirmed-process-2.json",
+      "bytes": 734,
+      "sha256": "46021f4ebe493f07cf1b4cf7ad4075d592c087bda180805b0eb88dae45562100"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-accepted-after-prefix.json",
+      "bytes": 28343,
+      "sha256": "0a2b133be0bdba9e69c5696d85dbc2b680a6a380c43b71f2ae9014dbff2fe604"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-accepted-after-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-accepted-after-cold-1.json",
+      "bytes": 40450,
+      "sha256": "7f1ef957fc1e8622d41a1c50c2c18ce703a75576daeed9f7d897837ceb3f3907"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-accepted-after-cold-2.json",
+      "bytes": 40450,
+      "sha256": "7f1ef957fc1e8622d41a1c50c2c18ce703a75576daeed9f7d897837ceb3f3907"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-accepted-after-process-0.json",
+      "bytes": 625,
+      "sha256": "5f0007702ea682da39f7ff36f20981081b72f44c578b2cafea240648e1d90150"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-accepted-after-process-1.json",
+      "bytes": 730,
+      "sha256": "1f5cee8d40a65e248c65beb91ee0a00271eea714bdb02b98c692a8319fc2636e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-accepted-after-process-2.json",
+      "bytes": 730,
+      "sha256": "5931212125db40f371390de4b49768528950856908cfef313cd907752ee1df9d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-notification-lost-prefix.json",
+      "bytes": 26485,
+      "sha256": "17e8251ef743c53d01176001d0d479a62e7a0e6fb4e70e6b36937269d8176d10"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-notification-lost-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-notification-lost-cold-1.json",
+      "bytes": 42527,
+      "sha256": "b44f92e72baa628efa85e868e7fb4dd572e1badf5c5ff2bb3d5bb7b30185c47e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-notification-lost-cold-2.json",
+      "bytes": 42527,
+      "sha256": "b44f92e72baa628efa85e868e7fb4dd572e1badf5c5ff2bb3d5bb7b30185c47e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-notification-lost-process-0.json",
+      "bytes": 628,
+      "sha256": "b8b55b91e3bc5cc33a98a3be7ec7e8665bdf668fd2578334b0e8b74ce384fe82"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-notification-lost-process-1.json",
+      "bytes": 736,
+      "sha256": "43568f6c71d8e7a54b6e757271418408d4a15c0003c66b5a4520f377db241e56"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-request-notification-lost-process-2.json",
+      "bytes": 736,
+      "sha256": "77451481dd5ad8034ef3f5c892c72f6d0ce0916c846380b14eef6cb04996445b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-before-prefix.json",
+      "bytes": 40983,
+      "sha256": "68a8b3d4806380ac4f621904f0c8f5f2af40397ca5509025b929583aa2224566"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-before-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-before-cold-1.json",
+      "bytes": 65457,
+      "sha256": "eece82d640903e3eb65a49e9d7bcc38fcce1e7750b65486d9b22f35e6e858a06"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-before-cold-2.json",
+      "bytes": 68826,
+      "sha256": "803ae4576049915e5e8b9182ee03f032f695a8f70dd7cef09d7f4c4792943ea7"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-before-process-0.json",
+      "bytes": 614,
+      "sha256": "c71cfe65053383a12e2154b8024ee06ce7c9bd10b798ebb253f13f743401931b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-before-process-1.json",
+      "bytes": 708,
+      "sha256": "b447a3af9d52648e59afaa0c80fad9f91f7ac67a0a0b85a066c611a7657c5dd0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-before-process-2.json",
+      "bytes": 708,
+      "sha256": "a1e41d0522617d15abc0462d1c418a40fa5a709e1348fe4707be7827074a7d9a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-after-prefix.json",
+      "bytes": 44337,
+      "sha256": "fb75bb85fd2825a0860833f589dde41c727b5a9246ade322488e9c9034dd6652"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-after-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-after-cold-1.json",
+      "bytes": 72174,
+      "sha256": "d2fc142662371bc38bba28078e768d639c6d8730d0e7e8a96b53ba5f58746635"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-after-cold-2.json",
+      "bytes": 72174,
+      "sha256": "d2fc142662371bc38bba28078e768d639c6d8730d0e7e8a96b53ba5f58746635"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-after-process-0.json",
+      "bytes": 613,
+      "sha256": "6fbf544fa87e2b2de2d4a3893b17d500af60f98cbc124cf403c0418d295a1f8c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-after-process-1.json",
+      "bytes": 706,
+      "sha256": "dd1341292d3bd38e4e8986beb47d9a8f72e9c800086198f698388f542bbf6002"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-rule-after-process-2.json",
+      "bytes": 706,
+      "sha256": "27d0c9502b6e958454524250a331faad0e6a40f0d904b325610d905fb24d2225"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-result-notification-lost-prefix.json",
+      "bytes": 52148,
+      "sha256": "20ea9b8a9cd3958e3fdfd86303ea7bf4ecd16e482b7b4a48c1fe1bce9c136e9d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-result-notification-lost-input.json",
+      "bytes": 9652,
+      "sha256": "974724de1574a60c1699fd9394ff71a3419ca1034d687a1cd1ad010caf4dfc96"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-result-notification-lost-cold-1.json",
+      "bytes": 92568,
+      "sha256": "27b0f41cc6237a52992d885bb3ee511a786b7ec6ac558da0096c12edde6b3938"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-result-notification-lost-cold-2.json",
+      "bytes": 92568,
+      "sha256": "27b0f41cc6237a52992d885bb3ee511a786b7ec6ac558da0096c12edde6b3938"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-result-notification-lost-process-0.json",
+      "bytes": 627,
+      "sha256": "959f9ad33f4e3e5f1d4cb42bc3f731ea742feb6dbd010559ddf4a2aa585518e9"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-result-notification-lost-process-1.json",
+      "bytes": 734,
+      "sha256": "49e4799cc71d3178158b4429575288902f9973047d4806978315b2dcc9f5d20a"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-result-notification-lost-process-2.json",
+      "bytes": 734,
+      "sha256": "1d56449f4b33f5585ea90f67dc4a185a7a7871f05640c5f989375322517f7622"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-before-prefix.json",
+      "bytes": 40886,
+      "sha256": "47bd0a786b7d0b026457a32714e797e9fd66164ac3c008ed3b1030bf514b3bba"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-before-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-before-cold-1.json",
+      "bytes": 67096,
+      "sha256": "b36a9441867688fa2c55084a63f5e4bcd083f6f0c07a9ebe2c09666f42a7c963"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-before-cold-2.json",
+      "bytes": 67096,
+      "sha256": "b36a9441867688fa2c55084a63f5e4bcd083f6f0c07a9ebe2c09666f42a7c963"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-before-process-0.json",
+      "bytes": 623,
+      "sha256": "0b4995bce7853f0a0f06cc8837f3b2eb6f5f998d32118ffe2d73321bdb787f19"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-before-process-1.json",
+      "bytes": 726,
+      "sha256": "71fe1d8960ddc4150cfebcc54e14f89504a8211df5e7b422f88f327309f33aed"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-before-process-2.json",
+      "bytes": 726,
+      "sha256": "dd5ac1f97cb90ba56b5294a784488e75b1a5202c97d41130d7bdee8887bda970"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-after-prefix.json",
+      "bytes": 42625,
+      "sha256": "53441dfbfd54a82a4d149e62b19dc79c4f627386b0b6a55de5ad13abbbf85dfc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-after-cold-1.json",
+      "bytes": 70583,
+      "sha256": "3692524b9cb7ee6c1e7bf486c850ba5d47d2d56c12be382c46f409fd78312e61"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-after-cold-2.json",
+      "bytes": 74793,
+      "sha256": "6a69fcb61afc96be56201354db14b21f5c1ee848f61fdb8d9b4f5c3b5bba8117"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-after-process-0.json",
+      "bytes": 622,
+      "sha256": "9206dbea61c15e02d3795a6e8bd7a2126de91d1116410d76c905acdcb18546b2"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-after-process-1.json",
+      "bytes": 724,
+      "sha256": "8af47fcbe0271629ede3d01f50e77bbccb87cd3b5ab858983eb8dae4d6c0a5fe"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-reserve-after-process-2.json",
+      "bytes": 724,
+      "sha256": "84aa9e5c3ae6c1ae5261204e86314c5cfc2ee014c219b258ce2084a3d732c7ce"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-preparing-after-prefix.json",
+      "bytes": 42829,
+      "sha256": "19608d772d78174a798d6a5080be74f5301a301908b93c51a31cb2265981f34b"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-preparing-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-preparing-after-cold-1.json",
+      "bytes": 73103,
+      "sha256": "1fc09433428be6ec4b65e46b51deaf55c7dd39588d341bfaa9a76cbc4f657e36"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-preparing-after-cold-2.json",
+      "bytes": 76078,
+      "sha256": "99d040211b8d54bc01b0ac855d9a3cf91424e1842aa340b62e0c35623da1310f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-preparing-after-process-0.json",
+      "bytes": 624,
+      "sha256": "75a8576a46010fd62bc4984c11aa960de74fbd93c4b3e1fb38fea801738d02f2"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-preparing-after-process-1.json",
+      "bytes": 728,
+      "sha256": "db7b1aad28cb3d7c5eccf6b20250ee450e2524534d447552894b19b52a09d3e8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-preparing-after-process-2.json",
+      "bytes": 728,
+      "sha256": "1c869379ef37212849a773f76baafbe8eadebfc23a30dbc8842ee9a3e4098d18"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-participant-unconfirmed-prefix.json",
+      "bytes": 43870,
+      "sha256": "c66bb26d7ba7189d79cf03a4740ce457103bbf5db231b8d031bae24714420613"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-participant-unconfirmed-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-participant-unconfirmed-cold-1.json",
+      "bytes": 73303,
+      "sha256": "1f295daeff60c9d83bc9f5a82d238a1bf1f9d5c8dd511e72d5da38b05fe68f0d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-participant-unconfirmed-cold-2.json",
+      "bytes": 76278,
+      "sha256": "0f0b8c91fc88e617b3ea3c986e3830df113c8f05636b94e028de65cc82d1398d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-participant-unconfirmed-process-0.json",
+      "bytes": 632,
+      "sha256": "75963b67700a1f41e1cfb59ce1fc03311bd8f5fbc92d8cc478916c23c31fe04c"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-participant-unconfirmed-process-1.json",
+      "bytes": 744,
+      "sha256": "ff99a2fed797cb8f9db4921c30cd63d2bc0185b69d4c56cf8e4c4d95b6df607f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-participant-unconfirmed-process-2.json",
+      "bytes": 744,
+      "sha256": "543047e5651646d4fcaf0b1fa36d713b9f045d311b9231942ccf94c2f1d51949"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-before-prefix.json",
+      "bytes": 44330,
+      "sha256": "982468aaad276dab07754eb87d7c672c7d8cd155721efc39b41e1c3c49130ed0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-before-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-before-cold-1.json",
+      "bytes": 73419,
+      "sha256": "e916b95baffa07270f094a2bcf9c0ff3cab5308c47e51dd1965e1679da9c4e2f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-before-cold-2.json",
+      "bytes": 76211,
+      "sha256": "ad40e751e9d738ecbb6202b43d6e694fde291cf0d2999ccaf257539a8e559c37"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-before-process-0.json",
+      "bytes": 622,
+      "sha256": "238f9f192131458e162e994d9cc5b31473e0fe76f52947b9b9a698632142f491"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-before-process-1.json",
+      "bytes": 724,
+      "sha256": "4454a3bee5deac14e400d7d8ca0dfa60dbe596bd08c5c0a3fd5e9e7d10666c10"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-before-process-2.json",
+      "bytes": 724,
+      "sha256": "1939ae9e823ef3ed2683eaa72c130f711fdba4749b9a58b111dd0e43d3c4d9b0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-after-prefix.json",
+      "bytes": 47083,
+      "sha256": "6d011386e369cdf3e549ab93ad674fbbdc719deb3b65b082a3321895edbcd8fd"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-after-cold-1.json",
+      "bytes": 78934,
+      "sha256": "9c37c80da4ad8a9fec7332e9194420469681c86d6a4d11533f1f02e5ce7744b9"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-after-cold-2.json",
+      "bytes": 78934,
+      "sha256": "9c37c80da4ad8a9fec7332e9194420469681c86d6a4d11533f1f02e5ce7744b9"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-after-process-0.json",
+      "bytes": 621,
+      "sha256": "e77d2eeba03d36a713e3c65522bfbe425654c3e764c7f0e31fdd317cedcce840"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-after-process-1.json",
+      "bytes": 722,
+      "sha256": "c11520de908822f280d6f0e5d5be9ee08bc8b3215f84deabf7719bc56fa031a7"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-commit-after-process-2.json",
+      "bytes": 722,
+      "sha256": "b0d2c46e45851da1fc44b84bf4f73317ccce78ee9b0b53561ef610fc14cc40f0"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-accepted-after-prefix.json",
+      "bytes": 28536,
+      "sha256": "cf68c83be4221b095592e4d5018225ef19f2c231e8a40c81461951c87eb43548"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-accepted-after-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-accepted-after-cold-1.json",
+      "bytes": 40690,
+      "sha256": "4d2366e28907630aa7967a0a453d1fa9fd133b32ce1a0f5c0b8776ff204bf816"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-accepted-after-cold-2.json",
+      "bytes": 40690,
+      "sha256": "4d2366e28907630aa7967a0a453d1fa9fd133b32ce1a0f5c0b8776ff204bf816"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-accepted-after-process-0.json",
+      "bytes": 631,
+      "sha256": "729157b6ebe968d788ef13bb200ec3aa7406a747bae0c6c7ce9efd2a34684aca"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-accepted-after-process-1.json",
+      "bytes": 742,
+      "sha256": "223c286b686c94aa32f820ec857202b3d971fb9672bd1d53c1d5aefb0178678d"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-accepted-after-process-2.json",
+      "bytes": 742,
+      "sha256": "9dee8468b4a8ac5f8e7bd6b3a9144890cc1ee30c5b46673436d0c803e96a2dd3"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-notification-lost-prefix.json",
+      "bytes": 26656,
+      "sha256": "945815891b1c7b8b78d73b20284b243927c7a18268f91ff0595528ee8f3c5cdc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-notification-lost-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-notification-lost-cold-1.json",
+      "bytes": 42779,
+      "sha256": "9d6745f2ed045249cbcda210fbbbf28490b8d52a3c325f14d2359ce7e8f63de8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-notification-lost-cold-2.json",
+      "bytes": 42779,
+      "sha256": "9d6745f2ed045249cbcda210fbbbf28490b8d52a3c325f14d2359ce7e8f63de8"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-notification-lost-process-0.json",
+      "bytes": 634,
+      "sha256": "c190fc73a9fdb984cedf1135b740bef77111b7acd166063d1fccf8af3f283e72"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-notification-lost-process-1.json",
+      "bytes": 748,
+      "sha256": "660d1cf7a1fd2daf0843332c6090875371457c2210c0c82beee69da09caa77da"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-request-notification-lost-process-2.json",
+      "bytes": 748,
+      "sha256": "1b8308d61d9a4276472bc23fbc184a9b357c65f9241e600197e4bb59ee6c8ceb"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-result-notification-lost-prefix.json",
+      "bytes": 58448,
+      "sha256": "48cfaa1c0b84d1b5797e52ecbc87aa583de9a62fd82433ff51084fd73167da5f"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-result-notification-lost-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-result-notification-lost-cold-1.json",
+      "bytes": 102072,
+      "sha256": "6d06ecf311d7a77c6b6ea519824183f56f6bd0673077c40ca22f741a5fb9b2e6"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-result-notification-lost-cold-2.json",
+      "bytes": 102072,
+      "sha256": "6d06ecf311d7a77c6b6ea519824183f56f6bd0673077c40ca22f741a5fb9b2e6"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-result-notification-lost-process-0.json",
+      "bytes": 633,
+      "sha256": "b3f7cd280e0e5d52ee67729168a6130cf26f302784457c891451f3bd02110099"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-result-notification-lost-process-1.json",
+      "bytes": 746,
+      "sha256": "9de6a6ac8ada9a1fe72854e5e18905c5ea4f38f364d6ae76c1de56ee268de40e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-result-notification-lost-process-2.json",
+      "bytes": 746,
+      "sha256": "98538b340bd0058123db9b9242020be5647325b5e38cee295d3d07619cf3fcff"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-channel-unconfirmed-prefix.json",
+      "bytes": 43923,
+      "sha256": "b008218014323d2b7fefbaef33ccb27250b244f5cc8ac54ca7086b6b737426fb"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-channel-unconfirmed-input.json",
+      "bytes": 9817,
+      "sha256": "e88e49714d852c429ab03b33b49cb18a704980e0a0dc8eebcb2113b1ebef32fc"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-channel-unconfirmed-cold-1.json",
+      "bytes": 73569,
+      "sha256": "4d18961cd49d21f7e76f22d0c43353efe678a4b728cb725d6cccb12838f35db1"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-channel-unconfirmed-cold-2.json",
+      "bytes": 76361,
+      "sha256": "aea23ddb9ef5cce0f7363e64ad01fb1ff87ac7df894e572bd98865139a217186"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-channel-unconfirmed-process-0.json",
+      "bytes": 628,
+      "sha256": "45cac81170bba85280c81113c13d4f8a6ed7e2f78eeb8304e475c1f4ef392e23"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-channel-unconfirmed-process-1.json",
+      "bytes": 736,
+      "sha256": "ff1123779b9d961530eb197cecf94348499970eeaffaee92fc02afdffa2cfe5e"
+    },
+    {
+      "path": ".local/world-completion/c21-external-crash/lib-sqlite-actor-channel-unconfirmed-process-2.json",
+      "bytes": 736,
+      "sha256": "2202b80f79131ca912129399d35930f9073dd474bfe90bac23fac233f9cc00db"
+    }
+  ],
+  "cases": [
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "request-accepted-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "request-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "rule-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "rule-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "result-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-reserve-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-reserve-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-preparing-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-participant-unconfirmed",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-commit-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-commit-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-request-accepted-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-request-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-result-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "actor-channel-unconfirmed",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "request-accepted-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "request-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "rule-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "rule-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "result-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-reserve-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-reserve-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-preparing-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-participant-unconfirmed",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-commit-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-commit-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-request-accepted-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-request-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-result-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "actor-channel-unconfirmed",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "request-accepted-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "request-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "rule-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "rule-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "result-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-reserve-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-reserve-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-preparing-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-participant-unconfirmed",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-commit-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-commit-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-request-accepted-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-request-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-result-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "actor-channel-unconfirmed",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "request-accepted-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "request-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "rule-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "rule-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "result-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-reserve-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-reserve-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-preparing-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-participant-unconfirmed",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-commit-before",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-commit-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-request-accepted-after",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-request-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-result-notification-lost",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "actor-channel-unconfirmed",
+      "intentionalSIGKILL": true,
+      "independentPausedCold0Model": 2
+    }
+  ],
+  "totals": {
+    "cases": 60,
+    "processes": 180,
+    "SIGKILL": 60,
+    "cold0Model": 120,
+    "artifacts": 420
+  },
+  "sourceCommands": "First source22 current production pass plus later actor supplement8 current production pass; not represented as one source30 run",
+  "libCommands": "First lib22 plus later actor supplement8; same compiled production from c21-build.log; only test stage predicates extended"
+}

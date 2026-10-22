@@ -24,6 +24,7 @@ const DEFAULT_RETAIN_RATIO = 0.16
 
 /** Fields shared by top-level defaults and exact-target overrides. */
 const POLICY_CONFIG_KEYS = [
+  'thresholdTokens',
   'thresholdRatio',
   'retainRatio',
   'retainTokens',
@@ -39,6 +40,9 @@ const BASIC_COMPACT_CONFIG_KEYS: ReadonlySet<string> = new Set([
   ...POLICY_CONFIG_KEYS,
   'modelPolicies',
   'auto',
+  'noGainMinTokens',
+  'noGainCooldownNodes',
+  'noGainHistoryLimit',
 ])
 
 /** Complete exact-target override key set. */
@@ -71,11 +75,19 @@ export function resolveConfig(config: BasicCompactionConfig = {}): ResolvedConfi
     throw new Error('BasicCompactionConfig: auto must be a boolean')
   }
 
+  for (const key of ['noGainMinTokens', 'noGainCooldownNodes', 'noGainHistoryLimit'] as const) {
+    if (config[key] !== undefined) assertPositiveInteger(`BasicCompactionConfig.${key}`, config[key])
+  }
+
   const thresholdRatio = config.thresholdRatio ?? DEFAULT_THRESHOLD_RATIO
   const retention = resolveRetention(config, { retainRatio: DEFAULT_RETAIN_RATIO })
   validateRatioRetention(thresholdRatio, retention, 'BasicCompactionConfig')
   const modelPolicies = resolveModelPolicies(config.modelPolicies)
   for (const [index, policy] of modelPolicies.entries()) {
+    const inherited = resolveRetention(policy, retention)
+    const threshold = policy.thresholdTokens ?? config.thresholdTokens
+    if (threshold !== undefined && inherited.retainTokens !== undefined && inherited.retainTokens >= threshold)
+      throw new Error(`BasicCompactionConfig: modelPolicies[${index}]: retainTokens must be less than thresholdTokens`)
     validateRatioRetention(
       policy.thresholdRatio ?? thresholdRatio,
       resolveRetention(policy, retention),
@@ -84,6 +96,7 @@ export function resolveConfig(config: BasicCompactionConfig = {}): ResolvedConfi
   }
 
   return deepFreeze({
+    ...config.thresholdTokens === undefined ? {} : { thresholdTokens: config.thresholdTokens },
     thresholdRatio,
     ...retention,
     summarizationProvider: config.summarizationProvider ?? '',
@@ -92,6 +105,9 @@ export function resolveConfig(config: BasicCompactionConfig = {}): ResolvedConfi
     compactionRetries: config.compactionRetries ?? 1,
     maxOverflowRetries: config.maxOverflowRetries ?? 1,
     modelPolicies,
+    noGainMinTokens: config.noGainMinTokens ?? 256,
+    noGainCooldownNodes: config.noGainCooldownNodes ?? 8,
+    noGainHistoryLimit: config.noGainHistoryLimit ?? 32,
     auto: config.auto ?? true,
   })
 }
@@ -114,6 +130,8 @@ export function resolveTargetPolicy(
     : { retainTokens: config.retainTokens }
   return deepFreeze({
     target: { provider: target.provider, model: target.model },
+    ...(override?.thresholdTokens ?? config.thresholdTokens) === undefined ? {}
+      : { thresholdTokens: override?.thresholdTokens ?? config.thresholdTokens },
     thresholdRatio: override?.thresholdRatio ?? config.thresholdRatio,
     ...resolveRetention(override ?? {}, inheritedRetention),
     summarizationProvider: override?.summarizationProvider ?? config.summarizationProvider,
@@ -141,7 +159,7 @@ export function resolveCompactSpec(
       `BasicCompactionConfig: contextWindow (${contextWindow}) must be a positive integer`,
     )
   }
-  const thresholdTokens = Math.floor(contextWindow * policy.thresholdRatio)
+  const thresholdTokens = Math.min(Math.floor(contextWindow * policy.thresholdRatio), policy.thresholdTokens ?? Infinity)
   const retainTokens = policy.retainTokens === undefined
     ? Math.floor(contextWindow * policy.retainRatio)
     : policy.retainTokens
@@ -228,6 +246,9 @@ function validatePolicy(
   config: CompactionPolicyConfig | Record<string, unknown>,
   name: string,
 ): void {
+  if (config.thresholdTokens !== undefined) assertPositiveInteger(`${name}.thresholdTokens`, config.thresholdTokens)
+  if (config.thresholdTokens !== undefined && typeof config.retainTokens === 'number' && config.retainTokens >= config.thresholdTokens)
+    throw new Error(`${name}: retainTokens must be less than thresholdTokens`)
   const thresholdRatio = config.thresholdRatio
   const retainRatio = config.retainRatio
   const retainTokens = config.retainTokens

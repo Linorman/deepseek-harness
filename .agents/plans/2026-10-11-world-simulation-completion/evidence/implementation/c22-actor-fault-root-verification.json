@@ -1,0 +1,984 @@
+{
+  "nativeStream": 74,
+  "inputInventoryFiles": 4539,
+  "consumedDirectory": ".local/world-completion/c22-external-actor-faults/consumed-inputs-native74-v2",
+  "verifiedRawAndLogs": 962,
+  "totals": {
+    "cases": 120,
+    "processes": 360,
+    "intentionalKills": 120,
+    "normalExit0": 240,
+    "cold0Model": 240,
+    "actualWarmModels": 960,
+    "realReactivations": 16,
+    "technicalRunningCases": 24,
+    "retryAllowances": 24,
+    "rawArtifacts": 960,
+    "logs": 2
+  },
+  "rootCaseChecks": [
+    {
+      "prefix": "src-company-json-actor-reserve-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-actor-reserve-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-actor-preparing-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-actor-participant-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-actor-commit-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-actor-commit-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-director-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-requester-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-result-notice-before-post",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-contact-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-contact-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-contact-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-reply-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-reply-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-json-reply-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-actor-reserve-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-actor-reserve-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-actor-preparing-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-actor-participant-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-actor-commit-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-actor-commit-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-director-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-requester-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-result-notice-before-post",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-contact-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-contact-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-contact-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-reply-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-reply-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-company-sqlite-reply-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-actor-reserve-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-actor-reserve-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-actor-preparing-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-actor-participant-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-actor-commit-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-actor-commit-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-director-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-requester-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-result-notice-before-post",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-contact-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-contact-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-contact-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-reply-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-reply-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-json-reply-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-actor-reserve-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-actor-reserve-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-actor-preparing-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-actor-participant-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-actor-commit-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-actor-commit-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-director-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-requester-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-result-notice-before-post",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-contact-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-contact-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-contact-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-reply-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-reply-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "src-laboratory-sqlite-reply-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-actor-reserve-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-actor-reserve-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-actor-preparing-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-actor-participant-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-actor-commit-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-actor-commit-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-director-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-requester-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-result-notice-before-post",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-contact-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-contact-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-contact-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-reply-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-reply-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-json-reply-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-actor-reserve-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-actor-reserve-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-actor-preparing-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-actor-participant-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-actor-commit-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-actor-commit-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-director-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-requester-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-result-notice-before-post",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-contact-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-contact-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-contact-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-reply-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-reply-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-company-sqlite-reply-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-actor-reserve-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-actor-reserve-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-actor-preparing-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-actor-participant-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-actor-commit-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-actor-commit-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-director-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-requester-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-result-notice-before-post",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-contact-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-contact-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-contact-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-reply-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-reply-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-json-reply-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-actor-reserve-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-actor-reserve-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-actor-preparing-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-actor-participant-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-actor-commit-before",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-actor-commit-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-director-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-requester-channel-unconfirmed",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-result-notice-before-post",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-contact-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-contact-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-contact-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-reply-post-lost",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-reply-session-before-ack",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-reply-ack-after",
+      "oneCommittedRepresentativeAndResult": true,
+      "originalPersonaAndResourceState": true,
+      "channelAndSessionPrefixesExact": true,
+      "zeroModelsOnBothCold": true,
+      "finalChargedActors": 0
+    }
+  ],
+  "inventorySha256": "a5614ea81725d5fb431bf39dc0c73af3cb722aff0a412a5538e2d5ac5730f2a2",
+  "reportSha256": "58855c269ac37d375e6be5471de5dfdcff44e6308a0653d8157d821127cc3250",
+  "checkedX12": false
+}

@@ -81,6 +81,28 @@ describe('UI renderer plugin', () => {
     expect(el.querySelector('[data-testid="root-probe"]')).toBeNull()
   })
 
+  it('waits for root registration and remounts after a registration gap without reviving a disposed mount', async () => {
+    const { ctx, slots } = await bench()
+    const renderer = ctx.get('uiRenderer')
+    if (renderer === undefined) throw new Error('Renderer is unavailable')
+    const el = container()
+    let unmount = () => {}, removeRoot = () => {}
+    try {
+      expect(renderer.hasRootRegistration()).toBe(false)
+      act(() => { unmount = renderer.mount(el) })
+      expect(el.children).toHaveLength(0)
+      await stabilize(() => { removeRoot = slots.register({ name: 'root' }, () => <div data-testid="first-root" />) })
+      expect(renderer.hasRootRegistration()).toBe(true)
+      expect(el.querySelector('[data-testid="first-root"]')).toBeTruthy()
+      await stabilize(() => { removeRoot() })
+      expect(el.children).toHaveLength(0)
+      await stabilize(() => { removeRoot = slots.register({ name: 'root' }, () => <div data-testid="second-root" />) })
+      expect(el.querySelector('[data-testid="second-root"]')).toBeTruthy()
+      await stabilize(() => { unmount(); unmount(); removeRoot(); slots.register({ name: 'root' }, () => <div data-testid="late-root" />) })
+      expect(el.children).toHaveLength(0)
+    } finally { unmount(); await stabilize(() => ctx.fiber.dispose()) }
+  })
+
   it('retracts the service and renderer with its fiber', async () => {
     const { ctx, slots, fiber } = await bench()
     await stabilize(() => fiber.dispose())

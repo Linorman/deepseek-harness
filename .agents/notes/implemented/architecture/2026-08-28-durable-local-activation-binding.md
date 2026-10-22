@@ -18,6 +18,8 @@ The activation request cursor protects initial admission. Provider startup runs 
 
 `clocky-team-agent-client` reconciles Session provenance against the durable binding before Link connection or inbox admission. It accepts only the exact running or idle epoch and uses the Link claim as the final inbox authorization. The Link carries the exact activation and Session with post and receipt operations, so the Hub rejects a stopping, offline, or replaced epoch under its Team-to-channel lock.
 
+Status and quiescence updates retain per-activation ordering and serialize each Team’s read/proof/write segment. Parallel retirement of more siblings than the retry allowance therefore does not create controller-internal cursor conflicts. Provider termination remains concurrent; unrelated Team writers still use the bounded conflict retry. The two-backend capacity test retires ten epochs with one allowed status attempt.
+
 ## Alternatives considered
 
 **Let Team Hub create AgentRuntime activations.** Rejected because the Hub owns replayable Team facts, while placement and handle teardown belong to AgentRuntime providers and their caller-owned handles.

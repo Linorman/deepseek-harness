@@ -1,0 +1,182 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-protocol.snapshot.ts examples/simulation-company/tests/world-hire.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts (12 tests | 12 failed) 27456ms
+     × retains the original plan and complete hire at crash=undefined 2880ms
+     × retains the original plan and complete hire at crash=accepted-before-reserve 2251ms
+     × retains the original plan and complete hire at crash=reserve-before-prep 2331ms
+     × retains the original plan and complete hire at crash=participant-afterIO 2314ms
+     × retains the original plan and complete hire at crash=commit-before 2335ms
+     × retains the original plan and complete hire at crash=commit-after 2334ms
+     × retains the original plan and complete hire at crash=undefined 2162ms
+     × retains the original plan and complete hire at crash=accepted-before-reserve 2196ms
+     × retains the original plan and complete hire at crash=reserve-before-prep 2150ms
+     × retains the original plan and complete hire at crash=participant-afterIO 2129ms
+     × retains the original plan and complete hire at crash=commit-before 2150ms
+     × retains the original plan and complete hire at crash=commit-after 2224ms
+ ❯ examples/simulation-company/tests/world-protocol.snapshot.ts (14 tests | 14 failed) 30336ms
+     × retains apply with crash=false at pending 2761ms
+     × retains reject with crash=false at pending 2162ms
+     × retains apply with crash=true at pending 2135ms
+     × retains reject with crash=true at pending 2182ms
+     × retains apply with crash=true at cancelled 2168ms
+     × retains reject with crash=true at cancelled 2204ms
+     × retains reject with crash=true at rejected 2198ms
+     × retains apply with crash=false at pending 2119ms
+     × retains reject with crash=false at pending 2093ms
+     × retains apply with crash=true at pending 2067ms
+     × retains reject with crash=true at pending 2094ms
+     × retains apply with crash=true at cancelled 2065ms
+     × retains reject with crash=true at cancelled 2086ms
+     × retains reject with crash=true at rejected 1999ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 26 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=undefined
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=undefined
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-team/src/decision.ts:61
+    throw new Error('Simulation model turn ended without submitting its identified decision')
+          ^
+
+Error: Simulation model turn ended without submitting its identified decision
+    at executeDecision (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-team/src/decision.ts:61:11)
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ executeDecision packages/simulation/simulation-team/src/decision.ts:61:11
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=accepted-before-reserve
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=reserve-before-prep
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=participant-afterIO
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=commit-before
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=commit-after
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=accepted-before-reserve
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=reserve-before-prep
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=participant-afterIO
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=commit-before
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=commit-after
+AssertionError: expected null to be 'SIGKILL' // Object.is equality
+
+- Expected:
+"SIGKILL"
+
++ Received:
+null
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:43:28
+     41|             first.child.kill('SIGKILL')
+     42|             const [, signal] = await first.exited as unknown[]
+     43|             expect(signal).toBe('SIGKILL')
+       |                            ^
+     44|           }
+     45|         }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains apply with crash=false at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains reject with crash=false at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains apply with crash=false at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains reject with crash=false at pending
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/entities.ts:85
+      if (rule === undefined) throw new Error('Simulation relation has no configured rule')
+                                    ^
+
+Error: Simulation relation has no configured rule
+    at foldEntityChange (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/entities.ts:85:37)
+    at fold (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:227:17)
+    at foldEntries (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:107:13)
+    at LocalSimulationRun.commitValues (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1766:18)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1340:18)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1786:26)
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ foldEntityChange packages/simulation/simulation-local/src/entities.ts:85:37
+ ❯ fold packages/simulation/simulation-local/src/journal.ts:227:17
+ ❯ foldEntries packages/simulation/simulation-local/src/journal.ts:107:13
+ ❯ LocalSimulationRun.commitValues packages/simulation/simulation-local/src/run.ts:1766:18
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1340:18
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1786:26
+ ❯ examples/simulation-company/tests/world-protocol.snapshot.ts:41:32
+     39|         try {
+     40|           const [code] = await exited as unknown[]
+     41|           expect(code, errors).toBe(0)
+       |                                ^
+     42|           expect(JSON.parse(output)).toEqual({ cases: 1, plans: 1, act…
+     43|             results: terminal === 'pending' ? 0 : 1, notificationWakes…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains apply with crash=true at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains reject with crash=true at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains apply with crash=true at cancelled
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains reject with crash=true at cancelled
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains reject with crash=true at rejected
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains apply with crash=true at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains reject with crash=true at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains apply with crash=true at cancelled
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains reject with crash=true at cancelled
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains reject with crash=true at rejected
+Error: /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/entities.ts:85
+      if (rule === undefined) throw new Error('Simulation relation has no configured rule')
+                                    ^
+
+Error: Simulation relation has no configured rule
+    at foldEntityChange (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/entities.ts:85:37)
+    at fold (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:227:17)
+    at foldEntries (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:107:13)
+    at LocalSimulationRun.commitValues (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1766:18)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1340:18)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1786:26)
+
+Node.js v25.9.0
+
+ ❯ foldEntityChange packages/simulation/simulation-local/src/entities.ts:85:37
+ ❯ fold packages/simulation/simulation-local/src/journal.ts:227:17
+ ❯ foldEntries packages/simulation/simulation-local/src/journal.ts:107:13
+ ❯ LocalSimulationRun.commitValues packages/simulation/simulation-local/src/run.ts:1766:18
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1340:18
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1786:26
+ ❯ examples/simulation-company/tests/world-protocol.snapshot.ts:30:99
+     28|           child.stderr!.on('data', (chunk: Buffer) => { errors += chun…
+     29|           try {
+     30|             const [ready] = await Promise.race([once(child, 'message')…
+       |                                                                                                   ^
+     31|             expect(ready).toBe('durable')
+     32|           } finally { child.kill('SIGKILL'); await exited }
+ ❯ examples/simulation-company/tests/world-protocol.snapshot.ts:30:29
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/26]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  26 failed (26)
+   Start at  02:20:22
+   Duration  30.63s (transform 291ms, setup 246ms, import 143ms, tests 57.79s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

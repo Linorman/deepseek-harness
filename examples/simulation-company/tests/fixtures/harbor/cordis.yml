@@ -1,0 +1,8 @@
+- name: cordis:include
+  config:
+    path: ../../../cordis.yml
+- name: '@clocky/clocky-simulation-world/harbor'
+  config:
+    provider: local
+    sourceDirectory: !!js process.cwd() + '/test-cases/harbor-society-365'
+    root: !!js process.env.SIMULATION_COMPANY_ROOT + '/harbor'

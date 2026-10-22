@@ -105,3 +105,32 @@ it.each(['json', 'sqlite'] as const)('locates exact originals and pages Unicode 
     expect(native.run.snapshot()).toEqual(before)
   } finally { await native.close() }
 })
+
+it('continues an exact source body page across World advancement', async () => {
+  const native = await createBusinessHarness('json')
+  const h = await fixture('json', { imports: [{ ...registration(), spec: native.selection.spec }],
+    maxPageSize: 2, maxContextPartBytes: 4 })
+  h.unregister(); h.ctx.simulations.registerProvider(native.provider)
+  try {
+    await h.ctx.plugin(TeamHub)
+    await h.ctx.plugin(ProductPrincipals)
+    await h.ctx.plugin(Humans)
+    await h.ctx.plugin(Direct)
+    const { original, decisionId, id } = await seedSource(h.ctx, native, call())
+    const { products } = await h.mount()
+    products.contextReaderRegistrar()([{ principalId: call().principal.id, entityIds: [id], content: ['sources'] }])
+    const input = { runId: registration().id, decisionId, sourceIndex: 0, limit: 1, envelopeSequence: original.sequence }
+    let page = await products.inspectSource(input, call())
+    expect(page.status).toBe('found')
+    expect(page.nextCursor).toBeDefined()
+    // The frozen Envelope does not move with the World, so its body continuation stays valid after a native commit.
+    await native.run.setPhase('paused', native.run.snapshot().revision)
+    const parts: string[] = []
+    for (;;) {
+      for (const item of page.items) if (item.body.status === 'text') parts.push(item.body.text)
+      if (page.nextCursor === undefined) break
+      page = await products.inspectSource({ ...input, cursor: page.nextCursor }, call())
+    }
+    expect(parts.join('')).toBe('精确🙂来源正文')
+  } finally { await native.close() }
+})

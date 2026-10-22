@@ -1,0 +1,5 @@
+$ tsx scripts/verify-translation-pairing.ts --write packages/simulation/simulation-product/README.md packages/client/ui-simulation/README.md .agents/notes/proposed/feature/2026-10-08-world-director-mvp.md
+verify-translation-pairing: recorded .agents/notes/proposed/feature/2026-10-08-world-director-mvp.i18n.yaml
+verify-translation-pairing: recorded packages/client/ui-simulation/README.i18n.yaml
+verify-translation-pairing: recorded packages/simulation/simulation-product/README.i18n.yaml
+verify-translation-pairing: 3 record(s) written; run the check to validate the pairs.

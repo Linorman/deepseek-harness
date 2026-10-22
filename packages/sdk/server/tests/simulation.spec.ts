@@ -13,6 +13,22 @@ const call: AuthenticatedProductCall = { principal: { id: 'reader' as never, iss
 const create = { commandId: 'original', templateId: 'company', templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' }, name: 'Company',
   parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } }
 const selections = [
+  ['raw-archive', 'archiveRaw', { runId: 'run', limit: 1 }],
+  ['runs-run-control', 'updateRunControl', { runId: 'run', commandId: 'clear', target: null }],
+  ['backup-export', 'backupExport', { runId: 'run', commandId: 'original' }],
+  ['retention-preview', 'retentionPreview', { runId: 'run' }],
+  ['retention-execute', 'retentionExecute', { runId: 'run', commandId: 'original', expectedRevision: 3, planHash: 'a'.repeat(64) }],
+  ['retention-read', 'retentionRead', { runId: 'run', commandId: 'original' }],
+  ['retention-records', 'retentionRecords', { runId: 'run', commandId: 'original', owner: 'native', ownerId: 'native', afterSequence: -1, limit: 1 }],
+  ['generation-read', 'generationRead', { runId: 'run', jobId: 'job' }],
+  ['generation-execute', 'generationExecute', { runId: 'run', jobId: 'job' }],
+  ['generation-transition', 'generationTransition', { runId: 'run', change: { kind: 'validate', id: 'job' } }],
+  ['generation-persona-draft', 'generationPersonaDraft', { runId: 'run', jobId: 'job', positionEntityId: 'position',
+    templateId: 'template', templateVersion: '1', draftId: 'draft', validUntil: '100' }],
+  ['index-rebuild', 'rebuildIndex', { runId: 'run', expectedRevision: 1 }],
+  ['world-cases-list', 'listWorldCases', { runId: 'run', limit: 1 }],
+  ['world-case-inspect', 'inspectWorldCase', { runId: 'run', requestId: 'case', section: 'request', limit: 1 }],
+  ['world-case-cancel', 'cancelWorldCase', { runId: 'run', requestId: 'case', commandId: 'original', previewRevision: 3, previewHash: `sha256:${'a'.repeat(64)}` }],
   ['tasks-list', 'listTasks', { runId: 'run', limit: 1 }],
   ['tasks-cancel', 'cancelTask', { runId: 'run', commandId: 'original-cancel', operationId: 'created-task',
     expectedAttemptId: null, expectedRevision: 3, reason: 'Cancel original task' }],
@@ -46,7 +62,7 @@ it.each(selections)('routes %s to its current optional product owner with the tr
   const ctx = new Context()
   const result = { original: 'receipt' }
   const operation = vi.fn(async () => result)
-  const admin = !['list', 'inspect', 'browse', 'inspectObject', 'readRecords', 'inspectSource', 'watch'].includes(handler)
+  const admin = !['archiveRaw', 'rebuildIndex', 'list', 'inspect', 'browse', 'inspectObject', 'readRecords', 'inspectSource', 'watch', 'listWorldCases', 'inspectWorldCase'].includes(handler)
   if (admin) ctx.provide('simulationAdministration', { [handler]: operation } as unknown as SimulationAdministration)
   else ctx.provide('simulationProducts', { [handler]: operation } as unknown as SimulationProducts)
   try {
@@ -68,7 +84,8 @@ it('parses empty catalog/list parameters and refuses missing optional owners wit
   } finally { await ctx.fiber.dispose() }
 })
 
-it.each(['SIMULATION_PRODUCT_FORBIDDEN', 'SIMULATION_PRODUCT_INVALID', 'SIMULATION_PRODUCT_UNAVAILABLE', 'SIMULATION_PRODUCT_STALE', 'SIMULATION_PRODUCT_MODEL_CHANGED'] as const)
+it.each(['SIMULATION_PRODUCT_FORBIDDEN', 'SIMULATION_PRODUCT_INVALID', 'SIMULATION_PRODUCT_UNAVAILABLE', 'SIMULATION_PRODUCT_STALE', 'SIMULATION_PRODUCT_MODEL_CHANGED',
+  'SIMULATION_PRODUCT_PREFLIGHT_CHANGED'] as const)
 ('preserves the %s product category', async (code) => {
   const ctx = new Context()
   ctx.provide('simulationProducts', { list: () => { throw new SimulationProductError('Public reason', code) } } as unknown as SimulationProducts)
@@ -107,7 +124,7 @@ it('rejects unauthenticated Simulation requests before product lookup', async ()
   } finally { await server.shutdown(); await ctx.fiber.dispose() }
 })
 
-it.each(selections.filter(([, handler]) => !['list', 'inspect', 'browse', 'inspectObject', 'readRecords', 'inspectSource', 'watch'].includes(handler)))('validates %s before resolving missing administration', async (method, _handler, input) => {
+it.each(selections.filter(([, handler]) => !['archiveRaw', 'rebuildIndex', 'list', 'inspect', 'browse', 'inspectObject', 'readRecords', 'inspectSource', 'watch'].includes(handler)))('validates %s before resolving missing administration', async (method, _handler, input) => {
   const ctx = new Context()
   try {
     await expect(dispatchSimulation(ctx, `simulation/${method}`, { ...input, principalId: 'forged' }, call)).rejects.toMatchObject({ code: -32602 })

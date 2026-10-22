@@ -55,6 +55,18 @@
     },
     {
       "path": "../../session/session-persistence"
+    },
+    {
+      "path": "../../storage/storage"
+    },
+    {
+      "path": "../../attachment/attachment"
+    },
+    {
+      "path": "../../storage/storage-log"
+    },
+    {
+      "path": "../../llm/token-meter"
     }
   ]
 }

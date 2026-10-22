@@ -32,7 +32,7 @@ function fakeHttpServer(
       return () => { upgrades.splice(upgrades.indexOf(route), 1) }
     },
     tapIndex: () => () => {},
-    port: 0,
+    port: 3080,
   }
 }
 
@@ -250,7 +250,7 @@ describe('connection node half', () => {
     expect(replay.state).toMatchObject({ status: 401, body: 'product authentication invalid' })
     expect(authenticateCalls).toEqual([badCredential, credential, credential])
     const setCookie = bootstrap.state.headers?.['set-cookie']
-    expect(setCookie).toMatch(/^clocky_product_auth=[A-Za-z0-9_-]{43}; Path=\/api; HttpOnly; SameSite=Strict$/)
+    expect(setCookie).toMatch(/^clocky_product_auth_3080=[A-Za-z0-9_-]{43}; Path=\/api; HttpOnly; SameSite=Strict$/)
     expect(setCookie).not.toContain(credential)
 
     const authenticated = fakeResponse()
@@ -266,7 +266,7 @@ describe('connection node half', () => {
 
     const invalidCookie = fakeResponse()
     await route.handler(fakePost({
-      host: '127.0.0.1:3080', cookie: 'clocky_product_auth=malformed',
+      host: '127.0.0.1:3080', cookie: 'clocky_product_auth_3080=malformed',
     }, '/api/team.list', {
       type: 'client-request', rpcId: 'invalid-cookie-team-list', method: 'team.list', payload: {},
     }), invalidCookie.response)

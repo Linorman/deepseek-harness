@@ -1,0 +1,11 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-facts.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  03:14:08
+   Duration  10.26s (transform 185ms, setup 159ms, import 79ms, tests 9.92s, environment 0ms)
+

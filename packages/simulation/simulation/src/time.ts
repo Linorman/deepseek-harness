@@ -1,6 +1,6 @@
 /** Canonical JSON decimal simulation time. @module @clocky/clocky-simulation/time */
 import { z } from 'zod'
-import type { SimTime } from './types.ts'
+import type { SimTime } from './time-types.ts'
 
 /** Validated canonical decimal, without a machine-integer precision limit. */
 export const simTimeSchema = z.string().regex(/^(0|[1-9][0-9]*)$/).transform(value => value as SimTime)

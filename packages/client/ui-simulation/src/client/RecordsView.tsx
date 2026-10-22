@@ -1,6 +1,7 @@
 /** Journal metadata and deliberate original inspection share runtime-owned pages, never React business caches. */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Button, Input, Menu, IconChevronDownOutline14 } from '@clocky/clocky-client-ui-primitives'
+import { observationVersion, useObservedRefresh } from './useObservedRefresh.ts'
+import { Button, Input, Menu, IconChevronDownOutline14, IconButton, IconCloseOutline16 } from '@clocky/clocky-client-ui-primitives'
 import { simulationRecordsScope } from '@clocky/clocky-client-runtime/client'
 import type { SimulationRuntimeState, SimulationProductRecordsInput, SimulationProductRunId, SimulationReadState,
   SimulationRecordExportState } from '@clocky/clocky-client-runtime/client'
@@ -8,6 +9,7 @@ import type { SnapshotSelectorHook } from '@clocky/clocky-client-ui-slots'
 import type { Route } from './store.ts'
 import type { Key } from './locales.ts'
 import css from './Workspace.module.css'
+import { InfoHint } from './WorldFacts.tsx'
 import { recordKinds, recordKindLabel } from './record-kinds.ts'
 type Query = Omit<SimulationProductRecordsInput, 'limit' | 'cursor' | 'expectedRevision'>
 
@@ -43,6 +45,9 @@ export function RecordsView({ view, data, pageSize, read, close, navigate, expor
   const list = data.records.scope === simulationRecordsScope(query) ? data.records : undefined
   const detail = data.record.scope === simulationRecordsScope(original) ? data.record : undefined
   const blocked = !data.connected || policy === undefined
+  useObservedRefresh(observationVersion(data, runId), list?.loading === true, () => {
+    if (!blocked) void read({ ...query, limit: pageSize })
+  }, list?.stale)
   useEffect(() => { setKind(view.recordKind ?? '') }, [view.recordKind])
   useEffect(() => {
     if (!blocked) void read({ runId, mode: 'metadata', kind: view.recordKind, limit: pageSize })
@@ -86,8 +91,9 @@ export function RecordsView({ view, data, pageSize, read, close, navigate, expor
         {kind !== '' && <Button onClick={() => {
           setKind(''); navigate({ ...view, recordKind: undefined, recordSequence: undefined }); form.current?.querySelector('input')?.focus()
         }}>{t('clearFilters')}</Button>}
+        <InfoHint label={t('world.hint')} text={t('recordOrder')} />
       </form>
-      <p className={css.notice}>{t('recordOrder')}</p>
+
       {list?.value !== undefined && <p>{t('total')}: {list.value.totalRecords} · {t('revision')}: {list.value.snapshotRevision}</p>}
       <RecordFeedback value={list} t={t} />
       <div className={css.scroll} ref={rows}>
@@ -96,30 +102,31 @@ export function RecordsView({ view, data, pageSize, read, close, navigate, expor
             <td>{item.action?.text ?? t('none')}{item.action?.truncated && <small>{t('truncate')}</small>}</td><td><Button data-record-sequence={item.sequence} aria-current={item.sequence === view.recordSequence ? 'true' : undefined} aria-label={`${t('recordOriginal')}: ${item.sequence}`}
               onClick={() => { navigate({ ...view, recordSequence: item.sequence }) }}>{t('recordOriginal')}</Button></td></tr>)}</tbody>
         </table>
-        {list?.value?.items.length === 0 && !list.loading && list.error === undefined && <p>{t(view.recordKind === undefined ? 'emptyCollection' : 'noMatchingRecords')}</p>}
+        {list?.value?.items.length === 0 && list.error === undefined && <p>{t(view.recordKind === undefined ? 'emptyCollection' : 'noMatchingRecords')}</p>}
       </div>
       <footer className={css.pagination}><Button disabled={blocked || list?.loading} onClick={() => { void first() }}>{t('first')}</Button>
         <Button disabled={blocked || list?.loading || list?.stale || list?.error !== undefined || list?.value?.nextCursor === undefined}
           onClick={() => { void read({ ...query, limit: pageSize, cursor: list?.value?.nextCursor, expectedRevision: list?.value?.snapshotRevision }) }}>{t('next')}</Button></footer>
-      <div className={css.actions}>
+      <section className={css.exportCard} aria-label={t('exportMetadata')}><div className={css.actions}>
         <Button disabled={blocked || exported.pending} onClick={() => { void exportRecords(query) }}>{t('exportMetadata')}</Button>
         <Button disabled={blocked || exported.pending || list?.stale || list?.error !== undefined
           || list?.value?.readVersion !== policy || list.value.bodyAccess !== 'allowed'}
         onClick={() => { void exportRecords({ ...query, mode: 'original' }) }}>{t('exportOriginal')}</Button>
         {exported.pending && <Button onClick={cancelExport}>{t('exportCancel')}</Button>}
       </div>
-      <p className={css.notice}>{t('exportScope')}</p>
+      <p className={css.muted}>{t('exportScope')}</p>
       {list?.value?.bodyAccess === 'withheld' && <p>{t('recordWithheld')}</p>}
       <div aria-live="polite">
         {exported.status !== 'idle' && <p>{t(exported.status === 'running' ? 'exportRunning' : exported.status === 'completed'
           ? 'exportCompleted' : exported.status === 'cancelled' ? 'exportCancelled' : 'exportFailed')} · {exported.records} · {exported.bytes} B</p>}
         {exported.error !== undefined && <p role="alert">{t(exported.error)}</p>}
-      </div>
+      </div></section>
     </section>
     {view.recordSequence !== undefined && <aside ref={inspector} className={css.inspector} aria-label={t('recordOriginal')}>
-      <Button onClick={() => { navigate({ ...view, recordSequence: undefined }) }}>{t('close')}</Button>
+      <header className={css.objectHeading}><div className={css.objectHeadingTop}><p className={css.objectDomain}>{t('records')}</p>
+        <IconButton size="sm" label={t('close')} icon={<IconCloseOutline16 />} onClick={() => { navigate({ ...view, recordSequence: undefined }) }} /></div>
+      <h2 tabIndex={-1}>{t('recordSequence')}: {view.recordSequence}</h2></header>
       {exported.pending && <Button onClick={cancelExport}>{t('exportCancel')}</Button>}
-      <h2 tabIndex={-1}>{t('recordSequence')}: {view.recordSequence}</h2>
       <RecordFeedback value={detail} t={t} />
       <Button disabled={blocked || detail?.loading} onClick={() => { void readOriginal() }}>{t('refreshDetail')}</Button>
       {detail?.value?.bodyAccess === 'withheld' && <p>{t('recordWithheld')}</p>}
@@ -137,5 +144,5 @@ export function RecordsView({ view, data, pageSize, read, close, navigate, expor
 }
 function RecordFeedback({ value, t }: { value?: SimulationReadState<unknown> | undefined; t: (key: Key) => string }) {
   return <div aria-live="polite">{value?.error !== undefined ? <p role="alert">{t(value.error)}</p>
-    : value?.loading ? <p>{t('loading')}</p> : value?.stale ? <p>{t('stale')}</p> : null}</div>
+    : value?.loading && value.value === undefined ? <p>{t('loading')}</p> : null}</div>
 }

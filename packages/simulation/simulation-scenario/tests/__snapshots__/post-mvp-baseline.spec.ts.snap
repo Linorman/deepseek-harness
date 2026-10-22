@@ -1,0 +1,203 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`association: retains every supported field, exact dependencies and semantic refusal across author views 1`] = `
+{
+  "actors": 4,
+  "calendars": 2,
+  "committees": 1,
+  "domains": [
+    {
+      "domain": "governance",
+      "generation": 1,
+      "implementationRef": "clocky.governance.propose-hire-approval/native/2",
+      "operation": "propose-hire-approval",
+      "schemaRef": "clocky.governance.propose-hire-approval/schema/2",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 4,
+      "implementationRef": "clocky.governance.vote/native/5",
+      "operation": "vote",
+      "schemaRef": "clocky.governance.vote/schema/3",
+      "version": "1",
+    },
+    {
+      "domain": "organization",
+      "generation": 1,
+      "implementationRef": "clocky.organization.hire-existing/native/1",
+      "operation": "hire-existing",
+      "schemaRef": "clocky.organization.hire-existing/schema/1",
+      "version": "1",
+    },
+    {
+      "domain": "external",
+      "generation": 1,
+      "implementationRef": "clocky.external.interact.mediated/native/1",
+      "operation": "interact",
+      "schemaRef": "clocky.external.interact.mediated/schema/1",
+      "version": "3",
+    },
+  ],
+  "entities": 10,
+  "external": 1,
+  "positions": 3,
+  "scene": "association",
+}
+`;
+
+exports[`company: retains every supported field, exact dependencies and semantic refusal across author views 1`] = `
+{
+  "actors": 4,
+  "calendars": 5,
+  "committees": 1,
+  "domains": [
+    {
+      "domain": "organization",
+      "generation": 1,
+      "implementationRef": "clocky.organization.generate-and-hire/native/5",
+      "operation": "generate-and-hire",
+      "schemaRef": "clocky.organization.generate-and-hire/schema/3",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 3,
+      "implementationRef": "clocky.governance.propose-norm/native/4",
+      "operation": "propose-norm",
+      "schemaRef": "clocky.governance.propose-norm/schema/4",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 4,
+      "implementationRef": "clocky.governance.vote/native/5",
+      "operation": "vote",
+      "schemaRef": "clocky.governance.vote/schema/3",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 2,
+      "implementationRef": "clocky.governance.enact-norm/native/2",
+      "operation": "enact-norm",
+      "schemaRef": "clocky.governance.enact-norm/schema/2",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 1,
+      "implementationRef": "clocky.governance.propose-hire-approval/native/2",
+      "operation": "propose-hire-approval",
+      "schemaRef": "clocky.governance.propose-hire-approval/schema/2",
+      "version": "1",
+    },
+    {
+      "domain": "organization",
+      "generation": 1,
+      "implementationRef": "clocky.organization.transfer/native/1",
+      "operation": "transfer",
+      "schemaRef": "clocky.organization.transfer/schema/1",
+      "version": "1",
+    },
+    {
+      "domain": "organization",
+      "generation": 1,
+      "implementationRef": "clocky.organization.depart/native/1",
+      "operation": "depart",
+      "schemaRef": "clocky.organization.depart/schema/1",
+      "version": "1",
+    },
+    {
+      "domain": "external",
+      "generation": 1,
+      "implementationRef": "clocky.external.interact.mediated/native/1",
+      "operation": "interact",
+      "schemaRef": "clocky.external.interact.mediated/schema/1",
+      "version": "3",
+    },
+  ],
+  "entities": 12,
+  "external": 0,
+  "positions": 4,
+  "scene": "company",
+}
+`;
+
+exports[`laboratory: retains every supported field, exact dependencies and semantic refusal across author views 1`] = `
+{
+  "actors": 4,
+  "calendars": 5,
+  "committees": 1,
+  "domains": [
+    {
+      "domain": "organization",
+      "generation": 1,
+      "implementationRef": "clocky.organization.generate-and-hire/native/5",
+      "operation": "generate-and-hire",
+      "schemaRef": "clocky.organization.generate-and-hire/schema/3",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 3,
+      "implementationRef": "clocky.governance.propose-norm/native/4",
+      "operation": "propose-norm",
+      "schemaRef": "clocky.governance.propose-norm/schema/4",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 4,
+      "implementationRef": "clocky.governance.vote/native/5",
+      "operation": "vote",
+      "schemaRef": "clocky.governance.vote/schema/3",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 2,
+      "implementationRef": "clocky.governance.enact-norm/native/2",
+      "operation": "enact-norm",
+      "schemaRef": "clocky.governance.enact-norm/schema/2",
+      "version": "1",
+    },
+    {
+      "domain": "governance",
+      "generation": 1,
+      "implementationRef": "clocky.governance.propose-hire-approval/native/2",
+      "operation": "propose-hire-approval",
+      "schemaRef": "clocky.governance.propose-hire-approval/schema/2",
+      "version": "1",
+    },
+    {
+      "domain": "organization",
+      "generation": 1,
+      "implementationRef": "clocky.organization.transfer/native/1",
+      "operation": "transfer",
+      "schemaRef": "clocky.organization.transfer/schema/1",
+      "version": "1",
+    },
+    {
+      "domain": "organization",
+      "generation": 1,
+      "implementationRef": "clocky.organization.depart/native/1",
+      "operation": "depart",
+      "schemaRef": "clocky.organization.depart/schema/1",
+      "version": "1",
+    },
+    {
+      "domain": "external",
+      "generation": 1,
+      "implementationRef": "clocky.external.interact.mediated/native/1",
+      "operation": "interact",
+      "schemaRef": "clocky.external.interact.mediated/schema/1",
+      "version": "3",
+    },
+  ],
+  "entities": 12,
+  "external": 0,
+  "positions": 4,
+  "scene": "laboratory",
+}
+`;

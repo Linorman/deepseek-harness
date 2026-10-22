@@ -1,0 +1,11 @@
+- name: cordis:include
+  config:
+    path: ../../../cordis.yml
+- name: ../../product-control-model.ts
+- name: '@clocky/clocky-user-questions'
+- name: '@clocky/clocky-simulation-product'
+  config:
+    directoryStream: raw-archive-directory
+    imports: !!js JSON.parse(process.env.COMPANY_RAW_IMPORTS)
+    maxContextPartBytes: 128
+    maxBytes: 4096

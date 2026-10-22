@@ -2,6 +2,8 @@
 
 [English](team.md) | 中文
 
+`TeamRootCreateInput.limits` 可选地提供由 `teamLimitsSchema` 解析的完整 `TeamLimits`。TeamHub 对照部署上限校验新创建值，并冻结到 `rules.teamLimits`；原 Simulation root 重试在 Host 配置变化后仍保留已接受值。它们约束历史、交付和模型使用量，独立于 typed resource budgets。
+
 `TeamHumanReaderProof` 为产品目录携带可撤销主体身份，不代表成员资格或修改权限。`TeamProductDirectoryPage` 在完整响应额度内包含安全元数据与绑定 reader 的加密续页。`ChannelOwnerSnapshot` 是原始读取鉴权前使用的挂载归属元组。[主体目录决策](../../.agents/notes/implemented/architecture/2026-09-28-principal-team-directory-and-readers.zh.md)拥有安全与范围规则。
 
 `TeamHumanReadAuthority` 通过经过验证的任务 reservation，标识最近的 active、由当前主体拥有的人工成员及其所属 Team。Hub 为获支持的读取 proof 复查祖先关系；修改和同意 proof 保留目标 Team 内成员资格要求。Host 选择发布有界、经认证的 `readAccess` 观察。[产品检查决策](../../.agents/notes/implemented/architecture/2026-09-28-parent-team-product-inspection.zh.md) 拥有安全规则与验证范围。
@@ -1022,7 +1024,7 @@ registerSystemPhaseProofSource(source: TeamSystemPhaseProofSource): () => void
 
 /**
  * Register one system owner that privately resolves opaque proofs for exact
- * destructive Team-maintenance operations. Registration is effect-scoped:
+ * closed Team-maintenance operations. Registration is effect-scoped:
  * disposing the contributing fiber immediately makes all of its proofs invalid.
  * @param source - named resolver that owns proof construction and lifetime.
  * @returns an HMR-safe disposer that removes exactly this source.
@@ -1040,6 +1042,12 @@ registerSystemMaintenanceProofSource(source: TeamSystemMaintenanceProofSource): 
  * @throws {@link TeamError} when the source name is invalid or already registered.
  */
 registerSystemInterruptProofSource(source: TeamSystemInterruptProofSource): () => void
+
+/**
+ * Read current complete deployment ceilings before preview or root creation.
+ * @returns detached creation limits without Team allocation, storage writes or inference; these do not authorize creation.
+ */
+abstract getCreationLimits(): TeamLimits
 
 /**
  * Create one Team, mint its identity, and commit its initial durable state.
@@ -1065,6 +1073,22 @@ abstract getTeam(request: TeamGetRequest): Promise<TeamStateSnapshot>
  * @returns owner-issued prefix reference; moved current cursors or missing prefixes reject.
  */
 getPersistenceReference(request: import('./persistence-reference.ts').TeamPersistenceReferenceRequest): Promise<import('./persistence-reference.ts').TeamPersistenceReference>
+
+/**
+ * Export complete original records while the owning queue validates its observed cursor.
+ * @param request - Exact original Team or Channel and current cursor; prefix selection is unsupported.
+ * @param limits - Finite entry, serialized-byte and page bounds.
+ * @returns full original records and their owner reference; unsupported providers reject.
+ */
+exportPersistenceArchive(request: import('./persistence-reference.ts').TeamPersistenceReferenceRequest, limits: { readonly maxEntries: number; readonly maxBytes: number; readonly pageSize: number }): Promise<import('./persistence-reference.ts').TeamPersistenceArchive>
+
+/**
+ * Hold the complete original Team/Channel source vector while its owning Simulation commits one Native settlement.
+ * @param request - Exact observed cursors and a live source-owned personnel-intent proof.
+ * @param commit - Original Native ledger submission only; must not call Team/Channel methods or models while their serializers are held.
+ * @returns the callback's original commit result after all held serializers are released; unsupported providers reject before callback.
+ */
+withPersonnelSettlementCut<T>(request: import('./types.ts').TeamPersonnelSettlementCutRequest, commit: (sources: import('./types.ts').TeamPersonnelSettlementCutSources) => Promise<T>): Promise<T>
 
 /** Read one current human action without copying the Team projection.
  * @param request - Exact Team and action identity.

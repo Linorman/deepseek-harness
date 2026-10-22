@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-19",
+  "checklist": "F02",
+  "scope": "Static three-scene compiler freeze; longitudinal workloads retain separate constructed inputs and manifests.",
+  "sourceHashes": {
+    "examples/simulation-company/scenarios/world-company-v1.json": "7db3cd94f3293145249bfb747cb0c94b90da653a391fdbe7e029a4f0e1fdf652",
+    "examples/simulation-company/scenarios/world-laboratory-v1.json": "67e893d4455864993c5779e1b3a4d287f1ea5e4c9b620bfbf69f1baeccddec97",
+    "examples/simulation-company/scenarios/world-association-v1.json": "4aa667a0349685acd2cb6e148ac05f53bbb5c1e988d23713535226fa6d71750b",
+    "packages/simulation/simulation-scenario/src/v1-schema.ts": "6f34b12dcab050adfa35e22615c8bd84798c0d98a0ac0505087ba03a3423dad7",
+    "packages/simulation/simulation-scenario/src/v1-compiler.ts": "3dcf752460daf8b765110550f63212e141502932ce9b8c4207f7a6c484c9437f",
+    "packages/simulation/simulation-scenario/tests/fixtures.ts": "40afb1d39e6a8d433f58cf0a7690b09026d82cc7ad4bc18268beb4dbe2459ccb",
+    "packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts": "f07169c735ea4cb0d66b0b5afef35cd362c6b29db813ab29f8b433ec57fd639d",
+    "packages/simulation/simulation-scenario/tests/__snapshots__/post-mvp-baseline.spec.ts.snap": "c3d0dcec4c79008a8ecffee7b863fa82b7d7b3a0bfab822dd9e8e91d19736d42"
+  },
+  "verification": {
+    "command": "TMPDIR=$PWD/.tmp/world-post-mvp pnpm exec vitest run packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts",
+    "log": "f0-scenes-current.log",
+    "passed": 3,
+    "executedDate": "2026-10-18",
+    "reusedEvidence": "Current relevant source hashes match final-inputs.json; canonical scene bytes remain unchanged from the initial freeze.",
+    "mode": "source; pure compiler; JSON/YAML round trips, frozen counts/pins, bad references and executable unknown fields rejected"
+  },
+  "artifacts": {
+    "f0-scenes-current.log": "da49975d9d1a56fc599c333e242f53b8ae7d1947e5b306bbe599f2cc395df544",
+    "final-inputs.json": "9f86121925c38b3ce1847586f81d03fc74f7615bd20ffd67f20240a40771a731"
+  }
+}

@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
+import { teamSystemChannelLifecycleScopeSchema } from '../src/schema.ts'
 import type { Branded } from '@clocky/clocky-brand'
 import {
   activationBindInputSchema,
@@ -2405,5 +2406,33 @@ describe('Team runtime schemas', () => {
     })
     expect(teamSystemWorkspaceAllocationProofResolutionSchema.parse({ sourceName: 'team-agent-client', scope }))
       .toMatchObject({ scope: { kind: 'workspace-allocation-reserve' } })
+  })
+})
+
+describe('Simulation cancellation cleanup scopes', () => {
+  const retire = { kind: 'simulation-participant-retire', teamId: 'team-original', participantId: 'participant-original',
+    expectedCursor: 3, expectedPhase: 'active', phase: 'left', runId: 'world-original', lifecycleOwner: 'world-owner' }
+  const close = { kind: 'simulation-channel-close', teamId: 'team-original', channelId: 'channel-original',
+    expectedCursor: 4, reason: 'World hire cancelled', runId: 'world-original', lifecycleOwner: 'world-owner' }
+
+  it('retains exact original owners while separating membership retirement from activation and channel opening', () => {
+    for (const expectedPhase of ['invited', 'provisioning', 'active']) {
+      expect(teamSystemTopologyScopeSchema.parse({ ...retire, expectedPhase })).toEqual({ ...retire, expectedPhase })
+    }
+    expect(teamSystemChannelLifecycleScopeSchema.parse(close)).toEqual(close)
+  })
+
+  it.each([
+    { ...retire, phase: 'active' }, { ...retire, expectedPhase: 'left' }, { ...retire, runId: '' },
+    { ...retire, lifecycleOwner: '' }, { ...retire, participantId: '' }, { ...retire, ready: true },
+  ])('rejects unsupported membership scope or authority expansion: %j', (scope) => {
+    expect(teamSystemTopologyScopeSchema.safeParse(scope).success).toBe(false)
+  })
+
+  it.each([
+    { ...close, runId: '' }, { ...close, lifecycleOwner: '' }, { ...close, channelId: '' },
+    { ...close, expectedCursor: -1 }, { ...close, participantId: 'another-member' }, { ...close, ready: true },
+  ])('rejects incomplete channel scope or authority expansion: %j', (scope) => {
+    expect(teamSystemChannelLifecycleScopeSchema.safeParse(scope).success).toBe(false)
   })
 })

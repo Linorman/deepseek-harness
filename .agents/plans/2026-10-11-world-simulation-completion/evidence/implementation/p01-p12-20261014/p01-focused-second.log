@@ -1,0 +1,31 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts (6 tests | 2 failed) 5809ms
+     × classifies retained intent/result payloads and generated reads while preserving owner failures 755ms
+     × classifies retained intent/result payloads and generated reads while preserving owner failures 187ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts > json World schema boundaries > classifies retained intent/result payloads and generated reads while preserving owner failures
+ FAIL  |thread-safe| packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts > sqlite World schema boundaries > classifies retained intent/result payloads and generated reads while preserving owner failures
+AssertionError: expected function to throw an error, but it didn't
+ ❯ packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:86:126
+     84|         new Error('Original provider failure'), new SimulationWorldDom…
+     85|         const refuses = vi.spyOn(domain, 'admitRequest').mockImplement…
+     86|         try { expect(() => createWorldIntent(before, h.requester, requ…
+       |                                                                                                                              ^
+     87|         finally { refuses.mockRestore() }
+     88|       }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 59 passed (61)
+   Start at  18:16:44
+   Duration  12.34s (transform 6.02s, setup 1.12s, import 6.11s, tests 5.84s, environment 0ms)
+

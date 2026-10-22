@@ -1,0 +1,80 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-product/tests/federation-mailbox.spec.ts (14 tests | 4 failed) 667ms
+   × json returned boundaries cannot mutate durable time promises 21ms
+   × sqlite returned boundaries cannot mutate durable time promises 12ms
+   × json accepted source time promises reject new earlier messages before local advance and during replay 12ms
+   × sqlite accepted source time promises reject new earlier messages before local advance and during replay 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/federation-mailbox.spec.ts > json returned boundaries cannot mutate durable time promises
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/federation-mailbox.spec.ts > sqlite returned boundaries cannot mutate durable time promises
+AssertionError: promise resolved "{ version: 1, messageId: 'late', …(8) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "after": [],
++   "at": "1",
++   "body": "late",
++   "messageId": "late",
++   "sourceGeneration": 1,
++   "sourceRun": "left",
++   "sourceSequence": 0,
++   "targetGeneration": 1,
++   "targetRun": "right",
++   "version": 1,
+  }
+
+ ❯ packages/simulation/simulation-product/tests/federation-mailbox.spec.ts:170:136
+    168|   const original = structuredClone(sent)
+    169|   sent.time = '0'
+    170|   await expect(source.ctx.federationMailbox.enqueue({ messageId: 'late…
+       |                                                                                                                                        ^
+    171|     .rejects.toThrow('promised boundary')
+    172|   const received = await destination.ctx.federationMailbox.receiveBoun…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/federation-mailbox.spec.ts > json accepted source time promises reject new earlier messages before local advance and during replay
+ FAIL  |thread-safe| packages/simulation/simulation-product/tests/federation-mailbox.spec.ts > sqlite accepted source time promises reject new earlier messages before local advance and during replay
+AssertionError: promise resolved "{ version: 1, messageId: 'late', …(4) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "digest": "f8a65335da7daa6d69fb136ec5eea97ff379d488edb8e28fdafa66204dea3862",
++   "inboxSequence": 0,
++   "messageId": "late",
++   "targetGeneration": 1,
++   "targetRun": "right",
++   "version": 1,
+  }
+
+ ❯ packages/simulation/simulation-product/tests/federation-mailbox.spec.ts:189:61
+    187|     targetGeneration: 1, sourceSequence: 0, at: '1', after: [], body: …
+    188|   const before = ctx.storageLog.get(policy.stream)!.tailSequence
+    189|   await expect(ctx.federationMailbox.receive(message, local)).rejects.…
+       |                                                             ^
+    190|   expect(ctx.storageLog.get(policy.stream)!.tailSequence).toBe(before)
+    191|   expect((await ctx.federationMailbox.inspect(remote)).inbox).toHaveLe…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 10 passed (14)
+   Start at  18:22:49
+   Duration  2.31s (transform 1.44s, setup 136ms, import 1.40s, tests 667ms, environment 0ms)
+

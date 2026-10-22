@@ -1,0 +1,1 @@
+packages/simulation/simulation-local/src/world-hire-existing.ts(7,31): error TS6133: 'worldMutationIdSchema' is declared but its value is never read.

@@ -1,0 +1,233 @@
+[
+  {
+    "kind": "resource/reserve",
+    "action": {
+      "kind": "resource/reserve",
+      "id": "original-reservation",
+      "transaction": {
+        "commitmentId": null,
+        "reads": [
+          {
+            "resourceId": "stock",
+            "revision": 0
+          },
+          {
+            "resourceId": "destination",
+            "revision": 0
+          }
+        ],
+        "transfers": [
+          {
+            "from": "stock",
+            "to": "destination",
+            "quantity": "1"
+          }
+        ]
+      },
+      "grants": [],
+      "expiresAt": "10"
+    },
+    "operation": {
+      "runId": "run",
+      "snapshotRevision": 3,
+      "observedAt": 1,
+      "selection": {
+        "collection": "operations",
+        "section": "execution",
+        "id": "operation-0"
+      },
+      "status": "found",
+      "value": {
+        "collection": "operations",
+        "section": "execution",
+        "id": "operation-0",
+        "summary": {
+          "id": "operation-0",
+          "entityId": "actor",
+          "decisionId": "decision",
+          "index": 0,
+          "kind": {
+            "text": "resource/reserve",
+            "truncated": false
+          },
+          "status": "pending",
+          "publication": "not-applicable",
+          "delivery": "not-applicable",
+          "task": "not-applicable"
+        },
+        "dependencies": []
+      }
+    },
+    "records": {
+      "runId": "run",
+      "snapshotRevision": 3,
+      "observedAt": 1,
+      "readVersion": "policy",
+      "mode": "original",
+      "bodyAccess": "allowed",
+      "totalRecords": 1,
+      "selection": {
+        "sequence": 1
+      },
+      "items": [
+        {
+          "sequence": 1,
+          "kind": {
+            "text": "run/change",
+            "truncated": false
+          },
+          "action": {
+            "text": "resource/reserve",
+            "truncated": false
+          },
+          "body": {
+            "status": "text",
+            "text": "{\"kind\":\"resource/reserve\",\"id\":\"original-reservation\",\"transaction\":{\"commitmentId\":null,\"reads\":[{\"resourceId\":\"stock\",\"revision\":0},{\"resourceId\":\"destination\",\"revision\":0}],\"transfers\":[{\"from\":\"stock\",\"to\":\"destination\",\"quantity\":\"1\"}]},\"grants\":[],\"expiresAt\":\"10\"}",
+            "part": 0,
+            "parts": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "resource/commit-reservation",
+    "action": {
+      "kind": "resource/commit-reservation",
+      "id": "original-reservation",
+      "expectedRevision": 1
+    },
+    "operation": {
+      "runId": "run",
+      "snapshotRevision": 3,
+      "observedAt": 1,
+      "selection": {
+        "collection": "operations",
+        "section": "execution",
+        "id": "operation-1"
+      },
+      "status": "found",
+      "value": {
+        "collection": "operations",
+        "section": "execution",
+        "id": "operation-1",
+        "summary": {
+          "id": "operation-1",
+          "entityId": "actor",
+          "decisionId": "decision",
+          "index": 1,
+          "kind": {
+            "text": "resource/commit-reservation",
+            "truncated": false
+          },
+          "status": "pending",
+          "publication": "not-applicable",
+          "delivery": "not-applicable",
+          "task": "not-applicable"
+        },
+        "dependencies": []
+      }
+    },
+    "records": {
+      "runId": "run",
+      "snapshotRevision": 3,
+      "observedAt": 1,
+      "readVersion": "policy",
+      "mode": "original",
+      "bodyAccess": "allowed",
+      "totalRecords": 1,
+      "selection": {
+        "sequence": 2
+      },
+      "items": [
+        {
+          "sequence": 2,
+          "kind": {
+            "text": "run/change",
+            "truncated": false
+          },
+          "action": {
+            "text": "resource/commit-reservation",
+            "truncated": false
+          },
+          "body": {
+            "status": "text",
+            "text": "{\"kind\":\"resource/commit-reservation\",\"id\":\"original-reservation\",\"expectedRevision\":1}",
+            "part": 0,
+            "parts": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "resource/cancel-reservation",
+    "action": {
+      "kind": "resource/cancel-reservation",
+      "id": "original-reservation",
+      "expectedRevision": 1
+    },
+    "operation": {
+      "runId": "run",
+      "snapshotRevision": 3,
+      "observedAt": 1,
+      "selection": {
+        "collection": "operations",
+        "section": "execution",
+        "id": "operation-2"
+      },
+      "status": "found",
+      "value": {
+        "collection": "operations",
+        "section": "execution",
+        "id": "operation-2",
+        "summary": {
+          "id": "operation-2",
+          "entityId": "actor",
+          "decisionId": "decision",
+          "index": 2,
+          "kind": {
+            "text": "resource/cancel-reservation",
+            "truncated": false
+          },
+          "status": "pending",
+          "publication": "not-applicable",
+          "delivery": "not-applicable",
+          "task": "not-applicable"
+        },
+        "dependencies": []
+      }
+    },
+    "records": {
+      "runId": "run",
+      "snapshotRevision": 3,
+      "observedAt": 1,
+      "readVersion": "policy",
+      "mode": "original",
+      "bodyAccess": "allowed",
+      "totalRecords": 1,
+      "selection": {
+        "sequence": 3
+      },
+      "items": [
+        {
+          "sequence": 3,
+          "kind": {
+            "text": "run/change",
+            "truncated": false
+          },
+          "action": {
+            "text": "resource/cancel-reservation",
+            "truncated": false
+          },
+          "body": {
+            "status": "text",
+            "text": "{\"kind\":\"resource/cancel-reservation\",\"id\":\"original-reservation\",\"expectedRevision\":1}",
+            "part": 0,
+            "parts": 1
+          }
+        }
+      ]
+    }
+  }
+]

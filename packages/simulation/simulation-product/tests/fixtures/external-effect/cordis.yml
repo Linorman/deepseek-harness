@@ -1,0 +1,23 @@
+- name: '@clocky/clocky-storage'
+- name: '@clocky/clocky-storage-json'
+  disabled: !!js process.env.E_TEST_BACKEND !== 'json'
+  config:
+    root: !!js process.env.E_TEST_ROOT
+- name: '@clocky/clocky-storage-sqlite'
+  disabled: !!js process.env.E_TEST_BACKEND !== 'sqlite'
+  config:
+    path: !!js process.env.E_TEST_ROOT + '/effects.sqlite'
+- name: '@clocky/clocky-storage-log'
+  config:
+    backend: !!js process.env.E_TEST_BACKEND
+- name: '@clocky/clocky-product-principal'
+- name: '@clocky/clocky-host-product-principal-local'
+  config:
+    path: !!js process.env.E_TEST_ROOT + '/principal.json'
+- name: '@clocky/clocky-simulation-product/external-effect-sandbox'
+  config:
+    stream: loader-effect-test
+    authorizedPrincipals: [reader]
+    mode: live
+    maxOccupiedUnits: 2
+    pageSize: 1

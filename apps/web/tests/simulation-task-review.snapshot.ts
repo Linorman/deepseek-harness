@@ -88,7 +88,7 @@ it.each(['json', 'sqlite'])('reviews and reworks original Simulation task attemp
     await dialog.getByRole('button', { name: '请求返工', exact: true }).click()
     await dialog.getByLabel('审核原因', { exact: true }).fill('请补充报告批次编号')
     await dialog.getByRole('button', { name: '请求返工', exact: true }).last().click()
-    await dialog.getByText('响应丢失，请查询或重试原操作。', { exact: true }).waitFor()
+    await dialog.getByText('结果尚不确定，请先查询原操作；未分配新身份。', { exact: true }).waitFor()
     await dialog.getByLabel('审核原因', { exact: true }).fill('后来编辑的审核原因')
     await dialog.getByRole('button', { name: '关闭并保留输入', exact: true }).click()
     await workspace.getByRole('button', { name: '实体', exact: true }).click()
@@ -149,7 +149,15 @@ it.each(['json', 'sqlite'])('reviews and reworks original Simulation task attemp
     await showSimulationMaintenance(workspace)
     await workspace.getByRole('button', { name: '验证并恢复运行', exact: true }).click()
     const recovery = page.getByRole('dialog', { name: '验证并恢复运行', exact: true })
-    await expect.poll(async () => await recovery.getByRole('button', { name: '验证并恢复运行', exact: true }).isEnabled()).toBe(true)
+    // Owner retirement can advance the world after the first source read; re-read sources from the technical layer.
+    await recovery.locator('[data-restore-layer="technical"] > summary').click()
+    await expect.poll(async () => {
+      const refreshSources = recovery.getByRole('button', { name: '返回首页', exact: true })
+      if (await recovery.getByText('观察已变化，请刷新首页。', { exact: true }).first().isVisible() && await refreshSources.isEnabled()) {
+        await refreshSources.click()
+      }
+      return await recovery.getByRole('button', { name: '验证并恢复运行', exact: true }).isEnabled()
+    }).toBe(true)
     await recovery.getByRole('button', { name: '验证并恢复运行', exact: true }).click()
     await expect.poll(async () => {
       const query = recovery.getByRole('button', { name: '查询原结果', exact: true })

@@ -1,0 +1,11 @@
+packages/simulation/simulation/src/world-types.ts:74:73: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/world-domains.ts:49:41: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/src/decisions.ts:72:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:345:1: error @stylistic(max-len): This line has a length of 150. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:728:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:320:64: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/src/world.ts:320:78: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/src/world.ts:331:117: error @stylistic(arrow-parens): Expected parentheses around arrow function argument having a body with curly braces.
+packages/simulation/simulation-local/src/world.ts:438:32: error @stylistic(member-delimiter-style): Unexpected separator (;).
+examples/simulation-company/tests/world-driver-model.ts:96:43: error typescript(no-unnecessary-type-conversion): This type conversion does not change the type or value of the expression.
+packages/simulation/simulation-local/src/world.ts:726:10: error typescript(no-unnecessary-condition): Unnecessary comparison between literal values.

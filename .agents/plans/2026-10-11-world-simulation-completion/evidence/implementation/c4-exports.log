@@ -1,0 +1,3 @@
+verify-export-jsdoc: 2 JSDoc completeness violation(s) (see AGENTS.md):
+  exported function 'validateNormRequest' (packages/simulation/simulation-local/src/world-norms.ts:93) has no return type annotation; annotate it explicitly so the gate can classify the result.
+  exported function 'normContextMaterial' (packages/simulation/simulation-local/src/world-norms.ts:226) has no return type annotation; annotate it explicitly so the gate can classify the result.

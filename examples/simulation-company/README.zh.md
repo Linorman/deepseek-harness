@@ -2,6 +2,16 @@
 
 [English](README.md) | 中文
 
+验证 source 和分发 SDK 前，先运行 `pnpm run build`，并为 `python/sdk/.venv` 安装 SDK 测试依赖；`uv` 必须在 `PATH` 中。从仓库根运行 `node examples/simulation-company/tests/sdk-world-wheel.mjs`。它构建当前工作区的 Python wheel，安装到独立的项目内 target，再串行运行 TS/Python source 与 compiled TS/installed-wheel 的 stdio 流程。各流程保留原命令，用新 Host 进程做只读查询及显式暂停恢复。缓存、wheel、安装 target 和进程证据均保存在 `.local/world-completion/u13-sdk/`。测试显式选择 Node Host，不验证 bundled runtime 可执行文件。
+
+已认证 `world-maintenance-intent.snapshot.ts` 在招聘、代表准备、调岗和离职中持有真实退休/Team 证据 IO 或自动 resume。`WORLD_MAINTENANCE_ONLY` 选择案例，`WORLD_MAINTENANCE_EVIDENCE_ROOT` 将 warm/cold 进程证明保存在项目内；compiled mode 要求先 build。
+
+`world-restore-contract.snapshot.ts` 在未给 seed 目录时创建实际公司/实验室 seed，再破坏复制的持久后缀，并用新 Loader 进程从 initial checkpoint 恢复。测试专用 JSON/SQLite mutator 要求 Python 3，可用 `PYTHON` 选择解释器。默认场景执行全部规范来源故障；`WORLD_RESTORE_CONTRACT_ONLY`、`WORLD_RESTORE_CONTRACT_SEEDS` 和 `WORLD_RESTORE_CONTRACT_EVIDENCE_ROOT` 分别选择有限案例、已有真实 seed 和项目内输出。Compiled mode 要求先 build。只读 baseline 可共享不可变字节，故障存储保持独立。
+
+完整世界和产品模型池场景接受 `WORLD_REPLAY_PROBE=true`，在暂停回放期间拦截实际模型 waterfall 调用、领域执行、环境采样和网络访问。`WORLD_COMPLETE_REPLAY_SEEDS` 复用完整世界 seed 并执行两轮新进程恢复；`WORLD_PRODUCT_POOL_EVIDENCE_ROOT` 保留进程记录与已认证显式 start 的证据。Compiled 探针要求先 build；无密钥脚本调用不证明真实 provider 质量。
+
+[World 案件取消探针](tests/world-case-cancel.snapshot.ts) 在两个场景和后端使用已认证列表/详情/取消 API。它验证预留前取消、真实 Participant IO 后精确清理、已提交结果、分别授权的案件/Persona 正文以及撤权在途读取。新进程无 owner、无模型调用地查询/重试同一终态命令。
+
 [Simulation preset](presets/simulation/agent.cordis.yml)拥有完整参与者 persona，并抑制无关部署运行时上下文。原生工具 role 过滤最终模型 schema，包括后来登记的 actor 自有 Team 工具。原生分发器与执行器独立执行决策权限检查。同一 actor 因此能在 Web 编码部署中运行，不继承未拥有的文件系统 `cwd` 或普通 Team 模型能力。
 
 此显式启用的组合使用脚本化模型，通过真实 Agent 回合运行买方与供应商。他们请求一个库存单位，等待延迟投递、接受承诺、转移库存、发送证据并观察结果。角色 preset 只开放 Simulation 工具。
@@ -15,6 +25,10 @@ pnpm run test:snapshot examples/simulation-company/tests
 测试覆盖 JSON 和 SQLite，包括提案接受前／后及库存效果发生后终止进程、在相同 Session 中恢复。未接受的决策保留取消状态，由新决策重试工作；已接受的决策不重复推理。断言检查实际数量、承诺、投递回执、私有 profile 隔离与决策重试。先运行 `pnpm run build`，再设置 `CLOCKY_EXAMPLE_MODE=lib`，即可验证构建产物。
 
 [场景](tests/scenario.ts)提供显式授权的决策输入。`executeDecision()` 仅在选定模型输入所属回合结束、提案被接受且 Session 已 flush 后返回。`run.snapshot()` 检查持久状态，`connection.drive()` 推进到显式时间界限，`run.setPhase('paused', revision)` 与 `run.setPhase('running', revision)` 控制准入。这些 API 不推断角色知识，也不自动选择决策。[开发计划](../../.agents/plans/2026-09-18-durable-simulation-coordination/development-plan.md)记录剩余验收与调度工作。
+
+[World 入职探针](tests/world-hire.snapshot.ts)在 JSON 与 SQLite 上使用真实 Loader、三工具请求/计划及 Native/Team 身份准备。它覆盖从计划接受到入职提交的五个 SIGKILL 边界，再恢复初始 checkpoint，核对原 Persona、身份、结果及暂停状态，不重新调用模型。[准备取消探针](tests/world-hire-cancellation.snapshot.ts)在邀请前或真实 Participant/Channel IO 后撤销权限，保留清理责任。[清理探针](tests/world-hire-cleanup.snapshot.ts)对账这些原效果，在 membership IO 后及 Native 原子 append 前后强制退出，验证取消恢复不推理、不复用历史身份。[通用 World driver](tests/world-driver.snapshot.ts)在两后端通过公司/实验室定义运行真实请求/计划工具、身份准备、新人首次行动与安全通知，核对维护暂停意图，并在新暂停进程中恢复原身份/结果且不推理。[World 产品 owner 探针](tests/world-owner.snapshot.ts)通过已认证 fetch 与原创建/manage/checkpoint/restore 进入，验证单 owner，并在计划接受、真实 Participant IO、入职提交前后强制退出。恢复保留原计划/Persona/UUID，保持暂停且不推理，继续须使用新显式身份。
+
+[完整可移植流程](tests/complete-world.snapshot.ts)以同一 driver 运行公司、实验室和协会作者定义。公司/实验室从独立投票和招聘制度生效继续到收费录用、新人自主申请供应商、独立代表回应及调岗。实际已接受承诺保留在义务清单中；原申请人显式取消原工作后另建工作，其他角色独立接受并确认收到，随后才结束原任职。原 debtor 与历史保持不变。每种定义都在两个新暂停进程中恢复完整 Native/Team/Session 状态且不推理。
 
 停用 Simulation 前，先暂停各 run，再关闭连接与 run，然后移除 Simulation 组合条目。保留 run、Team 与 Session 存储。旧二进制若拒绝保留格式或必读事件，应配套恢复一致备份；不要删除事件或改写版本标记来强行回退。
 
@@ -81,3 +95,5 @@ pnpm run benchmark:simulation --backend sqlite --workload live-model --entities 
 ```
 
 每次请求从 run 预算保留 `tokens-per-request`，再按提供方用量结算。这是准入计量，不是提供方账单硬上限：提供方可能超出保留量；样本随后失败并保留用量。输出上限发送给提供方；调用／token 准入额度耗尽或用量未知会阻止后续请求。缺失或为零的输入／输出用量不算成本测量完成。不从 token 推测货币成本。本地 HTTP 测试不算真实模型验收证据。
+
+设置 `WORLD_DOMAIN_READS=true` 可在每轮 warm／cold 完整流程后审计九类公开 World 查询。证据追踪实际来源引用，使用原查询／revision 翻页，并核验 Native 状态与模型调用数不变；不据此宣称浏览器执行或真实 provider 质量。

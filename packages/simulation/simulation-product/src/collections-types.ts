@@ -293,7 +293,7 @@ export type SimulationProductObjectDetail =
     readonly context: SimulationProductContextSummary
     readonly inference?: SimulationProductInference | undefined
     readonly closedAt?: number | undefined
-    readonly cancellation?: 'requested' | 'writer-revoked' | 'scheduled-wake-cancelled' | 'timeout' | undefined }
+    readonly cancellation?: 'requested' | 'writer-revoked' | 'scheduled-wake-cancelled' | 'timeout' | 'paused' | undefined }
   | { readonly collection: 'operations'
     readonly section: 'execution'
     readonly id: SimulationOperationId

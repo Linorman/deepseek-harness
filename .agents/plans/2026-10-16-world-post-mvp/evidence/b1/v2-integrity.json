@@ -1,0 +1,1056 @@
+{
+  "kind": "independent-b1-v2-integrity",
+  "complete": true,
+  "issues": [],
+  "batch": ".local/world-post-mvp/f0-longitudinal/1792387319584824000",
+  "frozenManifestSha256": "46ef28b587615c9adf66fce2fbd8b726e47fa64450fdb545e8a03f957e767c7f",
+  "currentInputDrift": [],
+  "rawFiles": {
+    "manifest.json": {
+      "sha256": "46ef28b587615c9adf66fce2fbd8b726e47fa64450fdb545e8a03f957e767c7f",
+      "bytes": 375570
+    },
+    "results.json": {
+      "sha256": "c34eca30f1d1ba51bb7bc461519d3d5f6478c4397422d7c5f716bbd87d9687c5",
+      "bytes": 566135
+    },
+    "input-drift.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "company-json/warm.stdout": {
+      "sha256": "cf92f0cffbe8ffa9a15ef313bb9722298de0f2709cb74d7116f1343bf7dccdf7",
+      "bytes": 38749
+    },
+    "company-json/warm.stderr": {
+      "sha256": "ad30d594973bc286dae0ac3bb3c69dd409799adb1adc33fe98fe844aa4bf558a",
+      "bytes": 39482
+    },
+    "company-json/cold.stdout": {
+      "sha256": "4d569c46643dad9297760baa09d9e03046fe635ec8d20025847c4e1c07eddd55",
+      "bytes": 576
+    },
+    "company-json/cold.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "company-sqlite/warm.stdout": {
+      "sha256": "18e85346764426e680cfcebce544d47595d9192ddb6ea84467bd42a51ed9c7e3",
+      "bytes": 38733
+    },
+    "company-sqlite/warm.stderr": {
+      "sha256": "b90de37e3f449eca38ee0676a744ce00cfb8818ed3698ee89f9c017779e0b708",
+      "bytes": 39464
+    },
+    "company-sqlite/cold.stdout": {
+      "sha256": "bbb4a194e2be244a5e61adf5f851bf8df2abb99ff67b0914c8b7842844f56911",
+      "bytes": 572
+    },
+    "company-sqlite/cold.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "laboratory-json/warm.stdout": {
+      "sha256": "3a011057690282bf6f4634d3a40d480c7723567143aa990636498772b0df185a",
+      "bytes": 36989
+    },
+    "laboratory-json/warm.stderr": {
+      "sha256": "541e6fe4729ff92b217daa5baf98d3d581ebea7edec027c0e805d4f31f49935c",
+      "bytes": 37843
+    },
+    "laboratory-json/cold.stdout": {
+      "sha256": "1bf2fffdaf8a3b413ca1ca4af6a87fdd359c09cb6cf885cd414a685657778a5c",
+      "bytes": 37056
+    },
+    "laboratory-json/cold.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "laboratory-sqlite/warm.stdout": {
+      "sha256": "7ed0f77b5135efcfeb6ca93ac30cdd6dd39434ab2f38c976d0db1d492b228803",
+      "bytes": 37007
+    },
+    "laboratory-sqlite/warm.stderr": {
+      "sha256": "6657d88a8a50128080f2aa87577f568b5a01749e824172bf7180fa9ed36f3bd6",
+      "bytes": 37859
+    },
+    "laboratory-sqlite/cold.stdout": {
+      "sha256": "8065cd504d66c8d9c8efc41b16c309a89b76feb682e81f47c60409080aa51073",
+      "bytes": 37067
+    },
+    "laboratory-sqlite/cold.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "association-json/warm.stdout": {
+      "sha256": "95b62687282768ed5f2335efdac3491d64c88b8a23af3c2ef21648ff6ac484f6",
+      "bytes": 38066
+    },
+    "association-json/warm.stderr": {
+      "sha256": "bfc7c86f90b64e77cf4bfa71e800c030a6e0d7c39984ccf0291dbcee2f3bd645",
+      "bytes": 38926
+    },
+    "association-json/cold.stdout": {
+      "sha256": "7fa50b96632c782d3d7b00a1a72a87c64cac9ff65370c45fbcfa213da483825d",
+      "bytes": 578
+    },
+    "association-json/cold.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "association-sqlite/warm.stdout": {
+      "sha256": "11d7249d34ef12cf0e78c9b78fa795286c7f8c86005e87a59a5a804df8364bbd",
+      "bytes": 38095
+    },
+    "association-sqlite/warm.stderr": {
+      "sha256": "1f909920acc6895472a2489ab6713937fdb0bf1aca7f12de83df8580182691b3",
+      "bytes": 38953
+    },
+    "association-sqlite/cold.stdout": {
+      "sha256": "b7b466a38ee1af2657d7af4210b3dc8951ffa24838d9e4f7211ac5220f416fca",
+      "bytes": 580
+    },
+    "association-sqlite/cold.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "rows": [
+    {
+      "scene": "company",
+      "backend": "json",
+      "rounds": 32,
+      "p50Ms": 151977.56183300004,
+      "p95Ms": 601096.1204579994,
+      "p99Ms": 783812.7612910001,
+      "maxObservedRssBytes": 2376089600,
+      "modelCalls": 2496,
+      "people": {
+        "scope": {
+          "kind": "run"
+        },
+        "runId": "company-longitudinal",
+        "cursor": 20743,
+        "time": "192",
+        "assignedPeople": 33,
+        "nonterminatedPeople": 34,
+        "residentActors": 3,
+        "unreleasedWriters": 3,
+        "residentLimit": 3,
+        "historicalParticipants": {
+          "kind": "known",
+          "value": 34,
+          "teamId": "team-b350e60e-1a12-4666-b6ad-2f916674b1cc",
+          "cursor": 4023
+        },
+        "historicalActivations": {
+          "kind": "known",
+          "value": 557,
+          "teamId": "team-b350e60e-1a12-4666-b6ad-2f916674b1cc",
+          "cursor": 4023
+        }
+      },
+      "activeActors": 34,
+      "elapsedMs": 6192864.4953339975,
+      "coldRestoreMs": 41661.854083000006,
+      "coldScope": "Simulation/Team checkpoint restore",
+      "b1Metrics": {
+        "processPeakRssBytes": 2526167040,
+        "coldProcessPeakRssBytes": 1560805376,
+        "historicalIdentities": 38,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "modelAccounting": {
+          "actor": {
+            "calls": 1248,
+            "knownTokens": 18720,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 1248,
+            "knownTokens": 18720,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "activeMaintenance": null
+      }
+    },
+    {
+      "scene": "company",
+      "backend": "sqlite",
+      "rounds": 32,
+      "p50Ms": 144258.56562499993,
+      "p95Ms": 289718.1565000005,
+      "p99Ms": 301372.5180829996,
+      "maxObservedRssBytes": 2367045632,
+      "modelCalls": 2496,
+      "people": {
+        "scope": {
+          "kind": "run"
+        },
+        "runId": "company-longitudinal",
+        "cursor": 20743,
+        "time": "192",
+        "assignedPeople": 33,
+        "nonterminatedPeople": 34,
+        "residentActors": 3,
+        "unreleasedWriters": 3,
+        "residentLimit": 3,
+        "historicalParticipants": {
+          "kind": "known",
+          "value": 34,
+          "teamId": "team-07ff7d04-c7a0-48de-aaa0-68ba2091740d",
+          "cursor": 4023
+        },
+        "historicalActivations": {
+          "kind": "known",
+          "value": 557,
+          "teamId": "team-07ff7d04-c7a0-48de-aaa0-68ba2091740d",
+          "cursor": 4023
+        }
+      },
+      "activeActors": 34,
+      "elapsedMs": 4798033.293458997,
+      "coldRestoreMs": 41218.825958,
+      "coldScope": "Simulation/Team checkpoint restore",
+      "b1Metrics": {
+        "processPeakRssBytes": 2388246528,
+        "coldProcessPeakRssBytes": 1522434048,
+        "historicalIdentities": 38,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "modelAccounting": {
+          "actor": {
+            "calls": 1248,
+            "knownTokens": 18720,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 1248,
+            "knownTokens": 18720,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "activeMaintenance": null
+      }
+    },
+    {
+      "scene": "laboratory",
+      "backend": "json",
+      "rounds": 32,
+      "p50Ms": 52780.764708,
+      "p95Ms": 164703.52666700003,
+      "p99Ms": 173556.6100000001,
+      "maxObservedRssBytes": 6073860096,
+      "modelCalls": 0,
+      "people": {
+        "scope": {
+          "kind": "run"
+        },
+        "runId": "fee-owner",
+        "cursor": 6985,
+        "time": "0",
+        "assignedPeople": 2,
+        "nonterminatedPeople": 3,
+        "residentActors": 2,
+        "unreleasedWriters": 2,
+        "residentLimit": 2,
+        "historicalParticipants": {
+          "kind": "known",
+          "value": 3,
+          "teamId": "team-35a9d55d-5a8f-4878-903d-8ba62296ad91",
+          "cursor": 776
+        },
+        "historicalActivations": {
+          "kind": "known",
+          "value": 192,
+          "teamId": "team-35a9d55d-5a8f-4878-903d-8ba62296ad91",
+          "cursor": 776
+        }
+      },
+      "activeActors": 3,
+      "elapsedMs": 2151831.225333997,
+      "coldRestoreMs": 4878.7501250000005,
+      "coldScope": "Native governance/norm replay",
+      "b1Metrics": {
+        "processPeakRssBytes": 6936395776,
+        "coldProcessPeakRssBytes": 1114488832,
+        "historicalIdentities": 8,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "modelAccounting": {
+          "actor": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "activeMaintenance": null
+      }
+    },
+    {
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "rounds": 32,
+      "p50Ms": 54138.02258300001,
+      "p95Ms": 161358.48408299987,
+      "p99Ms": 175445.6490829999,
+      "maxObservedRssBytes": 6067273728,
+      "modelCalls": 0,
+      "people": {
+        "scope": {
+          "kind": "run"
+        },
+        "runId": "fee-owner",
+        "cursor": 6985,
+        "time": "0",
+        "assignedPeople": 2,
+        "nonterminatedPeople": 3,
+        "residentActors": 2,
+        "unreleasedWriters": 2,
+        "residentLimit": 2,
+        "historicalParticipants": {
+          "kind": "known",
+          "value": 3,
+          "teamId": "team-cb86daab-c974-48fa-838d-073dc7f9f2a3",
+          "cursor": 776
+        },
+        "historicalActivations": {
+          "kind": "known",
+          "value": 192,
+          "teamId": "team-cb86daab-c974-48fa-838d-073dc7f9f2a3",
+          "cursor": 776
+        }
+      },
+      "activeActors": 3,
+      "elapsedMs": 2099765.8522919957,
+      "coldRestoreMs": 4740.806208,
+      "coldScope": "Native governance/norm replay",
+      "b1Metrics": {
+        "processPeakRssBytes": 7147814912,
+        "coldProcessPeakRssBytes": 1191165952,
+        "historicalIdentities": 8,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "modelAccounting": {
+          "actor": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "activeMaintenance": null
+      }
+    },
+    {
+      "scene": "association",
+      "backend": "json",
+      "rounds": 32,
+      "p50Ms": 4810.988083000004,
+      "p95Ms": 8822.683208000002,
+      "p99Ms": 8890.27608299999,
+      "maxObservedRssBytes": 1047937024,
+      "modelCalls": 396,
+      "people": {
+        "scope": {
+          "kind": "run"
+        },
+        "runId": "association-longitudinal",
+        "cursor": 3192,
+        "time": "63",
+        "assignedPeople": 2,
+        "nonterminatedPeople": 4,
+        "residentActors": 2,
+        "unreleasedWriters": 2,
+        "residentLimit": 2,
+        "historicalParticipants": {
+          "kind": "known",
+          "value": 4,
+          "teamId": "team-8f93dd87-3dfb-4f05-b25b-bc8cd2814b81",
+          "cursor": 553
+        },
+        "historicalActivations": {
+          "kind": "known",
+          "value": 69,
+          "teamId": "team-8f93dd87-3dfb-4f05-b25b-bc8cd2814b81",
+          "cursor": 553
+        }
+      },
+      "activeActors": 4,
+      "elapsedMs": 161876.7754589935,
+      "coldRestoreMs": 988.1114579999999,
+      "coldScope": "Simulation/Team checkpoint restore",
+      "b1Metrics": {
+        "processPeakRssBytes": 1085095936,
+        "coldProcessPeakRssBytes": 519012352,
+        "historicalIdentities": 10,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "modelAccounting": {
+          "actor": {
+            "calls": 201,
+            "knownTokens": 3015,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 195,
+            "knownTokens": 2925,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "activeMaintenance": null
+      }
+    },
+    {
+      "scene": "association",
+      "backend": "sqlite",
+      "rounds": 32,
+      "p50Ms": 3685.893750000003,
+      "p95Ms": 6916.950207999995,
+      "p99Ms": 7027.690416999991,
+      "maxObservedRssBytes": 953401344,
+      "modelCalls": 396,
+      "people": {
+        "scope": {
+          "kind": "run"
+        },
+        "runId": "association-longitudinal",
+        "cursor": 3192,
+        "time": "63",
+        "assignedPeople": 2,
+        "nonterminatedPeople": 4,
+        "residentActors": 2,
+        "unreleasedWriters": 2,
+        "residentLimit": 2,
+        "historicalParticipants": {
+          "kind": "known",
+          "value": 4,
+          "teamId": "team-cb6b25dc-6f78-4e6f-bb4f-1e3a2d068245",
+          "cursor": 553
+        },
+        "historicalActivations": {
+          "kind": "known",
+          "value": 69,
+          "teamId": "team-cb6b25dc-6f78-4e6f-bb4f-1e3a2d068245",
+          "cursor": 553
+        }
+      },
+      "activeActors": 4,
+      "elapsedMs": 124204.70391600975,
+      "coldRestoreMs": 932.6998330000001,
+      "coldScope": "Simulation/Team checkpoint restore",
+      "b1Metrics": {
+        "processPeakRssBytes": 955777024,
+        "coldProcessPeakRssBytes": 518995968,
+        "historicalIdentities": 10,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "modelAccounting": {
+          "actor": {
+            "calls": 201,
+            "knownTokens": 3015,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 195,
+            "knownTokens": 2925,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "activeMaintenance": null
+      }
+    }
+  ],
+  "details": [
+    {
+      "scene": "company",
+      "backend": "json",
+      "samples": 32,
+      "final": {
+        "processPeakRssBytes": 2526167040,
+        "processElapsedMs": 6184168.127459,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "maintenanceIntervals": [],
+        "activeMaintenance": null,
+        "historicalIdentities": 38,
+        "sourceRevision": 20743,
+        "modelAccounting": {
+          "actor": {
+            "calls": 1248,
+            "knownTokens": 18720,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 1248,
+            "knownTokens": 18720,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "round": 32,
+        "time": "192",
+        "elapsedMs": 389703.82079099957,
+        "modelCalls": 2496,
+        "offers": 32,
+        "assignments": 32,
+        "rss": 2376089600,
+        "people": {
+          "scope": {
+            "kind": "run"
+          },
+          "runId": "company-longitudinal",
+          "cursor": 20743,
+          "time": "192",
+          "assignedPeople": 33,
+          "nonterminatedPeople": 34,
+          "residentActors": 3,
+          "unreleasedWriters": 3,
+          "residentLimit": 3,
+          "historicalParticipants": {
+            "kind": "known",
+            "value": 34,
+            "teamId": "team-b350e60e-1a12-4666-b6ad-2f916674b1cc",
+            "cursor": 4023
+          },
+          "historicalActivations": {
+            "kind": "known",
+            "value": 557,
+            "teamId": "team-b350e60e-1a12-4666-b6ad-2f916674b1cc",
+            "cursor": 4023
+          }
+        },
+        "activeActors": 34
+      }
+    },
+    {
+      "scene": "company",
+      "backend": "sqlite",
+      "samples": 32,
+      "final": {
+        "processPeakRssBytes": 2388246528,
+        "processElapsedMs": 4790821.137875,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "maintenanceIntervals": [],
+        "activeMaintenance": null,
+        "historicalIdentities": 38,
+        "sourceRevision": 20743,
+        "modelAccounting": {
+          "actor": {
+            "calls": 1248,
+            "knownTokens": 18720,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 1248,
+            "knownTokens": 18720,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "round": 32,
+        "time": "192",
+        "elapsedMs": 301372.5180829996,
+        "modelCalls": 2496,
+        "offers": 32,
+        "assignments": 32,
+        "rss": 2367045632,
+        "people": {
+          "scope": {
+            "kind": "run"
+          },
+          "runId": "company-longitudinal",
+          "cursor": 20743,
+          "time": "192",
+          "assignedPeople": 33,
+          "nonterminatedPeople": 34,
+          "residentActors": 3,
+          "unreleasedWriters": 3,
+          "residentLimit": 3,
+          "historicalParticipants": {
+            "kind": "known",
+            "value": 34,
+            "teamId": "team-07ff7d04-c7a0-48de-aaa0-68ba2091740d",
+            "cursor": 4023
+          },
+          "historicalActivations": {
+            "kind": "known",
+            "value": 557,
+            "teamId": "team-07ff7d04-c7a0-48de-aaa0-68ba2091740d",
+            "cursor": 4023
+          }
+        },
+        "activeActors": 34
+      }
+    },
+    {
+      "scene": "laboratory",
+      "backend": "json",
+      "samples": 32,
+      "final": {
+        "processPeakRssBytes": 6936395776,
+        "processElapsedMs": 2140909.46025,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "maintenanceIntervals": [],
+        "activeMaintenance": null,
+        "historicalIdentities": 8,
+        "sourceRevision": 6985,
+        "modelAccounting": {
+          "actor": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "round": 32,
+        "elapsedMs": 173556.6100000001,
+        "proposals": 96,
+        "votes": 96,
+        "norms": 32,
+        "rss": 3296231424,
+        "people": {
+          "scope": {
+            "kind": "run"
+          },
+          "runId": "fee-owner",
+          "cursor": 6985,
+          "time": "0",
+          "assignedPeople": 2,
+          "nonterminatedPeople": 3,
+          "residentActors": 2,
+          "unreleasedWriters": 2,
+          "residentLimit": 2,
+          "historicalParticipants": {
+            "kind": "known",
+            "value": 3,
+            "teamId": "team-35a9d55d-5a8f-4878-903d-8ba62296ad91",
+            "cursor": 776
+          },
+          "historicalActivations": {
+            "kind": "known",
+            "value": 192,
+            "teamId": "team-35a9d55d-5a8f-4878-903d-8ba62296ad91",
+            "cursor": 776
+          }
+        },
+        "activeActors": 3
+      }
+    },
+    {
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "samples": 32,
+      "final": {
+        "processPeakRssBytes": 7147814912,
+        "processElapsedMs": 2088974.78525,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "maintenanceIntervals": [],
+        "activeMaintenance": null,
+        "historicalIdentities": 8,
+        "sourceRevision": 6985,
+        "modelAccounting": {
+          "actor": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "round": 32,
+        "elapsedMs": 175445.6490829999,
+        "proposals": 96,
+        "votes": 96,
+        "norms": 32,
+        "rss": 6067273728,
+        "people": {
+          "scope": {
+            "kind": "run"
+          },
+          "runId": "fee-owner",
+          "cursor": 6985,
+          "time": "0",
+          "assignedPeople": 2,
+          "nonterminatedPeople": 3,
+          "residentActors": 2,
+          "unreleasedWriters": 2,
+          "residentLimit": 2,
+          "historicalParticipants": {
+            "kind": "known",
+            "value": 3,
+            "teamId": "team-cb86daab-c974-48fa-838d-073dc7f9f2a3",
+            "cursor": 776
+          },
+          "historicalActivations": {
+            "kind": "known",
+            "value": 192,
+            "teamId": "team-cb86daab-c974-48fa-838d-073dc7f9f2a3",
+            "cursor": 776
+          }
+        },
+        "activeActors": 3
+      }
+    },
+    {
+      "scene": "association",
+      "backend": "json",
+      "samples": 32,
+      "final": {
+        "processPeakRssBytes": 1085095936,
+        "processElapsedMs": 158354.179084,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "maintenanceIntervals": [],
+        "activeMaintenance": null,
+        "historicalIdentities": 10,
+        "sourceRevision": 3192,
+        "modelAccounting": {
+          "actor": {
+            "calls": 201,
+            "knownTokens": 3015,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 195,
+            "knownTokens": 2925,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "round": 32,
+        "time": "63",
+        "elapsedMs": 8822.683208000002,
+        "adjudications": 32,
+        "modelCalls": 396,
+        "rss": 1035501568,
+        "people": {
+          "scope": {
+            "kind": "run"
+          },
+          "runId": "association-longitudinal",
+          "cursor": 3192,
+          "time": "63",
+          "assignedPeople": 2,
+          "nonterminatedPeople": 4,
+          "residentActors": 2,
+          "unreleasedWriters": 2,
+          "residentLimit": 2,
+          "historicalParticipants": {
+            "kind": "known",
+            "value": 4,
+            "teamId": "team-8f93dd87-3dfb-4f05-b25b-bc8cd2814b81",
+            "cursor": 553
+          },
+          "historicalActivations": {
+            "kind": "known",
+            "value": 69,
+            "teamId": "team-8f93dd87-3dfb-4f05-b25b-bc8cd2814b81",
+            "cursor": 553
+          }
+        },
+        "activeActors": 4
+      }
+    },
+    {
+      "scene": "association",
+      "backend": "sqlite",
+      "samples": 32,
+      "final": {
+        "processPeakRssBytes": 955777024,
+        "processElapsedMs": 121152.153125,
+        "maintenanceMs": 0,
+        "maintenanceFraction": 0,
+        "maintenanceIntervals": [],
+        "activeMaintenance": null,
+        "historicalIdentities": 10,
+        "sourceRevision": 3192,
+        "modelAccounting": {
+          "actor": {
+            "calls": 201,
+            "knownTokens": 3015,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "director": {
+            "calls": 195,
+            "knownTokens": 2925,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "generation": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          },
+          "auxiliary": {
+            "calls": 0,
+            "knownTokens": 0,
+            "unknownCalls": 0,
+            "retainedTokens": 0
+          }
+        },
+        "monetaryCost": {
+          "status": "unknown",
+          "reason": "No frozen provider price schedule"
+        },
+        "round": 32,
+        "time": "63",
+        "elapsedMs": 7027.690416999991,
+        "adjudications": 32,
+        "modelCalls": 396,
+        "rss": 953401344,
+        "people": {
+          "scope": {
+            "kind": "run"
+          },
+          "runId": "association-longitudinal",
+          "cursor": 3192,
+          "time": "63",
+          "assignedPeople": 2,
+          "nonterminatedPeople": 4,
+          "residentActors": 2,
+          "unreleasedWriters": 2,
+          "residentLimit": 2,
+          "historicalParticipants": {
+            "kind": "known",
+            "value": 4,
+            "teamId": "team-cb6b25dc-6f78-4e6f-bb4f-1e3a2d068245",
+            "cursor": 553
+          },
+          "historicalActivations": {
+            "kind": "known",
+            "value": 69,
+            "teamId": "team-cb6b25dc-6f78-4e6f-bb4f-1e3a2d068245",
+            "cursor": 553
+          }
+        },
+        "activeActors": 4
+      }
+    }
+  ],
+  "validatorSha256": "2c3b03799585a63abf0d00bf99eeddfd959fefe474121c2e550e30cd24f64d7b",
+  "scope": "One unchanged v2 sequential 12-process/192-round matrix; integrity and measurements only.",
+  "limits": [
+    "Old independent-scene F0 acceptance script fixes optimizationTarget=None and is inapplicable to v2.",
+    "B19 index/local improvement thresholds remain separately frozen in their original workloads.",
+    "Scripted fixture usage has no frozen provider pricing; monetary costs remain unknown.",
+    "Laboratory cold restore covers Native governance/norm replay, not Team checkpoint restore."
+  ]
+}

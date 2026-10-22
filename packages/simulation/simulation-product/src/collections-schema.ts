@@ -5,6 +5,7 @@ import type { SimulationEntityId, SimulationDecisionId, SimulationDecisionSlot, 
   SimulationCheckpointId, SimulationWriterEpoch, SimulationRelationId } from '@clocky/clocky-simulation/identities'
 import type { Branded } from '@clocky/clocky-brand'
 import type { SimTime } from '@clocky/clocky-simulation/time-types'
+import type { SimulationCheckpointDiagnostic } from '@clocky/clocky-simulation/checkpoint-diagnostics-types'
 import type { TeamId, ParticipantId, ChannelId, TeamTaskId, EnvelopeId } from '@clocky/clocky-team/types'
 import type { SessionId } from '@clocky/clocky-session/types'
 import type { SimulationProductBrowseInput, SimulationProductCollectionPage, SimulationProductObjectInput,
@@ -25,7 +26,8 @@ const relationId = z.string().min(1).transform(value => value as SimulationRelat
 const knowledgeId = z.string().min(1).transform(value => value as Branded<'SimulationKnowledgeId'>)
 const envelopeId = z.string().min(1).transform(value => value as EnvelopeId)
 const decimal = z.string().regex(/^(0|[1-9][0-9]*)$/)
-const time = decimal.transform(value => value as SimTime)
+const time: z.ZodType<SimTime> = decimal.transform(value => value as SimTime)
+const diagnostic: z.ZodType<SimulationCheckpointDiagnostic> = simulationCheckpointDiagnosticSchema
 const slot = decimal.transform(value => value as SimulationDecisionSlot)
 const epoch = z.string().regex(/^[1-9][0-9]*$/).transform(value => value as SimulationWriterEpoch)
 const integer = z.number().int().nonnegative()
@@ -160,7 +162,7 @@ const detail = z.union([
     binding: z.strictObject({ teamId, participantId, sessionId }).optional() }),
   z.strictObject({ collection: z.literal('decisions'), section: z.literal('execution'), id: decisionId, summary: decision, context,
     inference: inference.optional(), closedAt: integer.optional(),
-    cancellation: z.enum(['requested', 'writer-revoked', 'scheduled-wake-cancelled', 'timeout']).optional() }),
+    cancellation: z.enum(['requested', 'writer-revoked', 'scheduled-wake-cancelled', 'timeout', 'paused']).optional() }),
   z.strictObject({ collection: z.literal('operations'), section: z.literal('execution'), id: operationId, summary: operation,
     dependencies: z.array(operationId), result: z.strictObject({ status: settledStatus, time, sequence: integer,
       code: simulationProductTextSchema }).optional(),
@@ -170,7 +172,7 @@ const detail = z.union([
     attempts: z.strictObject({ ...nestedPage, items: z.array(attempt) }).refine(value => value.total >= value.items.length) }),
   z.strictObject({ collection: z.literal('checkpoints'), section: z.literal('references'), id: checkpointId, summary: checkpoint,
     references: z.strictObject({ ...nestedPage, items: z.array(reference) }).refine(value => value.total >= value.items.length),
-    failure: z.literal('details-withheld').optional(), diagnostic: simulationCheckpointDiagnosticSchema.optional() })
+    failure: z.literal('details-withheld').optional(), diagnostic: diagnostic.optional() })
     .refine(value => value.diagnostic === undefined || value.summary.status === 'failed', 'Only failed checkpoints carry diagnoses'),
 ])
 /** Bind found data to the exact requested object and section; missing results carry no object data. */

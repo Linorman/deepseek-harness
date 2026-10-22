@@ -1,0 +1,4 @@
+/Volumes/projects-mac/deepseek-harness/.local/world-post-mvp/f0-longitudinal/1792379723536063000
+{"scene": "company", "backend": "json", "recover": false, "exitCode": 0, "elapsedMs": 93470.10549999686}
+{"scene": "company", "backend": "json", "recover": true, "exitCode": 0, "elapsedMs": 5912.335042004997}
+Inputs changed during execution; preserved samples are not a fixed-input baseline

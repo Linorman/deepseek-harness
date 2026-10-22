@@ -1,0 +1,212 @@
+{
+  "date": "2026-10-19",
+  "scope": "Byte-identical copies of original manifests/results/drift/streams; complete runtime stores remain in their original project directories.",
+  "batches": [
+    {
+      "scene": "company",
+      "originalDirectory": ".local/world-post-mvp/f0-longitudinal/1792338832170825000",
+      "copyDirectory": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/raw/company-1792338832170825000",
+      "files": {
+        "company-json/cold.stderr": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "selectedEvidence": true
+        },
+        "company-json/cold.stdout": {
+          "sha256": "5d73053cf9a4eebc3434df3db274b4d5b20454f94be95148feef5b91eff66f5a",
+          "bytes": 537,
+          "selectedEvidence": true
+        },
+        "company-json/warm.stderr": {
+          "sha256": "0f87fabe73c180be68b42140f921aeae948db1b302641be00f59850b4df41c1b",
+          "bytes": 19618,
+          "selectedEvidence": true
+        },
+        "company-json/warm.stdout": {
+          "sha256": "2a626b5e96e0b55edf063af7e8d3433cccd9afc620264c61a836a542d8c4cff2",
+          "bytes": 18885,
+          "selectedEvidence": true
+        },
+        "company-sqlite/cold.stderr": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "selectedEvidence": true
+        },
+        "company-sqlite/cold.stdout": {
+          "sha256": "45d1505bd9ed564030989c48e176a6b56e56c9884f6e5bb41277b68ac498318c",
+          "bytes": 539,
+          "selectedEvidence": true
+        },
+        "company-sqlite/warm.stderr": {
+          "sha256": "3bd536877c30f58c1f456c751fdd27beb043474d6049d91539fcca132632f6c4",
+          "bytes": 19624,
+          "selectedEvidence": true
+        },
+        "company-sqlite/warm.stdout": {
+          "sha256": "47200739a2e6efd4bae47c62d1ab6d18055a66ef2df2a0a76e11f0738624386b",
+          "bytes": 18893,
+          "selectedEvidence": true
+        },
+        "input-drift.json": {
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "bytes": 3,
+          "selectedEvidence": true
+        },
+        "manifest.json": {
+          "sha256": "6a83dd54e99171b17271500f821de217d2cb29cbd2662563ea08d3acbfb13d61",
+          "bytes": 371677,
+          "selectedEvidence": true
+        },
+        "results.json": {
+          "sha256": "49d84bedb5e5f1b65dbc24813f230be64a0ed62116c57585e3af38cdc5b31b53",
+          "bytes": 71271,
+          "selectedEvidence": true
+        }
+      }
+    },
+    {
+      "scene": "laboratory",
+      "originalDirectory": ".local/world-post-mvp/f0-longitudinal/1792333087908875000",
+      "copyDirectory": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/raw/laboratory-1792333087908875000",
+      "files": {
+        "association-json/warm.stderr": {
+          "sha256": "4b73290ca644ad211332c32b2a670a5df9f5c0cf7e796b226cbc8d3f44702476",
+          "bytes": 13649,
+          "selectedEvidence": false
+        },
+        "association-json/warm.stdout": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "selectedEvidence": false
+        },
+        "input-drift.json": {
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "bytes": 3,
+          "selectedEvidence": true
+        },
+        "laboratory-json/cold.stderr": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "selectedEvidence": true
+        },
+        "laboratory-json/cold.stdout": {
+          "sha256": "6d497a249f5d3d049d2146932135aa76d24fd1995e9c69e1eeaa8fbb643578cc",
+          "bytes": 17583,
+          "selectedEvidence": true
+        },
+        "laboratory-json/warm.stderr": {
+          "sha256": "ca2b0138f12065484ffc92d908786c58a4fd8862f8f6f22e23f11106a52a537a",
+          "bytes": 18410,
+          "selectedEvidence": true
+        },
+        "laboratory-json/warm.stdout": {
+          "sha256": "bb9ef4e290baf14036dce1abed7fc3b7d1882ac38910003dc3c487874bbd4fa8",
+          "bytes": 17556,
+          "selectedEvidence": true
+        },
+        "laboratory-sqlite/cold.stderr": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "selectedEvidence": true
+        },
+        "laboratory-sqlite/cold.stdout": {
+          "sha256": "bc90661a88f1db03a6138065f166ff04685dc95b7fd8fa1e8dd31578dcd11f91",
+          "bytes": 17551,
+          "selectedEvidence": true
+        },
+        "laboratory-sqlite/warm.stderr": {
+          "sha256": "754ffc0bfff2ee4eda4c313d26c0dfb124aeb51a334122cfe50628f0c280280b",
+          "bytes": 18376,
+          "selectedEvidence": true
+        },
+        "laboratory-sqlite/warm.stdout": {
+          "sha256": "f37c92b5278d613cdf11910feb81a3dff39ba0a83686780c3c204630eeb70b19",
+          "bytes": 17524,
+          "selectedEvidence": true
+        },
+        "manifest.json": {
+          "sha256": "625314f43b7d2f133188107e63bcd125e6d4732c41dcd9619418ac57c4606e81",
+          "bytes": 371445,
+          "selectedEvidence": true
+        },
+        "results.json": {
+          "sha256": "00f6b3ed75d1c654fe3fe707f4946ec1036b09672c2c6fc4e0f8f8c374130084",
+          "bytes": 131859,
+          "selectedEvidence": true
+        }
+      }
+    },
+    {
+      "scene": "association",
+      "originalDirectory": ".local/world-post-mvp/f0-longitudinal/1792337889212043000",
+      "copyDirectory": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/raw/association-1792337889212043000",
+      "files": {
+        "association-json/cold.stderr": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "selectedEvidence": true
+        },
+        "association-json/cold.stdout": {
+          "sha256": "c2b6a17134d58eaff4e11416601086b3c562da8c5089edae0624a6f5530d66f9",
+          "bytes": 546,
+          "selectedEvidence": true
+        },
+        "association-json/warm.stderr": {
+          "sha256": "ea8775a780b2862908280904d2f064141212ed40b1d3bc90a0a4a3078ffeabad",
+          "bytes": 19219,
+          "selectedEvidence": true
+        },
+        "association-json/warm.stdout": {
+          "sha256": "b74754ee58979d64c24822c0e013ffc2946684cdc93c2c3647ecb816380b5092",
+          "bytes": 18359,
+          "selectedEvidence": true
+        },
+        "association-sqlite/cold.stderr": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "selectedEvidence": true
+        },
+        "association-sqlite/cold.stdout": {
+          "sha256": "20e3de9510bf43413f0bb3a39c74e6ccbb72ed19d5b03d3c6c2c395a9fdef78f",
+          "bytes": 548,
+          "selectedEvidence": true
+        },
+        "association-sqlite/warm.stderr": {
+          "sha256": "1530a6990250feabaeb405aaf91e38ceedfe8d8d4f3724acb6f2fe886aa7eeb0",
+          "bytes": 19230,
+          "selectedEvidence": true
+        },
+        "association-sqlite/warm.stdout": {
+          "sha256": "03698b0612f40998def440dc96b74ea3812139533c1db75a538e2d7d6e02da8d",
+          "bytes": 18372,
+          "selectedEvidence": true
+        },
+        "company-json/warm.stderr": {
+          "sha256": "bc576b06e8bd644dccff7843b3f1084df7f77053a20287a5de6acb00762766e7",
+          "bytes": 4220,
+          "selectedEvidence": false
+        },
+        "company-json/warm.stdout": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0,
+          "selectedEvidence": false
+        },
+        "input-drift.json": {
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "bytes": 3,
+          "selectedEvidence": true
+        },
+        "manifest.json": {
+          "sha256": "84c366c576f133b8c86fc52074c87d35610515776386d54156147702fbb59d8d",
+          "bytes": 371425,
+          "selectedEvidence": true
+        },
+        "results.json": {
+          "sha256": "7c58aa16ed3d5e94b57f6414fef15a2da6f1ccbb5ae84860feea511aecd07cc5",
+          "bytes": 69963,
+          "selectedEvidence": true
+        }
+      }
+    }
+  ]
+}

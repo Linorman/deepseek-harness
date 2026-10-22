@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-19T02:12:12.940179+08:00",
+  "scope": "A1-A3 existing validation evidence remains applicable; F04 still pending SQLite warm/cold completion",
+  "sourceIndex": "final-inputs.json",
+  "sourceIndexSha256": "9f86121925c38b3ce1847586f81d03fc74f7615bd20ffd67f20240a40771a731",
+  "sourceMatches": 941,
+  "artifactMatches": 7,
+  "changedToolingOnly": [
+    "scripts/world-post-mvp-baseline.py"
+  ],
+  "core": {
+    "implementation/a1-continuation.json": {
+      "sourceCount": 14,
+      "mismatches": [],
+      "evidenceSha256": "68b01cd84e45b9b4128a55fc32e1f3c171bb066880fdc231a5ec16efbdee1079"
+    },
+    "a2-core.json": {
+      "sourceCount": 36,
+      "mismatches": [],
+      "evidenceSha256": "59cce2f81601050b972358c126e5218baea4a4135351f90f1a18497a64b9a7f2"
+    },
+    "a3-core.json": {
+      "sourceCount": 20,
+      "mismatches": [],
+      "evidenceSha256": "348a120d2d32948d9f9c4dfbe9614773bc8236e4fd6a318e8c6c30529003c36a"
+    },
+    "a19-browser.json": {
+      "sourceCount": 9,
+      "mismatches": [],
+      "evidenceSha256": "118de3de75deaf582450f3432e470936627ea5810e5855b8d0a1a3a9e931b1ef"
+    }
+  },
+  "runningBaseline": {
+    "manifest": ".local/world-post-mvp/f0-longitudinal/1792338832170825000/manifest.json",
+    "manifestSha256": "6a83dd54e99171b17271500f821de217d2cb29cbd2662563ea08d3acbfb13d61",
+    "inventoryCount": 2926,
+    "currentDrift": []
+  },
+  "newF0Sources": {
+    "scripts/world-post-mvp-baseline.py": "a5fb3431892bcddd0afb5b09c3acc309d03261b97c13edc4d6bc5b1d63031fd3",
+    "scripts/world-post-mvp-report.py": "758e7c8541005a4b626f111946e3fd6c4d2802fddfa2f0ef9518142892a3f534",
+    "scripts/world-post-mvp-acceptance.py": "9d22802bcde4b199aeab42d58cbb818786ca30edc6af250006288363c33892be",
+    "scripts/tests/test_world_post_mvp_baseline.py": "934fa204acaba11016004ef72e1e56c78c94167c035ce7a418632c1a7b24a8d0",
+    "scripts/tests/test_world_post_mvp_acceptance.py": "7de3862639f295934b883ff2d334dabae5e175729777e0c2804a44c2f901c471"
+  },
+  "newF0Tests": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/tests -p test_world_post_mvp*.py -v",
+    "passed": 20,
+    "log": "f0-acceptance-tests.log",
+    "logSha256": "a774207f7966d4df944adee1ebd7bf6375ee1502ba81532bcc0a72e5d81638eb"
+  }
+}

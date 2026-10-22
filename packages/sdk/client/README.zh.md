@@ -1,6 +1,28 @@
 # @clocky/clocky-sdk-client
 
+协调者 transcript 严格校验 `compaction/assessment` 估计值和 `compaction/end.noGain` 的摘要、计数及无收益关系；格式错误或成功结束却携带无收益证据的事件会在进入类型化事件前拒绝。
+
+`archiveRawSimulation()` 读取一页显式授权的原始保留内容并校验登记 run 身份；文字片段可拼接为原始字节归档。客户端不会自动跟随续页、改写来源版本或恢复推理。
+
+`updateSimulationRunControl()` 通过 `simulation/runs-run-control` 持久化原始停止目标或显式 null 解除。输入不接受调用方角色、principal 或 revision；输出校验 run、命令和目标身份，当前 control 可以对应后续命令。解除保留 null 字段且不会恢复调度。
+
+归档预览要求来源已暂停且静止，不会退休角色。执行保留一个原 command、revision 和 plan hash，读取用于对账其持久结果。首次归档复制并校验完整 owner 历史，不删除原件或释放历史容量。归档原记录分页需要独立的完整记录读取权限；拥有 run 或归档命令不代表可以读取 Session、Channel 正文。
+
+生成请求、读取、执行、状态转换和 Persona 草稿方法保留原 job 身份，仅显式执行调用模型。产品输入必须为用户撰写；Host 记录实际 principal 来源并限制 runtime、scope 和 audience。Persona 纳入经过已有 A2 预览和提交路径，保留生成草稿的 revision/hash。读取和重试不创建替代 job，未知输出仍是原对账责任。结果属于私有数据，并按当前权限重新检查。
+
+`simulation/generation-input` 和 `simulation/generation-output` 是必读的助手事件。转录读取校验精确输入消息身份、scope/audience、模型/策略版本、原输出及可选 token 计数；额外字段、非法请求字节和 ignorable 标记均拒绝，缺少 usage 仍表示未知。
+
 [English](README.md) | 中文
+
+`readSimulationWorldManagementFields`、`previewSimulationWorldManagement` 和 `submitSimulationWorldManagement` 保留完整原调岗、离职或已有人员招聘表单。字段和预览不推理、不恢复可写 owner。提交要求固定 Native revision/hash 和唯一保留的 command ID；传输丢失后先查询原命令，再精确重试。用户案件明确标记 authenticated-user 来源，requester 为 null，不虚构 Operation。案件取消同样要求允许取消时返回的 revision/hash 和实际影响预览。
+
+两种公开 API 的 `preflightSimulationWorld`、`createSimulationWorld`、`prepareSimulationWorld` 和 `exportSimulationWorldDefinition` 校验 Host 拥有的严格 World DTO。创建／准备保留精确的 command、定义和预览，不确定回复须通过原 request 查询对账。返回的创建／准备／导出身份必须匹配所选 command／run。创建、准备、读取和导出不启动模型，显式管理与冷恢复仍独立。未知必需 Session event 拒绝 typed transcript 重建；未知且带 `ignorable: true` 的 event 保留在原始通知中，并从 `RunResult.events` 省略，不强转为已知 event。
+
+v1 `organization.hiringFees`只携带显式创作的一次性招聘费用：固定policy、招聘操作、岗位、不同的既有付款/收款账户、单位、正十进制数量、不同grant引用和正模拟预留周期。省略保持未声明，不补费用或付款默认值；空/错误字段和未知属性拒绝。资金、预留历史容量和模拟到期通过闭合的 `resource-capacity`、`resource-history-limit`、`resource-reservation-expired`停止分类观察，控制及运行状态DTO一致保留。账户解析、授权、扣费与恢复由Host/Native拥有；SDK没有新增付款写入API或私有compilerVersion DTO字段。
+
+World 原生额度包含 `maxResourceReservationHistory`：已解析额度必须完整提供正安全整数，场景可请求有界的正整数覆盖。它限制全部保留的资源预留历史；取消或模拟到期不会退还历史额度。资源预留、提交与取消通过既有 operation 元数据和获准读取的原 journal 文本观察，SDK 不提供 Native 交易写入接口；缺失必填字段、未知结构字段和未经授权的正文仍拒绝。
+
+两端客户端的 `listSimulationWorldCases`、`inspectSimulationWorldCase` 和 `cancelSimulationWorldCase` 保留原 World 案件选择。列表/详情校验 run、revision、filter 或 section；严格解析拒绝隐藏 Native 字段和 withheld 正文携带的文本。案件与 Persona 授权独立于 run 访问。取消使用保留的 command 与 request 身份；原请求查询/重试对账不确定回复，不替换意图或自动恢复调度。 摘要使用 `clocky.world-case/v4`，携带精确 domain/operation/version 和 `targetEntityId`。缺失版本标签、旧岗位别名及不符合领域的 Persona／预留数据均被拒绝。明确 null 申请通知与 Channel 发布保持区别。必填 lifecycle 分离请求、计划、回调/业务与通知；执行和通知详情必须与同一前缀的摘要一致。最终计划页核对当前计划，中间页不宣称完整；旧 v1 响应被拒绝。
 
 `listSimulationRequests()` 在重新连接后发现有界原始 receipt 元数据；`retrySimulationRequest()` 只按运行和命令身份重试后端保留的原请求。两个公开接口核对返回运行、原命令、所请求 revision 和页大小，不自动遍历分页或重试，不接受替换命令 payload，并保留不可变终态 receipt。继续游标过期后须显式读取首页。
 
@@ -42,6 +64,10 @@ Team-list continuation 是 opaque string，`-1` 表示新扫描。`scanned` 表�
 
 Simulation 目录／预检结果要求带判别值的 `readiness`；`ready.model` 是创建时应传给 `expectedModel` 的精确路由。预检不携带该确认字段或命令 ID。缺失／未知就绪字段或路由在使用前被拒绝；模型变化拒绝要求重新确认，未知响应保留原命令身份。
 
+`readSimulationWorldDomain`（Python 为 `read_simulation_world_domain`）共用 `simulation/world-domain-read`。严格的 `clocky.world-read/v1` 结果绑定完整原选择及独立有界覆盖范围，拒绝未知字段或替换身份、版本、分区、覆盖信息。续页使用返回的 cursor 及原 revision／readVersion。未知驻留和可空义务计数保持未知；模拟时间及制度／提案版本保持规范十进制字符串。读取不恢复、不 attach、不推理，正文授权不代表 Session 权限。
+
+`readSimulationDraft` 与 `saveSimulationDraft` 访问私有不可变创作文档。保存使用原保存 ID 与父版本 CAS；冲突返回双方定义，精确重试返回原保存版本。两个 API 均拒绝属于其他草稿、版本或保存意图的响应，不创建运行中的世界或调用模型。
+
 ## Clocky
 
 ```ts
@@ -80,6 +106,10 @@ console.log(result.finalResponse)
 
 `HarnessClientOptions.env` 给定时整体替换子进程环境（`undefined` 原样继承父进程环境）；凭据策略归调用方——`clocky-subprocess` 的 `scrubbedParentEnv` 是面向隔离启动的共享擦除基底。
 
+## 私密备份导出
+
+`backupExport({ runId, commandId })` 通过 `simulation/backup-export` 读取已完成的原始私密包。客户端拒绝变化的 run/command 身份及精确 UTF-8 包字节的 SHA-256 不匹配。导出需要独立原始记录披露授权，不启动或恢复运行。 完整分支导出还要求祖先的当前披露授权，或针对该分支的显式 `includeProvenance: true` 授权；只有分支自身权限不能读取祖先字节。
+
 ## 模型体验
 
 无，因为这是一个客户端进程库；模型运行在 spawn 出的运行时中，其体验由该运行时的 `cordis.yml` 所组合的插件决定。
@@ -100,3 +130,7 @@ console.log(result.finalResponse)
 ### 单任务取消
 
 `cancelTeamTask()`和`HarnessTeam.cancelTask()`接收可选原因，返回 durable cancellation 进度。Assigned 或 running 结果仍保留 live work；应观察任务状态直到 cancelled。该操作让 Team 继续处理其他任务。 [取消归属](../../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.zh.md).
+
+`previewSimulationWorldCalendar` 为暂停运行的排班修改生成 quote。`submitSimulationWorldCalendar` 先持久保留不变 quote；`readSimulationWorldCalendarCommand` 在响应丢失或客户端重启后找回作者限定原件，`cancelSimulationWorldCalendar` 仅撤销尚未执行命令。civil 排班固定时区数据库版本和 DST 选择，由 Host 转换。`readSimulationWorldDomain` 使用 `kind: "proposal", section: "impact"` 只预览政策语义、不发布；独立案件/操作权限可使完整报告 withheld。提案视图包含原审批路线契约、冻结投票人、期限和实际 Resolution。
+
+`branchWorld`、`readWorldBranch`、`queryWorldCausal` 和 `compareWorlds` 保留原实验命令和归档观察。Client 拒绝替换分支 UUID、来源或记忆策略；因果读取校验回显来源和完整字节/节点预算，比较校验两侧观察。未知结果后保留原 UUID。返回分支保持 paused 并关闭真实效果，调度需单独授权；这些 API 不合并历史或自动遍历因果分页。

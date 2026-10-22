@@ -21,7 +21,7 @@ const catalog: SimulationProductCatalog = { items: [{ id: 'company' as never, ve
 const raw: SimulationCreationDraft = { templateId: 'company', name: 'Report', buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' }
 const ready: SimulationReadState<SimulationProductPreflightResult> = { loading: false, stale: false, value: { status: 'ready', configuration, readiness: { status: 'ready', model: { provider: 'company', name: 'scripted' } } } }
 function setup(check: (input: SimulationProductPreflightInput) =>
-Promise<SimulationReadState<SimulationProductPreflightResult> | undefined>, locale = en) {
+Promise<SimulationReadState<SimulationProductPreflightResult> | undefined>, locale: Record<Key, string> = en) {
   const retain = vi.fn((_command: SimulationCommand) => 'original' as never), submit = vi.fn(async () => undefined), closePreflight = vi.fn()
   function Harness() {
     const [draft, change] = useState<SimulationCreationDraft | undefined>(raw)

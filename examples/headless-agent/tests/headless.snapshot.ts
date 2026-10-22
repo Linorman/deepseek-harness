@@ -328,6 +328,9 @@ describe('headless stream-json snapshots', () => {
         expect(types.filter(type => type === 'compaction/start')).toHaveLength(1)
         expect(types.filter(type => type === 'compaction/summary')).toHaveLength(1)
         expect(types.filter(type => type === 'compaction/end')).toHaveLength(1)
+        const assessment = records.find(record => record.type === 'compaction/assessment')
+        expect(assessment?.data).toMatchObject({ trigger: 'context-overflow', reason: 'attempt' })
+        expect(typeof (assessment?.data as JsonObject | undefined)?.fixedTokens).toBe('number')
         const start = types.indexOf('compaction/start')
         const summary = types.indexOf('compaction/summary')
         const replacement = records.findIndex((record) => {

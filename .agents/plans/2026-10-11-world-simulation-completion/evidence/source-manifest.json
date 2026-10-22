@@ -1,0 +1,23 @@
+{
+  "reviewDate": "2026-10-11",
+  "timezone": "Asia/Tokyo",
+  "head": "b49dd0edfddb2f19e27110576c5a0f2089cc30ba",
+  "basis": "working tree including uncommitted and untracked implementation; not HEAD-only",
+  "sourceHtmlSha256": "e63bcbf66050e4c3e9761f2aa65dacbbf17179d286603678406aa692796fbe25",
+  "files": {
+    "packages/simulation/simulation-scenario/src/schema.ts": "fc4855cff25f2d2d4d79be9b3ad4fd4c0c65764b74dc74a87f73f12c38a07643",
+    "packages/simulation/simulation-scenario/src/compiler.ts": "a355e2762f64c4c728f223be9803cd1454070d9c815a7beffad84e53bbde38d3",
+    "packages/simulation/simulation/src/world.ts": "22e644e9dd947210606cc3680c03c2e5707d65b160ab0c114f53486aef48342c",
+    "packages/simulation/simulation/src/world-types.ts": "d30b756f02bc6aa9f5dd08146f28a1fe9013ef194d50057d4665d942e916a09b",
+    "packages/simulation/simulation-local/src/world.ts": "a075302d13dc8c5893690cebdec4b1944fe74ecb1a750796a6fb52f10388aa85",
+    "packages/simulation/simulation-local/src/world-hire.ts": "cfaca79a000ef805d536363ae32d9186808fa14449b7cb0f8c7e3d5b38ed6c80",
+    "packages/simulation/simulation-local/src/journal.ts": "5a990d88735a43e54b0b9387cc6c1e18a8da1ac9cc55b722dfb931c73e26b4d3",
+    "packages/simulation/simulation-world/src/driver.ts": "89677c9a62f5de26ff6a1a8070ae237a7679b73b381147e88569f033a9e6db66",
+    "packages/simulation/simulation-product/src/world-preparation.ts": "d67d9a657cfd0cc10fe99b00b704ba6026456fd11be35948bcedadf2158bcc8d",
+    "packages/simulation/simulation-product/src/world-owner.ts": "46f508e3aa829f368efde901f47abbcf2a3a0725100c89ff8da6f8248dc880b9",
+    "packages/client/ui-simulation/src/client/WorldCreationDialog.tsx": "6c04af7f05671573e5bd185802b8fb9a64be9164e132d895e9427de1fdaf0825",
+    "packages/host/apiproxy/src/api/rpc-map.ts": "1419480c16b9c3a52da678b7808f39aff71bff348fa6b5624e73d781e1c674fa",
+    "examples/simulation-company/tests/world-driver.snapshot.ts": "44c648f0fa9f869efdafda5c1dce6a4751f8727f376c1a4fa89d969d32ed3fe4",
+    ".agents/plans/2026-10-08-world-director-mvp/checklist.md": "d1181063335ff11b7324f4c538ccc082459385c1244bfe0c68b0bd1629423368"
+  }
+}

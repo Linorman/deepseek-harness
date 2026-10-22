@@ -1,0 +1,173 @@
+{
+  "date": "2026-10-19",
+  "package": "A3",
+  "mode": "source",
+  "backends": [
+    "json",
+    "sqlite"
+  ],
+  "journalVersion": 98,
+  "checkpointManifestVersion": 8,
+  "sourceHashes": {
+    "packages/simulation/simulation/src/world-calendar.ts": "c20845fd1b217839458038025c10726e51205ebfc9335492310062bdfc26fe1b",
+    "packages/simulation/simulation/src/world-governance.ts": "67e60f90e824506f73f5761262e9a09974506565f41c289b3d978714236f90ce",
+    "packages/simulation/simulation/src/world-governance-domains.ts": "3ffe14c51299b42383f4d2111031cfc41c23a743e7c76c5deb2f9be75bd23298",
+    "packages/simulation/simulation/src/checkpoint.ts": "ade92859fca92ebd265efc14f592b8d897b3ed8b709ec67415841e4ff56151ea",
+    "packages/simulation/simulation-local/src/world-calendar.ts": "dcf6268b67d8690c3e1c6a32c363a1e63689610cc3245d29be38f9fef5e5ced5",
+    "packages/simulation/simulation-local/src/world-governance.ts": "51060c26696dd512cf5aee22303d51e74020b12951089b2940da0dd85ed4b2de",
+    "packages/simulation/simulation-local/src/world-norms.ts": "8009f8c0d90a6403549000c3e7298706bb4e39c9a584bf176404f79adf2109c1",
+    "packages/simulation/simulation-local/src/journal.ts": "324513aba21481f5a959e6950551bf04243d861a96aa919b96b31e8100c650af",
+    "packages/simulation/simulation-product/src/calendar-schema.ts": "8a0dbccd151488d6761e70516b931d751bbcf46854f43ce2639b9533c90ca330",
+    "packages/simulation/simulation-product/src/administration.ts": "0e6fef587db9421344c07e982a89ead99d2c920c42d98351afdf2a277271564c",
+    "packages/simulation/simulation-product/src/world-read-projection.ts": "8b8ef768139de81b2f89a1d3a891f34ad5121cd69059c73373190c26ca81366d",
+    "packages/client/runtime/src/client/simulations/calendar.ts": "e592df085357c2ae7c060c02a7484d49c21fe80b02ab55c0db193b2101c691f1",
+    "examples/simulation-company/tests/world-post-mvp.snapshot.ts": "d90b4598be54b1901ab2e92599efd1e442a8ba716db1a0b14cfd015c7ff5d8c4",
+    "packages/simulation/simulation-local/tests/world-post-mvp-flow.ts": "202132c112b30e6ddaa37f35dd9b02423c834b530172458abfdec5327839c50e",
+    "packages/simulation/simulation/src/world-calendar-civil.ts": "02a5bc6cfdfb0f1bdf6f2823b6d0ebd050c7f4c6cbbf903e0d987a8a2e9241a4",
+    "packages/simulation/simulation/src/world-norm-impact.ts": "b696b6c1630df73382e94432e5993248c9ef1b0a0575164b1ca5cccf1f461460",
+    "packages/simulation/simulation-local/src/world-calendar-command.ts": "e3e6ef4f5251aa7cdb97593efb242611762beec756616aff13d067f7fa9adb23",
+    "packages/simulation/simulation-product/src/calendar-command.ts": "24bebe087e4f32d052ba848c7781500e946dd8417bbf614eb0349cf5ba1c342b",
+    "packages/client/ui-simulation/src/client/WorldNormImpact.tsx": "1f0dea50d9bedf1a8f980c55d698629219a4f0d99861f9547a46ab77415ece01",
+    "packages/client/ui-simulation/src/client/WorldCalendarEditor.tsx": "5db04146639942a2770e221e35ef07105c419d3e7943459dbbc8dcc308bb1837"
+  },
+  "completed": [
+    "A15",
+    "A16",
+    "A17",
+    "A18",
+    "A19"
+  ],
+  "checks": [
+    {
+      "log": ".tmp/world-post-mvp/a3-final-owner-tests.log",
+      "result": "94 tests passed"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-format-calendar-gates.log",
+      "result": "40 tests passed"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-impact-route-current.log",
+      "result": "5 tests passed; JSON/SQLite real route/proxy and independent impact disclosure"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-snapshot-current.log",
+      "result": "4 runnable snapshots passed; 8 separate source warm/cold processes"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-python-final.log",
+      "result": "451 Python tests passed"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-final-focused-lint.log",
+      "result": "owner focused lint: empty error log"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-shared-focused-lint.log",
+      "result": "shared A3 focused lint: empty error log"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-freeze-production-lint.log",
+      "result": "remaining A3 production signatures/styles: process exit 0, empty error log"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-refresh-race.log",
+      "result": "11 tests passed: refresh blocks quote/dismissal, failed discovery stays unknown until successful lookup"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-refresh-race-lint.log",
+      "result": "client/runtime recovery changes lint exit 0"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-journal98-reject.log",
+      "result": "2 tests passed: both durable backends reject prior/future journal versions"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-pins-and-route-final.log",
+      "result": "37 tests passed including obsolete enact/revoke installed pin rejection"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-python-calendar-final.log",
+      "result": "7 calendar SDK tests passed; civil aliases and receipt/clock rejection"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-sdk-pairing.log",
+      "result": "both SDK README bilingual records updated successfully"
+    },
+    {
+      "log": "a19-browser.log",
+      "command": "TMPDIR=$PWD/.tmp/world-post-mvp pnpm exec vitest run --config vitest.web.config.ts apps/web/tests/world-post-mvp-governance.snapshot.ts",
+      "result": "2 passed; real authenticated HTTP on JSON/SQLite, independent case/context grants, revocation, actual decision navigation; zero model calls",
+      "evidence": "a19-browser.json"
+    }
+  ],
+  "bounds": [
+    "simulation and civil version1 clocks; civil conversion pins IANA 2026e and explicit DST ambiguity selection without host timezone dependence",
+    "finite endsAt plus at most4096 cycles/occurrences; lazy one-successor scheduling",
+    "proxy authority exact proposal, original electorate and expiry; no reader/tool permission enlargement",
+    "calendar user preview/submit requires already held paused owner; retains principal, command and expected rule revision",
+    "only installed all-applicable hiring approval policy; unsupported existing-obligation migration blocked"
+  ],
+  "remaining": "No A15-A19 item pending; shared build/typecheck/lint/GUI/doc-sync evidence is recorded in implementation/final-validation.md.",
+  "annotationOnlyChangesAfterChecks": "Public JSDoc, explicit return types and named schema-derived aliases for typert compatibility.",
+  "historicalChecks": [
+    {
+      "log": ".tmp/world-post-mvp/a3-final-tests.log",
+      "result": "109 passed",
+      "scope": "8 focused Native/schema/product/runtime suites"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-last-regression.log",
+      "result": "32 passed",
+      "scope": "calendar, actual proxy/route/enact/cold replay and product disclosure"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-checkpoint-tests.log",
+      "result": "56 passed",
+      "scope": "manifest7 strict old-version rejection, new per-record references, calendar and governance recovery"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-pins-admin.log",
+      "result": "3 passed",
+      "scope": "legacy pin rejection at Native replay lookup and authenticated calendar transport on both backends"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-version-tests.log",
+      "result": "2 passed",
+      "scope": "malformed and all unsupported Native stream versions including96"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-python.log",
+      "result": "450 passed",
+      "scope": "Python calendar/domain/management DTOs"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-snapshot-final.log",
+      "command": "pnpm run test:snapshot examples/simulation-company/tests/world-post-mvp.snapshot.ts",
+      "result": "4 passed / 8 real child processes",
+      "scope": "production Cordis Loader; proxy and two-committee route\u2192actual Session vote\u2192Norm enactment; separate process exact cold recovery"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-lint.log",
+      "result": "passed",
+      "scope": "focused A3 Native/calendar DTO/runtime and runnable-driver files"
+    },
+    {
+      "log": ".tmp/world-post-mvp/a3-post-lint-regression.log",
+      "result": "59 passed",
+      "scope": "4 Native governance/calendar/runtime suites after lint fixes"
+    }
+  ],
+  "pending": [],
+  "civil": {
+    "dependency": "moment-timezone@0.6.5",
+    "tzdb": "2026e",
+    "license": "MIT",
+    "hostIntl": false,
+    "resourceReservation": "Unknown room/equipment fields strictly rejected; calendar does not auto-reserve resources."
+  },
+  "currentLimitations": [
+    "Calendar events do not implicitly reserve room/equipment resources; unsupported resource fields reject.",
+    "Current norm policy supports all-applicable hiring approval; unsupported existing-obligation migrations block."
+  ]
+}

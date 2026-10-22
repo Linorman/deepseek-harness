@@ -1,6 +1,8 @@
 /** Serialized durable acceptance before native IO, with independently bounded complete replay. */
 import type { LogStream } from '@clocky/clocky-storage'
 import { foldCreationEntry, simulationCreationEntrySchema } from './creation-book.ts'
+import { isDeepStrictEqual } from 'node:util'
+import type { SimulationWorldBranchCreation } from './experiment-store.ts'
 import type { SimulationCreationBook, SimulationCreationCommand } from './creation-types.ts'
 import type { SimulationProductCommandId, SimulationProductRequestReceipt } from './administration-types.ts'
 
@@ -16,8 +18,25 @@ export class SimulationCreationStore {
   private tail: Promise<unknown> = Promise.resolve()
   private closing = false
 
-  /** @param stream - Caller-owned version 2 administration journal. @param options - Validated recovery/count/byte bounds. */
-  constructor(private readonly stream: LogStream, private readonly options: SimulationCreationStoreOptions) {}
+  /** @param stream - Caller-owned version 4 administration journal.
+   * @param options - Validated recovery/count/byte bounds.
+   * @param branches - Completed originals from the separately validated experiment journal, joined before maintenance replay. */
+  constructor(private readonly stream: LogStream, private readonly options: SimulationCreationStoreOptions,
+    branches: readonly SimulationWorldBranchCreation[] = []) {
+    this.state = { commands: new Map(), creations: new Map(branches.map(creation => [creation.record.id, structuredClone(creation)])) }
+  }
+  /** Join a completed branch owner's durable creation into this derived maintenance lookup; no approval is fabricated.
+   * @param creation - Exact completed original from the exclusive experiment journal owner.
+   * @returns lookup publication after existing command work drains; startup rebuilds this join from the same owner.
+   */
+  addBranch(creation: SimulationWorldBranchCreation): Promise<void> {
+    return this.enqueue(() => {
+      const prior = this.state.creations.get(creation.record.id)
+      if (prior && !isDeepStrictEqual(prior, creation)) throw new Error('Branch creation collides with an original run identity')
+      this.state = { ...this.state, creations: new Map(this.state.creations).set(creation.record.id, structuredClone(creation)) }
+      return Promise.resolve()
+    })
+  }
 
   /**
    * Replay the full retained command prefix before admitting writes.
@@ -84,6 +103,21 @@ export class SimulationCreationStore {
       /* v8 ignore next -- foldCreationEntry requires the original pending command before terminal installation. */
       if (command === undefined) throw new Error('Simulation settled command has no original identity')
       return structuredClone(command.receipt)
+    })
+  }
+  /**
+   * Import original creation frames into an isolated target journal without rewriting their source authority.
+   * @param values - Verified original accepted/terminal frames; the caller validates source and target ownership.
+   * @returns completion after one atomic append; duplicate frames reject. The caller resolves exact existing import retries first.
+   */
+  importOriginal(values: readonly unknown[]): Promise<void> {
+    return this.enqueue(async () => {
+      const entries = values.map(value => simulationCreationEntrySchema.parse(value))
+      let next = this.state
+      for (const entry of entries) { this.checkBytes(entry); next = foldCreationEntry(next, entry) }
+      this.checkCount(next)
+      await this.stream.append(this.stream.tailSequence, entries)
+      this.state = next
     })
   }
   /** Close admission and drain accepted writes; the caller then closes its own stream. */

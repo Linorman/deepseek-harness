@@ -7,10 +7,17 @@ type ObjectOf<C extends Collection> = Extract<SimulationProductObjectInput, { co
 
 /** Host-supported metadata status filters, used only for viewing. Writes still require Host capabilities. */
 export const statuses = {
-  records: [], requests: [], overview: [], entities: ['active', 'inactive', 'terminated'], decisions: ['open', 'submitted', 'accepted', 'cancelled'],
+  cases: ['open', 'cancel-requested', 'cancelled', 'rejected', 'committed'], records: [], requests: [], overview: [], entities: ['active', 'inactive', 'terminated'], decisions: ['open', 'submitted', 'accepted', 'cancelled'],
   operations: ['pending', 'applied', 'rejected', 'blocked-authority', 'blocked-dependency', 'outcome-unknown'],
   checkpoints: ['in-progress', 'failed', 'completed'],
+  organization: ['handoff-required', 'retirement-unconfirmed'], governance: [], external: [],
 } as const
+const LENSES: Partial<Record<Module, readonly string[]>> = {
+  organization: ['structure', 'timeline', 'people'], governance: ['proposals', 'norms', 'history'],
+}
+const WORLD_SECTIONS: Partial<Record<Module, readonly string[]>> = {
+  organization: ['identity', 'tenure', 'obligations', 'actions'], governance: ['record', 'electorate', 'votes', 'impact'], external: ['identity', 'facts', 'representative', 'interactions'],
+}
 
 /**
  * Drop unsupported or cross-module URL selectors before issuing a query.
@@ -22,24 +29,32 @@ export function normalize(view: Route): Route {
   // Each numeric assertion below follows Number.isSafeInteger: undefined and
   // non-numbers are rejected before the comparison, including zero ordinals.
   const collectionModule = view.module === 'entities' || view.module === 'decisions' || view.module === 'operations' || view.module === 'checkpoints'
-  return { display: collectionModule && view.display === 'visual' ? 'visual' : undefined, runId: view.runId, module: view.module, search: view.search, objectId: view.module === 'records' || view.module === 'requests' ? undefined : view.objectId,
-    recordKind: view.module === 'records' && view.recordKind !== undefined && view.recordKind.length <= 128 ? view.recordKind || undefined : undefined,
-    recordSequence: view.module === 'records' && Number.isSafeInteger(view.recordSequence) && (view.recordSequence as number) >= 0 ? view.recordSequence : undefined,
-    status: view.status !== undefined && allowed.includes(view.status) ? view.status : undefined,
-    cognition: view.module === 'entities' && (view.cognition === 'none' || view.cognition === 'agent') ? view.cognition : undefined,
-    entityId: view.module === 'decisions' || view.module === 'operations' ? view.entityId : undefined,
-    decisionId: view.module === 'operations' ? view.decisionId : undefined,
-    sourceIndex: view.module === 'decisions' && view.section === 'context' && view.objectId !== undefined
+  const lenses = LENSES[view.module], worldSections = WORLD_SECTIONS[view.module]
+  return { caseSection: view.module === 'cases' && view.objectId !== undefined
+    ? (['request', 'plans', 'execution', 'notification', 'evidence', 'source'].includes(view.caseSection ?? '') ? view.caseSection : 'request') : undefined,
+  lens: lenses === undefined ? undefined : lenses.includes(view.lens ?? '') ? view.lens : lenses[0],
+  at: (view.module === 'organization' || view.module === 'governance') && /^(0|[1-9][0-9]*)$/.test(view.at ?? '') ? view.at : undefined,
+  author: view.runId === undefined && /^[A-Za-z0-9-]{1,64}$/.test(view.author ?? '') ? view.author : undefined,
+  domain: view.module === 'cases' && view.domain !== undefined && view.domain.length > 0 && view.domain.length <= 128 ? view.domain : undefined,
+  needsAction: view.module === 'cases' && view.needsAction === true ? true : undefined,
+  worldSection: worldSections !== undefined && view.objectId !== undefined && worldSections.includes(view.worldSection ?? '') ? view.worldSection : undefined, display: collectionModule && view.display === 'visual' ? 'visual' : undefined, runId: view.runId, module: view.module, search: view.search, objectId: view.module === 'records' || view.module === 'requests' ? undefined : view.objectId,
+  recordKind: view.module === 'records' && view.recordKind !== undefined && view.recordKind.length <= 128 ? view.recordKind || undefined : undefined,
+  recordSequence: view.module === 'records' && Number.isSafeInteger(view.recordSequence) && (view.recordSequence as number) >= 0 ? view.recordSequence : undefined,
+  status: view.status !== undefined && allowed.includes(view.status) ? view.status : undefined,
+  cognition: view.module === 'entities' && (view.cognition === 'none' || view.cognition === 'agent') ? view.cognition : undefined,
+  entityId: view.module === 'decisions' || view.module === 'operations' ? view.entityId : undefined,
+  decisionId: view.module === 'operations' ? view.decisionId : undefined,
+  sourceIndex: view.module === 'decisions' && view.section === 'context' && view.objectId !== undefined
       && Number.isSafeInteger(view.sourceIndex) && (view.sourceIndex as number) >= 0 ? view.sourceIndex : undefined,
-    knowledgeId: view.module === 'decisions' && view.section === 'knowledge' && Number.isSafeInteger(view.knowledgeRevision)
+  knowledgeId: view.module === 'decisions' && view.section === 'knowledge' && Number.isSafeInteger(view.knowledgeRevision)
       && (view.knowledgeRevision as number) > 0 ? view.knowledgeId : undefined,
-    knowledgeRevision: view.module === 'decisions' && view.section === 'knowledge' && view.knowledgeId !== undefined
+  knowledgeRevision: view.module === 'decisions' && view.section === 'knowledge' && view.knowledgeId !== undefined
       && Number.isSafeInteger(view.knowledgeRevision) && (view.knowledgeRevision as number) > 0 ? view.knowledgeRevision : undefined,
-    section: view.objectId === undefined ? undefined
-      : (view.module === 'entities' || view.module === 'decisions') && view.section === 'knowledge' ? 'knowledge'
-        : view.module === 'operations' && view.section === 'attempts' ? 'attempts'
-          : view.module === 'entities' && view.section === 'relationships' ? 'relationships'
-            : view.module === 'decisions' && view.section === 'context' ? 'context' : undefined }
+  section: view.objectId === undefined ? undefined
+    : (view.module === 'entities' || view.module === 'decisions') && view.section === 'knowledge' ? 'knowledge'
+      : view.module === 'operations' && view.section === 'attempts' ? 'attempts'
+        : view.module === 'entities' && view.section === 'relationships' ? 'relationships'
+          : view.module === 'decisions' && view.section === 'context' ? 'context' : undefined }
 }
 
 /**
@@ -48,7 +63,7 @@ export function normalize(view: Route): Route {
  * @param limit - Deployment-owned page allowance.
  * @returns the existing collection DTO; overview is not a collection.
  */
-export function collectionInput(view: Route & { runId: string; module: Exclude<Module, 'overview' | 'records' | 'requests'> }, limit: number): SimulationProductBrowseInput {
+export function collectionInput(view: Route & { runId: string; module: Exclude<Module, 'overview' | 'records' | 'requests' | 'cases' | 'organization' | 'governance' | 'external'> }, limit: number): SimulationProductBrowseInput {
   const selected = normalize(view)
   const base = { runId: view.runId as SimulationProductRunId, limit }
   switch (view.module) {
@@ -72,7 +87,7 @@ export function collectionInput(view: Route & { runId: string; module: Exclude<M
  * @param limit - Page allowance for attempts and checkpoint references.
  * @returns one metadata section; only collection-bearing sections receive a limit.
  */
-export function objectInput(view: Route & { runId: string; objectId: string; module: Exclude<Module, 'overview' | 'records' | 'requests'> }, limit: number): SimulationProductObjectInput {
+export function objectInput(view: Route & { runId: string; objectId: string; module: Exclude<Module, 'overview' | 'records' | 'requests' | 'cases' | 'organization' | 'governance' | 'external'> }, limit: number): SimulationProductObjectInput {
   const base = { runId: view.runId as SimulationProductRunId }
   switch (view.module) {
     case 'entities': return view.section === 'knowledge'

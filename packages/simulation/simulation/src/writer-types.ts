@@ -2,20 +2,15 @@
 import type { SimulationDecision, SimulationDecisionId, SimulationProposal } from './business-types.ts'
 import type { SimulationEventId } from './scheduler-types.ts'
 import type { Branded } from '@clocky/clocky-brand'
-import type { ActivationId, ActivationReservationId, ParticipantId, TeamId } from '@clocky/clocky-team'
-import type { SessionId } from '@clocky/clocky-session'
+import type { ActivationId, ActivationReservationId } from '@clocky/clocky-team/types'
 import type { SimulationEntityId } from './entity-types.ts'
 import type { SimulationWriterEpoch } from './identities.ts'
+import type { SimulationEntityBinding } from './binding-types.ts'
+export type { SimulationEntityBinding } from './binding-types.ts'
 export type { SimulationWriterEpoch } from './identities.ts'
 
 /** Identity of one exclusively owned open-run lifetime. */
 export type SimulationCoordinatorId = Branded<'SimulationCoordinatorId'>
-/** One Entity's immutable canonical execution identity. */
-export interface SimulationEntityBinding {
-  readonly teamId: TeamId
-  readonly participantId: ParticipantId
-  readonly sessionId: SessionId
-}
 /** Durable writer ownership; revoked/unknown epochs remain reserved until proven stopped. */
 export interface SimulationWriter {
   readonly epoch: SimulationWriterEpoch
@@ -37,6 +32,34 @@ export interface SimulationWriterActivation extends SimulationWriterReservation 
 /** Controller-owned capability for one reserved writer epoch; never passed to model tools. */
 export interface SimulationWriterLease {
   /**
+   * Retain an auxiliary compaction refusal without inventing a model call or world decision.
+   * @param request - Flushed request event and transaction attested by the canonical compaction owner.
+   * @param pool - Exact full pool/queue facts; original transaction retries preserve the complete payload.
+   * @param requestHash - SHA-256 of the complete recorded compaction request event data.
+   * @returns original refusal; any current unsubmitted owned decision is cancelled and its wake returned atomically.
+   */
+  blockCompactionModelAdmission(request: import('./tokens.ts').SimulationCompactionTokenRequest,
+    pool: import('./model-admission.ts').SimulationModelPoolUsage,
+    requestHash: string): Promise<import('./model-admission.ts').SimulationCompactionAdmissionBlock>
+  /**
+   * Cancel an undispatched model attempt and return its wake before persisting the capacity stop.
+   * @param id - Current owned decision whose flushed Session request was refused by the live model pool.
+   * @param block - Exact Session position and observed full pool/queue; exact retries retain the original evidence.
+   * @returns cancelled decision; only an explicit new scheduling intent may retry its returned wake.
+   */
+  blockModelAdmission(id: SimulationDecisionId, block: import('./model-admission.ts').SimulationModelAdmissionBlock): Promise<SimulationDecision>
+  /** Cancel and retain a canonical context failure without retrying inference.
+   * @param id - Current owned unsubmitted prepared decision.
+   * @returns cancelled decision and durable stop; closes its window when every slot is settled.
+   */
+  failContextIntegrity(id: SimulationDecisionId): Promise<SimulationDecision>
+  /** Cancel an undispatched oversized request and return its wake atomically.
+   * @param id - Current owned decision.
+   * @param block - Measurement bound to its original durable Session request.
+   * @returns the retained cancelled decision; identical retries do not append.
+   */
+  blockRequestBudget(id: SimulationDecisionId, block: import('./model-admission.ts').SimulationRequestBudgetBlock): Promise<SimulationDecision>
+  /**
    * Reserve interval tokens for one logged, owner-attested compaction call without opening a world decision.
    * @param request - Canonical compaction id and durable request-event position.
    * @returns a separately charged auxiliary attempt; caller must validate the Session ownership reference.
@@ -57,7 +80,7 @@ export interface SimulationWriterLease {
    * @param view - Existing Session view about to be replaced.
    * @returns completion when the view is an authoritative presentation of this decision.
    */
-  validateContextPresentation(id: SimulationDecisionId, view: import('@clocky/clocky-session').SimulationContextViewEventData): Promise<void>
+  validateContextPresentation(id: SimulationDecisionId, view: import('@clocky/clocky-session/types').SimulationContextViewEventData): Promise<void>
 
   /**
    * Select a deterministic policy for a prepared decision before any model request.
@@ -79,6 +102,7 @@ export interface SimulationWriterLease {
    * @param id - Current prepared decision with a started inference deadline.
    * @param request - Exact flushed Session prefix and provider/model; each call allocates a new attempt.
    * @returns the durable reservation, independently charged from model concurrency.
+   * @throws SimulationDecisionPausedError when recorded pause closes this otherwise eligible model decision.
    */
   reserveModelTokens(id: SimulationDecisionId, request: import('./tokens.ts').SimulationTokenRequest):
   Promise<import('./tokens.ts').SimulationTokenReservation>
@@ -111,9 +135,17 @@ export interface SimulationWriterLease {
   readonly priorCoordinatorExited: boolean
   /**
    * Install the single live permission check used inside the decision write queue.
+   * @param consumption - Optional canonical Session verifier; it performs flush IO outside the Native write queue.
    * @param authorize - Non-reentrant check of the current Agent and Team authority; must not write to this run.
    */
-  bindDecisionAdmission(authorize: () => Promise<void>): void
+  bindDecisionAdmission(authorize: () => Promise<void>,
+    consumption?: (decision: SimulationDecision) => Promise<import('./context-consumption.ts').SimulationContextConsumption>): void
+  /**
+   * Ask the bound Session owner to verify and flush exact input consumption before retaining its receipt.
+   * @param id - Current prepared decision owned by this writer.
+   * @returns immutable evidence; rejects without the trusted verifier or after authority/context changes.
+   */
+  recordContextConsumption(id: SimulationDecisionId): Promise<import('./context-consumption.ts').SimulationContextConsumption>
   /**
    * Allocate the next serial slot and fix its input revision before inference.
    * @param id - Stable caller-selected decision retry identity.
@@ -137,9 +169,10 @@ export interface SimulationWriterLease {
    */
   prepareContext(id: SimulationDecisionId, request: import('./context.ts').SimulationContextRequest): Promise<import('./context.ts').SimulationContextPreparation>
   /**
-   * Read the frozen context while the writer, entity and decision still admit inference.
+   * Read the frozen context only while the writer, entity, decision and selected knowledge/World scope access still admit inference.
    * @param id - Current decision identity.
    * @returns immutable prepared selection; this does not prove input consumption.
+   * @throws SimulationDecisionPausedError when recorded pause closes this otherwise eligible model decision.
    */
   readPreparedContext(id: SimulationDecisionId): Promise<Extract<import('./context.ts').SimulationContextPreparation, { status: 'prepared' }>>
   /**
@@ -148,6 +181,12 @@ export interface SimulationWriterLease {
    * @returns durable cancellation.
    */
   cancelDecision(id: SimulationDecisionId): Promise<SimulationDecision>
+  /**
+   * Cancel only a current prepared model decision after recorded scheduling pause, retaining all token charges.
+   * @param id - Exact decision of this live writer; foreign or retired ownership rejects.
+   * @returns original paused cancellation, or undefined when this decision is not eligible at the queue.
+   */
+  cancelDecisionForPause(id: SimulationDecisionId): Promise<SimulationDecision | undefined>
   /**
    * Admit this epoch after its exact Team/Participant/Session binding is durable.
    * @param activation - Controller-observed activation identity.

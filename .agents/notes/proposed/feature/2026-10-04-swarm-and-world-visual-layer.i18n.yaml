@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/proposed/feature/2026-10-04-swarm-and-world-visual-layer.md
-2026-10-04-swarm-and-world-visual-layer.md: 43696507e965fbd950d5b1cf11bd386c1f349ab3
-2026-10-04-swarm-and-world-visual-layer.zh.md: 7521447d04f83bccd31ae801eeb7fdf6e39c1609
+2026-10-04-swarm-and-world-visual-layer.md: 0a09e31ad7e885538fe8e0e1ee6157f52e6d69d3
+2026-10-04-swarm-and-world-visual-layer.zh.md: dd02f2a86898323e0321ac144cf4f3c86943e016

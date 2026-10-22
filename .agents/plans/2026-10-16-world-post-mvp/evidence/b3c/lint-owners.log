@@ -1,0 +1,5 @@
+packages/simulation/simulation-local/src/world-mutation.ts:84:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/index.ts:198:1: error @stylistic(max-len): This line has a length of 186. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:2580:1: error @stylistic(max-len): This line has a length of 147. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:1345:13: error typescript(no-unnecessary-condition): Unnecessary conditional, value is always falsy.
+packages/simulation/simulation-local/src/run.ts:1345:33: error typescript(no-unnecessary-condition): Unnecessary optional chain on a non-nullish value.

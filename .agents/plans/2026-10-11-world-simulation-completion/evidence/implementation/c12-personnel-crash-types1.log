@@ -1,0 +1,3 @@
+examples/simulation-company/tests/world-personnel-crash-scenario.ts(5,10): error TS6133: 'mkdir' is declared but its value is never read.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts(12,85): error TS6133: 'simulationEventIdSchema' is declared but its value is never read.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts(13,3): error TS6133: 'simulationWorldTransferPayloadSchema' is declared but its value is never read.

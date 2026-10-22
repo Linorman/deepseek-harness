@@ -11,7 +11,7 @@ it.each(['json', 'sqlite'] as const)('reads bounded original history without acq
     maxContextPartBytes: 7, maxPageSize: 3 })
   h.unregister(); h.ctx.simulations.registerProvider(native.provider)
   try {
-    await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'private-record', entityKind: 'org',
+    await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'private-record', entityKind: 'org',
       cognition: 'none', profile: { name: 'Secret🙂history' } }), native.run.snapshot().revision)
     const before = native.run.snapshot()
     const observation = await native.provider.inspect({ provider: 'local', spec: native.selection.spec, includeRecords: true })

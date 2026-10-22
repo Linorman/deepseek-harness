@@ -1,0 +1,7 @@
+{
+  "sha256": "6bef383691290e7d10950e6ebd59dcc7f1e4cbd8770d4a0505c91e14d3f238ca",
+  "files": 1140,
+  "native": 95,
+  "manifest": 5,
+  "captured": "after final host build; final source guarded by targeted tests; three-scene production source ran before final quota/guard refinements"
+}

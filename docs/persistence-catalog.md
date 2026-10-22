@@ -92,7 +92,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 }[T]
 ```
 
-Sources: [`packages/core/session/src/types.ts:414`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:421`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:452`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:484`](../packages/core/session/src/types.ts)
+Sources: [`packages/core/session/src/types.ts:437`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:444`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:475`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:507`](../packages/core/session/src/types.ts)
 
 ## Events
 
@@ -233,7 +233,7 @@ Source: [`packages/interaction/user-approval/src/index.ts:67`](../packages/inter
 
 Types: [StreamChunk](subsystems/llm-streaming.md)
 
-Source: [`packages/core/session/src/types.ts:340`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:363`](../packages/core/session/src/types.ts)
 
 <a id="assistantmessage--surface"></a>
 
@@ -255,7 +255,7 @@ Source: [`packages/core/session/src/types.ts:340`](../packages/core/session/src/
 
 Types: [TokenUsage](subsystems/llm-streaming.md)
 
-Source: [`packages/core/session/src/types.ts:351`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:374`](../packages/core/session/src/types.ts)
 
 ### `command/*`
 
@@ -302,6 +302,17 @@ Source: [`packages/interaction/commands/src/types.ts:96`](../packages/interactio
 
 ### `compaction/*`
 
+<a id="compactionassessment--log-only"></a>
+
+#### `compaction/assessment` — log-only
+
+```ts persistence-catalog
+/** Diagnostic estimate; carries no model-visible input or surface mutation. */
+'compaction/assessment': CompactionAssessment
+```
+
+Source: [`packages/compaction/compaction/src/types.ts:19`](../packages/compaction/compaction/src/types.ts)
+
 <a id="compactionend--log-only"></a>
 
 #### `compaction/end` — log-only
@@ -311,10 +322,10 @@ Source: [`packages/interaction/commands/src/types.ts:96`](../packages/interactio
  * Marks the end of a compaction — log-only, releases the lock. Its owner
  * matches `compaction/start`; `error` records an unsuccessful attempt.
  */
-'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string }
+'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; noGain?: CompactionNoGain }
 ```
 
-Source: [`packages/compaction/compaction/src/types.ts:72`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:74`](../packages/compaction/compaction/src/types.ts)
 
 <a id="compactionprune--log-only"></a>
 
@@ -340,7 +351,7 @@ Source: [`packages/compaction/compaction/src/types.ts:72`](../packages/compactio
 }
 ```
 
-Source: [`packages/compaction/compaction/src/types.ts:82`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:84`](../packages/compaction/compaction/src/types.ts)
 
 <a id="compactionrequest--log-only"></a>
 
@@ -351,7 +362,7 @@ Source: [`packages/compaction/compaction/src/types.ts:82`](../packages/compactio
 'compaction/request': { compactionId: CompactionId; startSequence: number; request: Omit<GenerateOptions, 'signal' | 'sessionId' | 'purpose'> }
 ```
 
-Source: [`packages/compaction/compaction/src/types.ts:24`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:26`](../packages/compaction/compaction/src/types.ts)
 
 <a id="compactionstart--log-only"></a>
 
@@ -365,7 +376,7 @@ Source: [`packages/compaction/compaction/src/types.ts:24`](../packages/compactio
 'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null }
 ```
 
-Source: [`packages/compaction/compaction/src/types.ts:22`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:24`](../packages/compaction/compaction/src/types.ts)
 
 <a id="compactionsummary--log-only"></a>
 
@@ -419,7 +430,7 @@ Source: [`packages/compaction/compaction/src/types.ts:22`](../packages/compactio
 
 Types: [ContentBlock](subsystems/core.md) · [TokenUsage](subsystems/llm-streaming.md)
 
-Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:36`](../packages/compaction/compaction/src/types.ts)
 
 ### `feedback/*`
 
@@ -575,7 +586,7 @@ Source: [`packages/plan/plan-mode/src/index.ts:53`](../packages/plan/plan-mode/s
 'request/context': RequestContext
 ```
 
-Source: [`packages/core/session/src/types.ts:387`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:410`](../packages/core/session/src/types.ts)
 
 <a id="requestheader--log-only"></a>
 
@@ -589,7 +600,7 @@ Source: [`packages/core/session/src/types.ts:387`](../packages/core/session/src/
 'request/header': { header: EpochHeader; reason: RequestHeaderReason }
 ```
 
-Source: [`packages/core/session/src/types.ts:382`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:405`](../packages/core/session/src/types.ts)
 
 ### `sandbox/*`
 
@@ -664,7 +675,7 @@ Source: [`packages/schedule/schedule/src/types.ts:219`](../packages/schedule/sch
 'session/end-seed': Record<string, never>
 ```
 
-Source: [`packages/core/session/src/types.ts:410`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:433`](../packages/core/session/src/types.ts)
 
 <a id="sessiontitle--log-only"></a>
 
@@ -706,7 +717,48 @@ Source: [`packages/session/session-title-llm/src/index.ts:43`](../packages/sessi
 'simulation/context-view': SimulationContextViewEventData
 ```
 
+Source: [`packages/core/session/src/types.ts:361`](../packages/core/session/src/types.ts)
+
+<a id="simulationgeneration-input--log-only"></a>
+
+#### `simulation/generation-input` — log-only
+
+```ts persistence-catalog
+/** Exact tool-free helper input, persisted before provider admission. @mode append */
+'simulation/generation-input': {
+  jobId: string
+  scope: string
+  audience: readonly string[]
+  message: string
+  provider: string
+  model: string
+  modelVersion: string
+  promptVersion: string
+  policyVersion: string
+}
+```
+
 Source: [`packages/core/session/src/types.ts:338`](../packages/core/session/src/types.ts)
+
+<a id="simulationgeneration-output--log-only"></a>
+
+#### `simulation/generation-output` — log-only
+
+```ts persistence-catalog
+/** Original raw helper output retained before schema validation. @mode append */
+'simulation/generation-output': {
+  jobId: string
+  content: string
+  usage?: {
+    inputTokens: number
+    outputTokens: number
+    cacheReadTokens?: number | undefined
+    cacheWriteTokens?: number | undefined
+  }
+}
+```
+
+Source: [`packages/core/session/src/types.ts:350`](../packages/core/session/src/types.ts)
 
 ### `step/*`
 
@@ -781,7 +833,7 @@ Source: [`packages/core/session/src/types.ts:336`](../packages/core/session/src/
 
 Types: [TodoItem](subsystems/session.md)
 
-Source: [`packages/core/session/src/types.ts:377`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:400`](../packages/core/session/src/types.ts)
 
 ### `tool/*`
 
@@ -800,7 +852,7 @@ Source: [`packages/core/session/src/types.ts:377`](../packages/core/session/src/
 
 Types: [CallId](subsystems/core.md)
 
-Source: [`packages/core/session/src/types.ts:357`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:380`](../packages/core/session/src/types.ts)
 
 <a id="toolcode-dispatch--log-only"></a>
 
@@ -875,7 +927,7 @@ Source: [`packages/core/tools/src/types.ts:40`](../packages/core/tools/src/types
 }
 ```
 
-Source: [`packages/core/session/src/types.ts:369`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:392`](../packages/core/session/src/types.ts)
 
 ### `tool-workflow/*`
 

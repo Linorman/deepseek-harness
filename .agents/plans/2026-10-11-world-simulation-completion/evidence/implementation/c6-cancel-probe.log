@@ -1,0 +1,7 @@
+{"scenario":"company","stage":"accepted-before-reserve","restored":false,"modelCalls":6}
+Warning: Detected unsettled top-level await at /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-case-cancel-scenario.ts:218
+} finally { release.resolve(undefined); await ctx.fiber.dispose() }
+                                        ^
+
+
+

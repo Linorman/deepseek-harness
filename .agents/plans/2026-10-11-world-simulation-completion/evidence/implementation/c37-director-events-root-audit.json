@@ -1,0 +1,631 @@
+{
+  "inputHash": "595dd09c7afa14e5a354f2f996c6925da92751c09dab58f924b4811d120d19e9",
+  "inputFiles": 5354,
+  "nativeVersion": 77,
+  "compilerVersion": "4",
+  "cases": [
+    {
+      "face": "src",
+      "backend": "json",
+      "variant": "mediated",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ",
+      "models": 72,
+      "decisions": 24,
+      "batches": 84
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "variant": "mediated",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4",
+      "models": 72,
+      "decisions": 24,
+      "batches": 84
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "variant": "rule",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf",
+      "models": 54,
+      "decisions": 18,
+      "batches": 66
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "variant": "rule",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt",
+      "models": 54,
+      "decisions": 18,
+      "batches": 66
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "variant": "rule",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD",
+      "models": 54,
+      "decisions": 18,
+      "batches": 66
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "variant": "rule",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F",
+      "models": 54,
+      "decisions": 18,
+      "batches": 66
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "variant": "mediated",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH",
+      "models": 72,
+      "decisions": 24,
+      "batches": 84
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "variant": "mediated",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr",
+      "models": 72,
+      "decisions": 24,
+      "batches": 84
+    }
+  ],
+  "processes": 24,
+  "coldProcesses": 16,
+  "coldModelCalls": 0,
+  "pids": [
+    66425,
+    66628,
+    66770,
+    66797,
+    66951,
+    66964,
+    65991,
+    66129,
+    66255,
+    66271,
+    66413,
+    66415,
+    67183,
+    67335,
+    67352,
+    67425,
+    67603,
+    67604,
+    67607,
+    68204,
+    68205,
+    68355,
+    68676,
+    68696
+  ],
+  "raw": [
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/original.json",
+      "sha256": "18efc26fea797e698893760aa602b1f4956fa8d720c4638ca1f6637b824c47d8",
+      "bytes": 8867880
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/at-2.json",
+      "sha256": "1f2face7793cf4cdbe511c5f9fbdda3717b92cc8ac364e95b174b86745776583",
+      "bytes": 1610652
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/input.json",
+      "sha256": "3cf5c054ea2d9ba26c2c1f8dd484180e6189c05fd3e1ddbfea5db0e2830fff84",
+      "bytes": 51420
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/process-0.json",
+      "sha256": "271feac106967905b10b167a354f806719ac272ecbaf3572d4f75e60817f5778",
+      "bytes": 1337
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/process-1.json",
+      "sha256": "c937d6bf413531402e223792a026f6624effa560cef702fd34761212cfa14415",
+      "bytes": 1335
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/fixture-inputs.json",
+      "sha256": "f7ee972afd63242b0f9968d8a9dda5b2bf157a885b60c1cd66f6aeed58e18be4",
+      "bytes": 1539
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/round-2.json",
+      "sha256": "8e28ad803e3eb11bbbcde8cb09bea85b15d01d95199340e0d92bef9bc22ba603",
+      "bytes": 2233170
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/at-3.json",
+      "sha256": "dcd78f78a8bcd7d6559a12135dc89113d327d7a1cff7babf24c43c0a44992d3d",
+      "bytes": 2208611
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/process-2.json",
+      "sha256": "fc8b4b6fd79f7c8a2ea9872c33b0020815caf0aff679b41b0434de948bc9b634",
+      "bytes": 1335
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/round-1.json",
+      "sha256": "e6857b81646724d72c7f16ddbdf4dc44e2ff0a422457853a7f45e696ed86b938",
+      "bytes": 2233170
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/complete.json",
+      "sha256": "0ac5b967c9565acabc9f712910e320c9945ed6faeac1dc48ff8b14f4398d9da0",
+      "bytes": 186
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/round-0.json",
+      "sha256": "ad1af1a6b59768490a9d20dfbe258f233302879743898d8273c3c6e975bf0f3b",
+      "bytes": 2233172
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-json-w7IhhQ/at-1.json",
+      "sha256": "323391d470fdc44db48007f8a46bdac5c07084f1947435299049e67b18873f71",
+      "bytes": 776325
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/original.json",
+      "sha256": "4d4af5efca0fd86a7dbb7734ed75f12ac3f0b2a5e1f3aa00ce280c1320b7a4ce",
+      "bytes": 8867890
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/at-2.json",
+      "sha256": "12a038ae0f541b0b92248285c5cc9db4d4bb46503a2627c15f693df7a06cafc6",
+      "bytes": 1610658
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/input.json",
+      "sha256": "3cf5c054ea2d9ba26c2c1f8dd484180e6189c05fd3e1ddbfea5db0e2830fff84",
+      "bytes": 51420
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/process-0.json",
+      "sha256": "745fe0d05e12c6df622fd349504f47fc59a82d38bf30f17c3030c4259ef3bda9",
+      "bytes": 1341
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/process-1.json",
+      "sha256": "cff9fbd5ff218f45efd2db1aefd5d6fa7dcb5dca64149b54f89cb1a6aba0ba0c",
+      "bytes": 1339
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/fixture-inputs.json",
+      "sha256": "f7ee972afd63242b0f9968d8a9dda5b2bf157a885b60c1cd66f6aeed58e18be4",
+      "bytes": 1539
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/round-2.json",
+      "sha256": "04b8e2c12841334f22bfeac95de95b5c144941b640f2048ae517bd823abca385",
+      "bytes": 2233182
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/at-3.json",
+      "sha256": "39db9cc61ee8e9a7128c6c03c11bfa96e61f1bad7e73b25da6dac7118363b57c",
+      "bytes": 2208617
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/process-2.json",
+      "sha256": "07dba6b16dc6b58fd84772e57e1a1942add85a78ef68c5b8641ab907dfbe20ab",
+      "bytes": 1339
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/round-1.json",
+      "sha256": "6fb897984da3869d7fb1420a6bff49c71ba62981b2e7cc37f227eec370247851",
+      "bytes": 2233182
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/complete.json",
+      "sha256": "380062262e56a415cbe9f585afe6fdfe2648cc570830b31e872ba9c36326d9a0",
+      "bytes": 190
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/round-0.json",
+      "sha256": "2f1e0c3b662dbb2123772dfc9a04c9892afff842dc0d9174e31e99c15d36337b",
+      "bytes": 2233184
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-mediated-sqlite-w5UlP4/at-1.json",
+      "sha256": "15e1ac98f1024bc8dc04f645fcdca9da5805481979a00095d962f61175ce5f49",
+      "bytes": 776331
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/original.json",
+      "sha256": "62b590a665ef8e9c7c7b00bb56d87f7a670e30cabc0739718cbe623a2afa26f1",
+      "bytes": 4491433
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/at-2.json",
+      "sha256": "c6d0675d1e0f8a138465a6a1a73f8f22f6adea5e84ec13903ed7b06a267999b7",
+      "bytes": 1182580
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/input.json",
+      "sha256": "cf060ed4bf8c697088faaaf67bb85e52e9a3c9e6c2480ddb8c685f5de8115f41",
+      "bytes": 51351
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/process-0.json",
+      "sha256": "d752bbc78e5d9fe719b5778101a4f348ef59635f20add4dc748afcbd744cdf80",
+      "bytes": 1333
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/process-1.json",
+      "sha256": "73a2bfa482ada499ea824d656410eb9105d3aa353b9b2790cdf0ba9b7b573061",
+      "bytes": 1331
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/fixture-inputs.json",
+      "sha256": "f7ee972afd63242b0f9968d8a9dda5b2bf157a885b60c1cd66f6aeed58e18be4",
+      "bytes": 1539
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/round-2.json",
+      "sha256": "bc646c025f6e9c16e8ed1c2784acf14d62ecfd94015d3ce6a63673b62ae56617",
+      "bytes": 1497359
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/at-3.json",
+      "sha256": "af5662b624a15548f9a105845a0cc9c312586f4042b1bae012ca511b6ae7cc1a",
+      "bytes": 1466865
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/process-2.json",
+      "sha256": "871908fd132102e1e66d3771f8c5b4fe24893dbd49c772319a8d4cb9a0d7428c",
+      "bytes": 1331
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/round-1.json",
+      "sha256": "6b243103f7f6666a89c849b3cac808703a3f3374c5b6109f826a3b78a725cc85",
+      "bytes": 1497359
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/complete.json",
+      "sha256": "867b4bd07a248fb762c2d9bbf10eea6fc2b513d7d6ba7ecdb5fc1336754ddab0",
+      "bytes": 182
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/round-0.json",
+      "sha256": "2baa1bb36912eff635fc0e9d4a5494e382c9f465228d427c7d4c4fe4129b2be1",
+      "bytes": 1497361
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-json-LCRMkf/at-1.json",
+      "sha256": "88dd2419229dd1f67212d92c5d1af206c0b43f2044e3e663c83ccf9db04c6d8c",
+      "bytes": 695452
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/original.json",
+      "sha256": "98e4a79fd1d406c0930975e409edf6f70ba200321f982e64352e1ecd1f029589",
+      "bytes": 4491443
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/at-2.json",
+      "sha256": "6b1c9dd22408ac7a53ae53d786a41d3ad52998db6d53d86be8b7eea49cc1a91a",
+      "bytes": 1182586
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/input.json",
+      "sha256": "cf060ed4bf8c697088faaaf67bb85e52e9a3c9e6c2480ddb8c685f5de8115f41",
+      "bytes": 51351
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/process-0.json",
+      "sha256": "f3db2460748ef7c3646d17924f69af179e9113c22ea2d519e4db534c86a6c16c",
+      "bytes": 1337
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/process-1.json",
+      "sha256": "8b907977a9dfd87e9388bea5dcdb43169510f4c353a0d05e02e3ac53c585e83f",
+      "bytes": 1335
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/fixture-inputs.json",
+      "sha256": "f7ee972afd63242b0f9968d8a9dda5b2bf157a885b60c1cd66f6aeed58e18be4",
+      "bytes": 1539
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/round-2.json",
+      "sha256": "5a6591ccadd120466637f6ffe5035a3ad6a5718c618d105d380f9836fb39e107",
+      "bytes": 1497371
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/at-3.json",
+      "sha256": "d6cf85c82c5784a388304d7a753540b81a2f122d79035795a773d0b128bacb0f",
+      "bytes": 1466871
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/process-2.json",
+      "sha256": "a8c5823dd95eb2edfca43603ec7c146226b8552b9e47e7345e6c26420dcf1f5a",
+      "bytes": 1335
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/round-1.json",
+      "sha256": "2d444d90d49c6cfa7e79a1501692e82fee9115febe5d6130bc26fc50ac37ef1b",
+      "bytes": 1497371
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/complete.json",
+      "sha256": "b678ce6e7bcc3d2912fc23c446125b926baf52a8c9a4458a552c4ec838a921be",
+      "bytes": 186
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/round-0.json",
+      "sha256": "13e8a2335baf7d37da6daeb4215eab92be5db8f92414d350e6ca85d791c43054",
+      "bytes": 1497373
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/src/src-rule-sqlite-molCBt/at-1.json",
+      "sha256": "52d509a3f9e44f5a64b79c38b728c149f9182fa5eff6e30c27781237f4102d87",
+      "bytes": 695458
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/original.json",
+      "sha256": "82f07f1de3f33f4c51a1589b9b2a594d913fd9492dbf2545cab48797b69454a7",
+      "bytes": 4491433
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/at-2.json",
+      "sha256": "e3573fcf759a6684328f7ea2ceaf9777c64d88935f28222c19f0687dd0f0ad18",
+      "bytes": 1182580
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/input.json",
+      "sha256": "cf060ed4bf8c697088faaaf67bb85e52e9a3c9e6c2480ddb8c685f5de8115f41",
+      "bytes": 51351
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/process-0.json",
+      "sha256": "ccf202e8afd7d1248843767c7716761bfc5370db00706b493bbc1c529531cb0d",
+      "bytes": 1201
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/process-1.json",
+      "sha256": "788a76462e35f475df5642f3767e42d118cea760e9081764365a15682a541cab",
+      "bytes": 1199
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/fixture-inputs.json",
+      "sha256": "f7ee972afd63242b0f9968d8a9dda5b2bf157a885b60c1cd66f6aeed58e18be4",
+      "bytes": 1539
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/round-2.json",
+      "sha256": "1b9228d26d8389236d517a087f52fbce132decb6691bf23f3336faec485a32f6",
+      "bytes": 1497359
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/at-3.json",
+      "sha256": "ec333f3c500480e633597a62564cf35cdb914f76be70356625000505b2f7ae13",
+      "bytes": 1466865
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/process-2.json",
+      "sha256": "25c18316f583b9d0e8e09aca909f1f193fa40d7adb8fdcd01b2944510f337752",
+      "bytes": 1199
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/round-1.json",
+      "sha256": "2fceca65c5a30727710ae183d1ef788239a50213b2c467c548889435cdccd6f7",
+      "bytes": 1497359
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/complete.json",
+      "sha256": "c343559925d4aa80079482fde473c5094adf382b828679fb928c5339822d3064",
+      "bytes": 182
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/round-0.json",
+      "sha256": "84e279f3e307f98c3343841b73b4c94181a82edc803fcdc8fa1232d1ffecdc93",
+      "bytes": 1497361
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-json-IE5TpD/at-1.json",
+      "sha256": "5847ecc6f6746e09327187ece14e5bb18338bfb0870d00670f995e769c3c3eb1",
+      "bytes": 695452
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/original.json",
+      "sha256": "71cc98937202e8c426d2bcdba85c8604b69574ee7706d1ff0a5fcf096ca81a5b",
+      "bytes": 4491443
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/at-2.json",
+      "sha256": "ce7d848c523c8c5b536e21ff88a34ca2ddd87e63b59adee24d7a364afc690299",
+      "bytes": 1182586
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/input.json",
+      "sha256": "cf060ed4bf8c697088faaaf67bb85e52e9a3c9e6c2480ddb8c685f5de8115f41",
+      "bytes": 51351
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/process-0.json",
+      "sha256": "1919c3f2e0ea4275f0563ff13a89caec3e386113f4123aee9e2daee497675e13",
+      "bytes": 1205
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/process-1.json",
+      "sha256": "9d62f3d1aa40b57d9d511a4a10dc447dcce5526c2dd4ccc9a11794a1cadf96b3",
+      "bytes": 1203
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/fixture-inputs.json",
+      "sha256": "f7ee972afd63242b0f9968d8a9dda5b2bf157a885b60c1cd66f6aeed58e18be4",
+      "bytes": 1539
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/round-2.json",
+      "sha256": "9dd65790b50396b13321557f003c47da78bb88b204744b48b8b4a73ec9b82bba",
+      "bytes": 1497371
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/at-3.json",
+      "sha256": "cff04bcbe79d158a3277b3cc0071d3d120c2cb88bb66ed1c367aca4be76a875f",
+      "bytes": 1466871
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/process-2.json",
+      "sha256": "ea7caf4fb719a17c9469f5017ce1366b6949add1728b18bdb962baf75ce14a34",
+      "bytes": 1203
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/round-1.json",
+      "sha256": "ff62d1dddd01f08705ad388144ad91d94926fd01c0b2d1cd6a0efab050619c18",
+      "bytes": 1497371
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/complete.json",
+      "sha256": "6e355291aaaf24292d7a57e91538aa2990d96afd2ce7e43822195a0a05202ec6",
+      "bytes": 186
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/round-0.json",
+      "sha256": "1150dae4e1425e4acac3015bfdf38eafe300abe9182401a81ed66117e729b52c",
+      "bytes": 1497373
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-rule-sqlite-iVDB1F/at-1.json",
+      "sha256": "aa3862bc5ccc57543b23bf4074ced5eb8bc3698d5dc41f6e002bba40576d85ca",
+      "bytes": 695458
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/original.json",
+      "sha256": "2e85847152e56b7f43b8d072a8242a863825ccb6e39a44b7859ae82a85071fee",
+      "bytes": 8867880
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/at-2.json",
+      "sha256": "51ad581839702e212c266b80c5e48fa6397e9616e92f4d04d08aa4a4c833368e",
+      "bytes": 1610652
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/input.json",
+      "sha256": "3cf5c054ea2d9ba26c2c1f8dd484180e6189c05fd3e1ddbfea5db0e2830fff84",
+      "bytes": 51420
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/process-0.json",
+      "sha256": "20e98915235a66e0cee7ecf504bbc018dfdc8cc763c6e2463eaaa1fe3a412691",
+      "bytes": 1205
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/process-1.json",
+      "sha256": "031b26652f52fe0f2fd3b305046d35039de1d955feb8acf6423550aa107cf97b",
+      "bytes": 1203
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/fixture-inputs.json",
+      "sha256": "f7ee972afd63242b0f9968d8a9dda5b2bf157a885b60c1cd66f6aeed58e18be4",
+      "bytes": 1539
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/round-2.json",
+      "sha256": "143ba41d0af5125485d19129fe6476396f2c7e27b4923971e688ea5f106e2508",
+      "bytes": 2233170
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/at-3.json",
+      "sha256": "9b220cdff124bc99ea98ced9176327d0e5d9ab1241714184e4808801649cbac0",
+      "bytes": 2208611
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/process-2.json",
+      "sha256": "ba8eb43576395c2c24ee4df9b769854f18824acab78943980a3bccf9094ebb6f",
+      "bytes": 1203
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/round-1.json",
+      "sha256": "a70ff3bc07bf48036f459d4d02cf5c72973890f293b849868843181283c0faec",
+      "bytes": 2233170
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/complete.json",
+      "sha256": "07718fa6e061b0cf7459e6b13d4206be4413cc5cf933b1ce3a6e38e5254b4530",
+      "bytes": 186
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/round-0.json",
+      "sha256": "f34fcfb50718b2a87323b53f03c52f71221eee70fe8aa6a37584cf03129a886e",
+      "bytes": 2233172
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-json-BEUNQH/at-1.json",
+      "sha256": "c29c8b313ca6d2785509361156509adaef2d066ffafd73ed212570c22bf125c5",
+      "bytes": 776325
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/original.json",
+      "sha256": "454ac88070d6d878ac8e262f28dedf93724d5aed278e1283099726b0e13b1cd9",
+      "bytes": 8867890
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/at-2.json",
+      "sha256": "d6391c218b9ad0ded165342deb9616df3352ff22ee0ee49d67b37e41320379ae",
+      "bytes": 1610658
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/input.json",
+      "sha256": "3cf5c054ea2d9ba26c2c1f8dd484180e6189c05fd3e1ddbfea5db0e2830fff84",
+      "bytes": 51420
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/process-0.json",
+      "sha256": "8dddb94f8e212de687773f6e657163f72b95c154f7aebe9c2c6eced57f22464f",
+      "bytes": 1209
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/process-1.json",
+      "sha256": "9ed31fc2c34e02f63b7a00c42df1ee6dac77b96a15e330d3fd88ba8a386865ee",
+      "bytes": 1207
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/fixture-inputs.json",
+      "sha256": "f7ee972afd63242b0f9968d8a9dda5b2bf157a885b60c1cd66f6aeed58e18be4",
+      "bytes": 1539
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/round-2.json",
+      "sha256": "9c8fbfc7b73507c91683d2c37c6481bd55744049872738462d6c560295eb96fa",
+      "bytes": 2233182
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/at-3.json",
+      "sha256": "239bf0b9cebc86c92f8f0e8e1e7d2cb52967e66da997d7c4ecf3a13e2017674a",
+      "bytes": 2208617
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/process-2.json",
+      "sha256": "05c428ac207c5d32ca82f0339a5b6898acd7c6623f259a7f14dc75a309b3dd14",
+      "bytes": 1207
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/round-1.json",
+      "sha256": "3ebbd2ac0e5d959c277c15bd842daf3ba5d1fbd7de4c5ed3e44de1cd599c744c",
+      "bytes": 2233182
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/complete.json",
+      "sha256": "b1254bba21f804669a5dad5a3f75e0f3b1a5df1930d22de2c13fc13ec3e76916",
+      "bytes": 190
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/round-0.json",
+      "sha256": "680be7bb33083849cf4299aea9c97f732ac2f1bd67fe2fe51840da78c1214bb8",
+      "bytes": 2233184
+    },
+    {
+      "path": ".local/world-completion/c37-director-events/final-matrix-20261013/lib/lib-mediated-sqlite-YbY5lr/at-1.json",
+      "sha256": "62145e31014f16f4f6899a045c598d8cf853e2baf16bc272f8e5213e195033b3",
+      "bytes": 776331
+    }
+  ]
+}

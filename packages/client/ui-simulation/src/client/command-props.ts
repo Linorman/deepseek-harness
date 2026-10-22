@@ -7,7 +7,7 @@ export interface CommandProps {
   retain: (command: SimulationCommand, version: number) => SimulationCommandKey
   submit: (key: SimulationCommandKey) => Promise<SimulationCommandState | undefined>
   query: (key: SimulationCommandKey) => Promise<SimulationCommandState | undefined>
-  t: (key: Key) => string
+  t: (key: Key, vars?: Record<string, unknown>) => string
 }
 
 /**
@@ -16,6 +16,7 @@ export interface CommandProps {
  * @returns Whether callers must keep the original identity for query or retry.
  */
 export function commandUnresolved(record: SimulationCommandState | undefined): boolean {
-  return record !== undefined && (record.pending || record.unknown || record.receipt === undefined
-    || record.receipt.value.status === 'accepted')
+  return record !== undefined && (record.pending || record.requestObservationUnavailable === true
+    || record.requestObservation?.comparison === 'conflict' || !record.notAccepted
+    && (record.unknown || record.receipt === undefined || record.receipt.value.status === 'accepted'))
 }

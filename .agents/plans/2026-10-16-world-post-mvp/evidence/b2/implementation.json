@@ -1,0 +1,86 @@
+{
+  "scope": "B07-B11 plus the D1 portable owner-closure prerequisite",
+  "journalVersion": 100,
+  "backends": [
+    "json",
+    "sqlite"
+  ],
+  "supported": "Complete self-contained root Team, Native full history, Team/Channel full streams, materialized and unmaterialized canonical Sessions, canonical image attachments; legal mapped-header import checkpoint",
+  "unsupported": [
+    "child Teams and external Session parents",
+    "Team/task workspaces and provider workspace allocations/artifacts",
+    "non-image structured attachments",
+    "unknown branch lineage and unknown owner formats",
+    "physical deletion or history-capacity reclamation",
+    "automatic provider/preset installation or version migration",
+    "custom domain pins and runtime/Channel providers without covered reference-export contracts",
+    "Product creation/resolved runtime/directory registration migration"
+  ],
+  "commands": [
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-scenario/tests/environment.spec.ts packages/simulation/simulation-local/tests/world-environment.spec.ts packages/simulation/simulation/tests/world-environment-evaluation.spec.ts packages/simulation/simulation-team/tests/archive.spec.ts",
+      "evidence": ".tmp/world-post-mvp/b2/final-integration.log",
+      "result": "9 passed; JSON and SQLite, real Loader source and isolated target owner restoration"
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-team/tests/archive.spec.ts",
+      "evidence": ".tmp/world-post-mvp/b2/writable-restore-current.log",
+      "result": "2 passed; source unavailable, mapped header, old-manifest refusal, new legal checkpoint, actual restore and canonical resume"
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-product/tests/world-administration.spec.ts -t 'retains an authorized original archive'",
+      "evidence": ".tmp/world-post-mvp/b2/product-host-current.log",
+      "result": "2 passed; all four actual fetch-carrier methods, original command retry/restart and disclosure revocation"
+    },
+    {
+      "command": "pnpm exec vitest run examples/simulation-company/tests/world-archive.snapshot.ts --config vitest.snapshot.config.ts --maxWorkers=2 --update",
+      "evidence": ".tmp/world-post-mvp/b2/snapshot.log",
+      "result": "2 passed, 2 runnable example golden snapshots recorded"
+    },
+    {
+      "command": "pnpm exec tsc -b tsconfig.host.json --pretty false",
+      "evidence": ".tmp/world-post-mvp/b2/host-freeze.log",
+      "result": "passed at recorded check; final aggregate gate follows integrating task"
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-team/tests/archive.spec.ts packages/simulation/simulation-local/tests/owner.spec.ts packages/simulation/simulation-scenario/tests/environment.spec.ts packages/simulation/simulation-local/tests/world-environment.spec.ts packages/simulation/simulation-local/tests/world-representation.spec.ts",
+      "evidence": ".tmp/world-post-mvp-bc/representation-review/final-owning.log",
+      "result": "15 passed after final unified build; includes actual SIGKILL publication lock release, duplicate owner/Session refs, parent closure and installed custom domain rejection"
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-product/tests/world-administration.spec.ts -t 'retains an authorized original archive'",
+      "evidence": ".tmp/world-post-mvp-bc/representation-review/final-retention-host.log",
+      "result": "2 passed after final unified build; all four actual fetch-carrier methods and durable retry/access boundaries"
+    },
+    {
+      "command": "pnpm exec vitest run examples/simulation-company/tests/world-archive.snapshot.ts examples/simulation-company/tests/world-environment.snapshot.ts examples/simulation-company/tests/world-representation.snapshot.ts examples/simulation-company/tests/world-external-shared.snapshot.ts --config vitest.snapshot.config.ts --maxWorkers=2",
+      "result": "4 files, 10 passed; existing golden snapshots unchanged after unified build",
+      "log": ".tmp/world-post-mvp-bc/representation-review/final-snapshots.log"
+    }
+  ],
+  "hashes": {
+    "packages/storage/storage/src/archive.ts": "cb307f4fe589e2509c37c2ac6107ad06c0e8de4df81ca5a9b7c3984faa418f02",
+    "packages/core/team/src/persistence-reference.ts": "3459a998e2d56d4e9acd190d99ccb53170a984193cc0e05a68bcdc0db26ad44d",
+    "packages/core/team/src/runtime.ts": "9dd8c3f25806955b68adb9f47946308685b3f34d1921ae742c4f9d1480bee550",
+    "packages/team/team-hub/src/index.ts": "779b11fd98510e993a46007e5512e79e1963d264c8288b15d1ff1a9cc244c592",
+    "packages/simulation/simulation/src/checkpoint-reference.ts": "f68b4f4b6cf18ba5b2791e1e67751d6ffd5380e3a04835ffcadb80cc6e522338",
+    "packages/simulation/simulation-local/src/run.ts": "49a2bf0788fa32c28a5751fc01e9900ea6651f1cd997577346e91239c5d64c48",
+    "packages/simulation/simulation-team/src/archive.ts": "1e55286ac221169b23532bce4d03ac942ab8ca15e1171e625362891a2d96f165",
+    "packages/simulation/simulation-team/src/checkpoint.ts": "ec9fc2f3408f325fdb5daecb07d9c118df76b209ce59b99f05be9fda2e243652",
+    "packages/simulation/simulation-team/src/types.ts": "5144bc94f9406fa4a456473405b5b7dba5e9231901d5def831bd167a63660896",
+    "packages/simulation/simulation-product/src/retention.ts": "8a16688fe10b05109f9114ae7e943df251d62489325275c0ea5674efab3b44a2",
+    "packages/simulation/simulation-product/src/retention-schema.ts": "10d80df20eb4cdd5a3ad94b3a24f2f4f023120e5716011b0a8b28f2a1aa40b63",
+    "packages/simulation/simulation-product/src/retention-types.ts": "7491ecf73e204f5068caa6e7ea2455ef9495ad8c1064ea72448f2788aba37ead",
+    "packages/simulation/simulation-product/src/administration.ts": "ae507f981dda40a84e9aa7fc9d55a0ae2ac453eea1ec38ec877b19b250bbd7ce",
+    "packages/simulation/simulation-product/src/world-owner.ts": "7d897e3438cfadb739cc788561249f1c0f93977b0e0d97c6cf5be87d493d2417",
+    "packages/simulation/simulation-team/tests/archive.spec.ts": "9f278b7a35441fe2c495348b6139664fc138072c5fba071b8790e7f301784d46",
+    "packages/simulation/simulation-product/tests/world-administration.spec.ts": "2f477de647675f57c0dc3bfcd6d0c5563ad3fd223a8eebadfa073e8948e955f2",
+    "examples/simulation-company/tests/world-archive-scenario.ts": "bda488f02981452bdd56bdb1ca71dbea7f0c3794c03fe46adc4adf354ea251c9",
+    "examples/simulation-company/tests/world-archive.snapshot.ts": "8597fbcde8bca45295fabefc456cb3d8e22f68820ddd67926dcad8f261f73270",
+    "examples/simulation-company/tests/__snapshots__/world-archive.snapshot.ts.snap": "02f5b80d0c1c53e51eed06cf530fa948dc529b0e96533a71b4b1bc61669c0714",
+    "packages/storage/storage/src/owner.ts": "fedcb7ee85f8ff06e82ad17f4ee8d50738d72e514de04d7ea58d7327b8c1a419",
+    "packages/simulation/simulation-local/src/owner.ts": "03623f4f56f32815c275eedb3b5771c22508e83e5e2179ae2cf9b861342376eb",
+    "packages/simulation/simulation-team/tests/archive-owner-process.ts": "944d2d0886241b3466c9ba9a9ddb99bbbe6a758b59cd47f4ab0a6573b9fc85d2"
+  },
+  "aggregateGates": "Final full build, lint, doc-sync, SDK and long-workload gates are recorded by the integrating task."
+}

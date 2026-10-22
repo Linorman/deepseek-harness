@@ -8,6 +8,10 @@
 
 *.pdf binary
 
+# Retained acceptance captures are byte evidence; preserve their hashes and raw whitespace.
+.agents/plans/**/evidence/**/*.log binary
+.agents/plans/**/evidence/source-design.html binary
+
 # Pairing records are generated from the three confirmed owner-blob pairs.
 # The worktree-local installer registers the fail-closed driver command.
 *.i18n.yaml merge=clocky-translation-pairing

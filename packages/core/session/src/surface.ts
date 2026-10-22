@@ -1,4 +1,5 @@
 import { isSimulationContextViewEvent } from './simulation-context.ts'
+export { isSimulationGenerationEvent } from './simulation-generation.ts'
 export { SIMULATION_CONTEXT_SECTIONS, isSimulationContextView, isSimulationContextViewEvent } from './simulation-context.ts'
 /**
  * Surface layer on top of the session event log: an ordered view of events

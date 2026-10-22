@@ -1,0 +1,755 @@
+{
+  "scope": {
+    "checklist": "O17 evidence only; checklist owned by root",
+    "scene": "company trusted v0",
+    "backends": [
+      "json",
+      "sqlite"
+    ],
+    "launchModes": [
+      "source",
+      "lib"
+    ],
+    "stages": [
+      "transfer-reserve-before",
+      "transfer-reserve-after",
+      "transfer-commit-before",
+      "transfer-commit-after",
+      "depart-accepted-fence-after",
+      "depart-commit-after",
+      "notification-lost",
+      "transfer-maintenance-after",
+      "depart-retirement-unknown"
+    ],
+    "sourceFrozen": true,
+    "claimsExcluded": [
+      "laboratory crash matrix",
+      "v1/UI",
+      "payment/resource cost protocol"
+    ]
+  },
+  "sourceFiles": [
+    {
+      "path": "examples/simulation-company/tests/world-personnel-crash-scenario.ts",
+      "bytes": 26370,
+      "sha256": "2e9ce6997bf5c35bd635f284874a37634ee604d1882af3167576cfe4fd66ad54"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-crash-model.ts",
+      "bytes": 907,
+      "sha256": "e9851fa5ad0ad64aeabb0cf67672619d6bf398338eec1e730dcd3475471ec830"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-crash.snapshot.ts",
+      "bytes": 4051,
+      "sha256": "719939b3e894a8f5cc8510e500a3917c19a539935ce3c5ea3402ac8707b3bffb"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-personnel-crash/cordis.yml",
+      "bytes": 108,
+      "sha256": "b15b79b0856391317d50c5c83faa640fe56f0e2aa97e95b061205468ef923e79"
+    }
+  ],
+  "executions": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel-crash.snapshot.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source18.log",
+      "exitCode": 1,
+      "passed": 16,
+      "failed": 2,
+      "acceptedScope": "All stages except notification-lost; notification expectation failure retained."
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel-crash.snapshot.ts -t notification-lost",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-notification-fixed.log",
+      "exitCode": 0,
+      "passed": 2,
+      "skipped": 16,
+      "acceptedScope": "Current corrected notification expectation: second cold compares actual first reconciliation prefix."
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_EXAMPLE_MODE=lib pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel-crash.snapshot.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib18.log",
+      "exitCode": 0,
+      "passed": 18,
+      "buildPrerequisite": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-build.log",
+      "acceptedScope": "All nine stages, both backends, current frozen fixture."
+    }
+  ],
+  "staticChecks": {
+    "lint": {
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lint-final18c.log",
+      "exitCode": 0
+    },
+    "hostTypes": {
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-types-final18c.log",
+      "exitCode": 0
+    },
+    "rootBuild": {
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-build.log",
+      "exitCode": 0,
+      "clientArtifacts": 197
+    }
+  },
+  "counts": {
+    "acceptedSourceCases": 18,
+    "acceptedLibCases": 18,
+    "acceptedBarriers": 36,
+    "acceptedIndependentColdRestores": 72,
+    "acceptedSourceRawFiles": 54,
+    "acceptedLibRawFiles": 54,
+    "acceptedRawFiles": 108
+  },
+  "acceptedSourceArtifacts": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-accepted-fence-after-barrier.json",
+      "bytes": 255428,
+      "sha256": "a913e4111b1676062e6f5ce3447737a45ea61d41bc08e533005d5bf5f4f090ad"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-accepted-fence-after-restore-1.json",
+      "bytes": 100550,
+      "sha256": "54eb8554a3d7a9100ab65e2181c20273cc6e67a6d378523ca6788b27442c2645"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-accepted-fence-after-restore-2.json",
+      "bytes": 100550,
+      "sha256": "54eb8554a3d7a9100ab65e2181c20273cc6e67a6d378523ca6788b27442c2645"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-commit-after-barrier.json",
+      "bytes": 366202,
+      "sha256": "ab9f01893f3460be4428e17e5c02c5d3a58a199bc2867dcc988444089dff9744"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-commit-after-restore-1.json",
+      "bytes": 129059,
+      "sha256": "431246a1e2110635abda3c8c1426c33d7bca5f461484d17723ccb5135c1e9785"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-commit-after-restore-2.json",
+      "bytes": 129059,
+      "sha256": "431246a1e2110635abda3c8c1426c33d7bca5f461484d17723ccb5135c1e9785"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-retirement-unknown-barrier.json",
+      "bytes": 361624,
+      "sha256": "2206c7e69495b967365842e61aa36ffd8163cc35a9c1213b362dfc19d4a6500e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-retirement-unknown-restore-1.json",
+      "bytes": 126013,
+      "sha256": "e0a73b705ad8a325615b499c71c06a1d124da9d9026f7306183cfeaae8240dea"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-depart-retirement-unknown-restore-2.json",
+      "bytes": 126013,
+      "sha256": "e0a73b705ad8a325615b499c71c06a1d124da9d9026f7306183cfeaae8240dea"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-commit-after-barrier.json",
+      "bytes": 378523,
+      "sha256": "d0ecf5301ebb7a2e33c4fb0bb89cbd5dbcd65ca457b3797962430530ca61b5fd"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-commit-after-restore-1.json",
+      "bytes": 133588,
+      "sha256": "dcb77a3760accb2ad651e1cd18c2fb831e56c2ce875cb935f9efff2a41e5ab86"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-commit-after-restore-2.json",
+      "bytes": 133588,
+      "sha256": "dcb77a3760accb2ad651e1cd18c2fb831e56c2ce875cb935f9efff2a41e5ab86"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-commit-before-barrier.json",
+      "bytes": 369085,
+      "sha256": "4599910372e3b2182b6ca005751c378d57bf5969bd8eb2b9435dc8486f71528a"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-commit-before-restore-1.json",
+      "bytes": 124531,
+      "sha256": "9388bc7c949015419d090d5046c592355cbf5a8265ae36a857ffb51941213dee"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-commit-before-restore-2.json",
+      "bytes": 124531,
+      "sha256": "9388bc7c949015419d090d5046c592355cbf5a8265ae36a857ffb51941213dee"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-maintenance-after-barrier.json",
+      "bytes": 365528,
+      "sha256": "cfd5deeef35124db8b37db621861d2ad9bad8f7214707b55033e67b5d7cff525"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-maintenance-after-restore-1.json",
+      "bytes": 124587,
+      "sha256": "71d54179078abb8d5072c2ecb7924b6e029a369729b5e540df88be383ab5a9d7"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-maintenance-after-restore-2.json",
+      "bytes": 124587,
+      "sha256": "71d54179078abb8d5072c2ecb7924b6e029a369729b5e540df88be383ab5a9d7"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-reserve-after-barrier.json",
+      "bytes": 364326,
+      "sha256": "95b38fb7c5320991dce79311ac6e8ee0c240809a9fe8c517af70e3bb1ee9042d"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-reserve-after-restore-1.json",
+      "bytes": 124531,
+      "sha256": "570d22d7ca9840f7312bbd34ab050d87ba5fcddca0104ff9c689167614143b36"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-reserve-after-restore-2.json",
+      "bytes": 124531,
+      "sha256": "570d22d7ca9840f7312bbd34ab050d87ba5fcddca0104ff9c689167614143b36"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-reserve-before-barrier.json",
+      "bytes": 362178,
+      "sha256": "d3895794206df29974789f647d8822b393af596e9fe715214af8ff26c571ddd9"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-reserve-before-restore-1.json",
+      "bytes": 122418,
+      "sha256": "a4dcb9795b6a3b520508c8c2eb10d58f68ec1a0aa37bb664558ecc061f4d3bd0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-transfer-reserve-before-restore-2.json",
+      "bytes": 122418,
+      "sha256": "a4dcb9795b6a3b520508c8c2eb10d58f68ec1a0aa37bb664558ecc061f4d3bd0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-accepted-fence-after-barrier.json",
+      "bytes": 255432,
+      "sha256": "0efce601ae795d36bf43f39edf003deadb9314f6361c403cfca45e2a12660105"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-accepted-fence-after-restore-1.json",
+      "bytes": 100550,
+      "sha256": "807518ba5ce79039b40850cea56a768a1a55cb729b1f3d72209e0087a67ac56e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-accepted-fence-after-restore-2.json",
+      "bytes": 100550,
+      "sha256": "807518ba5ce79039b40850cea56a768a1a55cb729b1f3d72209e0087a67ac56e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-commit-after-barrier.json",
+      "bytes": 366206,
+      "sha256": "fa6d34a15ae9fab53c31349f7db78d0d94a093114700b8248e572655413926a8"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-commit-after-restore-1.json",
+      "bytes": 129059,
+      "sha256": "7bdbfbd394072efef5626b527b60a9178a2b6bb446cee0494f691eb74c823923"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-commit-after-restore-2.json",
+      "bytes": 129059,
+      "sha256": "7bdbfbd394072efef5626b527b60a9178a2b6bb446cee0494f691eb74c823923"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-retirement-unknown-barrier.json",
+      "bytes": 361628,
+      "sha256": "530e2cb771d9b209c9b452d170e01f18801da132c158ba1b90af6a5dae91bb24"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-retirement-unknown-restore-1.json",
+      "bytes": 126013,
+      "sha256": "e714ed9ae65f55f5b59f2a1d20ca37833c4251fab99030d422e294a5366ac71f"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-depart-retirement-unknown-restore-2.json",
+      "bytes": 126013,
+      "sha256": "e714ed9ae65f55f5b59f2a1d20ca37833c4251fab99030d422e294a5366ac71f"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-commit-after-barrier.json",
+      "bytes": 378527,
+      "sha256": "bbb1f2b76afcf6d63dc720c3585ecec808852eb5986d241317fe97f52855863d"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-commit-after-restore-1.json",
+      "bytes": 133588,
+      "sha256": "c8773bb10e2bd3d7bdbbb648879d837d88c448a434c34767b6b2843b6bf9114f"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-commit-after-restore-2.json",
+      "bytes": 133588,
+      "sha256": "c8773bb10e2bd3d7bdbbb648879d837d88c448a434c34767b6b2843b6bf9114f"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-commit-before-barrier.json",
+      "bytes": 369089,
+      "sha256": "918abee9dfeeee7001b176b23178fa5b3712560d4fbef6da6102e6f95e686fd2"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-commit-before-restore-1.json",
+      "bytes": 124531,
+      "sha256": "41e6cbe11b39cf8b0486e78fb492067eb7e38df743437200884c6255e6ff27d3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-commit-before-restore-2.json",
+      "bytes": 124531,
+      "sha256": "41e6cbe11b39cf8b0486e78fb492067eb7e38df743437200884c6255e6ff27d3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-maintenance-after-barrier.json",
+      "bytes": 365532,
+      "sha256": "0fa24b5bc8ac6ef58b76688dae092d74ef5e07d23004bc3d2c9cb84aa7a69704"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-maintenance-after-restore-1.json",
+      "bytes": 124587,
+      "sha256": "989ab9a92af7381df5e45ba83391900ccd561c909f7b4cabb64ff19d43cdbb6d"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-maintenance-after-restore-2.json",
+      "bytes": 124587,
+      "sha256": "989ab9a92af7381df5e45ba83391900ccd561c909f7b4cabb64ff19d43cdbb6d"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-reserve-after-barrier.json",
+      "bytes": 364330,
+      "sha256": "ed194a60cc6d727b6ecb86a62010d661a37c5ee1f55065d09450c653c776b04a"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-reserve-after-restore-1.json",
+      "bytes": 124531,
+      "sha256": "de61612c8348ecb20a9f2cb8b129fa9e824e8a3fcfe6ba5aa17c63c762b7dd19"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-reserve-after-restore-2.json",
+      "bytes": 124531,
+      "sha256": "de61612c8348ecb20a9f2cb8b129fa9e824e8a3fcfe6ba5aa17c63c762b7dd19"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-reserve-before-barrier.json",
+      "bytes": 362182,
+      "sha256": "058559241b24d7e1d1545c22026bd8a23576dcade17de178944e3bc49a9f8b0d"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-reserve-before-restore-1.json",
+      "bytes": 122418,
+      "sha256": "4f1f4452da666d17ac2a35b1ad285a40649937c92f5dbe2ed698bf12c401dcc3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-transfer-reserve-before-restore-2.json",
+      "bytes": 122418,
+      "sha256": "4f1f4452da666d17ac2a35b1ad285a40649937c92f5dbe2ed698bf12c401dcc3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18b-raw/json-notification-lost-barrier.json",
+      "bytes": 581317,
+      "sha256": "5c35fe699963d290403f2cdcf381cce38cb1e4ab5c888ca7361d54da2a365f68"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18b-raw/json-notification-lost-restore-1.json",
+      "bytes": 159782,
+      "sha256": "f63099c2300c98617fed1ebefe525cdc520f5f4e5e86526030ce5802ea4055ec"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18b-raw/json-notification-lost-restore-2.json",
+      "bytes": 159782,
+      "sha256": "f63099c2300c98617fed1ebefe525cdc520f5f4e5e86526030ce5802ea4055ec"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18b-raw/sqlite-notification-lost-barrier.json",
+      "bytes": 581321,
+      "sha256": "ea81130a8514b1d313343998917d157579f5464f6a2fcd013287dcf96bc28b01"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18b-raw/sqlite-notification-lost-restore-1.json",
+      "bytes": 159782,
+      "sha256": "7df6e76a73a669a6913f814c9f6710df8a3904fbb1df9c78a13e3f44650537a6"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18b-raw/sqlite-notification-lost-restore-2.json",
+      "bytes": 159782,
+      "sha256": "7df6e76a73a669a6913f814c9f6710df8a3904fbb1df9c78a13e3f44650537a6"
+    }
+  ],
+  "acceptedLibArtifacts": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-accepted-fence-after-barrier.json",
+      "bytes": 255428,
+      "sha256": "b752c1f4be4a5ef8f44e77bedf26b4027b747edb5e69536def95823a800f6fd0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-accepted-fence-after-restore-1.json",
+      "bytes": 100550,
+      "sha256": "8a8db98ecfe9e19f2ee4157be662dbe4512c52dfb5c759e852c97a4240dbed7a"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-accepted-fence-after-restore-2.json",
+      "bytes": 100550,
+      "sha256": "8a8db98ecfe9e19f2ee4157be662dbe4512c52dfb5c759e852c97a4240dbed7a"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-commit-after-barrier.json",
+      "bytes": 366202,
+      "sha256": "754b699bb70aff00fc40b446614cb086c1aa87448b9acc33c7d2f32930a474cc"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-commit-after-restore-1.json",
+      "bytes": 129059,
+      "sha256": "ff17086613e7777e1885c0f0c03c94600b364e0b7ab04dc06ac8697e4d099a12"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-commit-after-restore-2.json",
+      "bytes": 129059,
+      "sha256": "ff17086613e7777e1885c0f0c03c94600b364e0b7ab04dc06ac8697e4d099a12"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-retirement-unknown-barrier.json",
+      "bytes": 361624,
+      "sha256": "529ab62ea44036c212ba093516fae6d820a1ed9ac2b840fba7561d270a534e76"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-retirement-unknown-restore-1.json",
+      "bytes": 126013,
+      "sha256": "10dfef6a0eb9ac49ddf4fc95703ff6ce324edda872891a98a7aea9703ca6fbb7"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-depart-retirement-unknown-restore-2.json",
+      "bytes": 126013,
+      "sha256": "10dfef6a0eb9ac49ddf4fc95703ff6ce324edda872891a98a7aea9703ca6fbb7"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-notification-lost-barrier.json",
+      "bytes": 581317,
+      "sha256": "f9e06347454cf3098c64abd0c84363b93405e404e98bb3201c0c4d7b62d5f81c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-notification-lost-restore-1.json",
+      "bytes": 159782,
+      "sha256": "199d3b537dd9a01cb840fe938470089fc0e58761b5e1e60a68b170334ed2ccff"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-notification-lost-restore-2.json",
+      "bytes": 159782,
+      "sha256": "199d3b537dd9a01cb840fe938470089fc0e58761b5e1e60a68b170334ed2ccff"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-commit-after-barrier.json",
+      "bytes": 378523,
+      "sha256": "9d61e38653cb1a5c5fc7d563ed88ca641b40d2dabdb8044c6e4935aeab83203e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-commit-after-restore-1.json",
+      "bytes": 133588,
+      "sha256": "835797c2e282ae6b2ca73171e97470485c4fa7de80286f48bad8be7871a0480c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-commit-after-restore-2.json",
+      "bytes": 133588,
+      "sha256": "835797c2e282ae6b2ca73171e97470485c4fa7de80286f48bad8be7871a0480c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-commit-before-barrier.json",
+      "bytes": 369085,
+      "sha256": "6a409ecaff897720e87314d4d97a2c994b2782630caebfe800972d88a26202f6"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-commit-before-restore-1.json",
+      "bytes": 124531,
+      "sha256": "2f17f4fcd414d8beeef38a2bdc2fc1820c3abb1eee2f97450203be5f552ee9df"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-commit-before-restore-2.json",
+      "bytes": 124531,
+      "sha256": "2f17f4fcd414d8beeef38a2bdc2fc1820c3abb1eee2f97450203be5f552ee9df"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-maintenance-after-barrier.json",
+      "bytes": 365528,
+      "sha256": "335fba7ea932f7308b1a3eea28926598bd7091d76b8aa537bda6766ec614c7a0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-maintenance-after-restore-1.json",
+      "bytes": 124587,
+      "sha256": "f92d41946b140b7828cc310839c64fa6279cf37a651c169db1698c16640e6630"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-maintenance-after-restore-2.json",
+      "bytes": 124587,
+      "sha256": "f92d41946b140b7828cc310839c64fa6279cf37a651c169db1698c16640e6630"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-reserve-after-barrier.json",
+      "bytes": 364326,
+      "sha256": "3bbb6093557c35ca01d434cac9585ee61f9804bc4daff506e689a6c7bf8adb28"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-reserve-after-restore-1.json",
+      "bytes": 124531,
+      "sha256": "9ad893063125ea4ca8afb16cc04f4739be91918e6390a23e868b41b127902a7e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-reserve-after-restore-2.json",
+      "bytes": 124531,
+      "sha256": "9ad893063125ea4ca8afb16cc04f4739be91918e6390a23e868b41b127902a7e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-reserve-before-barrier.json",
+      "bytes": 362178,
+      "sha256": "cc5326f617d07bed3a6a7fc852c46b35e64eabfea45423d2b39c7274c8c7f938"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-reserve-before-restore-1.json",
+      "bytes": 122418,
+      "sha256": "6e9453489c33b8cae7761f89885f710995fe8efecc2b42b40c6bd9338368768e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/json-transfer-reserve-before-restore-2.json",
+      "bytes": 122418,
+      "sha256": "6e9453489c33b8cae7761f89885f710995fe8efecc2b42b40c6bd9338368768e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-accepted-fence-after-barrier.json",
+      "bytes": 255432,
+      "sha256": "803f6a8e0f806121a76de0536fd00298f705d97a858c2b10b3e5ded094b42a8d"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-accepted-fence-after-restore-1.json",
+      "bytes": 100550,
+      "sha256": "d2309c4b462c697bc4afb8d00aaaf1e5259028cf7f9659c8b041acd86562addb"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-accepted-fence-after-restore-2.json",
+      "bytes": 100550,
+      "sha256": "d2309c4b462c697bc4afb8d00aaaf1e5259028cf7f9659c8b041acd86562addb"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-commit-after-barrier.json",
+      "bytes": 366206,
+      "sha256": "8b07b97c94ba1350d6a5dc20cf1890d14351eeb058b0e15db6afea598be9ad11"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-commit-after-restore-1.json",
+      "bytes": 129059,
+      "sha256": "8b1f0185c8c100bdc2a9aa60d4676dafec2e5f50374691c06cc28a397cfc66c3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-commit-after-restore-2.json",
+      "bytes": 129059,
+      "sha256": "8b1f0185c8c100bdc2a9aa60d4676dafec2e5f50374691c06cc28a397cfc66c3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-retirement-unknown-barrier.json",
+      "bytes": 361628,
+      "sha256": "773f25a543347ebdbf257833f5a5f82f432893a71c63b25b625c708aba7eea28"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-retirement-unknown-restore-1.json",
+      "bytes": 126013,
+      "sha256": "bafe62898437392b4c26f340bc2a6c96b8942bdeafb26020e16521a821ca88e4"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-depart-retirement-unknown-restore-2.json",
+      "bytes": 126013,
+      "sha256": "bafe62898437392b4c26f340bc2a6c96b8942bdeafb26020e16521a821ca88e4"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-notification-lost-barrier.json",
+      "bytes": 581321,
+      "sha256": "683559bd10f5afc3c0339de7c98971b4c1dfe80604f06e46aacd43c261224a60"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-notification-lost-restore-1.json",
+      "bytes": 159782,
+      "sha256": "7fa73235cc73e02d2f5cf57f58c4ab6a0ea250e4389eac7481190ec02a3dc62e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-notification-lost-restore-2.json",
+      "bytes": 159782,
+      "sha256": "7fa73235cc73e02d2f5cf57f58c4ab6a0ea250e4389eac7481190ec02a3dc62e"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-commit-after-barrier.json",
+      "bytes": 378527,
+      "sha256": "e200a0ad3ab0429b1a38b0d112457d4f9aff53806940879826783fceee3a4f9b"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-commit-after-restore-1.json",
+      "bytes": 133588,
+      "sha256": "3f578bab72ec2af44c10b1e405e156a49487a9ee03b2a45ef5d607fb9b87bda0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-commit-after-restore-2.json",
+      "bytes": 133588,
+      "sha256": "3f578bab72ec2af44c10b1e405e156a49487a9ee03b2a45ef5d607fb9b87bda0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-commit-before-barrier.json",
+      "bytes": 369089,
+      "sha256": "f0897c440f32919a9764829b765603f9d1c9aa75e9373ccdb36400ce3b07e2b7"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-commit-before-restore-1.json",
+      "bytes": 124531,
+      "sha256": "2c15c86e1f250027432a363ffbee9a9ccc6c9ed653950df497f7c1dbf8ed926c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-commit-before-restore-2.json",
+      "bytes": 124531,
+      "sha256": "2c15c86e1f250027432a363ffbee9a9ccc6c9ed653950df497f7c1dbf8ed926c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-maintenance-after-barrier.json",
+      "bytes": 365532,
+      "sha256": "97011832e0fc0bf704cff83b5f64e685f574f074c2c1d76dc376ea32adb73d00"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-maintenance-after-restore-1.json",
+      "bytes": 124587,
+      "sha256": "d0b25a7082e68d6b5cd63487c9209d58d2142f8a4880315ccf5fb610d8e582f1"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-maintenance-after-restore-2.json",
+      "bytes": 124587,
+      "sha256": "d0b25a7082e68d6b5cd63487c9209d58d2142f8a4880315ccf5fb610d8e582f1"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-reserve-after-barrier.json",
+      "bytes": 364330,
+      "sha256": "d6c9e4b21f1d14d41e8c9afb584ced3be47bd321bcf3796203ef766e0ea33367"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-reserve-after-restore-1.json",
+      "bytes": 124531,
+      "sha256": "6faa650f60e6ef92425c10df7e9aba0c24e364b3996243b5fa0399a4867c14a1"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-reserve-after-restore-2.json",
+      "bytes": 124531,
+      "sha256": "6faa650f60e6ef92425c10df7e9aba0c24e364b3996243b5fa0399a4867c14a1"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-reserve-before-barrier.json",
+      "bytes": 362182,
+      "sha256": "cd9baa69a1655b86459fde737f0c68f64404b20fa42d7ec1893dc9686783f7a7"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-reserve-before-restore-1.json",
+      "bytes": 122418,
+      "sha256": "913d9e8981117a1e2dfa9fca2cf6a38a5586990c08de7d649aebc505aa089963"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw/sqlite-transfer-reserve-before-restore-2.json",
+      "bytes": 122418,
+      "sha256": "913d9e8981117a1e2dfa9fca2cf6a38a5586990c08de7d649aebc505aa089963"
+    }
+  ],
+  "logs": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source18.log",
+      "bytes": 46345,
+      "sha256": "234fa22239d833bc3cb59096e882bc023b8809f6bc691939fad00e414e258474"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-notification-fixed.log",
+      "bytes": 468,
+      "sha256": "91131e2dbcd1edd3d4f6b850273788aaab13ad2d3365000e75cca87e420e0df0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib18.log",
+      "bytes": 456,
+      "sha256": "417adfa861dcd0b85dfe5459db68bac5d7c9321979d6fa91cd0e51062ee6c5c4"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lint-final18c.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-types-final18c.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-build.log",
+      "bytes": 374599,
+      "sha256": "397f2932a521d6a971bdb047d6a32a25c5cb7fff2b9156483f333c1dc8e81467"
+    }
+  ],
+  "stageHistory": {
+    "originalSource18": {
+      "directory": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw",
+      "rawFiles": 52,
+      "acceptedRawFiles": 48,
+      "excludedNotificationArtifacts": [
+        {
+          "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-notification-lost-barrier.json",
+          "bytes": 581317,
+          "sha256": "432995154fd8c8d0c4c5f395de1d371a0d564c18df5cf251c87e4c87745175d7"
+        },
+        {
+          "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/json-notification-lost-restore-1.json",
+          "bytes": 159782,
+          "sha256": "1e8cce61e627708ec9e4fe56b6873870d53b8cc095df797c71b828787b8c8a84"
+        },
+        {
+          "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-notification-lost-barrier.json",
+          "bytes": 581321,
+          "sha256": "78ed969e9fc15de8fa9ddcc26f924d661c39845115ed0a1e65e98da43d8e543c"
+        },
+        {
+          "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18-raw/sqlite-notification-lost-restore-1.json",
+          "bytes": 159782,
+          "sha256": "14e980e6bd6d63f35cb7138a00ce1708679b69e90f6291599981aa97370d16ef"
+        }
+      ],
+      "failure": "Two notification cases failed only at second cold strict operation-prefix expectation. First cold correctly appended actual original receipt reconciliation; no production failure. Original failed raw/log preserved."
+    },
+    "fixedNotificationSource": {
+      "directory": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final18b-raw",
+      "rawFiles": 6,
+      "passedCases": 2
+    },
+    "currentFullLib": {
+      "directory": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-lib-final18b-raw",
+      "rawFiles": 54,
+      "passedCases": 18
+    },
+    "earlierSource14": {
+      "directory": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-final14-raw",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source14.log",
+      "passedCases": 14,
+      "scope": "Earlier seven-stage matrix; superseded by accepted final evidence, retained."
+    },
+    "pilotFailures": {
+      "logs": [
+        ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-pilot.log",
+        ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-pilot2.log",
+        ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-source-pilot3.log"
+      ],
+      "scope": "Fixture horizon/append-envelope classification corrections; retained, not accepted final evidence."
+    }
+  },
+  "proof": {
+    "coldModelCalls": 0,
+    "immutableLedgers": [
+      "world",
+      "relations",
+      "resources",
+      "grants",
+      "interactions",
+      "commitments",
+      "maintenance",
+      "decisions",
+      "operations/outbox",
+      "scheduledEvents",
+      "wakes",
+      "taskExecutions/cancellations"
+    ],
+    "identity": "Original Person, profile, binding, Session memory prefix remain; no replacement identity or double assignment. Writer lifecycle may be released by actual recovery owner.",
+    "unknownRetirement": "Actual original raw.dispose entry held under Controller after writer revocation; SIGKILL preserves charged original epoch, draining original maintenance, reservation and fence. Cold actual recovery reports same Team epoch quiescedAt and charge zero; reservation/fence remain unresolved.",
+    "notification": "Exact intercepted real receipt reconciled against original operation, immutable original fields/attempt prefix retained; second cold validates first actual reconciliation prefix.",
+    "postcommitRetry": "Original commit result retried with zero append.",
+    "quotas": "Unchanged scenario quotas; no increase to model/microstep/byte/resident budgets."
+  }
+}

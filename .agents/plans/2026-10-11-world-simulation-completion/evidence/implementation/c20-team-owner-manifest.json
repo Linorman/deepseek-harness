@@ -1,0 +1,185 @@
+{
+  "scope": "X12 C20 Team single-Channel contact cleanup owner; Native74 implementation/schema/adapter and actual Loader remain root-owned",
+  "nativeStream": 74,
+  "inputHash": "3698398e4be8fe8c5212a48da0c3d7f8e378be55b6eec9e876c91d11bf3d61dc",
+  "files": [
+    {
+      "path": "packages/simulation/simulation-team/src/world-cleanup.ts",
+      "bytes": 30493,
+      "sha256": "c4ae6c9bf4644e08973fa0a7e1e9e13020490169e4e8173651b0436ad298f3a3"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/channels.ts",
+      "bytes": 11347,
+      "sha256": "2e90896d740823f74d11bfff3d8c0bc52ddb22912c015e6008fe0eae8d2235c5"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/index.ts",
+      "bytes": 97395,
+      "sha256": "eabc50d544958d40a7a93cb5990f7aab9a99e5b5df7931ba0ede811b06d81b2d"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/invitation.ts",
+      "bytes": 5483,
+      "sha256": "6b33c26409ea7eb5d231f1888756bc50242b983ddb81e3cbb481a63f33952945"
+    },
+    {
+      "path": "packages/simulation/simulation-team/tests/world.spec.ts",
+      "bytes": 157409,
+      "sha256": "f4193bfefeb7999c44a09537dbaf6cea54798014ed738b95614f569752b54e02"
+    }
+  ],
+  "commands": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/c20-external-contact\" pnpm exec tsc -p .local/world-completion/c20-external-contact/tsconfig-team-contact.json > .local/world-completion/c20-external-contact/team-types-third.log 2>&1",
+      "exitCode": 0,
+      "scope": "Explicit five-file Host compiler face, no emit, existing project references; no package or full builds."
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/c20-external-contact\" pnpm exec tsx scripts/run-oxlint.ts --type-aware packages/simulation/simulation-team/src/world-cleanup.ts packages/simulation/simulation-team/src/channels.ts packages/simulation/simulation-team/src/index.ts packages/simulation/simulation-team/src/invitation.ts packages/simulation/simulation-team/tests/world.spec.ts > .local/world-completion/c20-external-contact/team-lint-third.log 2>&1",
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/c20-external-contact\" pnpm exec vitest run packages/simulation/simulation-team/tests/world.spec.ts -t \"contact Channel ownership\" > .local/world-completion/c20-external-contact/team-contact-tests-second.log 2>&1",
+      "exitCode": 0,
+      "passed": 8,
+      "skipped": 160
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/c20-external-contact\" pnpm exec vitest run packages/simulation/simulation-team/tests/world.spec.ts packages/simulation/simulation-team/tests/channels.spec.ts packages/simulation/simulation-team/tests/participants.spec.ts > .local/world-completion/c20-external-contact/team-owner-regression-final.log 2>&1",
+      "exitCode": 0,
+      "passed": 224
+    }
+  ],
+  "logs": [
+    {
+      "path": ".local/world-completion/c20-external-contact/fixture-lint-typed.log",
+      "bytes": 510,
+      "sha256": "fb20fc78f4aaacf7fdab8927f7a7732d42ddf3ead3b5804020e60349ae6a742f"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/host-types-third.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-base-regression.log",
+      "bytes": 2503,
+      "sha256": "f133c75b2c96a002d778491e1b8f14d5ad2c142575e99cf49adc2de0367e7750"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-owner-regression-final.log",
+      "bytes": 914,
+      "sha256": "8c880c3d235f94987ba4a84bafd0cbdc3e05faf81508b3cc367c178f3fd19e2e"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-lint-third.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-lint-first.log",
+      "bytes": 302,
+      "sha256": "de172bd2c9dcaa19a0e2dc90b14348850a6d143df3c11c3c7f3a62fe0cecc280"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/draft-types-first.log",
+      "bytes": 3303,
+      "sha256": "64e9f5c42afed777e913a9fba70583ad9343ba77e0da52b8d5b5645b3e920d54"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/fixture-lint-first.log",
+      "bytes": 502,
+      "sha256": "07433ec4f264fcbea011cb736ce73cb5ee9afe467c58738003d111174fc1adeb"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-contact-tests-first.log",
+      "bytes": 2328,
+      "sha256": "db64e9555df8a6fcd461da3fb425f70209a736b53ad04663083d01e6a87b4f58"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/source-channel-second.log",
+      "bytes": 3028,
+      "sha256": "bea0a30dd276a277ced1f4c6300f66da611a87fd2a5da4656fda1431f9baf296"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/fixture-lint-typed-ready.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-types-second.log",
+      "bytes": 149,
+      "sha256": "b44b18045e165c8bf8df27cb84b839ad7d96d5cadf11767a722581969f405c6c"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-contact-tests-second.log",
+      "bytes": 924,
+      "sha256": "96c67a09a57fcb1041a1b8cd4f56536d6dbe4fd0d1faa3a1fdaf862be53f354b"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/fixture-lint-typed-final.log",
+      "bytes": 158,
+      "sha256": "659ca07d686d6233e54a537ab1dd574e2ed7be43c5beb05b21dafe2f39e5d9b1"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/source-channel-first.log",
+      "bytes": 6438,
+      "sha256": "e2fe7798183147757ed6835273e2e45cf6c24d6021136794aad848d46b92ac58"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/fixture-lint-final.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-lint-second.log",
+      "bytes": 716,
+      "sha256": "86730aac26eac0a39ce95def3a5bc925ce9e0dd635de02a22ec5fc61e7620b96"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/draft-types-second.log",
+      "bytes": 149,
+      "sha256": "b44b18045e165c8bf8df27cb84b839ad7d96d5cadf11767a722581969f405c6c"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-types-third.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/source-full-first.log",
+      "bytes": 455,
+      "sha256": "0499ae07a82a777f3a7d97cb646822111c12ac96d57d269ce15898dd5edb227c"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/host-types-final.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact/team-types-first.log",
+      "bytes": 5411,
+      "sha256": "2cbe3a10e7d917d658f3d919b39d0374482930714335317df2fd155bcd6e2f60"
+    }
+  ],
+  "claims": [
+    "Single Channel inspect/close validates original key/id/spec, canonical bindings, direct-v4 manifest and exact fingerprinted invitations.",
+    "Original generated-hire/representative two-Channel wrapper remains, with prior cancellation labels and retirement guards.",
+    "Contact cleanup drains accepted channel/invitation IO and owns only its frozen original maintenance; it never retires ready representative membership or Session.",
+    "Retained keeper selection uses sequence then id, exact snapshot fence at every await; terminal demands no live same-Channel keeper.",
+    "Historical keeper can commit/cancel later; bounded Core Channel WAL pages validate the retained original phase/cursor/endpoint consent.",
+    "Confirmed Native Team registers independent contact callback/pending map/disposer; close waits for accepted work and late callback rejects.",
+    "Production73 files were copied read-only before root authorization; drafts applied only after explicit Native74/schema availability."
+  ],
+  "limits": [
+    "Eight new owner cases intentionally use typed Native book projections to isolate Team ownership; they do not claim real external request acceptance/Native settlement. Actual Team/Channel/Agent/Session and registered cleanup callback execute.",
+    "No Core/Native/schema/world adapter/participants edits. checkpoint/restore unchanged because their existing validateWorldCleanupHistory call now verifies contacts as well.",
+    "No full builds/docs/checklist writes, no extra agents."
+  ],
+  "retainedFailures": [
+    "team-types-first.log records scratch-config extends-path failure; final compiler face is project-local and passes.",
+    "team-base-regression.log had 214 pass and two root Core/schema accidental-field failures, preserved; current integrated 224 pass follows root fix.",
+    "team-contact-tests-first.log had six pass/two synchronous closed-callback assertion errors, preserved; async assertion wrapper now verifies existing denial without production weakening."
+  ]
+}

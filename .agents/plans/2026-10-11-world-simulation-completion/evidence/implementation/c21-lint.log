@@ -1,0 +1,17 @@
+$ npm run typecheck && npm run lint:contracts-ready
+
+> @clocky/clocky-root@0.1.1-rc.2 typecheck
+> npm run build:lib:host && npm run typecheck:contracts-ready
+
+
+> @clocky/clocky-root@0.1.1-rc.2 build:lib:host
+> tsc -b tsconfig.host.json && tsdown --env.CLOCKY_BUILD_FACE host
+
+examples/simulation-company/tests/world-external-fault-scenario.ts(11,69): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'channelReceiptRecordSchema'. Did you mean to use 'import channelReceiptRecordSchema from "@clocky/clocky-simulation"' instead?
+examples/simulation-company/tests/world-external-fault-scenario.ts(11,69): error TS6133: 'channelReceiptRecordSchema' is declared but its value is never read.
+examples/simulation-company/tests/world-external-fault-scenario.ts(52,18): error TS2322: Type 'ScenarioEntityCommand | { kind: "entity/create"; id: string; entityKind: string; cognition: "none"; readiness: "ready"; profile: { name: string; }; }' is not assignable to type 'ScenarioEntityCommand'.
+  Type '{ kind: "entity/create"; id: string; entityKind: string; cognition: "none"; readiness: "ready"; profile: { name: string; }; }' is not assignable to type 'ScenarioEntityCommand'.
+    Types of property 'profile' are incompatible.
+      Property 'description' is missing in type '{ name: string; }' but required in type '{ readonly name: string; readonly description: string; readonly persona?: { readonly name: string; readonly skills: readonly string[]; readonly traits: readonly string[]; readonly goals: readonly string[]; }; }'.
+examples/simulation-company/tests/world-external-fault-scenario.ts(53,29): error TS2741: Property 'description' is missing in type '{ name: string; }' but required in type '{ readonly name: string; readonly description: string; readonly persona?: { readonly name: string; readonly skills: readonly string[]; readonly traits: readonly string[]; readonly goals: readonly string[]; }; }'.
+[ELIFECYCLE] Command failed with exit code 1.

@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-16",
+  "scope": "F0 initial source inputs; B-E remain unimplemented",
+  "hardware": {
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "cpuCount": 12
+  },
+  "node": "v25.9.0",
+  "inputs": {
+    "examples/simulation-company/scenarios/world-company-v1.json": "7db3cd94f3293145249bfb747cb0c94b90da653a391fdbe7e029a4f0e1fdf652",
+    "examples/simulation-company/scenarios/world-laboratory-v1.json": "67e893d4455864993c5779e1b3a4d287f1ea5e4c9b620bfbf69f1baeccddec97",
+    "examples/simulation-company/scenarios/world-association-v1.json": "4aa667a0349685acd2cb6e148ac05f53bbb5c1e988d23713535226fa6d71750b",
+    "packages/simulation/simulation/src/world-domain.ts": "a1b5736b039158d79e1966050f0ec1f04e69d978286a5c0f5a9b273196a98e13",
+    "packages/simulation/simulation-scenario/src/v1-schema.ts": "c51d2325d52cd586b066fe9464e812499cca2a3d44e84893204395ae9515cd0d",
+    "packages/simulation/simulation-scenario/src/v1-compiler.ts": "ca3081922fbcddc7d3d3452b19720af8cad5dcabde41761b959d4b93e5c16284",
+    "packages/simulation/simulation-product/src/draft-schema.ts": "631d4c8c7c95964fd6f553401f502dfa41550223fcb975b6eee6a3320b75c486"
+  },
+  "workload": {
+    "backend": [
+      "json",
+      "sqlite"
+    ],
+    "mode": "source",
+    "models": "scripted-keyless",
+    "actors": 4,
+    "operations": 32,
+    "worldEvents": 256,
+    "residents": 2,
+    "concurrency": 2,
+    "durationMs": 15000,
+    "timeoutMs": 60000
+  }
+}

@@ -23,6 +23,12 @@ export interface SimulationCheckpointCut {
    * @returns the completed checkpoint request; failed storage writes leave it pending.
    */
   publish(manifest: import('./checkpoint.ts').SimulationCheckpointManifest): Promise<import('./checkpoint.ts').SimulationCheckpointOperation>
+  /** Read complete original records under this still-sealed cut; finite limits bound the full result. */
+  exportArchive(limits: { readonly maxEntries: number; readonly maxBytes: number; readonly pageSize: number }):
+  Promise<{
+    readonly name: string
+    readonly version: number
+    readonly entries: readonly { readonly sequence: number; readonly value: unknown }[] }>
   /** Release this cut's admission barrier; this does not resume scheduling. */
   release(): void
 }

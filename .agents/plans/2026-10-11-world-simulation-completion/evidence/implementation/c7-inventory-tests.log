@@ -1,0 +1,39 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-team/tests/personnel-obligations.spec.ts (12 tests | 2 failed) 1505ms
+     × projects typed owner-book roles and unknown activation/workspace cleanup without treating an ownership hint as acceptance 185ms
+     × projects typed owner-book roles and unknown activation/workspace cleanup without treating an ownership hint as acceptance 38ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/personnel-obligations.spec.ts > json canonical personnel inventory > projects typed owner-book roles and unknown activation/workspace cleanup without treating an ownership hint as acceptance
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/personnel-obligations.spec.ts > sqlite canonical personnel inventory > projects typed owner-book roles and unknown activation/workspace cleanup without treating an ownership hint as acceptance
+ZodError: [
+  {
+    "code": "custom",
+    "path": [
+      "releaseRequestedAt"
+    ],
+    "message": "release-requested workspace allocation requires its timestamp"
+  }
+]
+ ❯ packages/simulation/simulation-team/tests/personnel-obligations.spec.ts:105:62
+    103|       attemptCount: 1, attemptHistory: [], lease: { attemptId: 'origin…
+    104|         participantId: binding.participantId, assignedAt: 0, durationM…
+    105|     const allocation = teamWorkspaceAllocationSnapshotSchema.parse({ i…
+       |                                                              ^
+    106|       taskId: task.id, attemptId: task.lease?.attemptId, assignedRevis…
+    107|       activationId: 'unconfirmed-activation', sessionId: binding.sessi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 28 passed (30)
+   Start at  06:05:47
+   Duration  3.37s (transform 1.11s, setup 267ms, import 1.38s, tests 1.52s, environment 0ms)
+

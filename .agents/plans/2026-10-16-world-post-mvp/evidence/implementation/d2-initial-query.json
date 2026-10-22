@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-20",
+  "checklist": [
+    "D14",
+    "D15",
+    "D16"
+  ],
+  "mode": "source; real Loader; JSON + SQLite",
+  "command": "TMPDIR=\"$PWD/.tmp\" pnpm exec vitest run packages/simulation/simulation-team/tests/experiments.spec.ts",
+  "result": "2 tests passed; see project .tmp/d2-tests.log",
+  "hashes": {
+    "packages/simulation/simulation-team/src/experiment-query.ts": "0300cf538b385c0874a14e9ec35efe6c895305c062cd2a7b962eb5b33351603a",
+    "packages/simulation/simulation-team/src/experiments.ts": "015e1ecf6a5372525debd7abfa761e6f9a69bd1dd165b5ea8787c023357becea",
+    "packages/simulation/simulation-team/tests/experiments.spec.ts": "5c61cdd219bfccf6f8bb46fe169a963508d026ecd60b4a2beaf1e5751b3f2235",
+    "packages/simulation/simulation/src/experiment.ts": "63520d63ff7b435b10514d7b57d160e62e05c59a37913abbbf80bafb46c5c80f"
+  },
+  "scope": {
+    "comparison": "same parent cut; explicit memory-policy intervention; lineage identity fields; facts/resources/personnel/policy hashes; quality and cost unknown; stops and nondeterminism explicit; no causal conclusion",
+    "causal": "real Native event/decision/operation/effect references; snapshot relationships ignored; B1 prefix hashing; bounded nodes/depth/complete bytes; current record permission; disposable rebuild",
+    "merge": "unconditional unsupported refusal before IO"
+  },
+  "remaining": "D10-D13 and D17 remain open; initial-cut core implemented; settled-cut expansion in progress; durable HTTP/SDK branch route not included"
+}

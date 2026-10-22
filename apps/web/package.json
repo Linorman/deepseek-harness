@@ -28,8 +28,8 @@
   "devDependencies": {
     "@clocky/cordis-plugin-group": "workspace:^",
     "@clocky/clocky-client-modules": "workspace:^",
+    "@clocky/clocky-client-connection": "workspace:^",
     "@clocky/clocky-client-ui-primitives": "workspace:^",
-    "@clocky/clocky-client-ui-viz": "workspace:^",
     "@clocky/clocky-client-ui-slots": "workspace:^",
     "@clocky/clocky-client-web": "workspace:^",
     "@clocky/clocky-cmdline": "workspace:^",
@@ -44,6 +44,8 @@
     "typescript": "^6.0.3",
     "vite": "^6.0.0",
     "vitest": "^4.1.8",
-    "fflate": "^0.8.2"
+    "fflate": "^0.8.2",
+    "zod": "^4.4.3",
+    "@clocky/clocky-simulation-scenario": "workspace:^"
   }
 }

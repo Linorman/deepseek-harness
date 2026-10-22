@@ -267,6 +267,7 @@ it.each([
   ['simulation.runs.preflight', { templateId: 'company', templateVersion: '1', name: 'Company',
     parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '1' } }, 200],
   ['simulation.runs.create', { commandId: 'create', templateId: 'company', templateVersion: '1', name: 'Company',
+    expectedModel: { provider: 'company', name: 'scripted' },
     parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '1' } }, 200],
   ['simulation.runs.prepare', { runId: 'run', commandId: 'prepare' }, 200],
   ['simulation.requests.list', { runId: 'run' }, 200],

@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-10-21-simulation-decision-boundaries.md
+2026-10-21-simulation-decision-boundaries.md: 6f216cb74b2ed256e7856b94ea195b6e5871eeaf
+2026-10-21-simulation-decision-boundaries.zh.md: 2bae427dfa6d535a1e5596a2345e07796b3d4c44

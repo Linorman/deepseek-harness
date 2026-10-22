@@ -1,0 +1,18 @@
+Working directory: /Volumes/projects-mac/deepseek-harness.
+TMPDIR=$PWD/.local/world-completion/tmp; XDG_CACHE_HOME=$PWD/.local/world-completion/cache. Both snapshot files allocate their child roots inside .local/world-completion/tmp.
+
+CLOCKY_EXAMPLE_MODE=src pnpm run test:snapshot examples/simulation-company/tests/world-protocol.snapshot.ts examples/simulation-company/tests/world-hire.snapshot.ts
+Exit 0; 2 files / 26 tests passed. Source Loader, strict tools, original private Channel receipt, frozen plans/results, SIGKILL and fresh-process restore remain asserted.
+Output: c2-original-protocol-hire-source-fixed.log.
+
+CLOCKY_EXAMPLE_MODE=lib pnpm run test:snapshot examples/simulation-company/tests/world-protocol.snapshot.ts examples/simulation-company/tests/world-hire.snapshot.ts
+Exit 0; 2 files / 26 tests passed. Compiled library consumers use Node's strip-only execution for the same scenario fixtures; no parameter properties were introduced.
+Output: c2-original-protocol-hire-lib-fixed.log.
+
+pnpm exec tsx scripts/run-oxlint.ts examples/simulation-company/tests/world-protocol-model.ts examples/simulation-company/tests/world-protocol-scenario.ts examples/simulation-company/tests/world-hire-scenario.ts examples/simulation-company/tests/world-protocol.snapshot.ts examples/simulation-company/tests/world-hire.snapshot.ts
+Exit 0; no diagnostics. Output: c2-original-protocol-hire-lint.log.
+
+git diff --check -- examples/simulation-company/tests/world-protocol-model.ts examples/simulation-company/tests/world-protocol-scenario.ts examples/simulation-company/tests/world-hire-scenario.ts examples/simulation-company/tests/world-protocol.snapshot.ts examples/simulation-company/tests/world-hire.snapshot.ts
+Exit 0; no diagnostics.
+
+Fixture corrections: configure the actual requester's assignment rule; count its distinct noncognitive role in entity totals; verify common committed outcome separately from strict hiring payload IDs; preserve and check the original employment relation, plus the complete new hiring assignment. The output assignments field counts the target hiring position, while scenario assertions also verify the complete global baseline-plus-hire assignment count. Deadlines, actor/token budgets, log checks, crash stages and model-call counts were not relaxed.

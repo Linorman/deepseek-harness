@@ -1,3 +1,9 @@
+export type { SimulationDraftReadParams, SimulationDraftReadResult, SimulationDraftSaveParams, SimulationDraftSaveResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationWorldManagementFieldsParams, SimulationWorldManagementFieldsResult, SimulationWorldManagementPreviewParams, SimulationWorldManagementPreviewResult, SimulationWorldManagementSubmitParams, SimulationWorldManagementSubmitResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationWorldDomainParams, SimulationWorldDomainResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationWorldCasesParams, SimulationWorldCasesResult, SimulationWorldCaseParams, SimulationWorldCaseResult, SimulationWorldCaseCancelParams, SimulationWorldCaseCancelResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationWorldPreflightParams, SimulationWorldPreflightResult, SimulationWorldCreateParams, SimulationWorldCreateResult,
+  SimulationWorldPrepareParams, SimulationWorldPrepareResult, SimulationWorldExportParams, SimulationWorldExportResult } from '@clocky/clocky-sdk-protocol'
 export type { SimulationTasksParams, SimulationTasksResult, SimulationTaskCancelParams, SimulationTaskCancelResult } from '@clocky/clocky-sdk-protocol'
 export type { SimulationRequestsParams, SimulationRequestsResult, SimulationRetryRequestParams, SimulationRetryRequestResult } from '@clocky/clocky-sdk-protocol'
 export type { SimulationPreflightParams, SimulationPreflightResult } from '@clocky/clocky-sdk-protocol'
@@ -154,3 +160,24 @@ export type { SimulationTaskReviewListParams, SimulationTaskReviewListResult, Si
 export type { SimulationRunStatusesParams, SimulationRunStatusesResult } from '@clocky/clocky-sdk-protocol'
 
 export type { SimulationOperationRetryParams, SimulationOperationRetryResult } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationRebuildIndexParams, SimulationRebuildIndexResult } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationGenerationRequestParams, SimulationGenerationReadParams, SimulationGenerationExecuteParams, SimulationGenerationTransitionParams, SimulationGenerationPersonaDraftParams, SimulationGenerationResult } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationRetentionPreviewParams, SimulationRetentionExecuteParams, SimulationRetentionReadParams, SimulationRetentionRecordsParams, SimulationRetentionPlan, SimulationRetentionResult, SimulationRetentionRecordsResult } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationBackupExportParams, SimulationBackupExportResult } from '@clocky/clocky-sdk-protocol'
+
+export type {
+  SimulationWorldBranchParams,
+  SimulationWorldBranchReadParams,
+  SimulationWorldCausalParams,
+  SimulationWorldCompareParams,
+  SimulationWorldBranchResult,
+  SimulationWorldCausalResult,
+  SimulationWorldCompareResult,
+} from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationRunControlParams, SimulationRunControlResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationRawArchiveParams, SimulationRawArchiveResult } from '@clocky/clocky-sdk-protocol'

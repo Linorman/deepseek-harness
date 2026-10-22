@@ -22,6 +22,7 @@ const spec = simulationRunSpecSchema.parse({ runId: 'native-run', tickUnit: 'min
   tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000,
   maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32,
   maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 8,
+  maxResourceReservationHistory: 128,
   maxResourceQuantity: '1000000',
 })
 

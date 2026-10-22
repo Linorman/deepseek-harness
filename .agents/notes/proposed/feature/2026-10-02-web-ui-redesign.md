@@ -153,6 +153,8 @@ Extend [ui-primitives](../../../../packages/client/ui-primitives/README.md) so f
 
 ### Phase 6: Simulation observatory (`ui-simulation`)
 
+**Refined by [Simulation Web UI legibility](2026-10-21-simulation-webui-legibility.md).** That proposal supersedes these Phase 6 items: the saved-phase badge and driver indicator become one run-state chip and banner from `run-state.ts` with at most one primary action, freshness ("last observed") replaces the neutral revision-change pill, and the start sheet gains a Host-confirmed stop target and the categorized budget panel. Directory rows lead with that chip and mark failed status batches per row. The overview adds the domain business card and moves resident seats, writers and activations to Run management. Journal becomes the first-level History module beside a Diagnostics menu, and restore leads with its effect before coverage and identifiers.
+
 Simulation becomes a peer workspace that shares the shell, header anatomy, tabs, inspector pane, and attention model with Team pages. The goal is to show the simulated world, its time, and its causality while keeping every semantic distinction that [ui-simulation](../../../../packages/client/ui-simulation/README.md) and [simulation-product](../../../../packages/simulation/simulation-product/README.md) define:
 
 - Business data stays in Client runtime.

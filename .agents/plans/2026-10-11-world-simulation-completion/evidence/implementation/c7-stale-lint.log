@@ -1,0 +1,1 @@
+packages/simulation/simulation-team/tests/world.spec.ts:418:5: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.

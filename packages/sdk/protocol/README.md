@@ -1,6 +1,20 @@
 # @clocky/clocky-sdk-protocol
 
+`simulation/raw-archive` returns source-bound raw text parts with original journal version and explicit non-validation metadata. Parameters accept only a registered run and bounded continuation; the protocol carries no Native state, filesystem selector or permission override.
+
+`simulation/runs-run-control` shares the Product stop-target command/result schemas. Explicit null is required for clear; the original receipt and the currently observed stopping state remain separate.
+
 English | [中文](README.zh.md)
+
+`simulation/world-management-fields`, `world-management-preview` and `world-management-submit` share strict Product DTOs. Submit fixes the full original form, command ID and Native preview revision/hash; clients cannot supply principal, simulated requester or policy authority. `requests-get` exposes original management outcome metadata separately from callback and business results. `world-case-cancel` requires the fixed revision/hash from its actual allowed cancellation preview. Missing quotes, substituted original choices and contradictory authenticated-user case sources reject.
+
+`simulation/world-preflight`, `world-create`, `world-prepare` and `world-export` reuse the Host-owned strict World DTO parsers. Portable definitions select installed symbolic versions; provider configuration, principals and Native snapshots reject at ingress. Preflight is inert, creation/preparation retain their original command and return paused runs, and export returns only the original creation definition bound to its selected run. Export is not a private run backup; explicit start and cold restore use the existing control protocol.
+
+v1 `organization.hiringFees` carries only explicitly authored one-time hiring terms: a fixed policy, hiring operation, position, distinct existing debit/credit accounts, unit, positive decimal quantity, distinct grant references and a positive simulated reservation period. Omission remains undeclared; no fee or payment default is inserted. Missing/malformed fields and unknown properties reject. Control and operational DTOs preserve the closed `resource-capacity`, `resource-history-limit` and `resource-reservation-expired` stops. The Host/Native owns account resolution, authorization, debit and recovery; the SDK introduces no payment mutation API or private compilerVersion field.
+
+World Native allowances include `maxResourceReservationHistory`: resolved limits require a positive safe integer, while scenario inputs may request a bounded positive override. It caps all retained resource reservation history; cancellation or simulated expiry does not return history capacity. Reservation, commit and cancellation remain observable through existing operation metadata and authorized original journal text. The SDK exposes no Native transaction mutation API; missing required fields, unknown structural fields and unauthorized bodies still reject.
+
+`simulation/world-case-inspect` shares the product's strict result parser. The common committed outcome contains only `kind`; business identities belong to required JSON `payload`. When a hiring reservation is present, its original entity, relation and plan must match that payload; other domain results do not require a hiring reservation. The former hiring outcome fields and non-JSON payloads reject. SDK methods expose actor-free product selectors rather than Native intent creation. Versioned case summaries carry `clocky.world-case/v3`, domain/operation/version and the original target. Only exact hiring apply plans own Persona; non-hiring cases refuse hiring reservations. A required null request notification means no Channel post. Old summaries and position aliases reject rather than being stripped. Required lifecycle tracks separate request, plan, callback/business and notification from the same Native prefix; contradictory details, missing tracks and v1 responses reject.
 
 `simulation/requests-list` carries an actor-free run selector and returns distinct original receipt rows, total count, run-specific revision and optional continuation. No private command input is returned. `simulation/requests-retry` carries only `runId` and the existing `commandId`, returning the original receipt family; caller-supplied replacement input rejects. Accepted commands retain their original semantics and terminal receipts remain immutable.
 
@@ -28,6 +42,10 @@ The shared wire protocol for Clocky SDK runtime: one newline-delimited JSON-RPC 
 
 
 `simulation/tasks-list` returns bounded run-owned canonical task controls; `simulation/tasks-cancel` binds the original command, source operation, task revision and exact attempt or explicit no-lease `null`. Actor fields and missing fences reject. A `cancel-task` receipt confirms the original request family; `requests-get` reconstructs its immutable `cancellation` with the same run and command. Private task bodies and general Team authority are absent.
+
+`readSimulationWorldDomain` (`read_simulation_world_domain` in Python) uses the shared `simulation/world-domain-read` method. Its strict `clocky.world-read/v1` result binds the complete original selector and independently bounded coverage; unknown fields and substituted identities, versions, sections or coverage reject. Continue with the returned cursor and original revision/readVersion. Unknown residency and nullable obligation counts remain unknown, while simulated times and norm/proposal versions remain canonical decimal strings. Reads do not restore, attach or infer; body grants never imply Session authority.
+
+`simulation/draft-read` and `simulation/draft-save` share strict private authoring DTOs with the Host. New drafts carry a required null parent; later revisions retain their exact parent and original save ID. Saved revisions include authenticated author attribution. Unknown fields and inconsistent ancestry reject; conflicts preserve both definitions. Draft logs are separate from Native run history.
 
 ## Transport
 
@@ -74,6 +92,10 @@ The Team list, participant list, task list, and channel-read methods are page co
 
 `team/resume`, `team/member-*`, `team/channel-open`, `team/channel-post`, `team/channel-close`, goal update/transition, task create/update/cancel/delete/review, and terminal archive remain actor-free on the wire. After `initialize` authenticates the connection, a runtime composed with `teamHumanActors` derives the owned active human and binds each complete parsed payload plus its cursor or revision before Hub admission. Without that binder, these methods fail with `SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE`. The active human must hold the immutable grant for the requested operation.
 
+## Private backup export
+
+`simulation/backup-export` selects a completed retention original by run and command. Its closed result includes the full private bundle string, source archive hash and exact bundle hash. It is a private-record read with no scheduling side effect; redacted datasets cannot use its `full-private-backup` kind. Full branch exports additionally require current ancestor disclosure grants or an explicit exact-branch `includeProvenance: true` grant; branch-only permission does not disclose ancestor bytes.
+
 ## Model Experience
 
 None, as this package defines the client-facing wire protocol; the model-visible surfaces belong to the runtime plugins composed behind the serving [`clocky-sdk-jsonrpc-server`](../server/README.md) entry.
@@ -93,3 +115,5 @@ None; this package neither assembles nor sends a provider request.
 ### Single-task cancellation
 
 Task cancellation accepts Team/task ids, `expectedRevision`, and optional `reason`. Responses retain `TeamTaskSnapshot.cancellation`; assigned or running phases report pending owner termination rather than completed cancellation. Task deletion does not accept cancellation reasons. [Cancellation ownership](../../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md).
+
+`simulation/world-branch`, `world-branch-read`, `world-causal` and `world-compare` reuse the strict Product experiment DTOs. Branch commands retain a caller-owned UUID, original retention cut and explicit memory policy. Causal results echo their source; comparisons echo both archived observations. Private history, target factories, authority overrides and automatic merge are outside this wire contract.

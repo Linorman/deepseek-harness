@@ -1,0 +1,10 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  12:53:08
+   Duration  45.02s (transform 275ms, setup 228ms, import 192ms, tests 44.46s, environment 0ms)
+

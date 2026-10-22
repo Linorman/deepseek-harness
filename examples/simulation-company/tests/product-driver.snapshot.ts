@@ -7,16 +7,17 @@ import { describe, expect, it } from 'vitest'
 import { resolveExampleLaunch } from '@clocky/clocky-loader-smoke'
 
 describe.each(['json', 'sqlite'])('%s company product driver', (backend) => {
-  it.each(['normal', 'resident-one', 'request-submitted', 'request-committed', 'transfer-applied'])('executes mode=%s', async (mode) => {
+  it.each(['normal', 'resident-one', 'automatic-residency', 'request-submitted', 'request-committed', 'transfer-applied'])('executes mode=%s', async (mode) => {
     await mkdir(resolve('.tmp'), { recursive: true })
     const root = await mkdtemp(resolve('.tmp/company-product-driver-'))
     const fixture = resolve('examples/simulation-company/tests/product-driver-scenario.ts')
     const launch = resolveExampleLaunch({ srcBin: fixture, libBin: fixture, tsconfigPath: resolve('tsconfig.base.json'),
       configArgs: [resolve('examples/simulation-company/cordis.yml')], env: { SIMULATION_COMPANY_ROOT: root,
-        SIMULATION_COMPANY_BACKEND: backend, COMPANY_DRIVER_RESIDENTS: mode === 'resident-one' ? '1' : '2' } })
+        SIMULATION_COMPANY_BACKEND: backend, COMPANY_DRIVER_RESIDENTS: ['resident-one', 'automatic-residency'].includes(mode) ? '1' : '2',
+        COMPANY_DRIVER_AUTO_RESIDENCY: String(mode === 'automatic-residency') } })
     const start = (recover: boolean, crash: string) => spawn(launch.command, launch.args, { env: { ...process.env, ...launch.env,
       COMPANY_DRIVER_RECOVER: String(recover), COMPANY_DRIVER_CRASH: crash }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] })
-    const crashing = mode !== 'normal' && mode !== 'resident-one'
+    const crashing = !['normal', 'resident-one', 'automatic-residency'].includes(mode)
     try {
       if (crashing) {
         const child = start(false, mode), exited = once(child, 'exit')

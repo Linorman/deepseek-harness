@@ -1,0 +1,1701 @@
+{
+  "inputSha256": "3394838852830adc171874c8e845e9d07310e49dfb4d6baf51714fd2d8a27022",
+  "inputs": 5971,
+  "inputBytes": 65977086,
+  "cases": 40,
+  "processes": 120,
+  "warmModelCalls": 408,
+  "coldModelCalls": 0,
+  "rows": [
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "generate-and-hire",
+      "label": "calibration",
+      "bytes": 2807,
+      "limit": 4096,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/calibration"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "generate-and-hire",
+      "label": "exact",
+      "bytes": 2807,
+      "limit": 2807,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/exact"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "generate-and-hire",
+      "label": "minus-one",
+      "bytes": 2807,
+      "limit": 2806,
+      "warmModelCalls": 3,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/minus-one"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "hire-existing",
+      "label": "calibration",
+      "bytes": 2813,
+      "limit": 4096,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/calibration"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "hire-existing",
+      "label": "exact",
+      "bytes": 2813,
+      "limit": 2813,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/exact"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "hire-existing",
+      "label": "minus-one",
+      "bytes": 2813,
+      "limit": 2812,
+      "warmModelCalls": 3,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/minus-one"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "generate-and-hire",
+      "label": "calibration",
+      "bytes": 2807,
+      "limit": 4096,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/calibration"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "generate-and-hire",
+      "label": "exact",
+      "bytes": 2807,
+      "limit": 2807,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/exact"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "generate-and-hire",
+      "label": "minus-one",
+      "bytes": 2807,
+      "limit": 2806,
+      "warmModelCalls": 3,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/minus-one"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "hire-existing",
+      "label": "calibration",
+      "bytes": 2813,
+      "limit": 4096,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/calibration"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "hire-existing",
+      "label": "exact",
+      "bytes": 2813,
+      "limit": 2813,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/exact"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "hire-existing",
+      "label": "minus-one",
+      "bytes": 2813,
+      "limit": 2812,
+      "warmModelCalls": 3,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/minus-one"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "bytes-commit",
+      "scene": "company",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-5TPy0k",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "bytes-reserve",
+      "scene": "company",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-tHYioC",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "bytes-commit",
+      "scene": "company",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-AqUYSl",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "bytes-reserve",
+      "scene": "company",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-uLVBQj",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "bytes-commit",
+      "scene": "laboratory",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-ZHeRVM",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "mode": "bytes-reserve",
+      "scene": "laboratory",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-V8A0Sa",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "bytes-commit",
+      "scene": "laboratory",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-OjT9nZ",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "bytes-reserve",
+      "scene": "laboratory",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-q8jUHp",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "generate-and-hire",
+      "label": "calibration",
+      "bytes": 2807,
+      "limit": 4096,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/calibration"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "generate-and-hire",
+      "label": "exact",
+      "bytes": 2807,
+      "limit": 2807,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/exact"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "generate-and-hire",
+      "label": "minus-one",
+      "bytes": 2807,
+      "limit": 2806,
+      "warmModelCalls": 3,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/minus-one"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "hire-existing",
+      "label": "calibration",
+      "bytes": 2813,
+      "limit": 4096,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/calibration"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "hire-existing",
+      "label": "exact",
+      "bytes": 2813,
+      "limit": 2813,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/exact"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "hire-existing",
+      "label": "minus-one",
+      "bytes": 2813,
+      "limit": 2812,
+      "warmModelCalls": 3,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/minus-one"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "generate-and-hire",
+      "label": "calibration",
+      "bytes": 2807,
+      "limit": 4096,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/calibration"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "generate-and-hire",
+      "label": "exact",
+      "bytes": 2807,
+      "limit": 2807,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/exact"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "generate-and-hire",
+      "label": "minus-one",
+      "bytes": 2807,
+      "limit": 2806,
+      "warmModelCalls": 3,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/minus-one"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "hire-existing",
+      "label": "calibration",
+      "bytes": 2813,
+      "limit": 4096,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/calibration"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "hire-existing",
+      "label": "exact",
+      "bytes": 2813,
+      "limit": 2813,
+      "warmModelCalls": 18,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/exact"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "hire-existing",
+      "label": "minus-one",
+      "bytes": 2813,
+      "limit": 2812,
+      "warmModelCalls": 3,
+      "coldModelCalls": [
+        0,
+        0
+      ],
+      "root": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/minus-one"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "bytes-commit",
+      "scene": "company",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-VYKnNi",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "bytes-reserve",
+      "scene": "company",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-JVLe51",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "bytes-commit",
+      "scene": "company",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-wvwLTt",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "bytes-reserve",
+      "scene": "company",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-LZG64E",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "bytes-commit",
+      "scene": "laboratory",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-GaBM1L",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "mode": "bytes-reserve",
+      "scene": "laboratory",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-zWSpvd",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "bytes-commit",
+      "scene": "laboratory",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-S9Czsa",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "bytes-reserve",
+      "scene": "laboratory",
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-05v0Y6",
+      "warmModelCalls": 6,
+      "coldModelCalls": [
+        0,
+        0
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/calibration/process-0.json",
+      "sha256": "b4e0f23e4780d8d75aede40d4d2ae7a2e5390095f0a3fa385b7d8508ad08f6ec",
+      "bytes": 1672
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/calibration/process-1.json",
+      "sha256": "8d0f1901494ad58e27146a731248cbba7eb8f529a72324cba1b43c3b507aa557",
+      "bytes": 1671
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/calibration/process-2.json",
+      "sha256": "a60f52624905b4e6568da4f8e65770d439fac75f7913b5ec7bc3af5d60aabb31",
+      "bytes": 1671
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/calibration/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "ed34b80f687f1a44cdc195d00ea4f201ad304c3b158e48ebaf931c285074c13a",
+      "bytes": 140832
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/calibration/original.json",
+      "sha256": "92526effcc569bd6aa0c7511cde3297226ffaddf36ce0cc5dc47937c2fbc4a8c",
+      "bytes": 1195224
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/calibration/input.json",
+      "sha256": "4806786ef72a460127b7966b9c1d30917fbf61d0c87381ba4fdb47a04d37e177",
+      "bytes": 46183
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/calibration/initial.json",
+      "sha256": "f97eef10ac8f919bb3e472ee2526b225e59b5260f34029f474ccf6891195263b",
+      "bytes": 58173
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/exact/process-0.json",
+      "sha256": "8adb484b50913fd93f52cfc060105b8d61a04945594adf15cc737a364c030613",
+      "bytes": 1719
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/exact/process-1.json",
+      "sha256": "6ab68d1be4d0223fd4692c82e50e7d8de218d72142c82dd84521fa5537d4e26b",
+      "bytes": 1718
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/exact/process-2.json",
+      "sha256": "165324aba0ba36dfd139dfe933e025217e14fbe0b61b5f1053da2d3f00ff8dc0",
+      "bytes": 1718
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/exact/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "2d575f40c28a0a328c78ff2d5522752ed720221eb3b2e440144cb6f7b789ff99",
+      "bytes": 140832
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/exact/original.json",
+      "sha256": "effb4b977cac302d9bc4a6545f0da36175a13223351a2a99fc5e61a1a19994a7",
+      "bytes": 1195224
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/exact/input.json",
+      "sha256": "32ddb2c5253e16f411a6e1684e54d7c8ec94707ca95148a6667dbfa0cc9d9a8a",
+      "bytes": 46257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/exact/initial.json",
+      "sha256": "58108c5fc7eb980a2f82e8bf11b792c773b11067a4429a569537a9767f80f4e5",
+      "bytes": 58173
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/minus-one/process-0.json",
+      "sha256": "7f047dca68ccdfa22e0788e0351d33867d2365881615343d8508ad77f6a03e15",
+      "bytes": 1724
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/minus-one/process-1.json",
+      "sha256": "ae97393ccc3dcea615cc389b05fd4e257b0f201dd205968db40684bb95c04830",
+      "bytes": 1724
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/minus-one/process-2.json",
+      "sha256": "a704421d1506bfa75fda00b57b8f963c64fe32f6df781f556f2fc88f7662bd6b",
+      "bytes": 1724
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/minus-one/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "fb003110b7cceafc44cbee6ce41f4058d7177a28f88dbd1e3309fc76f09eb7fb",
+      "bytes": 49708
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/minus-one/original.json",
+      "sha256": "cc84d8cea8048a77bb0fd9b9d58acbc718f7184dcd9643d6802d8a16084066c5",
+      "bytes": 280336
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/minus-one/input.json",
+      "sha256": "0e46014dea7133320c1637ad4ba2a92be83153d661bd28ab635c31ed97f939e2",
+      "bytes": 46257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-generate-and-hire-ysVVGE/minus-one/initial.json",
+      "sha256": "e9f370b25ffe691b604d9d2104a4c76e42e74e250974c422c2a844e02bd18857",
+      "bytes": 58173
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/calibration/process-0.json",
+      "sha256": "abb69235151efebe740c2b9661e81c7f1ea9cf84c279a3b4f256cfd3df2b5eb5",
+      "bytes": 1656
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/calibration/process-1.json",
+      "sha256": "10630efd23e0b59230eb6c462d3376db81878534a65146b725c63e5486bf8f9d",
+      "bytes": 1655
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/calibration/process-2.json",
+      "sha256": "3e7a19c128861bfdcf5361e35538d91704b826395661b4eade832cd84ae386d2",
+      "bytes": 1655
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/calibration/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "faccb34c809a02fc33de1da25efeba8f9c3ac5d4bc7c03a878ca1c3a986d5412",
+      "bytes": 135208
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/calibration/original.json",
+      "sha256": "180a84ca6ee821b1147207f353f7ff3aa18d80d64e3f18c8096099e95cff2ecd",
+      "bytes": 1204189
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/calibration/input.json",
+      "sha256": "8fbb04e3e4fc9e26e00ce588f77c2f4996b89191232b35dff57b989d6ba44e69",
+      "bytes": 47591
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/calibration/initial.json",
+      "sha256": "20813a25e16c75d44195850c568e6f822379f6463351725c8df05972bf45d588",
+      "bytes": 60096
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/exact/process-0.json",
+      "sha256": "2b498b85ad471d664f6bbc3b4187f497f1ca06e2f2f4d2c0ec711e03db9d0061",
+      "bytes": 1703
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/exact/process-1.json",
+      "sha256": "36f6b7337e29cebaa3d45c57131b9e3b3ba0926bc869d3c3fc767153067250aa",
+      "bytes": 1702
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/exact/process-2.json",
+      "sha256": "82d780e261a7caa11ded3ec19ca1121770dbd51a3f7be06fcd4b3c4403ff9d6a",
+      "bytes": 1702
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/exact/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "8491ba69e427e48b9d45670765b29a38d9899afa0363f644442929b177c41991",
+      "bytes": 135208
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/exact/original.json",
+      "sha256": "4161a19f01cb8f1755c2bc5dd76181b4bd8d7c60731cc3af027049c7c4491d73",
+      "bytes": 1204189
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/exact/input.json",
+      "sha256": "06ce842e5b389147421c516775f48de9f7b521f85aee55a6fe8476ab35af3371",
+      "bytes": 47665
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/exact/initial.json",
+      "sha256": "00b87082f07131258a922514822790c860e7eb6073f9a23cfd9402dd99cd4989",
+      "bytes": 60096
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/minus-one/process-0.json",
+      "sha256": "803b92f7ba2da64024af72b766b8b2f83840b75b91635660f1dc5174dc54564d",
+      "bytes": 1708
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/minus-one/process-1.json",
+      "sha256": "fc4c4db58a52342a53e882b8d251df24f172623a6afbe0474449df2992f85e34",
+      "bytes": 1708
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/minus-one/process-2.json",
+      "sha256": "661ea09957320267db9f9319f13079bb751f59fb1b40ce6d932522535fdb65d7",
+      "bytes": 1708
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/minus-one/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "1c8be526942cb088d90da3177d303f90349e130624ee37b98869a6d9ba1fd941",
+      "bytes": 50701
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/minus-one/original.json",
+      "sha256": "6cdde743a383929cb05445cfc0b06c7174a8781568bef60de9adc3ab076dfdcb",
+      "bytes": 284395
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/minus-one/input.json",
+      "sha256": "87a28c9f4d4869a1bff5328c359b46b89728239c24e22b001666f72f50701da6",
+      "bytes": 47665
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-json-hire-existing-tpdlxG/minus-one/initial.json",
+      "sha256": "250884c8b8d522779f4ca889be96fce09623b333d54e661916e868e8845ea370",
+      "bytes": 60096
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/calibration/process-0.json",
+      "sha256": "9d3ed4101e020046e6870a54fca8b4bb35281d486e30cd5fd16c5a3faef040a3",
+      "bytes": 1680
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/calibration/process-1.json",
+      "sha256": "37859df96a7737a795e65456a0de21a87e26e2e1260ac7b77acb9c8478f57b91",
+      "bytes": 1679
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/calibration/process-2.json",
+      "sha256": "430eca8eb595461c5569d0151f3fe8e788dce8e541373b55286479c5b68e96dc",
+      "bytes": 1679
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/calibration/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "f29c7e7c8f8b8c856419ec9677167f5ab6dd296d2bcdb0d2235dc85f8d75cd7d",
+      "bytes": 143360
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/calibration/original.json",
+      "sha256": "4d7f17fb0059cb7ef6f2819f10fbe87bb6aadd565d1640b96d9a0638593b00c5",
+      "bytes": 1195238
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/calibration/input.json",
+      "sha256": "4806786ef72a460127b7966b9c1d30917fbf61d0c87381ba4fdb47a04d37e177",
+      "bytes": 46183
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/calibration/initial.json",
+      "sha256": "6d201a5dcda7240c7ab29f37757451440c8cbfc8f2602e027ab1eeceaf3f5ecb",
+      "bytes": 58179
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/exact/process-0.json",
+      "sha256": "2ae33dfb87b31aa53a15d966a42f4649a344889ccf3e7138167ebe14bb605531",
+      "bytes": 1727
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/exact/process-1.json",
+      "sha256": "cd43997d8cbdcf861dfca1be41d7fbbd051afc6623245acd65a514d92824770b",
+      "bytes": 1726
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/exact/process-2.json",
+      "sha256": "71d5d69c94e44d8fe61f0857c58db53866e78c1307dfe8661b507bf1c58d2358",
+      "bytes": 1726
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/exact/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "6c1c1b8798a56869fa594dd0b987cfaa6d6a3782936c83a8c7be7e46d3f8c8b4",
+      "bytes": 143360
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/exact/original.json",
+      "sha256": "aa6f19c6fad9ae4502a63cf9fa25347fc6c2fdb0d0f68bb468adfc03e6500d9e",
+      "bytes": 1195238
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/exact/input.json",
+      "sha256": "32ddb2c5253e16f411a6e1684e54d7c8ec94707ca95148a6667dbfa0cc9d9a8a",
+      "bytes": 46257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/exact/initial.json",
+      "sha256": "e8ae3034bb32da5a68ae5dbe4670eb1584287464b4b150e91549b2c304eea088",
+      "bytes": 58179
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/minus-one/process-0.json",
+      "sha256": "f2b4b374dc969347ccdd630139c6991ca6b428c2ce474cd2f6f39ce97f3274ba",
+      "bytes": 1732
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/minus-one/process-1.json",
+      "sha256": "f154b3d62b41d2ea1c96788974e0338c51df461cd6cb94d371a8108132e7b8cd",
+      "bytes": 1732
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/minus-one/process-2.json",
+      "sha256": "a1bb4abadf1bbdb813dd8c3ff9883ab3f4a94b30d9fe925f8a133c8c7361eea5",
+      "bytes": 1732
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/minus-one/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "5718ef7743affed22c3f56d96ddd1ccbb2aa45e14bf3d8a3a088861d34006601",
+      "bytes": 81920
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/minus-one/original.json",
+      "sha256": "91b437687cc8a2ba2101231faaf5aa01eff0cb08d6de6b6d409cfa1814b3426f",
+      "bytes": 280350
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/minus-one/input.json",
+      "sha256": "0e46014dea7133320c1637ad4ba2a92be83153d661bd28ab635c31ed97f939e2",
+      "bytes": 46257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-generate-and-hire-P8p07Z/minus-one/initial.json",
+      "sha256": "2b52254782eb6544e9b6aabadde625a6ac53ad61a61c1a542bfbd36abc8bd19b",
+      "bytes": 58179
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/calibration/process-0.json",
+      "sha256": "b77d5a2d3c27caeacadddad75ae6cbdb191e639857c929177dcc9cbf4bd3bcb9",
+      "bytes": 1664
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/calibration/process-1.json",
+      "sha256": "0791d1a863aa45bfc78b72c8f138089b9026ddbd09e90ebed5f8eef5a317ff0e",
+      "bytes": 1663
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/calibration/process-2.json",
+      "sha256": "0897e729698e301b9851c19ee74b648b090d16ddf015af25eaf0d25afd068bbb",
+      "bytes": 1663
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/calibration/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "653850b9289048d4c8b9d18147aa81813a78a72e010ed48d1b9dcf7cc641b597",
+      "bytes": 143360
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/calibration/original.json",
+      "sha256": "56ce93153de8c3eefe4c9d3df9fa3a60ea5cf67f71ef2d43c00b38ab8baa0615",
+      "bytes": 1204203
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/calibration/input.json",
+      "sha256": "8fbb04e3e4fc9e26e00ce588f77c2f4996b89191232b35dff57b989d6ba44e69",
+      "bytes": 47591
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/calibration/initial.json",
+      "sha256": "d973285c668f37d171e64c8b7a3b4ecb7ff8b98341a3e5bcbc4aedc0dcd69047",
+      "bytes": 60102
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/exact/process-0.json",
+      "sha256": "ea6bee2a406c141ad816f45adf6c74298baac05846979c16aa0844f0aabb3006",
+      "bytes": 1711
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/exact/process-1.json",
+      "sha256": "c9e9006e660c81f54b71f2d883aea987d8cc6c391a2fda3ea7248af9814a8fcd",
+      "bytes": 1710
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/exact/process-2.json",
+      "sha256": "76a126baf2f7beb60cff6aee6fa906506d1aec9b37d105ac74313f623c89ae59",
+      "bytes": 1710
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/exact/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "43359b3fdfbc130689344f0ba74f9ec11004d21ae3414d4b36f3545a28517a73",
+      "bytes": 143360
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/exact/original.json",
+      "sha256": "8f0eb504826054177e133b52dff00f92bff3f6521d70acbfa07ddf65223552b4",
+      "bytes": 1204203
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/exact/input.json",
+      "sha256": "06ce842e5b389147421c516775f48de9f7b521f85aee55a6fe8476ab35af3371",
+      "bytes": 47665
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/exact/initial.json",
+      "sha256": "54321eeb031e7795748a6e01923d2a078384bfed853dd6e32592476143662aaa",
+      "bytes": 60102
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/minus-one/process-0.json",
+      "sha256": "7b560d6cf2c8af039d9c7b5e149b5e829f9b6b4eac48e8cc533f023aa018d329",
+      "bytes": 1716
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/minus-one/process-1.json",
+      "sha256": "7434ce3e729501296cf7658bdf974b79fe27430d40d12bcca7173c361a723098",
+      "bytes": 1716
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/minus-one/process-2.json",
+      "sha256": "72df09b616282729697e3a69f2f0cd52da2e0a5f67ca73c5339cc92799caaeca",
+      "bytes": 1716
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/minus-one/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "cc635cac2bd90bb2a3d903e878ed13b33c19e3de513ad86f377ab7c9f89a1726",
+      "bytes": 81920
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/minus-one/original.json",
+      "sha256": "20e4a8aba441eec36e432dde41276bdd26576630f1b224224134fb6e291c77b3",
+      "bytes": 284409
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/minus-one/input.json",
+      "sha256": "87a28c9f4d4869a1bff5328c359b46b89728239c24e22b001666f72f50701da6",
+      "bytes": 47665
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src/src-sqlite-hire-existing-lvSSuQ/minus-one/initial.json",
+      "sha256": "460f6e77a84cce2fd493e805ac7dd187c30d3bb09ef93a8f3c5d633ec6a2b3ab",
+      "bytes": 60102
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-json-bytes-commit-process-0.json",
+      "sha256": "b9bba70dac6193e416c94697adafb260c60da816ecf97ee5bd0f983e66d906c0",
+      "bytes": 1381
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-json-bytes-commit-process-1.json",
+      "sha256": "e301781443431258c50242c71b48ff5087512b98898eb83a8fdea1afb1ac86d9",
+      "bytes": 1380
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-json-bytes-commit-process-2.json",
+      "sha256": "5660bbdfbd029fa6739ab2149f0472f26461756c8e0f4951c29896cddf18652e",
+      "bytes": 1380
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-5TPy0k/simulation/0e6c4cd68813033e6cb43f8c5460e39b0cab35c7e8dc030ddbfc2227974c7d60/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "6e6f881c791aac06dfdf44f5b7f7b2391df325e870f7dc2247d4dfd0454b176d",
+      "bytes": 139276
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-json-bytes-reserve-process-0.json",
+      "sha256": "c5092ebc2b0896238f28c3b571569bff1a811ec1855c48e209e52f78622db3aa",
+      "bytes": 1383
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-json-bytes-reserve-process-1.json",
+      "sha256": "ed4eb18ee34a70b5344bb1d384d210b9d70acfe807b2e6579cce81d715f8e9c6",
+      "bytes": 1382
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-json-bytes-reserve-process-2.json",
+      "sha256": "0ef1666c57c41e214256605e0a255b27513cc754c8a86b2db9f705c551d6909d",
+      "bytes": 1382
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-tHYioC/simulation/277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "e65a6c3991f87697dfb8aa4f35be7afddd986b01d7553e9223b48d883c16b319",
+      "bytes": 70086
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-sqlite-bytes-commit-process-0.json",
+      "sha256": "2e3718af3057cbd403621880f3f28c2ebe84e1df62f326738ba254ea54c9ecf9",
+      "bytes": 1383
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-sqlite-bytes-commit-process-1.json",
+      "sha256": "f7a53e3d367175f879e586c3e8b1ed5e7e3b3c75ed285dfaaea2511e50b33deb",
+      "bytes": 1382
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-sqlite-bytes-commit-process-2.json",
+      "sha256": "768150925f6d1cef4f2989653b51f75b05e9ac8404df2644729f0061d150d943",
+      "bytes": 1382
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-AqUYSl/simulation/0e6c4cd68813033e6cb43f8c5460e39b0cab35c7e8dc030ddbfc2227974c7d60/journal.sqlite",
+      "sha256": "a94c3265ebfa9c4426333e45a8a61eec67f0efe214df9fcd53ad7e03118bc456",
+      "bytes": 188416
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-sqlite-bytes-reserve-process-0.json",
+      "sha256": "b8b8186d2a3847ad24d0074a96ff5a4824e93f1c5bef5c763bd957fb2cb0399b",
+      "bytes": 1385
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-sqlite-bytes-reserve-process-1.json",
+      "sha256": "87bebfcdef827e6125c45890f48e206fb93b7a53d063c5183a388ebe3c617dc4",
+      "bytes": 1384
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-company-sqlite-bytes-reserve-process-2.json",
+      "sha256": "de4e04d3b1ddc48a5ef29aaac0103106fe0bb21f0a5298cebcf6b13a77221dbb",
+      "bytes": 1384
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-uLVBQj/simulation/277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9/journal.sqlite",
+      "sha256": "723cb93fce8a8c352983e53d919355691672594e082aa6b901105911345cfcbd",
+      "bytes": 90112
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-json-bytes-commit-process-0.json",
+      "sha256": "3ed38142e3dc411e05304648963da8558124fe0c7d287a340364f2a6b717f856",
+      "bytes": 1387
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-json-bytes-commit-process-1.json",
+      "sha256": "9f8c3f3e0c8ad50bb48b6b214b218578db6547d10d637ea5868ce0a12fa77307",
+      "bytes": 1386
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-json-bytes-commit-process-2.json",
+      "sha256": "68e5e5c31418ed2082f7fe01ca308eb440657f466eb3e1f726ef0d46ddbb1a5d",
+      "bytes": 1386
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-ZHeRVM/simulation/cccb9434f30e16d5e76f864650be8c53df0f523b3876516d13f3340afe1ed2d4/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "5f12c1509b8bb0af44df9652933d64dce507cbddca738c59912981e1ee74310d",
+      "bytes": 139706
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-json-bytes-reserve-process-0.json",
+      "sha256": "16de53a98722148c11c97d2f919feb348c10a1d3d1b9e0dff6706340d9489309",
+      "bytes": 1389
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-json-bytes-reserve-process-1.json",
+      "sha256": "41ad4e36ff571f338c58491f335f922059fca32ede0f5f1d9e3f8f35ba105e40",
+      "bytes": 1388
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-json-bytes-reserve-process-2.json",
+      "sha256": "7cf8c1c76d8791f567e2b5de0d77769e6868cfdfc613495c82fc42e815118843",
+      "bytes": 1388
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-V8A0Sa/simulation/277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "b8cc0aad9fccf26db0adab3133f7355fa2f9d1b055b91ebcdc94d62b0e29f08c",
+      "bytes": 70222
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-sqlite-bytes-commit-process-0.json",
+      "sha256": "08f03a939e7b006c25bb37571801a7e1e9f9e5572bc5786c85d95f001fecb2aa",
+      "bytes": 1389
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-sqlite-bytes-commit-process-1.json",
+      "sha256": "4b837804e125092a1de47f5c1a2f464de7fe50108c3beccfc73a80028c038bd8",
+      "bytes": 1388
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-sqlite-bytes-commit-process-2.json",
+      "sha256": "50aadf55af05e98afc70c6e009ea65252b5e220fcccad54e7a2441145f8ab3fe",
+      "bytes": 1388
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-OjT9nZ/simulation/cccb9434f30e16d5e76f864650be8c53df0f523b3876516d13f3340afe1ed2d4/journal.sqlite",
+      "sha256": "5affea4456671cbe828f90b87660a12738447c7979f01f5097e9e5c30a637d00",
+      "bytes": 188416
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-sqlite-bytes-reserve-process-0.json",
+      "sha256": "844945f63c8610c9f35406d37b61b666c2fc208225e199a185db25ae56c103b3",
+      "bytes": 1391
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-sqlite-bytes-reserve-process-1.json",
+      "sha256": "10f0f2b8200b2b94daa6b16cb4d8481e7db890fa592d391376a621eef7c5d2e5",
+      "bytes": 1390
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/src-laboratory-sqlite-bytes-reserve-process-2.json",
+      "sha256": "d39b52e9d5bd497e19f4297d3800de33f2c508a0575d2059a1605582aeaf63a3",
+      "bytes": 1390
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/src-external/loader-q8jUHp/simulation/277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9/journal.sqlite",
+      "sha256": "d6a1fcc183d24acf293b89c403e91bd55049fde81a5f7aa4ca1fa913c7c8d747",
+      "bytes": 90112
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/calibration/process-0.json",
+      "sha256": "84a8d5cc41da0839a45d09b4e331999290bfa0b6fcf88ca17ef33bd8824d0e66",
+      "bytes": 1454
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/calibration/process-1.json",
+      "sha256": "f93a3a6824226ffdf43d3732c3b79cfd4185d8f7d7e64094b652e601330ca82c",
+      "bytes": 1453
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/calibration/process-2.json",
+      "sha256": "7eab9eda065c886edbd0c46d29c5947e487bf0d0d080a4e1edbfe1a88a1093b9",
+      "bytes": 1453
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/calibration/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "9e90479d202f22f2fba12d5220d81cfdcf565ecefb8e71fa087025d08ebcb696",
+      "bytes": 140832
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/calibration/original.json",
+      "sha256": "1a3882cc24f72ea22a73f0e79551bcca22d79097322a3ef196d3d9d535631892",
+      "bytes": 1195224
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/calibration/input.json",
+      "sha256": "4806786ef72a460127b7966b9c1d30917fbf61d0c87381ba4fdb47a04d37e177",
+      "bytes": 46183
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/calibration/initial.json",
+      "sha256": "4142865a4bc4fa436046884b4a82ad7511a77cd596447fb3ff484d8c7822c926",
+      "bytes": 58173
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/exact/process-0.json",
+      "sha256": "152d1aabe84e8c6528fc4c2460eea82f46f46985e43619a992e822c1770ebad8",
+      "bytes": 1501
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/exact/process-1.json",
+      "sha256": "df92a7fb41730c7762fd263042505cc6a25c9279c9deaf3df0a6177537ca95ee",
+      "bytes": 1500
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/exact/process-2.json",
+      "sha256": "d939f3e4bca910faad05956aae30e191370739d986c69dd8e87d04ac52fe79f1",
+      "bytes": 1500
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/exact/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "c47a28ebcd60ca696b414b2f8fbe51338a9e9a8d844c7090e0d40ad030aac882",
+      "bytes": 140832
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/exact/original.json",
+      "sha256": "c8a8e4defb88bcaadc523ecdf12345715c3a263f14690563f5990cabf2e65021",
+      "bytes": 1195224
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/exact/input.json",
+      "sha256": "32ddb2c5253e16f411a6e1684e54d7c8ec94707ca95148a6667dbfa0cc9d9a8a",
+      "bytes": 46257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/exact/initial.json",
+      "sha256": "13f54b81d70a9516dbe0905079d2388441a38f8a6a72573e198e947dc6cfe510",
+      "bytes": 58173
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/minus-one/process-0.json",
+      "sha256": "1ab269e7ae215d468f9eb550766aef8acd8f38d9bb9152081a9587431f14de4f",
+      "bytes": 1506
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/minus-one/process-1.json",
+      "sha256": "473a97dacfedcb55521de3e72fbcd349fecd6e236ad56b6824f1c2b38261f814",
+      "bytes": 1506
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/minus-one/process-2.json",
+      "sha256": "be39de5078ef9f3e3550a5e536058a817946ea5a823de1a5be5eef19cdee3cc9",
+      "bytes": 1506
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/minus-one/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "679453b556db757b5c10f4d6ddc63898371bde51f88c2a11d868da9954f94283",
+      "bytes": 49708
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/minus-one/original.json",
+      "sha256": "46538c0e70e26fc6cb6d5b0d79f9720a31d6b16b9f0adf881ab146d35567c7e8",
+      "bytes": 280336
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/minus-one/input.json",
+      "sha256": "0e46014dea7133320c1637ad4ba2a92be83153d661bd28ab635c31ed97f939e2",
+      "bytes": 46257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-generate-and-hire-YYxjYD/minus-one/initial.json",
+      "sha256": "a7c27271b393336518c0f9f45f0711df00e964949ec4d53ee1867da9af05b9f3",
+      "bytes": 58173
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/calibration/process-0.json",
+      "sha256": "e3fbd7f0ee1c13047714fd87415451aff54d0b1dfc2696b86a78f3edefb37c6b",
+      "bytes": 1438
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/calibration/process-1.json",
+      "sha256": "16520c13ccd2e68e65a6e108c3dbf28f15e829633e88394cae28df4ef01310d4",
+      "bytes": 1437
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/calibration/process-2.json",
+      "sha256": "6660fe48f235884b2d860e6a5783bb3ddad6b2702ec5d2d0c895af702ad0c17a",
+      "bytes": 1437
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/calibration/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "44472215ba23fac056a537336d7b4652056df207b1646f86853b3a85f8b09fda",
+      "bytes": 135208
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/calibration/original.json",
+      "sha256": "0ecaa25400164ba3fca906d16e07399d89124155a6a56e3a3b30b25cdb278802",
+      "bytes": 1204189
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/calibration/input.json",
+      "sha256": "8fbb04e3e4fc9e26e00ce588f77c2f4996b89191232b35dff57b989d6ba44e69",
+      "bytes": 47591
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/calibration/initial.json",
+      "sha256": "3142f582192b5b24305155663561f0804f4dafb451097d36bd5fdeae1fea50de",
+      "bytes": 60096
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/exact/process-0.json",
+      "sha256": "d4cfec5e79ae8e2f194c3c3d2a8b941d8c1434abd75ff785484376109cd16f5e",
+      "bytes": 1485
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/exact/process-1.json",
+      "sha256": "0b0dd2b1119a731b6d4b758ba9b172e67b8cd0fb64a7b5516fc3f54ce5fbebfc",
+      "bytes": 1484
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/exact/process-2.json",
+      "sha256": "1f99e4fa0ebcbc0aa32ae888541090a21bf1c07ea791bf7ffd3e31c6a3e83f0d",
+      "bytes": 1484
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/exact/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "8b9494c870c73fe3872f265540e1a6b1d37d38005751f439e824c10717ff6c90",
+      "bytes": 135208
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/exact/original.json",
+      "sha256": "9eaf69a52c69f196242595397d887997d0340689d8cf54200b711a283c9a417f",
+      "bytes": 1204189
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/exact/input.json",
+      "sha256": "06ce842e5b389147421c516775f48de9f7b521f85aee55a6fe8476ab35af3371",
+      "bytes": 47665
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/exact/initial.json",
+      "sha256": "ebb44860c80b899e6ed0fd436c67f7a9cf21f27450af43f0e1de4a7b526eb7bf",
+      "bytes": 60096
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/minus-one/process-0.json",
+      "sha256": "242f754d027cf9d72159c027d8034aa7a3a04d2f2f6074e345a6372dd253d026",
+      "bytes": 1490
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/minus-one/process-1.json",
+      "sha256": "865571e0c5ba4a897a54b38bf0379989b6563bf2124be8d3f758168197d1b3d9",
+      "bytes": 1490
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/minus-one/process-2.json",
+      "sha256": "4bef4421668847bdf012160d3205140d1b3f01cbf417b7a9131b4f44c711c173",
+      "bytes": 1490
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/minus-one/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "dc5d8b2544583b6e332b158a4a327d8f043b0d6465e81854d3dbcbf486902c50",
+      "bytes": 50701
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/minus-one/original.json",
+      "sha256": "febb7531f23efcb0d9c2cfda794708f7274f778fce0f4124e420f889ca63e465",
+      "bytes": 284395
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/minus-one/input.json",
+      "sha256": "87a28c9f4d4869a1bff5328c359b46b89728239c24e22b001666f72f50701da6",
+      "bytes": 47665
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-json-hire-existing-7l5jOi/minus-one/initial.json",
+      "sha256": "6e14d993623752f03126bef1a9fc07c771fbeee79758a4fb73a2ea07584829af",
+      "bytes": 60096
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/calibration/process-0.json",
+      "sha256": "e21e9ad568a1b40e54e5354b35cbfda491a19141960a21c7125b1da9e7050213",
+      "bytes": 1462
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/calibration/process-1.json",
+      "sha256": "480dd63dbbe8ea855211f5491ab4bb81b7ffd3bf5c7ca12adf38700d5c120157",
+      "bytes": 1461
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/calibration/process-2.json",
+      "sha256": "17862916ab195ce9353037bff624af4958cd255965b5b5cfe9ab06817ed41821",
+      "bytes": 1461
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/calibration/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "d8e6076ae8207489affb6f9984aa9ded32cad4c402148dbf63d9008060845592",
+      "bytes": 143360
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/calibration/original.json",
+      "sha256": "4791b8abfdbc5d9df4200680a9a709448541c4083a73f228961d113704c7bdba",
+      "bytes": 1195238
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/calibration/input.json",
+      "sha256": "4806786ef72a460127b7966b9c1d30917fbf61d0c87381ba4fdb47a04d37e177",
+      "bytes": 46183
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/calibration/initial.json",
+      "sha256": "2abdac10e874de7ff8902b8bc48ebd519095061c1883b2899948c66e4adc10b0",
+      "bytes": 58179
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/exact/process-0.json",
+      "sha256": "a7d83fd3d832fe45087d360a7edd5c0c1821ae350b070aaacd6e1555165ae248",
+      "bytes": 1509
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/exact/process-1.json",
+      "sha256": "4af8e74335530724df1d04b9e01ea2e9d92e43b58a1ba989dbc997a3b3bb04c2",
+      "bytes": 1508
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/exact/process-2.json",
+      "sha256": "8997b380fd169db8aaa262e4d7859999c8fd93ae7d1b574e5088fb26af992448",
+      "bytes": 1508
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/exact/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "f79770df97f56261c57babcc7145c679b9f00897af3f32ed22fc891d0fdbc796",
+      "bytes": 143360
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/exact/original.json",
+      "sha256": "9b16efc088b83c1922ea34a89a02d9eeaca355715850b7ef88ff328f7cb8974b",
+      "bytes": 1195238
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/exact/input.json",
+      "sha256": "32ddb2c5253e16f411a6e1684e54d7c8ec94707ca95148a6667dbfa0cc9d9a8a",
+      "bytes": 46257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/exact/initial.json",
+      "sha256": "5c8484692b1748b26073ac3789df063d58e3d8b089ae8e612e2dd2e1520315f5",
+      "bytes": 58179
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/minus-one/process-0.json",
+      "sha256": "fa9235f06d80532ff3b6c5f57fc2ebaf152957a647fd7e19daa30e1167bb48c6",
+      "bytes": 1514
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/minus-one/process-1.json",
+      "sha256": "961f8d2fb4bc082ac25813cdf71f2dc514ac50ea83fb8a0629a73746e5a9dd4a",
+      "bytes": 1514
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/minus-one/process-2.json",
+      "sha256": "37c710fd7a9717fa674368fd552f7f72ec5132fa9dffd81849546e2abfa772e5",
+      "bytes": 1514
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/minus-one/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "a98963cace0a10a13855db2d5047fdcd228e6c8abad469910120209ff9a9693e",
+      "bytes": 81920
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/minus-one/original.json",
+      "sha256": "a9b88f0031620f5e696f24a1b8bfcf0802678ec07f8fb31bbdb4321ceef70d9d",
+      "bytes": 280350
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/minus-one/input.json",
+      "sha256": "0e46014dea7133320c1637ad4ba2a92be83153d661bd28ab635c31ed97f939e2",
+      "bytes": 46257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-generate-and-hire-6Mkv1F/minus-one/initial.json",
+      "sha256": "46a962d9bb9767fc467fa0b70745a51a1e24e41bd1c9bb2b0c9e7b7e3966aefc",
+      "bytes": 58179
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/calibration/process-0.json",
+      "sha256": "05fc6d3c046cfe97db5eb074e21a411c2b11d9b974849996dea0305064d26cb9",
+      "bytes": 1446
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/calibration/process-1.json",
+      "sha256": "227b919de00ad858f43ef7cdc6f4297b5811b2600a588a298097ec3bdeca8829",
+      "bytes": 1445
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/calibration/process-2.json",
+      "sha256": "e332373e5adf1bfdaafedd8a24bbf64b8709d5ef5ee64420f6d34b4909e8b759",
+      "bytes": 1445
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/calibration/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "edf0f9327cb6b5dabe7ce031b7bb4268152ab90a17ed1b71c36708f965ce0944",
+      "bytes": 143360
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/calibration/original.json",
+      "sha256": "f10ffbe7c4619573e56efa8095004a5ba509f4957fe4d7fc415f79701a9ffd7a",
+      "bytes": 1204203
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/calibration/input.json",
+      "sha256": "8fbb04e3e4fc9e26e00ce588f77c2f4996b89191232b35dff57b989d6ba44e69",
+      "bytes": 47591
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/calibration/initial.json",
+      "sha256": "981fe21aef566c7dea21b36e022ea332967f2176a6b6a38f3d1b7f75de770f6f",
+      "bytes": 60102
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/exact/process-0.json",
+      "sha256": "0262756c828290fd590f87a82c66d012a2db7c26cd33ff1750a837307787765d",
+      "bytes": 1493
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/exact/process-1.json",
+      "sha256": "08aac7b12eed460385114f570c8c0f8f30da05424e2fdd7ebb34fd862d79e807",
+      "bytes": 1492
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/exact/process-2.json",
+      "sha256": "beb74290596354c2ec4f1aa0ac6f9e81a174b25440d951884c8a7e06d4a0956e",
+      "bytes": 1492
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/exact/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "30848ec928c2e96a3917245b814d59a0532c96d89da422d21082ccb67a01191f",
+      "bytes": 143360
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/exact/original.json",
+      "sha256": "72a98306f72781a82a286a1219e2d122a58636863d32d98466153c5a744f3073",
+      "bytes": 1204203
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/exact/input.json",
+      "sha256": "06ce842e5b389147421c516775f48de9f7b521f85aee55a6fe8476ab35af3371",
+      "bytes": 47665
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/exact/initial.json",
+      "sha256": "3ec8a0617d9dcba98045666531c6099c1047998fc9401e94729aa478feed7144",
+      "bytes": 60102
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/minus-one/process-0.json",
+      "sha256": "df178bfb505ba7a0332bf6a23bd74121cbe94332044094a75639fe4fe2c37e21",
+      "bytes": 1498
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/minus-one/process-1.json",
+      "sha256": "9f869f95f9e1fb5a68cde09e2dec81f515108a1d4f59a6fbaf016f46d04d2af8",
+      "bytes": 1498
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/minus-one/process-2.json",
+      "sha256": "355500830209f2f353416e0e6467aaa477f765f1927e6d1cac23b764061b08ff",
+      "bytes": 1498
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/minus-one/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "sha256": "5dc9a1b5c42dcf562ce8bfa1e5ddfd542964cd03902d971c27e58fb0f5a2575c",
+      "bytes": 81920
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/minus-one/original.json",
+      "sha256": "9d450948e8260d26d5024c1997db04f3a7ad608edaa193cb9a233e820eca7c7b",
+      "bytes": 284409
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/minus-one/input.json",
+      "sha256": "87a28c9f4d4869a1bff5328c359b46b89728239c24e22b001666f72f50701da6",
+      "bytes": 47665
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib/lib-sqlite-hire-existing-bNZJdc/minus-one/initial.json",
+      "sha256": "c974a89975c13f36ab2a51d1318ee91ba1a3d87c2f4c16311bd679f6c3d4823c",
+      "bytes": 60102
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-json-bytes-commit-process-0.json",
+      "sha256": "808977d510b122a60f3dd721ae747746c14969f13d0b5f0b961ec60e63970c6b",
+      "bytes": 1249
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-json-bytes-commit-process-1.json",
+      "sha256": "6cce461bbbaf7e58c112558161fcb8a37368868cec91573c172fa330b6965b48",
+      "bytes": 1248
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-json-bytes-commit-process-2.json",
+      "sha256": "abae331d1877f3564cc1d6328d4363e1b2d3be333f5da4d4ada3c46cefdc6046",
+      "bytes": 1248
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-VYKnNi/simulation/0e6c4cd68813033e6cb43f8c5460e39b0cab35c7e8dc030ddbfc2227974c7d60/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "36af961c13bc6bfdc1399e2f246a95307a6d2e35a1490549dbd4ffba1f9b2034",
+      "bytes": 139276
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-json-bytes-reserve-process-0.json",
+      "sha256": "53d67ef4716d90ba035319e9f2b19f694e6d96df56575e77091956dc23e9c6d4",
+      "bytes": 1251
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-json-bytes-reserve-process-1.json",
+      "sha256": "0f0af673aef401f154641902ed9316a035d33c4aea6c44b6b85b0b876424c8d5",
+      "bytes": 1250
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-json-bytes-reserve-process-2.json",
+      "sha256": "368d012ee1869195179314d925327bd84315af419824c0e037d4a520235487e6",
+      "bytes": 1250
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-JVLe51/simulation/277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "c5413becdf30f0661dffdad0abc1b7e8ef7a3b80714801c07b35082907eba1e7",
+      "bytes": 70086
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-sqlite-bytes-commit-process-0.json",
+      "sha256": "713d0b04370f7207e00b571a617601ce7fb546d782d8f4763e07557e6f708a97",
+      "bytes": 1251
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-sqlite-bytes-commit-process-1.json",
+      "sha256": "7e3be3fbaae8c98c5761b01e69e53438759055977f43045e871b00882f35376e",
+      "bytes": 1250
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-sqlite-bytes-commit-process-2.json",
+      "sha256": "bafeb669c1ab506227db781c6134f2e189e23c4dc11f8c23ebb5c7fb9f6a4e04",
+      "bytes": 1250
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-wvwLTt/simulation/0e6c4cd68813033e6cb43f8c5460e39b0cab35c7e8dc030ddbfc2227974c7d60/journal.sqlite",
+      "sha256": "df8585681ef55e1dcd12b48e9e8946f5cb8c4720f4a49c536215363a4d6378fd",
+      "bytes": 188416
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-sqlite-bytes-reserve-process-0.json",
+      "sha256": "6042e9bfef8492d4fd9f100a1397a4186fba7d016078be55ce112cf3dc0c28b5",
+      "bytes": 1253
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-sqlite-bytes-reserve-process-1.json",
+      "sha256": "5fe4c92f49ba856832e70af4bc5ed85b0666b1422b2d90c220417d20aeb61b2e",
+      "bytes": 1252
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-company-sqlite-bytes-reserve-process-2.json",
+      "sha256": "4c78cc2a9fa541db682f03fc75756b1c381ab7fb23c809714e75e3e69d3cb0a2",
+      "bytes": 1252
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-LZG64E/simulation/277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9/journal.sqlite",
+      "sha256": "4f6d541060818765a2c1620b9b9f6d468682c9980ba02fdc89cdb655e2036e97",
+      "bytes": 90112
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-json-bytes-commit-process-0.json",
+      "sha256": "39625b92644c604f7f2d26d57741710ce4f7184fc9fad85e86853c0483b4dd62",
+      "bytes": 1255
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-json-bytes-commit-process-1.json",
+      "sha256": "d2d26617051c6614c2a8d4f7c05864fed036b2d8a60e8ea563cf8047ad1e2c08",
+      "bytes": 1254
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-json-bytes-commit-process-2.json",
+      "sha256": "cdc0f104b2aff8056e64abe27b684c0cbe90ae3951a68095e13b5e1d2639441a",
+      "bytes": 1254
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-GaBM1L/simulation/cccb9434f30e16d5e76f864650be8c53df0f523b3876516d13f3340afe1ed2d4/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "293471798c5831e8fcc9b0d6e645b2064bc1d159d16586f9f0c7cdbd3d2201eb",
+      "bytes": 139706
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-json-bytes-reserve-process-0.json",
+      "sha256": "c5f3df00109ad267239a280aaedd35a71ea419ec7c05f30a0487240edf7f86db",
+      "bytes": 1257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-json-bytes-reserve-process-1.json",
+      "sha256": "ad4f39ef05122e80fec09946ddfc2660594cf502674e481b5b1086e30232db62",
+      "bytes": 1256
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-json-bytes-reserve-process-2.json",
+      "sha256": "12652137cbca5e2e6433d5848ed73e441c2656546cda3aaba52c62737762496d",
+      "bytes": 1256
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-zWSpvd/simulation/277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "ff31eec4dc1a5be83bdd2b4e9fffb4cc56fd6fd6be18a4147b540a1804892e28",
+      "bytes": 70222
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-sqlite-bytes-commit-process-0.json",
+      "sha256": "4fa7932dbdf953abcb54799ed34929798707570860c4ced6abef1b5e8010e29a",
+      "bytes": 1257
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-sqlite-bytes-commit-process-1.json",
+      "sha256": "52f245de084fd6e9dfe5ab23af7af17fe572f09e0afc1e5ef4f0559109f3c06c",
+      "bytes": 1256
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-sqlite-bytes-commit-process-2.json",
+      "sha256": "b6c6a9043dc8a83db47cca6a45f3de664948274ac91a0b3a73ceed6212373f62",
+      "bytes": 1256
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-S9Czsa/simulation/cccb9434f30e16d5e76f864650be8c53df0f523b3876516d13f3340afe1ed2d4/journal.sqlite",
+      "sha256": "802eff05cf24678c156812edf210280468a1d5de0c0cbc6961d91a3a29509a73",
+      "bytes": 188416
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-sqlite-bytes-reserve-process-0.json",
+      "sha256": "366c8b75e33e1617c36d56729abea95882fbaae2cdd0fa9810e26996890cfbe1",
+      "bytes": 1259
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-sqlite-bytes-reserve-process-1.json",
+      "sha256": "92631361cc6cc85f9e9028c84b666037fe787cc5c66975fc2ec358a0fea4e683",
+      "bytes": 1258
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/lib-laboratory-sqlite-bytes-reserve-process-2.json",
+      "sha256": "7db44b41ff8768f2cf861121467659c5f1df4ce209c4b0b3a1e841c802df6de6",
+      "bytes": 1258
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/thread-01a1336a-acceptance-bytes/final-matrix/lib-external/loader-05v0Y6/simulation/277089d91c0bdf4f2e6862ba7e4a07605119431f5d13f726dd352b06f1b206a9/journal.sqlite",
+      "sha256": "6996e00ea7d789740ca7249d82a00061c1d146f459b3333dc2207f1b1d2f9f12",
+      "bytes": 90112
+    }
+  ]
+}

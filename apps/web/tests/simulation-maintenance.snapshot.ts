@@ -2,7 +2,7 @@ import { showSimulationMaintenance, showSimulationRequests } from './simulation-
 /** Real browser creation, original retries and explicit scheduling drive production actors without navigation inference. */
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { chromium } from 'playwright'
+import { chromium, type Route } from 'playwright'
 import { expect, it } from 'vitest'
 import { launchWebScaffold, watchConsole } from './scaffold.ts'
 import { simulationKnowledgeRequestSchema } from '@clocky/clocky-simulation'
@@ -229,9 +229,12 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
     }, detailUrl.href)
     const inspector = workspace.getByRole('complementary', { name: '查看详情' })
     await inspector.getByText(`匹配记录: ${publication.outbox!.attempts.length}`, { exact: true }).waitFor()
-    await page.route('**/api/simulation.objects.inspect', async (route) => { await route.abort('failed') }, { times: 1 })
+    // Keep the read failing until its notice is observed; stale reads retry automatically once the route recovers.
+    const failInspect = async (route: Route) => { await route.abort('failed') }
+    await page.route('**/api/simulation.objects.inspect', failInspect)
     await inspector.getByRole('button', { name: '刷新详情', exact: true }).click()
     await inspector.getByText('读取失败，已保留可读内容；连接恢复后可重试。', { exact: true }).waitFor()
+    await page.unroute('**/api/simulation.objects.inspect', failInspect)
     await inspector.getByText(`匹配记录: ${publication.outbox!.attempts.length}`, { exact: true }).waitFor()
     expect(await inspector.getByRole('button', { name: '下一页', exact: true }).isEnabled()).toBe(false)
     await inspector.getByRole('button', { name: '刷新详情', exact: true }).click()
@@ -280,8 +283,8 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
       const refreshDetail = inspector.getByRole('button', { name: '刷新详情', exact: true })
       await refreshDetail.click()
       await oldReadEntered.promise
-      await inspector.getByText('读取中…', { exact: true }).waitFor()
-      expect(await refreshDetail.isDisabled()).toBe(true)
+      // A refresh over retained content keeps that content and marks only its control busy.
+      await expect.poll(() => refreshDetail.isDisabled()).toBe(true)
       await policyEntry.update({ disabled: true })
       policyRetired = true
       await inspector.getByText('上下文正文未公开；读取需要部署显式授予此实体的正文权限。', { exact: true }).first().waitFor()
@@ -357,7 +360,10 @@ it.each(['json', 'sqlite'])('inputs, checkpoints and cold-recovers original simu
     await showSimulationMaintenance(workspace)
     await workspace.getByRole('button', { name: '验证并恢复运行', exact: true }).click()
     const recovery = page.getByRole('dialog', { name: '验证并恢复运行', exact: true })
-    await recovery.getByText('检查点发布时间（真实时间）', { exact: true }).waitFor()
+    // The first restore layer states the checkpoint time and its real publish time in one sentence.
+    await recovery.locator('[data-restore-layer="summary"]').waitFor()
+    // Source identities and paging live in the technical layer, opened on demand.
+    await recovery.locator('[data-restore-layer="technical"] > summary').click()
     await recovery.getByText(/不回滚历史/).waitFor()
     // Cold owner retirement can advance the world after the first source read.
     await recovery.getByRole('button', { name: '返回首页', exact: true }).click()

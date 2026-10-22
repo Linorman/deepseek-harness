@@ -8,10 +8,15 @@ A service can be a core spine service, a swappable capability seam, or a bundle/
 ```mermaid
 flowchart LR
   pkg_simulation_product["simulation-product"]
+  svc_externalEffectSandbox["ctx.externalEffectSandbox<br/>Explicit local effect test environment"]
+  svc_federationMailbox["ctx.federationMailbox<br/>Durable cross-run message bridge"]
+  svc_federationOwnership["ctx.federationOwnership<br/>Single federated resource coordinator"]
+  pkg_simulation_world["simulation-world"]
+  svc_simulationWorldExecutions["ctx.simulationWorldExecutions<br/>World execution factory admission"]
+  pkg_simulation_team["simulation-team"]
   svc_simulationAdministration["ctx.simulationAdministration<br/>Persistent company creation owner"]
   pkg_host_apiproxy["host-apiproxy"]
   svc_simulationProducts["ctx.simulationProducts<br/>Simulation product registration and reads"]
-  pkg_simulation_team["simulation-team"]
   svc_simulationTeams["ctx.simulationTeams<br/>Simulation cognition coordination"]
   pkg_tool_simulation["tool-simulation"]
   pkg_simulation["simulation"]
@@ -350,9 +355,13 @@ flowchart LR
   pkg_shell_env --> svc_shellEnv
   pkg_simulation --> svc_simulations
   pkg_simulation_local --> svc_simulations
+  pkg_simulation_product --> svc_externalEffectSandbox
+  pkg_simulation_product --> svc_federationMailbox
+  pkg_simulation_product --> svc_federationOwnership
   pkg_simulation_product --> svc_simulationAdministration
   pkg_simulation_product --> svc_simulationProducts
   pkg_simulation_team --> svc_simulationTeams
+  pkg_simulation_world --> svc_simulationWorldExecutions
   pkg_skill --> svc_skills
   pkg_skill_filesystem --> svc_skills
   pkg_spill --> svc_spillStore
@@ -429,6 +438,8 @@ flowchart LR
   svc_dynamicCordisRunner --> pkg_tool_cordis
   svc_e2b --> pkg_fs_e2b
   svc_e2b --> pkg_subprocess_e2b
+  svc_federationMailbox --> pkg_simulation_product
+  svc_federationOwnership --> pkg_simulation_product
   svc_fs --> pkg_tool_fs
   svc_invariants --> pkg_agent
   svc_invariants --> pkg_agent_loop
@@ -481,6 +492,8 @@ flowchart LR
   svc_simulationAdministration --> pkg_host_apiproxy
   svc_simulationProducts --> pkg_host_apiproxy
   svc_simulationTeams --> pkg_tool_simulation
+  svc_simulationWorldExecutions --> pkg_simulation_product
+  svc_simulationWorldExecutions --> pkg_simulation_team
   svc_simulations --> pkg_simulation_product
   svc_simulations --> pkg_simulation_team
   svc_skills --> pkg_tool_skill
@@ -578,6 +591,10 @@ flowchart LR
 
 | ctx key | Role | Owner | Implementations | Direct consumers | Companion plugins | Note |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.externalEffectSandbox` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | - | - | Opt-in Host service retains independent user grants and queries uncertain local test-ledger receipts; it has no production adapter. |
+| `ctx.federationMailbox` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`simulation-product`](../packages/simulation/simulation-product) | - | Explicit peer generations own inbox/outbox receipts, conservative Native time fences, and protected checkpoint cuts. |
+| `ctx.federationOwnership` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`simulation-product`](../packages/simulation/simulation-product) | - | One durable coordinator fences resource ownership generations and retains reservations through explicit target confirmation and settlement. |
+| `ctx.simulationWorldExecutions` | `core` | [`simulation-world`](../packages/simulation/simulation-world) | - | [`simulation-team`](../packages/simulation/simulation-team), [`simulation-product`](../packages/simulation/simulation-product) | - | Installs exact-generation factories, validates original restore contracts, and binds complete run-owned handler sets without IO. |
 | `ctx.simulationAdministration` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | Retains authenticated original allocations and immutable preparation outcomes, registers discovery, and owns paused native handles. |
 | `ctx.simulationProducts` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | Registers immutable principal-owned metadata and projects authenticated native history without taking execution ownership. |
 | `ctx.simulationTeams` | `core` | [`simulation-team`](../packages/simulation/simulation-team) | - | [`tool-simulation`](../packages/simulation/tool-simulation) | - | Connects durable entity bindings to controller-owned local activation epochs. |

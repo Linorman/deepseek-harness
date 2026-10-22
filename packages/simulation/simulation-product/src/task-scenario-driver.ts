@@ -1,3 +1,4 @@
+import { requiredCompanyContext } from './required-company-context.ts'
 /** Bounded trusted report workflows reuse native windows, task attempts and recipient delivery. */
 import { driverActivation } from './driver-residency.ts'
 import { simulationDecisionIdSchema, simulationWindowIdSchema, simulationProposalSchema } from '@clocky/clocky-simulation'
@@ -181,7 +182,8 @@ export class SimulationTaskScenarioDriver {
   }
   private residency(entityId: SimulationEntityId) {
     return { activation: driverActivation(this.run, entityId, this.preparation.participant, this.config.model, this.lifetime),
-      evict: Object.keys(this.run.snapshot().entities) as SimulationEntityId[] }
+      evict: Object.keys(this.run.snapshot().entities) as SimulationEntityId[],
+      ...this.config.residency === undefined ? {} : { policy: this.config.residency } }
   }
   private context(state: SimulationSnapshot, entityId: SimulationEntityId, proposal: Parameters<typeof taskScenarioInput>[0]):
   Omit<SimulationContextRequest, 'maxBytes' | 'teamCursor'> {
@@ -189,8 +191,7 @@ export class SimulationTaskScenarioDriver {
     const commitments = Object.values(state.commitments).filter(value => value.debtor === entityId || value.creditor === entityId)
     return { personaVersion: 'task-workflow/1', modelVersion: `${this.config.model.provider}/${this.config.model.name}`,
       sources: [{ kind: 'run-event', runId: state.spec.runId, sequence: state.revision }], sections: [
-        { kind: 'identity', required: true, blocks: [{ type: 'text', text: `You are ${entityId}.` }] },
-        { kind: 'authority', required: true, blocks: [{ type: 'text', text: 'Use only Simulation observe, stage and submit.' }] },
+        ...requiredCompanyContext(entityId, true),
         { kind: 'input', required: true, blocks: [{ type: 'text', text: taskScenarioInput(proposal) }] },
         { kind: 'goals', required: true, blocks: [{ type: 'text', text: proposal === null
           ? 'Acknowledge the selected notification with an empty proposal list.'

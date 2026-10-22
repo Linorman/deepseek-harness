@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "date": "2026-10-19",
+  "operation": "organization/rename-object/1",
+  "backends": ["json", "sqlite"],
+  "repetitions": 7,
+  "actors": 2,
+  "objects": 2,
+  "openWindows": 1,
+  "mode": "source",
+  "modelPolicy": "keyless canonical recorded decisions; no inference",
+  "control": "same request and accepted plan through canonical full-run maintenance; provider adapter omits optional local footprint inspection",
+  "treatment": "exact Native-only local object footprint, disjoint original window remains open",
+  "target": {"localP50ToMaintenanceP50Maximum": 0.75, "localMaintenanceCount": 0, "preserveOriginalWindow": true},
+  "limits": ["Only a plain non-cognitive object's name", "Unrelated unknown domains or reads fall back", "Not generated-hire or arbitrary-personnel concurrency"]
+}

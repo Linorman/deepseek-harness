@@ -1,0 +1,2 @@
+$ tsx scripts/verify-package-invariants.ts
+verify-package-invariants: 269 hand-owned package companion(s) conform.

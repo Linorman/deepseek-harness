@@ -17,7 +17,7 @@ it.each(['json', 'sqlite'] as const)('observes native writes without opening exe
     expect((await products.watch({ runId, cursor: first.cursor, waitMs: 0 }, call())).status).toBe('unchanged')
     expect(native.run.snapshot()).toEqual(before)
     const waiting = products.watch({ runId, cursor: first.cursor, waitMs: 20 }, call())
-    await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'new', entityKind: 'org', cognition: 'none', profile: {} }), before.revision)
+    await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'new', entityKind: 'org', cognition: 'none', profile: {} }), before.revision)
     const returned = await waiting
     const changed = returned.status === 'unchanged' ? await products.watch({ runId, cursor: returned.cursor, waitMs: 0 }, call()) : returned
     expect(changed).toMatchObject({ status: 'changed', readVersion: first.readVersion, world: { revision: native.run.snapshot().revision } })

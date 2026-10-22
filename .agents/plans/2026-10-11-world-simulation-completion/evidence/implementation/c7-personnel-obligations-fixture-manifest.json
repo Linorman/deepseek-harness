@@ -1,0 +1,109 @@
+{
+  "date": "2026-10-12",
+  "timezone": "Asia/Tokyo",
+  "writtenAtUtc": "2026-10-11T21:08:38.830882+00:00",
+  "scope": "Four new actual personnel-obligation Loader/Agent fixture files only. No existing production file/checklist edit. Root owns query protocol, Native references/bounds, actual Team collector/projector/admission/close drain, domain personnelSubjects hooks and build.",
+  "files": [
+    {
+      "path": "examples/simulation-company/tests/world-personnel-obligations-model.ts",
+      "bytes": 3469,
+      "sha256": "2d4edbc8a7dddd7096b4e55d64bb12a8bf2b1e31f4c6647572975705e03d0420"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-obligations-scenario.ts",
+      "bytes": 18404,
+      "sha256": "191d60d9d4e8d88dc32b1e848fd62a89643821a922a289fbee1c2af507fd9e14"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-obligations.snapshot.ts",
+      "bytes": 2559,
+      "sha256": "79c19ee54e61935fac79cb5412a45b6e23d145297147502c785b57329d4eed78"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-personnel-obligations/cordis.yml",
+      "bytes": 114,
+      "sha256": "d6ed6af5b9feb69b6e15707daf08284091b0a48c341082ec5e6725a4a275f0af"
+    }
+  ],
+  "inputHash": "1917672d24a2c387e7b58ca236e3c79e0df57085b2a52ad7955e8c103aa68ba6",
+  "commands": [
+    {
+      "actualCommand": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_SNAPSHOT=replay CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel-obligations.snapshot.ts --maxWorkers=1 --reporter=verbose > .local/world-completion/tmp/personnel-obligations-source-all.log 2>&1",
+      "mode": "source",
+      "log": ".local/world-completion/tmp/personnel-obligations-source-all.log",
+      "logSha256": "768d16cc51559225410338b7ea7e5436711dd7e63ffa779f0741926ef935c053",
+      "exitCode": 0,
+      "passed": 4,
+      "durationSeconds": 23.4,
+      "matrix": [
+        "json/company",
+        "json/laboratory",
+        "sqlite/company",
+        "sqlite/laboratory"
+      ],
+      "subprocessesPerCase": "fresh actual workflow, then separate process checkpoint restore and read",
+      "launch": "tsx source + explicit source paths"
+    },
+    {
+      "actualCommand": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_SNAPSHOT=replay CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 CLOCKY_EXAMPLE_MODE=lib pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel-obligations.snapshot.ts --maxWorkers=1 --reporter=verbose > .local/world-completion/tmp/personnel-obligations-lib-all.log 2>&1",
+      "mode": "lib",
+      "log": ".local/world-completion/tmp/personnel-obligations-lib-all.log",
+      "logSha256": "f1a55d65b29e27db496514a36223b11f9581c8923f58c6d9fe0e9edaccb66d92",
+      "exitCode": 0,
+      "passed": 4,
+      "durationSeconds": 5.23,
+      "matrix": [
+        "json/company",
+        "json/laboratory",
+        "sqlite/company",
+        "sqlite/laboratory"
+      ],
+      "subprocessesPerCase": "fresh actual workflow, then separate process checkpoint restore and read",
+      "launch": "plain Node package exports to built lib, no tsx or source paths map; fixture entry uses erasable TypeScript"
+    }
+  ],
+  "focused": {
+    "actualCommand": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_SNAPSHOT=replay CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel-obligations.snapshot.ts -t 'json.*company' --maxWorkers=1 --reporter=verbose > .local/world-completion/tmp/personnel-obligations-source-one-persona.log 2>&1",
+    "passed": 1,
+    "skipped": 3,
+    "exitCode": 0,
+    "durationSeconds": 7.11
+  },
+  "lint": {
+    "actualCommand": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec oxlint examples/simulation-company/tests/world-personnel-obligations-model.ts examples/simulation-company/tests/world-personnel-obligations-scenario.ts examples/simulation-company/tests/world-personnel-obligations.snapshot.ts > .local/world-completion/tmp/personnel-obligations-fixture-lint-persona.log 2>&1",
+    "exitCode": 0,
+    "scope": "three owned TypeScript fixture files; not full-repository lint"
+  },
+  "verified": {
+    "actualCreation": "Company/laboratory v0 compiler and original canonical Team/Entity/Participant/Session/private Channel bootstrap. Real HR Agent emits task/create using simulation_observe/stage/submit with recorded ordinary wake input. Actual Team task pending, original creator ID/revision, proposedOwnerId and lease absent, attemptHistory empty. No writer.accept/submitDecision shortcut or fabricated Team projection.",
+    "barrier": "Real HR communication/post to canonical director via original private Channel. ctx.teams.postChannelEnvelope actual IO completes before fixture holds return; Team pending Envelope exists but Native outbox receipt remains absent. Run pause succeeds while IO is held.",
+    "coverage": "Native-only result complete=false/status native-only. Connection report collects actual original Team/task and pending delivery books; covered denotes source coverage, not departure permission. Sender task creator metadata and current role refs; sender Native outbox is outcome-unknown, both selected persons expose matching Native messages with outcome-unknown and actual channel-delivery Envelope/recipient/sequence references with outgoing/incoming directions.",
+    "noWrites": "Original Native revision, Team cursor, every original Channel cursor and original materialized/unmaterialized Session persistence sequence/revision/fingerprint are identical around all reads. Query calls add zero model requests; no claim/ack/consume/cancel/assign/role change. Existing live Sessions are explicitly flushed before capturing the held baseline, outside inspection.",
+    "privateMetadata": "No task/description/message/Persona body in reports. Task/message private canaries come from actual accepted Agent effects; unique Persona name is explicitly declared as one allowed finite trusted catalog option before strict compilation, then selected by author input. Public reference relation subject IDs remain allowed.",
+    "bounds": "Real Chinese initial responsibility relation and ID cause UTF8 JSON byte count > character count. Actual covered report passes exact item limit and +1, lower limit overflows; exact full UTF8 byte limit and +1 pass, byte-1/character count overflows and complete=false; complete overflow envelope fits request bound. No partial report is interpreted as all clear.",
+    "selectors": "Actual person/assignment selectors preserve responsibilities; unknown person, stale person revision, unknown selector kind and too-small minimal report envelope are rejected with original parser/owner checks.",
+    "reconciliationAndCold": "Release original post return; original dispatch records its real receipt without repeating IO. Pause retained, explicit completed checkpoint. New process restores paused, no model calls; queries current actual metadata, original task/creator/revision and original Native operation/Envelope/identity refs. Compares retained current responsibilities after checkpoint, not the earlier held pending snapshot.",
+    "identity": "Canonical sender/receiver bindings, original sender Persona and original private Channel IDs retained across actual process restoration."
+  },
+  "failureInputs": [
+    {
+      "log": ".local/world-completion/tmp/personnel-obligations-source-one.log",
+      "exitCode": 1,
+      "classification": "invalid fixture finite Persona option before bootstrap",
+      "cause": "Sender canary name was not yet declared in trusted template.names, so strict compilation correctly refused. Fixed by adding that one finite allowed option before compile; production parser/budgets unchanged and diagnostics printed."
+    },
+    {
+      "log": ".local/world-completion/tmp/personnel-obligations-fixture-lint.log",
+      "exitCode": 1,
+      "classification": "fixture typing/style",
+      "cause": "Promise.withResolvers<void> lint restriction and one long line; use explicit undefined resolver and line wrap. No threshold/guard/behavior relaxation."
+    }
+  ],
+  "limitations": [
+    "No actual task attempt or proposed-owner hint is created. These absent fields must not produce owner/executor/attempt/hint responsibility claims. Root separate provider-book tests own those branches; this fixture does not advertise them as real scenario evidence.",
+    "No active departure/transfer/cleanup authorization is implemented or inferred from covered/complete. Actual pending task remains an obligation.",
+    "Keyless scripted external cognition uses the real Agent/three-tool/Native/Team/Channel paths, not real-provider model-quality evidence.",
+    "Source/runtime fixture roots and proof samples were project-local and cleaned by owning snapshot teardown after successful assertions; command logs and frozen source hashes remain reproducible.",
+    "No new checklist items or checklist edits. Old full Web suite result is unrelated and not claimed through this matrix."
+  ]
+}

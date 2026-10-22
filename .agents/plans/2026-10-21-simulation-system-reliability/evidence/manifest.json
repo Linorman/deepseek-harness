@@ -1,0 +1,303 @@
+{
+  "version": 1,
+  "capturedAt": "2026-10-21T15:58:13+08:00",
+  "head": "b49dd0edfddb2f19e27110576c5a0f2089cc30ba",
+  "baselineCommit": "0e85170d1236cfe846ebc3b88a073d848903fb47",
+  "baselineTree": "15f73f9d79f25d491edd02d7cd1c183dd750f532",
+  "baselineRef": "refs/clocky/development/simulation-system-reliability-baseline",
+  "scope": "Tracked and nonignored untracked project files at isolated-index capture; vendor changes excluded; real index and branch unchanged. Snapshot may contain independently started reliability changes; tree is the exact authoritative capture.",
+  "evidence": [
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/system-business-issues.md",
+      "source": ".tmp/simulation-webui-20261021/system-business-issues.md",
+      "sha256": "5bba36b5cf38c6dd32f25b257f0e326122635e427d4ce7e58f35ac3df8e8ed7d",
+      "bytes": 19620
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/ui-issues.md",
+      "source": ".tmp/simulation-webui-20261021/ui-issues.md",
+      "sha256": "c69a83f61233c4aec86bb0f41f55e17d63a3d47a73518acc64ad7ba7648ab7a1",
+      "bytes": 21100
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/reading-festival-results.md",
+      "source": ".tmp/simulation-webui-20261021/reading-festival-results.md",
+      "sha256": "2a6f928012d630b89c7027ac36ba3dc866613421a4ba2a6a5eccf0661b843e26",
+      "bytes": 5011
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/harbor-day12-final-audit.json",
+      "source": ".tmp/simulation-webui-20261021/harbor-day12-final-audit.json",
+      "sha256": "23d2c46f1f89c6950979fb8f309a87416ee5b31f4c7a84070511c3b6e7bafdf8",
+      "bytes": 8094
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/harbor-day12-final-native.jsonl",
+      "source": ".tmp/simulation-webui-20261021/harbor-day12-final-native.jsonl",
+      "sha256": "3271c43340c199b9f048c1dcce89a69023fdfeded429172acb39fd444072f0d9",
+      "bytes": 7533
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/harbor-forward-unit.log",
+      "source": ".tmp/simulation-webui-20261021/harbor-forward-unit.log",
+      "sha256": "f61068a26d125b6655cbed551c571c3699093e9abd413bfebd16398abe69dc07",
+      "bytes": 908
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/harbor-forward-snapshot.log",
+      "source": ".tmp/simulation-webui-20261021/harbor-forward-snapshot.log",
+      "sha256": "85761e40cb218d3772bff20d02a172479620c307a5a929e25c791f962f346264",
+      "bytes": 456
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/driver-failure-stop-tests.log",
+      "source": ".tmp/simulation-webui-20261021/driver-failure-stop-tests.log",
+      "sha256": "967bba527975dd2f90e31944cfe4d7be2d78789b1bd82b0898c16ac49e1325b6",
+      "bytes": 912
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/original-ledger-report.json",
+      "source": ".tmp/w5-evidence/original-ledger-report.json",
+      "sha256": "7d4888e00a53149f4efb3b967b357d9c9733ec88c9dbc593b6cc893f16d7bda1",
+      "bytes": 5936
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/no-gain-benchmark.json",
+      "source": ".tmp/w5-evidence/no-gain-benchmark.json",
+      "sha256": "f2ec8e2eff43abcbaa71b63eb25b7af6ba5599993584148e2b906e06ec938c1d",
+      "bytes": 512
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-1-report.json",
+      "source": ".tmp/simulation-system-development/capacity/json-1-report.json",
+      "sha256": "f61da1563e07e66db5fb862cb0ed2b2262856f3d88f79a4b3e3499dae2f890af",
+      "bytes": 2739
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-10-before-cache-removal-report.json",
+      "source": ".tmp/simulation-system-development/capacity/json-10-before-cache-removal-report.json",
+      "sha256": "144a61dd8c957d154d818702145f81334fb342b1f4f22d06ad24b6468ef5c027",
+      "bytes": 2747
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-10-report.json",
+      "source": ".tmp/simulation-system-development/capacity/json-10-report.json",
+      "sha256": "328728ff10ae85c68004fc44b9a9434b436b33b3d966ceb6dcdc8e9e4de13240",
+      "bytes": 2745
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-100-report.json",
+      "source": ".tmp/simulation-system-development/capacity/json-100-report.json",
+      "sha256": "40c0a23224677aff791dc57fbe15b018e5f12f8028c26fa01178af4ddd05cd19",
+      "bytes": 2752
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-200-report.json",
+      "source": ".tmp/simulation-system-development/capacity/json-200-report.json",
+      "sha256": "006cf8896a1445c342f09482bfbfff25fc71dd8f90c54d1438d9f73e488d4ba4",
+      "bytes": 2745
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/matrix.json",
+      "source": ".tmp/simulation-system-development/capacity/matrix.json",
+      "sha256": "036e73fe044430abe11780f8704ea96eefb376f2668ed1e1790145948a37c5b7",
+      "bytes": 9038
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/sqlite-1-report.json",
+      "source": ".tmp/simulation-system-development/capacity/sqlite-1-report.json",
+      "sha256": "2a4d4b4b28bb86a28283124fa48c2cd3ebbdf5c7afa716e5870c35aade9025fc",
+      "bytes": 2704
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/sqlite-10-report.json",
+      "source": ".tmp/simulation-system-development/capacity/sqlite-10-report.json",
+      "sha256": "a2e2381dac99e363628c9c3459e04f83bc3bda1eb6c9757d198e103fc332f16e",
+      "bytes": 2710
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/sqlite-100-report.json",
+      "source": ".tmp/simulation-system-development/capacity/sqlite-100-report.json",
+      "sha256": "e02eefaf823252b513d6934ffaf4f571d958e8b22caa01ed0172c7e470d6ddc3",
+      "bytes": 2708
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/sqlite-200-report.json",
+      "source": ".tmp/simulation-system-development/capacity/sqlite-200-report.json",
+      "sha256": "cb4a31c3d89f7571a0e986f240fe4a8ba9c152c715c22985c1d6dec280a30d30",
+      "bytes": 2718
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/original-ledger-report.mjs",
+      "source": ".tmp/w5-evidence/original-ledger-report.mjs",
+      "sha256": "cef4d03d99516a298d66c25a5f24930ea6cf0e6faed755102f6f4629f154f7d3",
+      "bytes": 6570
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/initial-context-measurements.json",
+      "source": ".tmp/w6-initial-evidence/measurements.json",
+      "sha256": "33dd79688e2a2c77e1530b53910bf5315284c18dbacd36ef985ca76cc9e11129",
+      "bytes": 827
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/original-checkpoint-inventory.json",
+      "source": ".tmp/w7/evidence/original-checkpoint-inventory.json",
+      "sha256": "7668c29348d38045a8ad88df897c947414e34c63c75f0983e97ea6f8153f21fe",
+      "bytes": 115550
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/original-full-restoration.json",
+      "source": ".tmp/w7/evidence/original-full-restoration.json",
+      "sha256": "dac8db268335545a8a90bca962f3bff43aea687d1b5d3074e0f2a8c8b80a7046",
+      "bytes": 450
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/original-owners-unchanged.log",
+      "source": ".tmp/w7/source-all-owners-unchanged.log",
+      "sha256": "963a5272c92c47cfdb5a4fb430981a59323b7422cc4694bb051ce9fd36dc3193",
+      "bytes": 192
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/original-native-migration-proof.log",
+      "source": ".tmp/w7/frozen-source-proof.log",
+      "sha256": "bfb4a527a2954482b7902803df937fd207ca2474a442c7ca3e3231174348d387",
+      "bytes": 267
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/original-restored-cold-open.log",
+      "source": ".tmp/w7/frozen-final-cold-open.log",
+      "sha256": "1263b2ff1b6cfbeca0aa29b3df91253c39eeabc9dc8ced606e44737558c95e75",
+      "bytes": 200
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/harbor-full-backup-stop-snapshot.log",
+      "source": ".tmp/w7/full-backup-stop-snapshot.log",
+      "sha256": "c3dc409578a1241e21fdb31e78ab903de5c1f93bf3c8d87c8fa846a0c421c59c",
+      "bytes": 453
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/raw-archive-loader.log",
+      "source": ".tmp/w2/raw-delivery-loader.log",
+      "sha256": "cd28cddd020be51371d855ec5a5a1957b544cc3e87665e40e32ea30267e14adc",
+      "bytes": 560
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/raw-archive-integrity.log",
+      "source": ".tmp/w2/raw-delivery-integrity.log",
+      "sha256": "3d75255f215ce0301c3252b0d9e1dece9d73063f429a68232cfe441e88819144",
+      "bytes": 1134
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/sdk-protocol-consistency-audit.md",
+      "source": ".tmp/w2/protocol-consistency-audit.md",
+      "sha256": "733623c2f6987a1daadbc0891ba2d324cd72813b48f00792dd45b2642ba557c6",
+      "bytes": 8120
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/sdk-compaction-evidence.log",
+      "source": ".tmp/w2/protocol-compaction-ts.log",
+      "sha256": "460b286fffaf3238feebd94ed53f0b43125156ff35d81deb3bbbb9083ce1c1d6",
+      "bytes": 977
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/sdk-python-protocol.log",
+      "source": ".tmp/w2/protocol-final-python.log",
+      "sha256": "fd3d9a4d87ca1727865cfcd038605f3c6a66abb58fd75e0d5d9bbc490b6527a3",
+      "bytes": 260
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/initial-context-quota-snapshot.log",
+      "source": ".tmp/w6-initial-snapshot-all.log",
+      "sha256": "595bf46bf19c43b39ca7b2cfe007bc40a74f9d50db6264fc9ff0a7445f8ecb44",
+      "bytes": 573
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/final-build.log",
+      "source": ".tmp/simulation-system-development/build-final2.log",
+      "sha256": "3661dcd26a329d4341da4483fb6ec90f927228f653e7ee1b9345167d29113497",
+      "bytes": 390727
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/final-lint.log",
+      "source": ".tmp/simulation-system-development/lint-final2.log",
+      "sha256": "5ab93e893da8c5f0748aa794bd2eb7d7a9f0b0cd29d66dcb19d907219df202f5",
+      "bytes": 30
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/final-doc-sync.log",
+      "source": ".tmp/simulation-system-development/doc-sync-final4.log",
+      "sha256": "aa8f527c0ef2694a07ecf7f0065801a891e5e4f651c1ef368d8ec1a3010b64f2",
+      "bytes": 2427
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/final-client-host-tests.log",
+      "source": ".tmp/simulation-system-development/stop-count-client-tests-final.log",
+      "sha256": "8508a8505e8e04f814baffca553fcbd1569154d8b3d18531b3d529ba8dca0378",
+      "bytes": 29162
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/final-compaction-replay.log",
+      "source": ".tmp/simulation-system-development/compaction-current-sdk-snapshot.log",
+      "sha256": "4f1773697cdc7d7929cc89f7970db15973c57a62f75712f66c676e133683fdae",
+      "bytes": 601
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/final-built-leaf-smoke.log",
+      "source": ".tmp/simulation-system-development/built-evidence-leaf-smoke-final.log",
+      "sha256": "a4221b253cd08dce959895435893ee4bc06ca2bfdd5956fd7832ad23473a5020",
+      "bytes": 73
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/final-stop-clock-fixture-tests.log",
+      "source": ".tmp/simulation-system-development/harbor-stop-fresh-fixture-tests.log",
+      "sha256": "ab108cbc1dce9df35f2e0aecba07004ad0d41c9fc7ca66a7d9d5eacf2da4a8a4",
+      "bytes": 1131
+    }
+  ],
+  "sources": [
+    {
+      "path": "packages/simulation/simulation/src/management.ts",
+      "sha256": "0f3d0b546373f5d4030eeefc1a799d7e0b063ab9894903e66a7e85d9c5cefd9f"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/run.ts",
+      "sha256": "6e502091f094998bd9ba4ee2297847108dc48fefcbe9d5b98d37691b0e776439"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/journal.ts",
+      "sha256": "a4aecb6274f808bfc5db894ba32b12f2ba50f7de69eab2117d918eec494e5fba"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-execution.ts",
+      "sha256": "416b793799fa8eaab11a0388ffd26aa6558dec00d79ef2772bd0947b612e9406"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-case.ts",
+      "sha256": "d12e3c054dd21c21bad3be018b732f85ca2c6fe2a666ce8b2c76a1e3763afee9"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-protocol.ts",
+      "sha256": "27a154562d20eaf1205e6da6cd54560797d9adbc80188802e5333ad7c3c572ca"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/model.ts",
+      "sha256": "6703efe73dd71710c376fd431dd377949442134fe5b1ec5560091d092d6700e6"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-owner.ts",
+      "sha256": "b37a0ce4cd12a164ad954c1d9b8bccd21667a86a1a3754519dbf86b6c87acb31"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/company-owner.ts",
+      "sha256": "f6f195c269e84d7e5de647f863c6ebd1def9781c4c952c71654b1c336a435820"
+    },
+    {
+      "path": "packages/compaction/compaction-basic/src/index.ts",
+      "sha256": "9fd5b47cad38e485588ebea0f9d0a777393c205f32a7ed1250cd267af22f7c37"
+    },
+    {
+      "path": "packages/compaction/compaction-basic/src/region.ts",
+      "sha256": "d5b8dd809737a2e47288292c760c115ca936548600f0ee40be53021df62ddd02"
+    }
+  ]
+}

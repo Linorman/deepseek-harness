@@ -1,0 +1,10 @@
+{
+  "backend": "json",
+  "origin": "http://127.0.0.1:51717",
+  "browser": "Playwright; Browser plugin unavailable",
+  "transport": "actual authenticated HTTP",
+  "modelCalls": 0,
+  "claim": "Authoring never runs a model",
+  "draftId": "63afae20-493d-4083-8be8-131ba25fc3b8",
+  "frames": "/Volumes/projects-mac/deepseek-harness/.playwright-mcp/gif-frames-post-mvp-json"
+}

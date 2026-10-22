@@ -1,0 +1,13 @@
+{
+  "causalIsolation": {
+    "beforePrivateMessage": "Federation blocked: missing sequence or causal predecessor",
+    "afterPrivateMessage": "Federation blocked: missing sequence or causal predecessor",
+    "sameAliasOtherSourceAccepted": "private-c-id",
+    "sourceScopedReceipt": 0
+  },
+  "duplicateGrantReplay": {
+    "loadOutcome": "External grant already belongs to another effect",
+    "executeOutcome": "External effect authorization unavailable",
+    "dispatches": 0
+  }
+}

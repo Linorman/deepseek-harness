@@ -1,0 +1,1 @@
+examples/simulation-company/tests/world-norm-history-scenario.ts(144,117): error TS2367: This comparison appears to be unintentional because the types 'MessageId' and 'Branded<"SimulationInputId">' have no overlap.

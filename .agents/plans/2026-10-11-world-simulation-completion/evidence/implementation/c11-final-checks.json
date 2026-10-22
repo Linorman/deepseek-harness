@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-12",
+  "inputHash": "71efa0772dfd0bc513126618ce6edc9c50e722e89fe2658c22e1e68c758becb1",
+  "checks": [
+    {
+      "command": "pnpm run build",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-build-final.log",
+      "exitCode": 0,
+      "count": 197
+    },
+    {
+      "command": "pnpm run lint",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-lint-final.log",
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm run doc-sync",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-doc-sync-final.log",
+      "exitCode": 0,
+      "count": 29
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-team/tests/personnel-retirement-unknown.spec.ts packages/simulation/simulation-team/tests/participants.spec.ts packages/simulation/simulation-team/tests/checkpoint-failure.spec.ts packages/simulation/simulation-world/tests/execution.spec.ts packages/simulation/simulation-local/tests/personnel-admission.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-final-tests.log",
+      "exitCode": 0,
+      "count": 56
+    },
+    {
+      "command": "CLOCKY_EXAMPLE_MODE=lib pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel-cancellation.snapshot.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13.log",
+      "exitCode": 0,
+      "count": 13
+    }
+  ],
+  "actualOwnerUnknownIoManifest": ".local/world-completion/tmp/personnel-retirement-manifest.json",
+  "firstActualFixtureManifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-agent-manifest.json",
+  "currentCompiledArtifacts": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-current-lib-artifacts.json",
+  "scope": "Only O16 complete; O14 timeout/unload/lateepoch and O17 SIGKILL not proven. Owner-unit actualdepart nulltarget distinct from fullLoader transfer13 reservedtarget evidence."
+}

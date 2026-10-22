@@ -19,7 +19,7 @@ import { CheckpointRail, EffectsView, TimelineView, WorldView } from './Visuals.
 import css from './Workspace.module.css'
 
 type Props = Pick<Injected, 'pageSize' | 'watchSource' | 'inspectSource' | 'refreshSource' | 'navigateApplication' | 'inspectObject' | 'browse'> & {
-  view: Route & { module: Exclude<Module, 'overview' | 'records' | 'requests'> }
+  view: Route & { module: Exclude<Module, 'overview' | 'records' | 'requests' | 'cases' | 'organization' | 'governance' | 'external'> }
   runId: SimulationProductRunId
   data: SimulationRuntimeState
   page?: SimulationProductCollectionPage | undefined
@@ -114,7 +114,7 @@ export function CollectionWorkspace(props: Props) {
         onScroll={(event) => { props.rememberScroll(event.currentTarget.scrollTop) }}>
         {page !== undefined && (view.display === 'visual' ? visual(page) : <CollectionTable page={page} selected={view.objectId} t={t} date={date}
           open={(objectId) => { navigate({ ...view, objectId, section: undefined }) }} />)}
-        {!current.loading && current.error === undefined && page?.items.length === 0 && <p className={css.empty}>{t(view.status !== undefined || view.cognition !== undefined || view.entityId !== undefined || view.decisionId !== undefined ? 'noMatchingRecords' : 'emptyCollection')}</p>}
+        {current.error === undefined && page?.items.length === 0 && <p className={css.empty}>{t(view.status !== undefined || view.cognition !== undefined || view.entityId !== undefined || view.decisionId !== undefined ? 'noMatchingRecords' : 'emptyCollection')}</p>}
       </div>
       <footer className={css.pagination}><Button disabled={!data.connected || current.loading} onClick={refresh}>{t('first')}</Button>
         <Button disabled={!data.connected || current.loading || current.stale || current.error !== undefined || collection === undefined
@@ -132,14 +132,14 @@ export function CollectionWorkspace(props: Props) {
         data={data} pageSize={props.pageSize}
         watch={props.watchSource} read={props.inspectSource} refresh={props.refreshSource} navigate={navigate}
         navigateApplication={props.navigateApplication} t={t} date={date} /> : <>
-        {detailSections[view.module].length > 1 && <nav className={css.actions} aria-label={t('detailSections')}>
+        {detailSections[view.module].length > 1 && <nav className={css.segmented} aria-label={t('detailSections')}>
           {detailSections[view.module].map(section => <Button key={section}
             aria-current={(view.section ?? detailSections[view.module][0]) === section ? 'page' : undefined}
             onClick={() => { navigate({ ...view, section: section === 'identity' || section === 'execution' || section === 'references'
               ? undefined : section }) }}>{t(section === 'context' ? 'contextView' : section)}</Button>)}
         </nav>}
         <Feedback value={data.object} t={t} />
-        <Button disabled={!data.connected || data.object.loading || selection === undefined}
+        <Button size="sm" variant="ghost" className={css.detailRefresh} disabled={!data.connected || data.object.loading || selection === undefined}
           onClick={() => {
             /* v8 ignore next -- The refresh button is disabled without an exact object selector. */
             if (selection !== undefined) void props.inspectObject(selection)

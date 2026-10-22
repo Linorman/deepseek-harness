@@ -5,6 +5,25 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { resolveExampleLaunch } from '@clocky/clocky-loader-smoke'
 
+/** A deadline may settle the held stream before SIGKILL; both histories retain the same charged unknown responsibility. */
+function interruptedOutput(value: unknown, slow: string): unknown {
+  const output = value as { decisions: Array<{ id: string; status: string; cancellation?: string }>
+    tokenAttempts: Record<'reserved' | 'unknown' | 'settled' | 'not-dispatched', number>
+    tokens: { used: number; limit: number } }
+  const prior = output.decisions.find(decision => decision.id === slow)
+  expect(prior?.status).toBe('cancelled')
+  expect(['writer-revoked', 'timeout']).toContain(prior?.cancellation)
+  const { reserved, unknown, ...attempts } = output.tokenAttempts
+  expect(Number.isSafeInteger(reserved) && reserved >= 0).toBe(true)
+  expect(Number.isSafeInteger(unknown) && unknown >= 0).toBe(true)
+  expect(reserved + unknown).toBe(2)
+  expect(attempts).toEqual({ settled: 6, 'not-dispatched': 0 })
+  expect(output.tokens).toEqual({ used: 20120, limit: 1000000 })
+  return { ...output, decisions: output.decisions.map(decision => decision === prior
+    ? { ...decision, cancellation: 'interrupted-before-recovery' } : decision),
+  tokenAttempts: { ...attempts, unresolved: reserved + unknown } }
+}
+
 describe.each([{ backend: 'json', timeout: false, limit: 2 }, { backend: 'sqlite', timeout: false, limit: 2 },
   { backend: 'json', timeout: false, limit: 1 }, { backend: 'sqlite', timeout: false, limit: 1 },
   { backend: 'json', timeout: false, limit: 1, close: true }, { backend: 'sqlite', timeout: false, limit: 1, close: true },
@@ -43,7 +62,8 @@ describe.each([{ backend: 'json', timeout: false, limit: 2 }, { backend: 'sqlite
         try {
           const [code] = await exited as unknown[]
           expect(code, error).toBe(0)
-          results.push(JSON.parse(output) as unknown)
+          const observed: unknown = JSON.parse(output)
+          results.push(timeout && crash === 'submitted' ? interruptedOutput(observed, reverse ? 'a' : 'b') : observed)
         } finally { child.kill('SIGKILL'); await exited }
       } finally { await rm(root, { recursive: true, force: true }) }
     }

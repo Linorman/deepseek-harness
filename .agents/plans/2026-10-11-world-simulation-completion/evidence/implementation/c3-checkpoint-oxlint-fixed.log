@@ -1,0 +1,3 @@
+packages/simulation/simulation/src/checkpoint.ts:121:16: error @stylistic(member-delimiter-style): Unexpected separator (,).
+packages/simulation/simulation/src/checkpoint.ts:121:40: error @stylistic(member-delimiter-style): Unexpected separator (,).
+packages/simulation/simulation/src/checkpoint.ts:121:58: error @stylistic(member-delimiter-style): Unexpected separator (,).

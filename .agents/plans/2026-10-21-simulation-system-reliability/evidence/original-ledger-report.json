@@ -1,0 +1,174 @@
+{
+  "runId": "25e846c3-9afa-4917-bd74-cd32dd9e709c",
+  "source": {
+    "databasePath": "/Volumes/projects-mac/deepseek-harness/.local/simulation-harbor-365-20261021/home/simulations/bd35669a503d8d200031736044526ef218e4268cbf324ceb27eb5a84738fefc3/journal.sqlite",
+    "canonicalRowsSha256": "de977f6f26400e63616b032a4435241f6fb8bdd5bd7f8c041dab1f366673cf25",
+    "rows": 10242,
+    "sessionHashes": {
+      "01a54f68-25e3-46bf-863c-3c26fe0caeb8": "9ad6128a5ceba394cf8f022a995e7b320eced4d05dcc7c2857532c281e11d6f5",
+      "19e47c7c-d8c6-4c47-821c-9d27699a0886": "7ba7fc8edf4b0cc5eb2c9365c188cba3d44ca6cf07ca40137b9dfeaeb90a77f0",
+      "10f49adf-23dd-4768-a020-2234cd22528e": "ab7db593d794c35744e3b781a001d80c01037cbb544e9bbbbd1c6675e35c58a9",
+      "96c10c03-2f45-44d0-b6f5-6ce64416b4ad": "1a21839cb64955df8c8c9410d6461a5d09b9b3f71a239edd588885bbb827c045",
+      "9fdba464-acfc-4209-8f66-7f6edce74f4c": "fbf13ecebd3ea86328c4bf50d4270af5d2fd0de0544de168ddb5ee8445ec7eeb",
+      "95c40639-435e-4d30-8c74-1e3d82694ce6": "eac527df703b2fa40c267b98208ffccb544dbadcece5fc6d558700a2fd4e9275",
+      "09d33ba0-5f4a-4c21-8b21-aa64ed784f93": "c1f201d2ebfe03b2510b0eb54f31ae6e107c04eaab239197c1648fc202d203b6",
+      "5b16a5ed-e48b-4a08-adfb-db48fa208eb8": "fcd3e5c12c908a2dba33b876d6de6592525f6f52120e503f90541560d62ff2c6",
+      "8e7349a4-d9fa-4ac3-b92e-485e0225281d": "ee9e338278a382c7843670eed673cdb757f9ddaaaaf71978cdf9b5e4460e0757",
+      "78a8b54a-e5e3-4908-ade9-c7700c1ad682": "d66512d8544ca08590b81315ca57d5a96ff20fea9bd1ca296c738d35da77033b",
+      "731f5d7e-b390-4613-bdf7-345d7598541c": "65a752a888254c7d96ef1b67eb65179ab8c620aebef0adfd918b2d285aee07cb",
+      "f40d6fe8-66b1-4e9d-96e4-051eb2b91479": "8037640512b0e9b666a226920a4661c307c77c0fb4922ae5f2f2214832313437",
+      "f56f649c-ace5-4f85-9378-b6d7aec4a0cf": "c99070574077fcf5b1be00753f6436be314e97ca082a855f9721b67ab153e4ee",
+      "9e78b042-1d65-46be-9784-1469fe4ef556": "906d20ae8591db72b0f40d5dbec40bb2d51aa768327cac4b3ec28cf44f31a16d"
+    },
+    "sessionFrames": {
+      "01a54f68-25e3-46bf-863c-3c26fe0caeb8": {
+        "frames": 3499,
+        "events": 62585
+      },
+      "19e47c7c-d8c6-4c47-821c-9d27699a0886": {
+        "frames": 2277,
+        "events": 52672
+      },
+      "10f49adf-23dd-4768-a020-2234cd22528e": {
+        "frames": 2017,
+        "events": 64474
+      },
+      "96c10c03-2f45-44d0-b6f5-6ce64416b4ad": {
+        "frames": 1920,
+        "events": 61348
+      },
+      "9fdba464-acfc-4209-8f66-7f6edce74f4c": {
+        "frames": 1870,
+        "events": 58996
+      },
+      "95c40639-435e-4d30-8c74-1e3d82694ce6": {
+        "frames": 2102,
+        "events": 70106
+      },
+      "09d33ba0-5f4a-4c21-8b21-aa64ed784f93": {
+        "frames": 1589,
+        "events": 48751
+      },
+      "5b16a5ed-e48b-4a08-adfb-db48fa208eb8": {
+        "frames": 1822,
+        "events": 61686
+      },
+      "8e7349a4-d9fa-4ac3-b92e-485e0225281d": {
+        "frames": 1733,
+        "events": 57260
+      },
+      "78a8b54a-e5e3-4908-ade9-c7700c1ad682": {
+        "frames": 1700,
+        "events": 56178
+      },
+      "731f5d7e-b390-4613-bdf7-345d7598541c": {
+        "frames": 1206,
+        "events": 40129
+      },
+      "f40d6fe8-66b1-4e9d-96e4-051eb2b91479": {
+        "frames": 863,
+        "events": 31435
+      },
+      "f56f649c-ace5-4f85-9378-b6d7aec4a0cf": {
+        "frames": 1161,
+        "events": 38914
+      },
+      "9e78b042-1d65-46be-9784-1469fe4ef556": {
+        "frames": 1020,
+        "events": 34764
+      }
+    }
+  },
+  "scope": "Forensic ledger projection only; no new-format Native replay, writer, provider call or run resume.",
+  "coverage": {
+    "sessionCorroboratedCompaction": 398,
+    "uncorroboratedCompaction": 0,
+    "otherRequests": "unknown: this forensic reader does not reinterpret historical business context or split mixed requests"
+  },
+  "nativePurposeEvidence": {
+    "compaction": {
+      "attempts": 398,
+      "complete": 397,
+      "unknown": 1,
+      "reserved": 0,
+      "notDispatched": 0,
+      "usage": {
+        "inputTokens": 584775,
+        "outputTokens": 1228261,
+        "cacheReadTokens": 6867708,
+        "cacheWriteTokens": 0
+      },
+      "unknownReported": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      }
+    },
+    "limitation": "Additional Native declaration view only; never added to the mutually exclusive categories."
+  },
+  "total": {
+    "attempts": 1669,
+    "complete": 1665,
+    "unknown": 4,
+    "reserved": 0,
+    "notDispatched": 0,
+    "usage": {
+      "inputTokens": 15498465,
+      "outputTokens": 1981691,
+      "cacheReadTokens": 28066428,
+      "cacheWriteTokens": 0
+    },
+    "unknownReported": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0
+    }
+  },
+  "categories": {
+    "compaction": {
+      "attempts": 398,
+      "complete": 397,
+      "unknown": 1,
+      "reserved": 0,
+      "notDispatched": 0,
+      "usage": {
+        "inputTokens": 584775,
+        "outputTokens": 1228261,
+        "cacheReadTokens": 6867708,
+        "cacheWriteTokens": 0
+      },
+      "unknownReported": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      }
+    },
+    "unknown": {
+      "attempts": 1271,
+      "complete": 1268,
+      "unknown": 3,
+      "reserved": 0,
+      "notDispatched": 0,
+      "usage": {
+        "inputTokens": 14913690,
+        "outputTokens": 753430,
+        "cacheReadTokens": 21198720,
+        "cacheWriteTokens": 0
+      },
+      "unknownReported": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      }
+    }
+  },
+  "totalSettledTokens": 45546584,
+  "savings": {
+    "actualHistoricalSavings": null,
+    "reason": "Historical requests already occurred; no counterfactual bill or costs inferred."
+  }
+}

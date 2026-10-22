@@ -2,6 +2,7 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { Context } from '@clocky/cordis'
 import { channelPostIdempotencyKeySchema, TeamError } from '@clocky/clocky-team'
+import { envelopeByteLimitDetails, fingerprintTeamEnvelopeDraft } from '@clocky/clocky-team'
 import type { SimulationOperationEnvelopePostScope, TeamId, TeamSystemEnvelopePostProof } from '@clocky/clocky-team'
 import type { SimulationOutboundMessage, SimulationRun, SimulationTeamTransport } from '@clocky/clocky-simulation'
 
@@ -40,6 +41,12 @@ export class SimulationPostAuthority {
           operationId: message.operationId, fingerprint: message.fingerprint,
           channelId: envelope.channelId, envelopeId: envelope.id } }
       } catch (error: unknown) {
+        const bytes = envelopeByteLimitDetails(error)
+        if (bytes !== undefined && bytes.teamId === teamId && bytes.channelId === message.channelId
+          && bytes.senderId === message.sender.participantId && bytes.idempotencyKey === scope.idempotencyKey
+          && bytes.draftFingerprint === fingerprintTeamEnvelopeDraft(scope.draft)) {
+          return { status: 'rejected', code: 'SIM_ENVELOPE_BYTE_LIMIT' }
+        }
         if (error instanceof TeamError && (error.code === 'TEAM_POLICY_DENIED' || error.code === 'TEAM_PARTICIPANT_NOT_FOUND')) {
           return { status: 'blocked-authority', code: error.code }
         }

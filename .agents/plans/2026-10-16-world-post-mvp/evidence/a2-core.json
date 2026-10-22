@@ -1,0 +1,156 @@
+{
+  "date": "2026-10-18",
+  "package": "A2",
+  "mode": "source",
+  "backends": [
+    "json",
+    "sqlite"
+  ],
+  "completedCore": [
+    "A08",
+    "A09",
+    "A10",
+    "A11",
+    "A12",
+    "A13",
+    "A14"
+  ],
+  "sourceHashes": {
+    "examples/simulation-company/tests/world-hiring-market-crash.snapshot.ts": "07afb85e6e42cb4905b1bedebd602be3c614c25c66ac820424d838a5728c8342",
+    "examples/simulation-company/tests/world-hiring-market-model.ts": "d82d5a8d71294969ccc930f265698028edf167320685eea5b15d40cf949ce121",
+    "examples/simulation-company/tests/world-hiring-market-scenario.ts": "2dc2922b9dc213da6b244b23716321625e1528aa9a78b5c166521db998cc130f",
+    "examples/simulation-company/tests/world-hiring-market.snapshot.ts": "04cb4af3c0b6cce796b118b6e39b6614af83cfd8e68894eb905ab272270fe152",
+    "packages/client/ui-simulation/src/client/WorldActionFlow.tsx": "e55253883cd21e1d17b63457cf2dd35f167d8b47e6129071225ffe6e4559ad7b",
+    "packages/client/ui-simulation/src/client/WorldHiringMarket.tsx": "0c1ce72c8d9ad6241e614d0039273a53147d4bb5793af181ea7d36c6b70f38b3",
+    "packages/client/ui-simulation/src/client/WorldPersonaEditor.tsx": "1ac9b1bc20029cd62160bf8583e4ef32a8158a17c3148028eddde797603d6c69",
+    "packages/client/ui-simulation/tests/world-hiring-market.client.spec.tsx": "a088907b55983ec69248bc42bf21df36ba8413317610fd551f6e570667ed78ed",
+    "packages/client/ui-simulation/tests/world-persona-editor.client.spec.tsx": "91a57640dd2b5cd775f346fc39dd4db00f2f0c3ab7cba579f26737571258ec8c",
+    "packages/simulation/simulation-local/src/resource-reservation.ts": "2fd4d32e1063b1feb205145c4ebf26ce36d676712eafcb9db0bb735ced7b9442",
+    "packages/simulation/simulation-local/src/run.ts": "68143da2654f1542f7e7a7ed3ee17070e403acee92a05658ac3919f56a298041",
+    "packages/simulation/simulation-local/src/world-execution.ts": "f546ff839d3082c1e8a394fefb549983878f1a38422c492a50fc86d4c135fe5b",
+    "packages/simulation/simulation-local/src/world-hire-existing.ts": "b67979ac254a77d7ac6c157426b307f9b9470783f10fdd743145c4d1020b5ccc",
+    "packages/simulation/simulation-local/src/world-hire.ts": "3f07b88687ad67a3607091ffbf13a8d6fe935577f975c0140c4c68e670f76700",
+    "packages/simulation/simulation-local/src/world-hiring-market.ts": "9908682d1011d9911b9177dfea216e6e29c48af7e9f59df821d2c6f8f61a852e",
+    "packages/simulation/simulation-local/src/world-hiring-resources.ts": "85ecad55fc6ac2b84ae8687a59f9182ed3de46169386b88c4491ffb54f6a4c45",
+    "packages/simulation/simulation-local/src/world-organization.ts": "000999d0d991fd9dacfe4d8b138fe9dc1070ec9b63e48c7b457cf34686560bb1",
+    "packages/simulation/simulation-local/src/world-structure-budget.ts": "bd17165f4eeb19e83863d38bbb5abc7116a6c13bfdd8f95d7f9be588ca65e06d",
+    "packages/simulation/simulation-local/src/world.ts": "7578e52df45265f604d4a7cc504903ce5289480d824220e86e1b516dda19c4b9",
+    "packages/simulation/simulation-local/tests/world-hiring-market.spec.ts": "1f616316f870e70d31ac7b07e5d40cd25a3bf9cf8b85cbf4ea6b024a5c0361d5",
+    "packages/simulation/simulation-local/tests/world-persona-management.spec.ts": "786716b85564797a35651340194b5362b227150ba38cf46ad372081bf70c5394",
+    "packages/simulation/simulation-product/src/world-management-authority.ts": "8de0bbdb9bd1866f3c6ded47cea06865798cce3a0b516fb6a16cfb2e58045970",
+    "packages/simulation/simulation-product/src/world-management-resolution.ts": "98e6ba65514314db62c9f1218bc96411a2e9889b0034c5225c6ed7657f7876e2",
+    "packages/simulation/simulation-product/src/world-management-schema.ts": "d8951ff9708f3c3e588bce534a292cfacacf367af3ea596eda46c8bd980ca60f",
+    "packages/simulation/simulation-product/src/world-read-projection.ts": "8b8ef768139de81b2f89a1d3a891f34ad5121cd69059c73373190c26ca81366d",
+    "packages/simulation/simulation-product/src/world-read-schema.ts": "131e74a6e8c230c4a25203683ced2261ee71913cd3dae134089f4df844d96c92",
+    "packages/simulation/simulation-world/src/hiring-market.ts": "55d6efb229cbcbe4c77c872cb703966dc5108003490a3b77103d915d7f43a334",
+    "packages/simulation/simulation-world/src/organization.ts": "8505ffc2ea761c4570e1d6bc169e48b6b5f673eba0e81405a16651757f0fc0a4",
+    "packages/simulation/simulation/src/world-domains.ts": "1b4f7f7add0daf24d137615db98834761cad72f4bbccec3b3a1fe77d6947e3ba",
+    "packages/simulation/simulation/src/world-hire-types.ts": "54047eae46edbfd88bd09e8f2553982b13cc14603557ead0320bf2fe50cdbd5e",
+    "packages/simulation/simulation/src/world-hire.ts": "8bf5a31c37c9ecdf957c402c0b9a63c0e76d054faac0d5548d99bad236d3dbd8",
+    "packages/simulation/simulation/src/world-hiring-market.ts": "57491019283ba3c699978558dff7031a2da2690694b8fd0bc47069c397926b1f",
+    "python/sdk/src/clocky/simulation_world_domain.py": "b72e42814f3ba1cfade28867d349a60572e8b0b913f489f87bca21be1c451a04",
+    "python/sdk/src/clocky/simulation_world_management.py": "5cfc5af2150b97a95dd3584c7e6ed3ae2fd5f0d6a66cd2ca4918b3e9a7ae9887",
+    "packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts": "3f2f9c56d33eb9e6609ddda441b04235ab9d8a81b32090b7114c4ebd96fa91e8",
+    "packages/simulation/simulation-local/tests/hiring-resource-harness.ts": "3e4f87af017930784766a9257dea64ef278cd80097db70dfa7788164c56ed87d"
+  },
+  "verification": [
+    {
+      "command": "TMPDIR=$PWD/.tmp/world-post-mvp pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-hiring-market-crash.snapshot.ts examples/simulation-company/tests/world-hiring-market.snapshot.ts",
+      "passed": 20,
+      "log": "a2-market-complete-snapshots.log",
+      "coverage": [
+        "real HR and independent candidate Session decisions",
+        "existing and reviewed generated candidates",
+        "both frozen reservation policies",
+        "generated candidate decline and withdrawal preserve independent identity without assignment/payment",
+        "cold process restore",
+        "SIGKILL after actual canonical participant IO before Native confirmation, candidate readiness, accepted-before-commit and commit-after",
+        "original Persona/ref, Session, plan, offer hash, hold and payment preserved across two further process restores"
+      ]
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-local/tests/world-hiring-market.spec.ts packages/simulation/simulation-local/tests/world-persona-management.spec.ts packages/client/ui-simulation/tests/world-hiring-market.client.spec.tsx packages/client/ui-simulation/tests/world-persona-editor.client.spec.tsx",
+      "passed": 23,
+      "log": "a2-core-final.log",
+      "coverage": [
+        "finite revision/review budget and immutable accepted Persona",
+        "human edits preserve actor origin, prior hash and explicit editor; rejected draft can revise",
+        "exact terms, current employer authority, independent candidate acceptance, stale/expired/impersonated response rejection",
+        "incompatible offers and withdrawal serialize once",
+        "free plan freeze and proposal/acceptance fee boundary",
+        "generated candidate prepared independently; direct commit without consent rejects on both backends",
+        "finite editor, incomplete scalar edit, explicit regenerate, creation position/revision, authorized chronological comparison and revoked body removal"
+      ]
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-product/tests/world-management-schema.spec.ts packages/simulation/simulation-product/tests/world-hiring-market-read.spec.ts packages/simulation/simulation-local/tests/world-management.spec.ts packages/simulation/simulation-local/tests/world-hiring-resources.spec.ts packages/simulation/simulation-local/tests/world-hiring-resource-stale.spec.ts",
+      "passed": 165,
+      "log": "a2-regressions-reopened.log",
+      "coverage": [
+        "strict Product forms and separate case/persona authorization",
+        "as-of/current history and complete authorized detail",
+        "two backend conserved hiring resources, deadlines, stale/cancel/retry and unknown IO ownership"
+      ]
+    },
+    {
+      "command": "TMPDIR=$PWD/.tmp/world-post-mvp PYTHONDONTWRITEBYTECODE=1 python/sdk/.venv/bin/python -m pytest python/sdk/tests/test_simulation_hiring_market.py python/sdk/tests/test_simulation_world_management.py python/sdk/tests/test_simulation_world_cases.py -q",
+      "passed": 426,
+      "log": "a2-python-reopened.log"
+    },
+    {
+      "command": "node --import tsx/esm scripts/run-oxlint.ts <21 A2 source/test files>",
+      "log": "a2-lint-complete.log",
+      "result": "passed"
+    },
+    {
+      "command": "TMPDIR=$PWD/.tmp/world-post-mvp pnpm exec vitest run packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts",
+      "passed": 10,
+      "log": "a2-owner-race.log",
+      "coverage": [
+        "Actual Native/Team/Agent/Session owner on JSON and SQLite; no hand-folded snapshots",
+        "Original requester and director plans retained through production three-tool context/submit boundary",
+        "Concurrent commitWorldMutation calls enter the same real serialized append queue",
+        "Acceptance vs withdrawal in both enqueue orders",
+        "Two incompatible offer acceptances commit at most one obligation and one assignment/fee",
+        "Preadmitted candidate acceptance rejects after actual scheduler deadline; acceptance before deadline retains original fee and commits once",
+        "Every case closes actual run then cold-inspects durable backend to verify 0/1 assignment and correct balance"
+      ]
+    },
+    {
+      "command": "node --import tsx/esm scripts/run-oxlint.ts packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts packages/simulation/simulation-local/tests/hiring-resource-harness.ts",
+      "log": "a2-owner-lint.log",
+      "result": "passed"
+    },
+    {
+      "command": "pnpm exec vitest run packages/client/ui-simulation/tests/world-persona-editor.client.spec.tsx packages/client/ui-simulation/tests/world-modules.client.spec.tsx",
+      "passed": 20,
+      "log": "a2-actionflow-integration.log",
+      "coverage": [
+        "ActionFlow retains finite editor after creating a valid draft",
+        "Creation, name and finite skill selection, deadline and repeated editing remain visible",
+        "Preview receives the complete edited Persona command",
+        "Adjacent ordinary management flow regressions"
+      ]
+    },
+    {
+      "mode": "real HTTP browser, built client, JSON and SQLite backends",
+      "passed": 2,
+      "log": "a2-browser-integration.log",
+      "screenshots": [
+        "a2-persona-browser-json.png",
+        "a2-persona-browser-sqlite.png"
+      ],
+      "coverage": [
+        "Create finite Persona draft and edit actual ActionFlow controls",
+        "Review, reject, explicitly regenerate and persist revision 2",
+        "Separate case and Persona content authorization",
+        "Zero model calls; clean browser console"
+      ],
+      "reportedBy": "main agent, verified browser log"
+    }
+  ],
+  "limits": [
+    "Recurring payroll intentionally not shipped; one-time-only compensation cannot imply future wages.",
+    "P1 regeneration uses finite installed template choices; no open-ended model text generator."
+  ]
+}

@@ -39,3 +39,21 @@ it('exposes participant tasks and task-completion fulfillment without accepting 
     expect(simulationProposalSchema.safeParse(proposal).success).toBe(false)
   }
 })
+
+it('allows bounded evidence questions and attributed answers without model-selected identity', () => {
+  const schema = parameterSchemaSpecToJsonSchema(stageParameters)
+  const actions = [
+    { kind: 'world/resolve', requestId: 'request', supersedes: null, resolution: { kind: 'awaiting-evidence',
+      missingFields: ['requirements'], deadline: '10', maxAttempts: 1, rationale: 'Missing requirements' } },
+    { kind: 'world/evidence', requestId: 'request', challengeId: 'question', expectedInputRevision: 0,
+      answers: [{ field: 'requirements', text: 'Careful research', references: [{ kind: 'run-event', runId: 'run', sequence: 1 }] }] },
+  ]
+  for (const action of actions) {
+    const proposal = { after: [], action }
+    expect(validateJsonSchemaValue(schema, { proposals: [proposal] })).toEqual([])
+    expect(simulationProposalSchema.safeParse(proposal).success).toBe(true)
+    for (const extra of [{ actorId: 'foreign' }, { responders: ['foreign'] }, { inputRevision: 8 }]) {
+      expect(validateJsonSchemaValue(schema, { proposals: [{ ...proposal, action: { ...action, ...extra } }] }).length).toBeGreaterThan(0)
+    }
+  }
+})

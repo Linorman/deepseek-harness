@@ -1,0 +1,1 @@
+packages/simulation/simulation-local/src/decisions.ts:430:40: error typescript(no-unnecessary-condition): Unnecessary optional chain on a non-nullish value.

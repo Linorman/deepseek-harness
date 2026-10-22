@@ -1,0 +1,816 @@
+$ vitest run packages/simulation/simulation-team/tests/world.spec.ts packages/simulation/simulation/tests/world-protocol.spec.ts packages/simulation/simulation-world/tests/execution.spec.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts (156 tests | 38 failed) 42229ms
+   × rejects an unassigned json goal before preparing model context 263ms
+   × rejects an unassigned sqlite goal before preparing model context 87ms
+   × reopens a json committed-but-lost reply as one complete original hire without a generation call 538ms
+   × reopens a sqlite committed-but-lost reply as one complete original hire without a generation call 180ms
+   × reserves json capacity and every identity, then commits one complete hire after real Team preparation 516ms
+   × reserves sqlite capacity and every identity, then commits one complete hire after real Team preparation 180ms
+   × rejects altered terminal result sources, public reasons and notification wakes in the Native projection 147ms
+   × retains the json model-selected apply plan after private request consumption 444ms
+   × retains the sqlite model-selected apply plan after private request consumption 203ms
+   × retains the json model-selected reject plan after private request consumption 536ms
+   × retains the sqlite model-selected reject plan after private request consumption 214ms
+   × returns the json director submission before window closure and then drains maintenance 383ms
+   × returns the sqlite director submission before window closure and then drains maintenance 163ms
+   × keeps business application identity independent of the actor field and rejects a changed original requester 43ms
+   × links a json insufficient-information resubmission without replacing the old case 410ms
+   × links a sqlite insufficient-information resubmission without replacing the old case 150ms
+   × refuses a 'json' predecessor whose original result is 'open' 305ms
+   × refuses a 'json' predecessor whose original result is 'cancelled' 245ms
+   × refuses a 'json' predecessor whose original result is 'policy' 317ms
+   × refuses a 'sqlite' predecessor whose original result is 'open' 106ms
+   × refuses a 'sqlite' predecessor whose original result is 'cancelled' 106ms
+   × refuses a 'sqlite' predecessor whose original result is 'policy' 152ms
+   × keeps one complete json hire when the original application retries with a new decision identity 489ms
+   × keeps one complete sqlite hire when the original application retries with a new decision identity 177ms
+   × linearizes 'json' cancel/commit with cancelFirst=true and preserves exactly one business terminal 535ms
+   × linearizes 'json' cancel/commit with cancelFirst=false and preserves exactly one business terminal 473ms
+   × linearizes 'sqlite' cancel/commit with cancelFirst=true and preserves exactly one business terminal 178ms
+   × linearizes 'sqlite' cancel/commit with cancelFirst=false and preserves exactly one business terminal 171ms
+   × releases proven json hire occupancy for a new real application while retaining every original identity 630ms
+   × releases proven sqlite hire occupancy for a new real application while retaining every original identity 238ms
+   × authorizes json exact terminal window inputs through three tools after the hiring grant is withdrawn 749ms
+   × authorizes sqlite exact terminal window inputs through three tools after the hiring grant is withdrawn 306ms
+   × refuses json altered result notification content, recipient, Channel, time, outcome or dependencies at Native submission 637ms
+   × refuses sqlite altered result notification content, recipient, Channel, time, outcome or dependencies at Native submission 274ms
+   × notifies the original director of a 'json' 'rejected' result through three tools without disclosing private rationale 484ms
+   × notifies the original director of a 'json' 'cancelled' result through three tools without disclosing private rationale 513ms
+   × notifies the original director of a 'sqlite' 'rejected' result through three tools without disclosing private rationale 207ms
+   × notifies the original director of a 'sqlite' 'cancelled' result through three tools without disclosing private rationale 151ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 38 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > rejects an unassigned json goal before preparing model context
+AssertionError: promise resolved "{ id: 'unassigned-goal', …(14) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "closedAt": 30,
++   "consumption": {
++     "consumedSequence": 5,
++     "contextHash": "a85c815747797e3da67d62652a5ef82c3e1943067f39adb82d3fb5e731264204",
++     "inputId": "simulation-input:38a7246ba8f2d0f6ccf027675c8a9220f2b8bcd3dbe9c53613321095c2a58fd5",
++     "sessionId": "02c6427f-10ea-4645-bd49-e772c6e55757",
++     "viewSequence": 3,
++   },
++   "context": {
++     "fingerprint": "sha256:d0505ead83518022722e727c99173514056c7bdec316b3f09b7c3e7d479ef712",
++     "maxBytes": 65536,
++     "omitted": [],
++     "requiredSections": [
++       "identity",
++       "authority",
++       "input",
++       "goals",
++       "commitments",
++     ],
++     "retainedBytes": 1891,
++     "status": "prepared",
++     "teamCursor": 10,
++     "view": {
++       "content": [
++         {
++           "blocks": [
++             {
++               "text": "identity",
++               "type": "text",
++             },
++           ],
++           "kind": "identity",
++         },
++         {
++           "blocks": [
++             {
++               "text": "authority",
++               "type": "text",
++             },
++           ],
++           "kind": "authority",
++         },
++         {
++           "blocks": [
++             {
++               "text": "input",
++               "type": "text",
++             },
++             {
++               "text": "{\"kind\":\"world-context\",\"authority\":{\"kind\":\"goal\",\"baseRevision\":19,\"operations\":[{\"pin\":{\"domain\":\"organization\",\"operation\":\"generate-and-hire\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.generate-and-hire/schema/2\",\"implementationRef\":\"clocky.organization.generate-and-hire/native/2\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"hiring-authority\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}]}],\"assignments\":[{\"id\":\"requester-employment\",\"revision\":1}]},\"operations\":[{\"pin\":{\"domain\":\"organization\",\"operation\":\"generate-and-hire\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.generate-and-hire/schema/2\",\"implementationRef\":\"clocky.organization.generate-and-hire/native/2\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"hiring-authority\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}],\"targets\":[{\"targetEntityId\":\"position\",\"scopeEntityId\":\"organization\"}],\"requestSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"organizationEntityId\":{\"type\":\"string\",\"minLength\":1},\"positionEntityId\":{\"type\":\"string\",\"minLength\":1},\"description\":{\"type\":\"string\",\"minLength\":1},\"priorRequestId\":{\"type\":\"string\",\"minLength\":1}},\"required\":[\"organizationEntityId\",\"positionEntityId\",\"description\"],\"additionalProperties\":false}}],\"organizationEntityId\":\"organization\",\"positions\":[{\"entityId\":\"position\",\"capacity\":1}],\"instruction\":\"Propose only an installed operation with a stable business key. A goal grants no new authority.\"}",
++               "type": "text",
++             },
++           ],
++           "kind": "input",
++         },
++         {
++           "blocks": [
++             {
++               "text": "goals",
++               "type": "text",
++             },
++           ],
++           "kind": "goals",
++         },
++         {
++           "blocks": [
++             {
++               "text": "commitments",
++               "type": "text",
++             },
++           ],
++           "kind": "commitments",
++         },
++       ],
++       "entityId": "requester",
++       "epoch": "1",
++       "inputId": "simulation-input:38a7246ba8f2d0f6ccf027675c8a9220f2b8bcd3dbe9c53613321095c2a58fd5",
++       "projections": {
++         "entity": 4,
++         "run": 18,
++         "team": 10,
++       },
++       "runId": "world-company",
++       "slot": "0",
++       "sources": [
++         {
++           "kind": "run-event",
++           "runId": "world-company",
++           "sequence": 13,
++         },
++         {
++           "kind": "run-event",
++           "runId": "world-company",
++           "sequence": 18,
++         },
++       ],
++       "time": "0",
++       "version": 1,
++       "versions": {
++         "model": "model-1",
++         "persona": "persona-1",
++         "policy": "sha256:7f47e6ded33bc758c8ae4aebdbb3923efa960c2fddb8d48df6993ae99a8ad413",
++         "rules": "1",
++       },
++       "windowId": "simulation-window:unassigned-goal",
++     },
++     "world": {
++       "assignments": [
++         {
++           "id": "requester-employment",
++           "revision": 1,
++         },
++       ],
++       "baseRevision": 19,
++       "kind": "goal",
++       "operations": [
++         {
++           "grants": [
++             {
++               "effectiveFrom": "0",
++               "effectiveUntil": null,
++               "id": "hiring-authority",
++               "kind": "relation",
++               "revision": 1,
++             },
++           ],
++           "pin": {
++             "domain": "organization",
++             "generation": 1,
++             "implementationRef": "clocky.organization.generate-and-hire/native/2",
++             "operation": "generate-and-hire",
++             "schemaRef": "clocky.organization.generate-and-hire/schema/2",
++             "version": "1",
++           },
++         },
++       ],
++     },
++   },
++   "entityId": "requester",
++   "entityRevision": 4,
++   "epoch": "1",
++   "fingerprint": "sha256:81d26c284c338c78dc3fd67e1ae9da3b7b7ef6c7e12eb191351ed4f7ff63ce6c",
++   "id": "unassigned-goal",
++   "inference": {
++     "deadline": 1791738486785,
++     "finishedAt": 1791738426826,
++     "startedAt": 1791738426785,
++   },
++   "operationIds": [
++     "simulation-operation:86f28d15d21b09114df3c0a8290399cc5ff2ee73586888cb5e69e1fafe1dabbc",
++     "simulation-operation:286866b76475b148662109b27e23146f1968e8fc955b5dc802e909936adefbf4",
++   ],
++   "slot": "0",
++   "snapshotRevision": 18,
++   "status": "accepted",
++   "time": "0",
++   "worldExpansion": {
++     "logicalIndex": 0,
++     "operationIds": [
++       "simulation-operation:86f28d15d21b09114df3c0a8290399cc5ff2ee73586888cb5e69e1fafe1dabbc",
++       "simulation-operation:286866b76475b148662109b27e23146f1968e8fc955b5dc802e909936adefbf4",
++     ],
++   },
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:215:54
+    213|   await h.run.setPhase('running', h.run.snapshot().revision)
+    214|   await expect(h.connection.executeDecision(requester, simulationDecis…
+    215|     { ...contextRequest(), world: { kind: 'goal' } })).rejects.toThrow…
+       |                                                      ^
+    216|   expect(h.run.snapshot().world!.requests).toEqual({})
+    217|   expect(h.requestModel.requests).toEqual([])
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > rejects an unassigned sqlite goal before preparing model context
+AssertionError: promise resolved "{ id: 'unassigned-goal', …(14) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "closedAt": 30,
++   "consumption": {
++     "consumedSequence": 5,
++     "contextHash": "a85c815747797e3da67d62652a5ef82c3e1943067f39adb82d3fb5e731264204",
++     "inputId": "simulation-input:38a7246ba8f2d0f6ccf027675c8a9220f2b8bcd3dbe9c53613321095c2a58fd5",
++     "sessionId": "b14d1ae0-027d-4ae8-8ce8-84eebc143d28",
++     "viewSequence": 3,
++   },
++   "context": {
++     "fingerprint": "sha256:d0505ead83518022722e727c99173514056c7bdec316b3f09b7c3e7d479ef712",
++     "maxBytes": 65536,
++     "omitted": [],
++     "requiredSections": [
++       "identity",
++       "authority",
++       "input",
++       "goals",
++       "commitments",
++     ],
++     "retainedBytes": 1891,
++     "status": "prepared",
++     "teamCursor": 10,
++     "view": {
++       "content": [
++         {
++           "blocks": [
++             {
++               "text": "identity",
++               "type": "text",
++             },
++           ],
++           "kind": "identity",
++         },
++         {
++           "blocks": [
++             {
++               "text": "authority",
++               "type": "text",
++             },
++           ],
++           "kind": "authority",
++         },
++         {
++           "blocks": [
++             {
++               "text": "input",
++               "type": "text",
++             },
++             {
++               "text": "{\"kind\":\"world-context\",\"authority\":{\"kind\":\"goal\",\"baseRevision\":19,\"operations\":[{\"pin\":{\"domain\":\"organization\",\"operation\":\"generate-and-hire\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.generate-and-hire/schema/2\",\"implementationRef\":\"clocky.organization.generate-and-hire/native/2\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"hiring-authority\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}]}],\"assignments\":[{\"id\":\"requester-employment\",\"revision\":1}]},\"operations\":[{\"pin\":{\"domain\":\"organization\",\"operation\":\"generate-and-hire\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.generate-and-hire/schema/2\",\"implementationRef\":\"clocky.organization.generate-and-hire/native/2\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"hiring-authority\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}],\"targets\":[{\"targetEntityId\":\"position\",\"scopeEntityId\":\"organization\"}],\"requestSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"organizationEntityId\":{\"type\":\"string\",\"minLength\":1},\"positionEntityId\":{\"type\":\"string\",\"minLength\":1},\"description\":{\"type\":\"string\",\"minLength\":1},\"priorRequestId\":{\"type\":\"string\",\"minLength\":1}},\"required\":[\"organizationEntityId\",\"positionEntityId\",\"description\"],\"additionalProperties\":false}}],\"organizationEntityId\":\"organization\",\"positions\":[{\"entityId\":\"position\",\"capacity\":1}],\"instruction\":\"Propose only an installed operation with a stable business key. A goal grants no new authority.\"}",
++               "type": "text",
++             },
++           ],
++           "kind": "input",
++         },
++         {
++           "blocks": [
++             {
++               "text": "goals",
++               "type": "text",
++             },
++           ],
++           "kind": "goals",
++         },
++         {
++           "blocks": [
++             {
++               "text": "commitments",
++               "type": "text",
++             },
++           ],
++           "kind": "commitments",
++         },
++       ],
++       "entityId": "requester",
++       "epoch": "1",
++       "inputId": "simulation-input:38a7246ba8f2d0f6ccf027675c8a9220f2b8bcd3dbe9c53613321095c2a58fd5",
++       "projections": {
++         "entity": 4,
++         "run": 18,
++         "team": 10,
++       },
++       "runId": "world-company",
++       "slot": "0",
++       "sources": [
++         {
++           "kind": "run-event",
++           "runId": "world-company",
++           "sequence": 13,
++         },
++         {
++           "kind": "run-event",
++           "runId": "world-company",
++           "sequence": 18,
++         },
++       ],
++       "time": "0",
++       "version": 1,
++       "versions": {
++         "model": "model-1",
++         "persona": "persona-1",
++         "policy": "sha256:7f47e6ded33bc758c8ae4aebdbb3923efa960c2fddb8d48df6993ae99a8ad413",
++         "rules": "1",
++       },
++       "windowId": "simulation-window:unassigned-goal",
++     },
++     "world": {
++       "assignments": [
++         {
++           "id": "requester-employment",
++           "revision": 1,
++         },
++       ],
++       "baseRevision": 19,
++       "kind": "goal",
++       "operations": [
++         {
++           "grants": [
++             {
++               "effectiveFrom": "0",
++               "effectiveUntil": null,
++               "id": "hiring-authority",
++               "kind": "relation",
++               "revision": 1,
++             },
++           ],
++           "pin": {
++             "domain": "organization",
++             "generation": 1,
++             "implementationRef": "clocky.organization.generate-and-hire/native/2",
++             "operation": "generate-and-hire",
++             "schemaRef": "clocky.organization.generate-and-hire/schema/2",
++             "version": "1",
++           },
++         },
++       ],
++     },
++   },
++   "entityId": "requester",
++   "entityRevision": 4,
++   "epoch": "1",
++   "fingerprint": "sha256:b1c21bf303f67408bce920011e0a9b6920af9f8a3a2cb4c0bd9464247dad6b5a",
++   "id": "unassigned-goal",
++   "inference": {
++     "deadline": 1791738486915,
++     "finishedAt": 1791738426942,
++     "startedAt": 1791738426915,
++   },
++   "operationIds": [
++     "simulation-operation:86f28d15d21b09114df3c0a8290399cc5ff2ee73586888cb5e69e1fafe1dabbc",
++     "simulation-operation:286866b76475b148662109b27e23146f1968e8fc955b5dc802e909936adefbf4",
++   ],
++   "slot": "0",
++   "snapshotRevision": 18,
++   "status": "accepted",
++   "time": "0",
++   "worldExpansion": {
++     "logicalIndex": 0,
++     "operationIds": [
++       "simulation-operation:86f28d15d21b09114df3c0a8290399cc5ff2ee73586888cb5e69e1fafe1dabbc",
++       "simulation-operation:286866b76475b148662109b27e23146f1968e8fc955b5dc802e909936adefbf4",
++     ],
++   },
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:215:54
+    213|   await h.run.setPhase('running', h.run.snapshot().revision)
+    214|   await expect(h.connection.executeDecision(requester, simulationDecis…
+    215|     { ...contextRequest(), world: { kind: 'goal' } })).rejects.toThrow…
+       |                                                      ^
+    216|   expect(h.run.snapshot().world!.requests).toEqual({})
+    217|   expect(h.requestModel.requests).toEqual([])
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > reopens a json committed-but-lost reply as one complete original hire without a generation call
+AssertionError: expected { kind: 'committed' } to deeply equal { kind: 'committed', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "entityId": "world-person:a9e862f8-d427-466e-9a72-65ed4ca37cb6",
+    "kind": "committed",
+-   "relationId": "world-assignment:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:525:26
+    523|   cleanups.push(() => reopened.close())
+    524|   const result = Object.values(reopened.snapshot().world!.results)[0]!
+    525|   expect(result.outcome).toEqual({ kind: 'committed', entityId: h.rese…
+       |                          ^
+    526|     relationId: h.reservation.identities.relationId })
+    527|   expect(reopened.snapshot().phase).toBe('paused')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > reopens a sqlite committed-but-lost reply as one complete original hire without a generation call
+AssertionError: expected { kind: 'committed' } to deeply equal { kind: 'committed', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "entityId": "world-person:8e058552-4c5b-438a-ab67-015f6efede92",
+    "kind": "committed",
+-   "relationId": "world-assignment:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:525:26
+    523|   cleanups.push(() => reopened.close())
+    524|   const result = Object.values(reopened.snapshot().world!.results)[0]!
+    525|   expect(result.outcome).toEqual({ kind: 'committed', entityId: h.rese…
+       |                          ^
+    526|     relationId: h.reservation.identities.relationId })
+    527|   expect(reopened.snapshot().phase).toBe('paused')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > reserves json capacity and every identity, then commits one complete hire after real Team preparation
+AssertionError: expected { kind: 'committed' } to deeply equal { kind: 'committed', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "entityId": "world-person:f514e007-00c6-4271-9645-28272bee0ac1",
+    "kind": "committed",
+-   "relationId": "world-assignment:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:581:26
+    579|     .rejects.toThrow(/maintenance|ready entity/)
+    580|   const result = await h.run.commitWorldHire(reservation.id)
+    581|   expect(result.outcome).toEqual({ kind: 'committed', entityId: id, re…
+       |                          ^
+    582|   expect(h.run.snapshot().entities[id]?.readiness).toBe('ready')
+    583|   expect(h.run.snapshot().relations[preparing.identities.relationId]).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > reserves sqlite capacity and every identity, then commits one complete hire after real Team preparation
+AssertionError: expected { kind: 'committed' } to deeply equal { kind: 'committed', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "entityId": "world-person:5ac47637-9f2f-4a70-b8f8-b8c0ffa66f17",
+    "kind": "committed",
+-   "relationId": "world-assignment:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:581:26
+    579|     .rejects.toThrow(/maintenance|ready entity/)
+    580|   const result = await h.run.commitWorldHire(reservation.id)
+    581|   expect(result.outcome).toEqual({ kind: 'committed', entityId: id, re…
+       |                          ^
+    582|   expect(h.run.snapshot().entities[id]?.readiness).toBe('ready')
+    583|   expect(h.run.snapshot().relations[preparing.identities.relationId]).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > rejects altered terminal result sources, public reasons and notification wakes in the Native projection
+SimulationWorldDomainError: World operations require an installed Native domain catalog
+ ❯ requireWorldRuntime packages/simulation/simulation-local/src/world-runtime.ts:62:11
+     60| export function requireWorldRuntime(runtime: NativeWorldRuntime | unde…
+     61|   if (runtime === undefined) {
+     62|     throw new SimulationWorldDomainError('SIM_WORLD_IMPLEMENTATION_UNA…
+       |           ^
+     63|   }
+     64|   return runtime
+ ❯ assertWorldProjection packages/simulation/simulation-local/src/world.ts:686:3
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:712:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > retains the json model-selected apply plan after private request consumption
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > retains the sqlite model-selected apply plan after private request consumption
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > retains the json model-selected reject plan after private request consumption
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > retains the sqlite model-selected reject plan after private request consumption
+AssertionError: expected [ 'requester', 'director', …(3) ] to have a length of 4 but got 5
+
+- Expected
++ Received
+
+- 4
++ 5
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:829:50
+    827|     expect(plan.status).toBe('accepted')
+    828|     expect(run.snapshot().decisions[decisionId]?.consumption?.notifica…
+    829|     expect(Object.keys(run.snapshot().entities)).toHaveLength(4)
+       |                                                  ^
+    830|     expect(h.requestModel.requests).toHaveLength(6)
+    831|     expect(model.requests).toHaveLength(3)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > returns the json director submission before window closure and then drains maintenance
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > returns the sqlite director submission before window closure and then drains maintenance
+AssertionError: expected [ 'requester', 'director', …(3) ] to have a length of 4 but got 5
+
+- Expected
++ Received
+
+- 4
++ 5
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:997:50
+    995|   expect(h.run.snapshot().phase).toBe('paused')
+    996|   expect(h.run.population().chargedActors).toBe(0)
+    997|   expect(Object.keys(h.run.snapshot().entities)).toHaveLength(4)
+       |                                                  ^
+    998|   expect(model.requests).toHaveLength(3)
+    999| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > keeps business application identity independent of the actor field and rejects a changed original requester
+SimulationWorldError: Business key changed its original actor, input or evidence
+ ❯ createWorldIntent packages/simulation/simulation-local/src/world.ts:106:13
+    104|       || !isDeepStrictEqual(original.payload, normalized.payload) || o…
+    105|       || !isDeepStrictEqual(original.evidence, request.evidence))
+    106|       throw new SimulationWorldError('SIM_WORLD_CONFLICT', 'Business k…
+       |             ^
+    107|     return original
+    108|   }
+ ❯ packages/simulation/simulation-local/src/run.ts:151:22
+ ❯ packages/simulation/simulation-local/src/run.ts:1735:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > links a json insufficient-information resubmission without replacing the old case
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > links a sqlite insufficient-information resubmission without replacing the old case
+AssertionError: expected [Function] to throw error matching /must link the latest insufficient-inf…/ but got 'Resubmission must reference the lates…'
+
+- Expected:
+/must link the latest insufficient-information case/
+
++ Received:
+"Resubmission must reference the latest insufficient-information rejection"
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1016:46
+    1014|   const original = h.run.snapshot().world!, input = { ...hiringIntentF…
+    1015|   expect(original.requests[h.request.id]?.status).toBe('rejected')
+    1016|   await expect(seedHiringIntent(h.run, input)).rejects.toThrow(/must l…
+       |                                              ^
+    1017|   await expect(seedHiringIntent(h.run, simulationHireIntentRequestSche…
+    1018|     .rejects.toThrow(/own original insufficient-information rejection/)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'json' predecessor whose original result is 'open'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'json' predecessor whose original result is 'cancelled'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'json' predecessor whose original result is 'policy'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'sqlite' predecessor whose original result is 'open'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'sqlite' predecessor whose original result is 'cancelled'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'sqlite' predecessor whose original result is 'policy'
+AssertionError: expected [Function] to throw error matching /own original insufficient-information…/ but got 'Resubmission requires its original in…'
+
+- Expected:
+/own original insufficient-information rejection/
+
++ Received:
+"Resubmission requires its original insufficient-information rejection"
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1054:142
+    1052|     }
+    1053|     const before = h.run.snapshot()
+    1054|     await expect(seedHiringIntent(h.run, { ...hiringIntentFields(h.int…
+       |                                                                                                                                              ^
+    1055|       .rejects.toThrow(/own original insufficient-information rejectio…
+    1056|     expect(h.run.snapshot()).toEqual(before)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > keeps one complete json hire when the original application retries with a new decision identity
+AssertionError: expected { kind: 'committed' } to deeply equal { kind: 'committed', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "entityId": "world-person:a6e9cd9c-2a12-4539-8f72-af972607c9e1",
+    "kind": "committed",
+-   "relationId": "world-assignment:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1155:26
+    1153|   const h = await preparedHireFixture(backend)
+    1154|   const result = await h.run.commitWorldHire(h.reservation.id)
+    1155|   expect(result.outcome).toEqual({ kind: 'committed', entityId: h.rese…
+       |                          ^
+    1156|     relationId: h.reservation.identities.relationId })
+    1157|   const committed = h.run.snapshot()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > keeps one complete sqlite hire when the original application retries with a new decision identity
+AssertionError: expected { kind: 'committed' } to deeply equal { kind: 'committed', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "entityId": "world-person:7252bad7-cb79-402a-9974-2f75bb285533",
+    "kind": "committed",
+-   "relationId": "world-assignment:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1155:26
+    1153|   const h = await preparedHireFixture(backend)
+    1154|   const result = await h.run.commitWorldHire(h.reservation.id)
+    1155|   expect(result.outcome).toEqual({ kind: 'committed', entityId: h.rese…
+       |                          ^
+    1156|     relationId: h.reservation.identities.relationId })
+    1157|   const committed = h.run.snapshot()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > linearizes 'json' cancel/commit with cancelFirst=true and preserves exactly one business terminal
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > linearizes 'sqlite' cancel/commit with cancelFirst=true and preserves exactly one business terminal
+AssertionError: expected [ Array(1) ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1487:93
+    1485|     expect(receipt.status).toBe(cancelFirst ? 'cancelled' : 'already-c…
+    1486|     expect(result.outcome.kind).toBe(cancelFirst ? 'cancelled' : 'comm…
+    1487|     expect(Object.values(state.relations).filter(value => value.relati…
+       |                                                                                             ^
+    1488|     expect(state.world!.reservations[h.reservation.id]?.status).toBe(c…
+    1489|     if (cancelFirst) expect(committed).toHaveProperty('error')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > linearizes 'json' cancel/commit with cancelFirst=false and preserves exactly one business terminal
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > linearizes 'sqlite' cancel/commit with cancelFirst=false and preserves exactly one business terminal
+AssertionError: expected [ { …(8) }, { …(8) } ] to have a length of 1 but got 2
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1487:93
+    1485|     expect(receipt.status).toBe(cancelFirst ? 'cancelled' : 'already-c…
+    1486|     expect(result.outcome.kind).toBe(cancelFirst ? 'cancelled' : 'comm…
+    1487|     expect(Object.values(state.relations).filter(value => value.relati…
+       |                                                                                             ^
+    1488|     expect(state.world!.reservations[h.reservation.id]?.status).toBe(c…
+    1489|     if (cancelFirst) expect(committed).toHaveProperty('error')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > releases proven json hire occupancy for a new real application while retaining every original identity
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > releases proven sqlite hire occupancy for a new real application while retaining every original identity
+Error: Simulation model turn ended without submitting its identified decision
+ ❯ executeDecision packages/simulation/simulation-team/src/decision.ts:61:11
+     59|       || paused
+     60|       || run.snapshot().compactionAdmissionBlocks?.some(value => value…
+     61|     throw new Error('Simulation model turn ended without submitting it…
+       |           ^
+     62|   }
+     63|   if (!await flush()) throw new Error('Simulation decision completion …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > authorizes json exact terminal window inputs through three tools after the hiring grant is withdrawn
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > authorizes sqlite exact terminal window inputs through three tools after the hiring grant is withdrawn
+AssertionError: expected [Function] to throw error matching /exact context and canonical Session/ but got 'World operations require an installed…'
+
+- Expected:
+/exact context and canonical Session/
+
++ Received:
+"World operations require an installed Native domain catalog"
+
+ ❯ assertTerminalConsumption packages/simulation/simulation-team/tests/world.spec.ts:1724:57
+    1722|     const invalid = { ...state, decisions: { ...state.decisions,
+    1723|       [decision.id]: { ...decision, consumption: simulationContextCons…
+    1724|     expect(() => { assertBusinessProjection(invalid) }).toThrow(/exact…
+       |                                                         ^
+    1725|   }
+    1726| }
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1772:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses json altered result notification content, recipient, Channel, time, outcome or dependencies at Native submission
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses sqlite altered result notification content, recipient, Channel, time, outcome or dependencies at Native submission
+AssertionError: expected [Function] to throw error matching /exact context and canonical Session/ but got 'World operations require an installed…'
+
+- Expected:
+/exact context and canonical Session/
+
++ Received:
+"World operations require an installed Native domain catalog"
+
+ ❯ assertTerminalConsumption packages/simulation/simulation-team/tests/world.spec.ts:1724:57
+    1722|     const invalid = { ...state, decisions: { ...state.decisions,
+    1723|       [decision.id]: { ...decision, consumption: simulationContextCons…
+    1724|     expect(() => { assertBusinessProjection(invalid) }).toThrow(/exact…
+       |                                                         ^
+    1725|   }
+    1726| }
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1850:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > notifies the original director of a 'json' 'rejected' result through three tools without disclosing private rationale
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > notifies the original director of a 'sqlite' 'rejected' result through three tools without disclosing private rationale
+AssertionError: expected { …(3) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "outcome": {
+      "kind": "rejected",
+      "reason": "insufficient-information",
+    },
++   "payload": {},
+    "resultId": "world-result:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1961:43
+    1959|     expect(notification).toEqual({ kind: 'communication/post', recipie…
+    1960|       text: worldResultNotification(result), deliverAt: '0' })
+    1961|     expect(JSON.parse(notification.text)).toEqual({ resultId: result.i…
+       |                                           ^
+    1962|     expect(JSON.stringify(accepted.context)).not.toContain(rejectedRes…
+    1963|     const world = h.run.snapshot().world
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/38]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > notifies the original director of a 'json' 'cancelled' result through three tools without disclosing private rationale
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > notifies the original director of a 'sqlite' 'cancelled' result through three tools without disclosing private rationale
+AssertionError: expected { …(3) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "outcome": {
+      "kind": "cancelled",
+    },
++   "payload": {},
+    "resultId": "world-result:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1961:43
+    1959|     expect(notification).toEqual({ kind: 'communication/post', recipie…
+    1960|       text: worldResultNotification(result), deliverAt: '0' })
+    1961|     expect(JSON.parse(notification.text)).toEqual({ resultId: result.i…
+       |                                           ^
+    1962|     expect(JSON.stringify(accepted.context)).not.toContain(rejectedRes…
+    1963|     const world = h.run.snapshot().world
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/38]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  38 failed | 144 passed (182)
+   Start at  02:07:04
+   Duration  43.60s (transform 1.57s, setup 354ms, import 1.64s, tests 42.26s, environment 0ms)
+
+[ELIFECYCLE] Test failed. See above for more details.

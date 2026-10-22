@@ -148,6 +148,10 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@clocky/clocky-session-telemetry-otel': ['lib/pipeline.js'],
   '@clocky/clocky-team-channel-admission': ['lib/principal.js'],
   '@clocky/clocky-team-channel-summary': ['lib/tool.js'],
+  // Config-loaded World providers share the same service identities with the main entry.
+  '@clocky/clocky-simulation-world': ['lib/providers.js', 'lib/providers-*.js'],
+  // Default Web World deployment is a config-loaded entry, distinct from the browser runtime glue.
+  '@clocky/clocky-web-app': ['lib/simulation-administration.js'],
   // Statically linked client libraries keep their stylesheets next to the emitted
   // JavaScript, which imports them by relative path: the compile shell runs
   // them through its own CSS pipeline, so the sheets are published artifacts.

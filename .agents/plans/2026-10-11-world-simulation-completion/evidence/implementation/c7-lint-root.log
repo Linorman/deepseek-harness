@@ -1,0 +1,5 @@
+packages/simulation/simulation-team/src/personnel-obligations.ts:41:1: error @stylistic(max-len): This line has a length of 146. Maximum allowed is 140.
+packages/simulation/simulation-team/tests/personnel-obligations.spec.ts:89:93: error typescript(no-invalid-void-type): Use `void` only as a return type or generic type argument. help: Replace this `void` type with an allowed type, or keep `void` only in a valid return position.
+packages/simulation/simulation-team/src/index.ts:733:1: error @stylistic(max-len): This line has a length of 162. Maximum allowed is 140.
+packages/simulation/simulation-team/src/personnel-obligations.ts:36:33: error typescript(no-unnecessary-condition): Unnecessary comparison between literal values.
+packages/simulation/simulation-team/tests/personnel-obligations.spec.ts:54:89: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.

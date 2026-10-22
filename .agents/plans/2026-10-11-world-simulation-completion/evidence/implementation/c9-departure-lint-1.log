@@ -1,0 +1,4 @@
+examples/simulation-company/tests/world-departure-scenario.ts:55:40: error typescript(no-invalid-void-type): Use `void` only as a return type or generic type argument. help: Replace this `void` type with an allowed type, or keep `void` only in a valid return position.
+examples/simulation-company/tests/world-departure-scenario.ts:136:1: error @stylistic(max-len): This line has a length of 146. Maximum allowed is 140.
+examples/simulation-company/tests/world-departure-scenario.ts:155:1: error @stylistic(max-len): This line has a length of 145. Maximum allowed is 140.
+examples/simulation-company/tests/world-departure-scenario.ts:159:1: error @stylistic(max-len): This line has a length of 157. Maximum allowed is 140.

@@ -1,4 +1,19 @@
 from __future__ import annotations
+from .simulation_retention import (SimulationRetentionPreviewInput, SimulationRetentionExecuteInput, SimulationRetentionReadInput, SimulationRetentionRecordsInput, SimulationRetentionPlan, SimulationRetentionResult, SimulationRetentionRecordsResult)
+from .simulation_generation import (SimulationGenerationRequest, SimulationGenerationRead, SimulationGenerationTransition,
+    SimulationGenerationPersonaDraft, SimulationGenerationResult)
+from .simulation_index import SimulationRebuildIndexInput, SimulationRebuildIndexResult
+from .simulation_world_management import (SimulationWorldManagementFieldsInput, SimulationWorldManagementFields,
+    SimulationWorldManagementDraft, SimulationWorldManagementPreview, SimulationWorldManagementSubmitInput)
+from .simulation_world_domain import SimulationWorldDomainInput, SimulationWorldDomainResult
+from .simulation_world_cases import SimulationWorldCasesInput, SimulationWorldCasesPage, SimulationWorldCaseInput, SimulationWorldCaseInspection
+from .simulation_scenario import (SimulationWorldPreflightInput, SimulationWorldPreflightResult, SimulationWorldCreateInput,
+    SimulationWorldPrepareInput, SimulationWorldExportInput, SimulationWorldExportResult)
+from .session_events import KNOWN_SESSION_EVENT_TYPES
+from .compaction_events import validate_compaction_evidence_event
+from .simulation_raw_archive import SimulationRawArchiveInput, SimulationRawArchivePage
+from .simulation import SimulationRunControlInput, SimulationRunControlResult
+from .simulation import SimulationWorldCaseCancelInput
 from .simulation import SimulationTasksInput, SimulationTasksPage, SimulationTaskCancelInput
 from .simulation import SimulationRequestsInput, SimulationRequestsPage, SimulationRetryRequestInput
 from .simulation import SimulationPreflightInput, SimulationPreflightResult
@@ -169,6 +184,11 @@ class Clocky:
         self.start()
         return self._client.get_simulation_control(request)
 
+    def update_simulation_run_control(self, request: SimulationRunControlInput) -> SimulationRunControlResult:
+        """Persist a target or explicit null clear; resuming scheduling remains separate."""
+        self.start()
+        return self._client.update_simulation_run_control(request)
+
     def manage_simulation(self, request: SimulationManageInput) -> SimulationManageResult:
         """Submit an original scheduling intent; exact retries retain its result without undoing later intent."""
         self.start()
@@ -183,6 +203,41 @@ class Clocky:
         """Read bounded canonical run-owned task controls without private task bodies or inference."""
         self.start()
         return self._client.list_simulation_tasks(request)
+
+    def read_simulation_world_management_fields(self, request: SimulationWorldManagementFieldsInput) -> SimulationWorldManagementFields:
+        """Read exact personnel form metadata without beginning execution or granting content access."""
+        self.start()
+        return self._client.read_simulation_world_management_fields(request)
+
+    def preview_simulation_world_management(self, request: SimulationWorldManagementDraft) -> SimulationWorldManagementPreview:
+        """Read inert actual effects, source coverage and the precise Native preview commitment."""
+        self.start()
+        return self._client.preview_simulation_world_management(request)
+
+    def submit_simulation_world_management(self, request: SimulationWorldManagementSubmitInput) -> SimulationRequestReceipt:
+        """Submit one caller-retained command; uncertain outcomes still require querying that original."""
+        self.start()
+        return self._client.submit_simulation_world_management(request)
+
+    def read_simulation_world_domain(self, request: SimulationWorldDomainInput) -> SimulationWorldDomainResult:
+        """Read an exact bounded World domain window without executing or granting private bodies."""
+        self.start()
+        return self._client.read_simulation_world_domain(request)
+
+    def list_simulation_world_cases(self, request: SimulationWorldCasesInput) -> SimulationWorldCasesPage:
+        """Read an exact World case selection without implicit scheduling or content authorization."""
+        self.start()
+        return self._client.list_simulation_world_cases(request)
+
+    def inspect_simulation_world_case(self, request: SimulationWorldCaseInput) -> SimulationWorldCaseInspection:
+        """Read an exact World case selection without implicit scheduling or content authorization."""
+        self.start()
+        return self._client.inspect_simulation_world_case(request)
+
+    def cancel_simulation_world_case(self, request: SimulationWorldCaseCancelInput) -> SimulationRequestReceipt:
+        """Submit or retry the exact original World case cancellation."""
+        self.start()
+        return self._client.cancel_simulation_world_case(request)
 
     def cancel_simulation_task(self, request: SimulationTaskCancelInput) -> SimulationRequestReceipt:
         """Cancel the exact original task with a current revision and attempt or explicit no-lease fence."""
@@ -244,6 +299,56 @@ class Clocky:
         self.start()
         return self._client.inspect_simulation(request)
 
+    def retention_preview(self, request: SimulationRetentionPreviewInput) -> SimulationRetentionPlan:
+        """Explicit original retention preview; preview and reads never infer or pause."""
+        self.start()
+        return self._client.retention_preview(request)
+
+    def retention_execute(self, request: SimulationRetentionExecuteInput) -> SimulationRetentionResult:
+        """Explicit original retention execute; preview and reads never infer or pause."""
+        self.start()
+        return self._client.retention_execute(request)
+
+    def retention_read(self, request: SimulationRetentionReadInput) -> SimulationRetentionResult:
+        """Explicit original retention read; preview and reads never infer or pause."""
+        self.start()
+        return self._client.retention_read(request)
+
+    def retention_records(self, request: SimulationRetentionRecordsInput) -> SimulationRetentionRecordsResult:
+        """Explicit original retention records; preview and reads never infer or pause."""
+        self.start()
+        return self._client.retention_records(request)
+
+    def generation_request(self, request: SimulationGenerationRequest) -> SimulationGenerationResult:
+        """Explicit original generation request; only execute invokes a model."""
+        self.start()
+        return self._client.generation_request(request)
+
+    def generation_read(self, request: SimulationGenerationRead) -> SimulationGenerationResult:
+        """Explicit original generation read; only execute invokes a model."""
+        self.start()
+        return self._client.generation_read(request)
+
+    def generation_execute(self, request: SimulationGenerationRead) -> SimulationGenerationResult:
+        """Explicit original generation execute; only execute invokes a model."""
+        self.start()
+        return self._client.generation_execute(request)
+
+    def generation_transition(self, request: SimulationGenerationTransition) -> SimulationGenerationResult:
+        """Explicit original generation transition; only execute invokes a model."""
+        self.start()
+        return self._client.generation_transition(request)
+
+    def generation_persona_draft(self, request: SimulationGenerationPersonaDraft) -> SimulationGenerationResult:
+        """Explicit original generation persona-draft; only execute invokes a model."""
+        self.start()
+        return self._client.generation_persona_draft(request)
+
+    def rebuild_simulation_index(self, request: SimulationRebuildIndexInput) -> SimulationRebuildIndexResult:
+        """Rebuild one original derived prefix through the authenticated Native owner."""
+        self.start()
+        return self._client.rebuild_simulation_index(request)
+
     def browse_simulation(self, request: SimulationBrowseInput) -> SimulationCollectionPage:
         """Read bounded authorized metadata without starting inference."""
         self.start()
@@ -253,6 +358,11 @@ class Clocky:
         """Read an exact frozen Envelope source under separate Simulation and Team authority."""
         self.start()
         return self._client.inspect_simulation_source(request)
+
+    def archive_raw_simulation(self, request: SimulationRawArchiveInput) -> SimulationRawArchivePage:
+        """Preserve original source bytes with an explicit whole-record grant; never restore or interpret Native state."""
+        self.start()
+        return self._client.archive_raw_simulation(request)
 
     def read_simulation_records(self, request: SimulationRecordsInput) -> SimulationRecordsPage:
         """Read bounded original journal metadata or separately authorized historical JSON text."""
@@ -273,6 +383,26 @@ class Clocky:
         """Resolve an allowlisted creation draft without allocating or preparing a run."""
         self.start()
         return self._client.preflight_simulation(request)
+
+    def preflight_simulation_world(self, request: SimulationWorldPreflightInput) -> SimulationWorldPreflightResult:
+        """Resolve a portable World definition without creating a run or starting its models."""
+        self.start()
+        return self._client.preflight_simulation_world(request)
+
+    def create_simulation_world(self, request: SimulationWorldCreateInput) -> SimulationRequestReceipt:
+        """Create a paused World with the exact original command and accepted preview."""
+        self.start()
+        return self._client.create_simulation_world(request)
+
+    def prepare_simulation_world(self, request: SimulationWorldPrepareInput) -> SimulationRequestReceipt:
+        """Prepare the original accepted World without starting inference."""
+        self.start()
+        return self._client.prepare_simulation_world(request)
+
+    def export_simulation_world_definition(self, request: SimulationWorldExportInput) -> SimulationWorldExportResult:
+        """Export the authorized portable definition without private execution history."""
+        self.start()
+        return self._client.export_simulation_world_definition(request)
 
     def create_simulation(self, request: SimulationCreateInput) -> SimulationRequestReceipt:
         """Use the original durable command identity; absence does not establish failure."""
@@ -438,7 +568,9 @@ class Clocky:
                     notification.method == "session.event"
                     and notification.payload.get("sessionId") == team.coordinator_session_id
                 ):
-                    events.append(validated_coordinator_event(notification))
+                    event = validated_coordinator_event(notification)
+                    if event is not None:
+                        events.append(event)
 
             subscription.drain(collect)
             final = team_final_receipt(
@@ -736,13 +868,24 @@ def belongs_to_coordinator(notification: Notification, coordinator_session_id: s
     return notification.payload.get("sessionId") == coordinator_session_id
 
 
-def validated_coordinator_event(notification: Notification) -> JsonObject:
-    """Validate the coordinator event projection exposed by ``RunResult``."""
+def validated_coordinator_event(notification: Notification) -> JsonObject | None:
+    """Validate known coordinator events; omit unknown ignorable events and refuse unknown required events."""
     event = notification.payload.get("event")
     if not isinstance(event, dict) or not isinstance(event.get("type"), str):
         raise SdkProtocolError(f"session.event carried no event envelope: {event!r}")
+    if "ignorable" in event and event["ignorable"] is not True:
+        raise SdkProtocolError("session.event carried an invalid ignorable marker")
+    if event["type"] not in KNOWN_SESSION_EVENT_TYPES:
+        if event.get("ignorable") is True:
+            return None
+        raise SdkProtocolError("session.event carried an unknown required event")
+    if event["type"] == "compaction/assessment" or (event["type"] == "compaction/end"
+            and isinstance(event.get("data"), dict) and "noGain" in event["data"]):
+        validate_compaction_evidence_event(event)
     if event["type"] == "simulation/context-view":
         validate_simulation_context_event(event)
+    if event["type"] in ("simulation/generation-input", "simulation/generation-output"):
+        validate_simulation_generation_event(event)
     if event["type"] == "team/channel-view":
         validate_team_channel_view_event(event)
     if event["type"] == "assistant/message":
@@ -755,6 +898,57 @@ def validated_coordinator_event(notification: Notification) -> JsonObject:
         ):
             raise SdkProtocolError(f"assistant/message event carried malformed content: {event!r}")
     return cast(JsonObject, event)
+
+
+def validate_simulation_generation_event(event: JsonObject) -> None:
+    """Reject altered helper request bytes, identities, required markers or token counters."""
+    import json
+
+    def counter(value: object) -> bool:
+        return type(value) in (int, float) and 0 <= value <= MAX_SAFE_INTEGER and value % 1 == 0
+
+    def text(value: object) -> bool:
+        return isinstance(value, str) and len(value) > 0
+
+    def refuse() -> None:
+        raise SdkProtocolError("Simulation generation event is malformed")
+
+    if set(event) != {"type", "seq", "time", "data"} or not counter(event.get("seq")) or not counter(event.get("time")):
+        refuse()
+    data = event.get("data")
+    if not isinstance(data, dict):
+        refuse()
+        return
+    if event["type"] == "simulation/generation-input":
+        fields = {"jobId", "scope", "audience", "message", "provider", "model", "modelVersion", "promptVersion", "policyVersion"}
+        if set(data) != fields or not all(text(data.get(key)) for key in fields - {"audience"}):
+            refuse()
+        audience = data.get("audience")
+        if not isinstance(audience, list) or not audience or not all(text(item) for item in audience):
+            refuse()
+            return
+        if len(set(audience)) != len(audience):
+            refuse()
+        try:
+            message = json.loads(cast(str, data["message"]))
+        except (ValueError, TypeError):
+            refuse()
+            return
+        if not isinstance(message, dict) or set(message) != {"id", "role", "source", "content"}:
+            refuse()
+            return
+        content = message.get("content")
+        if message.get("id") != f"generation:{data['jobId']}" or message.get("role") != "user" or message.get("source") != {"kind": "plugin", "plugin": "simulation-team"}:
+            refuse()
+        if not isinstance(content, list) or len(content) != 1 or not isinstance(content[0], dict) or set(content[0]) != {"type", "text"} or content[0].get("type") != "text" or not isinstance(content[0].get("text"), str):
+            refuse()
+    else:
+        if set(data) != ({"jobId", "content", "usage"} if "usage" in data else {"jobId", "content"}) or not text(data.get("jobId")) or not isinstance(data.get("content"), str):
+            refuse()
+        if "usage" in data:
+            usage = data["usage"]
+            if not isinstance(usage, dict) or not {"inputTokens", "outputTokens"} <= set(usage) or not set(usage) <= {"inputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens"} or not all(counter(value) for value in usage.values()):
+                refuse()
 
 
 def validate_simulation_context_event(event: JsonObject) -> None:

@@ -1,0 +1,386 @@
+{
+  "nativeStream": 74,
+  "scope": "Current canonical identity cleanup extraction regression: company only; participant IO held+unknown-read; separate from Native73 frozen full matrix",
+  "productionInputReference": ".local/world-completion/c22-external-actor-faults/final-input-hashes.json",
+  "productionHashesEqualToFrozenC22": true,
+  "totals": {
+    "cases": 8,
+    "processes": 24,
+    "cold0Model": 16,
+    "pendingCold": 4,
+    "sigkill": 0
+  },
+  "rows": [
+    {
+      "prefix": "src-company-json-participant-io",
+      "terminalOriginal": true,
+      "cold0Model": 2,
+      "pendingColdPreserved": false,
+      "oneCancelledResultAndWake": true,
+      "originalPersonAbandonedAndTerminated": true,
+      "unmaterializedSession": true,
+      "originalStock": 7
+    },
+    {
+      "prefix": "src-company-json-unknown-read",
+      "terminalOriginal": true,
+      "cold0Model": 2,
+      "pendingColdPreserved": true,
+      "oneCancelledResultAndWake": true,
+      "originalPersonAbandonedAndTerminated": true,
+      "unmaterializedSession": true,
+      "originalStock": 7
+    },
+    {
+      "prefix": "src-company-sqlite-participant-io",
+      "terminalOriginal": true,
+      "cold0Model": 2,
+      "pendingColdPreserved": false,
+      "oneCancelledResultAndWake": true,
+      "originalPersonAbandonedAndTerminated": true,
+      "unmaterializedSession": true,
+      "originalStock": 7
+    },
+    {
+      "prefix": "src-company-sqlite-unknown-read",
+      "terminalOriginal": true,
+      "cold0Model": 2,
+      "pendingColdPreserved": true,
+      "oneCancelledResultAndWake": true,
+      "originalPersonAbandonedAndTerminated": true,
+      "unmaterializedSession": true,
+      "originalStock": 7
+    },
+    {
+      "prefix": "lib-company-json-participant-io",
+      "terminalOriginal": true,
+      "cold0Model": 2,
+      "pendingColdPreserved": false,
+      "oneCancelledResultAndWake": true,
+      "originalPersonAbandonedAndTerminated": true,
+      "unmaterializedSession": true,
+      "originalStock": 7
+    },
+    {
+      "prefix": "lib-company-json-unknown-read",
+      "terminalOriginal": true,
+      "cold0Model": 2,
+      "pendingColdPreserved": true,
+      "oneCancelledResultAndWake": true,
+      "originalPersonAbandonedAndTerminated": true,
+      "unmaterializedSession": true,
+      "originalStock": 7
+    },
+    {
+      "prefix": "lib-company-sqlite-participant-io",
+      "terminalOriginal": true,
+      "cold0Model": 2,
+      "pendingColdPreserved": false,
+      "oneCancelledResultAndWake": true,
+      "originalPersonAbandonedAndTerminated": true,
+      "unmaterializedSession": true,
+      "originalStock": 7
+    },
+    {
+      "prefix": "lib-company-sqlite-unknown-read",
+      "terminalOriginal": true,
+      "cold0Model": 2,
+      "pendingColdPreserved": true,
+      "oneCancelledResultAndWake": true,
+      "originalPersonAbandonedAndTerminated": true,
+      "unmaterializedSession": true,
+      "originalStock": 7
+    }
+  ],
+  "artifactHashes": [
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-participant-io-process-1.json",
+      "sha256": "fcb9d5b1de10510778907d5f8e0478ce3664a805604f144a49b26a40f12a34fb"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-participant-io-process-0.json",
+      "sha256": "b63d4b0a6a6700b783e4a7d4a874faaedba7f05e53f8cb15a23818d1f84c8fb5"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-participant-io-held.json",
+      "sha256": "ce984114aa9a953d5409b07cbd023aa4089b957e5b7ce73f61b8e81c6694e8b1"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-participant-io-original.json",
+      "sha256": "5ecd27c3e279a061268a561a37ef63e8ceb83d2d70711407db42935c40c75d4c"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-participant-io-journal.json",
+      "sha256": "b24354ba13e84f7d903c16448e2137a6aaf11f0ad4874e640b2e998947e12686"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-participant-io-model-inputs.json",
+      "sha256": "aa5e5a776443b2ffcc4ef0f268f4a666d965ed7360d10c44973e64b859641ef0"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-participant-io-process-2.json",
+      "sha256": "91ea05bc7d0fa3b4d7c637d7af6b38c5bebf3193869bf90ac516c3d4f8dc8275"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-participant-io-input.json",
+      "sha256": "c8912edcbf3f53ce7f1ed345a4c36c5421cf54b457dc7fd6784fdb80c20df4fd"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-pending.json",
+      "sha256": "c4918fd5cf02041d02b8f7b25d53bae018e14f1f6710ff0d226e96f9e0ef682c"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-process-2.json",
+      "sha256": "7b05032ba51801463d410e86bd01e4456c5c56419221d4d48a7ee8804b4bb54a"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-journal.json",
+      "sha256": "131181ad2f7ccc47ba5490ffcab007e35e5fcbaf82ccc076c16e288ba3a605a0"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-input.json",
+      "sha256": "57988339e3873a7e694e601ab690a0c1445ca7b64c0479f2812e2b551ca545d8"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-model-inputs.json",
+      "sha256": "ee7fb53995ca1d20f2f5acf58398ffd29c203d2a0410574fc54420790390a660"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-original.json",
+      "sha256": "8f33ddb71f0eec3d8e18aaee8f25e1f9157653ca95340ef5779441ef0e819032"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-held.json",
+      "sha256": "f2dc978b1197d060411006a3507d5eb82e3a421db93a78bfe959b9afaa51becd"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-pending-cold.json",
+      "sha256": "57c5fed54b51b07d460a2c346d4408426463ad1f6523190d3fc3c270f3778ef2"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-process-0.json",
+      "sha256": "a649ed700b377b60d6418081c30dbd20f6466a4337081f4dc27baf43bd600405"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-json-unknown-read-process-1.json",
+      "sha256": "f8ea0ad2d6d349689c574ff9958c1ba1f13ad28f45d1df667f8c110661527575"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-participant-io-process-2.json",
+      "sha256": "d719c117e68271a35db658d7cdfa03b14c40f4e3cc9ca3ff63af6937755468d9"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-participant-io-model-inputs.json",
+      "sha256": "814d78064781d059c97f901c5f232146c9341b08c4a483c1547a47168116da63"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-participant-io-process-1.json",
+      "sha256": "b1a753a5aa540f8c7bf4ffe0afa1bc7248fdb8362e4db271f7e49478f40a04c8"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-participant-io-process-0.json",
+      "sha256": "c57787e2be4dcca69ccfca7d4222f03792234e65aca43ca1edd843434b6ecff0"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-participant-io-input.json",
+      "sha256": "c8912edcbf3f53ce7f1ed345a4c36c5421cf54b457dc7fd6784fdb80c20df4fd"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-participant-io-held.json",
+      "sha256": "fc31e4152306ecfe44061cb7ab76faf974c9db0f344765d97508f5e582ab3f56"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-participant-io-original.json",
+      "sha256": "9ecc403b5131981c67c89971099246712bad5587ae1613a991661c7fa77a17ba"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-participant-io-journal.json",
+      "sha256": "f3a51d956523bd3e2e918a7659812671ca88224897cf880151e96fa50a503c0d"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-model-inputs.json",
+      "sha256": "004e838758958e471ee8bbd2aa6cc47b540df4b0388b37b526ee27432225b3e5"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-journal.json",
+      "sha256": "16e5d909e20f70fb4e0e71659345e664c36d0229148b8a78deb5fbf9697eec62"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-held.json",
+      "sha256": "55f19d8602708b04072ac6762a2ecfa568c6c91db58d27808285bbfecfee28c0"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-pending.json",
+      "sha256": "872316935851e774f3b0999cca64aeaa0192f2a61c1c6ac145698a962d14dc6c"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-process-2.json",
+      "sha256": "3281e4213c55d4dfbf8a3976fea65f1c8c8a5a7358245b464fea02e42f2897ee"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-process-1.json",
+      "sha256": "4c2bb47aebd62fd7d56833e5143fdfe8be604c860d3c4689da237ece77f69b61"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-pending-cold.json",
+      "sha256": "32b605ab864940f728cf22f6cec71a4370c714ad34d54f79b1b860db2cbada3f"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-process-0.json",
+      "sha256": "01beed681b0deedaf5636f76ff0d838560b491a08fc122e9e5d1673cce2f5edd"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-input.json",
+      "sha256": "57988339e3873a7e694e601ab690a0c1445ca7b64c0479f2812e2b551ca545d8"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/src-company-sqlite-unknown-read-original.json",
+      "sha256": "242d39893666f14627f452bc803979c39f9c839f9b5f0f4b696ab1bfe20ec918"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-participant-io-journal.json",
+      "sha256": "31c525690ca7fc8f13364c4daa1ecd1a33d8430645c88adbb6b9db026cba508b"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-participant-io-process-0.json",
+      "sha256": "992bd69a288f8085c64cfb673160b43c609e111a239cb8d2fba10121a1d735fe"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-participant-io-model-inputs.json",
+      "sha256": "6e8a6af74f9ce2f45df6069195005cc8422cfa308382dd39387cfbe4db316b90"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-participant-io-process-1.json",
+      "sha256": "24c11b7654c517bd4cbbdee4e2af80e3cce9e48309f58723214d5c7ca80cd37f"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-participant-io-process-2.json",
+      "sha256": "dedf8cd31a52d94b03bb59cd825d367062873a5f29915d325b5967034a8b2783"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-participant-io-original.json",
+      "sha256": "a7db6d3b3a21d9406363d3a175f51486ae0a63f581b00506dc98c52c8b0da1ee"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-participant-io-held.json",
+      "sha256": "ba4be4cac4d775130e5094a2404f9181100a0e356dcf23ac6646d96f25941cc8"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-participant-io-input.json",
+      "sha256": "c8912edcbf3f53ce7f1ed345a4c36c5421cf54b457dc7fd6784fdb80c20df4fd"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-pending.json",
+      "sha256": "f9dc94b20fd77fc665ec5ac88b6c16df1f14e425140eff4f3eda0ce4dc2f90b2"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-held.json",
+      "sha256": "627da72ef97477cf283bbcc6745d251fe1fe44db1aca539baf71e4491b826f1d"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-process-0.json",
+      "sha256": "d7af0b54e374e996848648ffca6d7dbfa8f1bb2b30778c816d455251ef4ecadd"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-original.json",
+      "sha256": "2c8b03d5a3384433f46533e1e30f40730b4818910f5e708a29552e5a344a8c54"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-journal.json",
+      "sha256": "ee0a8b0fc5cdd990933c714e94e140484874b7ecfeb995550ac49b52647fdd32"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-process-1.json",
+      "sha256": "4fe3d230aeae059c29d55eb14edf5c769a25b15ff3555ba511e5bcc61d8f8a12"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-pending-cold.json",
+      "sha256": "7786739def8617a68f4b30a13e7aa06b5dc8d492340ccac291e37c5ae47c88a0"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-process-2.json",
+      "sha256": "9b97c86c391eef6e0247d82a294f9f5195587859c7efb7876adc7fedc19ab21a"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-input.json",
+      "sha256": "57988339e3873a7e694e601ab690a0c1445ca7b64c0479f2812e2b551ca545d8"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-json-unknown-read-model-inputs.json",
+      "sha256": "cda93373e53d396f4cd426b068a2c82c525d739ad5fc482e57a17b9d41012020"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-participant-io-process-0.json",
+      "sha256": "f5da5b8c70f93e0d18c0391afcda802545126c2e2ff93a144eb67b4c7fb3fac0"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-participant-io-process-1.json",
+      "sha256": "d4bc94a3733c2418b0081898e09a5b10642062ce1bbd9abf0acb112f50093b45"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-participant-io-input.json",
+      "sha256": "c8912edcbf3f53ce7f1ed345a4c36c5421cf54b457dc7fd6784fdb80c20df4fd"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-participant-io-original.json",
+      "sha256": "1c6aeb4708a00921fe262a6e11004ddc2580a918828eefe43d7de9ba2ab45cf0"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-participant-io-model-inputs.json",
+      "sha256": "ab444cc1fa661f1fff63145eced43bd6c2bdc71c8bb932d2d4ca915c60a1dbcb"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-participant-io-process-2.json",
+      "sha256": "353af89c7d4b534c941017417c64e0b97541c957e70ad2e935e7767905cf4add"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-participant-io-journal.json",
+      "sha256": "52a92d514f56f5047db2ec4d05faeefdc47c82f745cbb3a806b3ed2b24f599dd"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-participant-io-held.json",
+      "sha256": "b6237e2ee3cea3b94185fcfb195ce793e1226427917815ee885db6038e9ed428"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-process-2.json",
+      "sha256": "7e43cf9895cc91178b582a4481f6bf42172e983b00a1e5e2819979a4f973533f"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-held.json",
+      "sha256": "e271f7d06ee2998971b48b23bce464c559098e4358c354d30b115b0f21de0a0a"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-pending-cold.json",
+      "sha256": "703d70db5bbeefcf4a64230b11371ef2d4c56c49e8b68e314b8ccf955f4dafc2"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-process-0.json",
+      "sha256": "821750b5d399d15f098284750ff4dcd2439df65f51d2c66020b78f7beeb5e39a"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-process-1.json",
+      "sha256": "13c9a223604cf15f536f475edde1c8f843d9dac408ce717748988ec446f8c02b"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-journal.json",
+      "sha256": "b10a7a874cdc3ee91d56e23ba9eb81ca80effc3a39e0c8986b0bc9223b9c24e8"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-original.json",
+      "sha256": "27d2903a1a5b4c1b4fdd5705f53929cca402fe38c0ee2a8210c06007df2817f7"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-model-inputs.json",
+      "sha256": "2aa5f2e9b28eb4e458abe29abc4ed8a2763a63c84f1d68513e942fa47c9a4d35"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-input.json",
+      "sha256": "57988339e3873a7e694e601ab690a0c1445ca7b64c0479f2812e2b551ca545d8"
+    },
+    {
+      "path": ".local/world-completion/c19-external-cleanup-current/lib-company-sqlite-unknown-read-pending.json",
+      "sha256": "74fd13289821670d3c1c006569343639b494bcb2761298d3d1c117cc51ee98cf"
+    }
+  ],
+  "checkedX12": false
+}

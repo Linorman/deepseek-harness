@@ -1,3 +1,8 @@
+/** Safe failure facts share the Native journal parser and exclude private diagnostics. */
+export type SimulationProductFailure = import('@clocky/clocky-simulation/driver-observation').SimulationDriverFailure
+/** Safe history failure; missing histories remain the existing missing observation. */
+export type SimulationProductReadFailure = 'history-limit' | 'unsupported-version' | 'corrupt-history' | 'owner-unavailable' | 'unavailable'
+
 /** Actor-free scheduling controls and safe owner observations, independent of creation receipts. */
 import type { SimTime } from '@clocky/clocky-simulation/time-types'
 import type { SimulationCheckpointId, SimulationEntityId } from '@clocky/clocky-simulation/identities'
@@ -11,6 +16,8 @@ export interface SimulationProductManageInput {
   readonly runId: SimulationProductRunId
   readonly managementId: SimulationProductManagementId
   readonly phase: 'paused' | 'running'
+  /** Explicit original overrun acknowledgement; permitted only with phase paused and complete reported usage. */
+  readonly tokenRecovery?: import('@clocky/clocky-simulation/tokens').SimulationTokenRecovery | undefined
 }
 /** Read one run's current product owner without attaching actors or scheduling work. */
 export interface SimulationProductControlInput { readonly runId: SimulationProductRunId }
@@ -20,7 +27,7 @@ export interface SimulationProductManagementInput extends SimulationProductContr
 }
 /** Stable remedial category; no native storage diagnostic is exposed. */
 export type SimulationProductControlReason = 'ready' | 'recovery-required' | 'checkpoint-in-progress' | 'preparation-in-progress' | 'management-in-progress'
-  | 'stalled' | 'driver-failed' | 'execution-unavailable' | 'review-required' | 'scenario-completed' | 'scenario-blocked' | 'outcome-unknown' | 'retiring'
+  | 'stop-target-pending' | 'stop-target-reached' | 'stalled' | 'driver-failed' | 'execution-unavailable' | 'review-required' | 'scenario-completed' | 'scenario-blocked' | 'outcome-unknown' | 'retiring'
 /** Observed permission/precondition hint; each management write checks again in the owner queue. */
 export interface SimulationProductControlAction {
   readonly allowed: boolean
@@ -52,6 +59,7 @@ export interface SimulationProductAdministrationControl {
   readonly ingress: {
     readonly maxTime: SimTime
     readonly maxBytes: number
+    readonly coverage?: { readonly complete: boolean; readonly returned: number; readonly total: number } | undefined
     readonly targets: readonly { readonly id: SimulationEntityId; readonly name: SimulationProductText }[]
   }
   readonly recovery?: {
@@ -62,7 +70,7 @@ export interface SimulationProductAdministrationControl {
     readonly references: { readonly runs: number; readonly teams: number; readonly channels: number; readonly sessions: number }
   } | undefined
 }
-/** Installed scenario identity comes only from the original trusted template, never a run name. */
+/** Installed scenario identity comes from the original trusted definition or template, never a run name. */
 export type SimulationProductScenarioVersion = { readonly status: 'unavailable' }
   | { readonly status: 'observed'
     readonly templateId: SimulationProductText
@@ -84,6 +92,9 @@ export type SimulationProductOperationalStatus = { readonly status: 'unavailable
   | { readonly status: 'observed'
     readonly observedAt: number
     readonly scenario: SimulationProductScenarioVersion
+    readonly stopTarget?: SimulationProductControl['stopTarget'] | undefined
+    readonly driverSource?: SimulationProductControl['driverSource'] | undefined
+    readonly failure?: SimulationProductFailure | undefined
     readonly owner: SimulationProductControl['owner']
     readonly driver: SimulationProductControl['driver']
     readonly inFlight: boolean
@@ -107,18 +118,43 @@ export interface SimulationProductControl {
   readonly runId: SimulationProductRunId
   readonly administration: SimulationProductAdministrationControl
   readonly budget: SimulationProductControlBudget
+  /** First retained unacknowledged overrun; a quote is not permission to resume or change per-request limits. */
+  readonly tokenRecovery?: {
+    readonly request: import('@clocky/clocky-simulation/tokens').SimulationTokenRecovery
+    readonly allowed: boolean
+    readonly reason: 'ready' | 'pause-required' | 'in-flight' | 'unknown-usage' | 'ownership-unavailable'
+  } | undefined
+  /** Original full-envelope refusal, retained before provider dispatch. */
+  readonly requestBudget?: (import('@clocky/clocky-simulation/tokens').SimulationRequestBudgetBlock & { readonly decisionId: string }) | undefined
   /** Absence denotes an older protocol peer; deployed owners explicitly report observed or unavailable. */
   readonly modelPool?: SimulationProductModelPoolObservation | undefined
   readonly versions?: SimulationProductVersionSummary | undefined
   readonly owner: 'held' | 'not-held'
   readonly phase?: 'paused' | 'running' | 'stalled' | undefined
   readonly revision?: number | undefined
+  readonly failure?: SimulationProductFailure | undefined
+  /** Native facts and the driver observation may come from different revisions. */
+  readonly historyRead?: { readonly status: 'unavailable'
+    readonly reason: SimulationProductReadFailure
+    readonly limit?: SimulationProductReadLimit | undefined } | undefined
+  readonly stopTarget?: import('@clocky/clocky-simulation/run-control-observation').SimulationRunControlObservation | undefined
+  readonly driverSource?: { readonly status: 'live' | 'owner-unavailable'
+    readonly revision?: number | undefined
+    readonly observedAt: number } | undefined
   readonly driver: 'idle' | 'scheduled' | 'advancing' | 'checkpointing' | 'waiting' | 'completed' | 'failed' | 'retiring'
   readonly inFlight: boolean
   readonly observedAt: number
   readonly stop?: 'paused' | 'stalled' | 'until' | 'work-limit' | 'decision-required' | 'retry' | 'outcome-unknown'
+    | 'message-rejected' | 'context-integrity' | 'decision-timeout' | 'token-overrun' | 'request-budget'
     | 'recipient-required' | 'recipient-busy' | 'coordination-limit' | 'resident-capacity' | 'residency-recovery-required'
-    | 'review-required' | 'completed' | 'scenario-blocked' | 'recovery-required' | undefined
+    | 'review-required' | 'completed' | 'scenario-blocked' | 'recovery-required'
+    | 'idle' | 'maintenance-blocked' | 'position-capacity' | 'authority-missing' | 'approval-required' | 'existing-obligations' | 'plan-stale' | 'plan-budget'
+    | 'stale-time' | 'waiting-effective-time' | 'handoff-required'
+    | 'retirement-unknown'
+    | 'resource-capacity' | 'resource-history-limit' | 'resource-reservation-expired'
+    | 'entity-capacity' | 'identity-capacity' | 'channel-capacity' | 'world-byte-limit' | 'world-request-limit' | 'world-command-limit'
+    | 'world-birth-limit' | 'world-expansion-limit' | 'world-mutation-limit'
+    | 'budget-limit' | 'context-limit' | 'microstep-limit' | 'model-pool-capacity' | 'activation-history-limit' | 'message-byte-limit' | undefined
   readonly nextAttemptAt?: number | undefined
   readonly actions: { readonly start: SimulationProductControlAction; readonly pause: SimulationProductControlAction }
 }
@@ -142,3 +178,23 @@ export type SimulationProductManagementResult = {
   readonly runId: SimulationProductRunId
   readonly managementId: SimulationProductManagementId
 } & ({ readonly status: 'not-found' } | { readonly status: 'found'; readonly operation: SimulationProductManagementReceipt })
+
+/** Authenticated caller-selected command identity; Host derives run ownership and current revision. */
+export interface SimulationProductRunControlInput {
+  readonly runId: SimulationProductRunId
+  readonly commandId: string
+  readonly target: import('@clocky/clocky-simulation/run-control').SimulationStopTarget | null
+}
+/** Original durable receipt remains separate from the current stop state after later updates. */
+export interface SimulationProductRunControlResult {
+  readonly runId: SimulationProductRunId
+  readonly receipt: import('@clocky/clocky-simulation/run-control').SimulationRunControlReceipt
+  readonly control: SimulationProductControl
+}
+
+/** Numeric refusal measurements are safe independently of physical storage diagnostics. */
+export interface SimulationProductReadLimit {
+  readonly dimension: 'entries' | 'bytes' | 'entry-bytes'
+  readonly actual: number
+  readonly limit: number
+}

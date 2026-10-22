@@ -1,3 +1,4 @@
+import { productAuthCookieName } from '@clocky/clocky-client-connection/src/product-auth-contract.ts'
 // Shared scaffold for the keyless browser e2e lane (Agent Note:
 // .agents/notes/implemented/testing/2026-07-24-web-gui-browser-e2e-lane.md).
 // Boots the REAL web composition — the clocky-base and clocky-web-app bundle
@@ -188,7 +189,10 @@ export interface LaunchOptions {
   /** Explicit custom-composition takeover: disable the published group before mounting a separate Simulation overlay. */
   disableDefaultSimulation?: boolean
   /** Parent-owned persistent roots for a separately launched Host restart scenario; close never deletes them. */
-  retainedWorld?: { workspaceCwd: string; persistenceRoot: string }
+  retainedWorld?: { workspaceCwd: string
+    persistenceRoot: string
+    /** Explicit encoding of retained Session artifacts; omission uses the deployment default. */
+    compression?: 'none' | 'zstd' }
   /** Explicit port retained across independent Host processes; omission requests an OS-assigned port. */
   port?: number
   /** Project-owned temp parent when a scenario must retain evidence inside the checkout. */
@@ -435,7 +439,8 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
         includeUserRoot: false,
       },
     },
-    { id: 'session-persistence-jsonl', config: { root: persistenceRoot } },
+    { id: 'session-persistence-jsonl', config: { root: persistenceRoot,
+      ...options.retainedWorld?.compression === undefined ? {} : { compression: options.retainedWorld.compression } } },
     // Shared preferences do not make two execution Hosts one bootstrap-credential owner.
     { id: 'product-principal-local', config: { path: join(workspaceCwd, '.clocky-auth', 'product-principal.json') } },
     // Content search is enabled here although the shipped bundles default it
@@ -658,6 +663,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     if (process.cwd() !== originalCwd) process.chdir(originalCwd)
   }
 
+  const cookieName = productAuthCookieName(port)
   const ensureBrowserAuthToken = async (): Promise<string> => {
     if (browserAuthToken !== undefined) return browserAuthToken
     browserAuthBootstrap ??= (async () => {
@@ -676,7 +682,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       if (cookie === undefined) throw new Error('web e2e scaffold: product authentication bootstrap returned no cookie')
       const separator = cookie.indexOf('=')
       const token = separator < 1 ? '' : cookie.slice(separator + 1)
-      if (cookie.slice(0, separator) !== 'clocky_product_auth' || token.length === 0) {
+      if (cookie.slice(0, separator) !== cookieName || token.length === 0) {
         throw new Error('web e2e scaffold: product authentication bootstrap returned an invalid cookie')
       }
       browserAuthToken = token
@@ -696,7 +702,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     async authenticateBrowserPage(page: Page): Promise<void> {
       const token = await ensureBrowserAuthToken()
       await page.context().addCookies([{
-        name: 'clocky_product_auth',
+        name: cookieName,
         value: token,
         url: `http://${browserHost}:${String(port)}/api`,
       }])
@@ -712,25 +718,25 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       if (local === undefined) throw new Error('web e2e scaffold: local provider is unavailable')
       await local.rotateBootstrapCredential()
       const response = await fetch(`http://127.0.0.1:${String(port)}/api/bootstrap`, {
-        method: 'POST', headers: { 'content-type': 'application/json', cookie: `clocky_product_auth=${token}` },
+        method: 'POST', headers: { 'content-type': 'application/json', cookie: `${cookieName}=${token}` },
         body: JSON.stringify({ credential: principals.bootstrapCredential('local') }),
       })
       if (response.status !== 204) throw new Error('web e2e scaffold: authentication replacement failed')
       const cookie = response.headers.get('set-cookie')?.split(';', 1)[0]
-      if (cookie === undefined || !cookie.startsWith('clocky_product_auth=')) {
+      if (cookie === undefined || !cookie.startsWith(`${cookieName}=`)) {
         throw new Error('web e2e scaffold: replacement cookie is unavailable')
       }
-      browserAuthToken = cookie.slice('clocky_product_auth='.length)
+      browserAuthToken = cookie.slice(`${cookieName}=`.length)
     },
     async authenticatedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
       const token = await ensureBrowserAuthToken()
       const headers = new Headers(init?.headers)
-      headers.set('cookie', `clocky_product_auth=${token}`)
+      headers.set('cookie', `${cookieName}=${token}`)
       return await fetch(input, { ...init, headers })
     },
     async authenticatedRpc<T>(method: string, payload: unknown): Promise<{ readonly result: RpcResult<T> }> {
       const token = await ensureBrowserAuthToken()
-      const headers = new Headers({ 'content-type': 'application/json', cookie: `clocky_product_auth=${token}` })
+      const headers = new Headers({ 'content-type': 'application/json', cookie: `${cookieName}=${token}` })
       const response = await fetch(`${resolvedBaseUrl}/api/${method}`, {
         method: 'POST',
         headers,

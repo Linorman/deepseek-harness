@@ -104,7 +104,7 @@ Optional `isConcurrencySafe(args)` receives typed, softly validated arguments. E
 
 ### Enforced raw JSON Schema subset
 
-`JsonSchemaNode` is the raw counterpart shared by tool outputs, Code Mode generation, subagents, and workflows. It permits any JSON root, an annotation-only unconstrained JSON node, and exact-one `oneOf`; annotations must remain lossless JSON. `assertSupportedJsonSchema()` rejects unsupported constructs, while `validateJsonSchemaValue()` returns path-qualified violations. Subagents and workflows retain their caller-defined object-root requirement through `assertObjectJsonSchema()` and `ObjectJsonSchema`, not through a limitation in the shared vocabulary.
+`JsonSchemaNode` is the raw counterpart shared by tool outputs, Code Mode generation, subagents, and workflows. It permits any JSON root, an annotation-only unconstrained JSON node, and exact-one `oneOf`; annotations must remain lossless JSON. `assertSupportedJsonSchema()` rejects unsupported constructs, while `validateJsonSchemaValue()` returns path-qualified violations. When an object union has a shared required, uniquely valued `const` tag, a zero-match error also includes the selected branch’s field errors. Every branch is still validated; ambiguous or missing tags keep the generic union diagnostic. Subagents and workflows retain their caller-defined object-root requirement through `assertObjectJsonSchema()` and `ObjectJsonSchema`, not through a limitation in the shared vocabulary.
 
 ### Tool-owned UI presentation
 

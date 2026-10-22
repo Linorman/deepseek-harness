@@ -10,7 +10,7 @@ import { StorageError } from './error.ts'
 import { BackendRegistry } from './registry.ts'
 
 export { BackendRegistry } from './registry.ts'
-export { StorageError } from './error.ts'
+export { StorageError, StorageReadLimitError } from './error.ts'
 export type { StorageErrorCode } from './error.ts'
 export { UNIT_NAME_RE } from './backend.ts'
 export type { StorageBackend, KvFacet, KvUnit, KvUnitDescriptor } from './backend.ts'
@@ -24,7 +24,7 @@ export type {
 export { parseLogSummary } from './summary.ts'
 export { assertLogCompactionBounds, assertLogCompactionRequest } from './compaction.ts'
 export { assertLogReadRequest, boundedLogReadSnapshot } from './readonly-log.ts'
-export type { LogReadLimits, LogReadSnapshot } from './readonly-log.ts'
+export type { LogReadLimits, LogReadSnapshot, LogReadPage, LogReadPageLimits } from './readonly-log.ts'
 
 /**
  * Derive the Cordis lifecycle service that one named backend plugin provides.
@@ -112,3 +112,9 @@ export class Storage extends Service {
 // plugin-shaped (packages/AGENTS.md): mixing a default export with a
 // function-plugin `apply` makes the Loader drop the plugin namespace.
 export default Storage
+export { captureLogArchive } from './archive.ts'
+export type { LogArchive, LogArchiveLimits } from './archive.ts'
+export { archiveLogFacet } from './archive.ts'
+export { acquireLocalFileOwner } from './owner.ts'
+
+export type { RawLogArchive } from './raw-log-types.ts'

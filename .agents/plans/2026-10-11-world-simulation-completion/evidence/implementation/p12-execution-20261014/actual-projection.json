@@ -1,0 +1,218 @@
+[
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-association-IyeQey/case-duties-0.json",
+    "sha256": "8f4eac6ad3f521f9da5720ad5de34a60e2128adb3ee5d53935fbd4939976da51",
+    "pid": 66866,
+    "round": 0,
+    "cases": 6,
+    "observations": 6,
+    "modelCalls": 99
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-association-IyeQey/case-duties-1.json",
+    "sha256": "32e33c3a13da149dafbd1d24fee576d38a8cbaab6839f608a6657ec02d8cfb27",
+    "pid": 68873,
+    "round": 1,
+    "cases": 6,
+    "observations": 6,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-association-IyeQey/case-duties-2.json",
+    "sha256": "3bab4b97fdc325e32849de94920af18e0df32a51d7ba8e5cde349d7ed1f41ed4",
+    "pid": 68999,
+    "round": 2,
+    "cases": 6,
+    "observations": 6,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-company-025ZFP/case-duties-0.json",
+    "sha256": "96254b10ec83338935814055f8bd6d524de674a1a667b85da8eafded411f0ae0",
+    "pid": 61566,
+    "round": 0,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 189
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-company-025ZFP/case-duties-1.json",
+    "sha256": "b5b01547a7395fcdd92e4df1637a2e6a209f610accc565deaa469b79705b5a7f",
+    "pid": 63855,
+    "round": 1,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-company-025ZFP/case-duties-2.json",
+    "sha256": "46f3f1a61307af4b34822cf880ab291a659a3aed3637bb39b5faf5360e14194f",
+    "pid": 64043,
+    "round": 2,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-laboratory-zh60BK/case-duties-0.json",
+    "sha256": "149e36a141b4758516316519ec2fa1546fb33d275eb079b50f19623510b7e9f4",
+    "pid": 64365,
+    "round": 0,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 189
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-laboratory-zh60BK/case-duties-1.json",
+    "sha256": "9d077058bf7971f71918d8d4a3afb21702f51220cd6c872d9cc0fb19227edb36",
+    "pid": 66406,
+    "round": 1,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-json-laboratory-zh60BK/case-duties-2.json",
+    "sha256": "def3c6ca18735bcf1dff11c6944b799807990a2b25cae80d7874c6463c87adf8",
+    "pid": 66507,
+    "round": 2,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-association-YD91a2/case-duties-0.json",
+    "sha256": "70e0cb888a1cc0254573fc97d0d12db63152b82d01c2c0c86d974c5ba35f2607",
+    "pid": 71961,
+    "round": 0,
+    "cases": 6,
+    "observations": 6,
+    "modelCalls": 99
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-association-YD91a2/case-duties-1.json",
+    "sha256": "edc1467f0e0f9a84c883666ca5fa0a6f7f781835bb34c62df90cb64379f4d85e",
+    "pid": 72342,
+    "round": 1,
+    "cases": 6,
+    "observations": 6,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-association-YD91a2/case-duties-2.json",
+    "sha256": "7cee9d6b171787f1e820c88c131268bb8fd2ada8ea348e9987e0479df26680ac",
+    "pid": 72353,
+    "round": 2,
+    "cases": 6,
+    "observations": 6,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-company-fx07SF/case-duties-0.json",
+    "sha256": "d5ff52059eb1f906ea1c532ac888236580ea84c89f1102d55c556c3277ab3007",
+    "pid": 69028,
+    "round": 0,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 189
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-company-fx07SF/case-duties-1.json",
+    "sha256": "2ae3cea122d4bed2d617a43419478845519926114685eb2a25dda35d6c73b257",
+    "pid": 69626,
+    "round": 1,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-company-fx07SF/case-duties-2.json",
+    "sha256": "4b631a3302ea2a9a0eec0805abc62411a84c9616e7482e221ea3f17e3c891815",
+    "pid": 69649,
+    "round": 2,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-laboratory-CEleIg/case-duties-0.json",
+    "sha256": "b024e1862ae29c380d85fcd46a232d4ecea2fcf724fc60fecb4556042849446e",
+    "pid": 70019,
+    "round": 0,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 189
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-laboratory-CEleIg/case-duties-1.json",
+    "sha256": "887ed9f3c9441855e369374dfa434e3c6627c373c9e2fb45399efd8373c7c8db",
+    "pid": 71542,
+    "round": 1,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-source/src-sqlite-laboratory-CEleIg/case-duties-2.json",
+    "sha256": "0ec7341ea0ae1de960b3ec52c3c8945bee8767107d31ee64aacd19ea3cc937b0",
+    "pid": 71937,
+    "round": 2,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-lib/lib-json-company-fzY4Ax/case-duties-0.json",
+    "sha256": "711a854eed4c15f4b2803a7c7b6df177bcfc5912c5e73fd884362c030c095d64",
+    "pid": 74234,
+    "round": 0,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 189
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-lib/lib-json-company-fzY4Ax/case-duties-1.json",
+    "sha256": "1a25083aa697c86bb61502b90cc9a0f35817dad5ec0e5f99ceb4fce30ff59038",
+    "pid": 74945,
+    "round": 1,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-lib/lib-json-company-fzY4Ax/case-duties-2.json",
+    "sha256": "cb6c1148cd5bfad730d67a90ee642d2ca3afe56caa17473e0c9d4de79d471a46",
+    "pid": 74968,
+    "round": 2,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-lib/lib-sqlite-company-rJat4c/case-duties-0.json",
+    "sha256": "d835832717d0e07edce4a244b7ead46e552cc966fae8bac7687b6c45db684b46",
+    "pid": 75078,
+    "round": 0,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 189
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-lib/lib-sqlite-company-rJat4c/case-duties-1.json",
+    "sha256": "d859b8c4080a4fb570bc51deb76b822910fffbdf220f2bbc5a695aaf6a0717ba",
+    "pid": 76133,
+    "round": 1,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  },
+  {
+    "path": ".local/world-completion/p12-execution/loader-lib/lib-sqlite-company-rJat4c/case-duties-2.json",
+    "sha256": "3ac3728681b657e36d339952ba9557654a38216235e74bda3858931b3e92774a",
+    "pid": 76186,
+    "round": 2,
+    "cases": 11,
+    "observations": 11,
+    "modelCalls": 0
+  }
+]

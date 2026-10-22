@@ -95,6 +95,38 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'externalEffectSandbox',
+    pkg: 'simulation-product',
+    title: 'Explicit local effect test environment',
+    mode: 'core',
+    consumers: [],
+    note: 'Opt-in Host service retains independent user grants and queries uncertain local test-ledger receipts; it has no production adapter.',
+  },
+  {
+    key: 'federationMailbox',
+    pkg: 'simulation-product',
+    title: 'Durable cross-run message bridge',
+    mode: 'core',
+    consumers: ['simulation-product'],
+    note: 'Explicit peer generations own inbox/outbox receipts, conservative Native time fences, and protected checkpoint cuts.',
+  },
+  {
+    key: 'federationOwnership',
+    pkg: 'simulation-product',
+    title: 'Single federated resource coordinator',
+    mode: 'core',
+    consumers: ['simulation-product'],
+    note: 'One durable coordinator fences resource ownership generations and retains reservations through explicit target confirmation and settlement.',
+  },
+  {
+    key: 'simulationWorldExecutions',
+    pkg: 'simulation-world',
+    title: 'World execution factory admission',
+    mode: 'core',
+    consumers: ['simulation-team', 'simulation-product'],
+    note: 'Installs exact-generation factories, validates original restore contracts, and binds complete run-owned handler sets without IO.',
+  },
+  {
     key: 'simulationAdministration',
     pkg: 'simulation-product',
     title: 'Persistent company creation owner',

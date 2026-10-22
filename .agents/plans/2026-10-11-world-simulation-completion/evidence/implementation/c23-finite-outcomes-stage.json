@@ -1,0 +1,79 @@
+{
+  "format": "clocky-world-c23-finite-outcomes-stage/1",
+  "nativeStream": 75,
+  "cases": 72,
+  "processes": 144,
+  "independentColdProcesses": 72,
+  "coldModelCalls": 0,
+  "sourceSceneBackendCases": 36,
+  "builtRuntimeSceneBackendCases": 36,
+  "inventoriedFiles": 1641,
+  "sourceFiles": 776,
+  "compiledJS": 865,
+  "inventoryScope": "Conservative C21 runtime package groups plus util/diagnostics, package manifests and explicit fixture/scenario/preset inputs; not exhaustive import trace",
+  "sameFrozenInputsBothModes": true,
+  "actualFamilies": [
+    "environmental-fact",
+    "unverified-report",
+    "failure",
+    "delayed-event"
+  ],
+  "blockAndRejectionCases": [
+    "fact-conflict",
+    "stock-conflict",
+    "money-private",
+    "bootstrap-private",
+    "delayed-blocked"
+  ],
+  "deploymentPlanBytes": 16384,
+  "frozenBeforeCreate": true,
+  "missingScope": [
+    "representative-preparation-plan actual canonical actor flow",
+    "nonempty real commitment-as-of",
+    "new mediated fault and SIGKILL matrix",
+    "full scenario-v1/SDK/UI/real-model acceptance"
+  ],
+  "acceptedChecklistItems": [],
+  "artifacts": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-source-matrix.json",
+      "sha256": "3f51ff69825b3ec6a86ecf8a4d877d043e848593b99a3c5b731cf59b79921006"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-source-root-verification.json",
+      "sha256": "217f7187103762ff4140266dcf22f469c142d92666de5f018538a6e9bea8748a"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-source-input-manifest.json",
+      "sha256": "bdae2963c41030aee937ed444c878d08d127f024e20cc2c37725a593377e9625"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-lib-matrix.json",
+      "sha256": "9a5f92c8d86b04d5b15194c70f57ac0b5645067347ea69ae33ae18089e9aa939"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-lib-root-verification.json",
+      "sha256": "8d7f638a3b9e219177ba6780e8947409e712e7ad2e82dd9e1b31a0c833ec8b20"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-lib-input-manifest.json",
+      "sha256": "bdae2963c41030aee937ed444c878d08d127f024e20cc2c37725a593377e9625"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-host-build.log",
+      "sha256": "781486195c542d7a9c542171ec8d849cdede37375d442f902c81f0f477decd92"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-doc-sync.log",
+      "sha256": "1fda224f3e733d33e7b0c5c16e0d67c9518bfbe4fd3ba138db932734637e2db8"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-root-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c23-finite-outcomes-root-tests.log",
+      "sha256": "cbd30b96bfb8d9d105b73ddefcdc8248e9a7efb42721ac58843e8ec82edc1c94"
+    }
+  ]
+}

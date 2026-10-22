@@ -1,5 +1,5 @@
 /** Cross-owner IO failures retain a canonical subject while provider text remains private. */
-import { SimulationCheckpointError, SimulationCheckpointCleanupError } from '@clocky/clocky-simulation'
+import { SimulationCheckpointError, SimulationCheckpointCleanupError, SimulationRevisionConflictError } from '@clocky/clocky-simulation'
 import type { SimulationCheckpointDiagnostic, SimulationCheckpointSubject } from '@clocky/clocky-simulation'
 import { TeamError } from '@clocky/clocky-team'
 import { SessionPersistenceReferenceChanged } from '@clocky/clocky-session-persistence'
@@ -16,7 +16,8 @@ export async function checkpointSource<T>(stage: SimulationCheckpointDiagnostic[
   try { return await operation() }
   catch (cause: unknown) {
     if (cause instanceof SimulationCheckpointError || cause instanceof SimulationCheckpointCleanupError) throw cause
-    const moved = cause instanceof SessionPersistenceReferenceChanged || cause instanceof TeamError
+    const moved = cause instanceof SimulationRevisionConflictError || cause instanceof SessionPersistenceReferenceChanged
+      || cause instanceof TeamError
       && (cause.code === 'TEAM_CURSOR_CONFLICT' || cause.code === 'TEAM_CHANNEL_CURSOR_CONFLICT')
     throw new SimulationCheckpointError(cause instanceof Error ? cause.message : String(cause),
       { stage, subject, code: moved ? 'source-moved' : 'source-unavailable' }, { cause })

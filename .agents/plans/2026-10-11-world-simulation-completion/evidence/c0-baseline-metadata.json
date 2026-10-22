@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-11",
+  "versions": {
+    "nativeStream": 60,
+    "scenario": "clocky.world/v0",
+    "driverCheckpointImplementation": "world/1"
+  },
+  "baselineInputHash": "0be2b7b05f5397d5ca4030333c28f4877abd0947d4dfc089b59322663b63808b",
+  "sourceHtmlSha256": "e63bcbf66050e4c3e9761f2aa65dacbbf17179d286603678406aa692796fbe25",
+  "versionSources": {
+    "packages/simulation/simulation-local/src/journal.ts": "5a990d88735a43e54b0b9387cc6c1e18a8da1ac9cc55b722dfb931c73e26b4d3",
+    "packages/simulation/simulation-scenario/src/schema.ts": "fc4855cff25f2d2d4d79be9b3ad4fd4c0c65764b74dc74a87f73f12c38a07643",
+    "packages/simulation/simulation-world/src/driver.ts": "89677c9a62f5de26ff6a1a8070ae237a7679b73b381147e88569f033a9e6db66"
+  },
+  "oldChecklistTotal": 75,
+  "oldChecklistChecked": 73,
+  "assessmentSha256": "1dee788de25dacb469ae7e3980289f9e1a6c2b6435cde6dbb8e3517409eba918",
+  "routeCheck": {
+    "rootEnvPresent": false,
+    "presentEnvNames": {
+      "CLOCKY_LOCAL_MODEL_BASE_URL": false,
+      "CLOCKY_LOCAL_MODEL_ID": false,
+      "CLOCKY_LOCAL_MODEL_API_KEY": false,
+      "SIMULATION_MODEL_API_KEY": false,
+      "DEEPSEEK_API_KEY": false,
+      "OPENAI_API_KEY": false,
+      "ANTHROPIC_API_KEY": false
+    },
+    "networkOrModelRequests": 0,
+    "installedWorldTestModel": "company/scripted version 1, keyless; not real-model evidence",
+    "worldBoundedEvalEntryAvailable": false,
+    "runTokenDecisionCostBudgetFixed": false,
+    "missing": [
+      "authorized real provider/model version route",
+      "explicit per-run token/decision/world-mutation/monetary ceiling",
+      "bounded World evaluation entry; existing live-model benchmark has one observer and no cost limit"
+    ]
+  },
+  "scope": "Existing recruitment scope remains 75 items, 73 checked. Assessment distinguishes original three-domain full MVP from the recruitment subset. No old item/body/history modified.",
+  "packageVersions": {
+    "simulation-local": "0.1.1-rc.2",
+    "simulation-scenario": "0.1.1-rc.2",
+    "simulation-world": "0.1.1-rc.2"
+  }
+}

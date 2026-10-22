@@ -1,0 +1,9 @@
+{
+  "facts": [
+    { "factId": "background", "version": "1", "schemaRef": "clocky.world-fact/text/1", "subject": "organization", "scope": "organization", "payload": { "body": "original-authoritative" }, "effectiveFrom": "0", "effectiveUntil": null, "availableAt": "0", "audience": { "kind": "public" }, "supersedes": null, "sources": [] },
+    { "factId": "announced", "version": "1", "schemaRef": "clocky.world-fact/text/1", "subject": "organization", "scope": "organization", "payload": { "body": "announced-next" }, "effectiveFrom": "5", "effectiveUntil": "10", "availableAt": "0", "audience": { "kind": "public" }, "supersedes": null, "sources": [] },
+    { "factId": "unannounced", "version": "1", "schemaRef": "clocky.world-fact/text/1", "subject": "organization", "scope": "organization", "payload": { "body": "unannounced-sentinel" }, "effectiveFrom": "0", "effectiveUntil": null, "availableAt": "5", "audience": { "kind": "public" }, "supersedes": null, "sources": [] },
+    { "factId": "private", "version": "1", "schemaRef": "clocky.world-fact/text/1", "subject": "organization", "scope": "organization", "payload": { "body": "requester-only-sentinel" }, "effectiveFrom": "0", "effectiveUntil": null, "availableAt": "0", "audience": { "kind": "actors", "entityIds": ["requester"] }, "supersedes": null, "sources": [] },
+    { "factId": "members", "version": "1", "schemaRef": "clocky.world-fact/text/1", "subject": "organization", "scope": "organization", "payload": { "body": "membership-sentinel" }, "effectiveFrom": "0", "effectiveUntil": null, "availableAt": "0", "audience": { "kind": "scope-members" }, "supersedes": null, "sources": [] }
+  ]
+}

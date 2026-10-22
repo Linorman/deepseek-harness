@@ -1,0 +1,409 @@
+{
+  "apiVersion": "clocky.world/v1",
+  "metadata": {
+    "id": "company",
+    "name": "Northstar Studio",
+    "description": "One organization with a bounded request for one new colleague."
+  },
+  "runtimeProfiles": {
+    "allowed": [
+      {
+        "id": "world-agent",
+        "version": "1"
+      }
+    ],
+    "generated": {
+      "id": "world-agent",
+      "version": "1"
+    },
+    "templates": [
+      {
+        "id": "company-person",
+        "version": "1"
+      }
+    ]
+  },
+  "domains": [
+    {
+      "domain": "organization",
+      "operation": "generate-and-hire",
+      "version": "1"
+    },
+    {
+      "domain": "governance",
+      "operation": "propose-norm",
+      "version": "1"
+    },
+    {
+      "domain": "governance",
+      "operation": "vote",
+      "version": "1"
+    },
+    {
+      "domain": "external",
+      "operation": "interact",
+      "version": "3"
+    }
+  ],
+  "entities": [
+    {
+      "id": "studio",
+      "name": "Northstar Studio",
+      "description": "Members collaborate through private channels.",
+      "kind": "organization",
+      "cognition": "none"
+    },
+    {
+      "id": "managed-unit",
+      "name": "Managed unit",
+      "description": "A real declared child unit.",
+      "kind": "organization",
+      "cognition": "none"
+    },
+    {
+      "id": "outside-vendor",
+      "name": "Vendor",
+      "description": "An unexpanded outside party.",
+      "kind": "organization",
+      "cognition": "none"
+    },
+    {
+      "id": "director",
+      "name": "Director",
+      "description": "A colleague at Northstar Studio.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "director",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Director",
+        "skills": [
+          "engineering"
+        ],
+        "traits": [
+          "patient"
+        ],
+        "goals": [
+          "build"
+        ]
+      }
+    },
+    {
+      "id": "requester",
+      "name": "Recruiter",
+      "description": "A colleague at Northstar Studio.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "member",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Recruiter",
+        "skills": [
+          "engineering"
+        ],
+        "traits": [
+          "patient"
+        ],
+        "goals": [
+          "build"
+        ]
+      }
+    },
+    {
+      "id": "observer",
+      "name": "Observer",
+      "description": "A colleague at Northstar Studio.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "member",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Observer",
+        "skills": [
+          "engineering"
+        ],
+        "traits": [
+          "patient"
+        ],
+        "goals": [
+          "build"
+        ]
+      }
+    }
+  ],
+  "organization": {
+    "rootId": "studio",
+    "units": [
+      {
+        "id": "managed-unit",
+        "parentId": "studio"
+      }
+    ],
+    "positions": [
+      {
+        "id": "engineering",
+        "name": "Engineer",
+        "description": "Engineer",
+        "unitId": "managed-unit",
+        "capacity": 2,
+        "permissions": []
+      }
+    ],
+    "assignments": [
+      {
+        "id": "initial-assignment",
+        "personId": "requester",
+        "positionId": "engineering",
+        "validFrom": "0",
+        "validUntil": null
+      }
+    ],
+    "grants": [
+      {
+        "id": "hiring-authority",
+        "personId": "requester",
+        "domain": "organization",
+        "operation": "generate-and-hire",
+        "version": "1",
+        "scopeId": "studio",
+        "targetId": "engineering",
+        "relation": "can-hire",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "permission-propose-norm",
+        "personId": "requester",
+        "domain": "governance",
+        "operation": "propose-norm",
+        "version": "1",
+        "scopeId": "studio",
+        "targetId": "original-committee",
+        "relation": "can-propose-norm",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "permission-vote",
+        "personId": "requester",
+        "domain": "governance",
+        "operation": "vote",
+        "version": "1",
+        "scopeId": "studio",
+        "targetId": "original-committee",
+        "relation": "can-vote",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "permission-interact",
+        "personId": "requester",
+        "domain": "external",
+        "operation": "interact",
+        "version": "3",
+        "scopeId": "studio",
+        "targetId": "outside-vendor",
+        "relation": "can-interact",
+        "validFrom": "0",
+        "validUntil": null
+      }
+    ]
+  },
+  "governance": {
+    "committees": [
+      {
+        "id": "original-committee",
+        "name": "Committee",
+        "description": "The exact original electorate.",
+        "scopeId": "studio",
+        "members": [
+          {
+            "id": "original-membership",
+            "personId": "requester",
+            "validFrom": "0",
+            "validUntil": null
+          }
+        ],
+        "rule": {
+          "kind": "unanimity"
+        },
+        "quorum": 1
+      }
+    ],
+    "norms": [
+      {
+        "id": "initial-hiring-policy",
+        "scopeId": "studio",
+        "body": "An authored institution without a fabricated vote or resolution.",
+        "effectiveFrom": "0",
+        "effectiveUntil": "10",
+        "availableAt": "0",
+        "audience": {
+          "kind": "public"
+        },
+        "enforcement": {
+          "kind": "validated",
+          "policyRef": "clocky.organization.hiring-approval/1",
+          "params": {
+            "committeeId": "original-committee",
+            "positionIds": [
+              "engineering"
+            ],
+            "maxHires": 1
+          }
+        }
+      }
+    ]
+  },
+  "facts": [
+    {
+      "id": "original-private-fact",
+      "subjectId": "studio",
+      "scopeId": "studio",
+      "body": "PRIVATE-C30-DIRECTOR-FACT-CANARY",
+      "effectiveFrom": "0",
+      "effectiveUntil": null,
+      "availableAt": "0",
+      "audience": {
+        "kind": "actors",
+        "entityIds": [
+          "director"
+        ]
+      }
+    }
+  ],
+  "knowledge": [
+    {
+      "id": "original-belief",
+      "ownerId": "requester",
+      "body": "PRIVATE-C30-BELIEF-CANARY",
+      "observedAt": "0",
+      "availableAt": "0",
+      "validFrom": "0",
+      "validUntil": null,
+      "readers": []
+    }
+  ],
+  "resources": [
+    {
+      "id": "supplier-stock",
+      "owner": "outside-vendor",
+      "kind": "inventory",
+      "unit": "widget",
+      "quantity": "7",
+      "controllers": []
+    }
+  ],
+  "communication": {
+    "channels": [
+      {
+        "key": "original-workroom",
+        "members": [
+          {
+            "personId": "director",
+            "role": "director"
+          },
+          {
+            "personId": "requester",
+            "role": "member"
+          },
+          {
+            "personId": "observer",
+            "role": "member"
+          }
+        ]
+      }
+    ]
+  },
+  "externalWorld": {
+    "mode": "simulated-only",
+    "identities": [
+      {
+        "scopeId": "studio",
+        "externalKey": "vendor",
+        "subjectId": "outside-vendor",
+        "representation": "director-mediated"
+      }
+    ],
+    "adjudicationPolicy": {
+      "ref": "clocky.external.adjudication/1",
+      "version": "1",
+      "generation": 1,
+      "conditionInstalls": [],
+      "futureConditionInstalls": [],
+      "allowedOutcomeKinds": [
+        "failure"
+      ],
+      "maxDelay": "10",
+      "allowPublicDisclosure": false,
+      "allowScopeDisclosure": false,
+      "actorDisclosure": []
+    }
+  },
+  "behavior": {
+    "initialGoals": [
+      {
+        "id": "ordinary-stock-goal",
+        "kind": "goal",
+        "at": "1",
+        "target": {
+          "kind": "person",
+          "personId": "requester"
+        },
+        "body": "stock"
+      }
+    ],
+    "calendars": [
+      {
+        "id": "finite-stock-calendar",
+        "target": {
+          "kind": "position",
+          "positionId": "engineering"
+        },
+        "body": "stock",
+        "startsAt": "3",
+        "endsAt": "7",
+        "period": "2",
+        "maxOccurrences": 3
+      }
+    ],
+    "directorEvents": [
+      {
+        "id": "finite-director-request",
+        "calendarId": "finite-stock-calendar",
+        "maxRequests": 1,
+        "domain": "external",
+        "operation": "interact",
+        "version": "3",
+        "scopeId": "studio",
+        "targetId": "outside-vendor"
+      }
+    ]
+  },
+  "limits": {
+    "native": {},
+    "team": {},
+    "world": {}
+  }
+}

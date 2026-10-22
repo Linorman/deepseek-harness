@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-13 Asia/Tokyo",
+  "sha256": "28f7178742ffc48549154b8f3fb5f51ec554dc3b04ef09187521a32c4ef91b15",
+  "files": [
+    {
+      "path": ".local/world-completion/c29-public-v1/wheels/clocky_sdk-0.0.0.dev0-py3-none-any.whl",
+      "sha256": "909a90d121f98f821be445e0fd9ba595b20b389afc354558ea4d192c62049c89",
+      "bytes": 68254
+    },
+    {
+      "path": "packages/sdk/protocol/tests/fixtures/world-v1-definition.json",
+      "sha256": "8128e1836c3b8c6ea1c33e03600f9a344855ea6993f99f2abd5cf55a015313a1",
+      "bytes": 8767
+    },
+    {
+      "path": "packages/sdk/protocol/tests/fixtures/world-v1-preview.json",
+      "sha256": "405e5cca0e56c4df29e5edf6c2471086d4698d3911068b4e6e00a900813347b7",
+      "bytes": 7509
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/administration.ts",
+      "sha256": "f54ab7a9c5fee4ea97afa35ba7e714c09e76758e9483ee0d65f55476cecbc34b",
+      "bytes": 109258
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-creation.ts",
+      "sha256": "89acd5365f4363b1c18311098e908da4a01dbd70e926f5f3bc13854d9eb940a6",
+      "bytes": 17075
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-preflight.ts",
+      "sha256": "74be7a9fe871a6611303e75b46e765b02cb8118927caafc07a22b5c70cee3e91",
+      "bytes": 6542
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-preview.ts",
+      "sha256": "a39dc3b5327bd63425b95d9572ad2df4ccb1c7a8b8beafda3f900cc2ef099cbb",
+      "bytes": 5424
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-schema.ts",
+      "sha256": "3334d95ae91b5b0e559c4724bf88b659d76bf9d78b1529893db7d062b8e9c0b5",
+      "bytes": 8468
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-types.ts",
+      "sha256": "124f72bde20cfb34fa3790c5017b962fb5390d3af81747a50a4e661be45e2328",
+      "bytes": 5007
+    },
+    {
+      "path": "packages/simulation/simulation-product/tests/world-v1-preflight.spec.ts",
+      "sha256": "9b08241e0ac80cf478b87261cb2b623c02fdeaa2f24b95e9c50ec084df7e7120",
+      "bytes": 4443
+    },
+    {
+      "path": "packages/simulation/simulation-product/tests/world-v1-schema.spec.ts",
+      "sha256": "3895a5eb3c8f147984dc323ce470f1ba7fbd0b072679a6c413893818ffa843f5",
+      "bytes": 5366
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/v1-compiler.ts",
+      "sha256": "5ff3e1051a0378d5b3837ac69a89d78414b03be0ebd83e97796dccce079c22a1",
+      "bytes": 17114
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/v1-resolved.ts",
+      "sha256": "64f251c3bf569fadb4958bdddea07cffa0bd021a953405ed6503fc47a1e0cb7e",
+      "bytes": 5383
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/v1-schema.ts",
+      "sha256": "1a816714dc88ec2ddf934ab821fb9a0a9b377b13e19f1d235bbf315bea97ec0e",
+      "bytes": 8565
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/v1-validation.ts",
+      "sha256": "24addd665f892920151e8346511a00210c342379ac8f6d89e0e1aedbf8eff144",
+      "bytes": 27583
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/tests/v1-validation.spec.ts",
+      "sha256": "47d6e51d65f5785cc7c3968bf01c8b72bc3a53d9155eda596189f6b344773d5e",
+      "bytes": 25058
+    },
+    {
+      "path": "python/sdk/src/clocky/__init__.py",
+      "sha256": "7d1fa070e8e659bc5cd6cfc7a2e3fc5022c5aede9cb7caaf8dc2326de7a5985c",
+      "bytes": 13411
+    },
+    {
+      "path": "python/sdk/src/clocky/simulation_scenario.py",
+      "sha256": "8b79ca85a2d26ae37e5fc5ff08a0819e93c743b93599a95b6ce76dc9a6c6cad5",
+      "bytes": 28602
+    },
+    {
+      "path": "python/sdk/tests/test_simulation_scenario_v1.py",
+      "sha256": "c64adc2f85e5e3adf25d249e1aca53ad554f386ba5f694aebfa4cb07bd6e8625",
+      "bytes": 5942
+    }
+  ],
+  "nodeC30InputSha256": "6e3a7af379ae404b1cc2dd12d5f6b8131be85f7fc97360b97bb789ed88576f03",
+  "typescriptTests": 238,
+  "sourcePythonTests": 153,
+  "installedWheelTests": 153,
+  "buildPassed": true,
+  "docSyncPassed": 29,
+  "scopedLintPassed": true
+}

@@ -25,7 +25,10 @@ export function observeRequest(record: SimulationCommandState,
   const receipt = record.receipt?.kind === 'request' ? record.receipt.value : undefined
   const page = read.value
   const item = page?.items.find(value => value.commandId === input.commandId
-    && (record.command.kind === 'create' ? receipt === undefined || receipt.runId === value.runId : 'runId' in input && input.runId === value.runId))
+    && (record.command.kind !== 'world-create' && record.command.kind !== 'world-prepare' && record.command.kind !== 'cancel-world-case' && record.command.kind !== 'world-management'
+      || value.kind === record.command.kind)
+    && (record.command.kind === 'create' || record.command.kind === 'world-create'
+      ? receipt === undefined || receipt.runId === value.runId : 'runId' in input && input.runId === value.runId))
   const previous = record.requestObservation
   const usePage = item !== undefined && page !== undefined && (previous === undefined
     || previous.runId === item.runId && page.snapshotRevision >= previous.journalRevision)

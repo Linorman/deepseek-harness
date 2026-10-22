@@ -1,0 +1,1 @@
+examples/simulation-company/tests/world-personnel-crash-scenario.ts(116,28): error TS2551: Property 'taskDecisions' does not exist on type 'SimulationSnapshot'. Did you mean 'decisions'?

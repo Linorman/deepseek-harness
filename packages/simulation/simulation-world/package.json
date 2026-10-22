@@ -1,0 +1,67 @@
+{
+  "name": "@clocky/clocky-simulation-world",
+  "description": "Bounded World Director orchestration over Native and Team owners",
+  "version": "0.1.1-rc.2",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json",
+    "./providers": {
+      "types": "./lib/types/providers.d.ts",
+      "default": "./lib/providers.js"
+    },
+    "./harbor": {
+      "types": "./lib/types/harbor.d.ts",
+      "default": "./lib/harbor.js"
+    },
+    "./required-context": {
+      "types": "./lib/types/required-context.d.ts",
+      "default": "./lib/types/required-context.js"
+    }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/providers.js",
+    "lib/providers-*.js",
+    "lib/harbor.js",
+    "lib/types/**/*.d.ts",
+    "lib/types/required-context.js"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-scenario": "workspace:^",
+    "@clocky/clocky-simulation-team": "workspace:^"
+  },
+  "devDependencies": {
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-scenario": "workspace:^",
+    "@clocky/clocky-simulation-team": "workspace:^"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linorman/clocky.git",
+    "directory": "packages/simulation/simulation-world"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

@@ -1,0 +1,436 @@
+{
+  "nativeStream": 75,
+  "inputHash": "cac7dedce37cc849033d0e2018323a03335b7bfdee13b9b282afe585c2959b42",
+  "currentInputFilesVerified": 5290,
+  "artifactFilesVerified": 1166,
+  "cases": [
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "cancel-abandon-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-cancel-abandon-after-RspJop",
+      "originalStatus": "abandoned",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "cancel-abandon-before",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-cancel-abandon-before-pAMwZu",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "cancel-before-commit",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-cancel-before-commit-gfMi4V",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "cancellation-won-before-commit"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "cancel-close-receipt-lost",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-cancel-close-receipt-lost-dYTC8h",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "actual-close-receipt-not-returned"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "cancel-participant-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-cancel-participant-unconfirmed-REFAFL",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "actual-participant-before-native-binding"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "commit-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-commit-after-tNvrba",
+      "originalStatus": "committed",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "commit-before",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-commit-before-sAqFor",
+      "originalStatus": "preparing",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "commit-wins-cancel",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-commit-wins-cancel-Np8vFL",
+      "originalStatus": "committed",
+      "witnessBoundary": "commit-won-before-cancellation"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "director-channel-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-director-channel-unconfirmed-TFl9Wy",
+      "originalStatus": "preparing",
+      "witnessBoundary": "actual-channel-before-native-confirmation"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "notification-lost",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-notification-lost-hz29B4",
+      "originalStatus": "committed",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "participant-bound-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-participant-bound-after-Yb33AW",
+      "originalStatus": "preparing",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "participant-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-participant-unconfirmed-T12zMy",
+      "originalStatus": "preparing",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "stage": "reserved-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-json-reserved-after-f9fngG",
+      "originalStatus": "reserved",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "cancel-abandon-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-cancel-abandon-after-cBK6pP",
+      "originalStatus": "abandoned",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "cancel-abandon-before",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-cancel-abandon-before-mGvKVm",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "cancel-before-commit",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-cancel-before-commit-LDs8K0",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "cancellation-won-before-commit"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "cancel-close-receipt-lost",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-cancel-close-receipt-lost-mBvW8S",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "actual-close-receipt-not-returned"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "cancel-participant-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-cancel-participant-unconfirmed-KCSow5",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "actual-participant-before-native-binding"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "commit-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-commit-after-k0blSD",
+      "originalStatus": "committed",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "commit-before",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-commit-before-He7EZe",
+      "originalStatus": "preparing",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "commit-wins-cancel",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-commit-wins-cancel-fLWJBP",
+      "originalStatus": "committed",
+      "witnessBoundary": "commit-won-before-cancellation"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "director-channel-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-director-channel-unconfirmed-sOPpTZ",
+      "originalStatus": "preparing",
+      "witnessBoundary": "actual-channel-before-native-confirmation"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "notification-lost",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-notification-lost-4SoDia",
+      "originalStatus": "committed",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "participant-bound-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-participant-bound-after-gMlqRW",
+      "originalStatus": "preparing",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "participant-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-participant-unconfirmed-rgOZio",
+      "originalStatus": "preparing",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "stage": "reserved-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/src/src-sqlite-reserved-after-zaq7QS",
+      "originalStatus": "reserved",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "cancel-abandon-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-cancel-abandon-after-JSxEJX",
+      "originalStatus": "abandoned",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "cancel-abandon-before",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-cancel-abandon-before-B6JYNL",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "cancel-before-commit",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-cancel-before-commit-K5Vb4f",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "cancellation-won-before-commit"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "cancel-close-receipt-lost",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-cancel-close-receipt-lost-gQO2Cn",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "actual-close-receipt-not-returned"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "cancel-participant-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-cancel-participant-unconfirmed-FJ0rtd",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "actual-participant-before-native-binding"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "commit-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-commit-after-AF3Tzj",
+      "originalStatus": "committed",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "commit-before",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-commit-before-AO79zo",
+      "originalStatus": "preparing",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "commit-wins-cancel",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-commit-wins-cancel-6pgj4b",
+      "originalStatus": "committed",
+      "witnessBoundary": "commit-won-before-cancellation"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "director-channel-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-director-channel-unconfirmed-hBvCaE",
+      "originalStatus": "preparing",
+      "witnessBoundary": "actual-channel-before-native-confirmation"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "notification-lost",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-notification-lost-Ejw1ye",
+      "originalStatus": "committed",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "participant-bound-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-participant-bound-after-URMdeD",
+      "originalStatus": "preparing",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "participant-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-participant-unconfirmed-pBZom2",
+      "originalStatus": "preparing",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "stage": "reserved-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-json-reserved-after-UiGqxA",
+      "originalStatus": "reserved",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "cancel-abandon-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-cancel-abandon-after-LZPZl9",
+      "originalStatus": "abandoned",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "cancel-abandon-before",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-cancel-abandon-before-H49h5y",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "cancel-before-commit",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-cancel-before-commit-w4w7So",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "cancellation-won-before-commit"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "cancel-close-receipt-lost",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-cancel-close-receipt-lost-Wvk4Vt",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "actual-close-receipt-not-returned"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "cancel-participant-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-cancel-participant-unconfirmed-2d3mgW",
+      "originalStatus": "cancel-requested",
+      "witnessBoundary": "actual-participant-before-native-binding"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "commit-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-commit-after-uMZIr6",
+      "originalStatus": "committed",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "commit-before",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-commit-before-72U9xL",
+      "originalStatus": "preparing",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "commit-wins-cancel",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-commit-wins-cancel-MAcy3Y",
+      "originalStatus": "committed",
+      "witnessBoundary": "commit-won-before-cancellation"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "director-channel-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-director-channel-unconfirmed-DXtpah",
+      "originalStatus": "preparing",
+      "witnessBoundary": "actual-channel-before-native-confirmation"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "notification-lost",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-notification-lost-QrL53C",
+      "originalStatus": "committed",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "participant-bound-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-participant-bound-after-AlU3Si",
+      "originalStatus": "preparing",
+      "witnessBoundary": "after-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "participant-unconfirmed",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-participant-unconfirmed-Naaa6U",
+      "originalStatus": "preparing",
+      "witnessBoundary": "before-native-append"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "stage": "reserved-after",
+      "root": ".local/world-completion/c26-mediated-actor-fault/matrix-20261013/lib/lib-sqlite-reserved-after-L4mf5p",
+      "originalStatus": "reserved",
+      "witnessBoundary": "after-native-append"
+    }
+  ],
+  "distinctPids": 156,
+  "sigkill": 52,
+  "cold": 104,
+  "coldModelCalls": 0,
+  "committedColdStates": 44,
+  "abandonedColdStates": 24,
+  "canonicalPostsAcrossBothColdProofs": 120,
+  "limitations": [
+    "company only, not laboratory SIGKILL",
+    "cold2 reconciles retained work only; first-action remains unexecuted",
+    "not v1 authoring/SDK/UI/live-model acceptance"
+  ]
+}

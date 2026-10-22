@@ -10,6 +10,7 @@ import type { SessionId, WorkspaceId } from '../src/client/api.ts'
 import { RpcId } from '../src/client/api.ts'
 import type { HostFrame, MuxFrame, RpcMessage, RpcRequest } from '../src/client/api.ts'
 import { FixtureApiClient, createFixtureApi } from '../src/client/fixture.ts'
+import type { RequestPayload } from '@clocky/clocky-host-apiproxy/api'
 
 const sid = (id: string): SessionId => id as SessionId
 const req = <P>(payload: P): RpcRequest<P> => ({ rpcId: RpcId(`t-${Math.abs(Math.sin(reqCount++)).toString(36).slice(2, 10)}`), payload })
@@ -818,7 +819,36 @@ describe('createFixtureApi', () => {
 describe('FixtureApiClient (protocol-level fake carrier)', () => {
   it('returns an explicit unavailable result when its Host does not deploy Simulation', async () => {
     const client = new FixtureApiClient()
+    const management: RequestPayload<'simulation.world.management.preview'> = {
+      runId: 'run' as never, targetId: 'candidate' as never, expectedRevision: 1, action: 'hire-existing',
+      values: { position: 'position' as never, reason: 'Hire the existing candidate' },
+    }
+    const definition: RequestPayload<'simulation.world.preflight'>['definition'] = {
+      apiVersion: 'clocky.world/v0', metadata: { id: 'fixture-world', name: 'Fixture world', description: 'Portable input' },
+      organization: { id: 'organization', name: 'Organization', description: 'Private collaboration' },
+      positions: [{ id: 'position', name: 'Member', capacity: 1 }],
+      runtimeProfile: { id: 'profile', version: '1' }, templates: [{ id: 'persona', version: '1' }],
+      actors: [{ id: 'director', role: 'director', template: { id: 'persona', version: '1' } },
+        { id: 'member', role: 'member', template: { id: 'persona', version: '1' } }],
+      assignments: [], authorizations: [], initialEvents: [],
+    }
     for (const response of await Promise.all([client.simulations.list({}), client.simulations.catalog({}),
+      client.simulations.archiveRaw({ runId: 'run' as never }),
+      client.simulations.updateRunControl({ runId: 'run' as never, commandId: 'clear-stop', target: null }),
+      client.simulations.preflightWorld({ definition }),
+      client.simulations.createWorld({ commandId: 'world-create' as never, name: 'Fixture world', definition,
+        preflight: { hash: `sha256:${'0'.repeat(64)}`, catalogGeneration: 'fixture' } }),
+      client.simulations.prepareWorld({ runId: 'run' as never, commandId: 'world-prepare' as never }),
+      client.simulations.exportWorldDefinition({ runId: 'run' as never }),
+      client.simulations.readWorldDomain({ runId: 'run' as never, kind: 'overview' }),
+      client.simulations.worldManagementFields({ runId: 'run' as never, action: 'hire-existing', targetId: 'candidate' as never }),
+      client.simulations.previewWorldManagement(management),
+      client.simulations.submitWorldManagement({ runId: 'run' as never, commandId: 'world-manage' as never,
+        draft: management, previewRevision: 1, previewHash: `sha256:${'d'.repeat(64)}` }),
+      client.simulations.listWorldCases({ runId: 'run' as never }),
+      client.simulations.inspectWorldCase({ runId: 'run' as never, requestId: 'world-request' as never, section: 'request' }),
+      client.simulations.cancelWorldCase({ runId: 'run' as never, commandId: 'world-cancel' as never, requestId: 'world-request' as never,
+        previewRevision: 1, previewHash: `sha256:${'c'.repeat(64)}` }),
       client.simulations.runStatuses({ runIds: ['run' as never] }),
       client.simulations.retryOperation({ runId: 'run' as never, commandId: 'grant' as never, operationId: 'operation' as never,
         expectedAttemptCount: 1, reason: 'Reconcile original target' }),
@@ -829,6 +859,7 @@ describe('FixtureApiClient (protocol-level fake carrier)', () => {
       client.simulations.resolveTaskReview({ runId: 'run' as never, commandId: 'review' as never, operationId: 'operation' as never,
         attemptId: 'attempt' as never, expectedRevision: 1, nextPhase: 'completed', reason: 'Original review' })])) {
       expect(response.result).toMatchObject({ ok: false, error: { code: 'simulation-product-unavailable' } })
+      expect(response.result).not.toHaveProperty('value')
       expect(response.rpcId).toBeTruthy()
     }
   })

@@ -1,0 +1,56 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-external-crash.snapshot.ts (22 tests | 2 failed) 91008ms
+     × retains original accepted responsibility at actor-reserve-after 12949ms
+     × retains original accepted responsibility at actor-reserve-after 18358ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-external-crash.snapshot.ts > json original external crash boundaries > retains original accepted responsibility at actor-reserve-after
+ FAIL  examples/simulation-company/tests/world-external-crash.snapshot.ts > sqlite original external crash boundaries > retains original accepted responsibility at actor-reserve-after
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'reserved'
+- 'committed'
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-external-crash-scenario.ts:135:14) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'reserved',
+  expected: 'committed',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-external-crash.snapshot.ts:45:32
+     43|           await copyFile(resolve(root, 'external-crash-input.json'), r…
+     44|         } else {
+     45|           expect(code, stderr).toBe(0)
+       |                                ^
+     46|           expect(JSON.parse(stdout)).toEqual({ stage, phase: 'paused',…
+     47|           await copyFile(resolve(root, `external-crash-cold-${round}.j…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 20 passed (22)
+   Start at  18:36:51
+   Duration  91.46s (transform 188ms, setup 156ms, import 123ms, tests 91.01s, environment 0ms)
+

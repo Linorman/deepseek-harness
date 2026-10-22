@@ -40,11 +40,12 @@
     replayPageSize: !!js Number(process.env.SIMULATION_REPLAY_PAGE_SIZE ?? 4)
 - name: '@clocky/clocky-simulation-team'
   config:
-    maxContextBytes: 65536
+    maxContextBytes: !!js Number(process.env.SIMULATION_CONTEXT_LIMIT || 65536)
     deliveryPageSize: 32
     maxCoordinationRounds: 16
     maxConcurrentModels: !!js Number(process.env.SIMULATION_MODEL_LIMIT || 2)
     maxQueuedModels: !!js Number(process.env.SIMULATION_MODEL_QUEUE_LIMIT || 16)
+- name: '@clocky/clocky-simulation-world/providers'
 - name: '@clocky/clocky-tool-simulation'
 - name: '@clocky/clocky-agent-presets'
   config:

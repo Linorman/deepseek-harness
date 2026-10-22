@@ -1,0 +1,506 @@
+{
+  "apiVersion": "clocky.world/v1",
+  "metadata": {
+    "id": "association",
+    "name": "Neighbourhood Reading Association",
+    "description": "Two independent council votes, an existing volunteer recruitment opportunity, position calendars and an unknown simulated partner."
+  },
+  "runtimeProfiles": {
+    "allowed": [
+      {
+        "id": "world-agent",
+        "version": "1"
+      }
+    ],
+    "generated": {
+      "id": "world-agent",
+      "version": "1"
+    },
+    "templates": [
+      {
+        "id": "company-person",
+        "version": "1"
+      }
+    ]
+  },
+  "domains": [
+    {
+      "domain": "governance",
+      "operation": "propose-hire-approval",
+      "version": "1"
+    },
+    {
+      "domain": "governance",
+      "operation": "vote",
+      "version": "1"
+    },
+    {
+      "domain": "organization",
+      "operation": "hire-existing",
+      "version": "1"
+    },
+    {
+      "domain": "external",
+      "operation": "interact",
+      "version": "3"
+    }
+  ],
+  "entities": [
+    {
+      "id": "association",
+      "name": "Neighbourhood Reading Association",
+      "description": "A single volunteer association governed by an independent two-person council.",
+      "kind": "organization",
+      "cognition": "none"
+    },
+    {
+      "id": "external-library",
+      "name": "Outside community library",
+      "description": "An independent simulated organization whose inventory and staffing are unknown.",
+      "kind": "organization",
+      "cognition": "none"
+    },
+    {
+      "id": "director",
+      "name": "Facilitator",
+      "description": "An independent declared person; the facilitator cannot speak or vote for this person.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "director",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Director",
+        "skills": [
+          "engineering"
+        ],
+        "traits": [
+          "patient"
+        ],
+        "goals": [
+          "build"
+        ]
+      }
+    },
+    {
+      "id": "chair",
+      "name": "Council chair",
+      "description": "An independent declared person; the facilitator cannot speak or vote for this person.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "member",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Recruiter",
+        "skills": [
+          "engineering"
+        ],
+        "traits": [
+          "patient"
+        ],
+        "goals": [
+          "build"
+        ]
+      }
+    },
+    {
+      "id": "councillor",
+      "name": "Council treasurer",
+      "description": "An independent declared person; the facilitator cannot speak or vote for this person.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "member",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Observer",
+        "skills": [
+          "engineering"
+        ],
+        "traits": [
+          "patient"
+        ],
+        "goals": [
+          "build"
+        ]
+      }
+    },
+    {
+      "id": "candidate",
+      "name": "Existing volunteer candidate",
+      "description": "An independent declared person; the facilitator cannot speak or vote for this person.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "member",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Lin",
+        "skills": [
+          "engineering"
+        ],
+        "traits": [
+          "patient"
+        ],
+        "goals": [
+          "build"
+        ]
+      }
+    }
+  ],
+  "organization": {
+    "rootId": "association",
+    "units": [],
+    "positions": [
+      {
+        "id": "chair-seat",
+        "name": "Council chair",
+        "description": "One chair responsible for the council agenda and an existing-person volunteer request.",
+        "unitId": "association",
+        "capacity": 1,
+        "permissions": []
+      },
+      {
+        "id": "council-seat",
+        "name": "Council treasurer",
+        "description": "An independently voting councillor responsible for external inquiries.",
+        "unitId": "association",
+        "capacity": 1,
+        "permissions": []
+      },
+      {
+        "id": "volunteer-seat",
+        "name": "Reading-event volunteer",
+        "description": "One unfilled unpaid volunteer seat, with an explicitly declared existing candidate.",
+        "unitId": "association",
+        "capacity": 1,
+        "permissions": []
+      }
+    ],
+    "assignments": [
+      {
+        "id": "chair-assignment",
+        "personId": "chair",
+        "positionId": "chair-seat",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "councillor-assignment",
+        "personId": "councillor",
+        "positionId": "council-seat",
+        "validFrom": "0",
+        "validUntil": null
+      }
+    ],
+    "grants": [
+      {
+        "id": "chair-proposal",
+        "personId": "chair",
+        "domain": "governance",
+        "operation": "propose-hire-approval",
+        "version": "1",
+        "scopeId": "association",
+        "targetId": "council",
+        "relation": "can-approve-hire",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "chair-vote",
+        "personId": "chair",
+        "domain": "governance",
+        "operation": "vote",
+        "version": "1",
+        "scopeId": "association",
+        "targetId": "council",
+        "relation": "can-vote",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "councillor-vote",
+        "personId": "councillor",
+        "domain": "governance",
+        "operation": "vote",
+        "version": "1",
+        "scopeId": "association",
+        "targetId": "council",
+        "relation": "can-vote",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "existing-volunteer-hire",
+        "personId": "chair",
+        "domain": "organization",
+        "operation": "hire-existing",
+        "version": "1",
+        "scopeId": "association",
+        "targetId": "volunteer-seat",
+        "relation": "can-hire",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "library-contact",
+        "personId": "councillor",
+        "domain": "external",
+        "operation": "interact",
+        "version": "3",
+        "scopeId": "association",
+        "targetId": "external-library",
+        "relation": "can-interact",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "candidate-eligibility",
+        "personId": "candidate",
+        "domain": "organization",
+        "operation": "hire-existing",
+        "version": "1",
+        "scopeId": "association",
+        "targetId": "association",
+        "relation": "eligible-for-hire",
+        "validFrom": "0",
+        "validUntil": null
+      }
+    ]
+  },
+  "governance": {
+    "committees": [
+      {
+        "id": "council",
+        "name": "Association council",
+        "description": "Exactly two independent people contribute their own votes; the facilitator is not a voter.",
+        "scopeId": "association",
+        "members": [
+          {
+            "id": "chair-membership",
+            "personId": "chair",
+            "validFrom": "0",
+            "validUntil": null
+          },
+          {
+            "id": "councillor-membership",
+            "personId": "councillor",
+            "validFrom": "0",
+            "validUntil": null
+          }
+        ],
+        "rule": {
+          "kind": "absolute-threshold",
+          "yes": 2
+        },
+        "quorum": 2
+      }
+    ],
+    "norms": [
+      {
+        "id": "volunteer-approval",
+        "scopeId": "association",
+        "body": "The volunteer seat requires approval by both independent council members for the exact existing candidate. No payroll or second employer is implied.",
+        "effectiveFrom": "0",
+        "effectiveUntil": null,
+        "availableAt": "0",
+        "audience": {
+          "kind": "public"
+        },
+        "enforcement": {
+          "kind": "validated",
+          "policyRef": "clocky.organization.hiring-approval/1",
+          "params": {
+            "committeeId": "council",
+            "positionIds": [
+              "volunteer-seat"
+            ],
+            "maxHires": 1
+          }
+        }
+      }
+    ]
+  },
+  "facts": [
+    {
+      "id": "candidate-opportunity",
+      "subjectId": "candidate",
+      "scopeId": "association",
+      "body": "The candidate already exists, has no initial position and may join this association only after an explicitly authorized existing-person hire.",
+      "effectiveFrom": "0",
+      "effectiveUntil": null,
+      "availableAt": "0",
+      "audience": {
+        "kind": "public"
+      }
+    },
+    {
+      "id": "library-unknown",
+      "subjectId": "external-library",
+      "scopeId": "association",
+      "body": "The external library has no declared inventory. Unknown books or staffing must remain unknown; a meeting-status response cannot create stock or assets.",
+      "effectiveFrom": "0",
+      "effectiveUntil": null,
+      "availableAt": "0",
+      "audience": {
+        "kind": "public"
+      }
+    }
+  ],
+  "knowledge": [
+    {
+      "id": "councillor-belief",
+      "ownerId": "councillor",
+      "body": "I expect the library may be open for a meeting, but this is an individual belief rather than its inventory or an authoritative schedule.",
+      "observedAt": "0",
+      "availableAt": "0",
+      "validFrom": "0",
+      "validUntil": null,
+      "readers": []
+    }
+  ],
+  "resources": [],
+  "communication": {
+    "channels": [
+      {
+        "key": "council-room",
+        "members": [
+          {
+            "personId": "chair",
+            "role": "member"
+          },
+          {
+            "personId": "councillor",
+            "role": "member"
+          }
+        ]
+      }
+    ]
+  },
+  "externalWorld": {
+    "mode": "simulated-only",
+    "identities": [
+      {
+        "scopeId": "association",
+        "externalKey": "library",
+        "subjectId": "external-library",
+        "representation": "director-mediated"
+      }
+    ],
+    "adjudicationPolicy": {
+      "ref": "clocky.external.adjudication/1",
+      "version": "1",
+      "generation": 1,
+      "conditionInstalls": [],
+      "futureConditionInstalls": [],
+      "allowedOutcomeKinds": [
+        "failure"
+      ],
+      "maxDelay": "2",
+      "allowPublicDisclosure": false,
+      "allowScopeDisclosure": true,
+      "actorDisclosure": []
+    }
+  },
+  "behavior": {
+    "initialGoals": [
+      {
+        "id": "request-existing-volunteer",
+        "kind": "goal",
+        "at": "1",
+        "target": {
+          "kind": "person",
+          "personId": "chair"
+        },
+        "body": "request-hire-existing: Request explicitly authorized existing-person recruitment of candidate for volunteer-seat. The exact unpaid volunteer still needs approval under the original volunteer-approval norm."
+      },
+      {
+        "id": "propose-volunteer-approval",
+        "kind": "goal",
+        "at": "2",
+        "target": {
+          "kind": "person",
+          "personId": "chair"
+        },
+        "body": "propose-hire-approval: Inspect the actual existing-person request and original approval target; propose council approval for this exact candidate and volunteer seat, without inventing a request or resolution."
+      },
+      {
+        "id": "chair-independent-vote",
+        "kind": "goal",
+        "at": "3",
+        "target": {
+          "kind": "person",
+          "personId": "chair"
+        },
+        "body": "vote-hire-approval: Inspect the actual council proposal and contribute only your own independent vote on the original volunteer request."
+      },
+      {
+        "id": "councillor-independent-vote",
+        "kind": "goal",
+        "at": "3",
+        "target": {
+          "kind": "person",
+          "personId": "councillor"
+        },
+        "body": "vote-hire-approval: Inspect the actual council proposal and contribute your own independent vote. The chair vote does not substitute for this contribution."
+      }
+    ],
+    "calendars": [
+      {
+        "id": "association-inspection",
+        "target": {
+          "kind": "position",
+          "positionId": "volunteer-seat"
+        },
+        "body": "inspect-association: Inspect the actual association institution, council and individual knowledge as the current volunteer occupant. A calendar never invents an occupant or a second employer.",
+        "startsAt": "6",
+        "endsAt": "8",
+        "period": "2",
+        "maxOccurrences": 2
+      },
+      {
+        "id": "association-library-contact",
+        "target": {
+          "kind": "position",
+          "positionId": "council-seat"
+        },
+        "body": "association-stock: Ask the simulated external library only about unknown inventory or meeting status. Unknown books, staff and resources must remain unknown; a failure response cannot create assets.",
+        "startsAt": "5",
+        "endsAt": "9",
+        "period": "4",
+        "maxOccurrences": 2
+      }
+    ],
+    "directorEvents": []
+  },
+  "limits": {
+    "native": {},
+    "team": {},
+    "world": {}
+  }
+}

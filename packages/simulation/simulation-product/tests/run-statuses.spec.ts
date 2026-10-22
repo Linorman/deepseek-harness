@@ -1,3 +1,4 @@
+import { StorageError } from '@clocky/clocky-storage'
 /** Finite status observations isolate per-run failures and retain one current authenticated batch lifetime. */
 import { expect, it, vi } from 'vitest'
 import { simulationRuntimeMetrics } from '@clocky/clocky-simulation'
@@ -22,11 +23,19 @@ it.each(['json', 'sqlite'] as const)('observes the current %s directory window w
     const before = native.run.snapshot()
     const result = await products.runStatuses({ runIds: imports.map(value => value.id) }, call())
     expect(result.items.map(value => value.status)).toEqual(['observed', 'missing', 'unavailable'])
-    expect(result.items[0]).toMatchObject({ world: { metrics: simulationRuntimeMetrics(before, 'this-provider'),
+    expect(result.items[0]).toMatchObject({ world: { worldInitialized: false, metrics: simulationRuntimeMetrics(before, 'this-provider'),
       rulesVersion: { text: before.spec.rulesVersion }, policyVersion: { text: before.spec.policyVersion } } })
     expect(result.items.every(value => value.operational?.status === 'unavailable')).toBe(true)
     expect(result.modelPool?.status).toBe('unavailable')
     expect(simulationProductRunStatusesPageSchema.parse(result)).toEqual(result)
+    const original = result.items[0]
+    if (original?.status !== 'observed' || original.world === undefined) throw new Error('No original Native observation')
+    const { worldInitialized: _known, ...legacy } = original.world
+    const oldPeer = simulationProductRunStatusesPageSchema.parse({ ...result, items: [{ ...original, world: legacy }] })
+    expect(oldPeer.items[0]).not.toHaveProperty('world.worldInitialized')
+    for (const worldInitialized of [null, 0, 1, 'true', 'false', {}, []]) expect(simulationProductRunStatusesPageSchema
+      .safeParse({ ...result, items: [{ ...original, world: { ...original.world, worldInitialized } }] }).success).toBe(false)
+
     expect(JSON.stringify(result)).not.toContain('/private/')
     expect(JSON.stringify(result)).not.toContain('native-broken')
     expect(native.run.snapshot()).toEqual(before)
@@ -112,4 +121,36 @@ it('discards every batch result after credential retirement and drains other acc
   await expect(request).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_FORBIDDEN' })
   await closing
   expect(closed).toHaveBeenCalledOnce()
+})
+
+it.each([
+  ['read-limit', 'history-limit'], ['version-mismatch', 'unsupported-version'],
+  ['malformed-medium', 'corrupt-history'], ['closed', 'owner-unavailable'],
+] as const)('isolates typed %s history failures and retains their safe category', async (code, reason) => {
+  const h = await fixture()
+  const { products } = await h.mount()
+  h.inspect.mockRejectedValue(new StorageError(code, '/private/path token=secret private payload'))
+  const result = await products.runStatuses({ runIds: [registration().id] }, call())
+  expect(result.items[0]).toMatchObject({ status: 'unavailable', reason })
+  expect(JSON.stringify(result)).not.toMatch(/private|secret/)
+  await expect(products.inspect({ runId: registration().id }, call()))
+    .rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_UNAVAILABLE', reason })
+})
+
+it('binds collection continuations to source identity even when the numeric revision is unchanged', async () => {
+  const native = await createBusinessHarness('json')
+  const h = await fixture()
+  try {
+    await native.actor('a'); await native.actor('b')
+    const { products } = await h.mount(), snapshot = native.run.snapshot()
+    h.inspect.mockResolvedValue({ snapshot, owner: 'unowned', sourceHash: 'a'.repeat(64) })
+    const input = { runId: registration().id, collection: 'entities' as const, limit: 1 }
+    const first = await products.browse(input, call())
+    expect(first.nextCursor).toBeDefined()
+    h.inspect.mockResolvedValue({ snapshot, owner: 'unowned', sourceHash: 'b'.repeat(64) })
+    await expect(products.browse({ ...input, cursor: first.nextCursor }, call()))
+      .rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_STALE' })
+    h.inspect.mockResolvedValue({ snapshot, owner: 'unowned', sourceHash: 'a'.repeat(64) })
+    expect((await products.browse({ ...input, cursor: first.nextCursor }, call())).items).toHaveLength(1)
+  } finally { await native.close() }
 })

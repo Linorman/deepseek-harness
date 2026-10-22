@@ -24,6 +24,10 @@
     },
     "./src/*": "./src/*",
     "./package.json": "./package.json",
+    "./run-control": {
+      "types": "./lib/types/run-control.d.ts",
+      "default": "./lib/types/run-control.js"
+    },
     "./time-types": {
       "types": "./lib/types/time-types.d.ts",
       "default": "./lib/types/time-types.js"
@@ -43,6 +47,86 @@
     "./checkpoint-diagnostics-schema": {
       "types": "./lib/types/checkpoint-diagnostics-schema.d.ts",
       "default": "./lib/types/checkpoint-diagnostics-schema.js"
+    },
+    "./world": {
+      "types": "./lib/types/world.d.ts",
+      "default": "./lib/types/world.js"
+    },
+    "./world-authoring": {
+      "types": "./lib/types/world-authoring.d.ts",
+      "default": "./lib/types/world-authoring.js"
+    },
+    "./world-types": {
+      "types": "./lib/types/world-types.d.ts",
+      "default": "./lib/types/world-types.js"
+    },
+    "./world-evidence": {
+      "types": "./lib/types/world-evidence.d.ts",
+      "default": "./lib/types/world-evidence.js"
+    },
+    "./world-evidence-types": {
+      "types": "./lib/types/world-evidence-types.d.ts",
+      "default": "./lib/types/world-evidence-types.js"
+    },
+    "./context-reference": {
+      "types": "./lib/types/context-reference.d.ts",
+      "default": "./lib/types/context-reference.js"
+    },
+    "./world-domain": {
+      "types": "./lib/types/world-domain.d.ts",
+      "default": "./lib/types/world-domain.js"
+    },
+    "./world-domain-types": {
+      "types": "./lib/types/world-domain-types.d.ts",
+      "default": "./lib/types/world-domain-types.js"
+    },
+    "./world-domain-registry": {
+      "types": "./lib/types/world-domain-registry.d.ts",
+      "default": "./lib/types/world-domain-registry.js"
+    },
+    "./world-domains": {
+      "types": "./lib/types/world-domains.d.ts",
+      "default": "./lib/types/world-domains.js"
+    },
+    "./world-execution": {
+      "types": "./lib/types/world-execution.d.ts",
+      "default": "./lib/types/world-execution.js"
+    },
+    "./personnel-obligations": {
+      "types": "./lib/types/personnel-obligations.d.ts",
+      "default": "./lib/types/personnel-obligations.js"
+    },
+    "./world-management": {
+      "types": "./lib/types/world-management.d.ts",
+      "default": "./lib/types/world-management.js"
+    },
+    "./world-management-types": {
+      "types": "./lib/types/world-management-types.d.ts",
+      "default": "./lib/types/world-management-types.js"
+    },
+    "./world-generation": {
+      "types": "./lib/types/world-generation.d.ts",
+      "default": "./lib/types/world-generation.js"
+    },
+    "./tokens": {
+      "types": "./lib/types/tokens.d.ts",
+      "default": "./lib/types/tokens.js"
+    },
+    "./driver-observation": {
+      "types": "./lib/types/driver-observation.d.ts",
+      "default": "./lib/types/driver-observation.js"
+    },
+    "./world-summary": {
+      "types": "./lib/types/world-summary.d.ts",
+      "default": "./lib/types/world-summary.js"
+    },
+    "./run-control-observation": {
+      "types": "./lib/types/run-control-observation.d.ts",
+      "default": "./lib/types/run-control-observation.js"
+    },
+    "./context-size": {
+      "types": "./lib/types/context-size.d.ts",
+      "default": "./lib/types/context-size.js"
     }
   },
   "files": [
@@ -53,20 +137,23 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@clocky/cordis": "workspace:^",
-    "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-brand": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-product-principal": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
-    "@clocky/clocky-session": "workspace:^"
+    "@clocky/cordis": "workspace:^"
   },
   "devDependencies": {
-    "@clocky/cordis": "workspace:^",
-    "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-brand": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-product-principal": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
-    "@clocky/clocky-session": "workspace:^"
+    "@clocky/cordis": "workspace:^"
   },
   "dependencies": {
+    "moment-timezone": "0.6.5",
     "zod": "^4.4.3"
   }
 }

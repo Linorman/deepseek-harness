@@ -1,0 +1,20 @@
+- name: cordis:include
+  config:
+    path: ../complete-world/cordis.yml
+- name: '@clocky/clocky-product-principal'
+- name: '@clocky/clocky-host-product-principal-local'
+  config:
+    path: !!js process.env.SIMULATION_COMPANY_ROOT + '/principal.json'
+- name: '@clocky/clocky-user-questions'
+- name: '@clocky/clocky-simulation-product'
+  config:
+    directoryStream: maintenance-intent-directory
+    imports: []
+- name: '@clocky/clocky-simulation-product/administration'
+  config:
+    journalStream: maintenance-intent-commands
+    templates: []
+    world: !!js JSON.parse(process.env.WORLD_PRODUCT_CONFIGURATION)
+    recoveryPageSize: 1
+    driverIntervalMs: 1
+    driverRetryMs: 10

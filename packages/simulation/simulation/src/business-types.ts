@@ -32,6 +32,23 @@ export type SimulationProposal = z.infer<typeof simulationProposalSchema>
 export interface SimulationResource extends SimulationResourceSpec { readonly revision: number }
 /** A decision slot remains observable after acceptance or cancellation. */
 export interface SimulationDecision {
+  /** Native-derived employment admission generation; absent only on non-World synthetic consumer fixtures. */
+  readonly employmentGeneration?: number
+  /** Rejected queued message and its bounded same-wake repair attempt; no message effect was accepted. */
+  readonly messageRejection?: {
+    readonly code: 'SIM_MESSAGE_RECIPIENT_INVALID' | 'SIM_MESSAGE_TIME_INVALID'
+    readonly proposalHash: string
+    readonly attempt: number
+  }
+  /** Original unaccepted world submission; its oversized/private body is retained only by the Session owner. */
+  readonly worldSubmissionBlock?: import('./world-submission.ts').SimulationWorldSubmissionBlock
+  /** Shared model pool refusal; retained with the cancelled attempt even after explicit resume. */
+  readonly modelAdmissionBlock?: import('./model-admission.ts').SimulationModelAdmissionBlock
+  /** Original full-request refusal, retained before provider dispatch. */
+  readonly requestBudgetBlock?: import('./model-admission.ts').SimulationRequestBudgetBlock
+  readonly worldExpansion?: { readonly logicalIndex: 0; readonly operationIds: readonly SimulationOperationId[] }
+  /** Flushed canonical Session consumption, required for world authority. */
+  readonly consumption?: import('./context-consumption.ts').SimulationContextConsumption
   readonly deterministic?: import('./deterministic.ts').SimulationDeterministicDecision
   readonly ingressId?: import('./ingress.ts').SimulationIngressId
   readonly retry?: {
@@ -56,10 +73,12 @@ export interface SimulationDecision {
   readonly operationIds: readonly SimulationOperationId[]
   readonly fingerprint?: string
   readonly closedAt?: number
-  readonly cancellation?: 'requested' | 'writer-revoked' | 'scheduled-wake-cancelled' | 'timeout'
+  readonly cancellation?: 'requested' | 'writer-revoked' | 'scheduled-wake-cancelled' | 'timeout' | 'paused'
 }
 /** An accepted operation remains owned by the run after its originating writer retires. */
 export interface SimulationOperation {
+  /** Exact domain implementation retained in the acceptance record; ordinary operations omit it. */
+  readonly worldPin?: import('./world-domain-types.ts').SimulationWorldDomainPin
   readonly conflictRetry?: { readonly kind: 'scheduled'; readonly eventId: SimulationEventId }
     | { readonly kind: 'exhausted'; readonly rootDecisionId: SimulationDecisionId; readonly attempt: number; readonly acknowledged: boolean }
   /** Definitive target transport failure; local input and business responsibility remain independent. */
@@ -72,7 +91,7 @@ export interface SimulationOperation {
   /** Consumer-attested durable input and its persistent wake responsibility. */
   readonly delivery?: {
     readonly wakeId: SimulationEventId
-    readonly sessionId: import('@clocky/clocky-session').SessionId
+    readonly sessionId: import('@clocky/clocky-session/types').SessionId
     readonly sequence: number
     readonly time: SimTime
     readonly receipt?: import('@clocky/clocky-team').ChannelReceiptRecord
@@ -107,6 +126,13 @@ export interface SimulationResourceGrant {
   readonly phase: 'available' | 'consumed' | 'revoked'
   readonly operationId: SimulationOperationId
   readonly consumedBy?: SimulationOperationId
+  /** Actual World commit record when a hiring owner consumes this grant; never a fabricated transfer operation. */
+  readonly worldConsumption?: {
+    readonly intentId: import('./world-domain-types.ts').WorldIntentId
+    readonly planId: import('./world-types.ts').WorldPlanId
+    readonly sequence: number
+    readonly time: SimTime
+  } | undefined
 }
 
 /** Stable interaction identity. */

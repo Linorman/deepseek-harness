@@ -1,7 +1,10 @@
 /** Safe residency transitions selected by an explicit caller policy. @module @clocky/clocky-simulation-team/residency */
 import type { Agent } from '@clocky/clocky-agent'
+import { isAgentRuntimeTerminationUnconfirmed } from '@clocky/clocky-agent-runtime'
 import type { SimulationEntityId, SimulationRun } from '@clocky/clocky-simulation'
 import type { SimulationActivationRequest, SimulationResidencyResult, SimulationTeamConnection } from './types.ts'
+import { selectResidencyCandidates } from './residency-policy.ts'
+import type { SimulationResidencyPolicy } from './residency-policy.ts'
 
 /**
  * Reuse or establish residency, hibernating only eligible actors from the supplied order.
@@ -12,12 +15,13 @@ import type { SimulationActivationRequest, SimulationResidencyResult, Simulation
  * @param candidates - Ordered possible victims; the required actor is never evicted.
  * @param local - Current local actor lookup.
  * @param check - Connection admission check repeated after asynchronous transitions.
- * @returns resident lease or an explicit capacity/recovery requirement; runtime failures propagate.
+ * @param policy - Optional automatic idle selection, rechecked after each asynchronous retirement.
+ * @returns resident lease or capacity/recovery requirement; unrelated runtime failures propagate.
  */
 export async function ensureResident(run: SimulationRun, connection: SimulationTeamConnection, entityId: SimulationEntityId,
   request: SimulationActivationRequest, candidates: readonly SimulationEntityId[], local: (id: SimulationEntityId) => Agent | undefined,
-  check: () => void): Promise<SimulationResidencyResult> {
-  const ordered = [...candidates]
+  check: () => void, policy?: SimulationResidencyPolicy): Promise<SimulationResidencyResult> {
+  const ordered = policy === undefined ? [...candidates] : selectResidencyCandidates(run.snapshot(), candidates, policy)
   if (new Set(ordered).size !== ordered.length) throw new Error('Simulation eviction candidates must be distinct')
   const validate = (): void => { check(); request.signal.throwIfAborted() }
   validate()
@@ -34,15 +38,26 @@ export async function ensureResident(run: SimulationRun, connection: SimulationT
     if (run.population().chargedActors < state.spec.maxResidentActors) break
     validate()
     if (candidateId === entityId) continue
+    state = run.snapshot()
+    if (policy !== undefined && !selectResidencyCandidates(state, [candidateId], policy).includes(candidateId)) continue
     const candidate = state.entities[candidateId]
     if (candidate === undefined) throw new Error('Simulation eviction candidate does not exist')
     const actor = local(candidateId)
+    if (candidate.writer !== undefined && candidate.writer.phase !== 'released'
+      && (candidate.writer.phase !== 'active' || actor === undefined)) return { status: 'recovery-required', entityId: candidateId }
     if (candidate.writer?.phase !== 'active' || actor?.status !== 'idle'
       || Object.values(state.taskExecutions ?? {}).some(value => value.request.entityId === candidateId
         && value.retired === undefined && value.task?.executor?.outcome === undefined)
       || Object.values(state.decisions).some(decision => decision.entityId === candidateId
         && (decision.status === 'open' || decision.status === 'submitted'))) continue
-    await connection.hibernate(candidateId)
+    try { await connection.hibernate(candidateId) }
+    catch (error: unknown) {
+      validate()
+      const retained = run.snapshot().entities[candidateId]?.writer
+      if (!isAgentRuntimeTerminationUnconfirmed(error) || retained?.epoch !== candidate.writer.epoch || retained.phase !== 'revoked') throw error
+      // The exact provider refusal and retained revoked epoch prove that this residency remains charged.
+      return { status: 'recovery-required', entityId: candidateId }
+    }
     state = run.snapshot()
   }
   validate()

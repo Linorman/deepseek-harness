@@ -33,7 +33,10 @@
     "client": {
       "inject": [],
       "platform": "web",
-      "immediately": true
+      "immediately": true,
+      "external": [
+        "@clocky/clocky-client-modules/client"
+      ]
     }
   },
   "license": "MIT",

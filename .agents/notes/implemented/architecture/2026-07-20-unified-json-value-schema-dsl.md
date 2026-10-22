@@ -18,6 +18,8 @@ An explicit author object must declare `additionalProperties: true | false`. The
 
 Object-rooting is a consumer rule rather than a vocabulary restriction. Subagent and workflow caller-defined structured outputs use `assertObjectJsonSchema()` and `ObjectJsonSchema`; tool outputs may use any root. Dynamic Cordis registrations rebuild realm-foreign schemas into host-owned JSON, preserve raw-wrapper openness, and require direct-DSL object openness before calling the same compiler. The dynamic boundary rejects JSON-invisible record keys and exotic schema arrays before normalization, so it cannot silently discard a constraint or consume custom iteration semantics.
 
+Diagnostic branch selection never changes exact-one acceptance. When every object arm declares the same required property with distinct `const` values, a zero-match result retains that uniquely selected arm’s field failures alongside the union failure. Missing, unmatched or ambiguous tags keep the generic diagnostic; multiple successful arms still reject. This lets a model repair a missing envelope field without probing unrelated operations.
+
 ## Alternatives considered
 
 - **Keep separate parameter and structured-output schema systems:** rejected because every added output construct would require parallel inference, compilation, validation, and code-generation changes with no useful ownership boundary.

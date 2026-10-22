@@ -1,0 +1,6 @@
+packages/simulation/simulation-local/src/world-governance.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-hire-existing.ts(152,11): error TS6133: 'owned' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-norms.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-organization.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.
+packages/team/team-hub/tests/personnel-settlement-cut.spec.ts(65,7): error TS2741: Property 'channelId' is missing in type '{ audience: ParticipantId[]; kind: string; payload: { text: string; }; delivery: "turn"; }' but required in type 'TeamEnvelopeDraft'.
+packages/team/team-hub/tests/personnel-settlement-cut.spec.ts(102,67): error TS2741: Property 'channelId' is missing in type '{ audience: ParticipantId[]; kind: string; payload: { text: string; }; delivery: "turn"; }' but required in type 'TeamEnvelopeDraft'.

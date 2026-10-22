@@ -1,0 +1,5 @@
+packages/simulation/simulation-local/tests/run.spec.ts:141:1: error @stylistic(max-len): This line has a length of 150. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:190:30: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-world/tests/execution.spec.ts:35:1: error @stylistic(max-len): This line has a length of 163. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:321:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/index.ts:234:1: error @stylistic(max-len): This line has a length of 145. Maximum allowed is 140.

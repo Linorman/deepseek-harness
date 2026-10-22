@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-16",
+  "timezone": "Asia/Tokyo",
+  "head": "b49dd0edfddb2f19e27110576c5a0f2089cc30ba",
+  "basis": "working tree; documentation-only source inspection, no live-provider calls or functional revalidation",
+  "checklist": {
+    "total": 112,
+    "checked": 108,
+    "unchecked": [
+      "B04",
+      "R08",
+      "R09",
+      "R13"
+    ]
+  },
+  "sha256": {
+    ".agents/plans/2026-10-11-world-simulation-completion/checklist.md": "61c8657c16c74d34ce1db45615df6340416210dc0ebfd6658fdb5658fe9c86fc",
+    "packages/simulation/simulation-local/src/journal.ts": "4fe3e5020ba5e1eec0872bbdad1a5a791d1f5d837bc7b1e30fb675384bb8e1a3",
+    "packages/simulation/simulation-scenario/src/v1-compiler.ts": "ca3081922fbcddc7d3d3452b19720af8cad5dcabde41761b959d4b93e5c16284",
+    "packages/simulation/simulation-scenario/src/input.ts": "788a3c39a8c868b8f7f860393383ec68b58b14d2f3deb93434eee01e0790a313",
+    "packages/simulation/simulation-world/src/driver.ts": "d0727f3c245f4736ae9a64a45adb5a3ab6f2f1b83c3ef22ae4b2a9f0fb0aed49",
+    "packages/simulation/simulation-team/src/metered-stream.ts": "da6c99e06a9e7d09399fc41e40b4501b16e20273017b8b4e96bad00d882009ec",
+    "packages/simulation/simulation/src/tokens.ts": "65836774c3c8323be0dbf7e6b1d3c06f808124b5761816ce7a6134cf7382a430",
+    "examples/simulation-company/tests/live-model-benchmark-scenario.ts": "ec6333bbe21c0ddad03153bb4e02950420e386fe599e76a76333461affb9ace4",
+    "scripts/simulation-benchmark-options.ts": "4138fd84eb49b10dc990ce2a9071285794a72dca230fd33b0c630efb29a2b5ac",
+    ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/r11-final-verification-proof-20261015.md": "68ecd58c53b60d8d423318cc086a4d082a959de9f4143c67b627a535b62e9da1",
+    ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/review-followup-proof-20261015.md": "e12b3ca5de54ef2dfadce8f7824fba72d8873b8a41022c5d32742fd3872f8ba5"
+  }
+}

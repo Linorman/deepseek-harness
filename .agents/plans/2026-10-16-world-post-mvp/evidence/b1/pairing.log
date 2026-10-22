@@ -1,0 +1,6 @@
+$ tsx scripts/verify-translation-pairing.ts --write packages/simulation/simulation-local/README.md packages/simulation/simulation-product/README.md .agents/notes/implemented/architecture/2026-09-29-simulation-readonly-history.md docs/subsystems/simulation.md
+verify-translation-pairing: recorded .agents/notes/implemented/architecture/2026-09-29-simulation-readonly-history.i18n.yaml
+verify-translation-pairing: recorded docs/subsystems/simulation.i18n.yaml
+verify-translation-pairing: recorded packages/simulation/simulation-local/README.i18n.yaml
+verify-translation-pairing: recorded packages/simulation/simulation-product/README.i18n.yaml
+verify-translation-pairing: 4 record(s) written; run the check to validate the pairs.

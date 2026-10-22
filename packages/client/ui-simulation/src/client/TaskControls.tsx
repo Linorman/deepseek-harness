@@ -36,19 +36,20 @@ export function TaskControls(props: Props) {
   const selected = props.target?.runId === runId ? props.drafts[taskCancelDraftKey(props.target)] : undefined
   return <section className={css.review} data-empty={page?.total === 0 || page === undefined && value.error !== undefined || undefined} aria-label={t('taskControl.title')}>
     <header className={css.reviewHeader}><h2>{t('taskControl.title')}{page === undefined ? '' : ` · ${page.total}`}</h2>
-      <Button variant="secondary" disabled={!connected || value.loading} aria-busy={value.loading}
+      <Button variant="secondary" disabled={!connected}
         onClick={() => { void refresh() }}>{t('taskControl.refresh')}</Button></header>
     {page?.total !== 0 && value.error === undefined && <p>{t('taskControl.notice')}</p>}
-    {value.loading && <p role="status">{t('loading')}</p>}
-    {value.stale && <p role="status" className={css.stalePill}>{t('stale')}</p>}
+    {value.loading && page === undefined && <p role="status">{t('loading')}</p>}
     {value.error !== undefined && <p role="alert">{t(value.error)}</p>}
     {error !== undefined && <p role="alert">{error}</p>}
-    {page?.items.length === 0 && !value.loading && <p>{t('taskControl.empty')}</p>}
+    {page?.items.length === 0 && <p>{t('taskControl.empty')}</p>}
     <ul>{page?.items.map(row => <li key={row.operationId} data-simulation-task-control={row.taskId}>
       <code>{row.taskId}</code><p>{t(`reviews.phase.${row.phase}`)} · {t('reviews.revision')}: {row.taskRevision}</p>
       <p>{t(`taskControl.reason.${row.cancel.reason}`)}</p>
       {row.cancellation !== undefined && <p>{t('taskControl.cancelPending')}</p>}
-      <Button disabled={!connected || value.loading} onClick={() => {
+      {/* Opening only edits a draft; submission is fenced on a fresh window, so a background read never disables the
+          control focus returns to. */}
+      <Button disabled={!connected} onClick={() => {
         const target = { runId, operationId: row.operationId }, key = taskCancelDraftKey(target)
         try {
           if (props.drafts[key] === undefined) props.change(key, { ...target, expectedRevision: row.taskRevision,

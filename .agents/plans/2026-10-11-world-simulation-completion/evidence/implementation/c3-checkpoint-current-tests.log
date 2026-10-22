@@ -1,0 +1,13 @@
+$ vitest run packages/simulation/simulation-local/tests/checkpoints.spec.ts packages/simulation/simulation-product/tests/collections.spec.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+
+ Test Files  2 passed (2)
+      Tests  41 passed (41)
+   Start at  02:46:49
+   Duration  1.58s (transform 1.03s, setup 700ms, import 1.37s, tests 718ms, environment 0ms)
+

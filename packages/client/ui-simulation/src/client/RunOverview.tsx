@@ -1,5 +1,7 @@
 /** Progress uses existing bounded observations; diagnostics and Host-wide resources have separate disclosure. */
-import type { SimulationProductRunStatus, SimulationProductModelPoolObservation } from '@clocky/clocky-client-runtime/client'
+import type { SimulationProductRunStatus, SimulationProductModelPoolObservation, SimulationProductControl } from '@clocky/clocky-client-runtime/client'
+import { BudgetPanel } from './BudgetPanel.tsx'
+import { tickUnitLabel } from './RunStateChip.tsx'
 import type { CSSProperties } from 'react'
 import { ModelPool } from './RunStatus.tsx'
 import { SeatMap } from './Visuals.tsx'
@@ -34,9 +36,11 @@ function BudgetMeter({ charged, limit, unknownAttempts, t }: {
  * @param props - Authorized native counters and separately scoped Host pool observations.
  * @returns primary progress facts followed by optional budget and diagnostic detail; absent values stay unavailable.
  */
-export function RunOverview({ value, pool, t }: {
+export function RunOverview({ value, pool, budget, t }: {
   value?: SimulationProductRunStatus | undefined
   pool?: SimulationProductModelPoolObservation | undefined
+  /** Configured run limits from the control, for the usage panel. */
+  budget?: SimulationProductControl['budget'] | undefined
   t: (key: Key, vars?: Record<string, unknown>) => string
 }) {
   const world = value?.status === 'observed' ? value.world : undefined
@@ -86,6 +90,7 @@ export function RunOverview({ value, pool, t }: {
         <div><dt>{t('metrics.unknownOperations')}</dt><dd>{metrics?.unknownOperationCount ?? unavailable}</dd></div>
       </dl>
     </details>
+    <BudgetPanel budget={budget} attribution={metrics?.tokenAttribution} unit={tickUnitLabel(world?.tickUnit.text ?? '', t)} t={t} />
     <details className={css.overviewDetails}><summary>{t('directory.hostResources')}</summary><ModelPool value={pool} t={t} /></details>
   </section>
 }

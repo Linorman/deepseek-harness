@@ -1,7 +1,7 @@
 import { admitTestFinal } from './final-admission-fixture.ts'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import { createTestRootTeam, inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
 import { closeTestChannel, openTestChannel } from '../../../core/team/tests/channel-lifecycle-authority.ts'
@@ -10,6 +10,7 @@ import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
 import { activationIdSchema, teamDeliveryOwnerScopeSchema, teamSystemEnvelopePostScopeSchema, channelInvitationIdempotencyKeySchema, channelPostIdempotencyKeySchema, fingerprintChannelManifest } from '@clocky/clocky-team'
+import { envelopeByteLimitDetails, fingerprintTeamEnvelopeDraft } from '@clocky/clocky-team'
 import type {
   ActivationBindingSnapshot,
   ChannelDeliveryClaimRequest,
@@ -1898,15 +1899,30 @@ describe('Envelope admission rejection', () => {
     await nonArray.dispose()
   })
 
-  it('enforces the configured complete Envelope byte limit before adapter admission', async () => {
-    const harness = await setup('sqlite', recordingAdapter(), undefined, { maxEnvelopeBytes: 1 })
+  it.each(['json', 'sqlite'] as const)('enforces the complete %s UTF-8 Envelope byte limit before adapter admission', async (backend) => {
+    const adapter = recordingAdapter()
+    const admission = vi.spyOn(adapter, 'validateSend')
+    const harness = await setup(backend, adapter, undefined, { maxEnvelopeBytes: 1 })
     const seeded = await openedChannel(harness.ctx)
-    await expect(harness.ctx.teams.postChannelEnvelope(postRequest(
+    const original = postRequest(
       seeded.channel.manifest.id,
       seeded.sender.id,
       seeded.recipient.id,
       seeded.channel.cursor,
-    ))).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    )
+    const request = { ...original, idempotencyKey: channelPostIdempotencyKeySchema.parse('oversized-original'),
+      draft: { ...original.draft, payload: { text: '中🙂'.repeat(200) }, traceId: 'original-fingerprint', correlationId: 'original-operation' } }
+    const before = await harness.ctx.teams.getTeam({ teamId: seeded.team.team.id })
+    const error: unknown = await harness.ctx.teams.postChannelEnvelope(request).catch((reason: unknown) => reason)
+    const evidence = envelopeByteLimitDetails(error)
+    expect(evidence).toMatchObject({ kind: 'envelope-byte-limit', teamId: before.team.id, teamCursor: before.team.cursor,
+      channelId: seeded.channel.manifest.id, channelCursor: seeded.channel.cursor, senderId: seeded.sender.id,
+      idempotencyKey: request.idempotencyKey, traceId: request.draft.traceId, correlationId: request.draft.correlationId,
+      draftFingerprint: fingerprintTeamEnvelopeDraft(request.draft), limit: 1 })
+    expect(evidence!.bytes).toBeGreaterThan(Buffer.byteLength(JSON.stringify(request.draft), 'utf8'))
+    expect(admission).not.toHaveBeenCalled()
+    expect(await harness.ctx.teams.getTeam({ teamId: before.team.id })).toEqual(before)
+    expect((await harness.ctx.teams.getChannel({ channelId: seeded.channel.manifest.id })).cursor).toBe(seeded.channel.cursor)
     const records = await harness.ctx.teams.readChannel({ channelId: seeded.channel.manifest.id, afterCursor: -1 })
     expect(records.records.map(record => record.type)).toEqual([
       'channel/opened', 'channel/phase', 'channel/invitation', 'channel/invitation',

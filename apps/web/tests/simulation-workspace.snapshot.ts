@@ -50,7 +50,7 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
     run = await scaffold.ctx.simulations.open(scaffold.ctx.simulations.resolve({ provider: 'local', spec, mode: 'create' }))
     await run.setPhase('running', 0)
     for (const id of ['仓储中心', '采购人员', '运输组织']) {
-      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'org', cognition: 'none',
+      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'org', cognition: 'none',
         profile: { name: `${id}：${'长名称供应链上下文。'.repeat(16)}`, secret: 'private-world-body' } }), run.snapshot().revision)
     }
     for (const id of ['source-a', 'source-b', 'source-c']) {
@@ -81,11 +81,14 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
     expect(statuses[0]).toHaveLength(2)
     await page.route('**/api/simulation.runs.statuses', route => route.abort('failed'))
     await refreshStatuses()
-    await workspace.getByText('有更新 · 刷新核对', { exact: true }).first().waitFor()
+    // A failed status batch keeps each row as a last observation instead of presenting it as current.
+    await workspace.getByText('运行状态未能刷新；各行显示上次观测结果。', { exact: true }).waitFor()
+    await row.locator('[data-run-state][data-freshness="stale"]').getByText('当前状态未知', { exact: true }).waitFor()
     expect(await row.getByTitle('9007199254740993 minute', { exact: true }).count()).toBe(1)
     await page.unroute('**/api/simulation.runs.statuses')
     await refreshStatuses()
-    await expect.poll(async () => await workspace.getByText('有更新 · 刷新核对', { exact: true }).count()).toBe(0)
+    await expect.poll(async () => await workspace.getByText('运行状态未能刷新；各行显示上次观测结果。', { exact: true }).count()).toBe(0)
+    await expect.poll(async () => await row.locator('[data-run-state][data-freshness="stale"]').count()).toBe(0)
     await page.screenshot({ path: join(root, '01-runs-desktop.png'), animations: 'disabled' })
     await simulationReadPresentation(page, root, `${backend}-runs`, setNativeZoom)
     await workspace.getByRole('button').filter({ hasText: '物流仿真' }).click()
@@ -96,7 +99,10 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
     expect(objectReads).toBe(0)
     const headerStatus = workspace.getByRole('region', { name: '当前仿真状态', exact: true })
     await headerStatus.getByTitle('9007199254740993 minute', { exact: true }).waitFor()
+    // The connection is a run-details fact; a lost connection also turns the state chip into a last observation.
+    await headerStatus.getByText('运行详情', { exact: true }).click()
     await headerStatus.getByText('浏览器连接', { exact: true }).waitFor()
+    await page.keyboard.press('Escape')
     expect(await workspace.getByRole('table').getByRole('row').count()).toBe(3)
     await workspace.getByRole('button', { name: '筛选状态', exact: true }).click()
     await page.getByRole('menuitem', { name: '停用', exact: true }).click()
@@ -171,7 +177,10 @@ it.each(['json', 'sqlite'] as const)('browses registered simulations through the
     await page.getByRole('menuitem', { name: '检查点', exact: true }).waitFor()
     await page.keyboard.press('Escape')
     expect(await modulePicker.evaluate(element => element === document.activeElement)).toBe(true)
-    expect(await workspace.getByRole('table').isVisible()).toBe(false)
+    // The narrow inspector overlays the collection in the same cell and spans its full width.
+    const [table, panel] = await Promise.all([workspace.getByRole('table').boundingBox(),
+      workspace.getByRole('complementary', { name: '查看详情' }).boundingBox()])
+    expect(panel !== null && (table === null || panel.width >= table.width - 1)).toBe(true)
     await page.screenshot({ path: join(root, '03-entity-narrow.png'), animations: 'disabled' })
     await workspace.getByRole('button', { name: '返回集合', exact: true }).click()
     await workspace.getByRole('table').waitFor()

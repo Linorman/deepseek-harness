@@ -1,3 +1,50 @@
+import { simulationRawArchiveParamsSchema, simulationRawArchiveResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRawArchiveParams, SimulationRawArchiveResult } from '@clocky/clocky-sdk-protocol'
+import { simulationRunControlParamsSchema, simulationRunControlResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRunControlParams, SimulationRunControlResult } from '@clocky/clocky-sdk-protocol'
+import {
+  simulationWorldBranchParamsSchema,
+  simulationWorldBranchReadParamsSchema,
+  simulationWorldCausalParamsSchema,
+  simulationWorldCompareParamsSchema,
+  simulationWorldBranchResultSchema,
+  simulationWorldCausalResultSchema,
+  simulationWorldCompareResultSchema,
+} from '@clocky/clocky-sdk-protocol'
+import type {
+  SimulationWorldBranchParams,
+  SimulationWorldBranchReadParams,
+  SimulationWorldCausalParams,
+  SimulationWorldCompareParams,
+  SimulationWorldBranchResult,
+  SimulationWorldCausalResult,
+  SimulationWorldCompareResult,
+} from '@clocky/clocky-sdk-protocol'
+import { createHash } from 'node:crypto'
+import { simulationBackupExportParamsSchema, simulationBackupExportResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationBackupExportParams, SimulationBackupExportResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRetentionPreviewParams, SimulationRetentionExecuteParams, SimulationRetentionReadParams, SimulationRetentionRecordsParams, SimulationRetentionPlan, SimulationRetentionResult, SimulationRetentionRecordsResult } from '@clocky/clocky-sdk-protocol'
+import { simulationRetentionPreviewParamsSchema, simulationRetentionExecuteParamsSchema, simulationRetentionReadParamsSchema, simulationRetentionRecordsParamsSchema, simulationRetentionPlanSchema, simulationRetentionResultSchema, simulationRetentionRecordsResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationGenerationRequestParams, SimulationGenerationReadParams, SimulationGenerationExecuteParams, SimulationGenerationTransitionParams, SimulationGenerationPersonaDraftParams, SimulationGenerationResult } from '@clocky/clocky-sdk-protocol'
+import { simulationGenerationRequestParamsSchema, simulationGenerationReadParamsSchema, simulationGenerationExecuteParamsSchema, simulationGenerationTransitionParamsSchema, simulationGenerationPersonaDraftParamsSchema, simulationGenerationResultSchema } from '@clocky/clocky-sdk-protocol'
+import { simulationRebuildIndexParamsSchema, simulationRebuildIndexResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRebuildIndexParams, SimulationRebuildIndexResult } from '@clocky/clocky-sdk-protocol'
+import { simulationProductCalendarCommandInputSchema, simulationProductCalendarCommandResultSchema, simulationProductCalendarCancelSchema } from '@clocky/clocky-sdk-protocol'
+import { simulationProductCalendarInputSchema, simulationProductCalendarPreviewSchema, simulationProductCalendarSubmitSchema, simulationProductCalendarReceiptSchema } from '@clocky/clocky-sdk-protocol'
+import { simulationDraftReadParamsSchema, simulationDraftReadResultSchema, simulationDraftSaveParamsSchema, simulationDraftSaveResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationDraftReadParams, SimulationDraftReadResult, SimulationDraftSaveParams, SimulationDraftSaveResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWorldManagementFieldsParams, SimulationWorldManagementFieldsResult, SimulationWorldManagementPreviewParams, SimulationWorldManagementPreviewResult, SimulationWorldManagementSubmitParams, SimulationWorldManagementSubmitResult } from '@clocky/clocky-sdk-protocol'
+import { simulationWorldManagementFieldsParamsSchema, simulationWorldManagementFieldsResultSchema, simulationWorldManagementPreviewParamsSchema, simulationWorldManagementPreviewResultSchema, simulationWorldManagementSubmitParamsSchema, simulationWorldManagementSubmitResultSchema, matchesWorldManagementPreview } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWorldDomainParams, SimulationWorldDomainResult } from '@clocky/clocky-sdk-protocol'
+import { simulationWorldDomainParamsSchema, simulationWorldDomainResultSchema } from '@clocky/clocky-sdk-protocol'
+import { matchesWorldDomainSelection } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWorldCasesParams, SimulationWorldCasesResult, SimulationWorldCaseParams, SimulationWorldCaseResult, SimulationWorldCaseCancelParams, SimulationWorldCaseCancelResult } from '@clocky/clocky-sdk-protocol'
+import { simulationWorldPreflightParamsSchema, simulationWorldPreflightResultSchema, simulationWorldCreateParamsSchema,
+  simulationWorldCreateResultSchema, simulationWorldPrepareParamsSchema, simulationWorldPrepareResultSchema,
+  simulationWorldExportParamsSchema, simulationWorldExportResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWorldPreflightParams, SimulationWorldPreflightResult, SimulationWorldCreateParams, SimulationWorldCreateResult,
+  SimulationWorldPrepareParams, SimulationWorldPrepareResult, SimulationWorldExportParams, SimulationWorldExportResult } from '@clocky/clocky-sdk-protocol'
+import { simulationWorldCasesParamsSchema, simulationWorldCasesResultSchema, simulationWorldCaseParamsSchema, simulationWorldCaseResultSchema, simulationWorldCaseCancelParamsSchema, simulationWorldCaseCancelResultSchema } from '@clocky/clocky-sdk-protocol'
 import type { SimulationTasksParams, SimulationTasksResult, SimulationTaskCancelParams, SimulationTaskCancelResult } from '@clocky/clocky-sdk-protocol'
 import { simulationTasksParamsSchema, simulationTasksResultSchema, simulationTaskCancelParamsSchema, simulationTaskCancelResultSchema } from '@clocky/clocky-sdk-protocol'
 import { simulationRequestsParamsSchema, simulationRequestsResultSchema, simulationRetryRequestParamsSchema, simulationRetryRequestResultSchema, type SimulationRequestsParams, type SimulationRequestsResult, type SimulationRetryRequestParams, type SimulationRetryRequestResult } from '@clocky/clocky-sdk-protocol'
@@ -549,6 +596,21 @@ export class HarnessClient {
   }
 
   /**
+   * Persist a stopping target or explicit clear; later recovery and start remain separate commands.
+   * @param params - Original command identity and complete target, or explicit null clear.
+   * @returns original durable receipt plus the current independently observed control state.
+   */
+  async updateSimulationRunControl(params: SimulationRunControlParams): Promise<SimulationRunControlResult> {
+    const input = parseProtocolValue('simulation/runs-run-control params', simulationRunControlParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-run-control result', simulationRunControlResultSchema,
+      await this.request('simulation/runs-run-control', input))
+    if (result.runId !== input.runId || result.receipt.commandId !== input.commandId
+      || result.receipt.targetId !== (input.target?.targetId ?? null))
+      throw new SdkProtocolError('simulation/runs-run-control response belongs to a different selection or command')
+    return result
+  }
+
+  /**
    * Submit an original scheduling intent; exact retries retain its result without undoing later intent.
    * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
    * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
@@ -579,9 +641,172 @@ export class HarnessClient {
   }
 
   /**
-   * Read a bounded set of canonical tasks without creating an execution owner.
-   * @param params - Owned run and exact bounded canonical observation.
-   * @returns run-owned task metadata without task bodies or general Team authority.
+   * Inspect exact real personnel choices without reservation.
+   * @param params - Exact original selection or complete confirmed form.
+   * @returns strictly validated original quote or durable receipt; transport loss grants no replacement command.
+   */
+  async readSimulationWorldManagementFields(params: SimulationWorldManagementFieldsParams): Promise<SimulationWorldManagementFieldsResult> {
+    const input = parseProtocolValue('simulation/world-management-fields params', simulationWorldManagementFieldsParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-management-fields result', simulationWorldManagementFieldsResultSchema,
+      await this.request('simulation/world-management-fields', input))
+    if (result.runId !== input.runId || result.targetId !== input.targetId || result.action !== input.action) throw new SdkProtocolError('World management response belongs to another selection')
+    return result
+  }
+
+  /** Preview the exact finite replacement without inference or mutation.
+   * @param params - Original run, command and finite replacement.
+   * @returns exact current-prefix quote; mismatched response identity rejects.
+   */
+  async previewSimulationWorldCalendar(params: import('@clocky/clocky-sdk-protocol').SimulationCalendarPreviewParams): Promise<import('@clocky/clocky-sdk-protocol').SimulationCalendarPreviewResult> {
+    const input = parseProtocolValue('calendar preview params', simulationProductCalendarInputSchema, params)
+    const result = parseProtocolValue('calendar preview result', simulationProductCalendarPreviewSchema,
+      await this.request('simulation/world-calendar-preview', input))
+    if (JSON.stringify(result.input) !== JSON.stringify(input)) throw new SdkProtocolError('Calendar preview belongs to another command')
+    return result
+  }
+
+  /** Recover one original author command without acquiring execution ownership.
+   * @param params - Run and optional exact command identity.
+   * @returns original quote and settlement, or null for unavailable identities.
+   */
+  async readSimulationWorldCalendarCommand(params: import('@clocky/clocky-sdk-protocol').SimulationCalendarCommandParams):
+  Promise<import('@clocky/clocky-sdk-protocol').SimulationCalendarCommandResult> {
+    const input = parseProtocolValue('calendar command params', simulationProductCalendarCommandInputSchema, params)
+    const result = parseProtocolValue('calendar command result', simulationProductCalendarCommandResultSchema,
+      await this.request('simulation/world-calendar-command', input))
+    if (result.command !== null && (result.command.preview.input.runId !== input.runId
+      || input.commandId !== undefined && result.command.preview.input.request.commandId !== input.commandId))
+      throw new SdkProtocolError('Calendar command response belongs to another original')
+    return result
+  }
+
+  /** Retain the exact original quote before sending an execution request.
+   * @param params - Complete original quote.
+   * @returns durable source commitment; retention alone does not reschedule events.
+   */
+  async retainSimulationWorldCalendar(params: import('@clocky/clocky-sdk-protocol').SimulationCalendarSubmitParams):
+  Promise<import('@clocky/clocky-sdk-protocol').SimulationCalendarCommandResult> {
+    const input = parseProtocolValue('calendar retain params', simulationProductCalendarSubmitSchema, params)
+    const result = parseProtocolValue('calendar retain result', simulationProductCalendarCommandResultSchema,
+      await this.request('simulation/world-calendar-retain', input))
+    if (result.command === null || result.command.preview.previewHash !== input.previewHash
+      || JSON.stringify(result.command.preview.input) !== JSON.stringify(input.input))
+      throw new SdkProtocolError('Calendar retention changed its original quote')
+    return result
+  }
+
+  /** Cancel only the original retained command; a raced accepted effect remains applied.
+   * @param params - Run and exact original command identity.
+   * @returns actual cancelled or already-applied outcome.
+   */
+  async cancelSimulationWorldCalendar(params: import('@clocky/clocky-sdk-protocol').SimulationCalendarCancelParams):
+  Promise<import('@clocky/clocky-sdk-protocol').SimulationCalendarCommandResult> {
+    const input = parseProtocolValue('calendar cancel params', simulationProductCalendarCancelSchema, params)
+    const result = parseProtocolValue('calendar cancel result', simulationProductCalendarCommandResultSchema,
+      await this.request('simulation/world-calendar-cancel', input))
+    if (result.command !== null && (result.command.preview.input.runId !== input.runId
+      || result.command.preview.input.request.commandId !== input.commandId)) throw new SdkProtocolError('Calendar cancellation changed its original identity')
+    return result
+  }
+
+  /** Retry the unchanged original quote after uncertainty; never replace its command identity.
+   * @param params - Complete original quoted input, revision and hash.
+   * @returns original durable acceptance receipt; mismatched response identity rejects.
+   */
+  async submitSimulationWorldCalendar(params: import('@clocky/clocky-sdk-protocol').SimulationCalendarSubmitParams): Promise<import('@clocky/clocky-sdk-protocol').SimulationCalendarSubmitResult> {
+    const input = parseProtocolValue('calendar submit params', simulationProductCalendarSubmitSchema, params)
+    const retained = await this.retainSimulationWorldCalendar(input)
+    if (retained.command?.status === 'cancelled') throw new SdkProtocolError('Original calendar command was cancelled')
+    if (retained.command?.status === 'applied' && retained.command.receipt !== null) return retained.command.receipt
+    const result = parseProtocolValue('calendar submit result', simulationProductCalendarReceiptSchema,
+      await this.request('simulation/world-calendar-submit', input))
+    if (result.runId !== input.input.runId || result.commandId !== input.input.request.commandId)
+      throw new SdkProtocolError('Calendar receipt belongs to another command')
+    return result
+  }
+
+  /**
+   * Preview actual personnel impact without inference or reservation.
+   * @param params - Exact original selection or complete confirmed form.
+   * @returns strictly validated original quote or durable receipt; transport loss grants no replacement command.
+   */
+  async previewSimulationWorldManagement(params: SimulationWorldManagementPreviewParams): Promise<SimulationWorldManagementPreviewResult> {
+    const input = parseProtocolValue('simulation/world-management-preview params', simulationWorldManagementPreviewParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-management-preview result', simulationWorldManagementPreviewResultSchema,
+      await this.request('simulation/world-management-preview', input))
+    if (!matchesWorldManagementPreview(input, result)) throw new SdkProtocolError('World management response belongs to another selection')
+    return result
+  }
+
+  /**
+   * Submit or precisely retry the original confirmed personnel command.
+   * @param params - Exact original selection or complete confirmed form.
+   * @returns strictly validated original quote or durable receipt; transport loss grants no replacement command.
+   */
+  async submitSimulationWorldManagement(params: SimulationWorldManagementSubmitParams): Promise<SimulationWorldManagementSubmitResult> {
+    const input = parseProtocolValue('simulation/world-management-submit params', simulationWorldManagementSubmitParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-management-submit result', simulationWorldManagementSubmitResultSchema,
+      await this.request('simulation/world-management-submit', input))
+    if (result.runId !== input.runId || result.commandId !== input.commandId || result.kind !== 'world-management') throw new SdkProtocolError('World management response belongs to another selection')
+    return result
+  }
+
+  /**
+   * Read one independently authorized World domain window.
+   * @param params - Exact bounded domain selector and continuation.
+   * @returns original selection with explicit coverage, without opening execution.
+   */
+  async readSimulationWorldDomain(params: SimulationWorldDomainParams): Promise<SimulationWorldDomainResult> {
+    const input = parseProtocolValue('simulation/world-domain-read params', simulationWorldDomainParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-domain-read result', simulationWorldDomainResultSchema,
+      await this.request('simulation/world-domain-read', input))
+    if (!matchesWorldDomainSelection(input, result)) throw new SdkProtocolError('World domain response belongs to another selection')
+    return result
+  }
+
+  /**
+   * Read or submit an original World case selection without implicit scheduling.
+   * @param params - Exact owned run and retained selection.
+   * @returns strict original result; another run, section or command is refused.
+   */
+  async listSimulationWorldCases(params: SimulationWorldCasesParams): Promise<SimulationWorldCasesResult> {
+    const input = parseProtocolValue('simulation/world-cases-list params', simulationWorldCasesParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-cases-list result', simulationWorldCasesResultSchema,
+      await this.request('simulation/world-cases-list', input))
+    if (result.runId !== input.runId || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision || input.limit !== undefined && result.items.length > input.limit || input.status !== undefined && result.items.some(item => item.status !== input.status)) throw new SdkProtocolError('World case response belongs to another selection')
+    return result
+  }
+
+  /**
+   * Read or submit an original World case selection without implicit scheduling.
+   * @param params - Exact owned run and retained selection.
+   * @returns strict original result; another run, section or command is refused.
+   */
+  async inspectSimulationWorldCase(params: SimulationWorldCaseParams): Promise<SimulationWorldCaseResult> {
+    const input = parseProtocolValue('simulation/world-case-inspect params', simulationWorldCaseParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-case-inspect result', simulationWorldCaseResultSchema,
+      await this.request('simulation/world-case-inspect', input))
+    if (result.runId !== input.runId || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision || result.requestId !== input.requestId || result.section !== input.section) throw new SdkProtocolError('World case response belongs to another selection')
+    return result
+  }
+
+  /**
+   * Read or submit an original World case selection without implicit scheduling.
+   * @param params - Exact owned run and retained selection.
+   * @returns strict original result; another run, section or command is refused.
+   */
+  async cancelSimulationWorldCase(params: SimulationWorldCaseCancelParams): Promise<SimulationWorldCaseCancelResult> {
+    const input = parseProtocolValue('simulation/world-case-cancel params', simulationWorldCaseCancelParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-case-cancel result', simulationWorldCaseCancelResultSchema,
+      await this.request('simulation/world-case-cancel', input))
+    if (result.runId !== input.runId || result.commandId !== input.commandId || result.kind !== 'cancel-world-case') throw new SdkProtocolError('World case response belongs to another selection')
+    return result
+  }
+
+  /**
+   * Read canonical run-owned task controls without starting execution.
+   * @param params - Exact bounded owned-run observation.
+   * @returns canonical task controls without bodies or general Team authority.
    */
   async listSimulationTasks(params: SimulationTasksParams): Promise<SimulationTasksResult> {
     const input = parseProtocolValue('simulation/tasks-list params', simulationTasksParamsSchema, params)
@@ -767,10 +992,220 @@ export class HarnessClient {
     return result
   }
 
+  /** Explicit original experiment operation; reads never infer or resume scheduling.
+   * @param params - Exact original command or source references; retain IDs across uncertain outcomes.
+   * @returns Strict public result correlated to its original selection.
+   */
+  async branchWorld(params: SimulationWorldBranchParams): Promise<SimulationWorldBranchResult> {
+    const input = parseProtocolValue('simulation/world-branch params', simulationWorldBranchParamsSchema, params)
+    const value = parseProtocolValue('simulation/world-branch result', simulationWorldBranchResultSchema,
+      await this.request('simulation/world-branch', input))
+    if (value.commandId !== input.commandId || value.status === 'not-found'
+        || value.memoryPolicy !== input.memoryPolicy || value.source.runId !== input.source.runId
+        || value.source.archiveCommandId !== input.source.archiveCommandId)
+      throw new SdkProtocolError('World experiment response changed its original selection or bounds')
+    return value
+  }
+
+  /** Explicit original experiment operation; reads never infer or resume scheduling.
+   * @param params - Exact original command or source references; retain IDs across uncertain outcomes.
+   * @returns Strict public result correlated to its original selection.
+   */
+  async readWorldBranch(params: SimulationWorldBranchReadParams): Promise<SimulationWorldBranchResult> {
+    const input = parseProtocolValue('simulation/world-branch-read params', simulationWorldBranchReadParamsSchema, params)
+    const value = parseProtocolValue('simulation/world-branch-read result', simulationWorldBranchResultSchema,
+      await this.request('simulation/world-branch-read', input))
+    if (value.commandId !== input.commandId)
+      throw new SdkProtocolError('World experiment response changed its original selection or bounds')
+    return value
+  }
+
+  /** Explicit original experiment operation; reads never infer or resume scheduling.
+   * @param params - Exact original command or source references; retain IDs across uncertain outcomes.
+   * @returns Strict public result correlated to its original selection.
+   */
+  async queryWorldCausal(params: SimulationWorldCausalParams): Promise<SimulationWorldCausalResult> {
+    const input = parseProtocolValue('simulation/world-causal params', simulationWorldCausalParamsSchema, params)
+    const value = parseProtocolValue('simulation/world-causal result', simulationWorldCausalResultSchema,
+      await this.request('simulation/world-causal', input))
+    if (value.source.runId !== input.source.runId || value.source.archiveCommandId !== input.source.archiveCommandId
+        || value.nodes.length > input.maxNodes || Buffer.byteLength(JSON.stringify(value)) > input.maxBytes)
+      throw new SdkProtocolError('World experiment response changed its original selection or bounds')
+    return value
+  }
+
+  /** Explicit original experiment operation; reads never infer or resume scheduling.
+   * @param params - Exact original command or source references; retain IDs across uncertain outcomes.
+   * @returns Strict public result correlated to its original selection.
+   */
+  async compareWorlds(params: SimulationWorldCompareParams): Promise<SimulationWorldCompareResult> {
+    const input = parseProtocolValue('simulation/world-compare params', simulationWorldCompareParamsSchema, params)
+    const value = parseProtocolValue('simulation/world-compare result', simulationWorldCompareResultSchema,
+      await this.request('simulation/world-compare', input))
+    if (value.observations.left.runId !== input.left.runId || value.observations.left.archiveCommandId !== input.left.archiveCommandId
+        || value.observations.right.runId !== input.right.runId
+        || value.observations.right.archiveCommandId !== input.right.archiveCommandId)
+      throw new SdkProtocolError('World experiment response changed its original selection or bounds')
+    return value
+  }
+
+  /** Read the exact completed private backup; rejects changed authority or original selection.
+   * @param params - Original run and retention command identity.
+   * @returns bounded private bundle bytes without capture, restore or inference.
+   */
+  async backupExport(params: SimulationBackupExportParams): Promise<SimulationBackupExportResult> {
+    const input = parseProtocolValue('simulation/backup-export params', simulationBackupExportParamsSchema, params)
+    const value = parseProtocolValue('simulation/backup-export result', simulationBackupExportResultSchema,
+      await this.request('simulation/backup-export', input))
+    if (value.runId !== input.runId || value.commandId !== input.commandId
+      || createHash('sha256').update(value.bundle).digest('hex') !== value.bundleHash) throw new SdkProtocolError('Backup response changed its original selection or bytes')
+    return value
+  }
+
+  /**
+   * Explicit retention preview; keep the original command and source cut across retries.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns source-bound conservative archive plan; a live or nonquiescent source refuses without pausing.
+   */
+  async retentionPreview(params: SimulationRetentionPreviewParams): Promise<SimulationRetentionPlan> {
+    const input = parseProtocolValue('simulation/retention-preview params', simulationRetentionPreviewParamsSchema, params)
+    const value = parseProtocolValue('simulation/retention-preview result', simulationRetentionPlanSchema,
+      await this.request('simulation/retention-preview', input))
+    if (value.runId !== input.runId) throw new SdkProtocolError('Retention response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit retention execute; keep the original command and source cut across retries.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async retentionExecute(params: SimulationRetentionExecuteParams): Promise<SimulationRetentionResult> {
+    const input = parseProtocolValue('simulation/retention-execute params', simulationRetentionExecuteParamsSchema, params)
+    const value = parseProtocolValue('simulation/retention-execute result', simulationRetentionResultSchema,
+      await this.request('simulation/retention-execute', input))
+    if (value.runId !== input.runId || value.commandId !== input.commandId
+        || value.status === 'not-found' || value.plan.planHash !== input.planHash || value.plan.snapshotRevision !== input.expectedRevision) throw new SdkProtocolError('Retention response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit retention read; keep the original command and source cut across retries.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async retentionRead(params: SimulationRetentionReadParams): Promise<SimulationRetentionResult> {
+    const input = parseProtocolValue('simulation/retention-read params', simulationRetentionReadParamsSchema, params)
+    const value = parseProtocolValue('simulation/retention-read result', simulationRetentionResultSchema,
+      await this.request('simulation/retention-read', input))
+    if (value.runId !== input.runId || value.commandId !== input.commandId) throw new SdkProtocolError('Retention response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit retention records; keep the original command and source cut across retries.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns independently authorized original owner records in ascending sequence order.
+   */
+  async retentionRecords(params: SimulationRetentionRecordsParams): Promise<SimulationRetentionRecordsResult> {
+    const input = parseProtocolValue('simulation/retention-records params', simulationRetentionRecordsParamsSchema, params)
+    const value = parseProtocolValue('simulation/retention-records result', simulationRetentionRecordsResultSchema,
+      await this.request('simulation/retention-records', input))
+    if (value.runId !== input.runId || value.commandId !== input.commandId
+        || value.owner !== input.owner || value.ownerId !== input.ownerId
+        || value.entries.length > input.limit || value.entries.some((entry, index, entries) =>
+      entry.sequence <= (entries[index - 1]?.sequence ?? input.afterSequence))) throw new SdkProtocolError('Retention response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit generation request; retry retains the original job identity and payload.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async generationRequest(params: SimulationGenerationRequestParams): Promise<SimulationGenerationResult> {
+    const input = parseProtocolValue('simulation/generation-request params', simulationGenerationRequestParamsSchema, params)
+    const result = parseProtocolValue('simulation/generation-request result', simulationGenerationResultSchema,
+      await this.request('simulation/generation-request', input))
+    if (result.runId !== input.runId || result.job !== null && result.job.job.id !== input.job.id || result.job === null)
+      throw new SdkProtocolError('Generation response changed its original selection')
+    return result
+  }
+
+  /**
+   * Explicit generation read; retry retains the original job identity and payload.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns the original private job or absent history without any model request.
+   */
+  async generationRead(params: SimulationGenerationReadParams): Promise<SimulationGenerationResult> {
+    const input = parseProtocolValue('simulation/generation-read params', simulationGenerationReadParamsSchema, params)
+    const result = parseProtocolValue('simulation/generation-read result', simulationGenerationResultSchema,
+      await this.request('simulation/generation-read', input))
+    if (result.runId !== input.runId || result.job !== null && result.job.job.id !== input.jobId)
+      throw new SdkProtocolError('Generation response changed its original selection')
+    return result
+  }
+
+  /**
+   * Explicit generation execute; retry retains the original job identity and payload.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns retained output or explicit unresolved responsibility after the accepted model attempt.
+   */
+  async generationExecute(params: SimulationGenerationExecuteParams): Promise<SimulationGenerationResult> {
+    const input = parseProtocolValue('simulation/generation-execute params', simulationGenerationExecuteParamsSchema, params)
+    const result = parseProtocolValue('simulation/generation-execute result', simulationGenerationResultSchema,
+      await this.request('simulation/generation-execute', input))
+    if (result.runId !== input.runId || result.job !== null && result.job.job.id !== input.jobId || result.job === null)
+      throw new SdkProtocolError('Generation response changed its original selection')
+    return result
+  }
+
+  /**
+   * Explicit generation transition; retry retains the original job identity and payload.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async generationTransition(params: SimulationGenerationTransitionParams): Promise<SimulationGenerationResult> {
+    const input = parseProtocolValue('simulation/generation-transition params', simulationGenerationTransitionParamsSchema, params)
+    const result = parseProtocolValue('simulation/generation-transition result', simulationGenerationResultSchema,
+      await this.request('simulation/generation-transition', input))
+    if (result.runId !== input.runId || result.job !== null && result.job.job.id !== input.change.id || result.job === null)
+      throw new SdkProtocolError('Generation response changed its original selection')
+    return result
+  }
+
+  /**
+   * Explicit generation persona-draft; retry retains the original job identity and payload.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns original generation linked to its committed A2 draft revision and body hash.
+   */
+  async generationPersonaDraft(params: SimulationGenerationPersonaDraftParams): Promise<SimulationGenerationResult> {
+    const input = parseProtocolValue('simulation/generation-persona-draft params', simulationGenerationPersonaDraftParamsSchema, params)
+    const result = parseProtocolValue('simulation/generation-persona-draft result', simulationGenerationResultSchema,
+      await this.request('simulation/generation-persona-draft', input))
+    if (result.runId !== input.runId || result.job !== null && result.job.job.id !== input.jobId || result.job === null)
+      throw new SdkProtocolError('Generation response changed its original selection')
+    return result
+  }
+
   /**
    * Read authorized Simulation metadata without executing models.
    * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
    * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async rebuildSimulationIndex(params: SimulationRebuildIndexParams): Promise<SimulationRebuildIndexResult> {
+    const input = parseProtocolValue('simulation/index-rebuild params', simulationRebuildIndexParamsSchema, params)
+    const result = parseProtocolValue('simulation/index-rebuild result', simulationRebuildIndexResultSchema,
+      await this.request('simulation/index-rebuild', input))
+    if (result.runId !== input.runId || result.snapshotRevision !== input.expectedRevision)
+      throw new SdkProtocolError('simulation/index-rebuild response belongs to a different source')
+    return result
+  }
+
+  /**
+   * Read one authorized collection without model execution.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
    */
   async browseSimulation(params: SimulationBrowseParams): Promise<SimulationBrowseResult> {
     const input = parseProtocolValue('simulation/collections-list params', simulationBrowseParamsSchema, params)
@@ -795,6 +1230,19 @@ export class HarnessClient {
       || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision
       || input.envelopeSequence !== undefined && result.envelope !== undefined && result.envelope.sequence !== input.envelopeSequence
       || input.limit !== undefined && result.items.length > input.limit) throw new SdkProtocolError('Simulation source response does not match its selection')
+    return result
+  }
+
+  /**
+   * Preserve original registered-source bytes with an explicit whole-record body grant.
+   * @param params - Run and bounded continuation; no caller path, provider or version override.
+   * @returns raw-only archive parts; no inference, writable restoration or Native validation occurs.
+   */
+  async archiveRawSimulation(params: SimulationRawArchiveParams): Promise<SimulationRawArchiveResult> {
+    const input = parseProtocolValue('simulation/raw-archive params', simulationRawArchiveParamsSchema, params)
+    const result = parseProtocolValue('simulation/raw-archive result', simulationRawArchiveResultSchema,
+      await this.request('simulation/raw-archive', input))
+    if (result.runId !== input.runId) throw new SdkProtocolError('simulation/raw-archive response belongs to another selection')
     return result
   }
 
@@ -859,6 +1307,87 @@ export class HarnessClient {
     const input = parseProtocolValue('simulation/runs-preflight params', simulationPreflightParamsSchema, params)
     return parseProtocolValue('simulation/runs-preflight result', simulationPreflightResultSchema,
       await this.request('simulation/runs-preflight', input))
+  }
+
+  /** Access private immutable authoring revisions without model execution.
+   * @param params - Original private authoring request.
+   * @returns saved revision or explicit conflict; mismatched original identities reject.
+   */
+  async readSimulationDraft(params: SimulationDraftReadParams): Promise<SimulationDraftReadResult> {
+    const input = parseProtocolValue('simulation/draft-read params', simulationDraftReadParamsSchema, params)
+    const result = parseProtocolValue('simulation/draft-read result', simulationDraftReadResultSchema,
+      await this.request('simulation/draft-read', input))
+    if (result.value !== null && (result.value.draftId !== input.draftId
+      || input.revision !== undefined && result.value.revision !== input.revision)) throw new SdkProtocolError('Draft read belongs to another selection')
+    return result
+  }
+  /** Access private immutable authoring revisions without model execution.
+   * @param params - Original private authoring request.
+   * @returns saved revision or explicit conflict; mismatched original identities reject.
+   */
+  async saveSimulationDraft(params: SimulationDraftSaveParams): Promise<SimulationDraftSaveResult> {
+    const input = parseProtocolValue('simulation/draft-save params', simulationDraftSaveParamsSchema, params)
+    const result = parseProtocolValue('simulation/draft-save result', simulationDraftSaveResultSchema,
+      await this.request('simulation/draft-save', input))
+    const original = result.status === 'conflict' ? result.attempted : result.value
+    if (original.draftId !== input.draftId || original.saveId !== input.saveId || original.parentRevision !== input.parentRevision
+      || original.name !== input.name || JSON.stringify(original.definition) !== JSON.stringify(input.definition)
+      || JSON.stringify(original.layout) !== JSON.stringify(input.layout)
+      || JSON.stringify(original.templateManifest) !== JSON.stringify(input.templateManifest))
+      throw new SdkProtocolError('Draft save belongs to another original intent')
+    return result
+  }
+
+  /**
+   * Validate a portable World definition without allocating identities or starting inference.
+   * @param params - Strict JSON scenario selected by the caller.
+   * @returns current installed preview or bounded field diagnostics.
+   */
+  async preflightSimulationWorld(params: SimulationWorldPreflightParams): Promise<SimulationWorldPreflightResult> {
+    const input = parseProtocolValue('simulation/world-preflight params', simulationWorldPreflightParamsSchema, params)
+    return parseProtocolValue('simulation/world-preflight result', simulationWorldPreflightResultSchema,
+      await this.request('simulation/world-preflight', input))
+  }
+
+  /**
+   * Create a paused World using the caller's original immutable command and preview.
+   * @param params - Portable definition and exact accepted preflight identity.
+   * @returns durable original creation receipt; uncertain outcomes retain the same command.
+   */
+  async createSimulationWorld(params: SimulationWorldCreateParams): Promise<SimulationWorldCreateResult> {
+    const input = parseProtocolValue('simulation/world-create params', simulationWorldCreateParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-create result', simulationWorldCreateResultSchema,
+      await this.request('simulation/world-create', input))
+    if (result.commandId !== input.commandId || result.kind !== 'world-create') throw new SdkProtocolError('World creation response belongs to another command')
+    return result
+  }
+
+  /**
+   * Prepare an original World without replacing its accepted definition or starting inference.
+   * @param params - Run and caller-retained preparation command.
+   * @returns durable receipt correlated to the original run and command.
+   */
+  async prepareSimulationWorld(params: SimulationWorldPrepareParams): Promise<SimulationWorldPrepareResult> {
+    const input = parseProtocolValue('simulation/world-prepare params', simulationWorldPrepareParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-prepare result', simulationWorldPrepareResultSchema,
+      await this.request('simulation/world-prepare', input))
+    if (result.commandId !== input.commandId || result.kind !== 'world-prepare' || result.runId !== input.runId) {
+      throw new SdkProtocolError('World preparation response belongs to another command or run')
+    }
+    return result
+  }
+
+  /**
+   * Export only the authorized original portable creation definition.
+   * @param params - Exact original World run.
+   * @returns matching portable definition; export neither backs up private history nor starts inference.
+   */
+  async exportSimulationWorldDefinition(params: SimulationWorldExportParams): Promise<SimulationWorldExportResult> {
+    const input = parseProtocolValue('simulation/world-export params', simulationWorldExportParamsSchema, params)
+    const result = parseProtocolValue('simulation/world-export result', simulationWorldExportResultSchema,
+      await this.request('simulation/world-export', input))
+    if (result.runId !== input.runId) throw new SdkProtocolError('World export response belongs to another run')
+    return result
   }
 
   /**

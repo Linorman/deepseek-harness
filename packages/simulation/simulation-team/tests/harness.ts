@@ -1,3 +1,4 @@
+import TokenMeter from '@clocky/clocky-token-meter'
 /** Real in-process owners used after a subprocess has left durable recovery state. */
 import { join } from 'node:path'
 import { Context } from '@clocky/cordis'
@@ -17,9 +18,10 @@ import * as SimulationLocal from '@clocky/clocky-simulation-local'
 import SimulationTeams from '../src/index.ts'
 
 /** Mount real owners over the same media as the Loader subprocess. */
-export async function createContext(root: string, backend: 'json' | 'sqlite', maxContextBytes = 65536, maxCoordinationRounds = 16, maxConcurrentModels = 2, maxQueuedModels = 16) {
+export async function createContext(root: string, backend: 'json' | 'sqlite', maxContextBytes = 65536, maxCoordinationRounds = 16, maxConcurrentModels = 2, maxQueuedModels = 16, requestPolicy?: import('../src/request-budget.ts').RequestBudgetPolicy) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
+  if (requestPolicy !== undefined) await ctx.plugin(TokenMeter)
   await ctx.plugin(JsonlSessionPersistence, { root: join(root, 'sessions'), compression: 'none' })
   await ctx.plugin(AgentLoop, { agents: [] })
   await ctx.plugin(Storage)
@@ -34,7 +36,8 @@ export async function createContext(root: string, backend: 'json' | 'sqlite', ma
   await ctx.plugin(Simulations)
   await ctx.plugin(SimulationLocal, { name: 'local', root: join(root, 'simulation'), backend, replayPageSize: 4 })
   const serviceFiber = ctx.plugin(SimulationTeams, {
-    maxContextBytes, deliveryPageSize: 32, maxCoordinationRounds, maxConcurrentModels, maxQueuedModels,
+    ...requestPolicy === undefined ? {} : { requestPolicy }, maxContextBytes,
+    deliveryPageSize: 32, maxCoordinationRounds, maxConcurrentModels, maxQueuedModels,
   })
   await serviceFiber
   return { ctx, runtimeFiber, serviceFiber }

@@ -1,3 +1,4 @@
+import { assertSimulationMaintenanceAdmission, personnelRetired } from '@clocky/clocky-simulation'
 /** Deterministic fair admission and journal-owned window reservations. @module @clocky/clocky-simulation-local/dispatch */
 import { z } from 'zod'
 import { isDeepStrictEqual } from 'node:util'
@@ -41,7 +42,8 @@ export function selectDecisions(state: SimulationSnapshot, request: SimulationDi
   const eligible = Object.values(queue.tickets).filter((ticket) => {
     const entity = state.entities[ticket.candidate.entityId]
     const wake = ticket.candidate.wakeId === undefined ? undefined : state.wakes[ticket.candidate.wakeId]
-    return ticket.status === 'queued' && entity?.phase === 'active' && entity.cognition === 'agent' && entity.binding !== undefined
+    return ticket.status === 'queued' && entity?.readiness === 'ready' && entity.phase === 'active' && entity.cognition === 'agent' && entity.binding !== undefined
+      && !personnelRetired(state, entity.id)
       && (ticket.candidate.wakeId === undefined || wake?.status === 'pending' && wake.entityId === entity.id)
   }).sort((a, b) => {
     const starvedA = age(a) >= BigInt(state.spec.maxDispatchWaitRounds)
@@ -72,10 +74,11 @@ export function foldDispatch(state: SimulationSnapshot, record: DispatchRecord):
   const queue = decisionDispatch(state)
   switch (record.kind) {
     case 'dispatch/queued': {
+      assertSimulationMaintenanceAdmission(state)
       const candidate = record.candidate
       const entity = state.entities[candidate.entityId]
       if (Object.hasOwn(queue.tickets, candidate.id) || Object.hasOwn(state.decisions, candidate.id)
-        || entity?.phase !== 'active' || entity.cognition !== 'agent' || entity.binding === undefined) {
+        || entity?.readiness !== 'ready' || entity.phase !== 'active' || entity.cognition !== 'agent' || entity.binding === undefined) {
         throw new Error('Simulation nomination requires a new decision identity and active bound actor')
       }
       if (Object.values(queue.tickets).filter(ticket => ticket.status === 'queued' || ticket.status === 'reserved').length
@@ -90,6 +93,7 @@ export function foldDispatch(state: SimulationSnapshot, record: DispatchRecord):
         tickets: { ...queue.tickets, [candidate.id]: { candidate, ordinal: queue.nextOrdinal, queuedRound: queue.round, status: 'queued' } } } }
     }
     case 'dispatch/reserved': {
+      assertSimulationMaintenanceAdmission(state)
       if (Object.hasOwn(queue.selections, record.request.id) || Object.hasOwn(state.windows ?? {}, record.request.id)
         || !isDeepStrictEqual(selectDecisions(state, record.request), record.decisions)) {
         throw new Error('Simulation allocation changed its identity or fair order')

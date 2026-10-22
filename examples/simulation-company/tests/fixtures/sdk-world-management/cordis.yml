@@ -1,0 +1,4 @@
+- name: cordis:include
+  config:
+    path: ../sdk-world/cordis.yml
+- name: ./observer.ts

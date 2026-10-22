@@ -1,0 +1,36 @@
+{
+  "command": "TMPDIR=$PWD/.tmp pnpm exec vitest run packages/simulation/simulation-product/tests/backup-import.spec.ts",
+  "tests": 4,
+  "log": "product-import-tests.log",
+  "matrix": {
+    "backend": [
+      "json",
+      "sqlite"
+    ],
+    "family": [
+      "world-create",
+      "world-branch"
+    ],
+    "source": "source root renamed offline before import",
+    "target": "actual Loader new empty root, original parent Product directory absent for branch",
+    "fault": "actual child SIGKILL after durable Product registration before publication",
+    "resume": "exact retry and fresh Loader discovery, explicit new-anchor restore and start/pause",
+    "inference": "zero before explicit start",
+    "authority": "same principal; source original branch/creation family retained"
+  },
+  "sourceHashes": {
+    "packages/simulation/simulation-team/src/backup.ts": "73d9cd09212ef45e0a7b32877f663dbdb91ef49879d7a80a6e53e99c38e0445f",
+    "packages/simulation/simulation-team/src/archive.ts": "9bdeb13b2c854588a77efd8e2d5929a68915bf53d391b30fae4284dd8bdef7b7",
+    "packages/simulation/simulation-team/tests/backup.spec.ts": "f3f8082991bc0be325f3eba4e2a3314bc856356e7452ef3c9ca74d860bcae524",
+    "packages/simulation/simulation-team/tests/archive.spec.ts": "a2b26dd79e175a0ff590e278611c21320b0337f10033a2d901421eb277d100a5",
+    "packages/simulation/simulation-product/src/backup-import.ts": "8eb6222fd62587b8fdea3c062dc0585de19fa74198b332d0eec7323fec5b80fd",
+    "packages/simulation/simulation-product/tests/backup-import.spec.ts": "5af3581fa5bf5f7c4d027d33cb66f6d550bee4dec5a0a7e1f90b235210916dbc",
+    "packages/simulation/simulation-product/tests/backup-import-process.ts": "8dda8e55a3b1c5bf2cbffe1b97bced80bd73ec16fd6553044bd1733af6c205b3",
+    "packages/simulation/simulation-product/src/administration.ts": "f158810cce9b2d39d3b5a3a950894b2efc644918e85a7f5fc771eaf99224de1f",
+    "packages/simulation/simulation-product/src/world-creation.ts": "89acd5365f4363b1c18311098e908da4a01dbd70e926f5f3bc13854d9eb940a6",
+    "packages/simulation/simulation-product/src/experiment-store.ts": "356fe325d79d1342c16e45a8fc8b698f200e83fe83e4f3c6436974ad92c5c752",
+    "packages/simulation/simulation-team/src/experiments.ts": "848dcc0826f8cb91f295192cc3fe03ce09ab4b21a6695f3cff0edeb6bd9b7391",
+    "packages/simulation/simulation/src/experiment.ts": "43f894343473c1c81a86580fdba1aac22d97bfc18c7e46c4833c3886811f29af"
+  },
+  "logHash": "24ee96ba7be7885d3033a99fe8d7a211d917a320cdc3898cfd54365de3946af9"
+}

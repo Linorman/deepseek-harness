@@ -15,6 +15,7 @@ const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ prov
   outboxMaxAttempts: 1, outboxRetryDelayMs: 0, maxDriveSteps: 16, maxMicrostepsPerTime: 32,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 0,
   maxIngressBytes: 4096, maxEntities: 2, maxResidentActors: 1, maxDecisionsPerWindow: 1, maxOperationsPerDecision: 1,
+  maxResourceReservationHistory: 128,
   maxResourceQuantity: '1', maxQueuedDecisions: 2, maxDispatchWaitRounds: 2, budgetInterval: '100',
   maxDecisionsPerInterval: 10, maxMessagesPerInterval: 0, maxTokensPerInterval: 10000, tokensPerModelRequest: 100,
   maxPendingEvents: 10, maxPendingInteractions: 0, maxKnowledgeBytes: 4096, maxKnowledgePerQuery: 1, relationRules: [],
@@ -30,7 +31,7 @@ try {
     'simulation/knowledge-depth')
   const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/knowledge-depth')
   for (const id of [owner, viewer]) {
-    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
     await connection.ensureParticipant(id, { displayName: id, role: id, capabilities: [], provider: 'in-process', preset: 'simulation', model: 'depth/scripted' })
   }
   if (recovering) await connection.recover(viewer)

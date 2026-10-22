@@ -7,6 +7,8 @@
  * - mode identity: --clocky-mode-{team,simulation}-{fg,bg,subtle,glow,gradient}, chrome only
  * - live halos and materials: --clocky-glow-<state>, --clocky-surface-glass, --clocky-blur-glass
  * - visualization: --clocky-viz-{grid,edge,edge-active,edge-ghost,node-ring,halo}
+ * - World domain identity: --clocky-domain-{organization,governance,external}-{fg,bg,border}
+ * - ambient field: --clocky-ambient-{terrain-ink,terrain-opacity,pulse-opacity}, chrome only
  * - type: --clocky-type-<role> (font shorthand) and its -size/-line-height/-weight parts
  * - space, radius, elevation, layer, duration, ease
  *
@@ -87,6 +89,8 @@
   --clocky-duration-orbit: 24000ms;
   --clocky-duration-flow: 1200ms;
   --clocky-duration-celebrate: 1200ms;
+  /* `drift` is the ambient field's terrain period: slow enough to read as weather, never as progress. */
+  --clocky-duration-drift: 90000ms;
   --clocky-ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
   --clocky-stagger-step: 40ms;
 
@@ -134,6 +138,10 @@
   --clocky-type-metric-size: 32px;
   --clocky-type-metric-line-height: 36px;
   --clocky-type-metric-weight: 500;
+  /* Hero: the single largest live figure on a page (the World dial's simulated time). */
+  --clocky-type-hero-size: 44px;
+  --clocky-type-hero-line-height: 48px;
+  --clocky-type-hero-weight: 500;
 }
 
 body {
@@ -151,6 +159,7 @@ body {
   --clocky-type-mono-small: var(--clocky-type-mono-small-weight) var(--clocky-type-mono-small-size)/var(--clocky-type-mono-small-line-height) var(--ds-font-family-code);
   --clocky-type-hero: var(--clocky-type-hero-weight) var(--clocky-type-hero-size)/var(--clocky-type-hero-line-height) var(--clocky-font-family);
   --clocky-type-metric: var(--clocky-type-metric-weight) var(--clocky-type-metric-size)/var(--clocky-type-metric-line-height) var(--ds-font-family-code);
+  --clocky-type-hero: var(--clocky-type-hero-weight) var(--clocky-type-hero-size)/var(--clocky-type-hero-line-height) var(--ds-font-family-code);
 
   /* Palette steps. */
   --clocky-neutral-0: #ffffff;
@@ -283,6 +292,24 @@ body {
   --clocky-mode-simulation-glow: 0 0 0 1px rgb(190 40 170 / 26%), 0 0 24px rgb(190 40 170 / 16%);
   --clocky-mode-simulation-gradient: linear-gradient(135deg, #7c4ddb 0%, #d02aa8 100%);
 
+  /* World domains: which domain an object belongs to, never its state. Aliases over the
+     categorical tints so feature CSS never reads a tint for domain identity. */
+  --clocky-domain-organization-fg: var(--clocky-tint-teal-fg);
+  --clocky-domain-organization-bg: var(--clocky-tint-teal-bg);
+  --clocky-domain-organization-border: var(--clocky-tint-teal-border);
+  --clocky-domain-governance-fg: var(--clocky-tint-olive-fg);
+  --clocky-domain-governance-bg: var(--clocky-tint-olive-bg);
+  --clocky-domain-governance-border: var(--clocky-tint-olive-border);
+  --clocky-domain-external-fg: var(--clocky-tint-slate-fg);
+  --clocky-domain-external-bg: var(--clocky-tint-slate-bg);
+  --clocky-domain-external-border: var(--clocky-tint-slate-border);
+
+  /* Ambient field (L0 chrome): terrain contour ink and peak opacities. They stay below
+     reading contrast and never carry state. */
+  --clocky-ambient-terrain-ink: rgb(124 77 219 / 100%);
+  --clocky-ambient-terrain-opacity: 0.07;
+  --clocky-ambient-pulse-opacity: 0.32;
+
   /* Glow: live-state halos composed from the status roles. */
   --clocky-glow-running: 0 0 0 1px var(--clocky-status-running-border), 0 0 14px color-mix(in srgb, var(--clocky-status-running-fg) 30%, transparent);
   --clocky-glow-needs-you: 0 0 0 1px var(--clocky-status-needs-you-border), 0 0 14px color-mix(in srgb, var(--clocky-status-needs-you-fg) 32%, transparent);
@@ -340,7 +367,8 @@ body[data-ds-dark-theme] {
 
   --clocky-accent-fg: var(--clocky-blue-300);
   --clocky-accent-bg: var(--clocky-blue-500);
-  --clocky-accent-bg-hover: var(--clocky-blue-400);
+  /* Hover darkens like light mode: white text stays above 4.5:1 (blue-400 measured 3.0:1). */
+  --clocky-accent-bg-hover: var(--clocky-blue-600);
   --clocky-accent-subtle: var(--clocky-blue-900);
   --clocky-accent-subtle-border: var(--clocky-blue-800);
 
@@ -389,6 +417,10 @@ body[data-ds-dark-theme] {
   --clocky-mode-simulation-glow: 0 0 0 1px rgb(232 110 210 / 30%), 0 0 28px rgb(232 110 210 / 22%);
   --clocky-mode-simulation-gradient: linear-gradient(135deg, #9b6bff 0%, #ec4fc0 100%);
 
+  --clocky-ambient-terrain-ink: rgb(196 150 255 / 100%);
+  --clocky-ambient-terrain-opacity: 0.11;
+  --clocky-ambient-pulse-opacity: 0.48;
+
   --clocky-surface-glass: rgb(27 31 38 / 70%);
   --clocky-blur-glass: blur(16px) saturate(150%);
 
@@ -422,6 +454,7 @@ body[data-ds-dark-theme] {
     --clocky-duration-orbit: 0.01ms;
     --clocky-duration-flow: 0.01ms;
     --clocky-duration-celebrate: 0.01ms;
+    --clocky-duration-drift: 0.01ms;
     --clocky-stagger-step: 0ms;
   }
 

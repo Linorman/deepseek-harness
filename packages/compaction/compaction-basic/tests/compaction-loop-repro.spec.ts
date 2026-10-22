@@ -82,6 +82,7 @@ class OverflowRecoveryAdapter extends LlmAdapter {
   constructor(
     private readonly delivery: 'thrown' | 'in-band',
     private readonly transientAfterOverflow = false,
+    private readonly noGainOutput = false,
   ) {
     super()
   }
@@ -108,7 +109,7 @@ class OverflowRecoveryAdapter extends LlmAdapter {
     if (trailing.includes('acting as a compaction engine')) {
       this.summaryRequests.push(options)
       yield { type: 'block-start', index: 0, blockType: 'text' }
-      yield { type: 'block-end', index: 0, block: { type: 'text', text: 'RECOVERY CHECKPOINT' } }
+      yield { type: 'block-end', index: 0, block: { type: 'text', text: this.noGainOutput ? 'unhelpful summary '.repeat(10000) : 'RECOVERY CHECKPOINT' } }
       yield { type: 'finish', reason: { kind: 'stop' } }
       return
     }
@@ -384,6 +385,29 @@ describe('context-overflow recovery across the real loop and compaction-basic', 
       }
     },
   )
+
+  it('preserves provider overflow after a paid no-gain attempt instead of retrying the original request', async () => {
+    const ctx = new Context()
+    const adapter = new OverflowRecoveryAdapter('thrown', false, true)
+    await mountAgentLoopTestDependencies(ctx)
+    await mountInvariants(ctx)
+    await ctx.plugin(AgentLoop, { agents: [] })
+    await ctx.plugin(TokenMeter)
+    ctx.llm.registerAdapter(['mock'], adapter)
+    await ctx.plugin(BasicCompactionEngine, { thresholdRatio: 1, retainTokens: 100, maxTokens: 64,
+      compactionRetries: 0, maxOverflowRetries: 1 })
+    try {
+      const { agent } = await ctx.agentLoop.createAgent(ctx, { sessionId: SessionId('no-gain-overflow'),
+        seed: overflowHistorySeed(), agentOptions: { provider: 'mock', model: 'mock' } })
+      agent.followup(createUserMessage({ content: [{ type: 'text', text: 'continue' }], source: { kind: 'user' } }))
+      await agent.whenIdle()
+      expect(adapter.conversationRequests).toHaveLength(1)
+      expect(adapter.summaryRequests).toHaveLength(1)
+      expect(agent.session.events.filter(event => event.type === 'compaction/summary')).toHaveLength(0)
+      expect(agent.session.events.findLast(event => event.type === 'compaction/end')?.data.noGain).toBeDefined()
+      expect(agent.session.surface.replaceGeneration).toBe(0)
+    } finally { await ctx.fiber.dispose() }
+  })
 
   it('keeps context-overflow and transient retry budgets independent in one sequence', async () => {
     const ctx = new Context()

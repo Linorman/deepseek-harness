@@ -80,7 +80,8 @@ describe('bootstrap failure rendering', () => {
 })
 
 describe('plugin activation', () => {
-  it('allows a modules-dependent row to be created before the modules row', async () => {
+  it.each([true, false])('settles modules-dependent rows before validating the root registration (%s)', async (rootPresent) => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const events: string[] = []
     const container = document.createElement('div')
     document.body.append(container)
@@ -108,6 +109,7 @@ describe('plugin activation', () => {
         factory: () => ({
           apply: (ctx: Context) => {
             ctx.reflect.provide('uiRenderer', {
+              hasRootRegistration: () => rootPresent,
               mount: (element: HTMLElement) => {
                 events.push('mount')
                 element.textContent = 'mounted'
@@ -129,8 +131,14 @@ describe('plugin activation', () => {
     await entry.run()
 
     expect(target.mode).toBe('live')
-    expect(events).toEqual(['consumer', 'mount'])
-    expect(container.textContent).toBe('mounted')
+    expect(events).toEqual(rootPresent ? ['consumer', 'mount'] : ['consumer'])
+    if (rootPresent) {
+      expect(container.textContent).toBe('mounted')
+      expect(error).not.toHaveBeenCalled()
+    } else {
+      expect(container.textContent).toContain('Web boot requires a root layout registration')
+      expect(error).toHaveBeenCalled()
+    }
     await entry.dispose()
   })
 })

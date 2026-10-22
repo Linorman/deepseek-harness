@@ -1,0 +1,247 @@
+$ vitest run --config vitest.web.config.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ apps/web/tests/world-case-states.snapshot.ts (12 tests | 7 failed) 232867ms
+   × shows 'json' 'company' actual 'rejected' state 31992ms
+   × shows 'json' 'company' actual 'capacity' state 31350ms
+   × shows 'json' 'company' actual 'maintenance' state 31409ms
+   × shows 'json' 'laboratory' actual 'rejected' state 31593ms
+   × shows 'json' 'laboratory' actual 'capacity' state 31626ms
+   × shows 'json' 'laboratory' actual 'maintenance' state 31533ms
+   × shows 'sqlite' 'company' actual 'capacity' state 31383ms
+ ❯ apps/web/tests/simulation-task-execution-matrix.snapshot.ts (4 tests | 4 failed) 150269ms
+   × keeps genuine three-actor task reviews usable across language/theme/keyboard/zoom and unknown results (json) 37657ms
+   × keeps genuine three-actor task reviews usable across language/theme/keyboard/zoom and unknown results (sqlite) 36804ms
+   × retains exact public cancellation after genuine report effects and changed task revision (json) 37968ms
+   × retains exact public cancellation after genuine report effects and changed task revision (sqlite) 37840ms
+ ❯ apps/web/tests/simulation-administration.snapshot.ts (4 tests | 4 failed) 249473ms
+   × creates and controls original simulations through the real Web carrier (json, tasks=false) 62631ms
+   × creates and controls original simulations through the real Web carrier (sqlite, tasks=false) 62207ms
+   × creates and controls original simulations through the real Web carrier (json, tasks=true) 62267ms
+   × creates and controls original simulations through the real Web carrier (sqlite, tasks=true) 62368ms
+ ❯ apps/web/tests/world-case-privacy.snapshot.ts (4 tests | 4 failed) 136707ms
+   × retires 'json' 'company' private case content across revocation and offline replies 35261ms
+   × retires 'json' 'laboratory' private case content across revocation and offline replies 34583ms
+   × retires 'sqlite' 'company' private case content across revocation and offline replies 33326ms
+   × retires 'sqlite' 'laboratory' private case content across revocation and offline replies 33536ms
+ ❯ apps/web/tests/world-workspace.snapshot.ts (8 tests | 8 failed) 257677ms
+   × imports 'json' 'company' through real World UI with budget=false 33687ms
+   × imports 'json' 'company' through real World UI with budget=true 31747ms
+   × imports 'json' 'laboratory' through real World UI with budget=false 32886ms
+   × imports 'json' 'laboratory' through real World UI with budget=true 31606ms
+   × imports 'sqlite' 'company' through real World UI with budget=false 32463ms
+   × imports 'sqlite' 'company' through real World UI with budget=true 31456ms
+   × imports 'sqlite' 'laboratory' through real World UI with budget=false 32327ms
+   × imports 'sqlite' 'laboratory' through real World UI with budget=true 31503ms
+ ❯ apps/web/tests/world-cases-pagination.snapshot.ts (4 tests | 4 failed) 136692ms
+   × pages 'json' 'company' cases through real World UI 35148ms
+   × pages 'json' 'laboratory' cases through real World UI 34556ms
+   × pages 'sqlite' 'company' cases through real World UI 33336ms
+   × pages 'sqlite' 'laboratory' cases through real World UI 33651ms
+ ❯ apps/web/tests/world-case-actions.snapshot.ts (4 tests | 4 failed) 129797ms
+   × cancels 'json' 'company' original case after a real timeout 32868ms
+   × cancels 'json' 'laboratory' original case after a real timeout 32081ms
+   × cancels 'sqlite' 'company' original case after a real timeout 32416ms
+   × cancels 'sqlite' 'laboratory' original case after a real timeout 32431ms
+ ❯ apps/web/tests/simulation-read-lifecycle.snapshot.ts (2 tests | 1 failed) 62659ms
+   × waits for the deep-link handshake, discards old reads and reconnects without another owner (sqlite) 60523ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 36 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/web/tests/simulation-administration.snapshot.ts > creates and controls original simulations through the real Web carrier (json, tasks=false)
+ FAIL  apps/web/tests/simulation-administration.snapshot.ts > creates and controls original simulations through the real Web carrier (sqlite, tasks=false)
+ FAIL  apps/web/tests/simulation-administration.snapshot.ts > creates and controls original simulations through the real Web carrier (json, tasks=true)
+ FAIL  apps/web/tests/simulation-administration.snapshot.ts > creates and controls original simulations through the real Web carrier (sqlite, tasks=true)
+TimeoutError: locator.isEnabled: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('dialog', { name: '新建仿真', exact: true }).getByRole('button', { name: '重试原操作', exact: true })[22m
+
+ ❯ apps/web/tests/simulation-administration.snapshot.ts:127:113
+    125|     await dialog.getByRole('button', { name: '查询原结果', exact: true }).c…
+    126|     await expect.poll(() => queries.length).toBe(1)
+    127|     await expect.poll(async () => await dialog.getByRole('button', { n…
+       |                                                                                                                 ^
+    128|     expect(queries[0]?.commandId).toBe(creates[0]?.commandId)
+    129|     await dialog.getByRole('button', { name: '关闭并保留输入', exact: true })…
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ apps/web/tests/simulation-administration.snapshot.ts:127:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/36]⎯
+
+ FAIL  apps/web/tests/simulation-read-lifecycle.snapshot.ts > waits for the deep-link handshake, discards old reads and reconnects without another owner (sqlite)
+TimeoutError: page.screenshot: Timeout 30000ms exceeded.
+Call log:
+[2m  - taking page screenshot[22m
+[2m  - waiting for fonts to load...[22m
+
+ ❯ apps/web/tests/simulation-read-lifecycle.snapshot.ts:147:16
+    145|         'retained stale read during disconnect', 'real Loader disable …
+    146|   } catch (cause: unknown) {
+    147|     await page.screenshot({ path: join(root, 'failure.png') })
+       |                ^
+    148|     await writeFile(join(root, 'failure.txt'), JSON.stringify({ body: …
+    149|     throw cause
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/36]⎯
+
+ FAIL  apps/web/tests/simulation-task-execution-matrix.snapshot.ts > keeps genuine three-actor task reviews usable across language/theme/keyboard/zoom and unknown results (json)
+ FAIL  apps/web/tests/simulation-task-execution-matrix.snapshot.ts > keeps genuine three-actor task reviews usable across language/theme/keyboard/zoom and unknown results (sqlite)
+TimeoutError: locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('dialog', { name: '审核仿真任务', exact: true }).getByText('结果尚不确定，请查询或重试原操作；未分配新身份。', { exact: true }) to be visible[22m
+
+ ❯ apps/web/tests/simulation-task-execution-matrix.snapshot.ts:137:64
+    135|     await review.getByLabel(zh['reviews.reason'], { exact: true }).fil…
+    136|     await review.getByRole('button', { name: zh['reviews.approve'], ex…
+    137|     await review.getByText(zh.commandUnknown, { exact: true }).waitFor…
+       |                                                                ^
+    138|     await review.getByLabel(zh['reviews.reason'], { exact: true }).fil…
+    139|     await review.getByRole('button', { name: zh.queryOriginal, exact: …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/36]⎯
+
+ FAIL  apps/web/tests/simulation-task-execution-matrix.snapshot.ts > retains exact public cancellation after genuine report effects and changed task revision (json)
+ FAIL  apps/web/tests/simulation-task-execution-matrix.snapshot.ts > retains exact public cancellation after genuine report effects and changed task revision (sqlite)
+TimeoutError: locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('dialog', { name: /^(取消仿真任务|Cancel Simulation task)$/ }).getByText('结果尚不确定，请查询或重试原操作；未分配新身份。', { exact: true }) to be visible[22m
+
+ ❯ apps/web/tests/simulation-task-execution-matrix.snapshot.ts:277:87
+    275|     await dialog.getByRole('button', { name: '确认此任务的当前版本与尝试', exact: t…
+    276|     await reason.fill('Cancel the exact second reviewed attempt; keep …
+    277|     await confirm.click(); await dialog.getByText(zh.commandUnknown, {…
+       |                                                                                       ^
+    278|     await reason.fill('Later unsubmitted cancellation draft')
+    279|     await dialog.getByRole('button', { name: zh.queryOriginal, exact: …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/36]⎯
+
+ FAIL  apps/web/tests/world-case-actions.snapshot.ts > cancels 'json' 'company' original case after a real timeout
+ FAIL  apps/web/tests/world-case-actions.snapshot.ts > cancels 'json' 'laboratory' original case after a real timeout
+ FAIL  apps/web/tests/world-case-actions.snapshot.ts > cancels 'sqlite' 'company' original case after a real timeout
+ FAIL  apps/web/tests/world-case-actions.snapshot.ts > cancels 'sqlite' 'laboratory' original case after a real timeout
+TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-simulation-workspace-page]').getByRole('button', { name: 'World 案件', exact: true }).first()[22m
+
+ ❯ apps/web/tests/world-case-actions.snapshot.ts:122:86
+    120|       expect(Object.keys(world.plans)).toHaveLength(1)
+    121|       expect(Object.keys(world.reservations)).toHaveLength(0)
+    122|       await workspace.getByRole('button', { name: 'World 案件', exact: t…
+       |                                                                                      ^
+    123|       await workspace.getByRole('button', { name: original.id, exact: …
+    124|       const inspector = workspace.getByRole('complementary', { name: '…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/36]⎯
+
+ FAIL  apps/web/tests/world-case-privacy.snapshot.ts > retires 'json' 'company' private case content across revocation and offline replies
+ FAIL  apps/web/tests/world-case-privacy.snapshot.ts > retires 'json' 'laboratory' private case content across revocation and offline replies
+ FAIL  apps/web/tests/world-case-privacy.snapshot.ts > retires 'sqlite' 'company' private case content across revocation and offline replies
+ FAIL  apps/web/tests/world-case-privacy.snapshot.ts > retires 'sqlite' 'laboratory' private case content across revocation and offline replies
+TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-simulation-workspace-page]').getByRole('button', { name: 'World 案件', exact: true }).first()[22m
+
+ ❯ apps/web/tests/world-case-privacy.snapshot.ts:130:88
+    128|       })
+    129|       try {
+    130|         await workspace.getByRole('button', { name: 'World 案件', exact:…
+       |                                                                                        ^
+    131|         await workspace.getByRole('button', { name: original.id, exact…
+    132|         const inspector = workspace.getByRole('complementary', { name:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/36]⎯
+
+ FAIL  apps/web/tests/world-case-states.snapshot.ts > shows 'json' 'company' actual 'rejected' state
+ FAIL  apps/web/tests/world-case-states.snapshot.ts > shows 'json' 'company' actual 'capacity' state
+ FAIL  apps/web/tests/world-case-states.snapshot.ts > shows 'json' 'company' actual 'maintenance' state
+ FAIL  apps/web/tests/world-case-states.snapshot.ts > shows 'json' 'laboratory' actual 'rejected' state
+ FAIL  apps/web/tests/world-case-states.snapshot.ts > shows 'json' 'laboratory' actual 'capacity' state
+ FAIL  apps/web/tests/world-case-states.snapshot.ts > shows 'json' 'laboratory' actual 'maintenance' state
+ FAIL  apps/web/tests/world-case-states.snapshot.ts > shows 'sqlite' 'company' actual 'capacity' state
+TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-simulation-workspace-page]').getByRole('button', { name: 'World 案件', exact: true }).first()[22m
+
+ ❯ apps/web/tests/world-case-states.snapshot.ts:123:86
+    121|       expect(createCommands).toHaveLength(1); expect(countRequests()).…
+    122|       await expect.poll(() => owned?.snapshot().world !== undefined &&…
+    123|       await workspace.getByRole('button', { name: 'World 案件', exact: t…
+       |                                                                                      ^
+    124|       await workspace.getByRole('button', { name: '刷新', exact: true })…
+    125|       await workspace.getByText('此窗口没有匹配案件。显式开始后才能处理初始申请。', { exact: t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/36]⎯
+
+ FAIL  apps/web/tests/world-cases-pagination.snapshot.ts > pages 'json' 'company' cases through real World UI
+ FAIL  apps/web/tests/world-cases-pagination.snapshot.ts > pages 'json' 'laboratory' cases through real World UI
+ FAIL  apps/web/tests/world-cases-pagination.snapshot.ts > pages 'sqlite' 'company' cases through real World UI
+ FAIL  apps/web/tests/world-cases-pagination.snapshot.ts > pages 'sqlite' 'laboratory' cases through real World UI
+TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-simulation-workspace-page]').getByRole('button', { name: 'World 案件', exact: true }).first()[22m
+
+ ❯ apps/web/tests/world-cases-pagination.snapshot.ts:104:86
+    102|       expect(scaffold.ctx.worldDriverProbe.requests.some(call => call.…
+    103|         && call.entityId === newcomer.id)).toBe(true)
+    104|       await workspace.getByRole('button', { name: 'World 案件', exact: t…
+       |                                                                                      ^
+    105|       await workspace.getByRole('button', { name: original.id, exact: …
+    106|       const second = Object.values(world.requests).sort((a, b) => a.se…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/36]⎯
+
+ FAIL  apps/web/tests/world-workspace.snapshot.ts > imports 'json' 'company' through real World UI with budget=false
+ FAIL  apps/web/tests/world-workspace.snapshot.ts > imports 'json' 'laboratory' through real World UI with budget=false
+ FAIL  apps/web/tests/world-workspace.snapshot.ts > imports 'sqlite' 'company' through real World UI with budget=false
+ FAIL  apps/web/tests/world-workspace.snapshot.ts > imports 'sqlite' 'laboratory' through real World UI with budget=false
+TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-simulation-workspace-page]').getByRole('button', { name: 'World 案件', exact: true }).first()[22m
+
+ ❯ apps/web/tests/world-workspace.snapshot.ts:145:86
+    143|       expect(scaffold.ctx.worldDriverProbe.requests.some(call => call.…
+    144|         && call.entityId === newcomer.id)).toBe(true)
+    145|       await workspace.getByRole('button', { name: 'World 案件', exact: t…
+       |                                                                                      ^
+    146|       await workspace.getByRole('button', { name: original.id, exact: …
+    147|       await page.keyboard.press('Enter')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/36]⎯
+
+ FAIL  apps/web/tests/world-workspace.snapshot.ts > imports 'json' 'company' through real World UI with budget=true
+ FAIL  apps/web/tests/world-workspace.snapshot.ts > imports 'json' 'laboratory' through real World UI with budget=true
+ FAIL  apps/web/tests/world-workspace.snapshot.ts > imports 'sqlite' 'company' through real World UI with budget=true
+ FAIL  apps/web/tests/world-workspace.snapshot.ts > imports 'sqlite' 'laboratory' through real World UI with budget=true
+TimeoutError: locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-simulation-workspace-page]').getByText('45 / 10044', { exact: true }).first() to be visible[22m
+[2m    62 × locator resolved to hidden <span>45 / 10044</span>[22m
+
+ ❯ apps/web/tests/world-workspace.snapshot.ts:116:74
+    114|         await expect.poll(() => countRequests() - beforeCalls, { timeo…
+    115|         await workspace.getByRole('button', { name: '刷新', exact: true …
+    116|         await workspace.getByText('45 / 10044', { exact: true }).first…
+       |                                                                          ^
+    117|         await workspace.locator('summary').filter({ hasText: '运行详情' })…
+    118|         await workspace.getByText('运行预算已耗尽', { exact: true }).waitFor()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/36]⎯
+
+
+  Snapshots  4 obsolete
+             ↳ apps/web/tests/simulation-administration.snapshot.ts
+               · creates and controls original simulations through the real Web carrier (json, tasks=false) 1
+               · creates and controls original simulations through the real Web carrier (json, tasks=true) 1
+               · creates and controls original simulations through the real Web carrier (sqlite, tasks=false) 1
+               · creates and controls original simulations through the real Web carrier (sqlite, tasks=true) 1
+
+ Test Files  8 failed | 105 passed | 1 skipped (114)
+      Tests  36 failed | 315 passed | 14 skipped (365)
+   Start at  09:41:45
+   Duration  2367.05s (transform 1.73s, setup 276ms, import 31.17s, tests 2322.61s, environment 1.89s)
+
+[ELIFECYCLE] Command failed with exit code 1.

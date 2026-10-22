@@ -1,0 +1,761 @@
+{
+  "rubric": {
+    "version": "supply-review/1",
+    "questions": [
+      "Does each trace preserve its stated stock and commitments?",
+      "Are simulated outputs clearly distinguished from real facts?",
+      "Does the explanation of unmet demand agree with recorded inputs?",
+      "Is any unsupported psychological realism claim present?"
+    ],
+    "scale": "pass / fail / unclear; explain using trial and step references",
+    "status": "pending"
+  },
+  "instructions": "Review traces before consulting c3-results.json, which contains the A/B implementation mapping. A/B masking is not a claim of randomized double-blind assessment.",
+  "trajectories": [
+    {
+      "trial": "fixed-1-A",
+      "split": "fixed",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 2,
+          "production": 3,
+          "consumed": 2,
+          "previousInventory": 6,
+          "inventory": 7,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 3,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 7,
+          "inventory": 7,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 7,
+          "inventory": 6,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 3,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 6,
+          "inventory": 6,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 0,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "fixed-1-B",
+      "split": "fixed",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 2,
+          "production": 1,
+          "consumed": 2,
+          "previousInventory": 6,
+          "inventory": 5,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 3,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 5,
+          "inventory": 5,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 1,
+          "consumed": 4,
+          "previousInventory": 5,
+          "inventory": 2,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 3,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 2,
+          "inventory": 2,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 0,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "fixed-2-A",
+      "split": "fixed",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 1,
+          "production": 3,
+          "consumed": 1,
+          "previousInventory": 6,
+          "inventory": 8,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 2,
+          "production": 3,
+          "consumed": 2,
+          "previousInventory": 8,
+          "inventory": 9,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 3,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 9,
+          "inventory": 9,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 9,
+          "inventory": 8,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 0,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "fixed-2-B",
+      "split": "fixed",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 1,
+          "production": 1,
+          "consumed": 1,
+          "previousInventory": 6,
+          "inventory": 6,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 2,
+          "production": 3,
+          "consumed": 2,
+          "previousInventory": 6,
+          "inventory": 7,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 3,
+          "production": 1,
+          "consumed": 3,
+          "previousInventory": 7,
+          "inventory": 5,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 5,
+          "inventory": 4,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 0,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "fixed-3-A",
+      "split": "fixed",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 6,
+          "inventory": 5,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 5,
+          "inventory": 4,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 4,
+          "inventory": 3,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 3,
+          "inventory": 2,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 0,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "fixed-3-B",
+      "split": "fixed",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 1,
+          "consumed": 4,
+          "previousInventory": 6,
+          "inventory": 3,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 3,
+          "inventory": 2,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 1,
+          "consumed": 1,
+          "previousInventory": 2,
+          "inventory": 2,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 4,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 2,
+          "inventory": 2,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 4,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "holdout-1-A",
+      "split": "holdout",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 5,
+          "production": 3,
+          "consumed": 5,
+          "previousInventory": 6,
+          "inventory": 4,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 1,
+          "production": 3,
+          "consumed": 1,
+          "previousInventory": 4,
+          "inventory": 6,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 6,
+          "previousInventory": 6,
+          "inventory": 3,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 2,
+          "production": 3,
+          "consumed": 2,
+          "previousInventory": 3,
+          "inventory": 4,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 0,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "holdout-1-B",
+      "split": "holdout",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 5,
+          "production": 1,
+          "consumed": 5,
+          "previousInventory": 6,
+          "inventory": 2,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 1,
+          "production": 3,
+          "consumed": 1,
+          "previousInventory": 2,
+          "inventory": 4,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 1,
+          "consumed": 3,
+          "previousInventory": 4,
+          "inventory": 2,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 2,
+          "production": 3,
+          "consumed": 2,
+          "previousInventory": 2,
+          "inventory": 3,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 3,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "holdout-2-A",
+      "split": "holdout",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 6,
+          "previousInventory": 6,
+          "inventory": 3,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 4,
+          "previousInventory": 3,
+          "inventory": 2,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 1,
+          "production": 3,
+          "consumed": 1,
+          "previousInventory": 2,
+          "inventory": 4,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 1,
+          "production": 3,
+          "consumed": 1,
+          "previousInventory": 4,
+          "inventory": 6,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 2,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "holdout-2-B",
+      "split": "holdout",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 1,
+          "consumed": 5,
+          "previousInventory": 6,
+          "inventory": 2,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 2,
+          "inventory": 2,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 1,
+          "production": 1,
+          "consumed": 1,
+          "previousInventory": 2,
+          "inventory": 2,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 1,
+          "production": 3,
+          "consumed": 1,
+          "previousInventory": 2,
+          "inventory": 4,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 4,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "holdout-3-A",
+      "split": "holdout",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 2,
+          "production": 3,
+          "consumed": 2,
+          "previousInventory": 6,
+          "inventory": 7,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 6,
+          "previousInventory": 7,
+          "inventory": 4,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 5,
+          "previousInventory": 4,
+          "inventory": 2,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 2,
+          "inventory": 2,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 4,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    },
+    {
+      "trial": "holdout-3-B",
+      "split": "holdout",
+      "samples": [
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 2,
+          "production": 1,
+          "consumed": 2,
+          "previousInventory": 6,
+          "inventory": 5,
+          "time": "1",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 6,
+          "previousInventory": 5,
+          "inventory": 2,
+          "time": "2",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 1,
+          "consumed": 1,
+          "previousInventory": 2,
+          "inventory": 2,
+          "time": "3",
+          "simulated": true
+        },
+        {
+          "scopeEntityId": "evaluation",
+          "targetEntityId": "supply",
+          "demand": 6,
+          "production": 3,
+          "consumed": 3,
+          "previousInventory": 2,
+          "inventory": 2,
+          "time": "4",
+          "simulated": true
+        }
+      ],
+      "unmetDemand": 8,
+      "failures": [],
+      "stop": "completed",
+      "cost": {
+        "modelCalls": 0,
+        "tokens": 0,
+        "currency": null
+      },
+      "privacy": "no-personal-input",
+      "factConsistency": "simulated-only",
+      "humanJudgments": null,
+      "modelJudge": null
+    }
+  ],
+  "ratings": []
+}

@@ -1,0 +1,2 @@
+packages/simulation/simulation-local/src/world-personnel-domain.ts:309:1: error @stylistic(max-len): This line has a length of 144. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:255:1: error @stylistic(max-len): This line has a length of 147. Maximum allowed is 140.

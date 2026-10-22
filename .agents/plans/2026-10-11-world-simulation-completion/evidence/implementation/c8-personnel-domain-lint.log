@@ -1,0 +1,225 @@
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:48:1: error @stylistic(max-len): This line has a length of 149. Maximum allowed is 140.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:142:1: error @stylistic(max-len): This line has a length of 144. Maximum allowed is 140.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:231:1: error @stylistic(max-len): This line has a length of 150. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:303:1: error @stylistic(max-len): This line has a length of 150. Maximum allowed is 140.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:45:9: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:57:11: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:57:31: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:57:57: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:57:23: error typescript(no-unsafe-member-access): Unsafe member access .domain on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:57:46: error typescript(no-unsafe-member-access): Unsafe member access .operation on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:57:70: error typescript(no-unsafe-member-access): Unsafe member access .version on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:75:15: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:83:9: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:83:46: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:83:83: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:83:96: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:83:131: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:84:22: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:85:115: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:87:7: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:87:67: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:87:103: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:87:31: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:87:90: error typescript(no-unsafe-member-access): Unsafe member access .description on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:93:90: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:97:20: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:97:59: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:108:9: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:109:9: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:108:23: error typescript(no-unsafe-member-access): Unsafe member access .domain on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:116:18: error typescript(no-confusing-void-expression): Returning a void expression from an arrow function shorthand is forbidden. help: Add braces to the arrow function.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:116:74: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:165:65: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:169:65: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:173:26: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:173:36: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:173:73: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:176:65: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:179:74: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:185:72: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:203:67: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:208:34: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:208:44: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:208:79: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:210:65: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:212:71: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:221:71: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type JSONType.
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:224:114: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:65:23: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type Iterable<unknown> | null | undefined.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:65:23: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:66:39: error typescript(no-unsafe-member-access): Unsafe member access .flatMap on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:65:23: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:65:51: error typescript(no-unsafe-member-access): Unsafe member access .filter on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:65:23: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:65:73: error typescript(no-unsafe-member-access): Unsafe member access .requesterEntityId on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:66:14: error typescript(no-unsafe-member-access): Unsafe member access .scopeEntityId on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:67:46: error typescript(no-unsafe-argument): Unsafe argument of type any assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:67:52: error typescript(no-unsafe-member-access): Unsafe member access .relationId on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:68:72: error typescript(no-unsafe-member-access): Unsafe member access .targetEntityId on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:69:38: error typescript(no-unsafe-member-access): Unsafe member access .relation on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:83:5: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:84:5: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:85:5: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:85:25: error typescript(no-unsafe-member-access): Unsafe member access .implementationRef on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:86:5: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:86:32: error typescript(no-unsafe-member-access): Unsafe member access .generation on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:90:44: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:90:81: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:90:98: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:90:133: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:93:57: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:96:85: error typescript(no-unsafe-return): Unsafe return of a value of type `any[]`.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:96:115: error typescript(no-unsafe-member-access): Unsafe member access .personId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:106:23: error typescript(no-unsafe-return): Unsafe return of a value of type error.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:106:23: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:106:60: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:107:12: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:107:47: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:116:19: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:116:71: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:117:11: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:117:47: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:116:49: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:116:89: error typescript(no-unsafe-member-access): Unsafe member access .personId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:117:33: error typescript(no-unsafe-member-access): Unsafe member access .assignmentId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:117:75: error typescript(no-unsafe-member-access): Unsafe member access .assignmentRevision on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:119:48: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:119:74: error typescript(no-unsafe-member-access): Unsafe member access .targetPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:127:106: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:127:114: error typescript(no-unsafe-member-access): Unsafe member access .personId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:128:48: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:128:56: error typescript(no-unsafe-member-access): Unsafe member access .assignmentId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:129:49: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:129:57: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:134:18: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:135:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:137:115: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:138:42: error typescript(no-unsafe-member-access): Unsafe member access .assignmentRevision on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:139:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:142:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:146:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:148:17: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:148:57: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string | number | bigint | boolean.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:148:65: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:149:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:151:17: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:151:58: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string | number | bigint | boolean.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:151:66: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:152:17: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string | number | bigint | boolean.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:152:25: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:153:51: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string | number | bigint | boolean.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:153:59: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:154:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:157:27: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type readonly { readonly id: string; }[].
+packages/simulation/simulation-local/src/world-personnel-domain.ts:157:27: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:160:41: error typescript(no-unsafe-member-access): Unsafe member access .flatMap on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:157:27: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:157:55: error typescript(no-unsafe-member-access): Unsafe member access .filter on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:157:27: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:157:77: error typescript(no-unsafe-member-access): Unsafe member access .requesterEntityId on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:158:16: error typescript(no-unsafe-member-access): Unsafe member access .domain on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:158:36: error typescript(no-unsafe-member-access): Unsafe member access .domain on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:158:52: error typescript(no-unsafe-member-access): Unsafe member access .operation on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:158:75: error typescript(no-unsafe-member-access): Unsafe member access .operation on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:158:94: error typescript(no-unsafe-member-access): Unsafe member access .version on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:158:115: error typescript(no-unsafe-member-access): Unsafe member access .version on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:159:16: error typescript(no-unsafe-member-access): Unsafe member access .targetEntityId on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:159:62: error typescript(no-unsafe-member-access): Unsafe member access .scopeEntityId on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:159:88: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:160:16: error typescript(no-unsafe-member-access): Unsafe member access .relation on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:161:48: error typescript(no-unsafe-argument): Unsafe argument of type any assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:161:54: error typescript(no-unsafe-member-access): Unsafe member access .relationId on an `any` value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:162:115: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:165:31: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:166:59: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type SimulationEntityId.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:166:67: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:173:65: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:173:73: error typescript(no-unsafe-member-access): Unsafe member access .targetPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:174:90: error typescript(no-unsafe-member-access): Unsafe member access .targetPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:175:46: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:175:54: error typescript(no-unsafe-member-access): Unsafe member access .assignmentId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:177:48: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:179:64: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:188:57: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:190:66: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type SimulationEntityId.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:190:74: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:203:11: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:204:37: error typescript(no-unsafe-member-access): Unsafe member access .domain on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:204:78: error typescript(no-unsafe-member-access): Unsafe member access .operation on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:204:120: error typescript(no-unsafe-member-access): Unsafe member access .version on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:205:43: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:206:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:209:14: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:210:7: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:209:37: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:210:28: error typescript(no-unsafe-member-access): Unsafe member access .description on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:213:11: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:215:29: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:224:11: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:224:44: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:225:53: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:229:11: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:244:82: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:244:97: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:251:11: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:251:46: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:255:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:258:19: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:258:62: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:259:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:262:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:269:13: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:275:52: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:277:7: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:275:84: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:277:39: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:282:15: error typescript(no-unsafe-call): Unsafe construction of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:285:9: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:285:38: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:285:74: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:285:28: error typescript(no-unsafe-member-access): Unsafe member access .personId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:285:56: error typescript(no-unsafe-member-access): Unsafe member access .targetPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:285:91: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:287:70: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:287:98: error typescript(no-unsafe-member-access): Unsafe member access .targetPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:289:51: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:289:69: error typescript(no-unsafe-member-access): Unsafe member access .retire on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:300:16: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:303:11: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:303:46: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:303:56: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:303:108: error typescript(no-unsafe-member-access): Unsafe member access .parse on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:306:43: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:306:53: error typescript(no-unsafe-member-access): Unsafe member access .personId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:306:99: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:306:109: error typescript(no-unsafe-member-access): Unsafe member access .assignmentId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:307:49: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:307:57: error typescript(no-unsafe-member-access): Unsafe member access .newAssignmentId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:307:110: error typescript(no-unsafe-argument): Unsafe argument of type error typed assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:307:120: error typescript(no-unsafe-member-access): Unsafe member access .personId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:309:109: error typescript(no-unsafe-member-access): Unsafe member access .personId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:310:55: error typescript(no-unsafe-member-access): Unsafe member access .entityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:310:78: error typescript(no-unsafe-member-access): Unsafe member access .personId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:310:98: error typescript(no-unsafe-member-access): Unsafe member access .closedAssignmentId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:310:131: error typescript(no-unsafe-member-access): Unsafe member access .assignmentId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:311:18: error typescript(no-unsafe-member-access): Unsafe member access .targetPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:311:49: error typescript(no-unsafe-member-access): Unsafe member access .targetPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:311:77: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:311:112: error typescript(no-unsafe-member-access): Unsafe member access .requestedEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:312:18: error typescript(no-unsafe-member-access): Unsafe member access .actualEffectiveAt on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:312:63: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:312:98: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:320:77: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:321:32: error typescript(restrict-plus-operands): Invalid operand of type 'any' for a '+' operation. help: Operands must each be a number or string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:321:42: error typescript(no-unsafe-member-access): Unsafe member access .assignmentRevision on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:322:57: error typescript(no-unsafe-member-access): Unsafe member access .previousPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:324:84: error typescript(no-unsafe-member-access): Unsafe member access .targetPositionId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:325:42: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:326:11: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:326:19: error typescript(no-unsafe-member-access): Unsafe member access .closedAuthorityRelationIds on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:326:82: error typescript(no-unsafe-argument): Unsafe argument of type any assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:327:36: error typescript(no-unsafe-argument): Unsafe argument of type any assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:327:61: error typescript(no-unsafe-member-access): Unsafe member access .organizationEntityId on an `error` typed value.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:327:109: error typescript(no-unsafe-argument): Unsafe argument of type any assigned to a parameter of type string.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:334:22: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.

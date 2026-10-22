@@ -1,0 +1,17 @@
+packages/simulation/simulation-local/src/world-hire-approval.ts:68:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/index.ts:142:1: error @stylistic(max-len): This line has a length of 144. Maximum allowed is 140.
+packages/simulation/simulation-local/src/index.ts:241:1: error @stylistic(max-len): This line has a length of 174. Maximum allowed is 140.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts:11:1: error @stylistic(max-len): This line has a length of 155. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-hire-existing.ts:27:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-hire-existing.ts:105:1: error @stylistic(max-len): This line has a length of 147. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-hire-existing.ts:138:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-hire-existing.ts:153:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-hire-existing.ts:212:1: error @stylistic(max-len): This line has a length of 145. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:299:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:303:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:307:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:311:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:389:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:448:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:505:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:513:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.

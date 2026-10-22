@@ -51,3 +51,5 @@
     roots:
       - path: !!js process.cwd() + '/examples/simulation-company/presets'
         trust: system
+
+- name: '@clocky/clocky-simulation-world/providers'

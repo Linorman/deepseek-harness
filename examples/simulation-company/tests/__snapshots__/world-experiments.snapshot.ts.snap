@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json experiment branch process recovery snapshot 1`] = `
+{
+  "actualInheritedInputs": 3,
+  "exactProcessRecovery": true,
+  "isolatedTeam": true,
+  "merge": "unsupported",
+  "phase": "paused",
+  "realEffects": false,
+  "sourceProvenance": true,
+}
+`;
+
+exports[`sqlite experiment branch process recovery snapshot 1`] = `
+{
+  "actualInheritedInputs": 3,
+  "exactProcessRecovery": true,
+  "isolatedTeam": true,
+  "merge": "unsupported",
+  "phase": "paused",
+  "realEffects": false,
+  "sourceProvenance": true,
+}
+`;

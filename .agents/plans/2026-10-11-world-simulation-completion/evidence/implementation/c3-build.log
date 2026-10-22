@@ -1,0 +1,93 @@
+$ tsx scripts/build.ts
+$ npm run build:lib:host && npm run build:lib:client
+
+> @clocky/clocky-root@0.1.1-rc.2 build:lib:host
+> tsc -b tsconfig.host.json && tsdown --env.CLOCKY_BUILD_FACE host
+
+packages/simulation/simulation-local/src/world-governance.ts(5,10): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'SimulationGovernanceError'. Did you mean 'SimulationMaintenanceError'?
+packages/simulation/simulation-local/src/world-governance.ts(5,37): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'simulationGovernanceProposalInputSchema'. Did you mean to use 'import simulationGovernanceProposalInputSchema from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-governance.ts(5,78): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'simulationGovernanceProposalSchema'. Did you mean 'simulationProposalSchema'?
+packages/simulation/simulation-local/src/world-governance.ts(6,3): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'simulationGovernanceVoteInputSchema'. Did you mean 'simulationOperationSchema'?
+packages/simulation/simulation-local/src/world-governance.ts(6,40): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'simulationGovernanceVoteSchema'. Did you mean 'simulationGrantIdSchema'?
+packages/simulation/simulation-local/src/world-governance.ts(6,72): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'simulationGovernanceResolutionSchema'. Did you mean 'simulationWorldResolutionSchema'?
+packages/simulation/simulation-local/src/world-governance.ts(7,3): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'worldVoteIdSchema'. Did you mean 'worldIntentIdSchema'?
+packages/simulation/simulation-local/src/world-governance.ts(9,76): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'SimulationGovernanceState'. Did you mean to use 'import SimulationGovernanceState from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-governance.ts(10,3): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'SimulationGovernanceProposal'. Did you mean to use 'import SimulationGovernanceProposal from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-governance.ts(10,33): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'SimulationGovernanceVote'. Did you mean to use 'import SimulationGovernanceVote from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-governance.ts(10,59): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'SimulationGovernanceResolution'. Did you mean 'SimulationWorldResolution'?
+packages/simulation/simulation-local/src/world-governance.ts(11,3): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'SimulationGovernanceProposalRef'. Did you mean to use 'import SimulationGovernanceProposalRef from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-governance.ts(98,13): error TS2339: Property 'id' does not exist on type '{} | null'.
+packages/simulation/simulation-local/src/world-governance.ts(98,22): error TS2339: Property 'revision' does not exist on type '{} | null'.
+packages/simulation/simulation-local/src/world-governance.ts(98,43): error TS2339: Property 'bodyHash' does not exist on type '{} | null'.
+packages/simulation/simulation-local/src/world-governance.ts(98,60): error TS2339: Property 'proposer' does not exist on type '{} | null'.
+packages/simulation/simulation-local/src/world-governance.ts(98,81): error TS2339: Property 'source' does not exist on type '{} | null'.
+packages/simulation/simulation-local/src/world-governance.ts(99,7): error TS2339: Property 'electorate' does not exist on type '{} | null'.
+packages/simulation/simulation-local/src/world-governance.ts(99,32): error TS2339: Property 'time' does not exist on type '{} | null'.
+packages/simulation/simulation-local/src/world-governance.ts(99,45): error TS2339: Property 'sequence' does not exist on type '{} | null'.
+packages/simulation/simulation-local/src/world-governance.ts(100,69): error TS18047: 'original' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(100,78): error TS2339: Property 'source' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(101,10): error TS18047: 'original' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(101,19): error TS2339: Property 'proposer' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(114,65): error TS18046: 'value' is of type 'unknown'.
+packages/simulation/simulation-local/src/world-governance.ts(115,47): error TS18046: 'value' is of type 'unknown'.
+packages/simulation/simulation-local/src/world-governance.ts(116,86): error TS7006: Parameter 'member' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-governance.ts(116,116): error TS18046: 'value' is of type 'unknown'.
+packages/simulation/simulation-local/src/world-governance.ts(117,8): error TS18046: 'value' is of type 'unknown'.
+packages/simulation/simulation-local/src/world-governance.ts(117,56): error TS18046: 'value' is of type 'unknown'.
+packages/simulation/simulation-local/src/world-governance.ts(120,38): error TS7006: Parameter 'member' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-governance.ts(123,62): error TS18046: 'value' is of type 'unknown'.
+packages/simulation/simulation-local/src/world-governance.ts(137,60): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(137,69): error TS2339: Property 'revision' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(137,100): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(137,109): error TS2339: Property 'bodyHash' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(140,18): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(140,27): error TS2339: Property 'electorate' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(140,43): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-governance.ts(146,49): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(146,58): error TS2339: Property 'id' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(146,89): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(146,98): error TS2339: Property 'revision' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(146,127): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(146,136): error TS2339: Property 'bodyHash' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(149,96): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(149,105): error TS2339: Property 'id' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(152,9): error TS18047: 'original' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(152,18): error TS2339: Property 'choice' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(152,64): error TS18047: 'original' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(152,73): error TS2339: Property 'source' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(157,38): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(157,47): error TS2339: Property 'id' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(158,36): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(158,45): error TS2339: Property 'deadline' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(181,101): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(181,110): error TS2339: Property 'electorate' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(182,29): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ yes: number; no: number; abstain: number; missing: number; }'.
+packages/simulation/simulation-local/src/world-governance.ts(184,63): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(184,72): error TS2339: Property 'electorate' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(185,48): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(185,57): error TS2339: Property 'deadline' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(188,108): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(188,117): error TS2339: Property 'id' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(189,31): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(189,40): error TS2339: Property 'id' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(189,62): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(189,71): error TS2339: Property 'revision' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(189,91): error TS18047: 'proposal' is possibly 'null'.
+packages/simulation/simulation-local/src/world-governance.ts(189,100): error TS2339: Property 'bodyHash' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(242,62): error TS2339: Property 'proposer' does not exist on type '{}'.
+packages/simulation/simulation-local/src/world-governance.ts(243,82): error TS2339: Property 'id' does not exist on type '{}'.
+[ELIFECYCLE] Command failed with exit code 2.
+/Volumes/projects-mac/deepseek-harness/scripts/build.ts:26
+    throw new Error(`build: ${script} exited with ${String(result.status ?? result.signal)}`)
+          ^
+
+Error: build: build:lib exited with 2
+    at runScript (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:26:11)
+    at main (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:45:3)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:53:23)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0
+[ELIFECYCLE] Command failed with exit code 1.

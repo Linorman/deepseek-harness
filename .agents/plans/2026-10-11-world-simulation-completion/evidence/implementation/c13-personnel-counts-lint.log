@@ -1,0 +1,14 @@
+packages/simulation/simulation/tests/personnel-counts.spec.ts:112:1: error @stylistic(max-len): This line has a length of 142. Maximum allowed is 140.
+packages/simulation/simulation/tests/personnel-counts.spec.ts:124:1: error @stylistic(max-len): This line has a length of 150. Maximum allowed is 140.
+packages/simulation/simulation/tests/personnel-counts.spec.ts:137:1: error @stylistic(max-len): This line has a length of 160. Maximum allowed is 140.
+packages/simulation/simulation/tests/personnel-counts.spec.ts:40:1: error @stylistic(indent): Expected indentation of 2 spaces but found 4.
+packages/simulation/simulation/tests/personnel-counts.spec.ts:41:1: error @stylistic(indent): Expected indentation of 2 spaces but found 4.
+packages/simulation/simulation/tests/personnel-counts.spec.ts:42:1: error @stylistic(indent): Expected indentation of 2 spaces but found 4.
+packages/simulation/simulation/tests/personnel-counts.spec.ts:43:1: error @stylistic(indent): Expected indentation of 2 spaces but found 4.
+packages/simulation/simulation/tests/personnel-counts.spec.ts:44:1: error @stylistic(indent): Expected indentation of 2 spaces but found 4.
+packages/simulation/simulation/tests/personnel-counts.spec.ts:45:1: error @stylistic(indent): Expected indentation of 4 spaces but found 6.
+packages/simulation/simulation/src/personnel-counts.ts:36:29: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/personnel-counts.ts:36:62: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/personnel-counts.ts:36:93: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/personnel-counts.ts:37:33: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/personnel-counts.ts:75:7: error typescript(no-unnecessary-condition): Unnecessary comparison between literal values.

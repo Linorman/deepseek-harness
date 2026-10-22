@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-18",
+  "scope": "A1 acceptance and final build/typecheck/lint/GUI/browser gates passed; F0 long baseline pending",
+  "draftLogVersion": 2,
+  "sourceHashes": {
+    "packages/simulation/simulation-product/src/draft-schema.ts": "da1e91834abd27d0cd7f01448c93cc2f6166085532fcf2071791f5b2f5ca600e",
+    "packages/simulation/simulation-product/src/draft-store.ts": "87f39965ae3e647b062d2d5a3bfad40d121ab7d150e8063a018607f7786afb1d",
+    "packages/simulation/simulation-scenario/src/template-package.ts": "45854d536b14d6551d081469f789d2e5bfcdbfce04d9033845fb416e4495ebb1",
+    "packages/simulation/simulation-product/src/world-preflight.ts": "c21bd57539fa671d104d7667a62eeef90ced1b6ca8cc7b67afe54fbe6f827663",
+    "packages/client/ui-simulation/src/client/WorldAuthorWorkbench.tsx": "b15beb8db9cd1168edf37df4c89b61cf6011f17f466dec7f2b690510467121eb",
+    "packages/client/ui-simulation/src/client/WorldTemplateExport.tsx": "dfd8781c63c60a122c646661e9d958e2ceb7b6a3efcecd4263ce7f56e0be2e20",
+    "packages/client/ui-simulation/src/client/WorldDraftGraph.tsx": "a1b372b1734289df955038ba6680497a3d24e4c7f6a36f8118a83b8c8355725a",
+    "packages/client/ui-simulation/src/client/world-draft-compare.ts": "7635ed704de2e828064993ad199c59f36855d3d43f0bddaa72288d15f433406f",
+    "packages/client/ui-simulation/src/client/world-draft.ts": "c34c14a162c8b4ae3909d4b19f65a10099ec395c19b6dd7e57192261ab4d648c",
+    "packages/client/runtime/src/client/simulations/service.ts": "2ab39b6b7d4b991e7ecf5e96fda789554b1cc706ff8bc302b6e4d0e614c2332d",
+    "packages/sdk/client/src/client.ts": "b8db6e3de7a42035d67aaaaa431e658da412639500c982aed8f3acf2954fd67a",
+    "python/sdk/src/clocky/simulation_drafts.py": "2781abd550daf9244bb5ccf350e458f66b5a6e3b2d34fb6726f7f3f45022728e",
+    "python/sdk/src/clocky/simulation_scenario.py": "5b75f6318120bf9f021056823a4fbf6da0c51954da111ac1c870abd1ec0349a9",
+    "packages/client/ui-simulation/tests/world-post-mvp-author.client.spec.tsx": "e283ba2e58f904b00c6d88fb057e2f4e82dec963b2ee1fb802d26bd842e0e85a"
+  },
+  "verification": [
+    {
+      "log": "a1-continuation-focused.log",
+      "result": "8 files /31 tests passed; source; real JSON+SQLite draft journals"
+    },
+    {
+      "log": "a1-continuation-source.log",
+      "result": "2 files /8 tests passed after final metadata/source restore corrections"
+    }
+  ],
+  "browser": {
+    "backends": [
+      "json",
+      "sqlite"
+    ],
+    "tests": 2,
+    "transport": "actual authenticated HTTP; source Host / built Client",
+    "models": 0,
+    "coverage": [
+      "draft CAS and field conflict",
+      "saved layout reopen",
+      "bounded graph and narrow viewport",
+      "explicit licensed package export and creation",
+      "calendar retained command refresh/retry",
+      "finite Persona create/review/reject/regenerate/compare"
+    ],
+    "log": "a1-continuation-browser.log"
+  },
+  "gif": {
+    "path": ".playwright-mcp/world-post-mvp-complete.gif",
+    "sha256": "3f11ad4c8a4db5fd624c058d728ec03de6805f2301c80a85f32da50a11ec9254",
+    "sourceFrames": 6,
+    "durationSeconds": 12,
+    "models": 0,
+    "claim": "Local authoring and human review, not model inference; JSON/SQLite browser tests use real HTTP and explicit test deployment metadata."
+  }
+}

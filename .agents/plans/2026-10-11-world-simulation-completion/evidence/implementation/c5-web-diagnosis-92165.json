@@ -1,0 +1,188 @@
+{
+  "date": "2026-10-12",
+  "timezone": "Asia/Tokyo",
+  "observedAt": "2026-10-12T04:31:43.570633+09:00",
+  "ownedPids": [
+    92130,
+    92165
+  ],
+  "rootSession": 18451,
+  "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c4-web.log",
+  "processState": "Both owned Node live, sleeping, zero CPU; worker native sample in uv__io_poll/kevent; no owned network connection/listener or browser child observed. Not terminal.",
+  "suite": "apps/web/tests/world-cold-recovery.snapshot.ts",
+  "failureBoundary": {
+    "line": 119,
+    "staleLocator": "workspace.getByRole('button', { name: 'World 案件', exact: true }).first().click()",
+    "observedActualNavLabel": "事项",
+    "sourceLabelOwner": "packages/client/ui-simulation/src/client/Workspace.tsx:450; packages/client/ui-simulation/src/client/world-locales.ts:494",
+    "evidence": "All four failure DOMs show World overview with new nav; none contain World 案件 or 案件详情. Preview written before failure; no notification/cold/checkpoint measurement artifacts."
+  },
+  "retainedRoots": [
+    {
+      "root": ".local/world-director-mvp/browser/json-company-cold-browser/world-8BqKNt",
+      "failureTime": "2026-10-12 04:19:40 JST"
+    },
+    {
+      "root": ".local/world-director-mvp/browser/json-laboratory-cold-browser/world-vtLH94",
+      "failureTime": "2026-10-12 04:22:38 JST"
+    },
+    {
+      "root": ".local/world-director-mvp/browser/sqlite-company-cold-browser/world-icdytU",
+      "failureTime": "2026-10-12 04:25:38 JST"
+    },
+    {
+      "root": ".local/world-director-mvp/browser/sqlite-laboratory-cold-browser/world-NEWwZu",
+      "failureTime": "2026-10-12 04:28:38 JST"
+    }
+  ],
+  "teardownEvidence": {
+    "suiteFinallyLine": 235,
+    "order": "completion.finish(); await browser.close(); await scaffold.close()",
+    "scaffoldClose": "apps/web/tests/scaffold.ts:764 -> cleanupScaffoldWorld:293 -> await ctx.fiber.dispose()",
+    "observations": "No owned browser/network after each failure, owner.sqlite locks remain open, sample idle; roots advance roughly every 180 seconds, matching testTimeout.",
+    "remainingUncertainty": "Native sampling cannot resolve the exact unresolved JavaScript child promise inside fiber disposal; owner.retire/connection.close drain sets require further focused diagnosis. Do not assert a specific drain promise from idle sample alone."
+  },
+  "nativeCountsObservedSqliteCompany": {
+    "decisionPaused": 1,
+    "decisionAccepted": 6,
+    "decisionStarted": 7,
+    "writerReserved": 4,
+    "writerActivated": 4,
+    "writerRevoked": 4,
+    "writerReleased": 2,
+    "tailSequence": 194
+  },
+  "sampleFile": ".local/world-completion/tmp/web-worker-92165.sample.txt",
+  "actions": "Read-only ps/lsof/sample, code reads, failure DOM label checks, read-only SQLite lifecycle kinds. No process signal/restart, production/config edit or credential read/output.",
+  "followup": {
+    "authorizedEdits": [
+      "apps/web/tests/world-cold-recovery.snapshot.ts navigation World 案件 -> 事项",
+      "same file definition export -> 导出定义 / JSON menu / joined download promise"
+    ],
+    "retainedAssertions": "original JSON equality, no Session identity in export, no cold-read/export model inference or owner creation, original checkpoint, privacy and state assertions unchanged; deadlines/thresholds unchanged",
+    "browserPath": "Browser plugin not available; repository Playwright built browser snapshot",
+    "firstFocusedActualRun": {
+      "command": "TMPDIR=$PWD/.local/world-completion/tmp CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.web.config.ts apps/web/tests/world-cold-recovery.snapshot.ts -t 'restores.*json.*company.*original World' --reporter=verbose",
+      "log": ".local/world-completion/tmp/web-cold-canonical-json-company.log",
+      "result": "1 failed, 3 skipped, exit 1; 19.99 seconds; first matched-plain-name attempt skipped all 4 and is not counted as evidence",
+      "progress": "Passed complete employment/privacy/inspector/checkpoint, teardown, cold Loader and cold browse, then failed stale export locator line 190. Notification screenshot exists in world-d5Bdeb. No inferred real-model quality evidence."
+    },
+    "pending": "Authorized cold-recovery test fixes verified; old full suite failures and other files remain root-owned and are not covered by this four-case pass.",
+    "disposerOrder": "Cordis Fiber._unload at vendor/cordis/src/fiber.ts:676 invokes independent effect disposers with Promise.all. Only nested disposable children inside one effect serialize in reverse at fiber.ts:427. simulation-local.apply registers each domain and provider as independent effects, so a simple ordered brother-domain-disposer block does not prove provider.close was not entered.",
+    "pureLeaseLifetime": "NativeWorldRuntime.manifest/original acquires original operation leases until provider cleanup calls runtime.close after run.close. run.close first awaits retirement (connection.close) and writer/dispatch drain. Retained owner.sqlite descriptors confirm original runs had not completed cleanup in old worker. Exact unresolved JS promise and provider.close entry cannot be proved by native sample alone. No core lifecycle edit made.",
+    "exportInferenceCorrection": "Only stale old export locator was verified as failure. No actual enabled-state check proved overview-unpublished disabled export. Current WorldOverview source gates only connection/export-in-progress; its mtime predates prior dist build. Earlier disabled-by-unpublished hypothesis and assumed concurrent removal are withdrawn.",
+    "canonicalWeakPollMatrix": {
+      "log": ".local/world-completion/tmp/web-cold-canonical-all.log",
+      "passed": 4,
+      "exitCode": 0,
+      "limitation": "Whole-dialog completion text could be checkpoint context; does not establish original restore command terminal."
+    },
+    "strongOriginalTerminalFocused": {
+      "log": ".local/world-completion/tmp/web-cold-original-terminal-one.log",
+      "passed": 1,
+      "skipped": 3,
+      "exitCode": 0,
+      "screenshotRoot": ".local/world-director-mvp/browser/json-company-cold-browser/world-JJngUz",
+      "assertion": "Original CommandRecord named region; exact 原结果: 请求已完成 for checkpoint and restore; original 30s/1s unchanged."
+    },
+    "strongOriginalTerminalMatrix": {
+      "date": "2026-10-12",
+      "testInputSha256": "074507cb5f0a987dfb3484047313374cf8b3fedf5eedf967c8e39939371c16f1",
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.web.config.ts apps/web/tests/world-cold-recovery.snapshot.ts --reporter=verbose",
+      "log": ".local/world-completion/tmp/web-cold-original-terminal-all.log",
+      "exitCode": 0,
+      "passed": 4,
+      "durationSeconds": 48.02,
+      "browser": "Repository Playwright Chromium, real built Web/Host/Agent flow; Browser plugin absent",
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "locale": "zh-CN"
+      },
+      "originalChecks": "Original World/person identity, private body/rationale withheld, independent Session and first action, exact checkpoint and restore original command terminal, pure cold read/export without inference or owner, exact definition export excluding Session IDs, paused restoration; timings/deadlines/counters preserved.",
+      "items": [
+        {
+          "backend": "json",
+          "scenario": "company",
+          "root": "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/json-company-cold-browser/world-ORH1Dp",
+          "proofSha256": "60160f8e200ca3b5fc1773e7cc261edf299e5fea1c23b6e7f0d9f447bb82be5e",
+          "measurementsSha256": "63318a1516d0266e173f3c1aaae65a3f76645da399be356c50b708da1320336a",
+          "journalStream": 65,
+          "modelCalls": 18,
+          "coldCalls": 0,
+          "coldOpens": 1,
+          "phase": "paused",
+          "screenshots": [
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/json-company-cold-browser/world-ORH1Dp/00-preview.png",
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/json-company-cold-browser/world-ORH1Dp/01-notification.png",
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/json-company-cold-browser/world-ORH1Dp/02-cold-restored.png"
+          ]
+        },
+        {
+          "backend": "json",
+          "scenario": "laboratory",
+          "root": "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/json-laboratory-cold-browser/world-Yqgzma",
+          "proofSha256": "ddee546e957d69caa57d6bfdf087fe62383f4352b1c0e810b3d2a1baf40eca66",
+          "measurementsSha256": "8d8672c86d7ca68aa7439de915005bdcaf70a5df7e30248eddfe9e2f145772c3",
+          "journalStream": 65,
+          "modelCalls": 18,
+          "coldCalls": 0,
+          "coldOpens": 1,
+          "phase": "paused",
+          "screenshots": [
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/json-laboratory-cold-browser/world-Yqgzma/00-preview.png",
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/json-laboratory-cold-browser/world-Yqgzma/01-notification.png",
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/json-laboratory-cold-browser/world-Yqgzma/02-cold-restored.png"
+          ]
+        },
+        {
+          "backend": "sqlite",
+          "scenario": "company",
+          "root": "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/sqlite-company-cold-browser/world-O2QxY0",
+          "proofSha256": "ec2757ee77903c002ded34b3bfa8073ddcead93244d02ef2104f208840825157",
+          "measurementsSha256": "26268d16674b6221e2749f52bd2af7a6b90aff109300eb4a3d9631e429966b65",
+          "journalStream": 65,
+          "modelCalls": 18,
+          "coldCalls": 0,
+          "coldOpens": 1,
+          "phase": "paused",
+          "screenshots": [
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/sqlite-company-cold-browser/world-O2QxY0/00-preview.png",
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/sqlite-company-cold-browser/world-O2QxY0/01-notification.png",
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/sqlite-company-cold-browser/world-O2QxY0/02-cold-restored.png"
+          ]
+        },
+        {
+          "backend": "sqlite",
+          "scenario": "laboratory",
+          "root": "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/sqlite-laboratory-cold-browser/world-NaquFo",
+          "proofSha256": "0eb66235674671302f75b584490fe5610f9773f5bd34091f455fda769cc0ff15",
+          "measurementsSha256": "55ebc99c83afdd692ae8ac1c991281267868620e862d306455b4a4fa14cf7b23",
+          "journalStream": 65,
+          "modelCalls": 18,
+          "coldCalls": 0,
+          "coldOpens": 1,
+          "phase": "paused",
+          "screenshots": [
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/sqlite-laboratory-cold-browser/world-NaquFo/00-preview.png",
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/sqlite-laboratory-cold-browser/world-NaquFo/01-notification.png",
+            "/Volumes/projects-mac/deepseek-harness/.local/world-director-mvp/browser/sqlite-laboratory-cold-browser/world-NaquFo/02-cold-restored.png"
+          ]
+        }
+      ]
+    },
+    "targetedLint": {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec oxlint apps/web/tests/world-cold-recovery.snapshot.ts",
+      "log": ".local/world-completion/tmp/web-cold-test-lint.log",
+      "exitCode": 0,
+      "scope": "one authorized test; not full typed lint"
+    },
+    "manualVisualQa": {
+      "viewed": [
+        "world-JJngUz/02-cold-restored.png (strong focused json/company)",
+        "world-NaquFo/02-cold-restored.png (strong matrix sqlite/laboratory)"
+      ],
+      "results": "Real World app rendered, no blank page/framework overlay visible, original restore command explicitly shows 原结果: 请求已完成. Desktop 1440x1000 only; no mobile or broader design audit claimed."
+    }
+  }
+}

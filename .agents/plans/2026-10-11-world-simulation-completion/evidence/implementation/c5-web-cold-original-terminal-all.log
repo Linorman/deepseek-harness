@@ -1,0 +1,14 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ✓ apps/web/tests/world-cold-recovery.snapshot.ts > restores 'json' 'company' original World through the browser without redispatch 13095ms
+ ✓ apps/web/tests/world-cold-recovery.snapshot.ts > restores 'json' 'laboratory' original World through the browser without redispatch 10683ms
+ ✓ apps/web/tests/world-cold-recovery.snapshot.ts > restores 'sqlite' 'company' original World through the browser without redispatch 12313ms
+ ✓ apps/web/tests/world-cold-recovery.snapshot.ts > restores 'sqlite' 'laboratory' original World through the browser without redispatch 10266ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  04:49:33
+   Duration  48.02s (transform 974ms, setup 13ms, import 1.53s, tests 46.36s, environment 0ms)
+

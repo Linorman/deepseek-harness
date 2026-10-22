@@ -1,0 +1,78 @@
+{
+  "part": "O02/O03/O06/O07 personnel pure domains; complete integration remains root-owned",
+  "verifiedAt": "2026-10-11T21:42:20.450Z",
+  "files": [
+    {
+      "path": "packages/simulation/simulation/src/world-personnel.ts",
+      "bytes": 6007,
+      "sha256": "973fc5f44b4b1ff766c3c56cf334cd42c895cf58b2957771656a6b09773a5aad"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-personnel-domain.ts",
+      "bytes": 28482,
+      "sha256": "d06ce5efe61d1a881ec9a39b1e69cdc97c336af46c8b1f7415ba31542c0f2b42"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts",
+      "bytes": 24832,
+      "sha256": "0a40fd74022b78d1c58f82950d7a73515de9c7a92ebfc0beb4c013029231516d"
+    }
+  ],
+  "checks": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-domain-unit-target.log",
+      "exitCode": 0,
+      "tests": 19
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsx scripts/run-oxlint.ts packages/simulation/simulation/src/world-personnel.ts packages/simulation/simulation-local/src/world-personnel-domain.ts packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-domain-lint-target3.log",
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -b tsconfig.host.json",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-domain-types-target.log",
+      "exitCode": 2,
+      "note": "No errors in these three files. Root-owned SimulationRun implementation does not yet expose newly declared personnel methods and other in-progress root modules have unused imports. Full Host gate remains pending."
+    }
+  ],
+  "interfaces": [
+    "WORLD_TRANSFER_PIN/DEFINITION",
+    "WORLD_DEPART_PIN/DEFINITION",
+    "simulationWorldTransferPayloadSchema/PlanPayloadSchema/MutationPayloadSchema/CommittedResultPayloadSchema/ResultPayloadSchema",
+    "simulationWorldDepartPayloadSchema/PlanPayloadSchema/MutationPayloadSchema/CommittedResultPayloadSchema/ResultPayloadSchema",
+    "PersonnelDomainError",
+    "TransferNativeWorldDomain(owner)",
+    "DepartNativeWorldDomain(owner)",
+    "PersonnelDomainOwner.positionReservations(state,scope,position,excludeIntentId?)",
+    "PersonnelDomainOwner.requireCommit(state,intent,plan,effectiveAt):{closedAuthorityRelationIds}"
+  ],
+  "contracts": {
+    "request": "Exact original assignment/person/revision/time/request payload; no Persona/Session/identity substitutions",
+    "authority": "Transfer requires both original live can-transfer source-position grant and exact live can-transfer-target target-position grant with actor/operation/version/scope/name/actual Relation checks; departure requires original live can-depart source-position grant. Native-derived worldOperationGrants participates only via retained scenario authority.",
+    "reads": "Person entity-profile revision+hash and canonical binding hash; source assignment/grants, candidate all current/future assignments and target occupancy including generated and personnel reservations; writer entity revision alone does not stale; target-grant original revision and interval are retained explicitly.",
+    "capacity": "Peak target occupancy through remaining assignment intervals plus every unsettled target reservation; original self reservation excluded only by exact intent ID",
+    "commit": "Required synchronous Native owner proof; no default success; closes original assignment and only distinct exact approved live old-role authority subset; transfer creates deterministic assignment",
+    "time": "No backfill; null records actual safe time; strict future waits, passed strict time rejects; closing time strictly exceeds original start",
+    "identity": "No entity changes, new persons, Participant/Session/profile updates, debtor/task inheritance or irreversible termination",
+    "replay": "First action validates original plan/mutation/result, original binding and confirmed private person/director Channel; closed grants are not reauthorized",
+    "goal": "Recorded safe goal opportunities include only currently authorized source and target positions; no profile.role inference or model-chosen privileges."
+  },
+  "rootOwnedRemaining": [
+    "Durable personnel state machine and reservation/fence lifecycle",
+    "Actual complete Native/Team settlement and runtime-only safe-cut proof",
+    "Writer retirement confirmation and capacity settlement",
+    "Explicit scenario-approved future permissions plus derived role directory in same atomic batch",
+    "Generic driver/API/DTO and real Loader source/lib backend integration",
+    "Checklist and documentation"
+  ],
+  "checklistModified": false,
+  "targetPermissionTests": [
+    "missing actual target relation",
+    "missing frozen target declaration",
+    "foreign actual scope",
+    "half-open expired target grant",
+    "changed target revision refuses original plan commit"
+  ]
+}

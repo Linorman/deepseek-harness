@@ -1,0 +1,162 @@
+{
+  "date": "2026-10-12",
+  "scope": "C2 Native generic domain path and independently registered booking proof",
+  "files": [
+    {
+      "path": "packages/simulation/simulation/src/world.ts",
+      "sha256": "0d318b2c6a8ddd462c977f3600ea2dd8c826db731c0072dddcc82df5ae04e92b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-types.ts",
+      "sha256": "98f37f4e64360d9b9e37ed259deaf0340c5a40cec48155ecc8605a8f1369af8a"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain-types.ts",
+      "sha256": "bdc977026a95206eadaae517f4221f2b38a9f3dd09f47807a43d18d67bc5d71f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-native-types.ts",
+      "sha256": "1d0a751942dde528622fe77875cb87ad837316f8f85259dd1d9872d4eeab5f99"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domains.ts",
+      "sha256": "9c0071c4c02bb187e8959bb0f94fc926e3912b5ce0fabd7da211a69ad3e542fd"
+    },
+    {
+      "path": "packages/simulation/simulation/src/types.ts",
+      "sha256": "491672db6dee5af1bd25951205dd878751c5dec79d7d8389d04233e9f3a27ee3"
+    },
+    {
+      "path": "packages/simulation/simulation/src/index.ts",
+      "sha256": "5ec0ae768235474c6296e1c1cf29b0b414c6fa9e254eb8f26f84081b62c70135"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire.ts",
+      "sha256": "552494cc1eb2c73ce20ca9058cc56d525db404776248ffd6dec3f730b33aebc8"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-types.ts",
+      "sha256": "cbeaa3982e06e29f23af6198638f1addd6096d60e77445a3f714aa18c6ca859e"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world.ts",
+      "sha256": "74c66568f7b6cc350a75ca7830e83c2183903fd14e53ce307f3f66a6ae292204"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-runtime.ts",
+      "sha256": "e4af6064ac8bced068b088afb3c284585089e91606eaba52bf1dcdf7b0f35f62"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-organization.ts",
+      "sha256": "c7c21b5c16314db1910d2ab301dc7aa700cc0ceb2fdd80ee098fc6fbb5177650"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-mutation.ts",
+      "sha256": "cef169c10243f33a140badd173b11c10ef1d2b1c6d1f933979c2feca550893fc"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-hire.ts",
+      "sha256": "3ad13205d84cdd3be671fb1e7a1af842b8d64c4b6f4411662369f5d52a435436"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/journal.ts",
+      "sha256": "4de9ce9a906b7eb7f8a142b1b77557e48c04dd44cad6e740dec1022a11583014"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/index.ts",
+      "sha256": "c12c03725a5bfc2a1e40e7cd5ef0bf8f3e0503c38f390b37a0f9e1215621b7d7"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/run.ts",
+      "sha256": "4a6006c1920be3193dbe9a02a347ef0572c6cd34f45eb5771a1b4473291efabb"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/context.ts",
+      "sha256": "c1b45b6b7adde1535d694e2fadb20e89788c450f8f8ac52c4baee828deaac643"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/decisions.ts",
+      "sha256": "63fd8fc0a3dd0b7e605587a25b774358cd073fd4e4f9d6651a972e41616b71ee"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/business.ts",
+      "sha256": "f1748b54d8a013ccd971a2b19741b180a80af0d601ad428956733b4aa4ce558b"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/driver.ts",
+      "sha256": "5ac0769879e1fbf56b503ca77e7e2195050734b3656dc53c9def770ad48e5858"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/execution.ts",
+      "sha256": "118f17e23670316f0b7267723812110e282d2eaefe647644bb08f05b09a6c422"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/organization.ts",
+      "sha256": "d08de122ef1278372c9bea83f4188a1e9920e13922a9b3a9be4114a4a74eb8bb"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/index.ts",
+      "sha256": "75d122b8665f730701e188681fcbfe34daa9bb7901d6c29a64f214108dc521bc"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-owner.ts",
+      "sha256": "dd41af19e7d9ce04458be8952cf36c1b7a9a3a168208e0a5a6608483d6434870"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-preparation.ts",
+      "sha256": "06ea27e79755b1e0784570a2732e5d36bea8e2d6d08e6ae5bdf94ea8eb541f7d"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/case-schema.ts",
+      "sha256": "4e68d9d7de19d28001c163e1e385a360004b808e7e372cb78dbd8040b4500b86"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/case-types.ts",
+      "sha256": "df56333378ef1b4a2e59849f6d8f15682a824d20288d0849737ca5e3f4b6cc11"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/cases.ts",
+      "sha256": "dac8516c88d7779ec94ebbe7a4ffb3383fa45ba88356eb896777b58106f3b48f"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/compiler.ts",
+      "sha256": "778bf88a5eb76898c74eaa4ce61e16279c82913b3fc6b1c5df2173665db3120d"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/types.ts",
+      "sha256": "f30d56742a27b0c246ff98b802b3bdc355092fffbba648bf92141b3abc26a685"
+    },
+    {
+      "path": "packages/simulation/tool-simulation/src/schema.ts",
+      "sha256": "672882a7b0c075bf35a9c81c63445777e4f59260f2dd558949234954259ba5b4"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "sha256": "422c93be6cbb640ff67a08ebd8f46bd5bde429c01b9ba8f41ebe4449a78489e3"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-booking-domain.ts",
+      "sha256": "48e3dc9adb31ee549d47da89b0dfa69f41f5524591149b0d38b06f001615891b"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-booking-scenario.ts",
+      "sha256": "f9abae6175f46a42237cadc8476d334fb18d1f7af25dbda700b21bcdf7379491"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-booking.snapshot.ts",
+      "sha256": "fd2f7434739be4a4124130f819498ff18ebda143d02a1f5ba4eca40b40d74535"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-driver-model.ts",
+      "sha256": "b54750a49c65a9c423c1de8a92dfca33a01f109365570b2ec2aea78e2688bb66"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-driver-scenario.ts",
+      "sha256": "4e3f57226fe3c9bda2452bb9caa13a48d38f436d0b841ab9881ae21f8861c97f"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-domain-input.ts",
+      "sha256": "53da9a363532b27404156f03e0a339de8dd2f59ca33e702b0f0b23e73a331411"
+    }
+  ]
+}

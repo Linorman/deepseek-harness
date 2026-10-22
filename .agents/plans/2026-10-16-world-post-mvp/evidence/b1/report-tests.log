@@ -1,0 +1,10 @@
+.../Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/script-tests/tmpz9ym0t69/.local/world-post-mvp/f0-longitudinal/1792381740161620000
+{"scene": "company", "backend": "json", "recover": false, "exitCode": null, "elapsedMs": 1, "failure": {"kind": "timeout"}}
+/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/script-tests/tmpppkw9r9w/.local/world-post-mvp/f0-longitudinal/1792381740163163000
+{"scene": "company", "backend": "json", "recover": false, "exitCode": 0, "elapsedMs": 1, "failure": {"kind": "invalid-result"}}
+.........
+----------------------------------------------------------------------
+Ran 12 tests in 0.314s
+
+OK
+{"complete": false, "rows": 0, "output": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/script-tests/tmpbounay3b/summary.json"}

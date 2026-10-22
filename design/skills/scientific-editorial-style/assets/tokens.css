@@ -1,0 +1,86 @@
+/* Scientific editorial style. Scope this file to a wrapper bearing
+   data-scientific-editorial. These are tokens, not a reset or component kit.
+   Default/reference values derive from the 2026-10-11 PhAI tech-page study.
+   reading overrides are this skill's adaptations, not source-site behavior.
+   Font binaries are not bundled; load licensed IBM Plex faces separately. */
+:where([data-scientific-editorial]) {
+  --sci-bg: #0a0a0b;
+  --sci-surface: #101012;
+  --sci-surface-raised: #151518;
+  --sci-ink: #f0eee8;
+  --sci-body: rgba(240, 238, 232, .68);
+  --sci-muted: rgba(240, 238, 232, .44);
+  --sci-faint: rgba(240, 238, 232, .26);
+  --sci-rule: rgba(240, 238, 232, .12);
+  --sci-rule-soft: rgba(240, 238, 232, .07);
+  --sci-blue: #9ba7ff;
+  --sci-blue-bright: #aab4ff;
+  --sci-blue-deep: #5d6bd6;
+  --sci-blue-ink: #3a45a8;
+  --sci-blue-glow: rgba(155, 167, 255, .20);
+  --sci-blue-line: rgba(155, 167, 255, .38);
+  --sci-amber: #d29c52;
+  --sci-amber-hover: #e0ae66;
+  --sci-amber-glow: rgba(210, 156, 82, .20);
+  --sci-on-amber: #141008;
+
+  --sci-serif: 'IBM Plex Serif', 'Plex Serif', 'PhAI Serif SC', 'Songti SC', STSong, 'Noto Serif SC', SimSun, Georgia, serif;
+  --sci-sans: 'IBM Plex Sans', 'Plex Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  --sci-mono: 'IBM Plex Mono', 'Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --sci-shell: 1280px;
+  --sci-narrow: 760px;
+  --sci-pad: clamp(1.25rem, 5vw, 4.5rem);
+  --sci-gap: clamp(1.5rem, 3vw, 3rem);
+  --sci-section: clamp(4rem, 10vh, 8rem);
+  --sci-title: clamp(2.2rem, 4.4vw, 3.8rem);
+  --sci-h2: clamp(1.55rem, 2.6vw, 2.4rem);
+  --sci-h3: clamp(1.1rem, 1.35vw, 1.3rem);
+  --sci-lede: clamp(1.02rem, 1.25vw, 1.22rem);
+  --sci-text: clamp(.98rem, 1.05vw, 1.06rem);
+  --sci-small: .88rem;
+  --sci-eyebrow: .78rem;
+  --sci-label: .66rem;
+  --sci-leading-body: 1.7;
+  --sci-leading-title: 1.06;
+  --sci-leading-h2: 1.12;
+  --sci-tracking-title: -.025em;
+  --sci-tracking-eyebrow: .2em;
+  --sci-pill: 999px;
+  --sci-figure-radius: 4px;
+
+  --sci-ease: cubic-bezier(.22, 1, .36, 1);
+  --sci-feedback: 250ms;
+  --sci-edge-light: 260ms;
+  --sci-header-transition: 350ms;
+  --sci-reveal: 800ms;
+  --sci-reveal-y: 12px;
+  --sci-reveal-blur: 8px;
+  --sci-stagger: 70ms;
+  --sci-stagger-cap: 630ms;
+  --sci-word-reveal: 600ms;
+  --sci-word-stagger: 50ms;
+  --sci-section-draw: 1100ms;
+  --sci-path-draw: 1600ms;
+  --sci-path-draw-slow: 2600ms;
+  --sci-signal-default: 6s;
+  --sci-ring-default: 3.6s;
+}
+
+/* Scope the selected profile on the same wrapper as data-scientific-editorial.
+   faint remains decoration-only. Necessary text uses muted or a higher role. */
+:where([data-scientific-editorial][data-style-profile='reading']) {
+  --sci-muted: rgba(240, 238, 232, .60);
+  --sci-label: .75rem;
+  --sci-reveal: 450ms;
+  --sci-reveal-y: 6px;
+  --sci-reveal-blur: 0px;
+  --sci-stagger: 40ms;
+  --sci-stagger-cap: 160ms;
+}
+
+@media (max-width: 639px) {
+  :where([data-scientific-editorial]) {
+    --sci-section: clamp(3rem, 8vh, 5rem);
+  }
+}

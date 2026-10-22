@@ -1,0 +1,1434 @@
+{
+  "results": [
+    {
+      "backend": "json",
+      "samples": [
+        {
+          "repetition": 0,
+          "mode": "local",
+          "elapsedMs": 6.995375000000422,
+          "rss": 328351744,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 328351744,
+          "processElapsedMs": 13.264791999999943,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 0,
+          "mode": "maintenance",
+          "elapsedMs": 86.27216700000008,
+          "rss": 336986112,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 336986112,
+          "processElapsedMs": 90.91941700000007,
+          "maintenanceMs": 78.70895800000017,
+          "maintenanceFraction": 0.8657002057107351,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 8.496083999999883,
+              "inherited": false,
+              "finishedMs": 87.20504200000005
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 1,
+          "mode": "local",
+          "elapsedMs": 4.280124999999771,
+          "rss": 347815936,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 347815936,
+          "processElapsedMs": 9.452208000000155,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 1,
+          "mode": "maintenance",
+          "elapsedMs": 80.92483399999992,
+          "rss": 353599488,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 353599488,
+          "processElapsedMs": 85.5720409999999,
+          "maintenanceMs": 73.62862499999983,
+          "maintenanceFraction": 0.8604285247794886,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 7.417707999999948,
+              "inherited": false,
+              "finishedMs": 81.04633299999978
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 2,
+          "mode": "local",
+          "elapsedMs": 4.16137499999968,
+          "rss": 357908480,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 357908480,
+          "processElapsedMs": 8.8272079999997,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 2,
+          "mode": "maintenance",
+          "elapsedMs": 85.34891699999935,
+          "rss": 364937216,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 364937216,
+          "processElapsedMs": 89.70833399999992,
+          "maintenanceMs": 78.49108299999989,
+          "maintenanceFraction": 0.874958652113637,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 7.101959000000534,
+              "inherited": false,
+              "finishedMs": 85.59304200000042
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 3,
+          "mode": "local",
+          "elapsedMs": 3.549207999999453,
+          "rss": 370196480,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 370196480,
+          "processElapsedMs": 7.739207999999962,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 3,
+          "mode": "maintenance",
+          "elapsedMs": 83.43979200000012,
+          "rss": 376455168,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 376455168,
+          "processElapsedMs": 87.80720900000051,
+          "maintenanceMs": 76.75345900000048,
+          "maintenanceFraction": 0.87411341134872,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 6.762875000000349,
+              "inherited": false,
+              "finishedMs": 83.51633400000082
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 4,
+          "mode": "local",
+          "elapsedMs": 3.8215829999999187,
+          "rss": 380829696,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 380829696,
+          "processElapsedMs": 8.114250000000538,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 4,
+          "mode": "maintenance",
+          "elapsedMs": 74.53233300000011,
+          "rss": 387694592,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 387710976,
+          "processElapsedMs": 78.76949999999943,
+          "maintenanceMs": 68.06004200000007,
+          "maintenanceFraction": 0.864040548689538,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 6.889999999999418,
+              "inherited": false,
+              "finishedMs": 74.95004199999948
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 5,
+          "mode": "local",
+          "elapsedMs": 3.827374999999847,
+          "rss": 391053312,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 391053312,
+          "processElapsedMs": 8.313916000000063,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 5,
+          "mode": "maintenance",
+          "elapsedMs": 84.63541700000042,
+          "rss": 397623296,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 397623296,
+          "processElapsedMs": 89.4383340000004,
+          "maintenanceMs": 77.64908399999968,
+          "maintenanceFraction": 0.8681857155344522,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 7.944250000000466,
+              "inherited": false,
+              "finishedMs": 85.59333400000014
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 6,
+          "mode": "local",
+          "elapsedMs": 4.749374999999418,
+          "rss": 401113088,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 401113088,
+          "processElapsedMs": 10.04095899999993,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 6,
+          "mode": "maintenance",
+          "elapsedMs": 78.7367919999997,
+          "rss": 407617536,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 407617536,
+          "processElapsedMs": 83.2045420000004,
+          "maintenanceMs": 72.39633299999969,
+          "maintenanceFraction": 0.8701007332027539,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 7.151292000000467,
+              "inherited": false,
+              "finishedMs": 79.54762500000015
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        }
+      ],
+      "localP50Ms": 4.16137499999968,
+      "maintenanceP50Ms": 83.43979200000012,
+      "ratio": 0.04987278731471039
+    },
+    {
+      "backend": "sqlite",
+      "samples": [
+        {
+          "repetition": 0,
+          "mode": "local",
+          "elapsedMs": 1.6327079999991838,
+          "rss": 411762688,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 411762688,
+          "processElapsedMs": 3.6103750000002037,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 0,
+          "mode": "maintenance",
+          "elapsedMs": 25.73229100000026,
+          "rss": 420511744,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 420511744,
+          "processElapsedMs": 27.94012499999917,
+          "maintenanceMs": 23.708167000000685,
+          "maintenanceFraction": 0.8485347506498768,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 2.8979999999992287,
+              "inherited": false,
+              "finishedMs": 26.606166999999914
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 1,
+          "mode": "local",
+          "elapsedMs": 1.6812499999996362,
+          "rss": 424820736,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 424820736,
+          "processElapsedMs": 3.6982499999994616,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 1,
+          "mode": "maintenance",
+          "elapsedMs": 26.866958000000523,
+          "rss": 437567488,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 437567488,
+          "processElapsedMs": 28.74554199999875,
+          "maintenanceMs": 24.93816699999843,
+          "maintenanceFraction": 0.8675490272543657,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 2.5219170000000304,
+              "inherited": false,
+              "finishedMs": 27.46008399999846
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 2,
+          "mode": "local",
+          "elapsedMs": 1.625625000000582,
+          "rss": 441630720,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 441630720,
+          "processElapsedMs": 3.5572080000001733,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 2,
+          "mode": "maintenance",
+          "elapsedMs": 24.937167000000045,
+          "rss": 445431808,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 445431808,
+          "processElapsedMs": 26.935082999998485,
+          "maintenanceMs": 23.04979099999946,
+          "maintenanceFraction": 0.8557534795790589,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 2.6223749999990105,
+              "inherited": false,
+              "finishedMs": 25.67216599999847
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 3,
+          "mode": "local",
+          "elapsedMs": 1.5739169999997102,
+          "rss": 448888832,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 448888832,
+          "processElapsedMs": 3.504499999999098,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 3,
+          "mode": "maintenance",
+          "elapsedMs": 25.090000000000146,
+          "rss": 455098368,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 455098368,
+          "processElapsedMs": 27.04804200000035,
+          "maintenanceMs": 23.17945900000086,
+          "maintenanceFraction": 0.856973639718563,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 2.576208000000406,
+              "inherited": false,
+              "finishedMs": 25.755667000001267
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 4,
+          "mode": "local",
+          "elapsedMs": 1.7770830000008573,
+          "rss": 459079680,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 459079680,
+          "processElapsedMs": 3.7108750000006694,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 4,
+          "mode": "maintenance",
+          "elapsedMs": 23.46820800000023,
+          "rss": 462798848,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 462798848,
+          "processElapsedMs": 25.350749999999607,
+          "maintenanceMs": 21.51416600000084,
+          "maintenanceFraction": 0.8486599410274321,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 2.459666999999172,
+              "inherited": false,
+              "finishedMs": 23.973833000000013
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 5,
+          "mode": "local",
+          "elapsedMs": 1.6509580000001733,
+          "rss": 466354176,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 466354176,
+          "processElapsedMs": 3.53466600000138,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 5,
+          "mode": "maintenance",
+          "elapsedMs": 25.944541999999274,
+          "rss": 472285184,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 472285184,
+          "processElapsedMs": 27.842333000000508,
+          "maintenanceMs": 23.899249999998574,
+          "maintenanceFraction": 0.8583781395042628,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 2.517250000000786,
+              "inherited": false,
+              "finishedMs": 26.41649999999936
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 6,
+          "mode": "local",
+          "elapsedMs": 1.5424999999995634,
+          "rss": 476250112,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 69,
+          "processPeakRssBytes": 476250112,
+          "processElapsedMs": 3.386207999999897,
+          "maintenanceMs": 0,
+          "maintenanceFraction": 0,
+          "maintenanceIntervals": [],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 69,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        },
+        {
+          "repetition": 6,
+          "mode": "maintenance",
+          "elapsedMs": 23.417250000000422,
+          "rss": 479870976,
+          "modelCalls": 0,
+          "beforeRevision": 67,
+          "afterRevision": 79,
+          "processPeakRssBytes": 479870976,
+          "processElapsedMs": 25.263750000000073,
+          "maintenanceMs": 21.600125000000844,
+          "maintenanceFraction": 0.854984909207888,
+          "maintenanceIntervals": [
+            {
+              "id": "local-object:world-plan:simulation-operation:7a31f75e3b92237aa7cfbe540a19981c66859abfa1c51f2672eed25381251061",
+              "startedMs": 2.4191250000003492,
+              "inherited": false,
+              "finishedMs": 24.019250000001193
+            }
+          ],
+          "activeMaintenance": null,
+          "historicalIdentities": 8,
+          "sourceRevision": 79,
+          "modelAccounting": {
+            "actor": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "director": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "generation": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            },
+            "auxiliary": {
+              "calls": 0,
+              "knownTokens": 0,
+              "unknownCalls": 0,
+              "retainedTokens": 0
+            }
+          },
+          "monetaryCost": {
+            "status": "unknown",
+            "reason": "No frozen provider price schedule"
+          }
+        }
+      ],
+      "localP50Ms": 1.6327079999991838,
+      "maintenanceP50Ms": 25.090000000000146,
+      "ratio": 0.06507405340769926
+    }
+  ]
+}

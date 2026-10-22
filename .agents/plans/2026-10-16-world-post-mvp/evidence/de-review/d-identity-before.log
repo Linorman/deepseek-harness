@@ -1,0 +1,42 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-team/tests/experiments.spec.ts (8 tests | 2 failed | 6 skipped) 825ms
+   × keeps long and digest-shaped source Entity identities distinct (json) 656ms
+   × keeps long and digest-shaped source Entity identities distinct (sqlite) 169ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/experiments.spec.ts > keeps long and digest-shaped source Entity identities distinct (json)
+AssertionError: expected 'branch-3387c3b1-2cb6-40af-80d0-d2c011…' not to be 'branch-3387c3b1-2cb6-40af-80d0-d2c011…' // Object.is equality
+ ❯ packages/simulation/simulation-team/tests/experiments.spec.ts:336:42
+    334|     const branch = await createWorldExperimentBranch(h.ctx, body, inpu…
+    335|     try {
+    336|       expect(branch.lineage[longId]).not.toBe(branch.lineage[shortId])
+       |                                          ^
+    337|       expect(Object.keys(branch.run.snapshot().entities)).toHaveLength…
+    338|     } finally { await branch.connection.close(); await branch.run.clos…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/experiments.spec.ts > keeps long and digest-shaped source Entity identities distinct (sqlite)
+AssertionError: expected 'branch-78a4f299-44b2-4963-b502-41c998…' not to be 'branch-78a4f299-44b2-4963-b502-41c998…' // Object.is equality
+ ❯ packages/simulation/simulation-team/tests/experiments.spec.ts:336:42
+    334|     const branch = await createWorldExperimentBranch(h.ctx, body, inpu…
+    335|     try {
+    336|       expect(branch.lineage[longId]).not.toBe(branch.lineage[shortId])
+       |                                          ^
+    337|       expect(Object.keys(branch.run.snapshot().entities)).toHaveLength…
+    338|     } finally { await branch.connection.close(); await branch.run.clos…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 6 skipped (8)
+   Start at  18:23:34
+   Duration  3.23s (transform 1.73s, setup 155ms, import 2.13s, tests 825ms, environment 0ms)
+

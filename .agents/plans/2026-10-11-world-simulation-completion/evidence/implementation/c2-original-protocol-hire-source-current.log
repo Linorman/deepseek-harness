@@ -1,0 +1,605 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-protocol.snapshot.ts examples/simulation-company/tests/world-hire.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-protocol.snapshot.ts (14 tests | 14 failed) 31706ms
+     × retains apply with crash=false at pending 3015ms
+     × retains reject with crash=false at pending 2308ms
+     × retains apply with crash=true at pending 2254ms
+     × retains reject with crash=true at pending 2278ms
+     × retains apply with crash=true at cancelled 2285ms
+     × retains reject with crash=true at cancelled 2323ms
+     × retains reject with crash=true at rejected 2242ms
+     × retains apply with crash=false at pending 2149ms
+     × retains reject with crash=false at pending 2142ms
+     × retains apply with crash=true at pending 2193ms
+     × retains reject with crash=true at pending 2130ms
+     × retains apply with crash=true at cancelled 2126ms
+     × retains reject with crash=true at cancelled 2144ms
+     × retains reject with crash=true at rejected 2116ms
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts (12 tests | 12 failed) 48958ms
+     × retains the original plan and complete hire at crash=undefined 3465ms
+     × retains the original plan and complete hire at crash=accepted-before-reserve 4910ms
+     × retains the original plan and complete hire at crash=reserve-before-prep 4967ms
+     × retains the original plan and complete hire at crash=participant-afterIO 4934ms
+     × retains the original plan and complete hire at crash=commit-before 4990ms
+     × retains the original plan and complete hire at crash=commit-after 2710ms
+     × retains the original plan and complete hire at crash=undefined 2328ms
+     × retains the original plan and complete hire at crash=accepted-before-reserve 4475ms
+     × retains the original plan and complete hire at crash=reserve-before-prep 4546ms
+     × retains the original plan and complete hire at crash=participant-afterIO 4711ms
+     × retains the original plan and complete hire at crash=commit-before 4548ms
+     × retains the original plan and complete hire at crash=commit-after 2373ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 26 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=undefined
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:d3e42bc3-9a8f-437d-ab75-6a5b52063b94',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:d3e42bc3-9a8f-437d-ab75-6a5b52063b94',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=accepted-before-reserve
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:30ecc6cf-f5b0-422a-bd69-8e7d26402a07',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:30ecc6cf-f5b0-422a-bd69-8e7d26402a07',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=reserve-before-prep
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:9746ac2b-edea-4cab-a5c7-6c56ed91a032',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:9746ac2b-edea-4cab-a5c7-6c56ed91a032',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=participant-afterIO
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:2d332c3d-fac9-4ea4-8b90-2fa1fdd7b493',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:2d332c3d-fac9-4ea4-8b90-2fa1fdd7b493',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=commit-before
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:3b112bd1-63ff-4b47-acc8-11d4d73af70d',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:3b112bd1-63ff-4b47-acc8-11d4d73af70d',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > json Loader world hire > retains the original plan and complete hire at crash=commit-after
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=commit-after
+AssertionError: expected null to be 'SIGKILL' // Object.is equality
+
+- Expected:
+"SIGKILL"
+
++ Received:
+null
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:43:28
+     41|             first.child.kill('SIGKILL')
+     42|             const [, signal] = await first.exited as unknown[]
+     43|             expect(signal).toBe('SIGKILL')
+       |                            ^
+     44|           }
+     45|         }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=undefined
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:cc67bb82-867a-490b-8580-c89fce3c9292',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:cc67bb82-867a-490b-8580-c89fce3c9292',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=accepted-before-reserve
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:3e6cc66f-7ab7-4223-8aaf-a68bb5072021',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:3e6cc66f-7ab7-4223-8aaf-a68bb5072021',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=reserve-before-prep
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:8ce0ccfe-4029-45cc-b346-3672e3b74bf0',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:8ce0ccfe-4029-45cc-b346-3672e3b74bf0',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=participant-afterIO
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:4473f8c8-5ae0-44e8-8044-5c651a35dd55',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:4473f8c8-5ae0-44e8-8044-5c651a35dd55',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-hire.snapshot.ts > sqlite Loader world hire > retains the original plan and complete hire at crash=commit-before
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+-   entityId: 'world-person:3c56b2af-1874-4408-9834-8e6879ff2a06',
+    kind: 'committed',
+-   relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  }
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-scenario.ts:280:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: { kind: 'committed' },
+  expected: {
+    kind: 'committed',
+    entityId: 'world-person:3c56b2af-1874-4408-9834-8e6879ff2a06',
+    relationId: 'world-assignment:world-intent:c0452e81a9ed96cf1db8fc53e91979038963f3ef34a906601a2ac1c26689577f'
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-hire.snapshot.ts:49:39
+     47|         try {
+     48|           const [code] = await last.exited as unknown[]
+     49|           expect(code, last.errors()).toBe(0)
+       |                                       ^
+     50|           expectComplete(last.output(), crash === undefined ? 6 : 0,
+     51|             crash !== undefined && crash !== 'accepted-before-reserve'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains apply with crash=false at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains reject with crash=false at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains apply with crash=false at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains reject with crash=false at pending
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/entities.ts:85
+      if (rule === undefined) throw new Error('Simulation relation has no configured rule')
+                                    ^
+
+Error: Simulation relation has no configured rule
+    at foldEntityChange (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/entities.ts:85:37)
+    at fold (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:227:17)
+    at foldEntries (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:107:13)
+    at LocalSimulationRun.commitValues (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1766:18)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1340:18)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1786:26)
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ foldEntityChange packages/simulation/simulation-local/src/entities.ts:85:37
+ ❯ fold packages/simulation/simulation-local/src/journal.ts:227:17
+ ❯ foldEntries packages/simulation/simulation-local/src/journal.ts:107:13
+ ❯ LocalSimulationRun.commitValues packages/simulation/simulation-local/src/run.ts:1766:18
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1340:18
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1786:26
+ ❯ examples/simulation-company/tests/world-protocol.snapshot.ts:41:32
+     39|         try {
+     40|           const [code] = await exited as unknown[]
+     41|           expect(code, errors).toBe(0)
+       |                                ^
+     42|           expect(JSON.parse(output)).toEqual({ cases: 1, plans: 1, act…
+     43|             results: terminal === 'pending' ? 0 : 1, notificationWakes…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/26]⎯
+
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains apply with crash=true at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains reject with crash=true at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains apply with crash=true at cancelled
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains reject with crash=true at cancelled
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > json Loader world protocol > retains reject with crash=true at rejected
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains apply with crash=true at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains reject with crash=true at pending
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains apply with crash=true at cancelled
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains reject with crash=true at cancelled
+ FAIL  examples/simulation-company/tests/world-protocol.snapshot.ts > sqlite Loader world protocol > retains reject with crash=true at rejected
+Error: /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/entities.ts:85
+      if (rule === undefined) throw new Error('Simulation relation has no configured rule')
+                                    ^
+
+Error: Simulation relation has no configured rule
+    at foldEntityChange (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/entities.ts:85:37)
+    at fold (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:227:17)
+    at foldEntries (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:107:13)
+    at LocalSimulationRun.commitValues (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1766:18)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1340:18)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1786:26)
+
+Node.js v25.9.0
+
+ ❯ foldEntityChange packages/simulation/simulation-local/src/entities.ts:85:37
+ ❯ fold packages/simulation/simulation-local/src/journal.ts:227:17
+ ❯ foldEntries packages/simulation/simulation-local/src/journal.ts:107:13
+ ❯ LocalSimulationRun.commitValues packages/simulation/simulation-local/src/run.ts:1766:18
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1340:18
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1786:26
+ ❯ examples/simulation-company/tests/world-protocol.snapshot.ts:30:99
+     28|           child.stderr!.on('data', (chunk: Buffer) => { errors += chun…
+     29|           try {
+     30|             const [ready] = await Promise.race([once(child, 'message')…
+       |                                                                                                   ^
+     31|             expect(ready).toBe('durable')
+     32|           } finally { child.kill('SIGKILL'); await exited }
+ ❯ examples/simulation-company/tests/world-protocol.snapshot.ts:30:29
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/26]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  26 failed (26)
+   Start at  02:23:20
+   Duration  49.40s (transform 292ms, setup 243ms, import 447ms, tests 80.66s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

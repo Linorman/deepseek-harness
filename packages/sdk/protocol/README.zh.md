@@ -1,6 +1,20 @@
 # @clocky/clocky-sdk-protocol
 
+`simulation/raw-archive` 返回绑定来源的原始文字片段，保留 journal 原版本并明确未执行 Native 验证。参数仅接受登记 run 和有界续页选择，不携带 Native 状态、文件路径或权限覆盖。
+
+`simulation/runs-run-control` 共用 Product 的停止目标命令/结果 schema。解除必须显式传 null；原始 receipt 与当前停止状态保持独立。
+
 [English](README.md) | 中文
+
+`simulation/world-management-fields`、`world-management-preview` 和 `world-management-submit` 共用严格 Product DTO。提交固定完整原表单、command ID 及 Native 预览 revision/hash；客户端不能提供 principal、模拟 requester 或策略授权。`requests-get` 分别公开原管理结果元数据、回调与业务结果。`world-case-cancel` 要求实际允许取消预览中的固定 revision/hash。缺少预览、替换原选择或认证用户案件来源矛盾均拒绝。
+
+`simulation/world-preflight`、`world-create`、`world-prepare` 和 `world-export` 复用 Host 拥有的严格 World DTO parser。可移植定义只选择已安装的符号版本，入口拒绝 provider 配置、principal 和 Native snapshot。预检不产生执行副作用，创建／准备保留原 command 并返回暂停运行，导出仅返回与所选 run 绑定的原创建定义。导出不是私有运行备份；显式 start 和冷恢复使用现有控制协议。
+
+v1 `organization.hiringFees`只携带显式创作的一次性招聘费用：固定policy、招聘操作、岗位、不同的既有付款/收款账户、单位、正十进制数量、不同grant引用和正模拟预留周期。省略保持未声明，不补费用或付款默认值；空/错误字段和未知属性拒绝。资金、预留历史容量和模拟到期通过闭合的 `resource-capacity`、`resource-history-limit`、`resource-reservation-expired`停止分类观察，控制及运行状态DTO一致保留。账户解析、授权、扣费与恢复由Host/Native拥有；SDK没有新增付款写入API或私有compilerVersion DTO字段。
+
+World 原生额度包含 `maxResourceReservationHistory`：已解析额度必须完整提供正安全整数，场景可请求有界的正整数覆盖。它限制全部保留的资源预留历史；取消或模拟到期不会退还历史额度。资源预留、提交与取消通过既有 operation 元数据和获准读取的原 journal 文本观察，SDK 不提供 Native 交易写入接口；缺失必填字段、未知结构字段和未经授权的正文仍拒绝。
+
+`simulation/world-case-inspect` 共用产品的严格结果解析器。共同 committed outcome 仅含 `kind`，业务身份放在必填 JSON `payload` 中。存在招聘预留时，其原实体、关系和计划必须与该 payload 匹配；其他领域结果不要求招聘预留。解析器拒绝旧招聘 outcome 字段和非 JSON payload。SDK 方法公开不含 actor 的产品选择器，而非 Native 意图创建能力。 带版本案件摘要携带 `clocky.world-case/v3`、domain/operation/version 和原目标。只有精确招聘 apply 计划具备 Persona；非招聘案件拒绝招聘预留。必填 null 申请通知表示没有 Channel 发布。旧摘要与岗位别名被拒绝，不静默删除。 必填 lifecycle 从同一 Native 前缀分离请求、计划、回调/业务与通知，拒绝矛盾详情、缺失状态轨及 v1 响应。
 
 `simulation/requests-list` 携带 actor-free 运行选择器，返回互不重复的原 receipt、总数、运行独立 revision 及可选继续游标，不返回私有命令输入。`simulation/requests-retry` 只携带 `runId` 和已有 `commandId`，返回原 receipt 类型；调用方提供替换输入时会被拒绝。已受理命令保留原语义，终态 receipt 保持不可变。
 
@@ -28,6 +42,10 @@ Clocky SDK 运行时的共享协议格式（wire format）：一个按换行分�
 
 
 `simulation/tasks-list` 返回有界的运行所属规范任务控制；`simulation/tasks-cancel` 固定原命令、来源操作、任务 revision，以及精确 attempt 或显式无 lease 的 `null`。actor 字段与缺失的 fence 均被拒绝。`cancel-task` 回执确认原请求类型；`requests-get` 用同一运行与命令重建不可变的 `cancellation`。协议不携带私有任务正文或通用 Team 权限。
+
+`readSimulationWorldDomain`（Python 为 `read_simulation_world_domain`）共用 `simulation/world-domain-read`。严格的 `clocky.world-read/v1` 结果绑定完整原选择及独立有界覆盖范围，拒绝未知字段或替换身份、版本、分区、覆盖信息。续页使用返回的 cursor 及原 revision／readVersion。未知驻留和可空义务计数保持未知；模拟时间及制度／提案版本保持规范十进制字符串。读取不恢复、不 attach、不推理，正文授权不代表 Session 权限。
+
+`simulation/draft-read` 与 `simulation/draft-save` 和 Host 共享严格的私有创作 DTO。新草稿必须携带 null 父版本；后续版本保留精确父版本与原保存 ID。保存版本包含认证作者来源。未知字段与不一致祖先关系会被拒绝；冲突保留双方定义。草稿日志独立于 Native 运行历史。
 
 ## 传输
 
@@ -75,6 +93,10 @@ Team list、participant list、task list 与 channel-read method 都是 page con
 
 `team/resume`、`team/member-*`、`team/channel-open`、`team/channel-post`、`team/channel-close`、goal update/transition、task create/update/cancel/delete/review 以及 terminal archive 在线路上仍不携带 actor。`initialize`认证连接后，组合了`teamHumanActors`的运行时会派生所属的 active human，并在 Hub admission 前绑定每个完整 parsed payload 及其 cursor 或 revision。缺少该 binder 时，这些方法以`SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE`失败。active human 必须拥有该 operation 的 immutable grant。
 
+## 私密备份导出
+
+`simulation/backup-export` 按运行与命令选择已完成的归档原件。封闭结果包含完整私密包字符串、来源归档 hash 和精确包 hash。这是无调度副作用的私密记录读取，脱敏数据集不能使用其 `full-private-backup` 类别。 完整分支导出还要求祖先的当前披露授权，或针对该分支的显式 `includeProvenance: true` 授权；只有分支自身权限不能读取祖先字节。
+
 ## 模型体验
 
 无，因为此包定义面向客户端的协议格式；模型可见接口属于组合在对外服务入口 [`clocky-sdk-jsonrpc-server`](../server/README.zh.md) 后方的运行时插件。
@@ -94,3 +116,5 @@ Team list、participant list、task list 与 channel-read method 都是 page con
 ### 单任务取消
 
 Task cancellation 接收 Team/task id、`expectedRevision`和可选 `reason`。响应保留 `TeamTaskSnapshot.cancellation`；assigned 或 running phase 表示 owner 终止仍在等待，并非取消已经完成。Task deletion 不接收取消原因。 [取消归属](../../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.zh.md).
+
+`simulation/world-branch`、`world-branch-read`、`world-causal` 和 `world-compare` 复用严格 Product 实验 DTO。分支命令保留调用者持有的 UUID、原 retention cut 和明确记忆策略。因果结果回显来源；比较回显两侧归档观察。此 wire 契约不包含私密历史、目标工厂、权限覆盖或自动合并。

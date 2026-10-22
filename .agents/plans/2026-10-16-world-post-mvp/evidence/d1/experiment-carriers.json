@@ -1,0 +1,41 @@
+{
+  "command": "TMPDIR=$PWD/.tmp pnpm exec vitest run packages/sdk/client/tests/experiments.spec.ts packages/host/apiproxy/tests/fetch-experiment-selection.spec.ts packages/sdk/server/tests/simulation-world.spec.ts",
+  "log": "experiment-carrier-tests.log",
+  "tests": 19,
+  "rpc": [
+    "simulation.world.branch",
+    "simulation.world.branch.read",
+    "simulation.world.causal",
+    "simulation.world.compare"
+  ],
+  "sdk": [
+    "simulation/world-branch",
+    "simulation/world-branch-read",
+    "simulation/world-causal",
+    "simulation/world-compare"
+  ],
+  "checks": [
+    "strict request and response schemas",
+    "original branch command/source/memory-policy correlation",
+    "read command correlation",
+    "causal source/complete bytes/nodes",
+    "both comparison observations",
+    "no actor/Host-authority input"
+  ],
+  "sourceHashes": {
+    "packages/host/apiproxy/src/api/simulations.ts": "41567901424158f0fdb419dfc123951c009ce52372bd89b41df091698360138f",
+    "packages/host/apiproxy/src/api/rpc-map.ts": "cc504857d93dc018635625f36b7f9fd7e67abf401587597721abea5312c80ff6",
+    "packages/host/apiproxy/src/simulation-product-api.ts": "83d36bddb82ab4133f6daaa5df029ca10bdb32b85e64ff58679445789d524692",
+    "packages/host/apiproxy/src/fetch/handler.ts": "086ab98adfc561f1170cd60ebd4e1b58c0d9a9d1983eddbb229a04f6c5fcb57e",
+    "packages/host/apiproxy/src/fetch/client.ts": "7f2c6ea7ac655b3ced7e3453f41d6943893f23c3a8e9d0368bf322db2cd31bca",
+    "packages/sdk/protocol/src/simulation.ts": "6025204af5e2bab33f1bf64e721d0c92f52c37c5bd52ab36fb0eea42639aac6e",
+    "packages/sdk/protocol/src/index.ts": "f6c391181970a01cf217e8dff259a6da0c5f3267b51c16e6bd5b660a2ddb602c",
+    "packages/sdk/client/src/client.ts": "f59f3142ef09fbf75b0819faef57fdf3c62a68645cedb33c85a2176162e65bae",
+    "packages/sdk/client/src/api.ts": "ed7685e6ae2ada7201b62068add3866eec938549c78bc1efe8e669492a84de0d",
+    "packages/sdk/client/src/index.ts": "7f5145789166e8c0c17089003aac5662a412e60bae518ee4d36c4b6855ecafd8",
+    "packages/sdk/server/src/simulation.ts": "24680347b50b33c1116115e65198979074e3dad17ed7d51e3d3ed47e6b08afd7",
+    "packages/sdk/client/tests/experiments.spec.ts": "e80a5c205106c18fcbc6a6b0b017ca36f39a49df2ab038479f2ff75947dce510",
+    "packages/host/apiproxy/tests/fetch-experiment-selection.spec.ts": "75b95fbf742b9d3173cfbc9c67837a46465d1143567a5e8b6bcf6fa00a7dd4e3",
+    "packages/sdk/server/tests/simulation-world.spec.ts": "d77b4944bbb519e5b6430859d50cd19d2cc79b0fc0662c450c402870101b7750"
+  }
+}

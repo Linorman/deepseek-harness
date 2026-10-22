@@ -7,6 +7,7 @@ const { runId: _runId, ...spec } = simulationRunSpecSchema.parse({ runId: 'templ
   tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 100, maxMessagesPerInterval: 100,
   maxPendingEvents: 100, maxPendingInteractions: 100, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32,
   maxQueuedDecisions: 100, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16,
+  maxResourceReservationHistory: 128,
   maxResourceQuantity: '10000', relationRules: [] })
 export const templateJSON = JSON.stringify([{ id: 'company', version: '1', name: 'Company procurement',
   editableLimits: ['maxEntities', 'maxResidentActors', 'tokensPerModelRequest', 'maxTokensPerInterval', 'maxTime'],

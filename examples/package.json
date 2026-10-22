@@ -148,14 +148,17 @@
     "@clocky/clocky-team-placement-default": "workspace:^",
     "@clocky/clocky-host-product-principal-digest": "workspace:^",
     "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-scenario": "workspace:^",
     "@clocky/clocky-simulation-local": "workspace:^",
     "@clocky/clocky-simulation-team": "workspace:^",
+    "@clocky/clocky-simulation-world": "workspace:^",
     "@clocky/clocky-storage-sqlite": "workspace:^",
     "@clocky/clocky-tool-simulation": "workspace:^",
     "@clocky/clocky-persona": "workspace:^",
     "@clocky/clocky-agent-presets": "workspace:^",
     "@clocky/clocky-simulation-product": "workspace:^",
-    "@clocky/clocky-client-ui-simulation": "workspace:^"
+    "@clocky/clocky-client-ui-simulation": "workspace:^",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "typescript": "^6.0.3"

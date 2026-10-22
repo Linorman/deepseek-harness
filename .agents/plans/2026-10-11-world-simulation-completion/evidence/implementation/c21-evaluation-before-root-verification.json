@@ -1,0 +1,113 @@
+{
+  "nativeStream": 74,
+  "verifiedSources": 653,
+  "verifiedBuilt": 821,
+  "verifiedRawHashes": 56,
+  "consumedCopies": ".local/world-completion/c21-external-faults/evaluation-before-completion/consumed-inputs-native74",
+  "counts": {
+    "cases": 8,
+    "actualSIGKILL": 8,
+    "coldProcesses": 16,
+    "OSProcesses": 24,
+    "rawJSON": 56
+  },
+  "checks": [
+    {
+      "mode": "src",
+      "scene": "company",
+      "backend": "json",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802190055,
+      "priorUnappendedCandidateRecordedAt": 1791802183664,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802189633,
+      "priorUnappendedCandidateRecordedAt": 1791802183319,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802200167,
+      "priorUnappendedCandidateRecordedAt": 1791802193877,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802199816,
+      "priorUnappendedCandidateRecordedAt": 1791802193552,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "json",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802181102,
+      "priorUnappendedCandidateRecordedAt": 1791802180147,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802180721,
+      "priorUnappendedCandidateRecordedAt": 1791802179781,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802183132,
+      "priorUnappendedCandidateRecordedAt": 1791802182186,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802182724,
+      "priorUnappendedCandidateRecordedAt": 1791802181831,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    }
+  ],
+  "original96MatrixUnchanged": true
+}

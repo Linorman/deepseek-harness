@@ -1,0 +1,39 @@
+{
+  "scope": "Development probes excluded from final frozen acceptance",
+  "attempts": [
+    {
+      "kind": "invalid-benchmark-fixture",
+      "outcome": "rejected before completing workload",
+      "reason": "entity/profile input omitted required entityRevision; corrected before valid measurement",
+      "raw": "Original tool transcript; initial log was overwritten during development"
+    },
+    {
+      "kind": "early-cold-warm-only",
+      "backend": "sqlite",
+      "warmP50Ratio": 0.9204715115544654,
+      "threshold": 0.9,
+      "outcome": "target not met",
+      "raw": "Ratio preserved from tool transcript; full initial samples overwritten and not used as acceptance evidence"
+    },
+    {
+      "kind": "cold-warm-only-completed",
+      "raw": "index-benchmark-cold-warm-only.json",
+      "limitation": "Cold includes index construction; not an optimization-before/after control"
+    },
+    {
+      "kind": "corrected-pre-index-control-before-hoist",
+      "raw": "index-benchmark-pre-schema-hoist.json",
+      "limitation": "Shows new cold index-construction overhead, alongside genuine warm gain"
+    },
+    {
+      "kind": "structural-metrics-first-collector",
+      "raw": ".local/world-post-mvp/b1-maintenance/1792379992296558000/results.json",
+      "outcome": "metrics missing; excluded from timing acceptance"
+    },
+    {
+      "kind": "company-maintenance-probe",
+      "raw": ".local/world-post-mvp/f0-longitudinal/1792379723536063000/results.json",
+      "outcome": "source drift recorded; preliminary only"
+    }
+  ]
+}

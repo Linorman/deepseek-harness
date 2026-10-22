@@ -1,0 +1,48 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-external-crash.snapshot.ts (22 tests | 2 failed | 20 skipped) 13345ms
+     × retains original accepted responsibility at rule-after 7523ms
+     × retains original accepted responsibility at rule-after 5821ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-external-crash.snapshot.ts > json original external crash boundaries > retains original accepted responsibility at rule-after
+ FAIL  examples/simulation-company/tests/world-external-crash.snapshot.ts > sqlite original external crash boundaries > retains original accepted responsibility at rule-after
+AssertionError: <anonymous_script>:1
+undefined
+^
+
+SyntaxError: "undefined" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at normal (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-external-crash-scenario.ts:71:52)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-external-crash-scenario.ts:85:77)
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ normal examples/simulation-company/tests/world-external-crash-scenario.ts:71:52
+ ❯ <anonymous> examples/simulation-company/tests/world-external-crash-scenario.ts:85:77
+ ❯ examples/simulation-company/tests/world-external-crash.snapshot.ts:45:32
+     43|           await copyFile(resolve(root, 'external-crash-input.json'), r…
+     44|         } else {
+     45|           expect(code, stderr).toBe(0)
+       |                                ^
+     46|           expect(JSON.parse(stdout)).toEqual({ stage, phase: 'paused',…
+     47|           await copyFile(resolve(root, `external-crash-cold-${round}.j…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 20 skipped (22)
+   Start at  18:32:01
+   Duration  13.84s (transform 226ms, setup 215ms, import 109ms, tests 13.34s, environment 0ms)
+

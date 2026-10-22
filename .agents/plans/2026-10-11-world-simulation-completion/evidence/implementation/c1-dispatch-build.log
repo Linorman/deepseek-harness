@@ -1,0 +1,463 @@
+$ tsx scripts/build.ts
+$ npm run build:lib:host && npm run build:lib:client
+
+> @clocky/clocky-root@0.1.1-rc.2 build:lib:host
+> tsc -b tsconfig.host.json && tsdown --env.CLOCKY_BUILD_FACE host
+
+packages/api/gateway/src/client/index.ts(96,7): error TS2420: Class 'ClientRemoteService' incorrectly implements interface 'TypertClientRemote'.
+  Type 'ClientRemoteService' is missing the following properties from type 'TypertClientRemote': 'commands', 'dynamicCordisRunner', 'fileReferences', 'pluginInventory', and 2 more.
+packages/api/remotes/src/client/index.ts(48,21): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/api/gateway/src/client/index.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/connection/src/client/fixture.ts(44,28): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/random-uuid.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './random-uuid.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/fixture.ts'
+    Imported via './random-uuid.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/rpc.ts'
+packages/client/connection/src/client/index.ts(1,124): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/api.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/connection.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/fixture.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/fixture.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/web-api-client.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/web-api-client.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+    Imported via './api.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+packages/client/connection/src/client/index.ts(12,105): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/connection.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/connection/src/client/index.ts(13,34): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/fixture.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/connection/src/client/index.ts(14,30): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/web-api-client.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/connection/src/client/index.ts(15,55): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/rpc.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './rpc.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+    Imported via './rpc.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts'
+packages/client/connection/src/client/web-api-client.ts(9,45): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/product-auth-bootstrap.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './product-auth-bootstrap.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/web-api-client.ts'
+    Imported via './product-auth-bootstrap.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/rpc.ts'
+packages/client/runtime/src/client/contract/conversation-snapshot.ts(18,62): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/context-provenance.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './context-provenance.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/conversation-snapshot.ts'
+    Imported via './contract/context-provenance.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/context-provenance.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/contract/conversation-snapshot.ts(21,8): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/conversation.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/conversation-snapshot.ts'
+    Imported via '../contract/conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-assembler.ts'
+    Imported via '../contract/conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-assembler.ts'
+    Imported via '../contract/conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-location-index.ts'
+    Imported via '../contract/conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via '../contract/conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/conversation/event-registry.ts'
+    Imported via '../contract/conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/conversation/view-registry.ts'
+    Imported via './contract/conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/conversation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/contract/session.ts(15,43): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/conversation-snapshot.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/session.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/queue-mirror.ts'
+    Imported via './contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/partial.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/partial.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/assistant-timing.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-context.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/request-inspection.ts'
+    Imported via '../contract/conversation-snapshot.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/request-inspection.ts'
+packages/client/runtime/src/client/contract/sessions.ts(3,47): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/pending.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './pending.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via './pending.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/conversation-snapshot.ts'
+    Imported via '../contract/pending.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via '../contract/pending.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via '../contract/pending.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via './contract/pending.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/pending.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/contract/sessions.ts(16,35): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/agent-scope.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './agent-scope.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via './agent-scope.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via '../contract/agent-scope.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/scope.ts'
+    Imported via '../contract/agent-scope.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/scope.ts'
+packages/client/runtime/src/client/contract/sessions.ts(17,34): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/session.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './session.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via '../contract/session.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '../contract/session.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via './contract/session.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/contract/store.ts(18,8): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/ui-slots/src/index.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '@clocky/clocky-client-ui-slots' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/store.ts'
+    Imported via './index.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/ui-slots/src/renderer.ts'
+    Imported via '@clocky/clocky-client-ui-slots' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/store.ts'
+    Imported via '@clocky/clocky-client-ui-slots' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '@clocky/clocky-client-ui-slots' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/slots.ts'
+    Imported via '@clocky/clocky-client-ui-slots' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/slots.ts'
+    Imported via '@clocky/clocky-client-ui-slots' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via '@clocky/clocky-client-ui-slots' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '@clocky/clocky-client-ui-slots' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/provide.ts'
+packages/client/runtime/src/client/contract/team-tasks.ts(1,95): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/connection/src/client/index.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/read-state.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/access.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-references.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/api/remotes/src/client/index.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/api/gateway/src/client/index.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-inspector.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/artifact-inspector.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/identity-resolver.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/execution-profiles.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/team-observation.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-readiness.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-capabilities.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-query.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/action-inspector.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/attention-query.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/workflow-inspector.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-inspector.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/source-reader.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/records-export.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/administration.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/observer.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '@clocky/clocky-client-connection/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/contract/team-tasks.ts(60,41): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/store.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via './store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/session.ts'
+    Imported via './store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/projection-store.ts'
+    Imported via './store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/workspaces.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via './store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions-port.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/workspace.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/records-export.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/administration.ts'
+    Imported via '../contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+    Imported via './contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/contract/team-tasks.ts(353,36): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-references.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../teams/task-references.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts'
+    Imported via './task-references.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via './task-references.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+packages/client/runtime/src/client/conversation/event-registry.ts(3,48): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/conversation/definition-registry.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './definition-registry.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/conversation/event-registry.ts'
+    Imported via './definition-registry.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/conversation/view-registry.ts'
+packages/client/runtime/src/client/index.ts(1,69): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/team-tasks.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-references.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-references.ts'
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-inspector.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/artifact-inspector.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/identity-resolver.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/identity-resolver.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/execution-profiles.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/team-observation.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-readiness.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-capabilities.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-query.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/action-inspector.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/attention-query.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/workflow-inspector.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-inspector.ts'
+    Imported via '../contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/team-tasks.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/index.ts(9,50): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/api/remotes/src/client/index.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/pending.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/session.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/conversation-snapshot.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/conversation.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/scope.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/remotes.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/queue-mirror.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/workspaces.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions-port.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/manager.ts'
+    Imported via '@clocky/clocky-api-remotes/client' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/workspace.ts'
+packages/client/runtime/src/client/index.ts(16,30): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/slots.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './slots.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './slots.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './slots.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './slots.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/index.ts(17,32): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './sessions/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/provide.ts'
+    Imported via './sessions/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/index.ts(19,34): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './workspaces/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './workspaces/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './workspaces/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/index.ts(20,33): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './teams/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './teams/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/index.ts(21,35): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './simulations/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/source-reader.ts'
+    Imported via './service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/records-export.ts'
+    Imported via './service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/request-presentation.ts'
+    Imported via './service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/administration.ts'
+    Imported via './simulations/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './simulations/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './simulations/service.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/index.ts(26,43): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/conversation/event-registry.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './conversation/event-registry.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './conversation/event-registry.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './conversation/event-registry.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/index.ts(27,42): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/conversation/view-registry.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './conversation/view-registry.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './conversation/view-registry.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './conversation/view-registry.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/index.ts(58,58): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/path.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/index.ts(64,8): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/settings-scope.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/index.ts(115,37): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/partial.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/index.ts(116,30): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/assistant-timing.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/index.ts(118,39): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/failure-display.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/index.ts(121,8): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-context.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/index.ts(215,5): error TS2717: Subsequent property declarations must have the same type.  Property 'sessions' must be of type 'SessionStore', but here has type 'ISessions'.
+packages/client/runtime/src/client/index.ts(237,22): error TS2352: Conversion of type 'HostConnectionHandle | undefined' to type 'ConnectionHandle' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'HostConnectionHandle' is missing the following properties from type 'ConnectionHandle': api, isLoopback, hostDescription, retryAuthorization, start
+packages/client/runtime/src/client/sessions/conversation-assembler.ts(11,8): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-location-index.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './conversation-location-index.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-assembler.ts'
+    Imported via './sessions/conversation-location-index.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/sessions/conversation-context.ts(2,49): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/request-inspection.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './request-inspection.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-context.ts'
+    Imported via './sessions/request-inspection.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/sessions/manager.ts(14,38): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/ordered-baseline.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/sessions/manager.ts(21,26): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/notifier.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../contract/notifier.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via '../contract/notifier.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/projection-store.ts'
+    Imported via '../contract/notifier.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via '../contract/notifier.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/manager.ts'
+    Imported via '../contract/notifier.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/workspace.ts'
+packages/client/runtime/src/client/sessions/manager.ts(22,38): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/projection-store.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './projection-store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via './projection-store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via './projection-store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via './sessions/projection-store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './sessions/projection-store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/sessions/manager.ts(23,25): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './session.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via './session.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via './sessions/session.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/sessions/service.ts(1,97): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '../contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '../contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '../contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via '../contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via '../contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via '../contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via './contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/sessions.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/sessions/service.ts(33,52): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/scope.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './scope.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via './scope.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via './sessions/scope.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './sessions/scope.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/sessions/service.ts(34,42): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/conversation-assembler.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './conversation-assembler.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via './conversation-assembler.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via './conversation-assembler.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via './conversation-assembler.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via './sessions/conversation-assembler.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './sessions/conversation-assembler.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/sessions/service.ts(35,32): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './manager.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via './manager.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+packages/client/runtime/src/client/sessions/service.ts(38,39): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/provide.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './provide.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+    Imported via './sessions/provide.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './sessions/provide.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/sessions/session.ts(25,37): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/remotes.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './remotes.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/session.ts'
+    Imported via './remotes.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/manager.ts'
+    Imported via './remotes.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/service.ts'
+packages/client/runtime/src/client/sessions/session.ts(28,40): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/time-zone.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/sessions/session.ts(29,36): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/sessions/queue-mirror.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/simulations/administration.ts(3,32): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/request-presentation.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './request-presentation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/administration.ts'
+    Imported via './request-presentation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/administration.ts'
+packages/client/runtime/src/client/simulations/service.ts(2,40): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/source-reader.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './source-reader.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+    Imported via './simulations/source-reader.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/simulations/service.ts(4,42): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/records-export.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './records-export.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+    Imported via './records-export.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+    Imported via './simulations/records-export.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/simulations/service.ts(19,49): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/administration.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './administration.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+    Imported via './administration.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/request-presentation.ts'
+    Imported via './administration.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+    Imported via './simulations/administration.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './simulations/administration.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/simulations/service.ts(22,36): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/observer.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './observer.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+    Imported via './observer.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/simulations/service.ts'
+packages/client/runtime/src/client/slots.ts(414,9): error TS2322: Type '() => Session[]' is not assignable to type 'HostObservable<unknown>'.
+packages/client/runtime/src/client/slots.ts(415,31): error TS2339: Property 'currentProvideInfo' does not exist on type 'SessionStore'.
+packages/client/runtime/src/client/slots.ts(416,30): error TS2339: Property 'connection' does not exist on type 'SessionStore'.
+packages/client/runtime/src/client/slots.ts(422,5): error TS2322: Type 'SlotRendererHost | undefined' is not assignable to type 'SlotRendererHost'.
+  Type 'undefined' is not assignable to type 'SlotRendererHost'.
+packages/client/runtime/src/client/teams/execution-profiles.ts(4,33): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/team-observation.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './team-observation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/execution-profiles.ts'
+    Imported via './team-observation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-readiness.ts'
+    Imported via './team-observation.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-capabilities.ts'
+packages/client/runtime/src/client/teams/read-state.ts(3,42): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/access.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/read-state.ts'
+    Imported via './access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-references.ts'
+    Imported via './teams/access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts'
+    Imported via './access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/identity-resolver.ts'
+    Imported via './access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/team-observation.ts'
+    Imported via './access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-query.ts'
+    Imported via './access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/action-inspector.ts'
+    Imported via './access.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/attention-query.ts'
+packages/client/runtime/src/client/teams/service.ts(2,33): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-inspector.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(3,35): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/artifact-inspector.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(6,34): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/identity-resolver.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(9,35): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/execution-profiles.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(10,33): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-readiness.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(11,34): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-capabilities.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(12,27): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-query.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(13,33): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/action-inspector.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(14,32): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/attention-query.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(15,35): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/workflow-inspector.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/service.ts(16,31): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-inspector.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/teams/task-references.ts(1,46): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/read-state.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './read-state.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-references.ts'
+    Imported via './read-state.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-inspector.ts'
+    Imported via './read-state.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-inspector.ts'
+    Imported via './read-state.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/artifact-inspector.ts'
+    Imported via './read-state.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-query.ts'
+    Imported via './read-state.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/action-inspector.ts'
+    Imported via './read-state.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/attention-query.ts'
+packages/client/runtime/src/client/teams/task-references.ts(2,29): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/read-request.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './read-request.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-references.ts'
+    Imported via './read-request.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/member-inspector.ts'
+    Imported via './read-request.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/task-query.ts'
+    Imported via './read-request.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/action-inspector.ts'
+    Imported via './read-request.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/attention-query.ts'
+packages/client/runtime/src/client/workspaces/manager.ts(8,54): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/workspace.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/workspaces/service.ts(1,41): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/workspaces.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via '../contract/workspaces.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via '../contract/workspaces.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via '../contract/workspaces.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via './contract/workspaces.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/workspaces.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+    Imported via './contract/workspaces.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/runtime/src/client/workspaces/service.ts(12,53): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/contract/sessions-port.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/runtime/src/client/workspaces/service.ts(14,34): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/manager.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './manager.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/workspaces/service.ts'
+    Imported via './workspaces/manager.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts'
+packages/client/ui-simulation/src/client/world/domain.ts(9,45): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/index.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/ui-simulation/tests/world-fixtures.ts(3,93): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/ui-simulation/src/client/world/domain.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+packages/client/ui-slots/src/index.ts(17,37): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/ui-slots/src/renderer.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './renderer.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/ui-slots/src/index.ts'
+    Imported via './renderer.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/ui-slots/src/index.ts'
+packages/client/ui-slots/src/index.ts(18,90): error TS6307: File '/Volumes/projects-mac/deepseek-harness/packages/client/ui-slots/src/store.ts' is not listed within the file list of project '/Volumes/projects-mac/deepseek-harness/tsconfig.host.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/ui-slots/src/index.ts'
+    Imported via './store.ts' from file '/Volumes/projects-mac/deepseek-harness/packages/client/ui-slots/src/index.ts'
+[ELIFECYCLE] Command failed with exit code 2.
+/Volumes/projects-mac/deepseek-harness/scripts/build.ts:26
+    throw new Error(`build: ${script} exited with ${String(result.status ?? result.signal)}`)
+          ^
+
+Error: build: build:lib exited with 2
+    at runScript (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:26:11)
+    at main (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:45:3)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:53:23)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0
+[ELIFECYCLE] Command failed with exit code 1.

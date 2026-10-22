@@ -27,21 +27,26 @@ function caller(exec: ToolRunContext) {
  */
 export function apply(ctx: Context): void {
   ctx.tools.register(defineTool({ name: SIMULATION_MODEL_TOOLS[0],
-    description: 'Read the authorized observations prepared for your current simulation decision. This does not query newer or hidden world state.',
-    parameters: {}, output: { schema: { type: 'object', additionalProperties: false, properties: {
+    description: 'Confirm the authorized decision context already present in your input. Bounded World runs return its reference without duplicating it. Use sections to read only named chapters. Use detail: full only when all chapters are required; this never queries newer or hidden state.',
+    parameters: { sections: { type: 'array', items: { type: 'string' }, description: 'Distinct current chapter kinds, e.g. input or authority; cannot be combined with detail.' }, detail: { type: 'string', enum: ['full'], description: 'Return the complete frozen sections instead of a context receipt.' } },
+    output: { schema: { type: 'object', additionalProperties: false, properties: {
       status: { type: 'string', const: 'observed', required: true }, time: { type: 'string', required: true },
+      context: { type: 'object', additionalProperties: false, properties: {
+        inputId: { type: 'string', required: true }, hash: { type: 'string', required: true },
+      } },
       sections: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: {
         kind: { type: 'string', required: true }, blocks: { type: 'array', required: true, items: { type: 'json' } },
       } } },
     } }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
-    execute: async (_args, exec) => {
-      const result = await ctx.simulationTeams.modelRequest(caller(exec), { kind: 'observe' }, exec.signal)
+    execute: async (args, exec) => {
+      const result = await ctx.simulationTeams.modelRequest(caller(exec),
+        { kind: 'observe', ...args.sections === undefined ? {} : { sections: args.sections }, ...args.detail === 'full' ? { detail: 'full' as const } : {} }, exec.signal)
       if (result.status !== 'observed') throw new Error('Simulation observation returned another operation result')
       return { ...result, sections: result.sections.map(section => ({ kind: section.kind, blocks: section.blocks.map(jsonValue) })) }
     }, presentCall: () => ({ card: 'generic', title: 'Observe simulation', kind: 'read' }),
   }))
   ctx.tools.register(defineTool({ name: SIMULATION_MODEL_TOOLS[1],
-    description: 'Replace your complete staged proposal list. No world effects occur until a submitted proposal is executed. Send an empty list to stage no actions.',
+    description: 'Replace your complete staged proposal list. No world effects occur until a submitted proposal is executed. Send an empty list to stage no actions. After a staged result, call simulation_submit when the list is final. Restaging an unchanged list does not submit it. A rejected replacement preserves your previous staged list. Correct the reported paths using the exact protocol in this decision; staging does not grant permission to execute.',
     parameters: stageParameters, output: { schema: { type: 'object', additionalProperties: false, properties: {
       status: { type: 'string', const: 'staged', required: true }, count: { type: 'integer', required: true },
       effects: { type: 'string', const: 'none', required: true },
@@ -54,13 +59,13 @@ export function apply(ctx: Context): void {
     }, presentCall: args => ({ card: 'generic', title: 'Stage simulation proposals', kind: 'other', rawInput: args.proposals }),
   }))
   ctx.tools.register(defineTool({ name: SIMULATION_MODEL_TOOLS[2],
-    description: 'Submit the complete staged proposal list and end this decision. A submitted window proposal awaits ordered acceptance; accepted proposals await execution. Results arrive in a later decision.',
-    parameters: {}, output: { schema: { type: 'object', additionalProperties: false, properties: {
+    description: 'Submit the complete staged proposal list and end this decision. A submitted window proposal awaits ordered acceptance; accepted proposals await execution. Results arrive in a later decision. For a result decision, notification: {resultId} submits the exact frozen notification without staging or rewriting its text.',
+    parameters: { notification: { type: 'object', additionalProperties: false, properties: { resultId: { type: 'string', required: true } } } }, output: { schema: { type: 'object', additionalProperties: false, properties: {
       status: { type: 'string', enum: ['accepted', 'submitted'], required: true }, effects: { type: 'string', const: 'pending', required: true },
       operationIds: { type: 'array', required: true, items: { type: 'string' } },
     } }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
-    execute: async (_args, exec) => {
-      const result = await ctx.simulationTeams.modelRequest(caller(exec), { kind: 'submit' }, exec.signal)
+    execute: async (args, exec) => {
+      const result = await ctx.simulationTeams.modelRequest(caller(exec), { kind: 'submit', ...args.notification === undefined ? {} : { notification: args.notification } }, exec.signal)
       if (result.status !== 'accepted' && result.status !== 'submitted') throw new Error('Simulation submission returned another operation result')
       exec.concludeTurn()
       return result

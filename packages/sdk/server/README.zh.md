@@ -1,6 +1,12 @@
 # @clocky/clocky-sdk-jsonrpc-server
 
+`simulation/raw-archive` 使用当前鉴权调用委托 Product 读取所有者；Product 在 IO 前与发布前检查整记录正文权限。原始保留不请求执行或恢复。
+
+`simulation/runs-run-control` 将严格鉴权的停止更新交给 Product administration，不从输入推导用户权限，也不启动推理。传输保留显式 null 解除。
+
 [English](README.md) | 中文
+
+World preflight／create／prepare／export 分发复用原产品 administration owner 和当前已认证 call 的存续期。每种方法在解析完整严格输入后才解析可选服务。读取和预检不分配 writer；创建／准备保持暂停，原 command 重试保留已接受定义，冷恢复需要显式请求。公开 World 响应不包含私有编译执行配置或 Native snapshot。
 
 `simulation/requests-list` 与 `simulation/requests-retry` 先解析精确 actor-free 选择器，再解析当前 administration。元数据发现公开原 receipt，不公开保留输入，也不获取原生执行 owner。显式重试仅执行已受理的后端保留语义，保持终态结果不变，并复核原操作准入。冷的已受理审核或 outbox 授权重试仍要求显式恢复 owner。
 
@@ -59,6 +65,10 @@ Stdout 只承载 JSON-RPC 帧。部署不得组合 stdout logger；诊断应写�
 
 初始化后的`team/resume`、`team/member-*`、`team/channel-open`、`team/channel-post`、`team/channel-close`、goal update/transition、task create/update/cancel/delete/review 和 archive 不接收 actor、principal、proof 或 reviewer 字段。server 只会在保留的 credential lease 存活期间派生 connection principal，并要求组合`teamHumanActors` binder；缺少 binder 时以`SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE`失败。它会在 Hub admission 前绑定完整 parsed payload 及其 cursor 或 revision；resume 会将`{ teamId, expectedCursor }`绑定到`activate`，goal 会将完整 input 绑定到`goal-mutate`，task review 从 proof 派生 reviewer，archive 会将同一 cursor fence 绑定到`close`。active human 必须拥有请求 operation 的 immutable grant。SDK 部署必须提供该 binder，以及能把 bootstrap credential 交给 SDK client 的 credential provider；本包不创建 credential carrier。
 
+## 私密备份导出
+
+`simulation/backup-export` 委托给已认证的产品管理 owner。owner 独立检查私密记录披露授权，并且只导出已完成的不可变原件；传输身份不提供执行权限或 provider 凭证。 完整分支导出还要求祖先的当前披露授权，或针对该分支的显式 `includeProvenance: true` 授权；只有分支自身权限不能读取祖先字节。
+
 ## 模型体验
 
 ### Team human input
@@ -87,3 +97,5 @@ Stdout 只承载 JSON-RPC 帧。部署不得组合 stdout logger；诊断应写�
 ### 单任务取消
 
 Task-cancel route 将可选 `reason`绑定到 authenticated human proof 的完整 payload。它返回 Hub Task snapshot，包括 pending cancellation 和精确 attempt 目标，不会关闭 Team。 [取消归属](../../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.zh.md).
+
+实验分发在严格解析参数后，将 `simulation/world-branch`、`world-branch-read`、`world-causal` 和 `world-compare` 路由到同一已认证 Product administration owner。来源标识不可变 retention 原件；服务端不接收归档正文、Host 工厂或调用者选择的执行身份。分支创建和查询保持独立，检查不启动推理。

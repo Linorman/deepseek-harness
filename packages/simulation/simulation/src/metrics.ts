@@ -2,6 +2,7 @@
 import type { SimulationSnapshot } from './types.ts'
 import type { SimulationOwnerObservation } from './inspection.ts'
 import type { SimulationResidentSlots, SimulationRuntimeMetrics } from './metrics-types.ts'
+import { attributeSimulationTokens } from './token-attribution.ts'
 import { budgetUsage } from './budget.ts'
 import { simTimeSchema } from './time.ts'
 export type * from './metrics-types.ts'
@@ -29,14 +30,15 @@ export function simulationResidentSlots(state: SimulationSnapshot, owner: Simula
 export function simulationRuntimeMetrics(state: SimulationSnapshot, owner: SimulationOwnerObservation): SimulationRuntimeMetrics {
   const usage = budgetUsage(state)
   const decisions = Object.values(state.decisions), operations = Object.values(state.operations)
-  return { budgets: { interval: usage.interval, width: simTimeSchema.parse(state.spec.budgetInterval),
-    tokens: { charged: usage.tokens.used, limit: usage.tokens.limit,
-      unknownAttempts: Object.values(state.tokenReservations ?? {}).filter(value => value.interval === usage.interval
+  return { tokenAttribution: attributeSimulationTokens(Object.values(state.tokenReservations ?? {}), state.decisions),
+    budgets: { interval: usage.interval, width: simTimeSchema.parse(state.spec.budgetInterval),
+      tokens: { charged: usage.tokens.used, limit: usage.tokens.limit,
+        unknownAttempts: Object.values(state.tokenReservations ?? {}).filter(value => value.interval === usage.interval
         && value.status === 'unknown').length }, decisions: usage.decisions, messages: usage.messages },
-  residentSlots: simulationResidentSlots(state, owner),
-  pendingDecisionCount: decisions.filter(value => value.status === 'open' || value.status === 'submitted').length
+    residentSlots: simulationResidentSlots(state, owner),
+    pendingDecisionCount: decisions.filter(value => value.status === 'open' || value.status === 'submitted').length
     + Object.values(state.decisionDispatch?.tickets ?? {}).filter(value => value.status === 'queued' || value.status === 'reserved').length,
-  pendingExternalOperationCount: operations.filter(value => value.result === undefined
+    pendingExternalOperationCount: operations.filter(value => value.result === undefined
     && (value.action.kind === 'communication/post' || value.action.kind === 'task/create')).length,
-  unknownOperationCount: operations.filter(value => value.status === 'outcome-unknown').length }
+    unknownOperationCount: operations.filter(value => value.status === 'outcome-unknown').length }
 }

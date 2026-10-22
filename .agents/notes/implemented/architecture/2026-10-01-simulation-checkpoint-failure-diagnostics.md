@@ -16,6 +16,8 @@ Failed Native checkpoints preserve private error text and optional safe metadata
 
 The [product command journal](../../../../packages/simulation/simulation-product/src/creation-book.ts) retains only safe metadata for failed checkpoint/restore requests. Terminal folding validates the complete receipt family before publication. Native checkpoint detail and original request queries return the recorded diagnosis without provider prose, paths or payloads. Public parsers refuse additional properties and diagnoses on success or unrelated request families. Command queries, cold reads and diagnosis navigation do not acquire an execution owner, infer, roll back or repair a source; referenced Team/Session bodies still require independent authorization.
 
+World preparation retains its original failed initial checkpoint and creation receipt. An explicit new preparation command derives a distinct checkpoint identity from that command, reuses the original collection policy, and reconciles the same frozen topology and lifecycle owner. The trusted helper admits only exact checkpoints derived from accepted preparation attempts; changed policies, reuse of the failed identity, or an attempt before original failure reject before mutation.
+
 ## Alternatives considered
 
 **Parse provider messages.** Private paths can leak, and identical wording does not prove identical failure rules.

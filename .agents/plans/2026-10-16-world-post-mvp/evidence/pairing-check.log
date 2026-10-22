@@ -1,0 +1,2 @@
+$ tsx scripts/verify-translation-pairing.ts .agents/notes/proposed/feature/2026-10-08-world-director-mvp.md
+verify-translation-pairing: 1 named pair(s) consistent; the corpus-wide check still runs in doc-sync.

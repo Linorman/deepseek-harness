@@ -1,9 +1,9 @@
 /** JSON-boundary validation for durable run configuration. @module @clocky/clocky-simulation/schema */
 import { z } from 'zod'
-import { jsonObjectSchema } from '@clocky/clocky-team'
+import { jsonObjectSchema } from '@clocky/clocky-team/schema'
 import { simulationEntityIdSchema } from './entity.ts'
 /** Run-local stable direct-channel retry key. */
-export const simulationChannelKeySchema = z.string().min(1).transform(value => value as import('./types.ts').SimulationChannelKey)
+export const simulationChannelKeySchema = z.string().min(1).transform(value => value as import('./identities.ts').SimulationChannelKey)
 /** Frozen direct membership; a repeated entity cannot occupy two endpoints. */
 export const simulationChannelSpecSchema: z.ZodType<import('./types.ts').SimulationChannelSpec> = z.strictObject({
   key: simulationChannelKeySchema,
@@ -36,6 +36,7 @@ export const simulationRunSpecSchema: z.ZodType<SimulationRunSpec> = z.strictObj
   maxMessagesPerInterval: z.number().int().nonnegative(),
   maxPendingEvents: z.number().int().nonnegative(),
   maxPendingInteractions: z.number().int().nonnegative(),
+  maxResourceReservationHistory: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
   maxKnowledgeBytes: z.number().int().positive(),
   maxKnowledgePerQuery: z.number().int().positive(),
   maxEntities: z.number().int().positive(),

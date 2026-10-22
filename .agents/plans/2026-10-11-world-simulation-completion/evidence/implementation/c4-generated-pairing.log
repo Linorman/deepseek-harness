@@ -1,0 +1,3 @@
+verify-translation-pairing: recorded docs/config-catalog.i18n.yaml
+verify-translation-pairing: recorded docs/event-producer-consumer.i18n.yaml
+verify-translation-pairing: 2 record(s) written; run the check to validate the pairs.

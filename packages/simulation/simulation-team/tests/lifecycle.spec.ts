@@ -18,7 +18,7 @@ async function setup(attach = true, maxContextBytes = 65536, maxCoordinationRoun
   const root = await simulationTemp('team')
   const { ctx, runtimeFiber, serviceFiber } = await createContext(root, 'sqlite', maxContextBytes, maxCoordinationRounds)
   const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 'create', spec: {
-    runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors, maxTokensPerInterval, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
+    runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors, maxTokensPerInterval, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
   } })
   const run = await ctx.simulations.open(selection)
   cleanups.push(async () => {
@@ -34,7 +34,7 @@ async function setup(attach = true, maxContextBytes = 65536, maxCoordinationRoun
     await transitionBootstrapParticipant(ctx, { teamId, participantId: participant.id, expectedCursor: state.team.cursor, phase })
   }
   const entityId = simulationEntityIdSchema.parse('buyer')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   const connection = attach ? await ctx.simulationTeams.attach(run, teamId, 'simulation/company') : undefined
   return { ctx, run, teamId, participant, entityId, connection, serviceFiber, runtimeFiber }
 }
@@ -488,7 +488,7 @@ it('binds a fresh second participant while rejecting reuse of an activated parti
   await connection.bind(entityId, participant.id)
   await connection.activate(entityId, placement())
   const secondId = simulationEntityIdSchema.parse('manager')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: secondId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: secondId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   await expect(connection.bind(secondId, participant.id)).rejects.toThrow(/fresh active local/)
   const state = await ctx.teams.getTeam({ teamId })
   const second = await inviteBootstrapParticipant(ctx, { teamId, expectedCursor: state.team.cursor,
@@ -1489,7 +1489,7 @@ it('reconciles real Team task revisions without fulfilling a delivery commitment
   const { simulationDecisionIdSchema, simulationProposalSchema } = await import('@clocky/clocky-simulation')
   const { assignTestTask } = await import('../../../team/team-hub/tests/fixtures.ts')
   const coordinator = simulationEntityIdSchema.parse('coordinator')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: coordinator,
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: coordinator,
     entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   const teamId = run.snapshot().entities[entityId]!.binding!.teamId
   const before = await ctx.teams.getTeam({ teamId })
@@ -1696,7 +1696,7 @@ async function preparedPost(maxCoordinationRounds = 16, maxContextBytes = 65536,
     await transitionBootstrapParticipant(ctx, { teamId, participantId: recipient.id, expectedCursor: state.team.cursor, phase })
   }
   const receiverId = simulationEntityIdSchema.parse('receiver')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: receiverId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: receiverId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   await connection.bind(receiverId, recipient.id)
   const { openTestChannel } = await import('../../../core/team/tests/channel-lifecycle-authority.ts')
   const state = await ctx.teams.getTeam({ teamId })
@@ -1794,7 +1794,7 @@ it('refuses a publication at another WAL position before persisting recipient in
       envelope: { ...value.envelope, sequence: value.envelope.sequence + 1 },
     })) }
   })
-  try { await expect(connection.receiveOperation(operation)).rejects.toThrow(/position differs/ ) }
+  try { await expect(connection.receiveOperation(operation)).rejects.toThrow(/Envelope differs/ ) }
   finally { changed.mockRestore() }
   expect(run.snapshot().operations[operation]?.delivery).toBeUndefined()
   expect(JSON.stringify(receiver.localAgent?.inbox.nextStep)).not.toContain('Durable message')
@@ -1802,7 +1802,8 @@ it('refuses a publication at another WAL position before persisting recipient in
   expect(run.snapshot().operations[operation]?.delivery?.receipt).toBeDefined()
 })
 
-it.each(['missing', 'position', 'identity', 'team', 'channel', 'sender', 'audience', 'kind', 'delivery', 'payload'] as const)
+it.each(['missing', 'position', 'identity', 'team', 'channel', 'sender', 'audience', 'kind', 'delivery', 'payload',
+  'trace', 'correlation'] as const)
 ('refuses checkpoint publication evidence with changed %s and permits a corrected retry', async (field) => {
   const { ctx, run, connection, operation, simTimeSchema } = await preparedPost()
   const { envelopeIdSchema, teamIdSchema, channelIdSchema, participantIdSchema } = await import('@clocky/clocky-team')
@@ -1824,6 +1825,8 @@ it.each(['missing', 'position', 'identity', 'team', 'channel', 'sender', 'audien
     if (field === 'sender') envelope.senderId = participantIdSchema.parse('foreign')
     if (field === 'audience') envelope.audience = []
     if (field === 'kind') envelope.kind = 'other'
+    if (field === 'trace') envelope.traceId = 'foreign-fingerprint'
+    if (field === 'correlation') envelope.correlationId = 'foreign-operation'
     if (field === 'delivery') envelope.delivery = 'turn'
     if (field === 'payload') envelope.payload = { content: [{ type: 'text', text: 'Unrecorded content' }] }
     return { ...page, records: [{ ...record, envelope }] }
@@ -2094,7 +2097,7 @@ it('summarizes only an authorized subset without activating an actor or inheriti
   if (connection === undefined) throw new Error('fixture connection missing')
   const { simulationKnowledgeRequestSchema, simulationSummaryRequestSchema, simulationPolicyRefSchema } = await import('@clocky/clocky-simulation')
   const reader = simulationEntityIdSchema.parse('reader')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: reader, entityKind: 'person', cognition: 'none', profile: {} }),
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: reader, entityKind: 'person', cognition: 'none', profile: {} }),
     run.snapshot().revision)
   const base = simulationKnowledgeRequestSchema.parse({ id: 'secret', owner: entityId, expectedRevision: 0, statement: 'SECRET',
     source: { kind: 'belief', profileRevision: 1, policyVersion: '1', confidence: 1 }, observedAt: '0', availableAt: '0',
@@ -2586,7 +2589,7 @@ it('hibernates only an eligible idle actor when explicit residency exhausts its 
   await connection.bind(entityId, participant.id)
   const first = await connection.activate(entityId, placement())
   const other = simulationEntityIdSchema.parse('other')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: other, entityKind: 'person', cognition: 'agent', profile: {} }),
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: other, entityKind: 'person', cognition: 'agent', profile: {} }),
     run.snapshot().revision)
   const currentTeam = await ctx.teams.getTeam({ teamId })
   const otherParticipant = await inviteBootstrapParticipant(ctx, { teamId, expectedCursor: currentTeam.team.cursor,
@@ -2628,6 +2631,71 @@ it('hibernates only an eligible idle actor when explicit residency exhausts its 
     entityRevision: run.snapshot().entities[other]!.revision, phase: 'inactive' }), run.snapshot().revision)
   await expect(connection.ensureResident(other, request)).rejects.toThrow(/active bound entity/)
 })
+
+it.each(['typed-retirement', 'generic-retirement', 'unrevoked-refusal'] as const)(
+  'retains original residency and distinguishes a %s failure from ordinary capacity', async (failure) => {
+    const { ctx, run, connection, entityId, participant, teamId } = await setup(true, 65536, 16, 60000, 1000000, 1)
+    if (connection === undefined) throw new Error('fixture connection missing')
+    const { AgentRuntimeTerminationUnconfirmedError } = await import('@clocky/clocky-agent-runtime')
+    const provider = ctx.agentRuntimes.getProvider('in-process')
+    if (provider === undefined) throw new Error('fixture provider missing')
+    let refuse = true
+    const activate = provider.activate.bind(provider)
+    const activation = vi.spyOn(provider, 'activate').mockImplementation(async (...args) => {
+      const handle = await activate(...args), dispose = handle.dispose.bind(handle)
+      handle.dispose = async () => {
+        if (!refuse) { await dispose(); return }
+        throw failure === 'generic-retirement' ? new Error('Storage retirement failure')
+          : new AgentRuntimeTerminationUnconfirmedError('Original provider cannot confirm retirement')
+      }
+      return handle
+    })
+    let restoreHibernate: (() => void) | undefined
+    try {
+      await connection.bind(entityId, participant.id)
+      await connection.activate(entityId, placement())
+      const originalWriter = run.snapshot().entities[entityId]!.writer!
+      const target = simulationEntityIdSchema.parse('waiting-resident')
+      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: target,
+        entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+      const current = await ctx.teams.getTeam({ teamId })
+      const next = await inviteBootstrapParticipant(ctx, { teamId, expectedCursor: current.team.cursor,
+        kind: 'local-agent', displayName: 'Waiting', role: 'worker', capabilities: [] })
+      for (const phase of ['provisioning', 'active'] as const) {
+        const current = await ctx.teams.getTeam({ teamId })
+        await transitionBootstrapParticipant(ctx, { teamId, participantId: next.id, expectedCursor: current.team.cursor, phase })
+      }
+      await connection.bind(target, next.id)
+      if (failure === 'unrevoked-refusal') {
+        const refusal = vi.spyOn(connection, 'hibernate').mockRejectedValueOnce(
+          new AgentRuntimeTerminationUnconfirmedError('Foreign refusal without original writer revocation'))
+        restoreHibernate = () => { refusal.mockRestore() }
+      }
+      const choose = { activation: placement(), evict: [entityId] }
+      if (failure === 'typed-retirement') expect(await connection.ensureResident(target, choose))
+        .toEqual({ status: 'recovery-required', entityId })
+      else await expect(connection.ensureResident(target, choose)).rejects.toThrow(
+        failure === 'generic-retirement' ? 'Storage retirement failure' : 'Foreign refusal')
+      const retained = run.snapshot().entities[entityId]!.writer!
+      expect(retained.epoch).toBe(originalWriter.epoch)
+      expect(retained.phase).toBe(failure === 'unrevoked-refusal' ? 'active' : 'revoked')
+      expect(run.population().chargedActors).toBe(1)
+      expect(run.snapshot().entities[target]!.writer).toBeUndefined()
+      expect(activation).toHaveBeenCalledTimes(1)
+      if (failure !== 'unrevoked-refusal') {
+        const before = run.snapshot()
+        expect(await connection.ensureResident(target, choose)).toEqual({ status: 'recovery-required', entityId })
+        expect(run.snapshot()).toEqual(before)
+        expect(activation).toHaveBeenCalledTimes(1)
+      }
+    } finally {
+      restoreHibernate?.()
+      refuse = false
+      await connection.hibernate(entityId)
+      activation.mockRestore()
+    }
+  },
+)
 
 it('requires recovery rather than starting a second resident while its writer is reserved', async () => {
   const { run, connection, entityId, participant } = await setup()
@@ -2909,7 +2977,7 @@ it('refuses changed summary retries and source revocation without recomputing re
   if (connection === undefined) throw new Error('fixture connection missing')
   const { simulationKnowledgeRequestSchema, simulationSummaryRequestSchema, simulationPolicyRefSchema } = await import('@clocky/clocky-simulation')
   const reader = simulationEntityIdSchema.parse('reader')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: reader, entityKind: 'person', cognition: 'none', profile: {} }), run.snapshot().revision)
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: reader, entityKind: 'person', cognition: 'none', profile: {} }), run.snapshot().revision)
   const base = simulationKnowledgeRequestSchema.parse({ id: 'source', owner: entityId, expectedRevision: 0, statement: 'Private source',
     source: { kind: 'belief', profileRevision: 1, policyVersion: '1' }, observedAt: '0', availableAt: '0', validFrom: '0', validUntil: null, readers: [reader] })
   const source = await run.recordKnowledge(base)
@@ -3244,6 +3312,35 @@ it.each(['TEAM_PARTICIPANT_NOT_FOUND', 'TEAM_CHANNEL_IDEMPOTENCY_CONFLICT'] as c
   },
 )
 
+it.each(['exact', 'fingerprint', 'channel', 'untyped'] as const)(
+  'accepts only original typed Envelope byte refusal evidence: %s', async (variant) => {
+    const { ctx, run, connection, operation, participant, simTimeSchema } = await preparedPost()
+    const { TeamError, fingerprintTeamEnvelopeDraft, channelIdSchema } = await import('@clocky/clocky-team')
+    await run.drive({ until: simTimeSchema.parse('5') })
+    const failure = vi.spyOn(ctx.teams, 'postChannelEnvelope').mockImplementationOnce(async (request) => {
+      const channel = await ctx.teams.getChannel({ channelId: request.draft.channelId })
+      const team = await ctx.teams.getTeam({ teamId: channel.manifest.teamId })
+      if (request.idempotencyKey === undefined) throw new Error('Accepted Simulation post requires its original idempotency key')
+      const details = { kind: 'envelope-byte-limit', teamId: channel.manifest.teamId, teamCursor: team.team.cursor,
+        channelId: variant === 'channel' ? channelIdSchema.parse('foreign') : request.draft.channelId,
+        channelCursor: channel.cursor, senderId: participant.id, idempotencyKey: request.idempotencyKey,
+        draftFingerprint: variant === 'fingerprint' ? `sha256:${'0'.repeat(64)}` : fingerprintTeamEnvelopeDraft(request.draft),
+        bytes: 2049, limit: 2048 }
+      throw new TeamError('Definite pre-append size refusal', 'TEAM_INVALID_ARGUMENT', variant === 'untyped' ? undefined : { details })
+    })
+    try {
+      const outcome = await connection.dispatchOperation(operation, () => 100)
+      expect(outcome).toMatchObject(variant === 'exact'
+        ? { status: 'settled', result: { status: 'rejected', code: 'SIM_ENVELOPE_BYTE_LIMIT' } }
+        : { status: 'retry' })
+      const outbox = run.snapshot().operations[operation]!.outbox!
+      expect(outbox.attempts).toHaveLength(1)
+      expect(outbox.receipt).toBeUndefined()
+      expect(run.snapshot().operations[operation]!.result?.code).toBe(variant === 'exact' ? 'SIM_ENVELOPE_BYTE_LIMIT' : undefined)
+    } finally { failure.mockRestore() }
+  },
+)
+
 function deliveryOwner(ctx: import('@clocky/cordis').Context): import('../src/delivery.ts').SimulationDeliveryAuthority {
   return (ctx.simulationTeams as unknown as { deliveryAuthority: import('../src/delivery.ts').SimulationDeliveryAuthority }).deliveryAuthority
 }
@@ -3296,7 +3393,7 @@ it('rejects changed or missing claimed payloads before recording receipt', async
       envelope: { ...value.envelope, payload: { content: [{ type: 'text', text: 'Unaccepted text' }] } },
     })) }
   })
-  try { await expect(connection.receiveOperation(operation)).rejects.toThrow(/differs from its accepted intent/) }
+  try { await expect(connection.receiveOperation(operation)).rejects.toThrow(/differs from its original accepted attribution/) }
   finally { altered.mockRestore() }
   expect(run.snapshot().operations[operation]!.delivery).toBeUndefined()
   expect((await ctx.teams.readChannel({ channelId: channel.manifest.id, afterCursor: -1 })).records
@@ -5572,7 +5669,7 @@ it('skips an unbound eviction candidate before hibernating an eligible resident'
   await connection.bind(entityId, participant.id)
   await connection.activate(entityId, placement())
   const unbound = simulationEntityIdSchema.parse('unbound-victim'), target = simulationEntityIdSchema.parse('next-resident')
-  for (const id of [unbound, target]) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id,
+  for (const id of [unbound, target]) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id,
     entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   const team = await ctx.teams.getTeam({ teamId })
   const member = await inviteBootstrapParticipant(ctx, { teamId, expectedCursor: team.team.cursor,
@@ -6489,7 +6586,7 @@ async function linkedTaskFixture(kind: 'explicit' | 'transfer' | 'task-completed
     await transitionBootstrapParticipant(ctx, { teamId, participantId: requester.id, expectedCursor: current.team.cursor, phase })
   }
   const requesterId = simulationEntityIdSchema.parse('requester')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: requesterId,
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: requesterId,
     entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   await connection.bind(requesterId, requester.id)
   await connection.activate(requesterId, placement())

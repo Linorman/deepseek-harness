@@ -1,0 +1,285 @@
+{
+  "date": "2026-10-20",
+  "status": "Authorized implementation and automatic verification complete; C15/C16 human quality acceptance explicitly deferred by the user",
+  "scope": "B01-B19 and C01-C14 accepted; automatic C15/C16 evidence strengthened; human acceptance deferred by the user on 2026-10-20",
+  "newChecklistItems": 0,
+  "humanEvaluation": {
+    "status": "deferred-by-user",
+    "pendingChecklist": [
+      "C15",
+      "C16"
+    ],
+    "ratings": []
+  },
+  "checks": [
+    {
+      "name": "B owners",
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc/continuation-2026-10-20/tmp\" pnpm exec vitest run packages/simulation/simulation-local/tests/inspection-index.spec.ts packages/simulation/simulation-product/tests/index-fencing.spec.ts packages/simulation/simulation-team/tests/archive.spec.ts packages/simulation/simulation-team/tests/residency-policy.spec.ts packages/simulation/simulation-local/tests/world-representation.spec.ts packages/simulation/simulation-local/tests/world-local-object.spec.ts packages/simulation/simulation-local/tests/world-local-object-process.spec.ts",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/b-regression.log",
+      "sha256": "9b48a10eecd00407c6c47d6195170c8a91fae3fb76561386069a5b585824990c",
+      "exitCode": 0,
+      "passed": 52
+    },
+    {
+      "name": "API/Session/Client",
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc/continuation-2026-10-20/tmp\" pnpm exec vitest run packages/sdk/client/tests/retention.spec.ts packages/sdk/client/tests/generation.spec.ts packages/core/session/tests/simulation-generation.spec.ts packages/client/runtime/tests/generation.client.spec.ts packages/host/apiproxy/tests/simulation-index.spec.ts",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/api-regression.log",
+      "sha256": "7e0e249bd447d3700b5b7d02d84ceb8557b7ff42942d25740683a6edb3a96138",
+      "exitCode": 0,
+      "passed": 29
+    },
+    {
+      "name": "Keyless examples",
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc/continuation-2026-10-20/tmp\" CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-archive.snapshot.ts examples/simulation-company/tests/world-local-object.snapshot.ts examples/simulation-company/tests/world-representation.snapshot.ts examples/simulation-company/tests/world-environment.snapshot.ts --maxWorkers=2",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/bc-snapshots.log",
+      "sha256": "3bda538c5be498e40f27ac908f90aabda04bb4f55b03856c0dd1be5a1f52b6f4",
+      "exitCode": 0,
+      "passed": 8
+    },
+    {
+      "name": "Python API",
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc/continuation-2026-10-20/tmp\" PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=\"$PWD/python/sdk/src\" python/sdk/.venv/bin/python -m pytest python/sdk/tests/test_simulation_retention.py python/sdk/tests/test_simulation_generation.py python/sdk/tests/test_simulation_index.py -q -p no:cacheprovider",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/python-api.log",
+      "sha256": "700bc0322b00f8e8db3ce495047983b54ab27ab59ed1fedac05f3aeba47dae24",
+      "exitCode": 0,
+      "passed": 6
+    },
+    {
+      "name": "Measurement validators",
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc/continuation-2026-10-20/tmp\" PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/tests -p 'test_world_post_mvp*.py' -v",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/measurement-tools-fixed.log",
+      "sha256": "563746f208e100bf2eb6824aaa80d44ce56addd29cb3cf15796821c4503a69a8",
+      "exitCode": 0,
+      "passed": 21
+    },
+    {
+      "name": "Host/Client types",
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc/continuation-2026-10-20/tmp\" pnpm exec tsc -b tsconfig.host.json tsconfig.client.json --pretty false",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    {
+      "name": "C3 owner and evaluator tests",
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc/continuation-2026-10-20/tmp\" pnpm exec vitest run packages/simulation/simulation/tests/environment-registered-evaluate-command.spec.ts packages/simulation/simulation/tests/environment-registered-evaluation.spec.ts packages/simulation/simulation/tests/world-environment-evaluation.spec.ts packages/simulation/simulation-local/tests/world-environment.spec.ts packages/simulation/simulation-scenario/tests/environment.spec.ts",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/c3-final-tests.log",
+      "sha256": "b187aab3bdf0702dfd4eae41a0b065db3ad64387c4df4c59334577c3398d6d81",
+      "exitCode": 0,
+      "passed": 12
+    },
+    {
+      "name": "C3 final CLI regression",
+      "command": "TMPDIR=\"$PWD/.tmp/bc20\" pnpm exec vitest run packages/simulation/simulation/tests/environment-registered-evaluate-command.spec.ts",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/c3-cli-final.log",
+      "sha256": "09c739c63fea8615e601cd7a1e39079f86c377b0cc7589b5459e11a0ad9a6412",
+      "exitCode": 0,
+      "passed": 1
+    },
+    {
+      "name": "Final aggregate types",
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc/continuation-2026-10-20/tmp\" pnpm exec tsc -b tsconfig.host.json tsconfig.client.json --pretty false",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/final-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    {
+      "name": "Repository lint",
+      "command": "TMPDIR=\"$PWD/.tmp/bc20\" pnpm exec tsx scripts/run-oxlint.ts .",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/final-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    {
+      "name": "Documentation gates",
+      "command": "TMPDIR=\"$PWD/.tmp/bc20\" pnpm run doc-sync",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/doc-sync.log",
+      "sha256": "92d2e7c7ad30d2e7426c524d0e9cf9e5d674a05b20c969d6b62dd2c414a97fac",
+      "exitCode": 0,
+      "passed": 29
+    },
+    {
+      "name": "Final Markdown links",
+      "command": "TMPDIR=\"$PWD/.tmp/bc20\" pnpm exec tsx scripts/verify-md-links.ts",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/final-links-settled.log",
+      "sha256": "c406f81ce01f7abee718e8bcf4f72a59d02933e31f05459114d67d1731028d98",
+      "exitCode": 0
+    },
+    {
+      "name": "Final Markdown wrap",
+      "command": "TMPDIR=\"$PWD/.tmp/bc20\" pnpm exec tsx scripts/verify-md-wrap.ts",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/final-wrap-settled.log",
+      "sha256": "b45dc4b1206473353fb252a09f8757c349eef3431f004dccf8e6337a8d93b70e",
+      "exitCode": 0
+    },
+    {
+      "name": "Diff whitespace",
+      "command": "git diff --check",
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/diff-check-settled.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    }
+  ],
+  "reusedEvidenceIntegrity": {
+    "b1/implementation.json": {
+      "count": 18,
+      "changes": []
+    },
+    "b2/implementation.json": {
+      "count": 22,
+      "changes": []
+    },
+    "b3c/implementation.json": {
+      "count": 12,
+      "changes": []
+    },
+    "implementation/b3a-residency.json": {
+      "count": 5,
+      "changes": []
+    },
+    "implementation/b3b-representation.json": {
+      "count": 15,
+      "changes": []
+    },
+    "implementation/c1-c2-source-manifest.json": {
+      "count": 40,
+      "changes": []
+    },
+    "implementation/c3-hashes.json": {
+      "count": 22,
+      "changes": []
+    },
+    "b1/final-performance.json": {
+      "rawFiles": 37,
+      "changes": [],
+      "processes": 12,
+      "samples": 192,
+      "coldModelCalls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "c12Audit": ".tmp/post-mvp-c12-audit/result.json",
+  "regressionRepair": {
+    "file": "scripts/tests/test_world_post_mvp_acceptance.py",
+    "problem": "Tests copied evolving live workload sources but asserted exact historical F0 reverse hashes; B1 instrumentation invalidated that assumption.",
+    "fix": "Use fixed reviewed F0 text fixtures; verify their reverse reconstruction against unchanged production LEGACY_SHA256 and refuse unknown changes in either path.",
+    "productionValidatorChanged": false,
+    "initialFailures": {
+      "count": 2,
+      "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/measurement-tools.log",
+      "sha256": "e03375036ead27fed9e4455e36bda92aee3f3885d0ef2940d93bd00d517a6e7f"
+    }
+  },
+  "artifacts": "All task outputs and temporary/compiler artifacts remain in the repository; no live model/provider requests.",
+  "acceptedChecklist": {
+    "B": {
+      "complete": 19,
+      "total": 19
+    },
+    "C": {
+      "complete": 14,
+      "total": 16
+    },
+    "pending": [
+      "C15",
+      "C16"
+    ]
+  },
+  "c12AuditSha256": "97b0045321b63c82bb3dba67f134136d03bd59e23dd51f6ea1817bd1f45d0b9a",
+  "c3": {
+    "registration": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-registration.json",
+    "registrationSha256": "11639e0d5f3a1b213a14c1fc60277913cebeefff760114f85e6e9d08db9525f3",
+    "rawResults": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-results.json",
+    "rawResultsSha256": "af6a721395a1a0bb90096c6530a357dce8e59e5c22bbdd81e72f94fcd0f9130c",
+    "trials": 24,
+    "samples": 5376,
+    "failures": [],
+    "privacy": [
+      {
+        "id": "private-history",
+        "rejected": true
+      },
+      {
+        "id": "caller-sample",
+        "rejected": true
+      },
+      {
+        "id": "private-state",
+        "rejected": true
+      }
+    ],
+    "assessment": {
+      "automated": {
+        "source": "installed deterministic rules and arithmetic/schema probes",
+        "rubricVersion": "supply-review/2"
+      },
+      "human": {
+        "source": null,
+        "status": "deferred-by-user",
+        "ratings": []
+      },
+      "modelJudge": null
+    },
+    "commands": [
+      "TMPDIR=\"$PWD/.tmp/bc20\" node --import tsx scripts/world-environment-registered-evaluate.ts register",
+      "TMPDIR=\"$PWD/.tmp/bc20\" node --import tsx scripts/world-environment-registered-evaluate.ts run",
+      "TMPDIR=\"$PWD/.tmp/bc20\" node --import tsx scripts/world-environment-registered-evaluate.ts verify"
+    ],
+    "logs": {
+      "register": {
+        "path": ".tmp/world-post-mvp-bc/continuation-2026-10-20/c3-register.log",
+        "sha256": "24ed72e171716c4335d00d62dcada08721c647ae93fad22d056adb3be9e7c5b1"
+      },
+      "run": {
+        "path": ".tmp/world-post-mvp-bc/continuation-2026-10-20/c3-results.log",
+        "sha256": "59c339d4b77c04c1284d9d305668bcea8ce46ab15bd84790409ddd94c17a22c1"
+      },
+      "verify": {
+        "path": ".tmp/world-post-mvp-bc/continuation-2026-10-20/c3-verify.log",
+        "sha256": "59c339d4b77c04c1284d9d305668bcea8ce46ab15bd84790409ddd94c17a22c1"
+      }
+    },
+    "limitations": "Resource-only comparison on registered demand cycles. Human credibility, causal plausibility, role differences, Session privacy and general cognition remain unscored.",
+    "excludedAttempts": [
+      "c3-v2-registration-untrusted-cwd.json",
+      "c3-v2-results-untrusted-cwd.json",
+      "c3-v2-cli-probes-untrusted-cwd.json"
+    ]
+  },
+  "resolvedEnvironmentFailure": {
+    "log": ".tmp/world-post-mvp-bc/continuation-2026-10-20/c3-focused-lint.log",
+    "sha256": "d9f85b81dc81f58f7e9ea9a95c4d310a6429941ec637608a088e2368586011b2",
+    "reason": "tsx IPC Unix socket exceeded macOS pathname length under the long project-local TMPDIR",
+    "resolution": "Use the shorter project-local .tmp/bc20; focused and repository lint then passed. No sandbox bypass or system temp directory was used."
+  },
+  "currentSourceSha256": {
+    "scripts/world-environment-registered-evaluate.ts": "7ed8465eec9e11cdc400484194669793ccde4ebcaf27f65bcc37f2061b700865",
+    "packages/simulation/simulation/tests/environment-registered-evaluation.ts": "1edb62efc09aaffb62fa03646a4f2b65e302c88daaf8f81238ff76cd67c36df3",
+    "packages/simulation/simulation/tests/environment-registered-evaluation.spec.ts": "6c886d845ed7c3646aa1911e744269e668feb2e4262dca09bc686a804437969c",
+    "packages/simulation/simulation/tests/environment-registered-evaluate-command.ts": "b85f2439f4e33ce1ccb44fdba970e75e1c86ab306390942a70e8d0aa3113e15f",
+    "packages/simulation/simulation/tests/environment-registered-evaluate-command.spec.ts": "48ddd09951999a4336b315301ecda0a554e54fe62c3fa7f12be8f63158b7b8f0",
+    "scripts/tests/test_world_post_mvp_acceptance.py": "f1ab09c80bc07a0d279ca66c76abc89d56ad3d774797454448bf905fabe1394c",
+    "scripts/tests/fixtures/world-post-mvp-acceptance/association.ts.txt": "a966b81c7ca73f057a9eb6c1cee80328ca159b8aa8bce0db3adfb8037b6e37c2",
+    "scripts/tests/fixtures/world-post-mvp-acceptance/runner.py.txt": "a5fb3431892bcddd0afb5b09c3acc309d03261b97c13edc4d6bc5b1d63031fd3",
+    "packages/simulation/simulation/README.md": "01aec3fdc48c169dc70aecb399e3f9b1c273f1b745eba53a229bf472d4165746",
+    "packages/simulation/simulation/README.zh.md": "a2f1c154cada91823ce07a2db501c83acc12192a2b45abb0334f1abf1619eea4",
+    ".agents/notes/implemented/architecture/2026-10-19-world-environment-evolution.md": "64ceb366fd824e69f46369fb2006739e4da9e3d2f3af10e8d651a5cc684031f0",
+    ".agents/notes/implemented/architecture/2026-10-19-world-environment-evolution.zh.md": "53b66bf62f9c36c219978075db47aafccd99713ff1a4a1eb4cc4848a16d2bbc8"
+  },
+  "finalIntegrity": {
+    "currentSourceHashesMatch": true,
+    "registeredSourceHashesMatch": true,
+    "originalChecklistItems": 98,
+    "currentChecklistItems": 98,
+    "newItems": 0,
+    "pendingHumanItems": [
+      "C15",
+      "C16"
+    ]
+  }
+}

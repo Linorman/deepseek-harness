@@ -89,6 +89,7 @@ export function ChannelHub({ openMember, identities, maxDraftBytes, state, trans
   const report = (reason: unknown) => { setError(reason instanceof Error ? reason.message : String(reason)) }
   const load = async (channelId: ChannelId, afterCursor = -1) => {
     if (readChannel === undefined) return
+    updateView({ channelEnvelope: undefined, channelEnvelopeSequence: undefined })
     request.current?.abort()
     const controller = new AbortController()
     request.current = controller
@@ -130,6 +131,14 @@ export function ChannelHub({ openMember, identities, maxDraftBytes, state, trans
     }
     if (pinnedToLatest.current) element.scrollTop = element.scrollHeight
   }, [selectedId, page?.records.length, channelState?.startCursor])
+  useLayoutEffect(() => {
+    if (viewState.channelEnvelope === undefined) return
+    const target = [...messageScroll.current?.querySelectorAll<HTMLElement>('[data-channel-message]') ?? []]
+      .find(element => element.dataset.channelMessage === viewState.channelEnvelope)
+    if (target === undefined) return
+    pinnedToLatest.current = false
+    target.tabIndex = -1; target.focus(); target.scrollIntoView({ block: 'nearest' })
+  }, [viewState.channelEnvelope, selectedId, page])
   const name = (id: string) => referencedMemberName(id, participants.find(participant => participant.id === id)?.displayName
     ?? t('identity.reference', { id }), identities, t)
   const title = channel === undefined ? t('workspace.channels') : channel.manifest.participants.map(endpoint => name(endpoint.id)).join(' · ')

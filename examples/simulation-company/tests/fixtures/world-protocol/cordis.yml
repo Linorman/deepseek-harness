@@ -1,0 +1,6 @@
+- name: cordis:include
+  config:
+    path: ../../../cordis.yml
+- name: ../../world-protocol-model.ts
+  config:
+    resolution: !!js process.env.WORLD_RESOLUTION

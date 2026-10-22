@@ -1,12 +1,22 @@
 # @clocky/clocky-client-runtime
 
+归档预览要求来源已暂停且静止，不会退休角色。执行保留一个原 command、revision 和 plan hash，读取用于对账其持久结果。首次归档复制并校验完整 owner 历史，不删除原件或释放历史容量。归档原记录分页需要独立的完整记录读取权限；拥有 run 或归档命令不代表可以读取 Session、Channel 正文。
+
+生成请求、读取、执行、状态转换和 Persona 草稿方法保留原 job 身份，仅显式执行调用模型。产品输入必须为用户撰写；Host 记录实际 principal 来源并限制 runtime、scope 和 audience。Persona 纳入经过已有 A2 预览和提交路径，保留生成草稿的 revision/hash。读取和重试不创建替代 job，未知输出仍是原对账责任。结果属于私有数据，并按当前权限重新检查。
+
+命令回复未知时，必须先查询原结果，才能再次发送变更。not-found 查询允许按保留的原 payload/key 精确重试；查到回执则恢复原结果。并发提交、过期权限及缺失观察都不能分配替代命令。
+
+World 案件列表以 run 和状态筛选定义选择身份。cursor、page size 和 `expectedRevision` 仍是读取约束并原样转发；下一页增加 revision 不改变所选列表身份。每页替换先前的有界窗口。Native revision、查询或披露策略变化会拒绝旧游标并要求从首页刷新；案件正文和 Persona 仍使用独立详情授权。
+
 [English](README.md) | 中文
+
+World 读取分别保留一个有界的预检、案件列表、独立授权案件分区和原定义导出窗口。`closeWorldPreflight`、`closeWorldCase`、`closeWorldExport` 退休各自的精确 generation。切换运行、策略重置、断连与授权替换在迟到响应进入另一视图前清除私有案件详情。原 `world-create`、`world-prepare`、`cancel-world-case` 命令复用现有保留身份、查询与重试 owner；取消查询核对精确的 `worldCancellation` payload。公开 schema 声明引用浏览器安全类型叶子，包含 TypeScript 为推断 scalar 和诊断取名的输出路径。
 
 来源权限刷新独立于仿真世界 watch。`watchSource()` 持有一个精确来源及配置的读取结算后计时器，`inspectSource()` 继续定位或原文分页，`refreshSource()` 刷新当前原文。Team 撤权帧会为祖先权限依赖保守清除正文，不改变其他编写授权。来源切换取消旧 IO，所有者在卸载时排空已接收读取。
 
 `recordExporter()` 创建由插件持有的有界日志下载所有者，跟踪当前选择、凭据代际及策略观察，重建有序完整记录，并在调用同步文件消费者前重新验证。进度不含正文，取消清除保留输出，卸载排空已接收读取。日志列表与精确原文检查分别在 `records`、`record` 中保持独立有界。
 
-`ctx.simulationRuns` 持有有界目录／run／集合／对象／模板／预检／控制观察。`preflight(input)` 保留一个精确草稿校验窗口，不分配命令身份；替换、暂停查看、断线及凭据退役取消进行中的校验，不返回过期授权。`closePreflight()` 清理已改变或关闭的草稿；创建权限拒绝不撤销独立运行查看及私有输入。读取等待握手完成，并隔离请求／授权代际。普通断线保留标记内容，认证或查看拒绝清除；行政控制权限与查看权限保持独立。`observe(runId, { waitMs, retryMs })` 为可见运行持有一个有界元数据等待及重试计时器。策略替换清除私有页并取消持有旧响应，不改变编写授权或原命令；后续世界 revision 只将保留页面标记过期。新握手在策略核对前隐藏上下文正文。disposer 只退休自己的观察者，插件卸载排空被替换的等待。`pause()` 取消视图读取并释放未观察私有上下文，不取消已受理执行。`administration(ctx, options)` 为 UI 插件创建有界原命令 owner，在 IO 前保留精确 create／prepare／checkpoint／restore／manage／ingress 输入，独立查询持久结果。编写输入捕获授权版本，后到响应不能进入另一账号，`not-found` 不分配新身份。UI 注册者提供明确额度，通过 inject hook 绑定裸观察源。见 [Simulation 工作区约定](../ui-simulation/README.zh.md)。
+`ctx.simulationRuns` 持有有界目录／run／集合／对象／模板／预检／控制观察。 同一运行及凭据 generation 的重复 `control(runId)` 轮询共享一个在途读取，使耗时超过轮询间隔的历史查询仍能完成。选择其他运行、暂停、断连或替换凭据仍取消旧观察；结算后的下一次轮询发起新读取。`preflight(input)` 保留一个精确草稿校验窗口，不分配命令身份；替换、暂停查看、断线及凭据退役取消进行中的校验，不返回过期授权。`closePreflight()` 清理已改变或关闭的草稿；创建权限拒绝不撤销独立运行查看及私有输入。读取等待握手完成，并隔离请求／授权代际。普通断线或刷新失败将保留内容标记为过期，直到成功观察替换；认证或查看拒绝清除内容，私有 World 案件详情在读取失败时丢弃；行政控制权限与查看权限保持独立。`observe(runId, { waitMs, retryMs })` 为可见运行持有一个有界元数据等待及重试计时器。策略替换清除私有页并取消持有旧响应，不改变编写授权或原命令；后续世界 revision 只将保留页面标记过期。新握手在策略核对前隐藏上下文正文。disposer 只退休自己的观察者，插件卸载排空被替换的等待。`pause()` 取消视图读取并释放未观察私有上下文，不取消已受理执行。`administration(ctx, options)` 为 UI 插件创建有界原命令 owner，在 IO 前保留精确 create／prepare／checkpoint／restore／manage／ingress 输入，独立查询持久结果。编写输入捕获授权版本，后到响应不能进入另一账号，`not-found` 不分配新身份。UI 注册者提供明确额度，通过 inject hook 绑定裸观察源。见 [Simulation 工作区约定](../ui-simulation/README.zh.md)。
 
 `lookupTaskUpdate()` 在选中 Team 权限下读取精确原 Team／task／command 的结果。取消、Team 替换与授权替换会收回旧结果和诊断。管理操作转交确定拒绝前，会将元数据与已提交身份和 revision 核对。结果 revision 推进任务检查的最低版本，再次读取失败仍将旧字段标为过期。明确权限拒绝清理私有数据，普通失败保留数据，`not-found` 不触发自动写入。
 
@@ -54,6 +64,8 @@ Team 列表刷新只读取用户已明确请求的页范围。`loadMore()` 根�
 `SimulationRuntime.listTaskReviews()` 保留一个可取消、固定观察版本的元数据页。审核读取拒绝清理该行政页面，不撤销独立查看授权。原命令 owner 接入 `review` 请求，核对查询恢复的操作、尝试、版本、审核结果和规范原因后才接受原回执。读取或查询不激活审核实体，也不授予普通 Team 修改权限。
 
 `SimulationRuntime.directory()` 在当前名称页成功后读取准确有序的 `runStatuses()` 批次，只允许查询保留目录中的 ID。替换窗口退休状态 IO，刷新失败保留过期观察。运行选择、连接和授权变化取消在途读取；状态请求不获取原生所有权，也不提交管理意图。
+
+`SimulationRuntime.invalidateRun(runId)` 记录管理、检查点、恢复或停止目标回执到达终态后，该运行的保留观测已被取代：`invalidatedRuns` 以失效计数保留该运行，直到失效之后发起的 `runStatuses()` 批次成功返回为止，同时重读已选运行的控制与检查结果。`SimulationRuntime.runControl(ctx, { timeoutMs })` 创建单一停止目标 owner：以新命令标识发送 `updateRunControl`，把主机拒绝（`invalid`、`forbidden`、`unavailable`、`stale`）与已确认回执分开，并把传输中断、超时与内部失败视为结果未知，只能以同一命令与载荷精确重试。它从不开始调度，凭据更换会清除它。
 
 原命令 owner 接入 `retry-operation`，核对查询返回的原运行／操作／尝试次数／规范原因，不用其他 payload 替换不确定身份。结果未知操作预览占一个独立有界响应族，不替换用户的操作表格。读取预览或查询授权不启动推理或目标执行。
 
@@ -120,6 +132,16 @@ reason 为 `max-tokens` 的 `turn/end` 会在该轮位置投影出一个 `turn-m
 每个常驻 `Session` 都拥有一个 `modelSelection` 快照，其中包含当前模型选择、按提供方分组的目录、逐提供方失败记录，以及 `idle`／`loading`／`ready`／`selecting`／`error` 状态。历史记录会建立或刷新当前模型选择，打开选择器会刷新目录；选择失败会保留上一次模型选择和可用分组。目录与选择操作共用单调递增的代次，因此较旧响应无法覆盖较新的模型选择。重连重建会恢复 Host 报告的模型选择，同时不替换未变化的选择子结构。
 
 只有成功的已认证握手才发出 `connection/reset`。`connection/authorization-cleared` 在明确认证拒绝后，或恢复另一个已认证主体前，清退主体投影而不读取。设置、模型／预设目录与 Cordis 消费方丢弃或取消旧应答；显式凭据重查由连接服务持有。
+
+对于 `world-create`，只有 `simulation-product-preflight-changed` 证明本次命令未受理。保留的原件转为 `notAccepted`，新意图须重新预检。普通 invalid 错误、传输失败和 `not-found` 查询保留结果未知处理，不开放替换 payload。
+
+## 私密备份导出
+
+`simulations.backupExport({ runId, commandId })` 返回已完成原件的精确私密字节。调用要求有效连接，在连接权限 generation 改变后拒绝响应。产品独立要求完整记录披露授权，读取不启动推理。 完整分支导出还要求祖先的当前披露授权，或针对该分支的显式 `includeProvenance: true` 授权；只有分支自身权限不能读取祖先字节。
+
+## 不可变实验 cut
+
+`simulations.branchWorld`、`readWorldBranch`、`queryWorldCausal` 和 `compareWorlds` 使用已完成的原始归档 cut。分支要求明确 UUID 与记忆策略，保持暂停，直到独立 start。runtime 校验原始选择与完整因果响应上限，并在连接权限变化后拒绝迟到响应。查询不推理；比较报告实际预算与终止条件，质量、成本和因果结论保持明确未知。
 
 ## 模型体验
 

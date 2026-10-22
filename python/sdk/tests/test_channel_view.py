@@ -13,7 +13,7 @@ from clocky import Clocky, JsonObject, SdkProtocolError
 
 CORPUS = [
     case
-    for name in ("team-channel-view-cases", "simulation-context-cases")
+    for name in ("team-channel-view-cases", "simulation-context-cases", "simulation-director-context-cases", "simulation-generation-cases")
     for case in json.loads((
         Path(__file__).resolve().parents[3]
         / f"packages/sdk/protocol/tests/fixtures/{name}.json"

@@ -253,3 +253,13 @@ it('preserves zero as the last valid retry fence when no outbox evidence exists'
   fireEvent.click(view.getByRole('button', { name: en['operationRetry.title'] }))
   expect(openRetry).toHaveBeenCalledWith('operation', 0)
 })
+
+it.each([en, zh])('shows pause cancellation separately from timeout or writer retirement', (locale) => {
+  const value: SimulationProductObjectDetail = { collection: 'decisions', section: 'execution', id: 'paused-decision' as never,
+    summary: { id: 'paused-decision' as never, entityId: 'actor' as never, slot: '1' as never, time: '0' as never,
+      snapshotRevision: 1, status: 'cancelled', operationCount: 0 }, context: { status: 'absent' }, cancellation: 'paused', closedAt: 2 }
+  const view = render(<ObjectDetails value={value} view={{ runId: 'run', module: 'decisions', search: '' }} navigate={vi.fn()}
+    readPage={vi.fn()} blocked={false} canContinue={false} t={key => locale[key]} date={String} />)
+  expect(view.getByText(locale['cancellation.paused'])).toBeDefined()
+  expect(view.queryByText(locale['cancellation.timeout'])).toBeNull()
+})

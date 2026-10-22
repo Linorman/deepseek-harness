@@ -1,0 +1,1 @@
+{"report":".local/world-completion/c21-representative-current/pending-cold-verification-report.json","totals":{"cases":72,"processes":216,"intentionalKills":24,"normalExit0":192,"cold0Model":144,"coldPending":16,"coldTerminal":128,"rawArtifacts":608,"logs":2},"inventory":{"sources":1972,"built":2617,"fixtures":4}}

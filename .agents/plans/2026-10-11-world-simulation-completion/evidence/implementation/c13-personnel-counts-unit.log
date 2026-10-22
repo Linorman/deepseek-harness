@@ -1,0 +1,177 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation/tests/personnel-counts.spec.ts (7 tests | 7 failed) 6ms
+   × counts distinct nonterminated people on half-open current assignments, retaining inactive people 4ms
+   × separates admitted cognitive writers from reservations, unknown stop responsibility and released history 0ms
+   × keeps unavailable or unsupported history unknown while a complete empty canonical Team proves zero 0ms
+   × counts every canonical Team identity and epoch, including removed participants and prior Sessions 0ms
+   × rejects stale Native projection, unknown canonical scope and mismatched Team cursor or ownership 0ms
+   × rejects duplicate and orphan history refs and retained writer identity substitutions 0ms
+   × refuses impossible count subsets, unpaired source coverage and extra protocol fields 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation/tests/personnel-counts.spec.ts > counts distinct nonterminated people on half-open current assignments, retaining inactive people
+ZodError: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "maxTeamDepth"
+    ],
+    "path": [],
+    "message": "Unrecognized key: \"maxTeamDepth\""
+  }
+]
+ ❯ state packages/simulation/simulation/tests/personnel-counts.spec.ts:44:118
+     42|     nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), nextEve…
+     43|     decisions: {}, operations: {}, resources: {}, grants: {}, interact…
+     44|     teamReservation: { teamId: teamIdSchema.parse('canonical'), confir…
+       |                                                                                                                      ^
+     45|       goal: { objective: 'Original personnel', budgets: {} }, budgets:…
+     46| }
+ ❯ packages/simulation/simulation/tests/personnel-counts.spec.ts:69:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation/tests/personnel-counts.spec.ts > separates admitted cognitive writers from reservations, unknown stop responsibility and released history
+ZodError: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "maxTeamDepth"
+    ],
+    "path": [],
+    "message": "Unrecognized key: \"maxTeamDepth\""
+  }
+]
+ ❯ state packages/simulation/simulation/tests/personnel-counts.spec.ts:44:118
+     42|     nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), nextEve…
+     43|     decisions: {}, operations: {}, resources: {}, grants: {}, interact…
+     44|     teamReservation: { teamId: teamIdSchema.parse('canonical'), confir…
+       |                                                                                                                      ^
+     45|       goal: { objective: 'Original personnel', budgets: {} }, budgets:…
+     46| }
+ ❯ packages/simulation/simulation/tests/personnel-counts.spec.ts:82:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation/tests/personnel-counts.spec.ts > keeps unavailable or unsupported history unknown while a complete empty canonical Team proves zero
+ZodError: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "maxTeamDepth"
+    ],
+    "path": [],
+    "message": "Unrecognized key: \"maxTeamDepth\""
+  }
+]
+ ❯ state packages/simulation/simulation/tests/personnel-counts.spec.ts:44:118
+     42|     nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), nextEve…
+     43|     decisions: {}, operations: {}, resources: {}, grants: {}, interact…
+     44|     teamReservation: { teamId: teamIdSchema.parse('canonical'), confir…
+       |                                                                                                                      ^
+     45|       goal: { objective: 'Original personnel', budgets: {} }, budgets:…
+     46| }
+ ❯ packages/simulation/simulation/tests/personnel-counts.spec.ts:93:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation/tests/personnel-counts.spec.ts > counts every canonical Team identity and epoch, including removed participants and prior Sessions
+ZodError: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "maxTeamDepth"
+    ],
+    "path": [],
+    "message": "Unrecognized key: \"maxTeamDepth\""
+  }
+]
+ ❯ state packages/simulation/simulation/tests/personnel-counts.spec.ts:44:118
+     42|     nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), nextEve…
+     43|     decisions: {}, operations: {}, resources: {}, grants: {}, interact…
+     44|     teamReservation: { teamId: teamIdSchema.parse('canonical'), confir…
+       |                                                                                                                      ^
+     45|       goal: { objective: 'Original personnel', budgets: {} }, budgets:…
+     46| }
+ ❯ packages/simulation/simulation/tests/personnel-counts.spec.ts:106:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation/tests/personnel-counts.spec.ts > rejects stale Native projection, unknown canonical scope and mismatched Team cursor or ownership
+ZodError: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "maxTeamDepth"
+    ],
+    "path": [],
+    "message": "Unrecognized key: \"maxTeamDepth\""
+  }
+]
+ ❯ state packages/simulation/simulation/tests/personnel-counts.spec.ts:44:118
+     42|     nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), nextEve…
+     43|     decisions: {}, operations: {}, resources: {}, grants: {}, interact…
+     44|     teamReservation: { teamId: teamIdSchema.parse('canonical'), confir…
+       |                                                                                                                      ^
+     45|       goal: { objective: 'Original personnel', budgets: {} }, budgets:…
+     46| }
+ ❯ packages/simulation/simulation/tests/personnel-counts.spec.ts:116:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation/tests/personnel-counts.spec.ts > rejects duplicate and orphan history refs and retained writer identity substitutions
+ZodError: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "maxTeamDepth"
+    ],
+    "path": [],
+    "message": "Unrecognized key: \"maxTeamDepth\""
+  }
+]
+ ❯ state packages/simulation/simulation/tests/personnel-counts.spec.ts:44:118
+     42|     nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), nextEve…
+     43|     decisions: {}, operations: {}, resources: {}, grants: {}, interact…
+     44|     teamReservation: { teamId: teamIdSchema.parse('canonical'), confir…
+       |                                                                                                                      ^
+     45|       goal: { objective: 'Original personnel', budgets: {} }, budgets:…
+     46| }
+ ❯ packages/simulation/simulation/tests/personnel-counts.spec.ts:130:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation/tests/personnel-counts.spec.ts > refuses impossible count subsets, unpaired source coverage and extra protocol fields
+ZodError: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "maxTeamDepth"
+    ],
+    "path": [],
+    "message": "Unrecognized key: \"maxTeamDepth\""
+  }
+]
+ ❯ state packages/simulation/simulation/tests/personnel-counts.spec.ts:44:118
+     42|     nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), nextEve…
+     43|     decisions: {}, operations: {}, resources: {}, grants: {}, interact…
+     44|     teamReservation: { teamId: teamIdSchema.parse('canonical'), confir…
+       |                                                                                                                      ^
+     45|       goal: { objective: 'Original personnel', budgets: {} }, budgets:…
+     46| }
+ ❯ packages/simulation/simulation/tests/personnel-counts.spec.ts:144:41
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed (7)
+   Start at  09:04:46
+   Duration  588ms (transform 270ms, setup 138ms, import 292ms, tests 6ms, environment 0ms)
+

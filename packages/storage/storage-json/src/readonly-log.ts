@@ -1,7 +1,7 @@
 /** Read an existing atomic JSON log file without backend creation or writer locking. */
 import { open } from 'node:fs/promises'
 import { join } from 'node:path'
-import { assertLogReadRequest, boundedLogReadSnapshot, StorageError } from '@clocky/clocky-storage'
+import { assertLogReadRequest, boundedLogReadSnapshot, StorageError, StorageReadLimitError } from '@clocky/clocky-storage'
 import type { LogReadLimits, LogReadSnapshot, LogStreamDescriptor } from '@clocky/clocky-storage'
 import { parseLog } from './log-format.ts'
 import { logFileName } from './log.ts'
@@ -24,7 +24,7 @@ Promise<LogReadSnapshot | undefined> {
   }
   try {
     const { size } = await handle.stat()
-    if (size > limits.maxBytes) throw new StorageError('invalid-value', 'JSON log document exceeds the read-only byte allowance')
+    if (size > limits.maxBytes) throw new StorageReadLimitError('bytes', size, limits.maxBytes)
     const buffer = Buffer.alloc(size + 1)
     let offset = 0
     while (offset < buffer.length) {

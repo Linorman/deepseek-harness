@@ -63,7 +63,7 @@
  */
 import type { Context } from '@clocky/cordis'
 import type { Entry, Loader } from '@clocky/cordis-plugin-loader'
-import type { PluginsEventFrame } from '../events.ts'
+import { parseBootManifest } from '@clocky/clocky-client-modules/client'
 import { EVENTS_ENDPOINT } from '../events.ts'
 
 export type { PluginsEventFrame } from '../events.ts'
@@ -139,43 +139,73 @@ export function apply(ctx: Context): void {
     await entry.fiber?.await()
   }
 
-  // Serialize reloads: frames can arrive faster than a swap completes, and
-  // interleaved dispose/execute chains would corrupt the single-slot handoff.
+  // Keep the first connection as the baseline, including self-reload. A later connection reconciles missed builds.
+  let revisions: Map<string, string> | undefined
   let queue: Promise<void> = Promise.resolve()
-  const handle = (frame: PluginsEventFrame): void => {
-    switch (frame.type) {
+  const schedule = (id: string, rev: string): void => {
+    queue = queue.then(async () => {
+      if (revisions?.get(id) === rev) return
+      await reload(id)
+      revisions?.set(id, rev)
+    }).catch((error: unknown) => {
+      ctx.logger.error(`client-hmr: reload of "${id}" failed`)
+      ctx.logger.error(error)
+    })
+  }
+  const handle = (value: unknown): void => {
+    if (typeof value !== 'object' || value === null || !('type' in value)) throw new Error('Expected an HMR frame')
+    switch (value.type) {
       case 'rebuilt':
-        queue = queue.then(() => reload(frame.id)).catch((error: unknown) => {
-          ctx.logger.error(`client-hmr: reload of "${frame.id}" failed`)
-          ctx.logger.error(error)
-        })
+        if (!('id' in value) || typeof value.id !== 'string' || !('rev' in value) || typeof value.rev !== 'string')
+          throw new Error('Expected a rebuilt entry identity and revision')
+        schedule(value.id, value.rev)
         break
-      case 'graph':
-        // Connect-time snapshot, unused. The loader's cached graph rev
-        // goes stale after rebuilds — harmless, since prefetch hits the
-        // network anyway (host serves bundles no-cache); graph rev refresh
-        // lands with the reconnect-handshake mechanism.
+      case 'graph': {
+        if (!('graph' in value)) throw new Error('Expected a reconnect graph')
+        const graph = parseBootManifest(value.graph)
+        if (revisions === undefined) revisions = new Map(graph.modules.map(row => [row.id, row.rev]))
+        else for (const row of graph.modules) if (revisions.has(row.id)) schedule(row.id, row.rev)
         break
+      }
       default:
-        // Merge-extensible frame union: unknown frame types from newer hosts
-        // are ignored by design.
+        // Merge-extensible frame union: unknown frame types from newer hosts are ignored.
         break
     }
   }
 
   ctx.effect(() => {
-    const source = new EventSource(EVENTS_ENDPOINT)
-    source.addEventListener('message', (event: MessageEvent<string>) => {
-      let frame: PluginsEventFrame
-      try {
-        frame = JSON.parse(event.data) as PluginsEventFrame
-      } catch {
-        // Wire boundary: a malformed dev-channel frame is dropped loudly.
-        ctx.logger.warn(`client-hmr: unparseable event frame: ${event.data}`)
+    let source: EventSource | undefined
+    const synchronize = (): void => {
+      if (document.visibilityState === 'hidden') {
+        source?.close()
+        source = undefined
         return
       }
-      handle(frame)
-    })
-    return () => { source.close() }
-  }, 'client-hmr: event source')
+      if (source !== undefined) return
+      const current = new EventSource(EVENTS_ENDPOINT)
+      source = current
+      current.addEventListener('message', (event: MessageEvent<string>) => {
+        if (source !== current) return
+        let frame: unknown
+        try { frame = JSON.parse(event.data) }
+        catch {
+          // Wire boundary: malformed dev-channel JSON is dropped; later frames can still recover.
+          ctx.logger.warn('client-hmr: unparseable event frame')
+          return
+        }
+        try { handle(frame) }
+        catch (error) {
+          // Invalid known frames cannot change the retained reconnect baseline.
+          ctx.logger.warn('client-hmr: invalid event frame', error)
+        }
+      })
+    }
+    document.addEventListener('visibilitychange', synchronize)
+    synchronize()
+    return () => {
+      document.removeEventListener('visibilitychange', synchronize)
+      source?.close()
+      source = undefined
+    }
+  }, 'client-hmr: visible event source')
 }

@@ -1,0 +1,7 @@
+packages/simulation/simulation-team/src/personnel-settlement.ts:83:1: error @stylistic(max-len): This line has a length of 144. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:112:1: error @stylistic(max-len): This line has a length of 152. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:125:1: error @stylistic(max-len): This line has a length of 162. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:172:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:194:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:209:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:188:7: error typescript(no-unnecessary-condition): Unnecessary comparison between literal values.

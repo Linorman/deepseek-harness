@@ -13,12 +13,12 @@ async function setup(backend: 'json' | 'sqlite') {
   const config = { name: 'local', root, backend, replayPageSize: 2 }
   const provider = new LocalSimulationProvider(config, () => {})
   const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 'create', spec: {
-    runId: 'writers', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
+    runId: 'writers', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
   } })
   const run = await provider.open(selection)
   cleanups.push(async () => { await run.close(); await provider.close(); await rm(root, { recursive: true, force: true }) })
   const entityId = simulationEntityIdSchema.parse('buyer')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), 0)
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), 0)
   const binding = { teamId: teamIdSchema.parse('team'), participantId: participantIdSchema.parse('buyer'), sessionId: SessionId('session') }
   const reservationId = activationReservationIdSchema.parse('reservation-one')
   const activation = { ...binding, reservationId, provider: 'in-process', activationId: activationIdSchema.parse('activation-one') }
@@ -97,7 +97,7 @@ it('rejects noncognitive, duplicate, cross-Team and inactive bindings without al
   const { run, entityId, binding } = await setup('sqlite')
   await expect(run.bindEntity(simulationEntityIdSchema.parse('missing'), binding, run.snapshot().revision)).rejects.toThrow(/does not exist/)
   const create = async (id: string, cognition: 'agent' | 'none') => {
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'org', cognition, profile: {} }), run.snapshot().revision)
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'org', cognition, profile: {} }), run.snapshot().revision)
     return simulationEntityIdSchema.parse(id)
   }
   const organization = await create('warehouse', 'none')
@@ -252,7 +252,7 @@ it('diagnoses corrupted population and canonical reservations from published sta
   expect(() => { assertWriterProjection({ ...state, teamReservation: { ...state.teamReservation!, confirmed: false },
     entities: { [entityId]: { ...withoutReservation, binding: actual } } }) }).toThrow(/confirmed Team/)
   const other = simulationEntityIdSchema.parse('other')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: other, entityKind: 'person', cognition: 'agent', profile: {} }),
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: other, entityKind: 'person', cognition: 'agent', profile: {} }),
     run.snapshot().revision)
   await run.bindEntity(other, { teamId, participantId: participantIdSchema.parse('other'), sessionId: SessionId('other') },
     run.snapshot().revision)

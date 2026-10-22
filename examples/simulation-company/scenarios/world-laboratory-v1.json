@@ -1,0 +1,682 @@
+{
+  "apiVersion": "clocky.world/v1",
+  "metadata": {
+    "id": "laboratory-complete",
+    "name": "Horizon Laboratory",
+    "description": "A bounded complete institutional and personnel workflow with an independent external representative."
+  },
+  "runtimeProfiles": {
+    "allowed": [
+      {
+        "id": "world-agent",
+        "version": "1"
+      }
+    ],
+    "generated": {
+      "id": "world-agent",
+      "version": "1"
+    },
+    "templates": [
+      {
+        "id": "laboratory-person",
+        "version": "1"
+      }
+    ]
+  },
+  "domains": [
+    {
+      "domain": "organization",
+      "operation": "generate-and-hire",
+      "version": "1"
+    },
+    {
+      "domain": "governance",
+      "operation": "propose-norm",
+      "version": "1"
+    },
+    {
+      "domain": "governance",
+      "operation": "vote",
+      "version": "1"
+    },
+    {
+      "domain": "governance",
+      "operation": "enact-norm",
+      "version": "1"
+    },
+    {
+      "domain": "governance",
+      "operation": "propose-hire-approval",
+      "version": "1"
+    },
+    {
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1"
+    },
+    {
+      "domain": "organization",
+      "operation": "depart",
+      "version": "1"
+    },
+    {
+      "domain": "external",
+      "operation": "interact",
+      "version": "3"
+    }
+  ],
+  "entities": [
+    {
+      "id": "laboratory",
+      "name": "Horizon Laboratory",
+      "description": "Primary declared organization.",
+      "kind": "organization",
+      "cognition": "none"
+    },
+    {
+      "id": "managed-unit",
+      "name": "Operations",
+      "description": "Declared managed child unit.",
+      "kind": "organization",
+      "cognition": "none"
+    },
+    {
+      "id": "outside-vendor",
+      "name": "Independent supplier",
+      "description": "A simulated organization with no expanded representative or declared inventory.",
+      "kind": "organization",
+      "cognition": "none"
+    },
+    {
+      "id": "director",
+      "name": "Coordinator",
+      "description": "Coordinator acts through an independent canonical Session.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "director",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "laboratory-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Coordinator",
+        "skills": [
+          "analysis"
+        ],
+        "traits": [
+          "careful"
+        ],
+        "goals": [
+          "research"
+        ]
+      }
+    },
+    {
+      "id": "ceo",
+      "name": "Research Lead",
+      "description": "Research Lead acts through an independent canonical Session.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "member",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "laboratory-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Research Lead",
+        "skills": [
+          "analysis"
+        ],
+        "traits": [
+          "careful"
+        ],
+        "goals": [
+          "research"
+        ]
+      }
+    },
+    {
+      "id": "hr",
+      "name": "Kai",
+      "description": "Kai acts through an independent canonical Session.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "member",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "laboratory-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Kai",
+        "skills": [
+          "analysis"
+        ],
+        "traits": [
+          "careful"
+        ],
+        "goals": [
+          "research"
+        ]
+      }
+    },
+    {
+      "id": "peer",
+      "name": "Observer",
+      "description": "Observer acts through an independent canonical Session.",
+      "kind": "person",
+      "cognition": "agent",
+      "role": "member",
+      "runtimeProfile": {
+        "id": "world-agent",
+        "version": "1"
+      },
+      "template": {
+        "id": "laboratory-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Observer",
+        "skills": [
+          "analysis"
+        ],
+        "traits": [
+          "careful"
+        ],
+        "goals": [
+          "research"
+        ]
+      }
+    }
+  ],
+  "organization": {
+    "rootId": "laboratory",
+    "units": [
+      {
+        "id": "managed-unit",
+        "parentId": "laboratory"
+      }
+    ],
+    "positions": [
+      {
+        "id": "leadership",
+        "name": "Leadership",
+        "description": "Leadership",
+        "unitId": "managed-unit",
+        "capacity": 2,
+        "permissions": []
+      },
+      {
+        "id": "hr-office",
+        "name": "Personnel",
+        "description": "Personnel",
+        "unitId": "managed-unit",
+        "capacity": 1,
+        "permissions": []
+      },
+      {
+        "id": "work-position",
+        "name": "New colleague",
+        "description": "New colleague",
+        "unitId": "managed-unit",
+        "capacity": 1,
+        "permissions": [
+          {
+            "domain": "external",
+            "operation": "interact",
+            "version": "3",
+            "scopeId": "laboratory",
+            "targetId": "outside-vendor",
+            "relation": "can-interact"
+          }
+        ]
+      },
+      {
+        "id": "followup-position",
+        "name": "Follow-up duties",
+        "description": "Follow-up duties",
+        "unitId": "managed-unit",
+        "capacity": 1,
+        "permissions": [
+          {
+            "domain": "external",
+            "operation": "interact",
+            "version": "3",
+            "scopeId": "laboratory",
+            "targetId": "outside-vendor",
+            "relation": "can-interact"
+          }
+        ]
+      }
+    ],
+    "assignments": [
+      {
+        "id": "employment-ceo",
+        "personId": "ceo",
+        "positionId": "leadership",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "employment-hr",
+        "personId": "hr",
+        "positionId": "hr-office",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "employment-peer",
+        "personId": "peer",
+        "positionId": "leadership",
+        "validFrom": "0",
+        "validUntil": null
+      }
+    ],
+    "grants": [
+      {
+        "id": "hr-hire",
+        "personId": "hr",
+        "domain": "organization",
+        "operation": "generate-and-hire",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "work-position",
+        "relation": "can-hire",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "policy-proposal",
+        "personId": "ceo",
+        "domain": "governance",
+        "operation": "propose-norm",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "policy-committee",
+        "relation": "can-propose-norm",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "policy-enactment",
+        "personId": "ceo",
+        "domain": "governance",
+        "operation": "enact-norm",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "policy-committee",
+        "relation": "can-enact-norm",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "hire-approval",
+        "personId": "hr",
+        "domain": "governance",
+        "operation": "propose-hire-approval",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "policy-committee",
+        "relation": "can-approve-hire",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "chair-vote",
+        "personId": "ceo",
+        "domain": "governance",
+        "operation": "vote",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "policy-committee",
+        "relation": "can-vote",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "peer-vote",
+        "personId": "peer",
+        "domain": "governance",
+        "operation": "vote",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "policy-committee",
+        "relation": "can-vote",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "transfer-source",
+        "personId": "hr",
+        "domain": "organization",
+        "operation": "transfer",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "work-position",
+        "relation": "can-transfer",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "transfer-target",
+        "personId": "hr",
+        "domain": "organization",
+        "operation": "transfer",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "followup-position",
+        "relation": "can-transfer-target",
+        "validFrom": "0",
+        "validUntil": null
+      },
+      {
+        "id": "departure-source",
+        "personId": "hr",
+        "domain": "organization",
+        "operation": "depart",
+        "version": "1",
+        "scopeId": "laboratory",
+        "targetId": "followup-position",
+        "relation": "can-depart",
+        "validFrom": "0",
+        "validUntil": null
+      }
+    ],
+    "hiringFees": [
+      {
+        "id": "recruitment-fee",
+        "version": "1",
+        "policyRef": "clocky.organization.hiring-fee/1",
+        "operation": "generate-and-hire",
+        "positionEntityId": "work-position",
+        "from": "hiring-cash",
+        "to": "fee-payee",
+        "unit": "credit",
+        "quantity": "3",
+        "grants": [],
+        "reservationPeriod": "10"
+      }
+    ]
+  },
+  "governance": {
+    "committees": [
+      {
+        "id": "policy-committee",
+        "name": "Policy committee",
+        "description": "Two independent original voters.",
+        "scopeId": "laboratory",
+        "members": [
+          {
+            "id": "committee-member-ceo",
+            "personId": "ceo",
+            "validFrom": "0",
+            "validUntil": null
+          },
+          {
+            "id": "committee-member-peer",
+            "personId": "peer",
+            "validFrom": "0",
+            "validUntil": null
+          }
+        ],
+        "rule": {
+          "kind": "unanimity"
+        },
+        "quorum": 2
+      }
+    ],
+    "norms": []
+  },
+  "facts": [
+    {
+      "id": "private-director-fact",
+      "subjectId": "laboratory",
+      "scopeId": "laboratory",
+      "body": "PRIVATE-C41-DIRECTOR-CANARY",
+      "effectiveFrom": "0",
+      "effectiveUntil": null,
+      "availableAt": "0",
+      "audience": {
+        "kind": "actors",
+        "entityIds": [
+          "director"
+        ]
+      }
+    }
+  ],
+  "knowledge": [],
+  "resources": [
+    {
+      "id": "hiring-cash",
+      "owner": "laboratory",
+      "kind": "money",
+      "unit": "credit",
+      "quantity": "10",
+      "controllers": [
+        "hr"
+      ]
+    },
+    {
+      "id": "fee-payee",
+      "owner": "outside-vendor",
+      "kind": "money",
+      "unit": "credit",
+      "quantity": "0",
+      "controllers": []
+    }
+  ],
+  "communication": {
+    "channels": [
+      {
+        "key": "workroom",
+        "members": [
+          {
+            "personId": "director",
+            "role": "director"
+          },
+          {
+            "personId": "ceo",
+            "role": "member"
+          },
+          {
+            "personId": "hr",
+            "role": "member"
+          },
+          {
+            "personId": "peer",
+            "role": "member"
+          }
+        ]
+      }
+    ]
+  },
+  "externalWorld": {
+    "mode": "simulated-only",
+    "identities": [],
+    "adjudicationPolicy": {
+      "ref": "clocky.external.adjudication/1",
+      "version": "1",
+      "generation": 1,
+      "conditionInstalls": [],
+      "futureConditionInstalls": [],
+      "allowedOutcomeKinds": [
+        "representative-preparation-plan"
+      ],
+      "maxDelay": "10",
+      "allowPublicDisclosure": false,
+      "allowScopeDisclosure": false,
+      "actorDisclosure": []
+    }
+  },
+  "behavior": {
+    "initialGoals": [
+      {
+        "id": "policy-proposal",
+        "kind": "goal",
+        "at": "1",
+        "target": {
+          "kind": "person",
+          "personId": "ceo"
+        },
+        "body": "propose-policy"
+      },
+      {
+        "id": "policy-chair-vote",
+        "kind": "goal",
+        "at": "2",
+        "target": {
+          "kind": "person",
+          "personId": "ceo"
+        },
+        "body": "vote-policy"
+      },
+      {
+        "id": "policy-peer-vote",
+        "kind": "goal",
+        "at": "3",
+        "target": {
+          "kind": "person",
+          "personId": "peer"
+        },
+        "body": "vote-policy"
+      },
+      {
+        "id": "policy-enactment",
+        "kind": "goal",
+        "at": "4",
+        "target": {
+          "kind": "person",
+          "personId": "ceo"
+        },
+        "body": "enact-policy"
+      },
+      {
+        "id": "hr-hire",
+        "kind": "goal",
+        "at": "5",
+        "target": {
+          "kind": "person",
+          "personId": "hr"
+        },
+        "body": "request-hire"
+      },
+      {
+        "id": "hire-approval",
+        "kind": "goal",
+        "at": "6",
+        "target": {
+          "kind": "person",
+          "personId": "hr"
+        },
+        "body": "propose-hire-approval"
+      },
+      {
+        "id": "hire-chair-vote",
+        "kind": "goal",
+        "at": "7",
+        "target": {
+          "kind": "person",
+          "personId": "ceo"
+        },
+        "body": "vote-hire-approval"
+      },
+      {
+        "id": "hire-peer-vote",
+        "kind": "goal",
+        "at": "8",
+        "target": {
+          "kind": "person",
+          "personId": "peer"
+        },
+        "body": "vote-hire-approval"
+      }
+    ],
+    "calendars": [
+      {
+        "id": "supplier-contact",
+        "target": {
+          "kind": "position",
+          "positionId": "work-position"
+        },
+        "body": "contact-supplier",
+        "startsAt": "10",
+        "endsAt": "10",
+        "period": "1",
+        "maxOccurrences": 1
+      },
+      {
+        "id": "transfer-review",
+        "target": {
+          "kind": "position",
+          "positionId": "hr-office"
+        },
+        "body": "transfer-colleague",
+        "startsAt": "14",
+        "endsAt": "14",
+        "period": "1",
+        "maxOccurrences": 1
+      },
+      {
+        "id": "departure-review",
+        "target": {
+          "kind": "position",
+          "positionId": "hr-office"
+        },
+        "body": "depart-colleague",
+        "startsAt": "18",
+        "endsAt": "18",
+        "period": "1",
+        "maxOccurrences": 1
+      },
+      {
+        "id": "original-handoff",
+        "target": {
+          "kind": "position",
+          "positionId": "hr-office"
+        },
+        "body": "create-handoff",
+        "startsAt": "15",
+        "endsAt": "15",
+        "period": "1",
+        "maxOccurrences": 1
+      },
+      {
+        "id": "replace-handoff",
+        "target": {
+          "kind": "position",
+          "positionId": "hr-office"
+        },
+        "body": "perform-handoff: {\"successorId\":\"ceo\"}",
+        "startsAt": "16",
+        "endsAt": "16",
+        "period": "1",
+        "maxOccurrences": 1
+      }
+    ],
+    "directorEvents": []
+  },
+  "limits": {
+    "native": {
+      "maxDecisionsPerInterval": 256,
+      "maxMessagesPerInterval": 256,
+      "maxMicrostepsPerTime": 128
+    },
+    "team": {},
+    "world": {
+      "maxRequests": 32,
+      "maxBytesPerRequest": 65536,
+      "maxBytesPerPlan": 65536
+    }
+  }
+}

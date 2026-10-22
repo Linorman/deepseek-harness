@@ -39,10 +39,9 @@ export function TaskReviews(props: Props) {
   const retained = Object.entries(props.drafts).filter(([, draft]) => draft.runId === runId)
   return <section className={css.review} data-empty={page?.total === 0 || page === undefined && value.error !== undefined || undefined} aria-label={t('reviews.title')} data-simulation-reviews>
     <header className={css.reviewHeader}><h2>{t('reviews.title')}{page === undefined ? '' : ` · ${page.total}`}</h2>
-      <Button variant="secondary" disabled={!connected || value.loading} aria-busy={value.loading}
+      <Button variant="secondary" disabled={!connected}
         onClick={() => { void refresh() }}>{t('reviews.refresh')}</Button></header>
-    {value.loading && <p role="status">{t('loading')}</p>}
-    {value.stale && <p role="status" className={css.stalePill}>{t('reviews.stale')}</p>}
+    {value.loading && page === undefined && <p role="status">{t('loading')}</p>}
     {value.error !== undefined && <p role="alert">{t(value.error)}</p>}
     {error !== undefined && <p role="alert">{error}</p>}
     {page?.items.length === 0 && <p>{t('reviews.empty')}</p>}
@@ -51,7 +50,9 @@ export function TaskReviews(props: Props) {
       <p>{t(`reviews.phase.${row.phase}`)} · {t('reviews.revision')}: {row.taskRevision} · {t('reviews.reviewer')}: <code>{row.reviewerEntityId}</code></p>
       <p>{t(`reviews.reason.${row.action.reason}`)}</p>
       <ReviewEvidence row={row} t={t} />
-      <Button disabled={!connected || value.loading} onClick={() => { open(props.drafts[reviewDraftKey({ runId,
+      {/* Opening only edits a draft; submission is fenced on a fresh window, so a background read never disables the
+          control focus returns to. */}
+      <Button disabled={!connected} onClick={() => { open(props.drafts[reviewDraftKey({ runId,
         operationId: row.operationId, attemptId: row.attemptId })] ?? { runId, operationId: row.operationId,
         attemptId: row.attemptId, expectedRevision: row.taskRevision, nextPhase: 'completed', reason: '' }) }}>{t('reviews.open')}</Button>
     </li>)}</ul>

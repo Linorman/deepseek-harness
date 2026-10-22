@@ -1,0 +1,29 @@
+{
+  "version": "supply-registered-evaluation/2",
+  "control": "supply-seasonal/1",
+  "treatment": "supply-fixed/1",
+  "splits": {
+    "fixed": [
+      { "id": "steady", "demands": [2, 3, 4, 3] },
+      { "id": "constant-peak", "demands": [4, 4, 4, 4] }
+    ],
+    "holdout": [
+      { "id": "burst-recovery", "demands": [0, 0, 9, 9, 1, 7, 0] },
+      { "id": "alternating-over-sink", "demands": [8, 1, 8, 1, 8, 0] }
+    ]
+  },
+  "horizons": [32, 128, 512],
+  "initialState": { "model": "supply-seasonal/1", "generation": 1, "inventory": 6, "committed": 2, "capacity": 20, "sourceLimit": 3, "sinkLimit": 6, "step": 1, "lastTime": null },
+  "intervention": "Within each pair only the installed supply implementation varies. Demand cycles, stock, commitment, capacity, source/sink limits, horizons and unit time steps are identical. Lower shortage is reported alongside extra production; no production-normalized superiority criterion is inferred afterward.",
+  "exposure": "Both implementations and earlier v1 fixed/holdout resource outcomes were already available. The fixed cycles reuse prior cases; these two stress cycles are newly registered and are held out from implementation tuning for this v2 execution. This is a prospective bounded engineering comparison, not a blinded model-training holdout or independent external benchmark. No algorithm or parameter is tuned for this run.",
+  "rubric": {
+    "version": "supply-review/2",
+    "quality": "Report unmet demand and total production together; lower shortage alone does not establish efficiency.",
+    "constraints": "Every actual sample must conserve stock, cover commitments and obey source/sink bounds.",
+    "privacy": "Reject private history and caller-authored sample fields; no Session disclosure claim follows from parser probes.",
+    "human": "pass/fail/unclear with trial and step references for conservation, provenance, explanation and unsupported realism claims"
+  },
+  "humanAssessment": "deferred-by-user",
+  "modelJudge": null,
+  "stochasticity": "Deterministic installed algorithms; no seed or live-model reproducibility claim."
+}

@@ -1,0 +1,228 @@
+$ vitest run packages/simulation/simulation-team/tests/world.spec.ts packages/simulation/simulation/tests/world-protocol.spec.ts packages/simulation/simulation-world/tests/execution.spec.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts (156 tests | 22 failed) 43754ms
+   × rejects an unassigned json goal before preparing model context 217ms
+   × rejects an unassigned sqlite goal before preparing model context 66ms
+   × links a json insufficient-information resubmission without replacing the old case 362ms
+   × links a sqlite insufficient-information resubmission without replacing the old case 145ms
+   × refuses a 'json' predecessor whose original result is 'open' 255ms
+   × refuses a 'json' predecessor whose original result is 'cancelled' 249ms
+   × refuses a 'json' predecessor whose original result is 'policy' 289ms
+   × refuses a 'sqlite' predecessor whose original result is 'open' 97ms
+   × refuses a 'sqlite' predecessor whose original result is 'cancelled' 105ms
+   × refuses a 'sqlite' predecessor whose original result is 'policy' 149ms
+   × linearizes 'json' cancel/commit with cancelFirst=true and preserves exactly one business terminal 523ms
+   × linearizes 'json' cancel/commit with cancelFirst=false and preserves exactly one business terminal 495ms
+   × linearizes 'sqlite' cancel/commit with cancelFirst=true and preserves exactly one business terminal 182ms
+   × linearizes 'sqlite' cancel/commit with cancelFirst=false and preserves exactly one business terminal 170ms
+   × releases proven json hire occupancy for a new real application while retaining every original identity 618ms
+   × releases proven sqlite hire occupancy for a new real application while retaining every original identity 237ms
+   × refuses json altered result notification content, recipient, Channel, time, outcome or dependencies at Native submission 679ms
+   × refuses sqlite altered result notification content, recipient, Channel, time, outcome or dependencies at Native submission 278ms
+   × notifies the original director of a 'json' 'rejected' result through three tools without disclosing private rationale 505ms
+   × notifies the original director of a 'json' 'cancelled' result through three tools without disclosing private rationale 433ms
+   × notifies the original director of a 'sqlite' 'rejected' result through three tools without disclosing private rationale 211ms
+   × notifies the original director of a 'sqlite' 'cancelled' result through three tools without disclosing private rationale 172ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 22 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > rejects an unassigned json goal before preparing model context
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > rejects an unassigned sqlite goal before preparing model context
+AssertionError: expected [Function] to throw error matching /current organization employment/ but got 'World goal requires current employment'
+
+- Expected:
+/current organization employment/
+
++ Received:
+"World goal requires current employment"
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:228:54
+    226|   await h.run.setPhase('running', h.run.snapshot().revision)
+    227|   await expect(h.connection.executeDecision(requester, simulationDecis…
+    228|     { ...contextRequest(), world: { kind: 'goal' } })).rejects.toThrow…
+       |                                                      ^
+    229|   expect(h.run.snapshot().world!.requests).toEqual({})
+    230|   expect(h.requestModel.requests).toEqual([])
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/22]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > links a json insufficient-information resubmission without replacing the old case
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > links a sqlite insufficient-information resubmission without replacing the old case
+AssertionError: expected [Function] to throw error matching /must link the latest insufficient-inf…/ but got 'Resubmission must reference the lates…'
+
+- Expected:
+/must link the latest insufficient-information case/
+
++ Received:
+"Resubmission must reference the latest insufficient-information rejection"
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1029:46
+    1027|   const original = h.run.snapshot().world!, input = { ...hiringIntentF…
+    1028|   expect(original.requests[h.request.id]?.status).toBe('rejected')
+    1029|   await expect(seedHiringIntent(h.run, input)).rejects.toThrow(/must l…
+       |                                              ^
+    1030|   await expect(seedHiringIntent(h.run, simulationHireIntentRequestSche…
+    1031|     .rejects.toThrow(/own original insufficient-information rejection/)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/22]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'json' predecessor whose original result is 'open'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'json' predecessor whose original result is 'cancelled'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'json' predecessor whose original result is 'policy'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'sqlite' predecessor whose original result is 'open'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'sqlite' predecessor whose original result is 'cancelled'
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses a 'sqlite' predecessor whose original result is 'policy'
+AssertionError: expected [Function] to throw error matching /own original insufficient-information…/ but got 'Resubmission requires its original in…'
+
+- Expected:
+/own original insufficient-information rejection/
+
++ Received:
+"Resubmission requires its original insufficient-information rejection"
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1067:142
+    1065|     }
+    1066|     const before = h.run.snapshot()
+    1067|     await expect(seedHiringIntent(h.run, { ...hiringIntentFields(h.int…
+       |                                                                                                                                              ^
+    1068|       .rejects.toThrow(/own original insufficient-information rejectio…
+    1069|     expect(h.run.snapshot()).toEqual(before)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/22]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > linearizes 'json' cancel/commit with cancelFirst=true and preserves exactly one business terminal
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > linearizes 'sqlite' cancel/commit with cancelFirst=true and preserves exactly one business terminal
+AssertionError: expected [ Array(1) ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1500:93
+    1498|     expect(receipt.status).toBe(cancelFirst ? 'cancelled' : 'already-c…
+    1499|     expect(result.outcome.kind).toBe(cancelFirst ? 'cancelled' : 'comm…
+    1500|     expect(Object.values(state.relations).filter(value => value.relati…
+       |                                                                                             ^
+    1501|     expect(state.world!.reservations[h.reservation.id]?.status).toBe(c…
+    1502|     if (cancelFirst) expect(committed).toHaveProperty('error')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/22]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > linearizes 'json' cancel/commit with cancelFirst=false and preserves exactly one business terminal
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > linearizes 'sqlite' cancel/commit with cancelFirst=false and preserves exactly one business terminal
+AssertionError: expected [ { …(8) }, { …(8) } ] to have a length of 1 but got 2
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1500:93
+    1498|     expect(receipt.status).toBe(cancelFirst ? 'cancelled' : 'already-c…
+    1499|     expect(result.outcome.kind).toBe(cancelFirst ? 'cancelled' : 'comm…
+    1500|     expect(Object.values(state.relations).filter(value => value.relati…
+       |                                                                                             ^
+    1501|     expect(state.world!.reservations[h.reservation.id]?.status).toBe(c…
+    1502|     if (cancelFirst) expect(committed).toHaveProperty('error')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/22]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > releases proven json hire occupancy for a new real application while retaining every original identity
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > releases proven sqlite hire occupancy for a new real application while retaining every original identity
+Error: Simulation model turn ended without submitting its identified decision
+ ❯ executeDecision packages/simulation/simulation-team/src/decision.ts:61:11
+     59|       || paused
+     60|       || run.snapshot().compactionAdmissionBlocks?.some(value => value…
+     61|     throw new Error('Simulation model turn ended without submitting it…
+       |           ^
+     62|   }
+     63|   if (!await flush()) throw new Error('Simulation decision completion …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/22]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses json altered result notification content, recipient, Channel, time, outcome or dependencies at Native submission
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses sqlite altered result notification content, recipient, Channel, time, outcome or dependencies at Native submission
+AssertionError: expected [ { …(7) }, { …(7) }, { …(7) }, …(1) ] to have a length of 5 but got 4
+
+- Expected
++ Received
+
+- 5
++ 4
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1878:32
+    1876|     expect(h.run.snapshot()).toEqual(before)
+    1877|   }
+    1878|   expect(resultModel.requests).toHaveLength(5)
+       |                                ^
+    1879|   expect(firstModel.requests).toHaveLength(0)
+    1880|   await h.connection.cancelDecision(requester, id)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/22]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > notifies the original director of a 'json' 'rejected' result through three tools without disclosing private rationale
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > notifies the original director of a 'sqlite' 'rejected' result through three tools without disclosing private rationale
+AssertionError: expected { …(3) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "outcome": {
+      "kind": "rejected",
+      "reason": "insufficient-information",
+    },
++   "payload": {},
+    "resultId": "world-result:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1974:43
+    1972|     expect(notification).toEqual({ kind: 'communication/post', recipie…
+    1973|       text: worldResultNotification(result), deliverAt: '0' })
+    1974|     expect(JSON.parse(notification.text)).toEqual({ resultId: result.i…
+       |                                           ^
+    1975|     expect(JSON.stringify(accepted.context)).not.toContain(rejectedRes…
+    1976|     const world = h.run.snapshot().world
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/22]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > notifies the original director of a 'json' 'cancelled' result through three tools without disclosing private rationale
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > notifies the original director of a 'sqlite' 'cancelled' result through three tools without disclosing private rationale
+AssertionError: expected { …(3) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "outcome": {
+      "kind": "cancelled",
+    },
++   "payload": {},
+    "resultId": "world-result:world-intent:a3215ee2081182f5ddb7b931d87f8d030ff1e015f19239dbea8759fac6302563",
+  }
+
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:1974:43
+    1972|     expect(notification).toEqual({ kind: 'communication/post', recipie…
+    1973|       text: worldResultNotification(result), deliverAt: '0' })
+    1974|     expect(JSON.parse(notification.text)).toEqual({ resultId: result.i…
+       |                                           ^
+    1975|     expect(JSON.stringify(accepted.context)).not.toContain(rejectedRes…
+    1976|     const world = h.run.snapshot().world
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/22]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  22 failed | 160 passed (182)
+   Start at  02:12:15
+   Duration  45.48s (transform 2.02s, setup 443ms, import 2.09s, tests 43.78s, environment 0ms)
+
+[ELIFECYCLE] Test failed. See above for more details.

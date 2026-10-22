@@ -123,7 +123,7 @@ it('refuses persisted settlement before dependencies and refuses local settlemen
   expect(() => applyInteraction(state, operation)).toThrow(/Non-interaction/)
   const message = state.operations[accepted.operationIds[2]!]!
   expect(() => computeOperation(state, message)).toThrow(/outbox transport/)
-  expect(() => recordTransferEvidence(state, message)).toThrow(/requires a resource transfer/)
+  expect(() => recordTransferEvidence(state, message)).toThrow('Transfer evidence requires its actual conserved transaction')
   const taskAction = simulationProposalSchema.parse({ after: [], action: { kind: 'task/create', deliverAt: '0',
     task: { subject: 'Work', description: 'Do work', blockedBy: [], requiredCapabilities: [], priority: 0,
       readScopes: [], writeScopes: [], workspaceMode: 'shared', reviewPolicy: { kind: 'none' }, budget: {}, maxAttempts: 1 } } }).action

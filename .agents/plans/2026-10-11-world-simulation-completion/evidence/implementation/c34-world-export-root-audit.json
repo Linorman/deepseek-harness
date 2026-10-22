@@ -1,0 +1,190 @@
+{
+  "inputSha256": "526eb75d2a6c62aee837afc100ff01c91b98d75e2f48ba354339bb360a601309",
+  "inputFileCount": 5721,
+  "copiedInputBytes": 72922896,
+  "inputCapturedAfterBrowserRun": true,
+  "underlyingC33InputSha256": "581c86c87f898abc016ed92f529f55cff0b747c271948ed2f828fb6ce49bf5c7",
+  "caseCount": 2,
+  "exportReimportCount": 8,
+  "plainNodeLibDecoderVerified": true,
+  "actualHttpPreflightHashVerified": true,
+  "rootRawJsonSqliteVerified": true,
+  "allPausedZeroModelZeroWritableRestore": true,
+  "cases": [
+    {
+      "backend": "json",
+      "root": ".local/world-completion/c34-world-export/json/browser-NcirVE",
+      "nativeRecordCount": 34,
+      "definitionHash": "sha256:fc8489ae0a0770775a27a39d2b48281a5b2d9f43e5e0c300a8a9e270d994bb94",
+      "publicPreflightHash": "sha256:5c488bbcc7ad73aa32082b3257d89b960fad68bdd42931997413d206d25c7e5c",
+      "nativeVersion": 76,
+      "actualOriginalBootstrapVerified": true,
+      "exportReimportCount": 4
+    },
+    {
+      "backend": "sqlite",
+      "root": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG",
+      "nativeRecordCount": 34,
+      "definitionHash": "sha256:fc8489ae0a0770775a27a39d2b48281a5b2d9f43e5e0c300a8a9e270d994bb94",
+      "publicPreflightHash": "sha256:5c488bbcc7ad73aa32082b3257d89b960fad68bdd42931997413d206d25c7e5c",
+      "nativeVersion": 76,
+      "actualOriginalBootstrapVerified": true,
+      "exportReimportCount": 4
+    }
+  ],
+  "artifactCount": 38,
+  "artifacts": [
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/author-export-purpose.png",
+      "sha256": "623c5fb566f54bf3b8347300f0dc5b1619d0cbd46db903e476d64e6a9549b90b"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/author-reimport-json.png",
+      "sha256": "b7f664e951a6a45ae69f6dca5b1fb4025a39e060fa649d214caf9a73fdd451e0"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/author-reimport-yaml.png",
+      "sha256": "b7f664e951a6a45ae69f6dca5b1fb4025a39e060fa649d214caf9a73fdd451e0"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/author.world.json",
+      "sha256": "8128e1836c3b8c6ea1c33e03600f9a344855ea6993f99f2abd5cf55a015313a1"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/author.world.yaml",
+      "sha256": "e465b6d2adc6b4b51ce0e51768dc63d8f2440c202685c360c3695b4af08e0340"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/overlay.json",
+      "sha256": "423fd5a11d617a83c293f69e5f24966442498bf86991e2cc41b2edbfa35da726"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/proof.json",
+      "sha256": "7d82bb067b2080497268f4007287bdf972381d8b33f5ee6fd025c98dbe5ff56d"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/run-export-purpose.png",
+      "sha256": "10c6325e629c501aa938a43039949726a5b4252b7ece1fb7dc363e53a6eeb680"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/run-reimport-json.png",
+      "sha256": "b317ce9c0b93b43ac54a27716e4fe480cae389b34bced094473ba90c9fee1271"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/run-reimport-yaml.png",
+      "sha256": "b317ce9c0b93b43ac54a27716e4fe480cae389b34bced094473ba90c9fee1271"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/run.world.json",
+      "sha256": "8128e1836c3b8c6ea1c33e03600f9a344855ea6993f99f2abd5cf55a015313a1"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/run.world.yaml",
+      "sha256": "e465b6d2adc6b4b51ce0e51768dc63d8f2440c202685c360c3695b4af08e0340"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/workspace/.clocky-auth/product-principal.json",
+      "sha256": "493ca5d8d1465ac48814d4e11b02bafd44292e9cd1f9926a85cf0a90ee9b68f4"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/workspace/.clocky-home/profiles/scaffold/cordis.yml",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/workspace/.clocky-storages/workspace.json",
+      "sha256": "ae581504107075e10161487a6bcf32a8b6f291ac2ca8dd70ead37f149d6bdfe4"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/workspace/.clocky-team-storage.sqlite",
+      "sha256": "7262b4372abe243292b3c299638dd02dea1a8b1e38225b841ab06a43ebaaf577"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/world/f8d27c77fcf117170fabc59c6e6b96dc7251b65abef6aec040aae8099d3e2023/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "3fd996bcc4fd2625659c32423512bfcf1d0245c01b97dba6a31530dcc173b5ad"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/json/browser-NcirVE/world/f8d27c77fcf117170fabc59c6e6b96dc7251b65abef6aec040aae8099d3e2023/owner.sqlite",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/author-export-purpose.png",
+      "sha256": "623c5fb566f54bf3b8347300f0dc5b1619d0cbd46db903e476d64e6a9549b90b"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/author-reimport-json.png",
+      "sha256": "b7f664e951a6a45ae69f6dca5b1fb4025a39e060fa649d214caf9a73fdd451e0"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/author-reimport-yaml.png",
+      "sha256": "b7f664e951a6a45ae69f6dca5b1fb4025a39e060fa649d214caf9a73fdd451e0"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/author.world.json",
+      "sha256": "8128e1836c3b8c6ea1c33e03600f9a344855ea6993f99f2abd5cf55a015313a1"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/author.world.yaml",
+      "sha256": "e465b6d2adc6b4b51ce0e51768dc63d8f2440c202685c360c3695b4af08e0340"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/overlay.json",
+      "sha256": "1a1f38d5277b277d65875e15506c88bf79cf79ca597aa30f28bdea9e81bb90d6"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/proof.json",
+      "sha256": "537add76d887e984738288dbae862102f13f77cd5bd060e0de8f5760d220c792"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/run-export-purpose.png",
+      "sha256": "10c6325e629c501aa938a43039949726a5b4252b7ece1fb7dc363e53a6eeb680"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/run-reimport-json.png",
+      "sha256": "b317ce9c0b93b43ac54a27716e4fe480cae389b34bced094473ba90c9fee1271"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/run-reimport-yaml.png",
+      "sha256": "b317ce9c0b93b43ac54a27716e4fe480cae389b34bced094473ba90c9fee1271"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/run.world.json",
+      "sha256": "8128e1836c3b8c6ea1c33e03600f9a344855ea6993f99f2abd5cf55a015313a1"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/run.world.yaml",
+      "sha256": "e465b6d2adc6b4b51ce0e51768dc63d8f2440c202685c360c3695b4af08e0340"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/workspace/.clocky-auth/product-principal.json",
+      "sha256": "234be78a22d28b20a0c1a956180e71bb50a34f13bfaa2e5e88bf2d2b0c644551"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/workspace/.clocky-home/profiles/scaffold/cordis.yml",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/workspace/.clocky-storages/workspace.json",
+      "sha256": "ae581504107075e10161487a6bcf32a8b6f291ac2ca8dd70ead37f149d6bdfe4"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/workspace/.clocky-team-storage.sqlite",
+      "sha256": "667514f78523022c157f735d52909f2bafd68c0c93523f13622b43b84115bf35"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/world/d4c5171ad4146961ad656e13b08458bcb0343a005ea06b33c6b0f68390d73516/journal.sqlite",
+      "sha256": "2fc7ca9ea6fc2f63b4a35dfb20ce03bd6c63aab97d24ca88d97a07008aa2cb6d"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/world/d4c5171ad4146961ad656e13b08458bcb0343a005ea06b33c6b0f68390d73516/journal.sqlite-shm",
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/world/d4c5171ad4146961ad656e13b08458bcb0343a005ea06b33c6b0f68390d73516/journal.sqlite-wal",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c34-world-export/sqlite/browser-AUlRSG/world/d4c5171ad4146961ad656e13b08458bcb0343a005ea06b33c6b0f68390d73516/owner.sqlite",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

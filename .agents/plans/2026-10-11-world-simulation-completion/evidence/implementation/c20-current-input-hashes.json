@@ -1,0 +1,42 @@
+{
+  "nativeStream": 74,
+  "scope": "Current no-recycled-contact rejection and representative unstarted-maintenance recovery changes; company two backends source/lib, retained-keeper+channel-io subset",
+  "files": [
+    {
+      "path": "packages/simulation/simulation-local/src/world-external-actor.ts",
+      "sha256": "83a546405afe17378b9c7233d7e0be6c48e22a931c254f13cf51631d4f06cd30"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/external-actor.ts",
+      "sha256": "5dd73893db80aa7f5842d946ddafa9b7c0c6fe1a7144c320e6efe0614e565f5a"
+    },
+    {
+      "path": "packages/simulation/simulation/src/types.ts",
+      "sha256": "3ccbeff155651c3f8a6a6a338c387540bc18c2927df720c8ac149654d4eb3a30"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/index.ts",
+      "sha256": "575a7cfaa11c7d1a53de86a5f8fd3643c8947d5b8d9bc3223cdf3adfa46937b3"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-contact-model.ts",
+      "sha256": "f967eb4c5d52bd05e747a62424ec8dea0c75ad7c8614cf49f28417d6678beb19"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-contact-scenario.ts",
+      "sha256": "0b8789e89ca44848cbd150deb6e8179814dec5e53005a9f149b77a8ed492d5ea"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-external-contact/cordis.yml",
+      "sha256": "40ae8ebb9a127c9065e6c661304e6029db3f2ca50b5c779c29fa19016bf4e8cf"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/current.snapshot.ts",
+      "sha256": "ccc1270ac29459056d8407870f2833981da276d8c6aa6afeaee1cf3d041fef25"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/vitest.config.ts",
+      "sha256": "eb6c6f292508794b46dcdfddc4a6336b953fd2ff5bca18dded757d9d5ec22053"
+    }
+  ]
+}

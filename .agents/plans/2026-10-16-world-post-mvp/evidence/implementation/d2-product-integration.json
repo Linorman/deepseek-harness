@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "date": "2026-10-20",
+  "scope": "Authenticated local Product branch/read/causal/compare, exact original branch journal, actual paused World owner and driver, strict source qualification, full private branch backup provenance, and explicit ancestor disclosure.",
+  "command": "pnpm exec vitest run packages/simulation/simulation-product/tests/experiments.spec.ts packages/simulation/simulation-product/tests/creation-store.spec.ts packages/simulation/simulation-product/tests/administration.spec.ts packages/simulation/simulation-product/tests/world-administration.spec.ts packages/simulation/simulation-product/tests/federation-mailbox.spec.ts",
+  "result": {
+    "files": 5,
+    "passed": 68,
+    "failed": 0
+  },
+  "coverage": [
+    "JSON and SQLite: original branch commands preserve one UUID namespace and a separate world-branch creation family without a fabricated world-create preflight.",
+    "Actual Native/Team/Session/Channel seed, newly compiled runtime, new world/1 checkpoint, paused directory discovery, cold Product replay, explicit restore and start/pause; actual background driver advances without recovery-required and without a model call in the empty-goal fixture.",
+    "Actual authenticated Host carrier branch/read/causal/compare with source selection echoes and actual observation budgets; exact wrapped causal byte budget succeeds and one-byte-smaller/tiny bounds reject.",
+    "Accepted and completed append acknowledgement loss closes reads and execution admission until replay; exact retry retains two original frames and does not allocate another branch.",
+    "Unsupported progressed institutional source rejects with SIMULATION_PRODUCT_INVALID before durable acceptance or target creation; missing and foreign branch commands are indistinguishable.",
+    "Source disclosure revocation blocks causal/compare/new branches. An already completed original branch command remains readable/retryable under its own owner without consulting the offline parent.",
+    "Full private backup carries exact world-branch acceptance/completion provenance and validates Native configuration, source commitment, runtime and original principal.",
+    "Public-facts branch Native state omits the private parent canary while retained parent provenance contains it: branch-only record disclosure cannot export that closure after parent permission revocation; explicit exact-run includeProvenance:true grants it, wildcard inclusion rejects, and a late revocation suppresses the result.",
+    "Federation source send authority cannot forge destination acknowledgement; an authenticated target peer confirms the exact original receipt and its durable actor is replay-validated."
+  ],
+  "checks": {
+    "incrementalProductTypecheck": "passed before final aggregate build",
+    "exportJSDoc": "passed",
+    "targetedLint": "passed",
+    "bilingualProductReadme": "updated and pairing recorded"
+  },
+  "limits": "Public Product branches use self-contained v1 artifacts or a v0 Host catalog proven by pure recompilation to reproduce the original resolved semantics and frozen at original command acceptance and supported quiescent seed owners. Unsupported pending duties, progressed institutions, external/environment/evolution owners require explicit seed contracts. Quality/cost evaluation and automatic branch merge are not invented by comparison. Empty-target branch full-backup import has a separate Loader acceptance owner and is not claimed by this test command.",
+  "legacyCatalogValidation": {
+    "command": "pnpm exec vitest run packages/simulation/simulation-product/tests/experiments.spec.ts",
+    "files": 1,
+    "passed": 12,
+    "failed": 0,
+    "scope": "V0 JSON/SQLite actual Product branch, fresh checkpoint, cold restore and driver start; missing/generation-drift/model-semantic-drift catalog rejects before acceptance; lost acceptance reply replay uses the original frozen catalog after Host catalog replacement. Existing V1, private provenance, unsupported-source and fault cases remain covered."
+  }
+}

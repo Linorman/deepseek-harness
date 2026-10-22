@@ -1,0 +1,7 @@
+packages/simulation/simulation-local/src/world-hire-approval.ts(5,56): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'effectiveNorms'. Did you mean to use 'import effectiveNorms from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(45,82): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(84,13): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(85,12): error TS7006: Parameter 'a' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(85,15): error TS7006: Parameter 'b' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(175,15): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(177,17): error TS7006: Parameter 'norm' implicitly has an 'any' type.

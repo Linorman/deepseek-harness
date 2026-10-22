@@ -1,0 +1,207 @@
+{
+  "date": "2026-10-12",
+  "scope": "O06 preparing execution readiness; recorded original fixture inputs/proof plus current gate source inventory, not a full transitive import manifest",
+  "inputHash": "a96dbec64cba208deb7dc588118ed51d9bbd674451404bcc6bb46722c4f5ef01",
+  "files": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-company-0.json",
+      "bytes": 880,
+      "sha256": "58959d0263c7a8b3593f818e3fb92b9d9453dad6fb7acd3e34d80acee1e1e3fa"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-company-1.json",
+      "bytes": 879,
+      "sha256": "9d89ebd52d328700155542e02d4c1f35de4a8c422b76d97305a3211c25dba16f"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-company-2.json",
+      "bytes": 879,
+      "sha256": "20bf4e8e9764d798e810c551c177f9dcb307ee7526d1845c63562c932d80ba09"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-company-preparing-input.json",
+      "bytes": 13245,
+      "sha256": "673184d4253c78f4221607c83dbb427b9df2f72e9953b5796f5bdd1e5bc034fa"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-company-preparing-proof.json",
+      "bytes": 2992,
+      "sha256": "288af9ac50fd14a5e774b1835ddb6873bfd0f265c9c7749c393d9035efdca7ea"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-laboratory-0.json",
+      "bytes": 886,
+      "sha256": "2a33d1c9552d04bd37cf26bfdfac556ac901943e1b231461125a6d96089129d2"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-laboratory-1.json",
+      "bytes": 885,
+      "sha256": "427445369c9b891d93f75d79cdcb602c9adce85754cd7422991a810e458c9b93"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-laboratory-2.json",
+      "bytes": 885,
+      "sha256": "4ec702e4473e01be19ce7375d7b94a6e15e3be04ebc571af5be767095e3946e7"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-laboratory-preparing-input.json",
+      "bytes": 13406,
+      "sha256": "de8cc8ed3d8a5404be97f1db48664fe3d2656a8801b0c2e4a6316ee746f103cd"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-json-laboratory-preparing-proof.json",
+      "bytes": 2998,
+      "sha256": "5873a5f480ef05674c92807a95e71bc27fe97d1aa7a0d998de37c52709088a25"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-company-0.json",
+      "bytes": 882,
+      "sha256": "7c2c1ed60b089e87283558ecce6a3fa0fe7e94551dd5277b9c69c1554f076b18"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-company-1.json",
+      "bytes": 881,
+      "sha256": "32959a0cee51ca1671fc028e80c811c53d674a7ededd2c78242f57114b664bae"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-company-2.json",
+      "bytes": 881,
+      "sha256": "83e6cea40381740ac0466aaf098df0d38b7b100090138a0d64c29a77fe6de6ba"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-company-preparing-input.json",
+      "bytes": 13245,
+      "sha256": "673184d4253c78f4221607c83dbb427b9df2f72e9953b5796f5bdd1e5bc034fa"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-company-preparing-proof.json",
+      "bytes": 2992,
+      "sha256": "84b0e988c6e3afe76c012d8339521fb3a88769adcc3056af0436c8dbdc3acb39"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-laboratory-0.json",
+      "bytes": 888,
+      "sha256": "701cd518b3853abf5d140b30c32120e1cd77fa5ed43c1ea328dc17d5f7438bf0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-laboratory-1.json",
+      "bytes": 887,
+      "sha256": "1185620df9b858b0e282d441242c16e152696bec1c6c155c73a6b564d14f09ad"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-laboratory-2.json",
+      "bytes": 887,
+      "sha256": "46f87901905e700ea550c421d51e9630a0fb3267355b417d0816bf0133782fb5"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-laboratory-preparing-input.json",
+      "bytes": 13406,
+      "sha256": "de8cc8ed3d8a5404be97f1db48664fe3d2656a8801b0c2e4a6316ee746f103cd"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw/src-sqlite-laboratory-preparing-proof.json",
+      "bytes": 2998,
+      "sha256": "95742fbef25ccd0f3be0defb30f6eec8825f91793e791749fda1a1f2a3628519"
+    },
+    {
+      "path": "examples/simulation-company/cordis.yml",
+      "bytes": 2188,
+      "sha256": "d19dd92ddebc35ab62246dd272b2716918af5922f09cc7339900508ba3da59f3"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-driver/cordis.yml",
+      "bytes": 99,
+      "sha256": "66a49c15a7c5261e6e5a629be8c5ce8fd2c9ca55b39187f4cf24e022f8b011a9"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-owner-scenario.ts",
+      "bytes": 21858,
+      "sha256": "705d2a844f0795cc881a56860f1f26ca75f17c7845c4e0c753afa02bca17ffc2"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-owner.snapshot.ts",
+      "bytes": 4671,
+      "sha256": "799f479b601b5c9571e8e51194c03fdaf5df7d1ff18ce4da58dc6b62de3fd7eb"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-preparing-scenario.ts",
+      "bytes": 12302,
+      "sha256": "053e176387a52506932e5f5bd0ba09f158e52d1072f858e84147e8f745bfd384"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-preparing.snapshot.ts",
+      "bytes": 3196,
+      "sha256": "9065c4d2976364a1c818084a41d897d4735ee0bf023f0af00085a3ac15c4f48d"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/decisions.ts",
+      "bytes": 52437,
+      "sha256": "d6cfe12fcff03377f54b9b0c6e132e8fbb7aec67973d9b45f043e8ed0c7d98e9"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/dispatch.ts",
+      "bytes": 12267,
+      "sha256": "4204acbebfcbed1d061f7678cc95c4d736a2278fd0002c142c172513379ac83c"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/entities.ts",
+      "bytes": 10788,
+      "sha256": "18d1d0c922a83ccac7a417545acca5fa984d29eeac7090a5c74c1bd258b85d0a"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/scheduler.ts",
+      "bytes": 42328,
+      "sha256": "cec8bd62440ead4fc609bf9df0f40863cb7829424c9fe9fc16545ec2c9fec477"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/task-execution.ts",
+      "bytes": 24706,
+      "sha256": "85e931ec4524a83464f1c8b4a4fdf78febff5c02611ef4277e12de75fff80a69"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/writers.ts",
+      "bytes": 13272,
+      "sha256": "3782ff5d2960f5459649cd50cae98182a638a32fc5b133d4cdda1e7bd28ab8ad"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/readiness.spec.ts",
+      "bytes": 6948,
+      "sha256": "e1b1d279de8590db1df9396afaef5b145f6792f1f3c87af1f25219d9ec7cecac"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/index.ts",
+      "bytes": 94443,
+      "sha256": "0fe6a42713679446e7401dbf0a87ad711bb77e455f95697fb798e7c221431b58"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/restore.ts",
+      "bytes": 12967,
+      "sha256": "6ee113cd65c5fe0c65526b6e9d1f2f91a69712365d0922b00675ff4d87b16431"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/task-assignment.ts",
+      "bytes": 5393,
+      "sha256": "b52995f8ceea42c319032c05b9ec50050994a03455f1b2a42402249ff7a4e09f"
+    },
+    {
+      "path": "packages/simulation/simulation-team/tests/participants.spec.ts",
+      "bytes": 27378,
+      "sha256": "22125b436518ed8ab1e8127cbf32672aa271b45a0146279564f2c1769297a23e"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/driver.ts",
+      "bytes": 20305,
+      "sha256": "f1d7c37a20dd37d229f4182239088717e9810700db06c8d24b7295eb8fb687a6"
+    },
+    {
+      "path": "packages/team/team-activation-controller/src/index.ts",
+      "bytes": 91219,
+      "sha256": "324b9dd7af88abfabb8cd5e80f7e96467a8d5015ea3c6ce8e97dd4021f978d31"
+    },
+    {
+      "path": "packages/team/team-activation-controller/src/lifecycle.ts",
+      "bytes": 11184,
+      "sha256": "a33b04b24e0df6e92f4b1bacebbc268d86d08738d5a9032fdaf9958a3baf8db9"
+    }
+  ]
+}

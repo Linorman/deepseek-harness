@@ -1,6 +1,6 @@
 /** JSON schemas for authoritative entity and organization commands. @module @clocky/clocky-simulation/entity */
 import { z } from 'zod'
-import type { SimulationEntityId, SimulationRelationId } from './entity-types.ts'
+import type { SimulationEntityId, SimulationRelationId } from './identities.ts'
 import { simTimeSchema } from './time.ts'
 
 /** Stable entity identity, independent of residency and organizational roles. */
@@ -11,6 +11,8 @@ export const simulationRelationIdSchema = z.string().min(1).transform(value => v
 export const simulationProfileSchema = z.record(z.string(), z.json())
 /** Entity lifecycle has one irreversible terminal state. */
 export const simulationEntityPhaseSchema = z.enum(['active', 'inactive', 'terminated'])
+/** Execution readiness is independent of entity lifecycle and never inferred from Team membership. */
+export const simulationEntityReadinessSchema = z.enum(['preparing', 'ready', 'abandoned'])
 /** Scenario-defined endpoint/scope kinds and temporal cycle policy; absent optional policy stays absent in JSON. */
 export const simulationRelationRuleSchema = z.strictObject({
   relation: z.string().min(1),
@@ -35,7 +37,14 @@ export const simulationChangeSchema = z.discriminatedUnion('kind', [
     id: simulationEntityIdSchema,
     entityKind: z.string().min(1),
     cognition: z.enum(['none', 'agent']),
+    readiness: simulationEntityReadinessSchema.exclude(['abandoned']),
     profile: simulationProfileSchema,
+  }),
+  z.strictObject({
+    kind: z.literal('entity/readiness'),
+    id: simulationEntityIdSchema,
+    entityRevision: z.number().int().positive(),
+    readiness: simulationEntityReadinessSchema.exclude(['preparing']),
   }),
   z.strictObject({
     kind: z.literal('entity/profile'),

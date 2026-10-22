@@ -9,5 +9,6 @@ import type { SimulationProductError } from './index.ts'
 export function isSimulationProductError(cause: unknown): cause is SimulationProductError {
   return cause instanceof Error && 'code' in cause && (cause.code === 'SIMULATION_PRODUCT_FORBIDDEN'
     || cause.code === 'SIMULATION_PRODUCT_INVALID' || cause.code === 'SIMULATION_PRODUCT_UNAVAILABLE'
-    || cause.code === 'SIMULATION_PRODUCT_STALE' || cause.code === 'SIMULATION_PRODUCT_MODEL_CHANGED')
+    || cause.code === 'SIMULATION_PRODUCT_STALE' || cause.code === 'SIMULATION_PRODUCT_MODEL_CHANGED'
+    || cause.code === 'SIMULATION_PRODUCT_PREFLIGHT_CHANGED' || cause.code === 'SIMULATION_PRODUCT_MANAGEMENT_PREVIEW_CHANGED')
 }

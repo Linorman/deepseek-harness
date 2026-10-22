@@ -33,7 +33,7 @@ export function operation(id: string, decisionId = 'first', index = 0): Simulati
 export function checkpoints(state: SimulationSnapshot): Record<string, SimulationCheckpointOperation> {
   const fingerprint = 'sha256:' + 'a'.repeat(64)
   const owner = { stream: { name: '/private/source', version: 38 }, cursor: 4, firstSequence: 0, retention: 'full', projectionVersion: 38, fingerprint }
-  const manifest = simulationCheckpointManifestSchema.parse({ version: 2, id: 'complete', implementationVersion: '1',
+  const manifest = simulationCheckpointManifestSchema.parse({ version: 8, id: 'complete', implementationVersion: '1',
     rulesVersion: '1', policyVersion: '1', rng: { kind: 'none' },
     run: { runId: state.spec.runId, backend: 'json', stream: { name: '/private/run', version: 36 }, cursor: 1, firstSequence: 0, retention: 'full',
       fingerprint },
@@ -42,7 +42,7 @@ export function checkpoints(state: SimulationSnapshot): Record<string, Simulatio
     sessions: [{ kind: 'unmaterialized', sessionId: 'session-z', teamId: 'team', participantId: 'actor' },
       { kind: 'materialized', sessionId: 'session-a', teamId: 'team', participantId: 'actor', formatVersion: 0, sequence: -1,
         revision: 'private-revision', fingerprint, retention: 'full' }],
-    state: { time: '9007199254740993', nextEventSlot: '0', nextDecisionSlot: '0', nextIngressSlot: '0', activeWindowId: null,
+    state: { world: null, time: '9007199254740993', nextEventSlot: '0', nextDecisionSlot: '0', nextIngressSlot: '0', activeWindowId: null,
       contextVersions: { personas: [], models: [], policies: [] },
       pendingEvents: [], pendingOperations: [], pendingWakes: [], writers: [] },
   })

@@ -72,9 +72,14 @@ it('binds each continuation to run, revision, bound and authority while unrelate
 it.each(['json', 'sqlite'] as const)('discovers and resumes the accepted original allocation with a renewed caller after terminal publication loss (%s)', async (backend) => {
   const h = await ownerFixture(backend, { maxPendingRequests: 1 })
   try {
-    const lost = vi.spyOn(SimulationCreationStore.prototype, 'finish').mockRejectedValueOnce(new Error('Terminal result lost'))
+    const attempted = Promise.withResolvers<undefined>()
+    const lost = vi.spyOn(SimulationCreationStore.prototype, 'finish').mockImplementationOnce(async () => {
+      attempted.resolve(undefined)
+      throw new Error('Terminal result lost')
+    })
     const original = await h.ctx.simulationAdministration.create(h.input, call())
-    await vi.waitFor(() => { expect(lost).toHaveBeenCalledWith(h.input.commandId) })
+    await attempted.promise
+    expect(lost).toHaveBeenCalledWith(h.input.commandId)
     await h.fiber.dispose(); lost.mockRestore(); await h.mount()
     const service = h.ctx.simulationAdministration
     expect(await service.listRequests({ runId: original.runId }, renewed()))
@@ -125,11 +130,16 @@ it.each(['json', 'sqlite'].flatMap(backend => ['prepare', 'restore'].map(kind =>
   const h = await ownerFixture(backend as 'json' | 'sqlite')
   try {
     const runId = await h.create(), service = h.ctx.simulationAdministration
-    const lost = vi.spyOn(SimulationCreationStore.prototype, 'finish').mockRejectedValueOnce(new Error('Terminal result lost'))
+    const attempted = Promise.withResolvers<undefined>()
+    const lost = vi.spyOn(SimulationCreationStore.prototype, 'finish').mockImplementationOnce(async () => {
+      attempted.resolve(undefined)
+      throw new Error('Terminal result lost')
+    })
     const commandId = 'interrupted-request' as never
     const original = kind === 'prepare' ? await service.prepare({ runId, commandId }, call())
       : await service.restore({ runId, commandId, checkpointId: `product-initial/${h.input.commandId}` as never }, call())
-    await vi.waitFor(() => { expect(lost.mock.calls[0]?.[0]).toBe(commandId) })
+    await attempted.promise
+    expect(lost.mock.calls[0]?.[0]).toBe(commandId)
     await h.fiber.dispose(); lost.mockRestore(); await h.mount()
     const current = h.ctx.simulationAdministration
     expect((await current.listRequests({ runId }, renewed())).items.find(item => item.commandId === commandId)).toEqual(original)

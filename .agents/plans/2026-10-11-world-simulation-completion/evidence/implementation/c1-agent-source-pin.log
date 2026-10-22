@@ -1,0 +1,366 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts (8 tests | 8 failed) 32251ms
+     × drives 'company' with pauseDuringMaintenance=false to independent newborn and idle 4878ms
+     × drives 'company' with pauseDuringMaintenance=true to independent newborn and idle 4392ms
+     × drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle 4390ms
+     × drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle 4584ms
+     × drives 'company' with pauseDuringMaintenance=false to independent newborn and idle 3478ms
+     × drives 'company' with pauseDuringMaintenance=true to independent newborn and idle 3450ms
+     × drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle 3601ms
+     × drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle 3477ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'company' with pauseDuringMaintenance=false to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"},{"purpose":"first-action","entityId":"world-person:ae31ccf9-0c3d-401d-af3c-8f008cb97700","tool":"simulation_observe"},{"purpose":"first-action","entityId":"world-person:ae31ccf9-0c3d-401d-af3c-8f008cb97700","tool":"simulation_stage"},{"purpose":"first-action","entityId":"world-person:ae31ccf9-0c3d-401d-af3c-8f008cb97700","tool":"simulation_submit"},{"purpose":"result","entityId":"requester","tool":"simulation_observe"},{"purpose":"result","entityId":"requester","tool":"simulation_stage"},{"purpose":"result","entityId":"requester","tool":"simulation_submit"},{"purpose":"goal","entityId":"requester","tool":"simulation_observe"},{"purpose":"goal","entityId":"requester","tool":"simulation_stage"},{"purpose":"goal","entityId":"requester","tool":"simulation_submit"},{"purpose":"message","entityId":"world-person:ae31ccf9-0c3d-401d-af3c-8f008cb97700","tool":"simulation_observe"},{"purpose":"message","entityId":"world-person:ae31ccf9-0c3d-401d-af3c-8f008cb97700","tool":"simulation_stage"},{"purpose":"message","entityId":"world-person:ae31ccf9-0c3d-401d-af3c-8f008cb97700","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"}],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160:9) {
+  [cause]: AssertionError [ERR_ASSERTION]: {"reason":"position-capacity","controlSteps":9,"revision":208,"time":"0"}
+  + actual - expected
+  
+  + 'position-capacity'
+  - 'idle'
+  
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:105:14) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'position-capacity',
+    expected: 'idle',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'company' with pauseDuringMaintenance=true to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"},{"purpose":"first-action","entityId":"world-person:8321ff6f-4bf8-4367-a109-0c7609ec0e23","tool":"simulation_observe"},{"purpose":"first-action","entityId":"world-person:8321ff6f-4bf8-4367-a109-0c7609ec0e23","tool":"simulation_stage"},{"purpose":"first-action","entityId":"world-person:8321ff6f-4bf8-4367-a109-0c7609ec0e23","tool":"simulation_submit"},{"purpose":"result","entityId":"requester","tool":"simulation_observe"},{"purpose":"result","entityId":"requester","tool":"simulation_stage"},{"purpose":"result","entityId":"requester","tool":"simulation_submit"},{"purpose":"goal","entityId":"requester","tool":"simulation_observe"},{"purpose":"goal","entityId":"requester","tool":"simulation_stage"},{"purpose":"goal","entityId":"requester","tool":"simulation_submit"},{"purpose":"message","entityId":"world-person:8321ff6f-4bf8-4367-a109-0c7609ec0e23","tool":"simulation_observe"},{"purpose":"message","entityId":"world-person:8321ff6f-4bf8-4367-a109-0c7609ec0e23","tool":"simulation_stage"},{"purpose":"message","entityId":"world-person:8321ff6f-4bf8-4367-a109-0c7609ec0e23","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"}],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160:9) {
+  [cause]: AssertionError [ERR_ASSERTION]: {"reason":"position-capacity","controlSteps":6,"revision":212,"time":"0"}
+  + actual - expected
+  
+  + 'position-capacity'
+  - 'idle'
+  
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:105:14) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'position-capacity',
+    expected: 'idle',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"},{"purpose":"first-action","entityId":"world-person:c3718f31-b985-4f3e-930a-de14d3b42442","tool":"simulation_observe"},{"purpose":"first-action","entityId":"world-person:c3718f31-b985-4f3e-930a-de14d3b42442","tool":"simulation_stage"},{"purpose":"first-action","entityId":"world-person:c3718f31-b985-4f3e-930a-de14d3b42442","tool":"simulation_submit"},{"purpose":"result","entityId":"requester","tool":"simulation_observe"},{"purpose":"result","entityId":"requester","tool":"simulation_stage"},{"purpose":"result","entityId":"requester","tool":"simulation_submit"},{"purpose":"goal","entityId":"requester","tool":"simulation_observe"},{"purpose":"goal","entityId":"requester","tool":"simulation_stage"},{"purpose":"goal","entityId":"requester","tool":"simulation_submit"},{"purpose":"message","entityId":"world-person:c3718f31-b985-4f3e-930a-de14d3b42442","tool":"simulation_observe"},{"purpose":"message","entityId":"world-person:c3718f31-b985-4f3e-930a-de14d3b42442","tool":"simulation_stage"},{"purpose":"message","entityId":"world-person:c3718f31-b985-4f3e-930a-de14d3b42442","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"}],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160:9) {
+  [cause]: AssertionError [ERR_ASSERTION]: {"reason":"position-capacity","controlSteps":9,"revision":208,"time":"0"}
+  + actual - expected
+  
+  + 'position-capacity'
+  - 'idle'
+  
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:105:14) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'position-capacity',
+    expected: 'idle',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"},{"purpose":"first-action","entityId":"world-person:915a27fd-38ce-4a04-a4f5-68798ab88a12","tool":"simulation_observe"},{"purpose":"first-action","entityId":"world-person:915a27fd-38ce-4a04-a4f5-68798ab88a12","tool":"simulation_stage"},{"purpose":"first-action","entityId":"world-person:915a27fd-38ce-4a04-a4f5-68798ab88a12","tool":"simulation_submit"},{"purpose":"result","entityId":"requester","tool":"simulation_observe"},{"purpose":"result","entityId":"requester","tool":"simulation_stage"},{"purpose":"result","entityId":"requester","tool":"simulation_submit"},{"purpose":"goal","entityId":"requester","tool":"simulation_observe"},{"purpose":"goal","entityId":"requester","tool":"simulation_stage"},{"purpose":"goal","entityId":"requester","tool":"simulation_submit"},{"purpose":"message","entityId":"world-person:915a27fd-38ce-4a04-a4f5-68798ab88a12","tool":"simulation_observe"},{"purpose":"message","entityId":"world-person:915a27fd-38ce-4a04-a4f5-68798ab88a12","tool":"simulation_stage"},{"purpose":"message","entityId":"world-person:915a27fd-38ce-4a04-a4f5-68798ab88a12","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"}],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160:9) {
+  [cause]: AssertionError [ERR_ASSERTION]: {"reason":"position-capacity","controlSteps":6,"revision":212,"time":"0"}
+  + actual - expected
+  
+  + 'position-capacity'
+  - 'idle'
+  
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:105:14) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'position-capacity',
+    expected: 'idle',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'company' with pauseDuringMaintenance=false to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"},{"purpose":"first-action","entityId":"world-person:04f42521-19f8-44b4-868d-804d4ec46468","tool":"simulation_observe"},{"purpose":"first-action","entityId":"world-person:04f42521-19f8-44b4-868d-804d4ec46468","tool":"simulation_stage"},{"purpose":"first-action","entityId":"world-person:04f42521-19f8-44b4-868d-804d4ec46468","tool":"simulation_submit"},{"purpose":"result","entityId":"requester","tool":"simulation_observe"},{"purpose":"result","entityId":"requester","tool":"simulation_stage"},{"purpose":"result","entityId":"requester","tool":"simulation_submit"},{"purpose":"goal","entityId":"requester","tool":"simulation_observe"},{"purpose":"goal","entityId":"requester","tool":"simulation_stage"},{"purpose":"goal","entityId":"requester","tool":"simulation_submit"},{"purpose":"message","entityId":"world-person:04f42521-19f8-44b4-868d-804d4ec46468","tool":"simulation_observe"},{"purpose":"message","entityId":"world-person:04f42521-19f8-44b4-868d-804d4ec46468","tool":"simulation_stage"},{"purpose":"message","entityId":"world-person:04f42521-19f8-44b4-868d-804d4ec46468","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"}],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160:9) {
+  [cause]: AssertionError [ERR_ASSERTION]: {"reason":"position-capacity","controlSteps":9,"revision":208,"time":"0"}
+  + actual - expected
+  
+  + 'position-capacity'
+  - 'idle'
+  
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:105:14) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'position-capacity',
+    expected: 'idle',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'company' with pauseDuringMaintenance=true to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"},{"purpose":"first-action","entityId":"world-person:e168b26b-3713-487a-abac-2abd43ece17b","tool":"simulation_observe"},{"purpose":"first-action","entityId":"world-person:e168b26b-3713-487a-abac-2abd43ece17b","tool":"simulation_stage"},{"purpose":"first-action","entityId":"world-person:e168b26b-3713-487a-abac-2abd43ece17b","tool":"simulation_submit"},{"purpose":"result","entityId":"requester","tool":"simulation_observe"},{"purpose":"result","entityId":"requester","tool":"simulation_stage"},{"purpose":"result","entityId":"requester","tool":"simulation_submit"},{"purpose":"goal","entityId":"requester","tool":"simulation_observe"},{"purpose":"goal","entityId":"requester","tool":"simulation_stage"},{"purpose":"goal","entityId":"requester","tool":"simulation_submit"},{"purpose":"message","entityId":"world-person:e168b26b-3713-487a-abac-2abd43ece17b","tool":"simulation_observe"},{"purpose":"message","entityId":"world-person:e168b26b-3713-487a-abac-2abd43ece17b","tool":"simulation_stage"},{"purpose":"message","entityId":"world-person:e168b26b-3713-487a-abac-2abd43ece17b","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"}],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160:9) {
+  [cause]: AssertionError [ERR_ASSERTION]: {"reason":"position-capacity","controlSteps":6,"revision":212,"time":"0"}
+  + actual - expected
+  
+  + 'position-capacity'
+  - 'idle'
+  
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:105:14) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'position-capacity',
+    expected: 'idle',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"},{"purpose":"first-action","entityId":"world-person:a87c28e5-42a7-4a54-91d6-155533b91579","tool":"simulation_observe"},{"purpose":"first-action","entityId":"world-person:a87c28e5-42a7-4a54-91d6-155533b91579","tool":"simulation_stage"},{"purpose":"first-action","entityId":"world-person:a87c28e5-42a7-4a54-91d6-155533b91579","tool":"simulation_submit"},{"purpose":"result","entityId":"requester","tool":"simulation_observe"},{"purpose":"result","entityId":"requester","tool":"simulation_stage"},{"purpose":"result","entityId":"requester","tool":"simulation_submit"},{"purpose":"goal","entityId":"requester","tool":"simulation_observe"},{"purpose":"goal","entityId":"requester","tool":"simulation_stage"},{"purpose":"goal","entityId":"requester","tool":"simulation_submit"},{"purpose":"message","entityId":"world-person:a87c28e5-42a7-4a54-91d6-155533b91579","tool":"simulation_observe"},{"purpose":"message","entityId":"world-person:a87c28e5-42a7-4a54-91d6-155533b91579","tool":"simulation_stage"},{"purpose":"message","entityId":"world-person:a87c28e5-42a7-4a54-91d6-155533b91579","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"}],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160:9) {
+  [cause]: AssertionError [ERR_ASSERTION]: {"reason":"position-capacity","controlSteps":9,"revision":208,"time":"0"}
+  + actual - expected
+  
+  + 'position-capacity'
+  - 'idle'
+  
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:105:14) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'position-capacity',
+    expected: 'idle',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"},{"purpose":"first-action","entityId":"world-person:954b4d41-87fa-45f2-b70b-7d6363c78706","tool":"simulation_observe"},{"purpose":"first-action","entityId":"world-person:954b4d41-87fa-45f2-b70b-7d6363c78706","tool":"simulation_stage"},{"purpose":"first-action","entityId":"world-person:954b4d41-87fa-45f2-b70b-7d6363c78706","tool":"simulation_submit"},{"purpose":"result","entityId":"requester","tool":"simulation_observe"},{"purpose":"result","entityId":"requester","tool":"simulation_stage"},{"purpose":"result","entityId":"requester","tool":"simulation_submit"},{"purpose":"goal","entityId":"requester","tool":"simulation_observe"},{"purpose":"goal","entityId":"requester","tool":"simulation_stage"},{"purpose":"goal","entityId":"requester","tool":"simulation_submit"},{"purpose":"message","entityId":"world-person:954b4d41-87fa-45f2-b70b-7d6363c78706","tool":"simulation_observe"},{"purpose":"message","entityId":"world-person:954b4d41-87fa-45f2-b70b-7d6363c78706","tool":"simulation_stage"},{"purpose":"message","entityId":"world-person:954b4d41-87fa-45f2-b70b-7d6363c78706","tool":"simulation_submit"},{"purpose":"resolve","entityId":"director","tool":"simulation_observe"},{"purpose":"resolve","entityId":"director","tool":"simulation_stage"},{"purpose":"resolve","entityId":"director","tool":"simulation_submit"}],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:160:9) {
+  [cause]: AssertionError [ERR_ASSERTION]: {"reason":"position-capacity","controlSteps":6,"revision":212,"time":"0"}
+  + actual - expected
+  
+  + 'position-capacity'
+  - 'idle'
+  
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:105:14) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'position-capacity',
+    expected: 'idle',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  8 failed | 4 passed (12)
+   Start at  23:27:38
+   Duration  66.94s (transform 214ms, setup 199ms, import 368ms, tests 66.11s, environment 0ms)
+

@@ -1,0 +1,4 @@
+$ tsx scripts/verify-translation-pairing.ts --write docs/config-catalog.md docs/module-graph.md
+verify-translation-pairing: recorded docs/config-catalog.i18n.yaml
+verify-translation-pairing: recorded docs/module-graph.i18n.yaml
+verify-translation-pairing: 2 record(s) written; run the check to validate the pairs.

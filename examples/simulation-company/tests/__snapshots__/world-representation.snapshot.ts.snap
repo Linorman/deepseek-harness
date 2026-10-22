@@ -1,0 +1,39 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json representation switch snapshot 1`] = `
+{
+  "afterSwitchMediatedCommitted": true,
+  "beforeSwitchMediatedDenied": true,
+  "cancelledFenceReleased": true,
+  "from": "simulated-rule",
+  "generation": 3,
+  "memory": "none",
+  "originalIdentity": true,
+  "originalResources": true,
+  "pendingEventDenied": true,
+  "pendingRequestDenied": true,
+  "replay": true,
+  "reverseRuleCommitted": true,
+  "to": "simulated-rule",
+  "transitions": 2,
+}
+`;
+
+exports[`sqlite representation switch snapshot 1`] = `
+{
+  "afterSwitchMediatedCommitted": true,
+  "beforeSwitchMediatedDenied": true,
+  "cancelledFenceReleased": true,
+  "from": "simulated-rule",
+  "generation": 3,
+  "memory": "none",
+  "originalIdentity": true,
+  "originalResources": true,
+  "pendingEventDenied": true,
+  "pendingRequestDenied": true,
+  "replay": true,
+  "reverseRuleCommitted": true,
+  "to": "simulated-rule",
+  "transitions": 2,
+}
+`;

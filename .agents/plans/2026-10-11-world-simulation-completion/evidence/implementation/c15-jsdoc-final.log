@@ -1,0 +1,2 @@
+$ tsx scripts/verify-export-jsdoc.ts
+verify-export-jsdoc: every exported name in each package API is documented.

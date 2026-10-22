@@ -1,0 +1,113 @@
+{
+  "writtenAt": "2026-10-11T19:07:49.516644+00:00",
+  "scope": "Single-case actual committee hiring approval under each current validated Norm; closed normative/hire-approval targets; real independent Agent/Session world workflow. Agent did not edit checklist.",
+  "files": [
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval-types.ts",
+      "bytes": 652,
+      "sha256": "9a2704923ee96f64523701d2d20fdfed730cbf71713462de6bcb01ced0dd02fe"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval.ts",
+      "bytes": 3079,
+      "sha256": "aad1f1284c5d072a1fc203afaca7132e663c546a420e8a19b44e26e54b49e2ae"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval-domains.ts",
+      "bytes": 1813,
+      "sha256": "6542a5ea5eefd12811ec93c498a8be3c46c6b071d228ecc28b62f560b53174b0"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-hire-approval.ts",
+      "bytes": 16609,
+      "sha256": "a034dd3a8aeec40ac60de0a4b9f35a2949f955fd82fb85bd18e2be50349f3001"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-hire-approval.spec.ts",
+      "bytes": 16122,
+      "sha256": "e6c7e6604a1c3aeebd6df1e8781d5c4953e69ce42aafad6544df167e0715044c"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-norm-model.ts",
+      "bytes": 8639,
+      "sha256": "92e8a3b299418a4d7ce8b01e979622c1151d9c6d234c8a1ebf1d3ed9570d60e0"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-norm-scenario.ts",
+      "bytes": 15670,
+      "sha256": "8b2084ee5afbfc786b620b8823fcbd82756ae9bdbae87fce0dcb5282f205df20"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-norm.snapshot.ts",
+      "bytes": 2302,
+      "sha256": "f9a08f6091988f95d8fe614d14a6ef68faa88c6d2a98704603b6c8a022e478c2"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-norm/cordis.yml",
+      "bytes": 97,
+      "sha256": "626a5fa3b9742b6d6a2a060843e9d62bd6205bf7945b424653965418826d74d4"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance.ts",
+      "bytes": 7778,
+      "sha256": "64c5a3064e3dce01586442576323a21b97ac1deccf93bc588e2ef83802529bd5"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance-domains.ts",
+      "bytes": 2714,
+      "sha256": "e3bbea61893c228e2a90fb0855591e0acb6063c8ca5959c701b5711267637535"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-governance.ts",
+      "bytes": 36041,
+      "sha256": "4903776021873b753af2a534712da9920de1206c3bd2bf97e5f1ff03f8048620"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-governance.spec.ts",
+      "bytes": 20868,
+      "sha256": "5615f6c9c5398515dfb75d6af56fd54e2b0705f3cdda744cd021ce8b1b0142f2"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance-model.ts",
+      "bytes": 5189,
+      "sha256": "6b0cefc857aa32f42e3a2894f473ea1b0ef2544edce7f14e718671b247be9bd3"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance-scenario.ts",
+      "bytes": 10584,
+      "sha256": "e87c90bd3ccb9d5322215f29050d67a92daa8c8070ba8ff3485efda13459e995"
+    }
+  ],
+  "verification": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation-local/tests/world-hire-approval.spec.ts packages/simulation/simulation-local/tests/world-governance.spec.ts",
+      "log": "c4-approval-unit.log",
+      "result": "46 passed (14 approval + 32 governance)"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-norm.snapshot.ts",
+      "log": "c4-norm-source-final.log",
+      "result": "4 passed; company/laboratory x JSON/SQLite; true policy votes/enact -> HR world request -> direct reserve refusal without separate approval -> actual independent hire-approval votes -> Native reserve/commit with retained basis -> newcomer first action -> checkpoint/process cold restore; duplicate Norm commit returns original result with no append on create and restore"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-governance.snapshot.ts",
+      "log": "c4-governance-source.log",
+      "result": "4 passed after target/material migration and bounded horizons"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -b tsconfig.host.json --pretty false",
+      "log": "c4-approval-types-final.log",
+      "result": "exit 0"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec oxlint packages/simulation/simulation/src/world-hire-approval*.ts packages/simulation/simulation-local/src/world-hire-approval.ts packages/simulation/simulation-local/tests/world-hire-approval.spec.ts packages/simulation/simulation/src/world-governance*.ts packages/simulation/simulation-local/src/world-governance.ts packages/simulation/simulation-local/tests/world-governance.spec.ts examples/simulation-company/tests/world-governance*.ts examples/simulation-company/tests/world-norm*.ts",
+      "log": "c4-approval-lint.log",
+      "result": "exit 0"
+    }
+  ],
+  "limits": [
+    "No monetary/resource cost primitive is installed; money fields reject rather than inventing funds.",
+    "Root owns latest built-lib validation and shared Native reserve/commit/driver/SDK/doc wiring.",
+    "Full vote/close/enact kill-process fault matrix and end-to-end reserve-to-commit rule-change fault injection remain separate acceptance work."
+  ]
+}

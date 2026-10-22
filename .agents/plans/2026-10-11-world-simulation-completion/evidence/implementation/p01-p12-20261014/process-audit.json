@@ -1,0 +1,282 @@
+[
+  {
+    "root": ".local/world-completion/p12-case-duties/loader/src-json-association-TFNrsl",
+    "rounds": [
+      {
+        "round": 0,
+        "pid": 29753,
+        "refusals": 0,
+        "cases": 6
+      },
+      {
+        "round": 1,
+        "pid": 30046,
+        "refusals": 0,
+        "cases": 6
+      },
+      {
+        "round": 2,
+        "pid": 30194,
+        "refusals": 0,
+        "cases": 6
+      },
+      {
+        "round": 3,
+        "pid": 39044,
+        "refusals": 24,
+        "cases": 6
+      },
+      {
+        "round": 4,
+        "pid": 39284,
+        "refusals": 24,
+        "cases": 6
+      }
+    ]
+  },
+  {
+    "root": ".local/world-completion/p12-case-duties/loader/src-json-company-ndcokA",
+    "rounds": [
+      {
+        "round": 0,
+        "pid": 27389,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 1,
+        "pid": 28220,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 2,
+        "pid": 28446,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 3,
+        "pid": 38021,
+        "refusals": 44,
+        "cases": 11
+      },
+      {
+        "round": 4,
+        "pid": 38408,
+        "refusals": 44,
+        "cases": 11
+      }
+    ]
+  },
+  {
+    "root": ".local/world-completion/p12-case-duties/loader/src-json-laboratory-gmMzEp",
+    "rounds": [
+      {
+        "round": 0,
+        "pid": 28615,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 1,
+        "pid": 29597,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 2,
+        "pid": 29622,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 3,
+        "pid": 38618,
+        "refusals": 44,
+        "cases": 11
+      },
+      {
+        "round": 4,
+        "pid": 38928,
+        "refusals": 44,
+        "cases": 11
+      }
+    ]
+  },
+  {
+    "root": ".local/world-completion/p12-case-duties/loader/src-sqlite-association-pILm11",
+    "rounds": [
+      {
+        "round": 0,
+        "pid": 33641,
+        "refusals": 0,
+        "cases": 6
+      },
+      {
+        "round": 1,
+        "pid": 34719,
+        "refusals": 0,
+        "cases": 6
+      },
+      {
+        "round": 2,
+        "pid": 34756,
+        "refusals": 0,
+        "cases": 6
+      },
+      {
+        "round": 3,
+        "pid": 40920,
+        "refusals": 24,
+        "cases": 6
+      },
+      {
+        "round": 4,
+        "pid": 41005,
+        "refusals": 24,
+        "cases": 6
+      }
+    ]
+  },
+  {
+    "root": ".local/world-completion/p12-case-duties/loader/src-sqlite-company-aJibpg",
+    "rounds": [
+      {
+        "round": 0,
+        "pid": 30327,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 1,
+        "pid": 31647,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 2,
+        "pid": 31819,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 3,
+        "pid": 39492,
+        "refusals": 44,
+        "cases": 11
+      },
+      {
+        "round": 4,
+        "pid": 39739,
+        "refusals": 44,
+        "cases": 11
+      }
+    ]
+  },
+  {
+    "root": ".local/world-completion/p12-case-duties/loader/src-sqlite-laboratory-55Mvoi",
+    "rounds": [
+      {
+        "round": 0,
+        "pid": 32078,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 1,
+        "pid": 33235,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 2,
+        "pid": 33441,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 3,
+        "pid": 40290,
+        "refusals": 44,
+        "cases": 11
+      },
+      {
+        "round": 4,
+        "pid": 40783,
+        "refusals": 44,
+        "cases": 11
+      }
+    ]
+  },
+  {
+    "root": ".local/world-completion/p12-case-duties/loader-lib/lib-json-company-QqXcyM",
+    "rounds": [
+      {
+        "round": 0,
+        "pid": 33069,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 1,
+        "pid": 35087,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 2,
+        "pid": 35091,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 3,
+        "pid": 38032,
+        "refusals": 44,
+        "cases": 11
+      },
+      {
+        "round": 4,
+        "pid": 38247,
+        "refusals": 44,
+        "cases": 11
+      }
+    ]
+  },
+  {
+    "root": ".local/world-completion/p12-case-duties/loader-lib/lib-sqlite-company-WDxtZs",
+    "rounds": [
+      {
+        "round": 0,
+        "pid": 35142,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 1,
+        "pid": 35991,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 2,
+        "pid": 36028,
+        "refusals": 0,
+        "cases": 11
+      },
+      {
+        "round": 3,
+        "pid": 38406,
+        "refusals": 44,
+        "cases": 11
+      },
+      {
+        "round": 4,
+        "pid": 38439,
+        "refusals": 44,
+        "cases": 11
+      }
+    ]
+  }
+]

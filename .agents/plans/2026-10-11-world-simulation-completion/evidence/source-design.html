@@ -1,0 +1,1532 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="基于 Clocky 源码审阅的世界调控者、可演化模拟、MVP 与完整开发路线设计文档。"><meta name="color-scheme" content="light"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"><title>Clocky · 世界调控者与可演化模拟系统</title><style>
+:root { --ink:#172a34;--muted:#51636e;--blue:#175f7e;--bluewash:#eaf3f7;--paper:#fff;--line:#dbe5e9;--nav:#112b38;--navmuted:#aac1cc;--sand:#fafbfc; }
+* {box-sizing:border-box} html{scroll-behavior:smooth;scroll-padding-top:30px} body{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:16px;line-height:1.95;-webkit-font-smoothing:antialiased} 
+a{color:var(--blue);text-underline-offset:3px} button,input{font:inherit} button{cursor:pointer} button:focus-visible,a:focus-visible,input:focus-visible,div[tabindex]:focus-visible{outline:3px solid #dc9b35;outline-offset:4px} .skip{position:fixed;top:-80px;left:20px;z-index:99;background:white;padding:12px}.skip:focus{top:12px}
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:284px;padding:30px 22px 20px;background:var(--nav);color:white;display:flex;flex-direction:column;z-index:40}.brand{font-size:27px;font-weight:740;letter-spacing:-1px;line-height:1.2}.brand a{color:white;text-decoration:none}.brand-note{font-size:12px;color:var(--navmuted);margin:8px 0 23px;letter-spacing:.04em}.search-label{font-size:12px;color:var(--navmuted);display:block;margin-bottom:7px}.searchbox{display:flex;border:1px solid #47616d;border-radius:5px;overflow:hidden}.searchbox input{width:100%;min-width:0;background:transparent;color:#fff;border:0;padding:9px 10px;line-height:1.5;font-size:13px}.searchbox input::placeholder{color:#b1c4cd}.searchbox button{background:transparent;border:0;color:#dce7eb;padding:0 9px;font-size:16px}.search-feedback{font-size:11px;color:var(--navmuted);min-height:28px;margin:6px 0 7px}.toc{overflow-y:auto;min-height:0;scrollbar-width:thin;scrollbar-color:#68818d transparent}.toc ol{padding:0;margin:0;list-style:none}.toc a{display:flex;gap:10px;color:#d1dfe6;text-decoration:none;font-size:12.5px;line-height:1.65;padding:8px 8px;border-left:2px solid transparent;margin:2px 0}.toc a>span:first-child{font-variant-numeric:tabular-nums;font-size:11px;color:#94b2c0;padding-top:1px}.toc a.active,.toc a:hover{color:#fff;background:#214555;border-left-color:#81c3de}.sidebar-foot{margin-top:16px;padding:14px 8px 0;border-top:1px solid #365260;color:var(--navmuted);font-size:11px;line-height:1.7}.sidebar-foot strong{color:#dce7eb;font-weight:550}.mobile-bar{display:none}
+main{margin-left:284px;min-width:0}.page{max-width:1100px;margin:0 auto;padding:62px 64px 90px}.cover{padding-bottom:30px;border-bottom:1px solid var(--line);margin-bottom:26px}.cover h1{font-size:clamp(35px,3.4vw,48px);font-weight:760;letter-spacing:-1.7px;line-height:1.3;margin:0 0 20px;max-width:870px}.cover h1 .line2{display:block;font-size:.73em;margin-top:9px;letter-spacing:-.9px}.subtitle{font-size:19px;line-height:1.8;color:var(--muted);max-width:700px;margin:0 0 28px}.doc-meta{display:flex;flex-wrap:wrap;gap:12px 24px;color:var(--muted);font-size:12px}.doc-meta strong{color:var(--ink);font-weight:600}.cover-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:26px}.cover-actions a,.cover-actions button{background:white;border:1px solid #a9bdc7;padding:7px 14px;text-decoration:none;color:var(--blue);border-radius:4px;font-size:13px;line-height:1.8}.cover-actions a.primary{background:var(--blue);color:#fff;border-color:var(--blue)}.intro{font-size:13px;color:var(--muted);line-height:1.85;margin-bottom:40px}.intro p{margin:0}.intro code{font-size:11px;overflow-wrap:anywhere}.reading-map{background:var(--bluewash);border-left:3px solid var(--blue);padding:19px 24px;margin:0 0 38px;font-size:14px;line-height:1.9}.reading-map p{margin:0}.reading-map strong{color:var(--blue)}
+.chapter{padding-top:27px;margin-top:18px;border-top:1px solid var(--line);scroll-margin-top:18px}.chapter:first-of-type{border-top:0}.chapter h2{font-size:28px;line-height:1.4;letter-spacing:-.6px;font-weight:740;margin:0 0 26px;display:flex;align-items:baseline;gap:14px}.chapter-no{color:#648393;font-size:15px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:0;flex:0 0 27px}.chapter h3{font-size:19px;font-weight:720;line-height:1.55;margin:34px 0 15px}.chapter p{margin:0 0 18px}.chapter strong{font-weight:700}blockquote{margin:27px 0;padding:14px 22px;background:var(--bluewash);border-left:3px solid var(--blue);font-size:17px;font-weight:520;line-height:1.8}blockquote p:last-child{margin-bottom:0}.source-ref{font-size:11px;vertical-align:super;text-decoration:none;white-space:nowrap;margin-left:3px;color:var(--blue);font-weight:650}.chapter p code, .chapter td code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:.84em;background:#edf2f5;padding:2px 4px;border-radius:3px;overflow-wrap:anywhere}.table-wrap{width:100%;overflow:auto;margin:22px 0 27px;border:1px solid var(--line);border-radius:4px;scrollbar-width:thin}table{width:100%;border-collapse:collapse;min-width:660px;text-align:left;font-size:13px;line-height:1.8}th{padding:12px 14px;background:#edf3f6;color:#234858;font-weight:650;border-bottom:1px solid #c8d8e0;vertical-align:top}td{padding:13px 14px;border-bottom:1px solid #e5ecef;vertical-align:top;overflow-wrap:anywhere}tbody tr:last-child td{border-bottom:0}tbody tr:nth-child(even){background:#fbfcfd}td:first-child{font-weight:590;min-width:100px}td p:last-child{margin-bottom:0}#s22 table{font-size:12px}#s22 td:first-child{min-width:54px;width:54px}#s22 td:nth-child(2){width:42%}#s22 .table-wrap{margin-bottom:12px}[id^=source-]{scroll-margin-top:30px}
+.code-frame{margin:24px 0 28px;border:1px solid #b8cbd4;border-radius:5px;overflow:hidden;background:#f5f8fa}.code-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 13px;background:#e6eff3;color:#355968;font-size:11px;letter-spacing:.04em}.copy-code{font-size:11px;line-height:1.6;padding:3px 10px;background:white;border:1px solid #b2c7d1;color:#2b5365;border-radius:3px}pre{margin:0;padding:21px 23px;max-height:none;overflow:auto;tab-size:2;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:12px;line-height:1.85;color:#1f4152}pre code{font:inherit}footer{margin-top:42px;border-top:1px solid var(--line);padding-top:24px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.progress{position:fixed;z-index:50;top:0;left:284px;right:0;height:3px;background:transparent}.progress span{display:block;height:100%;width:0;background:#2d8bb1}.chapter h2:focus{outline:none} .screenonly{display:block}
+@media(min-width:1650px){.page{max-width:1160px;padding-left:80px;padding-right:80px}}
+@media(max-width:1150px){.sidebar{width:258px;padding-left:18px;padding-right:18px}main{margin-left:258px}.page{padding:46px 38px 65px}.progress{left:258px}.cover h1{font-size:37px}.chapter h2{font-size:25px}}
+@media(max-width:900px){.mobile-bar{display:flex;position:sticky;top:0;z-index:45;align-items:center;justify-content:space-between;background:var(--nav);color:white;padding:12px 20px;height:54px}.mobile-bar a{color:white;text-decoration:none;font-weight:700;font-size:19px}.mobile-bar button{border:1px solid #708f9c;border-radius:3px;background:transparent;color:white;font-size:12px;padding:3px 12px}.sidebar{display:none;width:100%;top:54px;padding:24px 26px;z-index:44}.sidebar.open{display:flex}.sidebar .brand,.sidebar .brand-note{display:none}.sidebar .search-feedback{margin-bottom:12px}.toc a{font-size:14px;padding:9px 8px}.sidebar-foot{display:none}main{margin-left:0}.page{padding:34px 24px 54px}.progress{left:0;top:54px}html{scroll-padding-top:80px}.chapter{scroll-margin-top:76px}.cover h1{font-size:36px}.cover h1 .line2{font-size:.73em}.subtitle{font-size:17px}.chapter h2{font-size:24px}.intro{font-size:12px}.reading-map{padding:15px 18px;font-size:13px}body.menu-open{overflow:hidden}}
+@media(max-width:480px){body{font-size:15px;line-height:1.92}.page{padding:28px 20px 50px}.cover h1{font-size:33px;letter-spacing:-1.1px}.cover h1 .line2{font-size:.71em;letter-spacing:-.5px}.doc-meta{gap:7px 15px;font-size:11px}.cover-actions{gap:7px}.cover-actions a,.cover-actions button{font-size:12px;padding:6px 11px}.chapter h2{font-size:22px;gap:9px}.chapter-no{font-size:12px;flex-basis:22px}.chapter h3{font-size:18px}.table-wrap{margin-top:17px}.code-bar{font-size:10px}pre{padding:17px;font-size:11px}blockquote{font-size:16px;padding:13px 17px}.subtitle{margin-bottom:20px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{@page{size:A4;margin:17mm 15mm}html{scroll-behavior:auto}body{font-size:10.2pt;line-height:1.7;color:black}.sidebar,.mobile-bar,.progress,.cover-actions,.copy-code,.skip,.screenonly{display:none!important}main{margin:0}.page{padding:0;max-width:none}.cover h1{font-size:30pt}.cover h1 .line2{font-size:21pt}.subtitle{font-size:12pt}.cover{padding-bottom:20px;margin-bottom:18px}.intro{font-size:9pt}.reading-map{padding:12px 17px;margin-bottom:24px}.chapter{break-before:auto;padding-top:18px;margin-top:18px}.chapter h2{font-size:18pt;break-after:avoid}.chapter h3{font-size:12pt;break-after:avoid;margin-top:21px}.chapter p{orphans:3;widows:3;margin-bottom:12px}.table-wrap{overflow:visible;border:0;break-inside:auto}table{min-width:0;font-size:8.4pt;line-height:1.6;table-layout:fixed}th,td{padding:7px 8px}tr{break-inside:avoid}thead{display:table-header-group}.code-frame{break-inside:auto}pre{white-space:pre-wrap;overflow:visible;font-size:8.3pt;line-height:1.6;padding:12px;overflow-wrap:anywhere}.code-bar{font-size:8pt}blockquote{break-inside:avoid;font-size:11pt}a{color:#174a61;text-decoration:none}.chapter-no{font-size:11pt}.source-ref{font-size:8pt}#s22 table{font-size:8pt}#s22 td:first-child{width:34px;min-width:0}footer{font-size:8pt}}
+</style></head>
+<body id="top"><a class="skip" href="#main">跳到正文</a><div class="progress" aria-hidden="true"><span></span></div>
+<header class="mobile-bar"><a href="#top">Clocky</a><button id="menu-toggle" aria-expanded="false" aria-controls="sidebar" type="button">目录</button></header>
+<aside id="sidebar" class="sidebar"><div class="brand"><a href="#top">Clocky</a></div><p class="brand-note">世界调控者与可演化模拟系统</p><label class="search-label" for="search">搜索全文，按章定位</label><div class="searchbox"><input id="search" type="search" placeholder="例如：Persona、委员会、恢复" autocomplete="off"><button id="clear-search" aria-label="清空搜索" type="button">×</button></div><div id="search-feedback" class="search-feedback" aria-live="polite"></div><nav class="toc" aria-label="文档目录"><ol><li data-section="s01"><a href="#s01"><span>01</span><span>设计结论与本轮修正</span></a></li><li data-section="s02"><a href="#s02"><span>02</span><span>与现有仓库的关系：保留什么，补什么</span></a></li><li data-section="s03"><a href="#s03"><span>03</span><span>总体架构与责任分配</span></a></li><li data-section="s04"><a href="#s04"><span>04</span><span>世界数据模型：背景不是一段可覆盖的文本</span></a></li><li data-section="s05"><a href="#s05"><span>05</span><span>场景协议与配置编译</span></a></li><li data-section="s06"><a href="#s06"><span>06</span><span>请求协议：通过 Channel，但不把聊天当作授权</span></a></li><li data-section="s07"><a href="#s07"><span>07</span><span>计划、裁决和原子提交</span></a></li><li data-section="s08"><a href="#s08"><span>08</span><span>三个实例之一：CEO 与委员会颁布制度</span></a></li><li data-section="s09"><a href="#s09"><span>09</span><span>三个实例之二：HR 招聘、角色生成与离职</span></a></li><li data-section="s10"><a href="#s10"><span>10</span><span>三个实例之三：与未建模外部世界互动</span></a></li><li data-section="s11"><a href="#s11"><span>11</span><span>通用事件驱动与安全变更时点</span></a></li><li data-section="s12"><a href="#s12"><span>12</span><span>信息边界、记忆与世界视图</span></a></li><li data-section="s13"><a href="#s13"><span>13</span><span>原子性、崩溃恢复与可重复性</span></a></li><li data-section="s14"><a href="#s14"><span>14</span><span>可扩展性：领域可插拔，不把一切变成任意 JSON</span></a></li><li data-section="s15"><a href="#s15"><span>15</span><span>产品 API、网页与文件往返</span></a></li><li data-section="s16"><a href="#s16"><span>16</span><span>代码落点与包边界</span></a></li><li data-section="s17"><a href="#s17"><span>17</span><span>MVP：必须真实完成的范围</span></a></li><li data-section="s18"><a href="#s18"><span>18</span><span>开发路线：从集成证据到完整系统</span></a></li><li data-section="s19"><a href="#s19"><span>19</span><span>验证方案与质量门槛</span></a></li><li data-section="s20"><a href="#s20"><span>20</span><span>风险、取舍与明确的默认决定</span></a></li><li data-section="s21"><a href="#s21"><span>21</span><span>最终架构决定与交付检查表</span></a></li><li data-section="s22"><a href="#s22"><span>22</span><span>证据索引与审阅边界</span></a></li></ol></nav><div class="sidebar-foot"><strong>设计提案 · 未实施</strong><br>源码基线 b49dd0edfddb<br>2026.10.08 · 离线单文件文档</div></aside>
+<main id="main"><div class="page"><header class="cover"><h1>世界调控者<span class="line2">与可演化模拟系统</span></h1><p class="subtitle">从固定场景流程，走向可配置、可裁决、可恢复的模拟世界。</p><div class="doc-meta"><span><strong>Clocky</strong> 架构设计提案</span><span>2026 年 10 月 8 日</span><span>基线 <strong>b49dd0edfddb</strong></span></div><div class="cover-actions"><a class="primary" href="#s17">阅读 MVP 范围</a><a href="#s03">查看总体架构</a><a href="#s22">源码证据索引</a><button type="button" id="print-report">打印文档</button></div></header><div class="intro">
+
+<p><strong>设计状态：提案，尚未实施。</strong> 本文基于 <code>Linorman/deepseek-harness</code> 的 <code>master</code> 提交 <code>b49dd0edfddb2f19e27110576c5a0f2089cc30ba</code>，复核日期为 <strong>2026 年 10 月 8 日</strong>。本轮通过 GitHub 连接读取了相关源码；没有修改仓库、创建 PR 或运行 Clocky 测试。源码审阅与文档自身的可用性检查不等于实现验证。本文出现的新包名、类型、事件、RPC、配置格式和错误码均为拟议契约，除非明确标为“已有”。</p>
+
+</div><div class="reading-map"><p><strong>阅读路线</strong>　先看第 01–04 章确定边界；第 06–13 章核对协议、三个案例与恢复；第 16–19 章进入代码落点、MVP、开发顺序与验收。</p></div>
+<section class="chapter" id="s01" aria-labelledby="s01-heading"><h2 id="s01-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">01</span>设计结论与本轮修正</h2>
+<p><strong>推荐架构是“有边界的世界调控者 Agent + 确定性的世界执行内核 + 可插拔领域规则 + 持久化角色运行时”。</strong> 世界调控者不是一个只会转发消息的管理员，也不是可以随意改数据库的全能模型。它负责理解意图、提出世界变化、生成新角色、裁决未充分建模的情境，以及选择如何模拟外部世界；可信执行内核负责验证权力、维护因果与资源约束、实施变化并保存可恢复证据。</p>
+<p>本轮相较上一版有四项重要修正。</p>
+<p><strong>第一，世界调控者成为明确的一等角色。</strong> 组织 driver 不再独自承担全部场景推进逻辑。每个运行可以有一个世界调控者，持有自己的 Participant、Session、决策与运行预算。它接收组织通过 Channel 提交的请求，并能够主动安排被场景授权的环境事件。</p>
+<p><strong>第二，“更新背景”成为版本化世界变更，不是改写全体 system prompt。</strong> 新制度、事实、角色、资源与外部事件都有身份、版本、生效时间、可见范围和来源。各角色看到的背景是这些记录的授权投影。</p>
+<p><strong>第三，自由裁决与硬规则共存。</strong> 模型可以决定一位虚构候选人的性格，或对没有专用模拟器的场景提出合理结果；不能因此伪造委员会批准、绕过资金守恒、修改已提交历史，或把模拟权限变成真实宿主权限。</p>
+<p><strong>第四，外部世界采用按需展开。</strong> 不要求预先创建世界上每个实体。世界调控者先复用已有外部身份，必要时调用规则模型、给出明确标注的环境裁决，或准备一个拥有独立记忆的外部角色 Agent。</p>
+<blockquote>
+<p>系统中的每一个重要变化，都应能回答：谁请求、依据什么、谁裁决、何时生效、影响谁、哪些效果已发生，以及中断后从哪里继续。</p>
+</blockquote>
+<h3>目标与明确不做的事</h3>
+<p>目标是支持任意组织及其环境，而非只支持公司、CEO、HR。学校、医院、研究团队、城市社区、供应链与游戏组织都应能替换领域模块后复用同一运行骨架。灵活性来自可组合实体、关系、请求、规则、观察与效果，而不是从一个采购脚本扩展出越来越多分支。</p>
+<p>第一版不追求分布式世界分片、不执行真实付款或任意外网动作、不让 Agent 动态安装宿主插件，也不承诺一份 seed 能使模型重新生成相同世界。先交付三个端到端能力：<strong>制度落地、动态人员变化、外部交互</strong>，并共同覆盖配置初始化、权限、日志和恢复。</p>
+</section><section class="chapter" id="s02" aria-labelledby="s02-heading"><h2 id="s02-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">02</span>与现有仓库的关系：保留什么，补什么</h2>
+<p>审阅对象包括 Native schema 与本地 fold、Simulation Team 的模型/消息/身份接入、产品创建与场景 driver、网页创建与运行工作区，以及先前阅读的相关测试。以下“缺口”指当前契约不覆盖目标需求，不把它们直接判定为现有功能的 bug。</p>
+<div aria-label="与现有仓库的关系：保留什么，补什么表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>已核对的所有者</th>
+<th>当前事实</th>
+<th>本设计的处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simulation/src/entity-types.ts</code>、<code>simulation-local/src/entities.ts</code></td>
+<td>Entity 的 kind/cognition 稳定；profile、phase 和时态关系独立；terminated 不可逆</td>
+<td>复用 Entity/Relation；任职与人物生命期分离，离职不删除人</td>
+</tr>
+<tr>
+<td><code>simulation-local/src/writers.ts</code></td>
+<td>一个 run 使用 canonical Team；Participant/Session 绑定唯一；新 writer 等待旧 writer 释放</td>
+<td>调控者和外部 Agent 复用同一路径，不引入旁路 spawn</td>
+</tr>
+<tr>
+<td><code>simulation-product/src/scenario-topology.ts</code></td>
+<td>固定 buyer、supplier、purchase；额外 actor 只有 id/name，且拓扑为安装时配置</td>
+<td>将采购 foundation 降为模板；建立用户可导入的通用场景</td>
+</tr>
+<tr>
+<td><code>simulation-product/src/company-preparation.ts</code></td>
+<td>仅初始化未开始的暂停运行；人物为 person/agent、profile 为 name</td>
+<td>新增通用 bootstrap；运行期创建走另一套 mutation 生命周期</td>
+</tr>
+<tr>
+<td><code>simulation-product/src/company-driver.ts</code>、<code>task-scenario-config.ts</code></td>
+<td>采购阶段机或安装时确定的有限任务流程</td>
+<td>保留为 driver；新增事件驱动的 world driver，不继续硬塞阶段</td>
+</tr>
+<tr>
+<td><code>simulation/src/business.ts</code></td>
+<td>模型操作集合包含通信、交互、任务和资源，没有治理、角色生成、世界裁决</td>
+<td>显式扩展结构化操作与 native 验证，不能只增加 prompt</td>
+</tr>
+<tr>
+<td><code>tool-simulation/src/index.ts</code>、<code>simulation-team/src/model.ts</code></td>
+<td>三工具为 observe/stage/submit；身份从实际 Agent/epoch/已消费上下文推导；stage 暂存在局部变量</td>
+<td>保留三工具；调控者拥有不同的可信操作权限；把生成结果在提交后持久化，不能把 stage 当 durable plan</td>
+</tr>
+<tr>
+<td><code>simulation-team/src/transport.ts</code></td>
+<td>仅匹配已接受且到期的 communication/post；原文、身份、依赖、fingerprint 和 outbox attempt 必须吻合</td>
+<td>世界请求使用普通通信意图承载通知；不允许任意“系统发送者”</td>
+</tr>
+<tr>
+<td><code>simulation-team/src/participants.ts</code>、<code>channels.ts</code></td>
+<td>先 reservation，再 Team IO，再核对和确认；通道成员配置稳定</td>
+<td>复用幂等 provisioning；动态成员使用通道 generation 或新直接通道</td>
+</tr>
+<tr>
+<td><code>simulation/src/knowledge.ts</code>、<code>context.ts</code></td>
+<td>知识分 observation/report/inference/belief/summary；决策上下文固定来源与版本</td>
+<td>世界事实与角色知识分离；用现有 context-view 留下确切输入</td>
+</tr>
+<tr>
+<td>Native queue/window、Team residency/metrics</td>
+<td>有持久化 wake、队列、窗口、预算、休眠和共享模型池</td>
+<td>复用调度与资源治理；增加调控者公平配额与有限工作批次</td>
+</tr>
+<tr>
+<td>产品 owner、checkpoint/restore、Client runtime</td>
+<td>有原始命令与收据、授权读取、跨所有者恢复、草稿与不确定结果保留</td>
+<td>扩展现有产品面，不另造第二个后台控制系统</td>
+</tr>
+</tbody>
+</table></div>
+<p>上述源码及契约的固定提交链接见 <a href="#s22">证据索引</a>。尤其需要尊重两处真实边界：<strong>现有发布证明不是通用广播权限；现有 participant preparation 不是运行中任意增员 API。</strong> 新能力需要在这些所有者中增加受控接入和相应恢复测试。<a class="source-ref" href="#source-s02">S02</a><a class="source-ref" href="#source-s03">S03</a><a class="source-ref" href="#source-s04">S04</a><a class="source-ref" href="#source-s05">S05</a><a class="source-ref" href="#source-s06">S06</a><a class="source-ref" href="#source-s07">S07</a><a class="source-ref" href="#source-s08">S08</a><a class="source-ref" href="#source-s09">S09</a><a class="source-ref" href="#source-s10">S10</a><a class="source-ref" href="#source-s11">S11</a><a class="source-ref" href="#source-s12">S12</a></p>
+<p>现有 <code>changeMany()</code> 的原子实体/关系变更可作为基础，但它不等于“任意世界事实、审批、派生调度与 Team IO 的跨日志事务”。新设计必须明确各次提交边界，不能把跨所有者原子性寄托在一个高级函数名上。<a class="source-ref" href="#source-s13">S13</a><a class="source-ref" href="#source-s18">S18</a></p>
+</section><section class="chapter" id="s03" aria-labelledby="s03-heading"><h2 id="s03-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">03</span>总体架构与责任分配</h2>
+<h3>3.1 四个逻辑层，共用已有运行基础</h3>
+<div aria-label="总体架构与责任分配表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>层</th>
+<th>主要所有者</th>
+<th>负责</th>
+<th>不负责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>场景与用户控制</td>
+<td>Scenario compiler、产品 administration、网页/CLI</td>
+<td>定义初始世界、解析部署能力、确认启动与干预</td>
+<td>从浏览器直接写 native 状态</td>
+</tr>
+<tr>
+<td>认知与裁决</td>
+<td>世界调控者、组织内角色、外部角色</td>
+<td>理解、生成、交涉、提案、请求证据</td>
+<td>直接赋予自己权限、提交未验证效果</td>
+</tr>
+<tr>
+<td>世界运行与执行</td>
+<td>World executor、领域规则、Native scheduler</td>
+<td>验证、排队、提交世界变化、运行生命周期、对账</td>
+<td>在 reducer 中请求模型或进行外部 IO</td>
+</tr>
+<tr>
+<td>既有基础设施</td>
+<td>Team、Channel、Session、Activation、Storage</td>
+<td>身份、传输、日志、推理、启动/停止、物理存储</td>
+<td>判断企业制度是否通过、招聘是否符合场景规则</td>
+</tr>
+</tbody>
+</table></div>
+<p>实际因果链是：<strong>角色决策 → 原始世界请求 → Channel 通知与接收 → 世界调控者决策 → 已记录计划 → 权限/规则验证 → 世界效果 → 有界发布与角色后续观察。</strong> 普通沟通、既有合法资源转移和独立任务不必每次绕行调控者。它是需要生成或裁决的入口，不是每一次世界写入的人工串行瓶颈。</p>
+<h3>3.2 世界调控者的物理承载</h3>
+<p>MVP 采用一个 run、一个 canonical execution Team、一个调控者 Participant/Session。调控者对应保留命名空间下的认知 Entity，语义角色为 <code>world-director</code>，与公司内部职位无关。组织中的董事长不可以通过修改自己的 profile 获得这一角色。</p>
+<p>可信 compiler 记录不可自选的 <code>ExecutionRoleBinding</code>，包含角色、允许的 operation families、版本与预算归属。普通场景数据可以选择“安装一个调控者配置”，但不能任意声明所有人物为系统调控者。Native admission 根据实际 entity、writer、decision 和持久化角色绑定验证权限。</p>
+<p>这样的“控制角色”与“模拟角色”是逻辑隔离，不要求立刻拆成两个 Team。强行使用两个 Team 会引入当前 canonical binding 与跨 Team checkpoint/通信问题；暂时不值得。公司、部门、委员会属于世界实体，不自动对应嵌套 Team。未来独立子模拟可以引入 child Team，但需明确跨 run/Team 桥接与 checkpoint 支持，不能视为当前免费能力。<a class="source-ref" href="#source-s02">S02</a><a class="source-ref" href="#source-s08">S08</a><a class="source-ref" href="#source-s12">S12</a><a class="source-ref" href="#source-s18">S18</a></p>
+<h3>3.3 调控者的五项职责</h3>
+<p><strong>受理与解释。</strong> 接收版本化请求，判断缺少哪些证据、需要哪个领域策略，必要时提出澄清而不是猜测批准已经发生。</p>
+<p><strong>生成与实例化计划。</strong> 将岗位需求、人物模板、世界约束与生成随机性转换为完整 Persona、外部实体定义或环境事件计划。</p>
+<p><strong>裁决。</strong> 对尚未由专用规则精确建模的情境，输出受约束、来源明确的世界结果；不能重写已知事实。</p>
+<p><strong>持续调控。</strong> 按授权场景日历提出市场、环境、人口或资源来源事件。主动干预必须有场景授权及独立预算，并留下触发依据，不能为了“让剧情顺利”无记录地干预。</p>
+<p><strong>解释。</strong> 输出可公开的裁决理由与依据引用，帮助用户定位阻塞、冲突和资源消耗。这里指结构化理由，不要求暴露模型内部推理过程。</p>
+<h3>3.4 为什么执行内核不能由调控者替代</h3>
+<p>模型输出不是执行凭证。它可能误读消息、重复生成、混淆历史版本，也可能遇到进程中断。执行内核必须核对固定 read-set、当前权限、实体/通道准备、额度、有效时间和已应用结果；然后把世界变化与结果一起持久化。</p>
+<p>调控者可以选择“创建哪个候选人”，而执行器决定“这个候选人是否来自允许的模板、是否重复、何时具备行动资格、如何恢复”。这一分工不削弱调控者，而是使它能在长期模拟中承担可靠职责。</p>
+</section><section class="chapter" id="s04" aria-labelledby="s04-heading"><h2 id="s04-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">04</span>世界数据模型：背景不是一段可覆盖的文本</h2>
+<h3>4.1 核心对象</h3>
+<div aria-label="世界数据模型：背景不是一段可覆盖的文本表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>对象</th>
+<th>最小语义</th>
+<th>所有者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ScenarioDefinition</code></td>
+<td>用户可编辑的初始世界描述</td>
+<td>scenario</td>
+</tr>
+<tr>
+<td><code>ResolvedScenario</code></td>
+<td>解析后的依赖、默认值、模型/策略版本及身份映射</td>
+<td>scenario / 创建日志</td>
+</tr>
+<tr>
+<td><code>Entity</code>、<code>Relation</code></td>
+<td>稳定人物/组织/地点等身份，以及带时间的关系</td>
+<td>现有 Native</td>
+</tr>
+<tr>
+<td><code>WorldFact</code></td>
+<td>一个有 schema 的事实版本、来源、作用域与可见性</td>
+<td>native 世界扩展</td>
+</tr>
+<tr>
+<td><code>Norm</code> / <code>PolicyDocument</code></td>
+<td>版本化制度文本、审批依据、适用范围、执行级别</td>
+<td>治理领域模块</td>
+</tr>
+<tr>
+<td><code>PersonaSpec</code></td>
+<td>出生/创建时的人物属性、经历、倾向与生成来源</td>
+<td>角色生成领域模块</td>
+</tr>
+<tr>
+<td><code>Employment</code> / <code>Assignment</code></td>
+<td>人与组织/岗位的时间关系</td>
+<td>组织领域；映射到 Native Entity/Relation</td>
+</tr>
+<tr>
+<td><code>GovernanceResolution</code></td>
+<td>对固定内容版本的可验证集体决定</td>
+<td>治理领域</td>
+</tr>
+<tr>
+<td><code>WorldRequest</code></td>
+<td>一个原始主体希望世界执行或裁决的意图</td>
+<td>native 请求记录</td>
+</tr>
+<tr>
+<td><code>WorldPlan</code> / <code>Mutation</code></td>
+<td>已冻结的提案，以及其独立执行进度</td>
+<td>native 操作与执行器</td>
+</tr>
+<tr>
+<td><code>ExternalIdentity</code></td>
+<td>外部实体稳定身份与当前表示方式</td>
+<td>外部世界领域</td>
+</tr>
+<tr>
+<td><code>Knowledge</code> / <code>Observation</code></td>
+<td>一个主体在特定时刻可以知道的内容</td>
+<td>现有知识/上下文体系</td>
+</tr>
+</tbody>
+</table></div>
+<p>上述新对象是逻辑所有者，不意味着每个对象都要新增一个数据库、微服务或 npm 包。MVP 把权威事实放入同一 Native run journal；组织关系继续使用原有事实，不创建第二份可独立修改的员工表。</p>
+<h3>4.2 四种经常被混淆的“规则”</h3>
+<p><strong>世界宪章</strong>限制整个模拟，例如不得逆改历史、真实工具禁用、资源来源模型和最大人口。只有真实用户授权的场景管理流程可以变更；普通公司委员会无法改它。</p>
+<p><strong>组织制度</strong>是世界中的事实，例如报销需要财务批准。它必须记录版本、适用组织、生效时间与制定证据。</p>
+<p><strong>可执行策略</strong>是已安装的可信规则实现，例如 <code>approval.required/v1</code>。制度可以引用它并配置参数，但不能把自然语言自动变为无限制可执行代码。</p>
+<p><strong>人物信念</strong>是某个角色相信的规则或信息，可能过时、错误或不完整。不能因为其进入背景就变成世界真相。</p>
+<p>每个制度显示 <code>enforcement: advisory | validated</code>。<code>advisory</code> 通过授权上下文影响角色行为，也允许出现违规情节；<code>validated</code> 映射到具体操作准入检查。文本“禁止加班”若没有工时领域实现，只能作为可见规范，不能宣传成系统已验证所有加班行为。</p>
+<h3>4.3 事实、生效与可知时间</h3>
+<p>新事实至少保留 <code>recordedAt</code>（真实记录时间）、<code>effectiveFrom/effectiveUntil</code>（模拟有效区间）、<code>visibility/availableAt</code>（谁何时可知道）、<code>revision</code> 与 <code>source</code>。世界时间仍采用规范十进制字符串。</p>
+<p>今天可以公告明天生效的制度：它今天已经可知，但明天才约束相关行为。相反，已经生效的私下董事会决定并不自动出现在所有员工的 Session。治理生效、通知发布、收件持久化和角色理解是不同事实。</p>
+<p>“当前背景”是对这些事实的可重建视图。更新背景会追加新版本；旧 Decision 的输入和历史背景不能被替换成新版本。修正错误通过新更正事件或独立实验分支，不静默回填。</p>
+<h3>4.4 资源创建与调控</h3>
+<p>现有资源结算验证完整 read-set、同种类/单位、控制权与非负余额；初始账户创建是管理操作，不是模型 mint 工具。<a class="source-ref" href="#source-s03">S03</a><a class="source-ref" href="#source-s19">S19</a></p>
+<p>保留这些约束。把“创建资源账户”“转移资源”“世界来源/消耗”“表现形式细化”拆开。调控者创建新人不能顺手给公司凭空增加资金；外部供应商从抽象实体细化成 Agent，也不能重复铸造库存。</p>
+<p>世界层确实需要资源来源和消耗时，新增受策略限制的 <code>resource/source</code>、<code>resource/sink</code> 类效果：记录数量、单位、原因、来源模型/事件、额度和一次性授权。守恒关系改成明确的台账等式：期末总量 = 期初总量 + 已记录来源 − 已记录消耗，而不是授予无限 <code>setBalance</code>。</p>
+</section><section class="chapter" id="s05" aria-labelledby="s05-heading"><h2 id="s05-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">05</span>场景协议与配置编译</h2>
+<h3>5.1 一份定义，三种入口，两个不同用途</h3>
+<p>文件导入、网页表单、CLI/SDK 都操作同一种 <code>ScenarioDefinition</code>。第一版支持 JSON 与安全 YAML。编辑器可以在表单、组织表和代码视图之间切换，不能丢弃自己暂不认识的已安装领域字段；未知字段应明确拒绝或只读保留，不能静默删除。</p>
+<p>场景定义用于创建新运行；当前运行由日志驱动。编辑模板不会复活已离职的人，也不会重置库存。对运行中世界的调整必须成为 <code>WorldRequest</code> 或经过认证的管理命令。</p>
+<h3>5.2 拟议配置示例</h3>
+<p>下面是目标格式示例，不可直接交给当前 Clocky 运行。宿主引用需在部署中安装；未填写的时钟原点、所有 Native 限额、模型路由和策略细节由指定的版本化 runtime profile 解析并冻结。</p>
+<div class="code-frame"><div class="code-bar"><span>YAML · 拟议契约示例</span><button aria-label="复制yaml示例" class="copy-code" type="button">复制</button></div><pre><code class="language-yaml">apiVersion: clocky.simulation/v1alpha1
+kind: Scenario
+metadata:
+  key: small-studio
+  name: 一家正在扩张的工作室
+runtimeProfileRef: organization-local-v1
+clock:
+  tickUnit: minute
+  maxTime: "43200"
+
+world:
+  charterRef: bounded-organizational-world-v1
+  publicBackground: |
+    工作室正在开发协作软件，计划在三十天内交付可演示版本。
+  director:
+    profileRef: world-director-v1
+    autonomy: bounded
+    allowedDomains: [organization, governance, external]
+  domains:
+    organization: { implementationRef: organization-v1 }
+    governance: { implementationRef: committee-v1 }
+    external: { implementationRef: external-world-v1 }
+
+entities:
+  - key: studio
+    kind: organization
+    profile: { name: 工作室 }
+  - key: engineering
+    kind: department
+    profile: { name: 工程部 }
+  - key: board
+    kind: committee
+    profile: { name: 管理委员会 }
+  - key: alice
+    kind: person
+    profile: { name: Alice }
+    cognition: { type: agent, profileRef: employee-v1 }
+    persona:
+      biography: 有创业经验，重视交付，也容易低估协调成本。
+      goals: [按时交付演示版本]
+  - key: han
+    kind: person
+    profile: { name: Han }
+    cognition: { type: agent, profileRef: employee-v1 }
+    persona:
+      biography: 负责招聘，偏好明确岗位要求和合理 onboarding。
+  - key: lin
+    kind: person
+    profile: { name: Lin }
+    cognition: { type: agent, profileRef: employee-v1 }
+    persona:
+      biography: 关注财务风险，希望保留足够现金。
+
+organization:
+  units:
+    - { entity: engineering, parent: studio }
+    - { entity: board, parent: studio }
+  positions:
+    - { key: ceo, organization: studio, capacity: 1 }
+    - { key: hr, organization: studio, capacity: 1 }
+    - { key: finance, organization: studio, capacity: 1 }
+    - { key: engineer, organization: studio, unit: engineering, capacity: 3 }
+  assignments:
+    - { person: alice, position: ceo, from: "0" }
+    - { person: han, position: hr, from: "0" }
+    - { person: lin, position: finance, from: "0" }
+  hiring:
+    candidateTemplateRef: engineer-persona-v1
+    authorizedPosition: hr
+    approvalPolicyRef: headcount-budget-v1
+    onAdmission: create-and-onboard
+
+governance:
+  committees:
+    - entity: board
+      members: [alice, han, lin]
+      votingPolicy:
+        electorate: freeze-at-proposal
+        threshold: unanimity
+  initialNorms:
+    - key: hiring-approval
+      organization: studio
+      text: 招聘不得超过岗位容量和批准的招聘预算。
+      enforcement:
+        mode: validated
+        policyRef: headcount-budget-v1
+
+knowledge:
+  - key: finance-risk-belief
+    owner: lin
+    kind: belief
+    readers: [lin]
+    text: Lin 担心客户回款可能延迟，但尚无确证。
+    availableAt: "0"
+
+resources:
+  - key: studio-cash
+    owner: studio
+    kind: money
+    unit: cent
+    quantity: "10000000"
+    controllers: [lin]
+
+communication:
+  worldRequests: per-actor-private-direct
+  routes:
+    - { key: management, members: [alice, han, lin] }
+
+externalWorld:
+  mode: simulated-only
+  registry:
+    - key: vendor-north
+      kind: organization
+      profile: { name: 北方供应商 }
+      representation: latent
+      actorTemplateRef: vendor-representative-v1
+  resolutionPolicyRef: bounded-external-resolution-v1
+
+behavior:
+  driverRef: event-driven-world-v1
+  calendars:
+    - key: office
+      periodTicks: "1440"
+      wakePositions: [ceo, hr, finance, engineer]
+  initialEvents:
+    - { key: kickoff, at: "0", recipient: alice, text: 请制定交付计划。 }
+  termination: { kind: horizon }
+
+limits:
+  maxEntities: 64
+  maxResidentActors: 4
+  maxTokensPerInterval: 200000
+  maxWorldRequestsPerInterval: 24
+  maxEntityBirthsPerInterval: 4
+  maxExternalIdentities: 12
+  maxDirectorDecisionsPerCase: 4
+  maxMutationSteps: 32
+</code></pre></div>
+<p>这些数值是示例限制，不是经过性能测试的推荐容量。预检还必须验证 Team participant/activation 历史上限、共享模型并发与 <code>maxOperationsPerDecision</code> 等底层额度；不能只检查上面显示的几个字段。</p>
+<h3>5.3 编译管线</h3>
+<p><code>parse → normalize → resolve references → validate semantics → resolve deployment → produce plan → confirm → persist → prepare</code>。</p>
+<p><code>validate/plan/preflight</code> 无模型调用、无身份分配、无 world 写入。预览显示角色数量、岗位、可执行与仅提示性制度、外部展开策略、已解析模型及预算。用户接受后固化 <code>definitionHash</code>、<code>planHash</code>、compiler/策略版本、能力引用和运行身份。所有部署默认值都在这里显式解析，执行时不偷偷重新读取最新模板。<a class="source-ref" href="#source-s09">S09</a><a class="source-ref" href="#source-s14">S14</a></p>
+<p>初始人物若由用户提供，可直接建立。要求模型生成整批初始人物时，应增加单独的“生成场景草稿”操作，明确消耗模型预算；不能藏在预检或“创建暂停运行”里。MVP 初始角色要求有可解析的 persona/template，运行后的招聘生成才由调控者完成。调控者本身由宿主可信配置引导创建，不通过自己尚未存在的 agent 自举。</p>
+<h3>5.4 输入与配置边界</h3>
+<p>拒绝重复 YAML key、自定义执行 tag、任意 JS、模板表达式执行、任意本地文件路径、凭证和自动网络 include。限制原始文件、展开后的节点数、深度、引用数量和总字节。大型附件走受控 attachment/content-addressed 存储引用，不把所有字节重复写进每个人物。</p>
+<p>客户端可以选择允许的模板和额度；服务端不能接受客户端声称的 capability、原生 proof、任意现存 Session ID。对运行配置进行变更需要新的版本化命令；历史重试使用原解析结果。</p>
+</section><section class="chapter" id="s06" aria-labelledby="s06-heading"><h2 id="s06-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">06</span>请求协议：通过 Channel，但不把聊天当作授权</h2>
+<h3>6.1 一个通用请求封装</h3>
+<p>建议模型侧新增逻辑 action <code>world/request</code>，不是一个新特权工具。其字段包括：领域/操作版本、目标对象、结构化意图、补充说明、依据引用、期望对象版本与希望的生效时间。请求者、run、decision、epoch、真实接收时间和原始 operation identity 由服务端派生。</p>
+<p>典型领域请求是 <code>governance.enact-norm</code>、<code>organization.hire</code>、<code>organization.end-employment</code>、<code>external.interact</code>、<code>environment.resolve-action</code>。这五类不是全部支持范围；每一类走同一身份、证据、裁决和效果协议。</p>
+<h3>6.2 MVP 复用现有 direct-v4，而不是立即开发新 Channel adapter</h3>
+<p>为每个活跃认知角色准备一个与调控者的私有直接通道。不要把所有世界请求放入全员共享通道，否则招聘资料、财务请求和委员会机密会互相泄露。准备通道沿用现有 reservation/consent 流程；有历史请求的通道不复用为另一组成员。<a class="source-ref" href="#source-s06">S06</a><a class="source-ref" href="#source-s07">S07</a></p>
+<p>提交 <code>world/request</code> 时，可信规范化步骤产生两个 native 操作：记录请求的本地效果，以及依赖该效果的标准 <code>communication/post</code>。请求 ID 在接受前由 run/decision/操作位置确定；通知文本包含严格编码的 <code>requestId</code> 与 payload fingerprint。<strong>这个文本只是索引，不是权限，也不是新的事实数据库。</strong></p>
+<p>两项意图和映射在同一次 Decision acceptance 中冻结。数量、消息和字节预算按展开后的操作计算。MVP 每个这类决策只允许一个逻辑 world request，避免复杂的用户操作索引重映射；后续支持一般批次时，必须保留逻辑到实际 operation index 的映射。</p>
+<p>因此 <code>transport.ts</code> 仍然看到真正的 <code>communication/post</code>、固定发送者/接收者、固定正文、已应用依赖和精确 fingerprint，不需要放开任意 system post。新增请求记录的 schema/fold、规范化映射和 Session 工具结果需共同实现，不能只把一个 JSON 字符串扔进现有通道。<a class="source-ref" href="#source-s04">S04</a><a class="source-ref" href="#source-s05">S05</a></p>
+<h3>6.3 受理条件与后续通知</h3>
+<p>本地请求被记录后先处于“等待通知交付”，不是调控者已经处理。只有匹配的 Envelope/收件 Session 持久化事实就绪，才调度该请求的调控者决策。重复通知不会创建第二个 case；未知投递结果按现有 outbox 机制对账。</p>
+<p>调控者从固定授权上下文获得真正的请求及证据，并可提出 <code>request-more-evidence</code>、<code>reject</code> 或 <code>world/resolve</code>。回复中必须区分“收到”“已批准”“已提交计划”“已生效”。</p>
+<p>世界效果提交时原子记录一个结果唤醒。调控者在后续决策中读取真实结果，使用普通通信操作回复；固定格式的回执可由已注册确定性策略完成，不必再次调用模型。不能提前生成一封声称成功的通信，然后不论结果如何都发送。</p>
+<h3>6.4 两级幂等性</h3>
+<p><strong>技术幂等性</strong>使用原始 request/operation/plan 身份及 payload hash：同身份同内容返回原事实，内容改变则拒绝。</p>
+<p><strong>业务幂等性</strong>防止模型用不同 decision ID 重复办理同一事项：同一岗位录用单的 <code>hireIntentId</code>、同一制度版本的 <code>resolutionId</code>、同一外部交互的 <code>interactionId</code>，各自有业务唯一约束。模型真的想再次招聘，需要新的招聘意图和重新校验岗位容量，不能靠改一个随机 ID 绕过。</p>
+<p>真实用户管理命令可以走认证 RPC 直接进入同一请求/计划执行器，不必伪造一封来自 CEO 的 Team 消息。日志必须标记“用户干预”，并在需要时生成世界内通知。</p>
+</section><section class="chapter" id="s07" aria-labelledby="s07-heading"><h2 id="s07-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">07</span>计划、裁决和原子提交</h2>
+<h3>7.1 调控者输出的是世界计划，不是任意状态补丁</h3>
+<p>拟议的核心接口如下。它表达设计边界，不是当前可导入的 SDK 类型；生产实现还需要严格 parser、Branded ID、文档和错误联合类型。</p>
+<div class="code-frame"><div class="code-bar"><span>TS · 拟议契约示例</span><button aria-label="复制ts示例" class="copy-code" type="button">复制</button></div><pre><code class="language-ts">interface WorldPlan {
+  readonly requestId: WorldRequestId
+  readonly baseRevision: number
+  readonly readSet: readonly VersionedObjectRef[]
+  readonly authorityBasis: readonly EvidenceRef[]
+  readonly directorDecisionId: SimulationDecisionId
+  readonly policyGeneration: PolicyGenerationRef
+  readonly effectTime: SimTime
+  readonly disposition: 'apply' | 'reject' | 'request-evidence'
+  readonly effects: readonly WorldEffect[]
+  readonly generatedArtifacts: readonly GeneratedArtifactRef[]
+  readonly explanation: string
+}
+
+type WorldEffect =
+  | { readonly kind: 'norm/enact'; readonly norm: NormVersion }
+  | { readonly kind: 'entity/materialize'; readonly birth: BirthSpec }
+  | { readonly kind: 'employment/start'; readonly assignment: AssignmentSpec }
+  | { readonly kind: 'employment/end'; readonly request: EmploymentEndSpec }
+  | { readonly kind: 'external/resolve'; readonly result: ExternalResolution }
+  | { readonly kind: 'resource/source'; readonly grant: WorldSourceGrant }
+  | { readonly kind: 'resource/sink'; readonly grant: WorldSinkGrant }
+  | { readonly kind: 'event/schedule'; readonly event: WorldEventSpec }
+</code></pre></div>
+<p>Effect 集合按 MVP 所支持领域收敛，并由宿主注册的版本化模块解释。不能提供模型可调用的 <code>set(path, any)</code>、SQL、任意 JSON patch 或直接 <code>ctx</code> 操作。需要的通用性是“允许安装新的领域效果”，不是“绕过现有所有者修改任意字段”。</p>
+<h3>7.2 对未充分建模世界的自由裁决</h3>
+<p>世界调控者可以在授权的 <code>AdjudicationPolicy</code> 下处理自由文本行动，例如“拜访一个尚未建模的行业协会”。策略为它指定可生成的结果类型、影响的对象范围、资源/时间上界、必需证据和可见性。</p>
+<p>它可以选择一段合理的环境回应、一位接待人员的出生记录、一个延迟事件或一个明确的失败结果。输出写成 <code>AdjudicatedOutcome</code>，标记 <code>scenario-generated</code>，不能冒充真实外部观察或委员会记录。对硬不变量的检查仍由内核完成；对世界叙事合理性的裁决记录模型/策略版本和证据，允许真实用户审核。</p>
+<p>已知事实优先于新生成内容。若供应商既有台账只剩 2 件库存，生成“现货 20 件”必须被拒绝或作为不可靠报价/信念记录，而不是覆盖库存。未知不代表零；未展开的信息保留 unknown，直到有合法生成/观察事件补全。</p>
+<h3>7.3 四种独立状态，避免一个万能 status</h3>
+<div aria-label="计划、裁决和原子提交表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>投影</th>
+<th>示例状态</th>
+<th>不应推导出的结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>请求处理</td>
+<td>recorded / awaiting-evidence / planned / rejected</td>
+<td>planned 不表示实际已应用</td>
+</tr>
+<tr>
+<td>授权与计划</td>
+<td>unverified / approved / stale / superseded</td>
+<td>approved 不表示物理准备已完成</td>
+</tr>
+<tr>
+<td>效果执行</td>
+<td>pending / preparing / committed / blocked / outcome-unknown</td>
+<td>committed 不表示每个角色已经收到通知</td>
+</tr>
+<tr>
+<td>通知与观察</td>
+<td>pending / published / persisted / receipted</td>
+<td>receipted 不表示业务理解或接受</td>
+</tr>
+</tbody>
+</table></div>
+<p>采用原始事实与当前投影，而不是把任意后来观察覆盖成“成功”。UI 将这些状态并列呈现。</p>
+<h3>7.4 本地变化与跨所有者步骤</h3>
+<p>纯本地计划在一个 Native append 中提交：世界事实/关系变更、计划执行结果、派生事件和审计引用同时成为事实。失败则保持先前状态。带 Team/Session/Channel IO 的计划采用持久化分步流程，详见人员生命周期。</p>
+<p>模型规划发生在串行写队列之外；外部 IO 也不能占住 run 写队列。真正提交时在队列内重新核对 read-set、权限世代、审批、容量、有效时间、计划身份及旧结果。无关对象更新不必使整个计划失效；关键对象变化则记录 stale，产生显式新规划机会。</p>
+<p>旧计划不能被无记录地“自动修正”。同一原始请求可以有后继 plan，但必须链接 <code>supersedes</code> 并保留旧方案，且该请求至多有一个成功的业务提交。规划重试数有上限。</p>
+<p><code>submitted</code> 的窗口提案还不是已接受计划。恢复时若旧 slot 被取消，不能把其中的计划直接执行；确需复用已记录的候选 Persona 或草案，由新决策引用并重新验证，保留新的接受身份，不伪造旧 slot 已完成。</p>
+</section><section class="chapter" id="s08" aria-labelledby="s08-heading"><h2 id="s08-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">08</span>三个实例之一：CEO 与委员会颁布制度</h2>
+<h3>8.1 把“委员会同意”变成可核验依据</h3>
+<p>MVP 增加最小治理协议：提案、投票、结案。提案固定正文内容哈希、制度修订号、委员会身份、投票策略版本、截止时间和 electorate。投票从真实绑定的角色决策派生投票人，不能由 CEO 提交一个声称“大家都同意”的字符串数组。</p>
+<p>默认在提案创建时冻结有资格投票的人，支持一致通过与明确阈值。弃权、否决、重复投票和截止规则由策略定义。同一个人不能投两次；需要改票时以显式修订处理。投票结果绑定原正文 hash，CEO 修改条款必须重新审批。</p>
+<p><code>GovernanceResolution</code> 由确定性结案规则生成。它是业务证据，不是可以绕过当前服务权限的 runtime proof。世界调控者也不能生成假 resolution。</p>
+<h3>8.2 完整流程</h3>
+<div aria-label="三个实例之一：CEO 与委员会颁布制度表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>行为</th>
+<th>保留的证据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>CEO 提出制度草案并通知委员会</td>
+<td>proposalId、正文 hash、electorate、policy version</td>
+</tr>
+<tr>
+<td>2</td>
+<td>委员分别作出结构化投票</td>
+<td>原 decision、投票人、choice、revision、时间</td>
+</tr>
+<tr>
+<td>3</td>
+<td>治理规则核验阈值并结案</td>
+<td>resolutionId、票据引用、最终内容 hash</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CEO 通过私有 world Channel 请求生效</td>
+<td>WorldRequest 与确切 resolution 引用</td>
+</tr>
+<tr>
+<td>5</td>
+<td>调控者解释制度、确定可支持的执行映射</td>
+<td>WorldPlan；advisory/validated 标识</td>
+</tr>
+<tr>
+<td>6</td>
+<td>内核复核授权与版本，在安全时点提交</td>
+<td>NormVersion、有效区间、作用域、事件</td>
+</tr>
+<tr>
+<td>7</td>
+<td>向受影响角色公告</td>
+<td>每个收件人的发送和接收事实</td>
+</tr>
+<tr>
+<td>8</td>
+<td>后续决策按有效时间和可见性取得制度</td>
+<td>冻结的 context-view 与政策版本</td>
+</tr>
+</tbody>
+</table></div>
+<p>MVP 可直接用通用治理领域记录，不强行把多成员投票塞进现有单 reviewer 的 Team task-review。Task 可以承载“讨论草案”的工作过程，但它不是投票真相；普通会议纪要也不是全票通过的证明。<a class="source-ref" href="#source-s12">S12</a></p>
+<h3>8.3 生效与撤销边界</h3>
+<p>组织制度不能自动修改已有承诺的履行条件。默认只影响生效后的新准入；需要影响已有任务时，必须声明适用范围并生成明确的变更/补偿。撤销制度产生新版本和结束区间，不删除过去的执行证据。</p>
+<p>委员会的人事变更发生在投票期间时，默认继续使用冻结 electorate；场景也可选择“成员变化使提案失效”，但必须在提案创建时确定，不能由调控者事后选择有利规则。</p>
+</section><section class="chapter" id="s09" aria-labelledby="s09-heading"><h2 id="s09-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">09</span>三个实例之二：HR 招聘、角色生成与离职</h2>
+<h3>9.1 招聘需求和候选人事实分开</h3>
+<p>HR 提交岗位、技能范围、薪酬/资源约束、已有候选人引用或“生成新人”的需求。权限来自当前任职与组织策略，不能来自 persona 中的“我是 HR”。调控者检查是录用已有候选人、从模板生成新人，还是先要求补齐 headcount/预算批准。</p>
+<p>MVP 支持 <code>hire-existing</code> 与 <code>generate-and-hire</code>。后者允许在受控虚构世界中直接生成可入职人物；需要劳动力市场、候选人意愿、面试与 offer 接受的场景，后续使用同一请求协议扩展为独立生命周期，不默认“HR 一声令下就能强迫任何人入职”。</p>
+<h3>9.2 Persona 由调控者确定，但生成结果不能随重试改变</h3>
+<p>Persona 分三层：<strong>不可变出生事实</strong>（背景经历、初始技能和倾向）、<strong>可演化人物状态</strong>（关系、信念、技能变化）、<strong>当前职责与权限</strong>（来自任职和策略）。不要把职位写死成人格，更不要把业务职位当成 immutable Participant role 的可变值。</p>
+<p>调控者提出完整 <code>BirthSpec</code>：来源模板/版本、生成输入引用、生成 decision、采样/随机记录、显式属性与文本、初始知识及 audiences、允许的执行 profile、业务归属。生成文本在被接纳为计划时持久化；之后才分配和启动运行身份。当前 <code>model.ts</code> 的 staged 列表只是局部暂存，因此这一步必须依靠 durable submission/acceptance，而不是以为 stage 已经足够。<a class="source-ref" href="#source-s04">S04</a></p>
+<p>同一请求在 plan 已保存后中断，重试直接使用已保存 Persona，不能再次生成另一位新人。只保留 seed 不够：同时保留实际输出、模型/提示配置版本和验证结果。模型生成的新属性不能包含 shell 权限、插件代码、任意模型 endpoint 或秘密引用。</p>
+<p>MVP 可用有限字段和已安装 persona 模板生成；需要开放式、对低权限角色可见的长文本时，使用只接收准许输入的隔离生成上下文。调控者负责选择约束、委托生成、验证并确定最终人选，不要求所有生成都在其可能见过机密的单一历史上下文中完成。可复用同 Team 中有稳定 Session 的受限生成助手，而不是开放未计费的额外 LLM 旁路。</p>
+<h3>9.3 招聘执行的持久化步骤</h3>
+<div aria-label="三个实例之二：HR 招聘、角色生成与离职表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>具体工作</th>
+<th>崩溃后如何继续</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>plan-retained</td>
+<td>冻结 hireIntent、Persona、岗位与批准依据</td>
+<td>查询原计划，不重新生成</td>
+</tr>
+<tr>
+<td>reserved</td>
+<td>预留岗位/所需资源额度及稳定 Entity 身份</td>
+<td>同请求复用原 reservation；不得占第二个岗位</td>
+</tr>
+<tr>
+<td>preparing</td>
+<td>在维护边界准备 Entity、Participant/Session 和必要通道</td>
+<td>使用现有 ensure/receipt 对账，不凭内存判断缺失</td>
+</tr>
+<tr>
+<td>ready-to-commit</td>
+<td>确认 canonical binding、通道、当前审批与预算仍有效</td>
+<td>准备失败保留阻塞，不公布已入职</td>
+</tr>
+<tr>
+<td>committed</td>
+<td>原子建立任职/关系、激活行动资格、保留结果及入职 wake</td>
+<td>业务只提交一次</td>
+</tr>
+<tr>
+<td>onboarding</td>
+<td>新人按调度获得自己的上下文并与组织交流</td>
+<td>复用同一 Session；不要求一直 resident</td>
+</tr>
+</tbody>
+</table></div>
+<p>这里需要新增一个 native 级的 <code>provisioning/ready</code> 准入事实，与现有 <code>Entity.phase</code> 区分。原因是当前 preparation 要求 active cognition entity，而直接将半准备人物暴露给一般 scheduler 会产生竞争。准备中的 Entity 可以供受控 topology proof 使用，却不能开普通决策、成为合法新任务执行者或被 UI 标为已任职。这个 gate 必须进入 Native writer/decision admission，不能只加在网页上。<a class="source-ref" href="#source-s06">S06</a><a class="source-ref" href="#source-s08">S08</a></p>
+<p>MVP 用短暂的全 run 维护暂停满足当前 paused provisioning 约束：调控者先提交计划并结束窗口，再由 owner 停止新准入、排空相关工作、prepare 并提交。不要简单去掉 <code>paused</code> 校验。后续的局部热变更仍需独立证明隔离、旧窗口和 controller 行为。</p>
+<p>岗位/资源 reservation 也必须是可恢复事实，带上明确模拟到期事件或取消规则。执行失败不应永久占用岗位；释放是新的记录，已发生的 Team 历史和未知外部效果不能被当作未发生而擦除。</p>
+<h3>9.4 调岗、解雇和重新入职</h3>
+<p>调岗关闭旧 Assignment 区间并建立新区间，更新当前政策/上下文世代。Person、Participant、Session 通常不变。岗位空缺和新请求寻址从当前关系推导，不改写已接受任务的责任人。</p>
+<p>离职先记录意图并阻止该任职继续取得新工作，再处理 open/submitted 决策、任务、承诺、待收消息和定时唤醒。需要停止认知时，先关闭新权限、撤销旧 writer，再等待 controller 确认 quiescence；只有确认后才能释放 resident slot。无法确认则保持明确恢复状态。</p>
+<p><strong>已接受的效果不能被取消操作悄悄删除。</strong> 当前结算会检查执行实体的 active 状态，发布也会检查收发实体。因此不能直接把人标 inactive 后假设所有旧效果仍会照常执行。MVP 默认在相关已接受效果得到明确结算/阻塞处置后才改变实体 phase；只结束任职时，可保留 active 身份用于独立的交接/个人活动，但撤销旧岗位权限。若要允许已 inactive 人物继续完成确切既有义务，需要额外的窄范围 reconciliation authority，不能顺便放宽全部操作。<a class="source-ref" href="#source-s05">S05</a><a class="source-ref" href="#source-s19">S19</a></p>
+<p>已有 Team task 的执行者/已接受 commitment 的债务人不会因为“新主管上任”自动替换。MVP 支持等待完成或显式取消再建新任务；对不支持的义务转移返回 <code>handoff-required</code>。后续增加双方接受的责任转移协议，不伪造新执行者的既有证据。</p>
+<p>重新入职创建新任职而保留人物记忆。<code>terminated</code> 用于真正不可逆的实体终止，不是普通离职。现有非终止人口上限和历史 Team participant 上限仍可能限制长期招聘；界面要把它们与在职 headcount 分开，不声称离职自动释放所有额度。<a class="source-ref" href="#source-s02">S02</a><a class="source-ref" href="#source-s08">S08</a><a class="source-ref" href="#source-s13">S13</a></p>
+</section><section class="chapter" id="s10" aria-labelledby="s10-heading"><h2 id="s10-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">10</span>三个实例之三：与未建模外部世界互动</h2>
+<h3>10.1 分开“模拟外部”与“真实外部”</h3>
+<p>公司外部的供应商仍然可以处于同一个模拟 run。它不必是独立 Hub，更不意味着允许连接互联网。MVP 的全部外部交互明确为 <code>simulated-only</code>；真实网站、邮件、付款、现实招聘和其他现实副作用保持禁用。</p>
+<p>未来真实连接器走独立 <code>ExternalAdapter</code>，要求宿主安装、资源/网络 allowlist、真实用户授权、幂等键和结果对账。调控者没有凭虚构世界中的批准获得真实凭证的权利。</p>
+<h3>10.2 按需选择表示方式</h3>
+<div aria-label="三个实例之三：与未建模外部世界互动表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>表示</th>
+<th>适用情况</th>
+<th>记忆与身份</th>
+<th>对外来源标记</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>已安装规则/分布模型</td>
+<td>快递时延、标准库存、简单天气/市场事件</td>
+<td>稳定外部身份和已记录采样结果</td>
+<td>simulated-rule</td>
+</tr>
+<tr>
+<td>调控者环境裁决</td>
+<td>一次性、无须独立人物视角的环境结果</td>
+<td>case、结构化结果和 subjectRef</td>
+<td>director-mediated</td>
+</tr>
+<tr>
+<td>独立外部角色</td>
+<td>谈判、客户、监管人员、长期供应商代表</td>
+<td>独立 Entity/Participant/Session</td>
+<td>simulated-actor</td>
+</tr>
+<tr>
+<td>真实外部适配器</td>
+<td>未来明确授权的现实交互</td>
+<td>独立外部 operation 与真实 receipt</td>
+<td>real-adapter</td>
+</tr>
+</tbody>
+</table></div>
+<p>“调控者自己模拟外部”可以表现为它直接裁决环境结果；涉及人物对话时，由它编排隔离的角色执行。<strong>不建议把调控者的全知 Session 换一段 system prompt，就当成供应商继续聊天。</strong> 那个模型可能已经看过买方内部底价，提示词不能使它从未看过这些信息。</p>
+<p>环境裁决由调控者真实身份发布，附 <code>subjectRef</code> 和 <code>director-mediated</code>，不能伪造一个不存在的 Participant 发送者。独立外部 Agent 则使用其真实 canonical binding 和标准通道发言。当前 Team post 的发送身份从 proof 派生，不应为“代演”开放任意 sender 字段。<a class="source-ref" href="#source-s05">S05</a><a class="source-ref" href="#source-s12">S12</a></p>
+<h3>10.3 外部身份稳定，展开方式可变化</h3>
+<p>先按稳定业务 key、所属范围和请求相关键查询外部 registry。已有供应商就复用；不因每次新会话生成一家同名但库存和历史不同的公司。</p>
+<p>一个非认知供应商组织可以先用规则响应，再增加一个认知代表，通过 <code>represents</code> 关系连接同一供应商。库存、合同和信用仍属于原供应商。<strong>这不是把现有 cognition:none Entity 原地改为 agent</strong>，因为当前 cognition 不可变。若某个外部人物将来明确需要认知，可一开始声明为 agent 并延迟 binding；否则增加明确的代表/认知代理身份，不改写其历史。<a class="source-ref" href="#source-s02">S02</a></p>
+<p>表示升级必须保留此前已经生成的事实、合同、报价及其可靠性级别；不得重复生成资产。降级则先停止 writer，再保留必要状态与记忆摘要，不删除记录。MVP 支持 latent/规则实体与按需新增代表；自动升降级和多表示切换留待后续。</p>
+<h3>10.4 一次外部交互的完整链</h3>
+<p>角色提出 <code>external.interact</code> → 请求固定在 native 并经 world Channel 交付 → 调控者选择已有/新外部身份与表示策略 → 生成并冻结外部计划 → 准备必要的代表与通道 → 在指定模拟时间引入回应/会面事件 → 角色取得授权观察 → 双方通过普通 interaction/task/resource 协议继续。</p>
+<p>陌生外部实体可以不完整：未知库存保持 unknown，未知员工不必全部生成。以后新增细节受此前已知事实约束。实体、展开次数、生成调用、事件链长度和字节总量都有边界，避免一个请求递归创造无限世界。</p>
+</section><section class="chapter" id="s11" aria-labelledby="s11-heading"><h2 id="s11-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">11</span>通用事件驱动与安全变更时点</h2>
+<h3>11.1 Driver 不再写死业务剧情</h3>
+<p>通用 driver 只做：推进已接受效果、消费到期事件、收集 wake、选择候选者、保证驻留、冻结上下文、执行决策、按 slot 接受、返回明确停止原因。领域逻辑从制度、角色目标、世界请求与已安装策略进入，而不是在主循环中判断“下一步轮到买家”。</p>
+<p>复用现有 <code>collectDecisionWakes()</code>、<code>queueDecision()</code>、<code>reserveDecisionWindow()</code>、<code>openWindow()</code>、<code>ensureResident()</code> 和 <code>driveResident()</code>。普通资源/任务效果继续使用既有执行器，调控者仅处理需要它负责的 case。<a class="source-ref" href="#source-s13">S13</a><a class="source-ref" href="#source-s15">S15</a></p>
+<h3>11.2 调控者不享有隐形的时间特权</h3>
+<p>一封发给调控者的消息必须等到配置的 <code>deliverAt</code> 且收件事实就绪。其决定成为后续调度 microstep 的效果，不能插入已经冻结的旧窗口。模型调用超时和运行监督仍使用真实时间；世界中的投票截止、入职时间和会面时间使用模拟时间。</p>
+<p>MVP 只在没有开放 DecisionWindow 的安全边界提交结构/制度变更。角色运行期间可接收新请求，但这些输入只能进入后续固定视图。默认不 retroactively 修改已分配 slot 的背景或权限；强制撤权通过明确 fencing/cancellation 结束未接受决策。</p>
+<p>计划请求的生效时间已经错过时，按场景预先选定策略返回 stale 或记录新的未来执行计划；不悄悄把过去时间重写成当前时间。</p>
+<h3>11.3 一个必须避免的死锁</h3>
+<p>错误链：调控者在打开的决策窗口中调用“创建新人”，等待新人激活；新人 provisioning 又等待 run 暂停与窗口关闭。</p>
+<p>正确链：调控者只提交计划并结束自己的决策 → owner 关闭窗口 → executor 到维护边界执行 → 结果被记录并唤醒调控者/新人。任何工具调用不得在持有当前 window 时等待依赖该窗口关闭的 world mutation。</p>
+<h3>11.4 公平性、配额与驻留</h3>
+<p>调控者不必常驻。无待处理 case 时休眠；有请求、规划后续或系统事件时唤醒。管理模型调用计入同一个共享模型池和 native token 账，不存在免费的角色生成请求。</p>
+<p>增加 per-run 的世界请求队列、每 case 决策上限、同一时间最大 world mutation 数、每周期实体出生与外部展开上限。可以给调控者设最小服务份额，但不能永久抢占普通角色；延续已有公平队列的等待龄规则。</p>
+<p>MVP 的示例运行 profile 至少准备两个 resident 名额，且把调控者、生成助手和外部代表一起计数。进一步允许单 resident 时，需要证明收件、任务和调控者驱动在释放/恢复之间不会互相等待，不直接沿用纯采购场景的结论。被撤销但未确认停止的 writer 仍占容量。</p>
+<p>不存在待处理世界事件时返回 <code>idle/waiting-for-event</code>，不是故障；预算、用户审批、未知外部结果和恢复分别有明确停止原因。run 在后台是否继续调度由已存在的产品 owner 持有，不能由 React 页面的挂载生命周期决定。<a class="source-ref" href="#source-s08">S08</a><a class="source-ref" href="#source-s13">S13</a><a class="source-ref" href="#source-s14">S14</a></p>
+</section><section class="chapter" id="s12" aria-labelledby="s12-heading"><h2 id="s12-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">12</span>信息边界、记忆与世界视图</h2>
+<h3>12.1 三种观察者，不共享一份背景</h3>
+<p><strong>普通角色视图</strong>包含身份、当前职责、合法行动、当前输入、相关目标/承诺、已知制度和自身授权知识。</p>
+<p><strong>调控者工作视图</strong>包含当前 case、结构化世界事实和足够的批准/资源依据。它不默认扫描所有人物完整聊天记录，也不把整张世界图塞进每次请求。</p>
+<p><strong>真实用户观察视图</strong>依认证策略决定是否可看全世界、私人角色记忆、调控者案件及源记录。运行所有者身份不能自动替代每一个内容权限；复用现有产品读取/失效模型。<a class="source-ref" href="#source-s10">S10</a><a class="source-ref" href="#source-s11">S11</a><a class="source-ref" href="#source-s14">S14</a><a class="source-ref" href="#source-s16">S16</a></p>
+<h3>12.2 每次模型输入都可从日志重建</h3>
+<p>沿用 <code>simulation/context-view</code>：固定 run/entity/decision/epoch、Persona/规则版本、选中的知识版本、Team Envelope 和 run event 引用、确切内容。模型 dispatch 前持久化并核对当前 writer。不要另用一个未记录的 director system-context 回调注入世界状态。</p>
+<p>初始事实、制度、Persona 和自然语言报告需要明确来源。公司真实制度属于 world fact；“某员工听说制度已通过”可能只是 report 或 belief。世界调控者的总结也不是免责通道：摘要和推论必须保留授权来源，不能从隐藏输入推出可公开内容而不标明新的授权依据。</p>
+<h3>12.3 全知调控者的输出泄漏风险</h3>
+<p>字段过滤与提示词都不能证明模型没有把已见机密编码进自由文本。为此规定：调控者的广权限工作输出默认留在控制范围；向较低权限角色发布的结构化结果通过可信投影生成，只有明确获准的事实字段可降级公开。</p>
+<p>开放式 Persona、外部角色对白或面向全员的自由文本生成，使用独立、输入受限的认知上下文；不能直接复用曾看过全体私密历史的调控者 Session。MVP 可以用已安装模板和受限字段避免复杂降级，或者配置同 Team 的隔离生成助手。后者计入所有资源额度，保持独立 Entity/Session 与最小能力。</p>
+<p>公司与外部谈判者必须使用不同 Session。共用 canonical Team 不等于彼此可读取所有通道；角色只得到被选入其上下文的输入。浏览器的全知检查器也不能回流为角色模型的环境材料。</p>
+<h3>12.4 角色离职并不抹除记忆</h3>
+<p>默认人物保留已经知道的信息；离职撤销后续检索和岗位权力，不承诺忘掉旧 Session。需要真实信息隔离时，使用新的上下文隔离域和明确记忆转移协议，且处理派生摘要；这不是普通的 <code>hibernate/resume</code>。<a class="source-ref" href="#source-s18">S18</a></p>
+<p>只有当前小部分角色 resident 不代表历史自动可无限保留。知识检索、上下文、日志扫描、保留量和队列各有上限。必要时增加 checkpoint/index 与归档方案，保持可验证的引用，不静默删除仍被审批或效果使用的历史。</p>
+</section><section class="chapter" id="s13" aria-labelledby="s13-heading"><h2 id="s13-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">13</span>原子性、崩溃恢复与可重复性</h2>
+<h3>13.1 单一权威日志，多个物理所有者</h3>
+<p>新增 world request、治理、Persona 生成结果、计划、原子世界变化与执行进度写入 Native run journal 的版本化扩展。当前产品命令日志保留原始用户创建/管理请求及其结果引用；不能再建立一份能独立写入不同结果的 world 数据库。查询索引和 UI 汇总可以重建。</p>
+<p>Team/Channel/Session 继续各自保存原始事实。相同 SQLite 后端不等于现有 API 提供跨日志事务；使用持久化意图、目标幂等键和回执进行对账。现有 checkpoint/restore 收集与验证跨所有者引用，恢复到可继续处理的暂停状态，不把世界回滚到旧 checkpoint。<a class="source-ref" href="#source-s12">S12</a><a class="source-ref" href="#source-s14">S14</a><a class="source-ref" href="#source-s15">S15</a><a class="source-ref" href="#source-s18">S18</a></p>
+<h3>13.2 必须覆盖的中断窗口</h3>
+<div aria-label="原子性、崩溃恢复与可重复性表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>中断位置</th>
+<th>恢复要求</th>
+<th>禁止行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>请求记录完成，Channel 尚未发布</td>
+<td>使用原通信意图继续</td>
+<td>新建第二个 case</td>
+</tr>
+<tr>
+<td>Channel 已写，native 未收结果</td>
+<td>查询/重试相同 key，核对真实 receipt</td>
+<td>凭超时认定未发出</td>
+</tr>
+<tr>
+<td>调控者尚未提交生成内容</td>
+<td>标记旧决策状态，按既有 writer 恢复规则重新取得工作机会</td>
+<td>宣称未持久化 Persona 已存在</td>
+</tr>
+<tr>
+<td>Persona/plan 已接受，人物尚未准备</td>
+<td>复用原 Persona 和原身份 reservation</td>
+<td>再调用模型换一个新人</td>
+</tr>
+<tr>
+<td>Participant 已创建，binding 未确认</td>
+<td>对账原 Participant/Session</td>
+<td>分配替代身份</td>
+</tr>
+<tr>
+<td>部分通道已准备，业务尚未提交</td>
+<td>继续准备或记录撤销/清理责任</td>
+<td>宣布入职成功</td>
+</tr>
+<tr>
+<td>业务提交完成，终态回执丢失</td>
+<td>读取已提交结果，继续结果通知</td>
+<td>重复资源扣除/任职创建</td>
+</tr>
+<tr>
+<td>离职已撤权，writer 清理失败</td>
+<td>保持 charge，显式恢复</td>
+<td>提前释放并启动第二 writer</td>
+</tr>
+<tr>
+<td>插件卸载/版本不兼容</td>
+<td>关闭新准入，保留未知责任，报告缺失版本</td>
+<td>用当前不同实现猜测旧结果</td>
+</tr>
+</tbody>
+</table></div>
+<h3>13.3 重放、恢复与新实验不是一回事</h3>
+<p><strong>记录重放</strong>只验证并折叠已记录事件，不调用 LLM、不访问真实外部系统、不重新抽样。<strong>恢复执行</strong>对未完成责任做受控对账，之后显式继续。<strong>新实验/分支</strong>使用新的 run namespace，可复用场景和已选择种子，但不保证模型输出相同。</p>
+<p>模型输出被接受之后禁止为同一操作重新推理。未持久化的生成发生中断，重新尝试可能改变输出；这属于新的有记录尝试，不承诺 exactly-once inference。世界效果的防重来自身份、原子记录和目标去重，而不是网络 RPC 只调用了一次。</p>
+<h3>13.4 Checkpoint 必须扩展的内容</h3>
+<p>纳入 world plan/case/治理投票/Persona 版本、外部 registry、待提交 mutation/reservations、策略实现引用与 generation、调控者和生成助手/外部代表的 canonical Session、通道 generation 与结果通知责任。收集时先停止新准入、排空已接受 IO、确认 writer 状态，再确认跨所有者引用。</p>
+<p>场景导出用于新运行；一致运行备份包含上述历史和所需跨所有者数据。MVP 可先支持同机已有存储上的 checkpoint 恢复，不把一份 YAML 或 native JSON 导出宣传成可移植完整备份。</p>
+</section><section class="chapter" id="s14" aria-labelledby="s14-heading"><h2 id="s14-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">14</span>可扩展性：领域可插拔，不把一切变成任意 JSON</h2>
+<h3>14.1 三个明确的扩展点</h3>
+<p>**领域定义（DomainDefinition）**声明请求、事件和效果 schema，纯验证/投影，以及已安装的确定性规则。组织、治理、外部世界是第一批实现；以后可以增加教育、临床流程的纯虚构运行场景、城市交通、制造等模块，而不修改调控者主循环。</p>
+<p>**推理策略（Cognition/AdjudicationPolicy）**决定某类 case 由模型规划、确定性函数处理、等待人工，还是组合执行。世界调控者负责选择已授权策略，不能上传函数。</p>
+<p>**效果适配器（EffectProvider）**负责跨所有者实际 IO、结果对账与关闭。它只能处理已接受、范围固定的意图；不能自造新的业务权限。</p>
+<div class="code-frame"><div class="code-bar"><span>TS · 拟议契约示例</span><button aria-label="复制ts示例" class="copy-code" type="button">复制</button></div><pre><code class="language-ts">interface SimulationDomainDefinition {
+  readonly id: string
+  readonly version: string
+  readonly implementationRef: string
+  readonly requestSchema: RuntimeSchema
+  readonly eventSchema: RuntimeSchema
+
+  validateRequest(input: JsonValue, view: AuthorizedWorldView): ValidationResult
+  validatePlan(plan: WorldPlan, view: AuthorizedWorldView): ValidationResult
+  fold(event: DomainEvent, state: ReadonlyDomainState): DomainTransition
+  project(state: ReadonlyDomainState, reader: WorldReader): JsonValue
+}
+
+interface WorldEffectProvider {
+  resolve(intent: AcceptedWorldIntent): ResolvedWorldEffect
+  execute(effect: ResolvedWorldEffect): Promise&lt;EffectAttemptResult&gt;
+  reconcile(effect: ResolvedWorldEffect): Promise&lt;EffectAttemptResult&gt;
+  close(): Promise&lt;void&gt;
+}
+</code></pre></div>
+<p>这里只展示职责；不能把这些泛型/占位类型当成现有导出。schema 注册时应生成/验证具体 operation 的可判别联合、文档与模型呈现。<code>fold</code> 返回受控 transition，经 Native 验证后才提交；不把可写 run/context 直接传入模型生成代码。</p>
+<h3>14.2 分阶段引入扩展能力</h3>
+<p>MVP 的外层 Native 操作明确增加 <code>world/request</code>、<code>world/resolve</code> 和必要治理操作；内层使用注册的 <code>domain + version + operation</code> 并严格验证 payload。最初只交付 organization/governance/external 三个内建领域，实现仍可在同一包中。</p>
+<p>不要在第一版就建立任意跨实体查询语言、动态 reducer 编译器或通用插件 marketplace。先证明模块边界：新增一个“会议室预约”测试领域，只实现自己的 schema/校验/效果投影，即可经同一个请求和 Channel 流程工作，无需在主 driver 新增业务分支。</p>
+<p>Native 的闭合核心不变量仍然保持闭合。当前 resource kind 等集合并非天然无限扩展；新增时间资源、空间或生产流时，需由所属资源所有者定义单位、合法变化与守恒规则，不能仅添加任意 <code>kind</code> 字符串就宣称完成。<a class="source-ref" href="#source-s03">S03</a><a class="source-ref" href="#source-s19">S19</a></p>
+<h3>14.3 生命周期与版本</h3>
+<p>按 Clocky 的 Cordis 模式注册，登记返回 disposer，贡献跟随 effect 生命周期；消费者依赖 Service Definition，不直接调用本地 provider 内部方法。采用明确的 <code>resolve(request): Spec</code>，把部署默认值解析在 owner 中。<a class="source-ref" href="#source-s01">S01</a></p>
+<p>已接受计划固定使用实现 generation。计划执行期间取得实现 lease；卸载关闭新准入并排空已接受工作。无法继续执行的版本显示 <code>implementation-unavailable</code>，不选择一个同名但语义已变的插件替代。</p>
+<p>冷重放依赖对应事件 schema 和 reducer；缺失必需版本时禁止可写恢复。可额外提供明确标注不完整的只读原始记录检查，但不能把未知领域事件当成功忽略。跨包和 SDK 新增必需事件需要同步解析器、投影、replay 和快照。</p>
+<h3>14.4 后续多调控者如何扩展</h3>
+<p>先保持一个 run 一个最终提交顺序。以后可以把外部市场、人口、制度解释分配给多个领域调控者或生成助手：它们产生独立 plan，统一由 World executor 做冲突检查与提交。并行规划不等于多个无协调的世界写者。</p>
+<p>只有当单机工作量、隔离需求和真实测试证明必要，才引入分区/多 run；必须定义跨区引用、因果时钟、幂等消息和 checkpoint，不能把增加几个 Team 当作完成分布式一致性。</p>
+</section><section class="chapter" id="s15" aria-labelledby="s15-heading"><h2 id="s15-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">15</span>产品 API、网页与文件往返</h2>
+<h3>15.1 扩展现有 RPC，不另开独立控制面</h3>
+<div aria-label="产品 API、网页与文件往返表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>拟议 RPC/能力</th>
+<th>语义</th>
+<th>准入与副作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simulation.scenarios.validate</code></td>
+<td>结构与语义诊断</td>
+<td>无写入、无模型</td>
+</tr>
+<tr>
+<td><code>simulation.scenarios.plan</code></td>
+<td>解析宿主能力、展示完整创建预览</td>
+<td>无身份分配；创建时重新校验</td>
+</tr>
+<tr>
+<td><code>simulation.scenarios.create</code></td>
+<td>固定原始 command、创建并准备暂停运行</td>
+<td>沿用产品创建日志与收据</td>
+</tr>
+<tr>
+<td><code>simulation.world.requests.list/inspect</code></td>
+<td>查看原始世界请求、依据、当前处理</td>
+<td>严格按 reader 权限脱敏</td>
+</tr>
+<tr>
+<td><code>simulation.world.commands.preview/submit</code></td>
+<td>真实用户管理干预的影响预览与原命令提交</td>
+<td>不冒充模拟人物；完整审计</td>
+</tr>
+<tr>
+<td><code>simulation.world.plans.inspect</code></td>
+<td>查看计划、来源、生成物与独立执行进度</td>
+<td>私密内容需要独立权限</td>
+</tr>
+<tr>
+<td><code>simulation.organization.query</code></td>
+<td>按组织/模拟时点/revision 查询有界节点与边</td>
+<td>标明分页和局部图</td>
+</tr>
+<tr>
+<td><code>simulation.world.documents.list/inspect</code></td>
+<td>当前及历史制度/背景版本</td>
+<td>生效/可知/收到状态分开</td>
+</tr>
+<tr>
+<td><code>simulation.external.list/inspect</code></td>
+<td>外部身份、表示方式与交互来源</td>
+<td>明示 simulated/real</td>
+</tr>
+</tbody>
+</table></div>
+<p>实际命名可以随现有 API 风格统一；不能让客户端提交 Runtime proof、真实 sender、任意 native run spec。所有新 DTO 都提供浏览器安全类型与 parser。原命令请求应复用 Client runtime 的保留、查询与显式重试，而不是每张新表单各自实现一次超时重试。<a class="source-ref" href="#source-s14">S14</a><a class="source-ref" href="#source-s16">S16</a><a class="source-ref" href="#source-s17">S17</a></p>
+<h3>15.2 创建工作区</h3>
+<p>入口是“模板 / 导入文件 / 空白场景”。编辑区包括世界背景、调控者、组织、人物、初始资源、行为与外部世界。先提供表格和结构化表单，辅以 YAML/JSON；图形画布是后续可替换的编辑视图，不拥有另一份业务真相。</p>
+<p>预览清楚显示：将创建哪些实体、哪些 Agent、哪些系统角色；调控者的权限和预算；哪些制度只作为提示；外部世界是否真实联网；所有模型配置的实际解析结果。主按钮明确“创建暂停运行”。开始推理属于后续显式操作。</p>
+<h3>15.3 运行工作区</h3>
+<p><strong>世界总览</strong>展示模拟时间、停止原因、待处理案件、人口与 resident/模型预算。<strong>组织</strong>展示岗位、任职和历史时间线；调岗拖拽只产生 preview。<strong>制度与背景</strong>展示版本、生效区间、审批来源和执行级别。<strong>世界调控者</strong>展示案件、请求证据、计划、生成角色和效果，不把一段长聊天当作全部运行状态。<strong>外部世界</strong>展示身份和表示方式。<strong>历史与恢复</strong>沿用操作、checkpoint、原请求与记录检查器。</p>
+<p>优先呈现需要人处理的原因：缺少表决、预算不足、等待交接、Persona 不合规、外部结果不确定、writer 未确认停止。用户应能沿单一 case 跳转到具体 Decision、Operation、Envelope、Entity 和 checkpoint。</p>
+<p>组织图不能仅用已加载的一页 Entity 假装完整世界。服务端提供有界查询并返回覆盖范围；大图逐步展开，历史时点固定 revision。当前视觉组件只读已加载窗口这一原则应保持。<a class="source-ref" href="#source-s16">S16</a></p>
+<h3>15.4 运行修改、导出与撤权</h3>
+<p>修改模板副本用于新实验；修改当前运行提交正式命令。界面不能导出当前组织图后覆盖整个世界文件来“保存”。确认离职前显示未完成责任、资源控制权、消息与下属关系。</p>
+<p>导出场景与导出运行备份是两个独立动作。默认场景导出不包含凭证、私有日志或调控者隐藏案件；完整导出必须使用明确权限。授权撤销时清除已显示的敏感文本和异步结果，普通断网则保留标记过时的数据与原命令，不自行提交第二次操作。<a class="source-ref" href="#source-s14">S14</a><a class="source-ref" href="#source-s16">S16</a></p>
+</section><section class="chapter" id="s16" aria-labelledby="s16-heading"><h2 id="s16-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">16</span>代码落点与包边界</h2>
+<h3>16.1 MVP 新增两个包即可起步</h3>
+<p>建议新增 <code>packages/simulation/simulation-scenario</code> 与 <code>packages/simulation/simulation-world</code>。</p>
+<p><code>simulation-scenario</code> 负责场景 schema、语义编译、纯类型与可移植定义；宿主 capability 解析通过受控接口提供，浏览器入口不引入 provider 或 Cordis 宿主声明。</p>
+<p><code>simulation-world</code> 负责调控者编排、world driver、计划执行协调、领域注册，以及内建的 organization/governance/external 子模块。领域的权威状态实际保存在 Native journal。模块独立演化后，再按 Service Definition / Provider / Consumer 边界拆包，不按每个业务名词先拆十几个包。</p>
+<h3>16.2 现有文件的具体修改责任</h3>
+<div aria-label="代码落点与包边界表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>文件/所有者</th>
+<th>计划修改</th>
+<th>必须避免</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simulation/src/business.ts</code> 与相关 types/schema</td>
+<td>增加受控请求/计划/治理操作、操作展开映射、角色准入</td>
+<td>只扩展工具描述，Native 不验证</td>
+</tr>
+<tr>
+<td><code>simulation/src/entity-types.ts</code>、writer/decision 契约</td>
+<td>provisioning readiness、可信执行角色/权限世代的独立记录</td>
+<td>复用 profile.role 授权，或随意更改 immutable cognition</td>
+</tr>
+<tr>
+<td><code>simulation-local/src/journal.ts</code>、<code>run.ts</code></td>
+<td>新事件解析、原子 native mutation batch、恢复投影与检查</td>
+<td>接受计划后遗漏效果/派生 wake</td>
+</tr>
+<tr>
+<td><code>simulation-local/src/entities.ts</code>、<code>business.ts</code>、<code>writers.ts</code>、<code>decisions.ts</code></td>
+<td>人员/资源/世界操作的所属 fold 与不可绕过准入</td>
+<td>用 world 插件直接修改这些对象</td>
+</tr>
+<tr>
+<td><code>simulation-team/src/participants.ts</code>、<code>channels.ts</code></td>
+<td>在维护能力下复用原 reservation，加入 readiness 对接</td>
+<td>仅删除 paused 校验或重复创建身份</td>
+</tr>
+<tr>
+<td><code>simulation-team/src/model.ts</code>、工具 schema 与 preset</td>
+<td>三工具保持；按可信执行角色限制可见操作，Native 重验</td>
+<td>认为 schema 隐藏本身就是授权</td>
+</tr>
+<tr>
+<td><code>simulation-team/src/transport.ts</code></td>
+<td>优先保持现有 communication/post 精确匹配；记录 world 请求映射的测试</td>
+<td>开放任意 sender/system message</td>
+</tr>
+<tr>
+<td>checkpoint/restore 所有者</td>
+<td>纳入调控者、外部代表、生成物及未完成 mutation</td>
+<td>仅恢复 native 快照而漏掉 Session/通道</td>
+</tr>
+<tr>
+<td><code>simulation-product/src/creation-*.ts</code>、<code>administration-*.ts</code></td>
+<td>通用场景创建、解析计划、原命令、受控 world 管理</td>
+<td>浏览器可选全部 native spec/凭证</td>
+</tr>
+<tr>
+<td><code>company-preparation.ts</code>、<code>company-owner.ts</code>、<code>company-driver.ts</code></td>
+<td>通用准备与 driver 选择；采购逻辑留在模板/driver</td>
+<td>让所有场景继续继承 buyer/supplier</td>
+</tr>
+<tr>
+<td><code>client/runtime</code>、<code>ui-simulation</code>、相关 remote/SDK owners</td>
+<td>新 DTO、草稿、请求历史、world 检查器与 API</td>
+<td>React 挂载触发未经确认的世界运行</td>
+</tr>
+<tr>
+<td>例子、架构说明、schema 目录、Agent Notes、两端 SDK 快照</td>
+<td>增加可执行的 keyless 场景与一致文档</td>
+<td>更新一端协议，另一端静默误读</td>
+</tr>
+</tbody>
+</table></div>
+<p>这是跨多个所有者的特性，不适合在一个大文件增加几百行 <code>if (kind === 'hire')</code> 就结束。又不需要为了它改造整个 agent loop。优先通过已有 Service、策略注册、队列和 owner 生命周期接入；确需改 loop/model-input 契约的部分单独记录 ADR 和两端验证。<a class="source-ref" href="#source-s01">S01</a></p>
+<h3>16.3 与现有采购功能的共存</h3>
+<p>保留现有采购模板及其回归测试，把固定 foundation 迁移到该模板，而不是立刻删除它。新场景采用独立明确版本。旧运行继续使用它原来固化的 driver 和依赖，不因默认 UI 改为“世界模拟”就换解释器。</p>
+<p>项目处于 pre-release 并有旧格式拒绝原则。<a class="source-ref" href="#source-s01">S01</a> 因此本设计不要求永久兼容所有历史布局：可以选择版本升级后明确拒绝不支持的格式，但必须给出备份/导出和不兼容诊断。正式迁移只能由受支持的离线转换器处理可证明映射；无法从旧记录恢复的 Persona、审批或世界控制证据不能伪造。</p>
+</section><section class="chapter" id="s17" aria-labelledby="s17-heading"><h2 id="s17-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">17</span>MVP：必须真实完成的范围</h2>
+<h3>17.1 一次可验收的 MVP，不是只有配置编辑器</h3>
+<p>MVP 包含 <strong>一个真实世界调控者 Agent、三个内建领域、一个事件驱动 owner、两种场景输入、同机持久化恢复</strong>。使用现有本地运行 provider 和 JSON/SQLite 后端，保持一个 canonical Team。没有真实外部副作用。</p>
+<div aria-label="MVP：必须真实完成的范围表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>能力</th>
+<th>MVP 必须交付</th>
+<th>明确暂不交付</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>场景创建</td>
+<td>任意命名实体、人物/组织/关系、初始背景/知识/资源；文件与基础网页编辑</td>
+<td>大型拖拽建模器、任意脚本</td>
+</tr>
+<tr>
+<td>世界调控者</td>
+<td>通过私有 Channel 收请求，真实模型决策，结构化 plan，后续结果回执</td>
+<td>多调控者分布式写入</td>
+</tr>
+<tr>
+<td>制度</td>
+<td>固定成员提案/投票/结案、一致或阈值通过、制度版本与作用域</td>
+<td>通用宪政系统、任意自然语言可执行化</td>
+</tr>
+<tr>
+<td>招聘</td>
+<td>已有人物录用、受控新 Persona 生成、身份准备、任职和 onboarding</td>
+<td>完整劳动力市场、复杂 offer 谈判</td>
+</tr>
+<tr>
+<td>调岗/离职</td>
+<td>时态任职、未完成工作检查、正式退休/保留历史</td>
+<td>无协议的责任自动继承</td>
+</tr>
+<tr>
+<td>外部交互</td>
+<td>确定性环境结果、调控者明确来源裁决、按需独立外部代表</td>
+<td>现实联网/付款、自动复杂升降级</td>
+</tr>
+<tr>
+<td>行为</td>
+<td>事件/wake 驱动，角色目标与世界请求可自主产生</td>
+<td>不受限无限自循环</td>
+</tr>
+<tr>
+<td>恢复</td>
+<td>原请求/Persona/身份/效果防重；所有重要中断点的冷恢复</td>
+<td>跨机器便携完整备份、多世界分支合并</td>
+</tr>
+<tr>
+<td>观察</td>
+<td>请求、计划、制度、人物及外部实体的来源与状态</td>
+<td>全量无界世界图和所有私密记忆默认公开</td>
+</tr>
+</tbody>
+</table></div>
+<p>MVP 可以使用模板限制自由文本与效果类型，但不是固定买家/卖家流程。至少增加一个非公司配置样例，例如“研究实验室的项目组与外部评审”，只改配置与已有领域术语，主 driver 不新增业务分支。</p>
+<h3>17.2 首个端到端验收剧本</h3>
+<p>创建一家包含 CEO、HR、财务和委员会的公司；角色初始背景与私有信念不同。CEO 起草招聘制度，委员以独立决策投票；制度经 world Channel 提交给调控者并生效。HR 请求一位工程师，调控者确定 Persona，executor 准备其认知身份并安排入职。工程师向未展开供应商询问服务，调控者准备供应商代表，由独立 Session 回应。随后调岗并结束一段任职。</p>
+<p>分别在 Channel 发布、Persona 固化、Participant 建立、业务提交、writer 退休位置杀进程；恢复后不重复投票、不重复招聘、不换 Persona、不重复资源变化、不把供应商变成全知角色。恢复保持暂停，显式继续后工作可完成。</p>
+<p>这个剧本使用脚本化模型做确定性端到端验收，并增加一次显式、受预算限制的真实模型试验。真实模型试验只用于评估请求理解、Persona 合理性和裁决质量，不能替代故障注入及权限测试。</p>
+<h3>17.3 MVP 完成定义</h3>
+<p>所有新 public/persisted/tool 输入有严格 parser；所有世界变化有原始身份和来源；关键本地事实与派生责任原子提交；跨所有者执行有持久进度与精确重试；旧 writer 不与新 writer 共存写入；模型请求计费且输入可重建；错误明确区分拒绝、阻塞和未知；网页不确定结果不会生成第二次业务命令。</p>
+<p>完成 MVP 不意味着证明任意规模吞吐、长周期无限存储、复杂制度语义或强隐私自由文本自动发布。界面和文档必须保留这些边界。</p>
+</section><section class="chapter" id="s18" aria-labelledby="s18-heading"><h2 id="s18-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">18</span>开发路线：从集成证据到完整系统</h2>
+<h3>18.1 MVP 的合并顺序</h3>
+<div aria-label="开发路线：从集成证据到完整系统表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>工作包</th>
+<th>依赖</th>
+<th>交付</th>
+<th>合入门槛</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M0 · 协议与集成探针</td>
+<td>现有源码</td>
+<td>ADR、操作/事件草案；验证新 action 通过三工具、日志、窗口和发布边界</td>
+<td>一个 fake world request 能持久化、经标准 Channel 到调控者；新 writer/角色 gate 的拒绝路径可测</td>
+</tr>
+<tr>
+<td>M1 · 场景编译与通用创建</td>
+<td>M0 的身份/版本决策</td>
+<td>场景 schema、semantic compiler、解析计划、通用暂停 preparation</td>
+<td>不含 buyer/supplier 的场景成功；任意初始化中断复用原身份</td>
+</tr>
+<tr>
+<td>M2 · 世界请求与调控者闭环</td>
+<td>M0、M1</td>
+<td>WorldRequest/Plan、调控者 preset/context、角色能力、结果 wake 和回执</td>
+<td>一个真实 Agent 决策提交计划；重启不重做已接受效果；通道延迟不被绕过</td>
+</tr>
+<tr>
+<td>M3 · 治理与制度</td>
+<td>M2</td>
+<td>投票/结案、制度版本、背景投影、最小可执行策略</td>
+<td>未获批准、旧正文 hash、重复投票和权限绕过全部拒绝</td>
+</tr>
+<tr>
+<td>M4 · 人员与资源生命周期</td>
+<td>M2</td>
+<td>Persona 固化、出生/任职、维护 gate、离职与交接检查</td>
+<td>生成后、binding 前后、退休失败的故障注入均可恢复</td>
+</tr>
+<tr>
+<td>M5 · 外部世界与通用行为</td>
+<td>M2、M4</td>
+<td>外部 registry、裁决、代表创建、事件驱动、公平/预算边界</td>
+<td>同外部身份不重复展开；隔离 Session；额外 Agent 与模型调用全部计数</td>
+</tr>
+<tr>
+<td>M6 · 产品与发布闭环</td>
+<td>M1–M5</td>
+<td>完整基础编辑、检查器、原请求、SDK/文档/例子、回归</td>
+<td>三个场景从 UI 到冷恢复闭环；现有采购 keyless 场景不回归</td>
+</tr>
+</tbody>
+</table></div>
+<p>网页骨架可与 M2–M5 并行，但必须使用版本化契约和标记清楚的 fixture，不能把静态界面完成当成后端能力完成。每包自带测试，不在 M6 集中补测试。</p>
+<h3>18.2 MVP 后的完整路线</h3>
+<div aria-label="开发路线：从集成证据到完整系统表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>主题</th>
+<th>重点能力</th>
+<th>进入下一阶段前的证据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1 · 作者体验与领域完整性</td>
+<td>让更多真实用例可配置</td>
+<td>组织图、岗位市场/offer、丰富日历、多委员会、制度审计、用户可审阅 Persona 草稿</td>
+<td>第二和第三类非公司场景无需改主 driver；配置往返不丢语义</td>
+</tr>
+<tr>
+<td>P2 · 长期运行与效率</td>
+<td>减少维护暂停和历史成本</td>
+<td>有证明的局部热变更、external 代表自动休眠/复用、带引用保护的索引与归档、成本观测</td>
+<td>对 actor churn、消息、混合 world mutation 的目标工作负载测量；无无限队列/日志扫描退化</td>
+</tr>
+<tr>
+<td>P3 · 认知与模拟质量</td>
+<td>更丰富且可评估的世界</td>
+<td>多个受限领域调控者、可替换市场/环境模型、角色技能/关系演化、裁决质量评估、隔离生成助手</td>
+<td>私密事实探针、已知事实一致性、人工评价和失败审计同时达标</td>
+</tr>
+<tr>
+<td>P4 · 实验与可移植性</td>
+<td>可比较、可迁移</td>
+<td>一致备份、明确版本迁移、分支身份重映射、场景对比、因果链检索</td>
+<td>对所有 Run/Team/Channel/Session 引用做完整性校验；分支不会引用原运行可写身份</td>
+</tr>
+<tr>
+<td>P5 · 真实世界与分布式（可选）</td>
+<td>高成本能力单独立项</td>
+<td>经真实用户授权的外部适配器、跨 run 联邦/世界分片</td>
+<td>对账和安全模型经过独立审查；单机架构确有可测瓶颈</td>
+</tr>
+</tbody>
+</table></div>
+<p>这些是依赖和功能阶段，不是工期承诺。真实适配器与分布式不是完整本地模拟的前置条件，也不应为了“未来扩展性”在 MVP 先引入消息集群或多数据库事务层。</p>
+<h3>18.3 建议第一份 PR 的实际边界</h3>
+<p>第一份 PR 只做 <strong>M0 + 场景协议骨架</strong>：固定本轮 ADR、受控 operation/schema、版本/能力模型及最小请求 Channel 探针，不先大改 UI。第二份再做通用创建，将采购 foundation 从通用类型中分离。不要一次提交一个同时改 loop、全部页面、全部领域和持久格式的大型 PR。</p>
+<p>M0 需要特别证明四个假设：控制角色的操作权限能在 Native 重验；展开的通信仍满足现有 post proof；半准备 Entity 不能通过 direct controller 绕过；调控者提交后不持有阻止 mutation 的窗口。任何探针失败都回到对应所有者修改契约，不用临时 bypass 掩盖。</p>
+</section><section class="chapter" id="s19" aria-labelledby="s19-heading"><h2 id="s19-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">19</span>验证方案与质量门槛</h2>
+<h3>19.1 分层测试矩阵</h3>
+<div aria-label="验证方案与质量门槛表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>层次</th>
+<th>重点用例</th>
+<th>所证明的性质</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Schema/编译</td>
+<td>重复 key、未知引用、循环关系、整数上溢、非法 capability、未知领域版本</td>
+<td>非法输入在产生副作用前被拒绝</td>
+</tr>
+<tr>
+<td>领域规则</td>
+<td>quorum、正文 hash、当前任职、预算、资源来源上界、外部事实一致性</td>
+<td>模型文本不能替代授权和世界规则</td>
+</tr>
+<tr>
+<td>Native 原子性</td>
+<td>计划结果/事实/派生 wake 的任一写入失败</td>
+<td>不出现半个业务提交</td>
+</tr>
+<tr>
+<td>工具与身份</td>
+<td>普通 actor 提交 world/resolve、伪造 director profile、旧 epoch、未消费输入</td>
+<td>实际运行身份不可伪造，schema 隐藏不是唯一防线</td>
+</tr>
+<tr>
+<td>请求传输</td>
+<td>延迟到达、伪造 requestId、错误 fingerprint、重复 Envelope、丢回复</td>
+<td>world case 与真实 canonical 通知一致</td>
+</tr>
+<tr>
+<td>人员准备</td>
+<td>在 birth、reservation、invite、bind、channel consent 后逐点失败</td>
+<td>原 Persona 和所有身份可恢复且不重复</td>
+</tr>
+<tr>
+<td>生命周期</td>
+<td>半准备人物通过 direct controller 激活；离职清理超时；恢复后迟到提交</td>
+<td>readiness/epoch gate 在所有入口有效</td>
+</tr>
+<tr>
+<td>通道变化</td>
+<td>新员工不获旧通道历史；旧消息保留原收件人；变更旧 spec 拒绝</td>
+<td>成员与消息身份不被静默替换</td>
+</tr>
+<tr>
+<td>外部实体</td>
+<td>同一供应商重复请求、latent 增加代表、既有库存与新报价冲突</td>
+<td>展开不重复创造真相/资源</td>
+</tr>
+<tr>
+<td>信息隔离</td>
+<td>隐藏底价、不同角色私有背景、受限 Persona 生成、通道原文越权</td>
+<td>可观察的私密泄漏路径受控；不把提示词当隔离</td>
+</tr>
+<tr>
+<td>调度</td>
+<td>旧窗口与新制度、Director/actor 公平性、生成超过预算、微步循环</td>
+<td>事件顺序和容量具有上界</td>
+</tr>
+<tr>
+<td>关闭与恢复</td>
+<td>等待模型/写日志/发消息/provisioning 时卸载；冷恢复缺插件</td>
+<td>不丢已接受责任，不虚构 quiescence</td>
+</tr>
+<tr>
+<td>产品与 SDK</td>
+<td>草稿变更、HTTP 不确定结果、权限撤销、旧 peer/新事件、导出中止</td>
+<td>原始请求不替换，授权/协议一致</td>
+</tr>
+<tr>
+<td>keyless 端到端</td>
+<td>三个 MVP 场景在 JSON/SQLite、多进程 kill/restart 下运行</td>
+<td>业务、运行与历史之间的实际闭环</td>
+</tr>
+</tbody>
+</table></div>
+<p>建议新增的行为命名测试包括：<code>world-request-retains-canonical-channel-receipt</code>、<code>director-cannot-forge-committee-resolution</code>、<code>persona-is-reused-after-restart</code>、<code>provisioning-entity-cannot-open-a-decision</code>、<code>terminated-writer-cannot-submit-plan</code>、<code>existing-effect-is-not-erased-by-employment-end</code>、<code>external-actor-does-not-see-buyer-private-context</code>、<code>recorded-plan-replay-performs-no-inference</code>。这些是拟议测试，不是已经执行的结果。</p>
+<h3>19.2 最有价值的故障注入方式</h3>
+<p>在每个外部 await 前后和 native append 前后设置测试屏障，分别模拟错误、超时、响应丢失、owner 撤销和真正进程退出。断言具体身份、原始输出、资源余额、关系区间、receipt 和 writer 状态，不只断言某个函数返回 success。</p>
+<p>记录运行中的模型请求数和完整 accepted 记录；冷重放路径断言模型计数不增加。Persona 未接受前的失败与已接受后的失败应有不同预期。故障测试不能依赖实时 provider；真实模型只用于另外的质量评估。</p>
+<h3>19.3 运行质量与性能观测</h3>
+<div aria-label="验证方案与质量门槛表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>指标组</th>
+<th>建议记录</th>
+<th>解释限制</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>请求与裁决</td>
+<td>每 case 请求/规划次数、缺证据/拒绝/冲突原因、人工介入率</td>
+<td>通过率高不代表裁决正确</td>
+</tr>
+<tr>
+<td>世界正确性</td>
+<td>重复业务提交、身份冲突、无来源资源变化、不可解释事实修订</td>
+<td>任一出现应阻断发布</td>
+</tr>
+<tr>
+<td>生命周期</td>
+<td>resident/awaiting-release、provisioning age、恢复阻塞</td>
+<td>持久容量占用不等于进程正在活跃</td>
+</tr>
+<tr>
+<td>成本</td>
+<td>调控者/角色/生成助手 token、unknown usage、共享模型等待</td>
+<td>预算预留不等于精确消费；token 不自动等于货币</td>
+</tr>
+<tr>
+<td>执行效率</td>
+<td>mutation、投递、checkpoint、冷恢复延迟与世界规模</td>
+<td>所有结果标明硬件、数据规模、模型是否脚本化</td>
+</tr>
+<tr>
+<td>模拟质量</td>
+<td>Persona 一致性、已知事实冲突、外部角色知识越界、制度执行解释</td>
+<td>使用测试探针与人工抽样，不伪造通用“智能分数”</td>
+</tr>
+</tbody>
+</table></div>
+<p>尚无本次新设计的性能测量。容量目标在 M0/M2 后确定，并以仓库既有 benchmark 风格保存原始样本、版本和硬件信息。已有代码中的全量 snapshot/Object.values 路径提示需要关注历史增长，但不能在未测量前断言它们就是实际瓶颈。<a class="source-ref" href="#source-s08">S08</a><a class="source-ref" href="#source-s19">S19</a><a class="source-ref" href="#source-s21">S21</a></p>
+<h3>19.4 与仓库验证流程接轨</h3>
+<p>实施时按具体 diff 运行相关 Vitest、keyless runnable-example snapshot、typecheck、lint、build 与文档 gates；新增必需 Session 或 SDK 事件同时更新两端消费者。源码测试与打包后的 executable/SDK 场景分开验证，避免源码可用而分发产物缺少注册模块。本文没有运行这些命令，也没有取得通过结果。<a class="source-ref" href="#source-s01">S01</a><a class="source-ref" href="#source-s21">S21</a></p>
+</section><section class="chapter" id="s20" aria-labelledby="s20-heading"><h2 id="s20-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">20</span>风险、取舍与明确的默认决定</h2>
+<div aria-label="风险、取舍与明确的默认决定表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>风险/取舍</th>
+<th>本设计默认决定</th>
+<th>后续改进触发条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>调控者过于全能</td>
+<td>Agent 提案与可信 executor 分离，硬规则不可越过</td>
+<td>新领域定义新的允许裁决范围，而非开放任意写入</td>
+</tr>
+<tr>
+<td>自由裁决不够灵活</td>
+<td>支持受限 AdjudicatedOutcome，缺专用模型时仍能产生环境事件</td>
+<td>常见情境积累后以专用模拟器替代反复推理</td>
+</tr>
+<tr>
+<td>调控者成瓶颈</td>
+<td>普通动作直走 Native；模板/确定性规则可跳过模型；公平配额</td>
+<td>观测到规划拥塞后增加领域助手</td>
+</tr>
+<tr>
+<td>共享调控者历史泄漏</td>
+<td>不默认读取所有私聊；低权限文本生成隔离；结构化结果可信投影</td>
+<td>强隐私场景强制多个 scope 的认知执行</td>
+</tr>
+<tr>
+<td>半准备实体可行动</td>
+<td>Native readiness gate，不只 product flag</td>
+<td>直接 controller 和恢复测试证明覆盖全部路径</td>
+</tr>
+<tr>
+<td>全 run 维护暂停影响体验</td>
+<td>MVP 接受明确的短维护边界，禁止无证热改</td>
+<td>P2 通过并发/fault 证据后开放局部变更</td>
+</tr>
+<tr>
+<td>任职结束破坏旧义务</td>
+<td>默认交接/结算检查，已接受效果不擦除</td>
+<td>增加明确的义务转移和 reconciliation authority</td>
+</tr>
+<tr>
+<td>不断招聘耗尽历史容量</td>
+<td>区分 headcount、非终止 Entity、resident 与历史量</td>
+<td>长周期测量后设计归档与再激活准入</td>
+</tr>
+<tr>
+<td>外部代理不真实</td>
+<td>把裁决、规则、独立演员和真实来源明确标注</td>
+<td>质量评估决定更多情境需要独立演员</td>
+</tr>
+<tr>
+<td>插件热替换改变历史</td>
+<td>固定实现 generation、关闭准入、必要时拒绝恢复</td>
+<td>支持显式、审计过的迁移，不静默升级</td>
+</tr>
+<tr>
+<td>规则文本看似可执行</td>
+<td>advisory/validated 分开；只执行已安装原语</td>
+<td>新增领域执行器和对应边界测试</td>
+</tr>
+<tr>
+<td>大量新抽象拖慢开发</td>
+<td>两个新包、三个内建模块、一个 journal、一个提交者</td>
+<td>职责确实独立演化再拆包</td>
+</tr>
+</tbody>
+</table></div>
+<p>这些默认值已经足以启动开发，不需要先等全部远期问题定稿。实现中的新发现必须以 ADR 修订默认决定，不能用没有文档的旁路改变安全和持久化语义。</p>
+</section><section class="chapter" id="s21" aria-labelledby="s21-heading"><h2 id="s21-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">21</span>最终架构决定与交付检查表</h2>
+<h3>21.1 建议固定的 ADR</h3>
+<div aria-label="最终架构决定与交付检查表表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>决定</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADR-W01 · 调控者的权力</td>
+<td>有认知与世界规划权，没有绕过规则的数据库写权</td>
+</tr>
+<tr>
+<td>ADR-W02 · 世界真相</td>
+<td>版本化事实/制度/关系是权威；背景与图形是投影</td>
+</tr>
+<tr>
+<td>ADR-W03 · 通信与请求</td>
+<td>Channel 保存可靠交付；Native 保存业务请求，两者精确关联</td>
+</tr>
+<tr>
+<td>ADR-W04 · 生成与重试</td>
+<td>保存实际 Persona/plan 后才进行运行时 IO</td>
+</tr>
+<tr>
+<td>ADR-W05 · 组织与执行</td>
+<td>组织关系不是 Team/subagent 父子树；MVP 复用 canonical Team</td>
+</tr>
+<tr>
+<td>ADR-W06 · 外部模拟</td>
+<td>按需展开、身份稳定；独立角色有独立 Session，不借用全知历史</td>
+</tr>
+<tr>
+<td>ADR-W07 · 持久化</td>
+<td>同 run 业务事实共享 native 原子提交；跨所有者用意图与回执</td>
+</tr>
+<tr>
+<td>ADR-W08 · 运行期变化</td>
+<td>MVP 安全维护边界；热变更须新增并发/恢复证据</td>
+</tr>
+<tr>
+<td>ADR-W09 · 可扩展性</td>
+<td>注册版本化领域和适配器，不向模型开放任意代码/JSON patch</td>
+</tr>
+<tr>
+<td>ADR-W10 · 产品语义</td>
+<td>计划、授权、应用、通知分别呈现；读取不等于运行</td>
+</tr>
+</tbody>
+</table></div>
+<h3>21.2 交付顺序的核心判断</h3>
+<p>最优先的工作不是继续增加几个模板，也不是先画一个完整组织编辑器，而是打通 <strong>“请求经 Channel 到达调控者 → 调控者真实决策 → 可验证计划 → 有记录的世界变化 → 冷恢复”</strong> 的纵向链。</p>
+<p>这条链可靠之后，公司的规章、HR 的招聘和外部代表的创建都只是不同领域策略；新增学校、研究团队或社区，不必再改一套执行机制。</p>
+<p><strong>最终产品应让用户感觉自己定义并观察了一个会持续演化的世界，而不是在启动一个预先写好的对话脚本。</strong> 这种体验的基础是稳定身份、明确知识边界、真实的决策自主性，以及每一项已经发生的效果都不会因重启而失踪或重来。</p>
+</section><section class="chapter" id="s22" aria-labelledby="s22-heading"><h2 id="s22-heading" tabindex="-1"><span aria-hidden="true" class="chapter-no">22</span>证据索引与审阅边界</h2>
+<p>所有仓库链接固定到本次审阅提交；它们可以作为开发时的落点，不会随 master 后续更新漂移。<code>[Sxx]</code> 标记对应下列来源。没有把上游同名仓库当成本项目，也没有从代码静态阅读推导出“测试已通过”。</p>
+<div aria-label="证据索引与审阅边界表格" class="table-wrap" role="region" tabindex="0"><table>
+<thead>
+<tr>
+<th>编号</th>
+<th>固定提交下的源码/文档</th>
+<th>本文用到的事实</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span id="source-s01">S01</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/AGENTS.md" rel="noopener noreferrer" target="_blank">AGENTS.md</a></td>
+<td>Cordis/包边界、模型输入可重建、pre-release、验证与文档规范</td>
+</tr>
+<tr>
+<td><span id="source-s02">S02</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation/src/entity-types.ts" rel="noopener noreferrer" target="_blank">entity-types.ts</a>；<a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-local/src/entities.ts" rel="noopener noreferrer" target="_blank">entities.ts</a></td>
+<td>人物/关系、immutable cognition、终止和 writer 停止要求</td>
+</tr>
+<tr>
+<td><span id="source-s03">S03</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation/src/business.ts" rel="noopener noreferrer" target="_blank">simulation/src/business.ts</a></td>
+<td>现有有限操作集合、资源 schema 和提案依赖</td>
+</tr>
+<tr>
+<td><span id="source-s04">S04</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-team/src/model.ts" rel="noopener noreferrer" target="_blank">model.ts</a>；<a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/tool-simulation/src/index.ts" rel="noopener noreferrer" target="_blank">tool-simulation/index.ts</a></td>
+<td>三工具、实际 Agent/epoch/已消费输入检查、stage 局部暂存</td>
+</tr>
+<tr>
+<td><span id="source-s05">S05</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-team/src/transport.ts" rel="noopener noreferrer" target="_blank">transport.ts</a></td>
+<td>exact communication intent、sender proof、依赖/正文/fingerprint 校验</td>
+</tr>
+<tr>
+<td><span id="source-s06">S06</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-team/src/participants.ts" rel="noopener noreferrer" target="_blank">participants.ts</a></td>
+<td>Participant reservation、invite、phase、binding 和重试</td>
+</tr>
+<tr>
+<td><span id="source-s07">S07</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-team/src/channels.ts" rel="noopener noreferrer" target="_blank">channels.ts</a></td>
+<td>通道预留、原 spec、endpoint consent 和确认</td>
+</tr>
+<tr>
+<td><span id="source-s08">S08</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-local/src/writers.ts" rel="noopener noreferrer" target="_blank">writers.ts</a></td>
+<td>canonical Team、唯一 Session/Participant、epoch 与容量</td>
+</tr>
+<tr>
+<td><span id="source-s09">S09</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-product/src/scenario-topology.ts" rel="noopener noreferrer" target="_blank">scenario-topology.ts</a>；<a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-product/src/company-preparation.ts" rel="noopener noreferrer" target="_blank">company-preparation.ts</a></td>
+<td>固定采购基础、有限初始人物、暂停初始化限制</td>
+</tr>
+<tr>
+<td><span id="source-s10">S10</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation/src/knowledge.ts" rel="noopener noreferrer" target="_blank">knowledge.ts</a></td>
+<td>attributed knowledge、audience、时间与来源版本</td>
+</tr>
+<tr>
+<td><span id="source-s11">S11</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation/src/context.ts" rel="noopener noreferrer" target="_blank">context.ts</a></td>
+<td>固定上下文、Team/run 来源引用、required/optional 字节预算</td>
+</tr>
+<tr>
+<td><span id="source-s12">S12</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/core/team/README.md" rel="noopener noreferrer" target="_blank">core/team/README.md</a></td>
+<td>Team/Channel/Envelope/Session 证明与所有权、单 reviewer 接口</td>
+</tr>
+<tr>
+<td><span id="source-s13">S13</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation/README.md" rel="noopener noreferrer" target="_blank">simulation/README.md</a></td>
+<td>atomic changes、窗口/队列/wake、预算、知识与容量契约</td>
+</tr>
+<tr>
+<td><span id="source-s14">S14</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-product/README.md" rel="noopener noreferrer" target="_blank">simulation-product/README.md</a>；<a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-product/src/administration-types.ts" rel="noopener noreferrer" target="_blank">administration-types.ts</a></td>
+<td>创建/预检/原命令、权限读取和产品限制</td>
+</tr>
+<tr>
+<td><span id="source-s15">S15</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-team/README.md" rel="noopener noreferrer" target="_blank">simulation-team/README.md</a>；<a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-team/src/index.ts" rel="noopener noreferrer" target="_blank">index.ts</a></td>
+<td>驻留、模型池、执行/恢复/checkpoint 和关闭责任</td>
+</tr>
+<tr>
+<td><span id="source-s16">S16</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/client/ui-simulation/README.md" rel="noopener noreferrer" target="_blank">ui-simulation/README.md</a></td>
+<td>草稿/原操作、受控显示、局部视觉图和导出</td>
+</tr>
+<tr>
+<td><span id="source-s17">S17</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/client/ui-simulation/src/client/CreationDialog.tsx" rel="noopener noreferrer" target="_blank">CreationDialog.tsx</a></td>
+<td>现有采购表单、预检、模型确认与原输入保存</td>
+</tr>
+<tr>
+<td><span id="source-s18">S18</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/.agents/notes/proposed/architecture/2026-09-17-durable-simulation-coordination.md" rel="noopener noreferrer" target="_blank">durable-simulation-coordination.md</a></td>
+<td>既有总体设计的边界；该说明本身仍标 proposed，不把全部远期能力视为实现</td>
+</tr>
+<tr>
+<td><span id="source-s19">S19</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-local/src/business.ts" rel="noopener noreferrer" target="_blank">simulation-local/src/business.ts</a></td>
+<td>资源创建、read-set、单位/控制权/守恒和 active 实体检查</td>
+</tr>
+<tr>
+<td><span id="source-s20">S20</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/packages/simulation/simulation-product/tests/topology.spec.ts" rel="noopener noreferrer" target="_blank">topology.spec.ts</a></td>
+<td>已有第三角色、checkpoint、配置变化后的原拓扑恢复测试；本轮未执行</td>
+</tr>
+<tr>
+<td><span id="source-s21">S21</span></td>
+<td><a href="https://github.com/Linorman/deepseek-harness/blob/b49dd0edfddb2f19e27110576c5a0f2089cc30ba/examples/simulation-company/README.md" rel="noopener noreferrer" target="_blank">simulation-company/README.md</a></td>
+<td>keyless 示例、组织/演员/消息 benchmark 和结果解释边界</td>
+</tr>
+</tbody>
+</table></div>
+<p>本轮对新设计的验证范围是文档结构、链接、配置示例语法和 HTML 的离线阅读/响应式交互；不代表上述拟议配置已通过 Clocky parser，不代表新的世界协议已经实现。开发从 M0 的源码级集成与拒绝路径测试开始。</p>
+</section>
+<footer><span>Clocky · World Simulation Design · v0.1 proposal</span><a href="#top">返回文档开头</a></footer></div></main><script>
+(() => {
+  const menu = document.getElementById('menu-toggle');
+  const side = document.querySelector('.sidebar');
+  const query = document.getElementById('search');
+  const feedback = document.getElementById('search-feedback');
+  const items = [...document.querySelectorAll('.toc li')];
+  const chapters = [...document.querySelectorAll('.chapter')];
+  const haystack = new Map(chapters.map(s => [s.id, s.textContent.toLocaleLowerCase()]));
+  const closeMenu = () => { side.classList.remove('open');document.body.classList.remove('menu-open');menu.setAttribute('aria-expanded','false'); };
+  menu.addEventListener('click', () => { const open = side.classList.toggle('open');document.body.classList.toggle('menu-open',open);menu.setAttribute('aria-expanded',String(open));if(open)query.focus(); });
+  const search = () => { const q=query.value.trim().toLocaleLowerCase();let count=0;for(const item of items){const ok=!q||haystack.get(item.dataset.section).includes(q);item.hidden=!ok;if(ok)count++;}feedback.textContent=q?`匹配 ${count} 个章节；正文完整保留`:`22 个章节 · 输入关键词定位`; };
+  query.addEventListener('input',search);
+  document.getElementById('clear-search').addEventListener('click',()=>{query.value='';search();query.focus();});
+  document.addEventListener('keydown', e=>{if(e.key==='Escape'){if(side.classList.contains('open')){closeMenu();menu.focus();}else if(document.activeElement===query){query.value='';search();}}});
+  document.querySelectorAll('.toc a').forEach(a=>a.addEventListener('click',()=>{closeMenu();const h=document.querySelector(a.hash+' h2');if(h)setTimeout(()=>h.focus({preventScroll:true}),70);}));
+  document.getElementById('print-report').addEventListener('click',()=>window.print());
+  document.querySelectorAll('.copy-code').forEach(btn=>btn.addEventListener('click',async()=>{
+    const text=btn.closest('.code-frame').querySelector('code').textContent;
+    let ok=false;
+    try{if(navigator.clipboard){await navigator.clipboard.writeText(text);ok=true;}}catch(_err){/* file:// clipboard policy may reject; use a local selection fallback. */}
+    if(!ok){const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();try{ok=document.execCommand('copy');}catch(_err){ok=false;}t.remove();}
+    btn.textContent=ok?'已复制':'请选择代码复制';setTimeout(()=>{btn.textContent='复制';},1800);
+  }));
+  const navLinks=items.map(li=>li.querySelector('a'));
+  const setActive=id=>navLinks.forEach(a=>{const active=a.hash==='#'+id;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current');});
+  let ticking=false;
+  const update=()=>{const y=window.scrollY;const max=document.documentElement.scrollHeight-window.innerHeight;document.querySelector('.progress span').style.width=(max>0?Math.min(100,100*y/max):0)+'%';let active=chapters[0].id;for(const s of chapters){if(s.getBoundingClientRect().top<130)active=s.id;else break;}setActive(active);ticking=false;};
+  window.addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update);}},{passive:true});
+  window.addEventListener('resize',()=>{if(window.innerWidth>900)closeMenu();update();});
+  search();update();
+})();
+</script></body></html>

@@ -11,6 +11,8 @@ export type { TeamTaskReferencesInput, TeamTaskReferencesPage, TeamTaskReference
  */
 
 import type { Branded } from '@clocky/clocky-brand'
+import type { z } from 'zod'
+import type { teamLimitsSchema } from './schema.ts'
 export type * from './attention-types.ts'
 import type { SessionId, TeamChannelViewEventData } from '@clocky/clocky-session/types'
 
@@ -1349,8 +1351,15 @@ export interface SimulationChannelOpenScope extends Omit<TeamChannelOpenScope, '
   readonly lifecycleOwner: string
   readonly channelId: ChannelId
 }
+/** Exact run-owned closure while an original hire retains cancellation and cleanup responsibility. */
+export interface SimulationChannelCloseScope extends Omit<TeamChannelCloseScope, 'kind'> {
+  readonly kind: 'simulation-channel-close'
+  readonly runId: string
+  readonly lifecycleOwner: string
+}
 /** Closed generic channel lifecycle mutations a system source may select. */
-export type TeamSystemChannelLifecycleScope = TeamChannelOpenScope | SimulationChannelOpenScope | TeamChannelCloseScope
+export type TeamSystemChannelLifecycleScope =
+  | TeamChannelOpenScope | SimulationChannelOpenScope | TeamChannelCloseScope | SimulationChannelCloseScope
 /** Immutable source attribution resolved for one generic channel lifecycle proof. */
 export interface TeamSystemChannelLifecycleProofResolution {
   readonly sourceName: string
@@ -1530,6 +1539,14 @@ export interface SimulationParticipantPhaseScope extends Omit<TeamRunBootstrapPa
   readonly runId: string
   readonly lifecycleOwner: string
 }
+/** Run-owned withdrawal of one cancelled hire's membership; activation and task obligations must be absent. */
+export interface SimulationParticipantRetireScope extends Omit<TeamRunBootstrapParticipantPhaseScope, 'kind' | 'expectedPhase' | 'phase'> {
+  readonly kind: 'simulation-participant-retire'
+  readonly runId: string
+  readonly lifecycleOwner: string
+  readonly expectedPhase: 'invited' | 'provisioning' | 'active'
+  readonly phase: 'left'
+}
 
 /** Exact TeamRun bootstrap opening of the default human/coordinator direct channel. */
 export interface TeamRunBootstrapChannelOpenScope {
@@ -1629,6 +1646,7 @@ export interface TeamRunReviewerPhaseScope {
 export type TeamSystemTopologyScope =
   | SimulationParticipantInviteScope
   | SimulationParticipantPhaseScope
+  | SimulationParticipantRetireScope
   | TeamRunBootstrapParticipantInviteScope
   | TeamRunBootstrapParticipantPhaseScope
   | TeamRunBootstrapChannelOpenScope
@@ -3457,7 +3475,7 @@ declare const teamSystemMaintenanceProofBrand: unique symbol
 
 /**
  * Runtime-only evidence retained by a registered source for one exact
- * destructive Team-maintenance operation. The proof has no serializable
+ * closed Team-maintenance operation. The proof has no serializable
  * fields and cannot grant generic journal-compaction authority.
  */
 export interface TeamSystemMaintenanceProof {
@@ -3491,20 +3509,63 @@ export interface SchedulerChannelCompactionScope {
   readonly throughSequence: number
 }
 
-/** Closed durable scopes a system maintenance source may select. */
+/** Exact Simulation-owned personnel settlement against one complete Team and Channel source vector. */
+export interface SimulationPersonnelSettlementCutScope {
+  /** Closed source operation selected by this proof. */
+  readonly kind: 'simulation-personnel-cut'
+  /** Original canonical Team whose serializers protect the Native settlement. */
+  readonly teamId: TeamId
+  /** Original Simulation run retained by the Team creation rules. */
+  readonly runId: Branded<'SimulationRunId'>
+  /** Exact activation lifecycle owner retained by the Team creation rules. */
+  readonly lifecycleOwner: string
+  /** Original Native personnel intent authorized by the source; callers cannot substitute another intent. */
+  readonly personnelIntentId: Branded<'WorldIntentId'>
+  /** Exact Team cursor observed before acquiring its settlement cut. */
+  readonly expectedTeamCursor: number
+  /** Complete attached Channel identity/cursor vector; missing or duplicate channels cannot protect a settlement. */
+  readonly channels: readonly { readonly channelId: ChannelId; readonly cursor: number }[]
+}
+
+/** Complete source vector and its runtime-only original-owner authority. */
+export interface TeamPersonnelSettlementCutRequest {
+  /** Original Simulation scope; a live proof must resolve to this exact detached value. */
+  readonly scope: SimulationPersonnelSettlementCutScope
+  /** Opaque source-owned proof, never a durable or model-supplied authority claim. */
+  readonly actor: TeamSystemMaintenanceProof
+}
+
+/** Private owner snapshots held behind all source serializers; only metadata may cross a public/model boundary. */
+export interface TeamPersonnelSettlementCutSources {
+  /** Detached complete Team state at the exact admitted cursor. */
+  readonly team: TeamStateSnapshot
+  /** Detached Channel snapshots and actual pending recipient references, with no guessed sender identity. */
+  readonly channels: readonly {
+    readonly channel: ChannelSnapshot
+    readonly pending: readonly {
+      readonly envelopeId: EnvelopeId
+      readonly senderId: ParticipantId
+      readonly recipientId: ParticipantId
+      readonly sequence: number
+    }[]
+  }[]
+}
+
+/** Closed scopes a system maintenance source may select; settlement cuts grant no compaction or general mutation authority. */
 export type TeamSystemMaintenanceScope = SchedulerTeamJournalCompactionScope | SchedulerChannelCompactionScope
+  | SimulationPersonnelSettlementCutScope
 
 /** Immutable system-source attribution resolved for one Team-maintenance proof. */
 export interface TeamSystemMaintenanceProofResolution {
   /** Registered source that retained and resolved the opaque proof. */
   readonly sourceName: string
-  /** Exact destructive maintenance operation selected by that source. */
+  /** Exact maintenance operation selected by that source. */
   readonly scope: TeamSystemMaintenanceScope
 }
 
 /**
  * Registration contributed by a system owner that retains opaque Team
- * maintenance proofs. A source never receives caller-selected compaction
+ * maintenance proofs. A source never receives caller-selected maintenance
  * identities or bounds.
  */
 export interface TeamSystemMaintenanceProofSource {
@@ -5425,6 +5486,13 @@ export interface TeamJournalCompactResult {
   readonly auditCompactedThrough?: number | undefined
 }
 
+/** Complete creation-time history, delivery and usage ceilings, independent of resource budgets. */
+export type TeamLimits = z.infer<typeof teamLimitsSchema>
+/** Original Hub refusal and controller-attested cleanup; confirmed cleanup does not free historical activation capacity. */
+export type TeamActivationHistoryLimitDetails = z.infer<typeof import('./schema.ts').teamActivationHistoryLimitDetailsSchema>
+/** Exact ordinary-post refusal; complete Envelope bytes include Hub-stamped fields while the fingerprint binds the draft. */
+export type TeamEnvelopeByteLimitDetails = z.infer<typeof import('./schema.ts').teamEnvelopeByteLimitDetailsSchema>
+
 /** JSON-only payload used to create a root Team before its identity exists. */
 export interface TeamRootCreateInput {
   /** Seed for the Team's first durable objective revision. */
@@ -5433,6 +5501,8 @@ export interface TeamRootCreateInput {
   readonly rules: JsonObject
   /** Complete provider-resolved resource budgets. */
   readonly budgets: JsonObject
+  /** Complete per-Team limits, or deployment defaults when omitted; values above the deployment ceiling reject before creation. */
+  readonly limits?: TeamLimits | undefined
   /** Optional authority grant; omitted requests receive the provider's explicit default grant. */
   readonly authorityGrant?: TeamAuthorityGrant | undefined
 }

@@ -1,0 +1,3 @@
+examples/simulation-company/tests/world-departure.snapshot.ts:20:1: error @stylistic(max-len): This line has a length of 148. Maximum allowed is 140.
+examples/simulation-company/tests/world-departure-scenario.ts:175:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+examples/simulation-company/tests/world-departure-scenario.ts:271:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.

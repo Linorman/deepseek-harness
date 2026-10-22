@@ -1,0 +1,7 @@
+{
+  "sha256": "c613bf41167c7876d698fac153a5b849a3da26a4682da8ad8842dd690e6716dc",
+  "files": 1333,
+  "native": 95,
+  "checkpoint": 5,
+  "captured": "after successful source/lib verified matrices and audit; runtime code frozen before those matrices"
+}

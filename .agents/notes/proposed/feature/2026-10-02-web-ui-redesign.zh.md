@@ -153,6 +153,8 @@ Web 客户端把 Clocky 呈现成"带一个 Team 页面的聊天应用"，但产
 
 ### 阶段 6：仿真观测台（`ui-simulation`）
 
+**由 [Simulation Web UI 易读性](2026-10-21-simulation-webui-legibility.zh.md) 细化。** 该提案取代本阶段的以下条目：保存的 phase 徽章与驱动器指示合并为由 `run-state.ts` 得出的运行状态标签与说明行，每种状态至多一个主操作；新鲜度（“上次观测”）取代中性的修订变化提示；启动表单增加经主机确认的停止目标与分类额度面板。目录行以状态标签开头，并在状态批量读取失败时逐行标注。概览新增领域业务卡，并把驻留名额、writer 与激活移入运行管理。日志成为一级“历史”模块，其余模块收入“诊断”菜单；恢复对话框先说明效果，再展开覆盖范围与标识。
+
 仿真成为与 Team 平级的工作区，与 Team 页面共享外壳、头部结构、标签、检查器面板和关注事项模型。目标是呈现被模拟的世界、它的时间和因果关系，同时保留 [ui-simulation](../../../../packages/client/ui-simulation/README.zh.md) 与 [simulation-product](../../../../packages/simulation/simulation-product/README.zh.md) 定义的每一项语义区分：
 
 - 业务数据留在 Client runtime。

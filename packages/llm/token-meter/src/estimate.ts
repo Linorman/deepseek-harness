@@ -6,7 +6,7 @@
  * @module @clocky/clocky-token-meter/estimate
  */
 
-import type { ContentBlock, Message } from '@clocky/clocky-llm'
+import type { ContentBlock, Message, GenerateOptions } from '@clocky/clocky-llm'
 import type { EpochHeader } from '@clocky/clocky-session'
 
 /** Fixed text-density estimate used until exact tokenization is needed. */
@@ -84,4 +84,15 @@ export function estimateToolsTokens(header: EpochHeader | undefined): number {
  */
 export function estimateHeader(header: EpochHeader | undefined): number {
   return estimateSystemTokens(header) + estimateToolsTokens(header)
+}
+
+/** Price the complete actual request with the meter's shared heuristic, including its system and tools.
+ * @param request - Model-visible envelope; no provider call or Session mutation occurs.
+ * @returns estimated input tokens, excluding the requested output allowance.
+ */
+export function estimateRequestTokens(request: Pick<GenerateOptions, 'provider' | 'model' | 'system' | 'tools' | 'messages'>): number {
+  return estimateHeader({ config: { provider: request.provider, model: request.model },
+    ...request.system === undefined ? {} : { system: request.system },
+    ...request.tools === undefined ? {} : { tools: request.tools } })
+    + request.messages.reduce((total, message) => total + estimateMessage(message), 0)
 }

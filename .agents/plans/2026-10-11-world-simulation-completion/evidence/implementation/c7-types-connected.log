@@ -1,0 +1,6 @@
+packages/simulation/simulation-team/src/personnel-obligations.ts(60,7): error TS2322: Type 'ActivationReservationId | null' is not assignable to type 'ActivationReservationId'.
+  Type 'null' is not assignable to type 'ActivationReservationId'.
+    Type 'null' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/personnel-obligations.spec.ts(10,41): error TS6133: 'taskAttemptIdSchema' is declared but its value is never read.
+packages/simulation/simulation-local/tests/personnel-obligations.spec.ts(65,7): error TS2322: Type '{ assignmentRevision: number; kind: "person"; personId: SimulationEntityId; personRevision: number; } | { assignmentRevision: number; kind: "assignment"; personId: SimulationEntityId; personRevision: number; assignmentId: SimulationRelationId; }' is not assignable to type '{ kind: "person"; personId: SimulationEntityId; personRevision: number; } | { kind: "assignment"; personId: SimulationEntityId; personRevision: number; assignmentId: SimulationRelationId; assignmentRevision: number; }'.
+  Object literal may only specify known properties, and 'assignmentRevision' does not exist in type '{ kind: "person"; personId: SimulationEntityId; personRevision: number; }'.

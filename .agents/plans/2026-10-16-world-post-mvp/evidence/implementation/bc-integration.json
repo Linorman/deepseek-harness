@@ -1,0 +1,118 @@
+{
+  "date": "2026-10-19",
+  "status": "implementation, functional/static acceptance and final frozen performance matrix passed; human evaluation explicitly deferred",
+  "checklist": "B01-B19 and C01-C14 accepted; C15/C16 human review deferred by user",
+  "commands": [
+    {
+      "name": "build",
+      "command": "pnpm run build",
+      "log": ".tmp/world-post-mvp-bc/final-build-retry.log",
+      "result": "passed",
+      "sha256": "2832cc233604459e676c031cf7f684c08d1005f9f07b0ac3e64432eb0c602c3f"
+    },
+    {
+      "name": "types",
+      "command": "node node_modules/typescript/bin/tsc -b tsconfig.host.json tsconfig.client.json",
+      "log": ".tmp/world-post-mvp-bc/final-all-types.log",
+      "result": "passed",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "lint",
+      "command": "node node_modules/tsx/dist/cli.mjs scripts/run-oxlint.ts .",
+      "log": ".tmp/world-post-mvp-bc/final-lint-clean.log",
+      "result": "passed; subsequent changed files passed focused lint",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "docs",
+      "command": "pnpm run doc-sync",
+      "log": ".tmp/world-post-mvp-bc/final-doc-sync-clean.log",
+      "result": "29 passed",
+      "sha256": "3283483666d383880ab7390de13c399dfa0b584095278705b4afdfcae8bb6f06"
+    },
+    {
+      "name": "hygiene",
+      "command": "pnpm run hygiene",
+      "log": ".tmp/world-post-mvp-bc/final-hygiene-clean.log",
+      "result": "16 passed",
+      "sha256": "470d80686f57f42d0a3cdc87777090b59ee0a148d7d6f129d69fdbf4964a471b"
+    },
+    {
+      "name": "new-api",
+      "command": "focused Core/SDK/Client generation and retention tests",
+      "log": ".tmp/world-post-mvp-bc/final-api-tests.log",
+      "result": "107 passed",
+      "sha256": "d38242a9b404df5d53966d5a795755bc7f2e090315c4129ac7076dee0c3450d4"
+    },
+    {
+      "name": "events",
+      "command": "Core surface and SDK client wire tests",
+      "log": ".tmp/world-post-mvp-bc/final-events-tests.log",
+      "result": "220 passed",
+      "sha256": "498d2d9ae5649e8cc89acf7b20a1364bd7bf7c97adb6c7d7d9d7a2ea63311582"
+    },
+    {
+      "name": "fixture",
+      "command": "Client connection fixture and fixture commands tests",
+      "log": ".tmp/world-post-mvp-bc/final-fixture-tests.log",
+      "result": "44 passed",
+      "sha256": "87c6c806f3d1e62c240a05fed4b5c88cb421ab4ae137b9b07b5128f5a073e1bd"
+    },
+    {
+      "name": "python-sdk",
+      "command": "Python SDK full suite",
+      "log": ".tmp/world-post-mvp-bc/final-python-sdk.log",
+      "result": "992 passed; 5 stale-node-carrier failures subsequently repaired and rechecked",
+      "sha256": "64ff57b8426b8f62b1a59aaf3c2bb802981fd50056e674b7fceeb54284335d25"
+    },
+    {
+      "name": "python-runtime",
+      "command": "Python bundled runtime suite after production deploy pipeline refresh",
+      "log": ".tmp/world-post-mvp-bc/final-python-runtime.log",
+      "result": "12 passed, including all 5 prior failures",
+      "sha256": "deb608ac382274d4cc8707fa574f1ebbef2f7559868e26ececbed69a23b3bc99"
+    },
+    {
+      "name": "browser",
+      "command": "real World v1 authoring desktop and narrow-screen snapshot",
+      "log": ".tmp/world-post-mvp/b1-graph-browser-final-3.log",
+      "result": "2 passed; prior failed attempts retained",
+      "sha256": "3b8e21339d2059e749c07224c04c49ddb095f0cbb585fd3b9b5a1e773b3fb6cb"
+    },
+    {
+      "name": "b1-b3",
+      "command": "frozen B1/B3 core regression",
+      "log": ".tmp/world-post-mvp/b1-b3-core-frozen.log",
+      "result": "235 passed",
+      "sha256": "9d2faf1c9076d6e0694e6c4b8e091ffa4053f9c6973c9f362eeba2a32b406531"
+    },
+    {
+      "name": "b3-retirement",
+      "command": "local mutation with real retirement receipt",
+      "log": ".tmp/world-post-mvp/b3-retirement-frozen.log",
+      "result": "28 passed",
+      "sha256": "663343972deee7ce94ab34bdd9cea0516dc060bd61aa74e243f4a58237ae580a"
+    }
+  ],
+  "scopeLimits": [
+    "No paid or live-model inference used in this implementation verification.",
+    "Archive is restricted to supported self-contained owner closure, not full D1 Product migration.",
+    "Representation switching is memoryless v1/v3; actor-memory downgrade remains refused.",
+    "Local hot mutation is independent plain-object rename with one Native commit owner; unsupported footprints/providers use whole-run maintenance.",
+    "Known monetary cost remains unknown without frozen provider pricing; helper/unknown usage is accounted separately."
+  ],
+  "artifacts": "Project .tmp, .local, evidence, lib and web dist directories; no task artifacts intentionally placed in system temporary directories.",
+  "performance": {
+    "integrity": ".agents/plans/2026-10-16-world-post-mvp/evidence/b1/v2-integrity.json",
+    "processes": 12,
+    "samples": 192,
+    "coldRecoveriesWithoutModelCalls": 6,
+    "sourceDrift": [],
+    "scope": "Three scenes, JSON/SQLite, 32 rounds each, sequential; actual cold costs and long-tail latency retained.",
+    "report": ".agents/plans/2026-10-16-world-post-mvp/evidence/b1/final-performance.json",
+    "reportSha256": "3f91d2cb3a7816e808cd628e1533f022a0a27e45a48d5b314ceb32d4348b3cb4"
+  },
+  "postMeasurementFormatting": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/post-measurement-formatting.json",
+  "finalDiffCheck": ".tmp/world-post-mvp-bc/final-diff-check-clean.log"
+}

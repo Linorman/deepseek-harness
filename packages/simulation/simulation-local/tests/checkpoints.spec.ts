@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { checkpointState, simulationCheckpointManifestSchema, simulationCheckpointRequestSchema, simulationIngressRequestSchema } from '@clocky/clocky-simulation'
+import { checkpointState, simulationCheckpointManifestSchema, simulationCheckpointRequestSchema, simulationIngressRequestSchema,
+  simulationPhaseManagementRequestSchema } from '@clocky/clocky-simulation'
 import type { SimulationCheckpointCut, SimulationCheckpointRequest } from '@clocky/clocky-simulation'
 import type { LogStream } from '@clocky/clocky-storage'
 import { SIMULATION_JOURNAL_VERSION } from '../src/journal.ts'
@@ -7,7 +8,7 @@ import { createBusinessHarness } from './business-harness.ts'
 
 const request = (id: string) => simulationCheckpointRequestSchema.parse({ id, implementationVersion: 'fixture-1', maxDrainRounds: 4, maxAttempts: 3 })
 function manifest(cut: SimulationCheckpointCut, command: SimulationCheckpointRequest) {
-  return simulationCheckpointManifestSchema.parse({ version: 2, id: command.id, implementationVersion: command.implementationVersion,
+  return simulationCheckpointManifestSchema.parse({ version: 8, id: command.id, implementationVersion: command.implementationVersion,
     rulesVersion: cut.snapshot.spec.rulesVersion, policyVersion: cut.snapshot.spec.policyVersion, rng: { kind: 'none' }, run: cut.reference,
     team: { owner: { kind: 'team', teamId: 'company' }, stream: { name: 'team/company', version: 35 }, cursor: 0,
       firstSequence: 0, retention: 'full', projectionVersion: 35, fingerprint: `sha256:${'0'.repeat(64)}` },
@@ -15,6 +16,26 @@ function manifest(cut: SimulationCheckpointCut, command: SimulationCheckpointReq
 }
 
 describe.each(['json', 'sqlite'] as const)('%s checkpoint publication', (backend) => {
+  it('persists a new pause while a sealed cut refuses production writes and stale publication', async () => {
+    const h = await createBusinessHarness(backend)
+    let cut: SimulationCheckpointCut | undefined
+    try {
+      const command = request('pause-invalidates-cut')
+      await h.run.beginCheckpoint(command)
+      cut = await h.run.acquireCheckpointCut(4)
+      const old = manifest(cut, command)
+      const paused = await h.run.managePhase(simulationPhaseManagementRequestSchema.parse({ id: 'new-user-pause', phase: 'paused' }))
+      expect(paused.status).toBe('completed')
+      expect(h.run.snapshot().management?.[paused.request.id]).toEqual(paused)
+      await expect(h.run.setPhase('running', h.run.snapshot().revision)).rejects.toThrow(/blocks new writes/)
+      await expect(cut.publish(old)).rejects.toThrow(/changed its run cut/)
+      expect(h.run.snapshot().latestCheckpointId).toBeUndefined()
+      cut.release(); cut = await h.run.acquireCheckpointCut(4)
+      expect((await cut.publish(manifest(cut, command))).status).toBe('completed')
+      expect(h.run.snapshot().management?.[paused.request.id]).toEqual(paused)
+    } finally { cut?.release(); await h.close() }
+  })
+
   it.each(['binding', 'reservation', 'publication'] as const)('retains the checkpoint Team before any entity binding through %s', async (action) => {
     const h = await createBusinessHarness(backend)
     try {
@@ -27,7 +48,7 @@ describe.each(['json', 'sqlite'] as const)('%s checkpoint publication', (backend
       if (action === 'binding') {
         const { simulationChangeSchema, simulationEntityIdSchema, simulationEntityBindingSchema } = await import('@clocky/clocky-simulation')
         const id = simulationEntityIdSchema.parse('new-actor')
-        await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }), before.revision)
+        await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }), before.revision)
         await expect(h.run.bindEntity(id, simulationEntityBindingSchema.parse({ teamId: 'foreign', participantId: 'actor', sessionId: 'session' }),
           h.run.snapshot().revision)).rejects.toThrow(/canonical Team/)
         expect(h.run.snapshot().entities[id]?.binding).toBeUndefined()
@@ -379,12 +400,12 @@ it('requires every reserved channel reference while permitting a world entity wi
     if (teamId === undefined) throw new Error('No native Team reservation')
     await h.run.confirmTeam(teamId, h.run.snapshot().revision)
     for (const id of ['a', 'b']) {
-      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }),
+      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }),
         h.run.snapshot().revision)
       await h.run.bindEntity(id as never, simulationEntityBindingSchema.parse({ teamId, participantId: id, sessionId: id }),
         h.run.snapshot().revision)
     }
-    await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'unbound', entityKind: 'org', cognition: 'none', profile: {} }),
+    await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'unbound', entityKind: 'org', cognition: 'none', profile: {} }),
       h.run.snapshot().revision)
     const spec = simulationChannelSpecSchema.parse({ key: 'reserved',
       members: [{ entityId: 'a', role: 'a' }, { entityId: 'b', role: 'b' }], limits: {} })
@@ -420,6 +441,30 @@ it('rejects missing, negative, fractional or non-numeric publication times at th
       }
       expect(checkpointRecordSchema.safeParse({ kind: 'checkpoint/published', manifest: value, publishedAt: 0 }).success).toBe(true)
       expect(cut.reference.stream.version).toBe(SIMULATION_JOURNAL_VERSION)
+    } finally { cut.release() }
+  } finally { await h.close() }
+})
+
+it.each(['json', 'sqlite'] as const)('rejects an old manifest or changed World reference vector before publishing on %s', async (backend) => {
+  const h = await createBusinessHarness(backend)
+  try {
+    const command = request('world-reference-rejection')
+    await h.run.beginCheckpoint(command)
+    const cut = await h.run.acquireCheckpointCut(4)
+    try {
+      const original = manifest(cut, command)
+      expect(original.version).toBe(8)
+      expect(original.state.world).toBeNull()
+      for (const version of [0, 1, 2, 3, 4, 5, 6, 7, 9]) {
+        expect(simulationCheckpointManifestSchema.safeParse({ ...original, version }).success).toBe(false)
+      }
+      const changed = simulationCheckpointManifestSchema.parse({ ...original, state: { ...original.state, world: {
+        domains: [], definitionFingerprint: `sha256:${'1'.repeat(64)}`, projectionFingerprint: `sha256:${'2'.repeat(64)}`, records: [],
+      } } })
+      const revision = h.run.snapshot().revision
+      await expect(cut.publish(changed)).rejects.toThrow('quiescent run prefix')
+      expect(h.run.snapshot().revision).toBe(revision)
+      expect((await cut.publish(original)).status).toBe('completed')
     } finally { cut.release() }
   } finally { await h.close() }
 })

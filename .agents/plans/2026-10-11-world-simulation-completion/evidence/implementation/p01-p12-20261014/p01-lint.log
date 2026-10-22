@@ -1,0 +1,12 @@
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:21:1: error @stylistic(max-len): This line has a length of 149. Maximum allowed is 140.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:15:74: error @stylistic(arrow-parens): Expected parentheses around arrow function argument having a body with curly braces.
+packages/simulation/simulation-local/src/world.ts:105:1: error @stylistic(max-len): This line has a length of 162. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:133:1: error @stylistic(max-len): This line has a length of 157. Maximum allowed is 140.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:12:78: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:24:35: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:28:35: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:46:79: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:53:53: error typescript(no-unsafe-member-access): Unsafe member access .status on an `error` typed value.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:58:60: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:64:58: error typescript(no-unsafe-member-access): Unsafe member access .status on an `error` typed value.
+packages/simulation/simulation-local/tests/world-parser-boundaries.spec.ts:76:27: error typescript(no-confusing-void-expression): Returning a void expression from an arrow function shorthand is forbidden. help: Add braces to the arrow function.

@@ -1,5 +1,11 @@
 # @clocky/clocky-storage-sqlite
 
+`readSqliteRawLogArchive()` captures original stream version, sequence and stored payload bytes in one read transaction. It preserves entries, checkpoint and optional summary as base64 logical frames and retains the physical schema stamp as metadata. This is a bounded logical archive, not an exact physical database/WAL copy or consumer-state validation; opening a current-version backend is unnecessary.
+
+`readSqliteLogPages()` holds one read transaction and captures the stream tail before yielding contiguous entry pages. `maxEntries` and `maxBytes` bound the aggregate observation; `pageEntries` and complete-envelope `pageBytes` bound each page. Sizes are checked before payload decode; an indivisible oversized row yields `read-limit` with `entry-bytes`, actual and limit. Later appends are excluded from the captured prefix. Consumers must finish or close the async iterator to release its read connection.
+
+Read-only snapshot allowance failures carry `StorageError.code = read-limit`; invalid observation configuration remains `invalid-value`. Version mismatch and corrupt-medium failures retain their own codes.
+
 English | [中文](README.zh.md)
 
 `readSqliteLogSnapshot(path, descriptor, limits)` uses an existing read-only connection and one read transaction without schema initialization, migration, backend ownership or journal mutation. It checks physical/stream versions and encoded row/checkpoint sizes before decoding, then validates complete response bounds. SQLite may create or reuse WAL/SHM bookkeeping files during a read-only connection; these are [SQLite WAL semantics](https://www.sqlite.org/walformat.html), not an accepted application write. Immutable mode is unsuitable for a concurrently mutable journal.

@@ -1,0 +1,465 @@
+{
+  "passed": true,
+  "inputHash": "f743679e30fa20278ff5139e219bd222d4f8f86029652c7a314d7e3d2d9e341a",
+  "inputFiles": 5389,
+  "inputBytes": 60178463,
+  "nativeVersion": 78,
+  "compilerVersion": "4",
+  "cases": [
+    {
+      "root": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6",
+      "face": "src",
+      "backend": "json",
+      "modelCalls": 27,
+      "decisions": 9,
+      "originalRevision": 167,
+      "readonlyRevision": 167
+    },
+    {
+      "root": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv",
+      "face": "src",
+      "backend": "sqlite",
+      "modelCalls": 27,
+      "decisions": 9,
+      "originalRevision": 167,
+      "readonlyRevision": 167
+    },
+    {
+      "root": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK",
+      "face": "lib",
+      "backend": "sqlite",
+      "modelCalls": 27,
+      "decisions": 9,
+      "originalRevision": 167,
+      "readonlyRevision": 167
+    },
+    {
+      "root": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf",
+      "face": "lib",
+      "backend": "json",
+      "modelCalls": 27,
+      "decisions": 9,
+      "originalRevision": 167,
+      "readonlyRevision": 167
+    }
+  ],
+  "processes": 12,
+  "coldProcesses": 8,
+  "coldModelCalls": 0,
+  "pids": [
+    87012,
+    87274,
+    87661,
+    87866,
+    87990,
+    88012,
+    88162,
+    88180,
+    88181,
+    88140,
+    88155,
+    88156
+  ],
+  "raw": [
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/original.json",
+      "bytes": 1403447,
+      "sha256": "24cd51969b6aa7b1b7e6aef89627b8f01492923e90e9e591e47df979081ba2bc"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/reserve.json",
+      "bytes": 173572,
+      "sha256": "7434d527893aebcfc2057321c3545d9e6d866a59f0c5ce6fffa4c7c914aab73e"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/commit-after-expiry.json",
+      "bytes": 295069,
+      "sha256": "0b40732ceee09782eee5ebda218df46c3399df0250ab612a75ab0394001450d0"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/input.json",
+      "bytes": 54840,
+      "sha256": "9d67ea2d31aa5433d410e4f5e3d090211735cd5ce1bea03aad0096fd451585dd"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/process-0.json",
+      "bytes": 1066,
+      "sha256": "5bee8ab3be8381659d35fbdd18c15b06ecb0570ff3939d69297118dcc7e89274"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/process-1.json",
+      "bytes": 1065,
+      "sha256": "6579f573d057ad784c514f2c98497331f538a646501a9b41f48e13c49c7ce1de"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/fixture-inputs.json",
+      "bytes": 1539,
+      "sha256": "f81484fbb282c89845716595612adda71866877e625a2374512283f464e18832"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/round-2.json",
+      "bytes": 531750,
+      "sha256": "30ddb02a77b353ef822e04431d38e118b413be59dd8bf4176ad0dd1bfc7f6bbd"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/overbook.json",
+      "bytes": 213962,
+      "sha256": "3e953350e2e7400946f6f9bedf2c1bd430436e785f39eb70da2998e01877ff1d"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/reserve-cancel.json",
+      "bytes": 426716,
+      "sha256": "77156b2f6ffd3801b326d9401ab2bb77d42d7a50cce5dfabf910223fd890dd4b"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/process-2.json",
+      "bytes": 1065,
+      "sha256": "920b8221795801a342505c7e8889b11d2d1e3809f3af018542d29b69fef455f1"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/commit-payment.json",
+      "bytes": 380586,
+      "sha256": "3bdfd990c31ad18b08043e7b861fba28deda2f058f4c0b920bcb8e5865709bed"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/round-1.json",
+      "bytes": 531750,
+      "sha256": "b38426b7c7f5a8fd69afa4e2c95f3b4d86d123d284782aeeb2d761c3f4284c0d"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/complete.json",
+      "bytes": 182,
+      "sha256": "738a053d74dcdf8479df9af54a489d933892f05c16ea96896500a60ed00f67ef"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/round-0.json",
+      "bytes": 531751,
+      "sha256": "8cee6c7aed7b77e3a64f47bbd2f5bdbd3aa6e2d53874a79ec805f5528282afba"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/reserve-payment.json",
+      "bytes": 338428,
+      "sha256": "fb926e73c0835737a50fbdd3655d0b034a1b71e6fbaa3430c3f02309ba282e36"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/root-readonly-native.json",
+      "bytes": 253700,
+      "sha256": "403c201d5af368d9a413ea809f0a75fab144f6732ea06a45ccaf53096186a912"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/history-limit.json",
+      "bytes": 518256,
+      "sha256": "a7c64df4c764e90d0b81858a9c98e5f827e63c8b188b2507c4eedfcbb028d27c"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/spend-held.json",
+      "bytes": 254141,
+      "sha256": "e4169cdaf56b817c18a38c607bab9658e0fc0f28ccb166d80c393af38de5b48f"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6/cancel.json",
+      "bytes": 471336,
+      "sha256": "fec641325186088a067823456a840d79050ec23ae1b9199c859a765fbeb528ba"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/original.json",
+      "bytes": 1403457,
+      "sha256": "133fd3d4bb8130ff51ac7a4072fe396193109832cdb6a9f03f5eb430e8c43fc2"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/reserve.json",
+      "bytes": 173578,
+      "sha256": "2651e847fe25c140c4617e13453e1a2addc9fc38bf0738bbf9e889f7bf72c4f7"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/commit-after-expiry.json",
+      "bytes": 295075,
+      "sha256": "0dcad5a24608d4268dbbedcb634da2a42242567fdb68fbcaf3058caa1a1a25f4"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/input.json",
+      "bytes": 54840,
+      "sha256": "9d67ea2d31aa5433d410e4f5e3d090211735cd5ce1bea03aad0096fd451585dd"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/process-0.json",
+      "bytes": 1070,
+      "sha256": "7b03056feb5c0fd75257a39e53eea4559bc3d6d54e52aa41c32604f797b66d06"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/process-1.json",
+      "bytes": 1069,
+      "sha256": "c5397d434742b61819d02732464c9ae519ecada6a6a346bf3d3ad38ba30919bb"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/fixture-inputs.json",
+      "bytes": 1539,
+      "sha256": "f81484fbb282c89845716595612adda71866877e625a2374512283f464e18832"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/round-2.json",
+      "bytes": 531762,
+      "sha256": "61a9c64b442ba93224ef660eb28ec83a1941711d49c8b8de4318ad38c59d89b5"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/overbook.json",
+      "bytes": 213968,
+      "sha256": "6fc7a0e4aa27a41f6a3627f04d79e544948ef1d93da1845d703d9781509c1795"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/reserve-cancel.json",
+      "bytes": 426722,
+      "sha256": "8c9253e069dfd321687f24a7399d020120f42b82dd4dfc1e28b5ad2669ab5b0f"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/process-2.json",
+      "bytes": 1069,
+      "sha256": "f11d64d2fb490b180b7e3c102316497a8a3e6e0d89be381837723be3d7976dd0"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/commit-payment.json",
+      "bytes": 380592,
+      "sha256": "c006f71d578298021663f503271ae926ccd7bce86ac46e04fe523f05ba595c84"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/round-1.json",
+      "bytes": 531762,
+      "sha256": "844ae9ab8a699651f8e4bd91a1219148b73da37bfa0ac8a365f5073ac85586af"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/complete.json",
+      "bytes": 186,
+      "sha256": "e10ff2eaa72f213169a4f373b7e325f40b13da6ee12eac74b1ec26b3c22f854f"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/round-0.json",
+      "bytes": 531763,
+      "sha256": "542924f9514ca5bc85295012021720fbd0b19f2750ca04edae7c6899bdf2a074"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/reserve-payment.json",
+      "bytes": 338434,
+      "sha256": "393e4c39e26d2a7f8ebd1ee9cd418114e9dc818fe68419b9d4571199f5ea802c"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/root-readonly-native.json",
+      "bytes": 253710,
+      "sha256": "8337ec8ffa74116a938927c4e5e260eef494acdb8d6a65175efd732304813f14"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/history-limit.json",
+      "bytes": 518262,
+      "sha256": "b4b7dc8743cdfbcefd6b0aa66671b33d022e6592508aa68b3595d538acda20b6"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/spend-held.json",
+      "bytes": 254147,
+      "sha256": "88ba5ede3f018591d01e25a8ef3cb81c6c0536733c1feebd35fbfc8d613d5fb5"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv/cancel.json",
+      "bytes": 471342,
+      "sha256": "0b32ac98daf0226cafa4ad5f81295e24031b36fc75832c0178fa1e87a288024a"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/original.json",
+      "bytes": 1403457,
+      "sha256": "f7d2f8b339f871c34c5646f2e7aaba5a2a1c1a07e3c62714aafc6f589e2daa50"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/reserve.json",
+      "bytes": 173578,
+      "sha256": "d7a084dff2c2e06de6a0cd16889fa8ec5a69b4270d9791b3a631ff1449e2f373"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/commit-after-expiry.json",
+      "bytes": 295075,
+      "sha256": "7c1565477e244d127692976ebed471cfd4e56173a75dc611e345db785b2033d1"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/input.json",
+      "bytes": 54840,
+      "sha256": "9d67ea2d31aa5433d410e4f5e3d090211735cd5ce1bea03aad0096fd451585dd"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/process-0.json",
+      "bytes": 938,
+      "sha256": "4e93fc60163d61eb4cee4b03ae2f78889c0bae37f4f2ce49ea15446cd8e12544"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/process-1.json",
+      "bytes": 937,
+      "sha256": "96ae5352bc39ce116629e828bd1fcfb68249d46ad85a54595c9f42aa5d2f708e"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/fixture-inputs.json",
+      "bytes": 1539,
+      "sha256": "f81484fbb282c89845716595612adda71866877e625a2374512283f464e18832"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/round-2.json",
+      "bytes": 531762,
+      "sha256": "2de3441fdf5d24f894d3e473e84cc1ae17a44d09b300377c63b2c04789340d8f"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/overbook.json",
+      "bytes": 213968,
+      "sha256": "6642b58a61fe72e834636de31d01c25a775038315c6a2db9a364e0fe85e7e329"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/reserve-cancel.json",
+      "bytes": 426722,
+      "sha256": "9840ac90253be34cc965f5287f74fd7714d5053fef478ab7f9c8110967513fca"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/process-2.json",
+      "bytes": 937,
+      "sha256": "c00854158d1d0ecfd85757ea3e78bac927053292e94cb71b16e599a4b385296a"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/commit-payment.json",
+      "bytes": 380592,
+      "sha256": "7a5e9677f7119e96f9c5707bcabeca46ff9e110d091066b19fe589f3306b7606"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/round-1.json",
+      "bytes": 531762,
+      "sha256": "904896d05e5d660140e606429075ca1128487ea1df3606884dbd11999201bb24"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/complete.json",
+      "bytes": 186,
+      "sha256": "ffcc6c8d52891da87d0bbed47deccb2265f8a227c2eabd8036d4dccffddab95b"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/round-0.json",
+      "bytes": 531763,
+      "sha256": "883b12a558af1b5bd3332ec3ed323aff07de97c63fbdc154240eea2cb0e07e92"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/reserve-payment.json",
+      "bytes": 338434,
+      "sha256": "8e1adf573a3850b631611f87c30904bf0f13f59874c8a7130e9e43b95687c5cb"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/root-readonly-native.json",
+      "bytes": 253710,
+      "sha256": "fd2f5da42f890c26422e14b16a924e93d53dfc05b2c66e7aabfd33bf0dcad7da"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/history-limit.json",
+      "bytes": 518262,
+      "sha256": "79dbcc523dfe32572e2fed5a2872f5f858d59905045d81a03ea93e5adaa345c9"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/spend-held.json",
+      "bytes": 254147,
+      "sha256": "78679fa6e53cd8248e190edb1517f9a72a952790b21f38df9d2fc33c53d3002c"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK/cancel.json",
+      "bytes": 471342,
+      "sha256": "6aea12d49fc49e384f1886e950c3e6b3f16aea22b6d46407a6f276339c3d332c"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/original.json",
+      "bytes": 1403447,
+      "sha256": "d90f6fc2dd45ea657d14b0316d5a3e13c9434c64809630e676827d999fde6ca4"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/reserve.json",
+      "bytes": 173572,
+      "sha256": "0599989b4021052d301dac3ff86a0bd51f1ad0133761c04ccb9b1a38728f7219"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/commit-after-expiry.json",
+      "bytes": 295069,
+      "sha256": "a629222b08bf65414d4dd814d062ba0813d33554d074e582fa1f8cf688d1907c"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/input.json",
+      "bytes": 54840,
+      "sha256": "9d67ea2d31aa5433d410e4f5e3d090211735cd5ce1bea03aad0096fd451585dd"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/process-0.json",
+      "bytes": 934,
+      "sha256": "5e5b668223a5769f3b9ead100251b82466f8c37c819f7cd6b3981cb86bf7241d"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/process-1.json",
+      "bytes": 933,
+      "sha256": "0d6a10a3d3d58f1ceabd8e8f5937a312dd897b0cee7b23e9e5899eb5ada7e0ef"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/fixture-inputs.json",
+      "bytes": 1539,
+      "sha256": "f81484fbb282c89845716595612adda71866877e625a2374512283f464e18832"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/round-2.json",
+      "bytes": 531750,
+      "sha256": "e806335fd1856c867d8d6ef806234c1b6a381431cb66d949ead47a655bbff99b"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/overbook.json",
+      "bytes": 213962,
+      "sha256": "727744537c83f30304603e804489c1373b407af26a7dc317348ef214a87540ca"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/reserve-cancel.json",
+      "bytes": 426716,
+      "sha256": "bbdf92848a0fe032b6a0642313164ac1f43d695a9ae08413d1a778a02d28a5b9"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/process-2.json",
+      "bytes": 933,
+      "sha256": "dd84b9785165d36f2f40d75f909218d7ac05263c247b332c164ddc510de21e74"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/commit-payment.json",
+      "bytes": 380586,
+      "sha256": "1a56ba9ae5df4ea7b1e01ae1dccedd3730a8ed07e431c265ab619947942cf386"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/round-1.json",
+      "bytes": 531750,
+      "sha256": "3a932a6f96b4d73eb02d91719dd00bcf080511647d1102d0ee052b2b2077a1d4"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/complete.json",
+      "bytes": 182,
+      "sha256": "d85a88eac386547c3c29160e359f7464e1f6bbb74da1df1f7928c46fd2a9dfe1"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/round-0.json",
+      "bytes": 531751,
+      "sha256": "6366d72d2014646d255f2f2865ffe77707092470467d50bd49b904dcaff624fb"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/reserve-payment.json",
+      "bytes": 338428,
+      "sha256": "540b149a7434970e870a00e35d4dff9eb88e5fd82692db8fb116b482bdffe3b6"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/root-readonly-native.json",
+      "bytes": 253700,
+      "sha256": "5d1d6e2d98966e2f6cf91173acf2360cd6b88885191e4ab30d7e873610b1cfab"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/history-limit.json",
+      "bytes": 518256,
+      "sha256": "85aa3f40e3f45f47ac5df662cc55219d3a334e87be5c191c71f418102714c2ed"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/spend-held.json",
+      "bytes": 254141,
+      "sha256": "96f055ad190d5cda8cebf80be01a2deb4c16af35a5c906ce9c0df0e1d64dc589"
+    },
+    {
+      "path": ".local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf/cancel.json",
+      "bytes": 471336,
+      "sha256": "b0dad85710c386a2f1bb131d4bc165086a33291f181fc2dc5378a3b8854dad76"
+    }
+  ]
+}

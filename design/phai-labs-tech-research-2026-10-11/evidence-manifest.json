@@ -1,0 +1,96 @@
+{
+  "date": "2026-10-11",
+  "subject": "https://phai-labs.com/en/tech/",
+  "viewports": [
+    [
+      1280,
+      720
+    ],
+    [
+      390,
+      844
+    ]
+  ],
+  "sources": [
+    {
+      "url": "https://phai-labs.com/assets/js/field.js",
+      "bytes": 13035,
+      "sha256": "b9225a1b692871c00d64c727ab4b50513b23a860840359c1053b218752e4e701"
+    },
+    {
+      "url": "https://phai-labs.com/assets/js/paper.js",
+      "bytes": 1479,
+      "sha256": "b93972cf5026f12feee99d3dc04f70b4253d78ee43e6d1c7e9968a9a47d0012c"
+    },
+    {
+      "url": "https://phai-labs.com/assets/css/papers.css",
+      "bytes": 6462,
+      "sha256": "9e3bfaac1ecb79c1cade2d1497c4839a9363fcc21e59e975ff3ed9c51c53448b"
+    },
+    {
+      "url": "https://phai-labs.com/assets/css/pulse.css",
+      "bytes": 9559,
+      "sha256": "5d7ba0cd4e20f671bca884ff826741df34d54b9b16c598854d9368b23f46d00f"
+    },
+    {
+      "url": "https://phai-labs.com/assets/css/site.css",
+      "bytes": 87095,
+      "sha256": "49f20aa1b98925ae2a6e8bf1dd612df801868adb91b2026778761163aa901f8c"
+    },
+    {
+      "url": "https://phai-labs.com/assets/js/site.js",
+      "bytes": 10868,
+      "sha256": "e172f2152590e196c259514a26cc0cce09ad5209aa2dd5a023ed197d187db361"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "assets/01-hero.jpg",
+      "sha256": "c7d51271cbdc9e7436b6c6b634cb1f0dc6348809e01ea19c91e77f2644afc858"
+    },
+    {
+      "file": "assets/02-dfm.jpg",
+      "sha256": "c6321c77fb66930cd01abd259bd9f521abcd6bd30a21647fd0984b30bbd83000"
+    },
+    {
+      "file": "assets/03-dfm-diagram.jpg",
+      "sha256": "9b547207d62ee6eb8a58ddc6fa1d5f701f00fd8066617f3b23bfb18ca355a282"
+    },
+    {
+      "file": "assets/04-sciencebuddy.jpg",
+      "sha256": "5e3f9e4a14001b2004076a62775742b87f966efdfa75bd505e411efa245b7a1d"
+    },
+    {
+      "file": "assets/05-scienceide.jpg",
+      "sha256": "fb3948dc964e0b5fc5b5baf65cfc8bd9effa961b0a3d0b93ebef9bb58fe54124"
+    },
+    {
+      "file": "assets/06-jepa.jpg",
+      "sha256": "9ff225248db5387053ee771daa310f15d7a01733e20153deacdb14d279844334"
+    },
+    {
+      "file": "assets/07-papers.jpg",
+      "sha256": "94f287c628931d47a696dda8724d8ae7f47ae5e675f3b59d70cd51f260745d96"
+    },
+    {
+      "file": "assets/08-mobile.jpg",
+      "sha256": "010d02df738e491394cfd1f08ed41a3673673aef42b172ced4f8114b1cf2714a"
+    },
+    {
+      "file": "assets/09-mobile-menu.jpg",
+      "sha256": "340bb601adb536a7e651cf8c637835fec6b03dd0eb8943357bd2c25f74df7793"
+    },
+    {
+      "file": "assets/10-roadmap.jpg",
+      "sha256": "59e6b07832dcd05b8cdc2f2c46e68754ef42be836975a4298fc764249fb0d131"
+    },
+    {
+      "file": "assets/11-footer.jpg",
+      "sha256": "408ee677a53b66281da3ce4d392886539256c027a98033d35222ca633e7a40ab"
+    },
+    {
+      "file": "assets/12-dfm-spiral.jpg",
+      "sha256": "aaf6df602c15eb2065043985b9f0cf9d93784ad607fa85deeb52c4600ce9e066"
+    }
+  ]
+}

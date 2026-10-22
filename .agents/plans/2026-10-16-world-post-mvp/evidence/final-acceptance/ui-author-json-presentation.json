@@ -1,0 +1,58 @@
+{
+  "keyboard": [
+    "Space selects graph",
+    "Enter selects equivalent list node",
+    "Tab reaches visible focus on Y",
+    "Tab then Enter applies original layout"
+  ],
+  "presentations": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "scheme": "light",
+      "background": "rgb(246, 247, 249)",
+      "reducedMotion": true,
+      "transition": "0s",
+      "overflow": 0
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "dark",
+      "scheme": "dark",
+      "background": "rgb(20, 23, 28)",
+      "reducedMotion": true,
+      "transition": "0s",
+      "overflow": 0
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "scheme": "light",
+      "background": "rgb(246, 247, 249)",
+      "reducedMotion": true,
+      "transition": "0s",
+      "overflow": 0
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "dark",
+      "scheme": "dark",
+      "background": "rgb(20, 23, 28)",
+      "reducedMotion": true,
+      "transition": "0s",
+      "overflow": 0
+    }
+  ]
+}

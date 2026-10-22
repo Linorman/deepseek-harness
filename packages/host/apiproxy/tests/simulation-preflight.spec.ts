@@ -15,7 +15,7 @@ it('returns resolved allowances over fetch without allocating a run or accepting
     await h.ctx.plugin(UserQuestions)
     const api = createApiProxy(h.ctx, { cwd: process.cwd(), defaultModelSelection: () => undefined })
     const client = new InProcessApiClient(toFetchHandler(api, { authenticatedProductCall: call() }))
-    const { commandId: _commandId, ...draft } = h.input
+    const { commandId: _commandId, expectedModel: _expectedModel, ...draft } = h.input
     const open = vi.spyOn(h.ctx.simulations, 'open').mockClear()
     const attach = vi.spyOn(h.ctx.simulationTeams, 'attach').mockClear()
     expect((await api.simulations!.preflight({ rpcId: RpcId('unauthenticated'), payload: draft })).result)

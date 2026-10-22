@@ -1,0 +1,20 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: examples/simulation-company/tests/world-external-fault-scenario.ts
++ actual - expected
+
++ 'bc81820fb29358091fa7449d6a30efad636d6fb6af8b638e80a1ab928e4cbdc8'
+- '2099582c1bfcbf5fc105da1aa8e9b5c1fec9b43e35fe91a2b730a5b8035d5c6f'
+
+    at file:///Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-representative-current/verify-current.mjs:16:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'bc81820fb29358091fa7449d6a30efad636d6fb6af8b638e80a1ab928e4cbdc8',
+  expected: '2099582c1bfcbf5fc105da1aa8e9b5c1fec9b43e35fe91a2b730a5b8035d5c6f',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0

@@ -303,3 +303,11 @@ export { SimulationAdministrationRuntime, simulationCommandKey } from './simulat
 export type { SimulationCommandKey, SimulationCommand, SimulationCommandState, SimulationCommandReceipt, SimulationAdministrationState, SimulationAdministrationOptions } from './simulations/administration.ts'
 export type { SimulationRecordExportOptions, SimulationRecordExportState, SimulationRecordDownload } from './simulations/records-export.ts'
 export { simulationSourceScope } from './simulations/source-reader.ts'
+
+export type { SimulationWorldDomainReader } from './simulations/world-domain-reader.ts'
+export type { SimulationWorldManagementReader, SimulationWorldManagementReadState } from './simulations/world-management-reader.ts'
+export type { SimulationWorldDomainKind, SimulationWorldDomainState } from './simulations/world-domain-reader.ts'
+export type * from '@clocky/clocky-simulation-product/world-read-types'
+
+export type { SimulationCalendarState, SimulationCalendarOptions } from './simulations/calendar.ts'
+export type { SimulationRunControlState, SimulationRunControlOptions, SimulationRunControlReceipt } from './simulations/run-control.ts'

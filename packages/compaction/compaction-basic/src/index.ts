@@ -4,11 +4,13 @@
  * @module @clocky/clocky-compaction-basic
  */
 
+import { createHash } from 'node:crypto'
 import { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import { CompactionEngine, ManualCompactionError } from '@clocky/clocky-compaction'
-import type { CompactionResult, CompactionTrigger } from '@clocky/clocky-compaction'
-import type { TokenMeter } from '@clocky/clocky-token-meter'
+import { CompactionEngine, ManualCompactionError, isCompactionNoGain } from '@clocky/clocky-compaction'
+import type { CompactionNoGain, CompactionResult, CompactionTrigger } from '@clocky/clocky-compaction'
+import { estimateRequestTokens } from '@clocky/clocky-token-meter'
+import type { TokenMeasurement, TokenMeter } from '@clocky/clocky-token-meter'
 import type { Session } from '@clocky/clocky-session'
 import { CONTEXT_WINDOW_EXCEEDED_CODE, assertNever } from '@clocky/clocky-llm'
 import type { LlmCallConfig } from '@clocky/clocky-llm'
@@ -24,10 +26,12 @@ import {
 } from './config.ts'
 import {
   assertNoActiveCompaction,
+  buildSummarizationInput,
+  CompactionNoGainError,
   compactSurfaceRegion,
   selectCompactableRange,
 } from './region.ts'
-import { summarizeWithLlm } from './summarizer.ts'
+import { COMPACTION_INSTRUCTION, summarizeWithLlm } from './summarizer.ts'
 import type { SummarizationInput, SummaryResult } from './summarizer.ts'
 import type {
   BasicCompactionConfig,
@@ -80,6 +84,7 @@ const compactionRetriesSchema = z.number().step(1).min(0)
 const maxOverflowRetriesSchema = z.number().step(1).min(0)
 
 const modelPolicy: z<ModelCompactPolicyConfig> = z.object({
+  thresholdTokens: z.number().step(1).min(1),
   provider: z.string().required(),
   model: z.string().required(),
   thresholdRatio: thresholdRatioSchema,
@@ -104,6 +109,7 @@ export class BasicCompactionEngine extends CompactionEngine {
   static inject = ['llm', 'tokenMeter', 'sessions']
 
   static Config: z<BasicCompactionConfig> = z.object({
+    thresholdTokens: z.number().step(1).min(1),
     thresholdRatio: thresholdRatioSchema,
     retainRatio: retainRatioSchema,
     retainTokens: retainTokensSchema,
@@ -114,6 +120,9 @@ export class BasicCompactionEngine extends CompactionEngine {
     maxOverflowRetries: maxOverflowRetriesSchema,
     modelPolicies: z.array(modelPolicy),
     auto: z.boolean(),
+    noGainMinTokens: z.number().step(1).min(1),
+    noGainCooldownNodes: z.number().step(1).min(1),
+    noGainHistoryLimit: z.number().step(1).min(1),
   })
 
   /** Resolved and validated compaction configuration. */
@@ -253,7 +262,7 @@ export class BasicCompactionEngine extends CompactionEngine {
    * @param agent - agent whose latest durable routed request is measured.
    * @param trigger - normal step-boundary pressure or context-overflow recovery.
    * @param signal - live turn cancellation signal forwarded to summarization.
-   * @returns the latest summary compaction result, or `null` when no summary ran.
+   * @returns the latest summary compaction result, or `null` when no useful summary committed (including suppressed or no-gain attempts).
    */
   override async compactIfNeeded(
     agent: Agent,
@@ -281,13 +290,22 @@ export class BasicCompactionEngine extends CompactionEngine {
     const prune = this.ctx.get('toolResultPruner')
 
     if (trigger === 'context-overflow') {
+      if (this.fixedContextBlocked(agent, measurement, trigger, agent.session.requestContext()?.contextWindow)) return null
       if (prune !== undefined) {
         prune.pruneSession(agent.session)
         measurement = meter.measure(agent.session)
       }
       const range = selectCompactableRange(agent.session, measurement, 0)
-      if (range === null) return null
-      return this.compactRegion(range.start, range.end, agent, signal)
+      if (range === null) { this.assess(agent, measurement, trigger, 'no-range'); return null }
+      if (this.suppressed(agent, range)) { this.assess(agent, measurement, trigger, 'no-gain', range); return null }
+      this.assess(agent, measurement, trigger, 'attempt', range)
+      try {
+        return await this.compactRegion(range.start, range.end, agent, signal)
+      } catch (error: unknown) {
+        signal.throwIfAborted()
+        if (error instanceof CompactionNoGainError) return null
+        throw error
+      }
     }
 
     const context = (await this.ctx.llm.resolveModelInfo(target.provider, target.model, signal)).context
@@ -302,6 +320,7 @@ export class BasicCompactionEngine extends CompactionEngine {
     }
     const spec = resolveCompactSpec(policy, context.contextWindow)
     if (measurement.totalTokens < spec.thresholdTokens) return null
+    if (this.fixedContextBlocked(agent, measurement, trigger, context.contextWindow)) return null
 
     // Once pressure qualifies, land the model-free pass before choosing a
     // summary range, then remeasure through the singleton replay fold.
@@ -316,11 +335,19 @@ export class BasicCompactionEngine extends CompactionEngine {
       const range = selectCompactableRange(agent.session, measurement, spec.retainTokens)
       if (range === null) {
         /* v8 ignore else -- concrete replacement preserves a compactable checkpoint; subclass hooks cannot mutate it. */
-        if (result === null) return null
+        if (result === null) { this.assess(agent, measurement, trigger, 'no-range'); return null }
         /* v8 ignore next -- paired with the defensive post-success branch above. */
         break
       }
-      result = await this.compactRegion(range.start, range.end, agent, signal)
+      if (this.suppressed(agent, range)) { this.assess(agent, measurement, trigger, 'no-gain', range); return result }
+      this.assess(agent, measurement, trigger, 'attempt', range)
+      try {
+        result = await this.compactRegion(range.start, range.end, agent, signal)
+      } catch (error: unknown) {
+        signal.throwIfAborted()
+        if (error instanceof CompactionNoGainError) return result
+        throw error
+      }
       measurement = meter.measure(agent.session)
       if (measurement.totalTokens < spec.thresholdTokens) return result
     }
@@ -352,7 +379,10 @@ export class BasicCompactionEngine extends CompactionEngine {
       start,
       end,
       agent,
-      { owner: 'current-turn', stability: 'whole-surface' },
+      {
+        owner: 'current-turn', stability: 'whole-surface',
+        noGainIdentity: prepared => this.noGainIdentity(agent, { start, end }, prepared.measurement, prepared.input),
+      },
       signal,
     )
   }
@@ -419,6 +449,95 @@ export class BasicCompactionEngine extends CompactionEngine {
     }
   }
 
+  /** Record estimates without inserting a duplicate model-visible message. */
+  private assess(agent: Agent, measurement: TokenMeasurement, trigger: CompactionTrigger,
+    reason: 'attempt' | 'no-gain' | 'fixed-context' | 'no-range', range?: { start: number; end: number }): void {
+    const header = agent.session.requestHeader()
+    const fixedTokens = header === undefined ? 0 : estimateRequestTokens({ ...header.config,
+      ...header.system === undefined ? {} : { system: header.system },
+      ...header.tools === undefined ? {} : { tools: header.tools }, messages: [] })
+    const start = range === undefined ? -1 : measurement.nodes.findIndex(node => node.seq === range.start)
+    const end = range === undefined ? -1 : measurement.nodes.findIndex(node => node.seq === range.end)
+    const selectedTokens = start < 0 ? 0 : measurement.nodes.slice(start, end + 1).reduce((sum, node) => sum + node.tokens, 0)
+    agent.session.append('compaction/assessment', { trigger, reason,
+      generation: agent.session.surface.replaceGeneration, pressureTokens: measurement.totalTokens,
+      fixedTokens, selectedTokens, retainedTokens: measurement.surfaceTokens - selectedTokens,
+      outputReserveTokens: header?.config.maxTokens ?? null,
+    })
+  }
+
+  /** Fixed input already consumes the declared window; history reduction cannot repair it. */
+  private fixedContextBlocked(agent: Agent, measurement: TokenMeasurement, trigger: CompactionTrigger,
+    contextWindow: number | undefined): boolean {
+    if (contextWindow === undefined) return false
+    const header = agent.session.requestHeader()
+    if (header === undefined) return false
+    const fixedTokens = estimateRequestTokens({ ...header.config,
+      ...header.system === undefined ? {} : { system: header.system },
+      ...header.tools === undefined ? {} : { tools: header.tools }, messages: [] })
+    if (fixedTokens + (header.config.maxTokens ?? 0) < contextWindow) return false
+    this.assess(agent, measurement, trigger, 'fixed-context')
+    return true
+  }
+
+  /** Hash only effective summary inputs; bookkeeping events never alter this identity. */
+  private noGainIdentity(
+    agent: Agent,
+    range: { start: number; end: number },
+    measurement = this.ctx.tokenMeter.measure(agent.session),
+    preparedInput?: SummarizationInput,
+  ): Omit<CompactionNoGain, 'summaryTokens'> {
+    const session = agent.session
+    const start = measurement.nodes.findIndex(node => node.seq === range.start)
+    const end = measurement.nodes.findIndex(node => node.seq === range.end)
+    const nodes = measurement.nodes.slice(start, end + 1)
+    const input = preparedInput ?? buildSummarizationInput(session, nodes.map(node => node.seq))
+    const target = conversationTarget(agent)
+    const policy = target === undefined ? this.config : resolveTargetPolicy(this.config, target)
+    const contextFingerprint = hash({ algorithm: 'basic-summary-v1/token-meter-v1',
+      instruction: COMPACTION_INSTRUCTION, policy, system: input.system, tools: input.tools })
+    const prefixFingerprint = hash({ nodes, messages: input.messages })
+    const generation = session.surface.replaceGeneration
+    return {
+      fingerprint: hash({ contextFingerprint, prefixFingerprint, generation }),
+      contextFingerprint, prefixFingerprint, generation,
+      selectedNodes: nodes.length,
+      selectedTokens: nodes.reduce((sum, node) => sum + node.tokens, 0),
+    }
+  }
+
+  /** Reconstruct a bounded recent window directly from durable closed attempts. */
+  private suppressed(agent: Agent, range: { start: number; end: number }): boolean {
+    let current: Omit<CompactionNoGain, 'summaryTokens'> | undefined
+    let inspected = 0
+    const events = agent.session.events
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+      const event = events[index]
+      if (event?.type !== 'compaction/end') continue
+      inspected += 1
+      const previous = event.data.noGain
+      if (previous !== undefined && !isCompactionNoGain(previous)) {
+        throw new Error('compaction: invalid durable no-gain evidence')
+      }
+      if (previous !== undefined) current ??= this.noGainIdentity(agent, range)
+      if (previous !== undefined && current !== undefined && current.contextFingerprint === previous.contextFingerprint
+        && current.generation === previous.generation) {
+        if (current.fingerprint === previous.fingerprint) return true
+        if (current.selectedNodes >= previous.selectedNodes
+          && current.selectedNodes - previous.selectedNodes < this.config.noGainCooldownNodes
+          && current.selectedTokens - previous.selectedTokens < this.config.noGainMinTokens) {
+          const nodes = agent.session.surface.nodes
+          const start = nodes.indexOf(range.start)
+          const prefixEnd = nodes[start + previous.selectedNodes - 1]
+          if (prefixEnd !== undefined && this.noGainIdentity(agent,
+            { start: range.start, end: prefixEnd }).prefixFingerprint === previous.prefixFingerprint) return true
+        }
+      }
+      if (inspected >= this.config.noGainHistoryLimit) break
+    }
+    return false
+  }
+
   /** Bind the effective token meter and dynamically dispatched summarizer hook. */
   private regionDependencies(): { meter: TokenMeter; summarize: RegionSummarize } {
     return {
@@ -429,3 +548,15 @@ export class BasicCompactionEngine extends CompactionEngine {
 }
 
 export default BasicCompactionEngine
+
+/** Canonical object-key ordering keeps semantically identical durable inputs stable. */
+function hash(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value, (_key, field: unknown) => {
+    if (field !== null && typeof field === 'object' && !Array.isArray(field)) {
+      return Object.fromEntries(Object.entries(field).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0))
+    }
+    return field
+  })).digest('hex')
+}
+
+export { CompactionNoGainError } from './region.ts'

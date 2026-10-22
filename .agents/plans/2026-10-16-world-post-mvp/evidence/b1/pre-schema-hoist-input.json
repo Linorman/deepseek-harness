@@ -1,0 +1,4 @@
+{
+  "sha256": "63a72e088b209f34d69bd47f8cc2ec3340865c1e301decafa0413be1b207ecf7",
+  "note": "Corrected pre-index baseline retained before removing per-entry schema allocation"
+}

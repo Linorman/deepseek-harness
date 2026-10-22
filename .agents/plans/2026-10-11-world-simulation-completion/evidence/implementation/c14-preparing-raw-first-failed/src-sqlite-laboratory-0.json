@@ -1,0 +1,16 @@
+{
+  "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+  "args": [
+    "--import",
+    "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-preparing-scenario.ts",
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-driver/cordis.yml"
+  ],
+  "backend": "sqlite",
+  "scenario": "laboratory",
+  "recovery": 0,
+  "code": 1,
+  "signal": null,
+  "stdout": "",
+  "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'settled'\n- 'applied'\n\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-preparing-scenario.ts:75:14) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 'settled',\n  expected: 'applied',\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v25.9.0\n"
+}

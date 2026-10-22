@@ -1,0 +1,66 @@
+{
+  "id": "world-hiring-resource:world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+  "actorId": "buyer",
+  "transaction": {
+    "commitmentId": null,
+    "reads": [
+      {
+        "resourceId": "fee-cash",
+        "revision": 1
+      },
+      {
+        "resourceId": "fee-payee",
+        "revision": 1
+      }
+    ],
+    "transfers": [
+      {
+        "from": "fee-cash",
+        "to": "fee-payee",
+        "quantity": "6"
+      }
+    ]
+  },
+  "grants": [],
+  "expiresAt": "7",
+  "createdTime": "2",
+  "createdOperationId": null,
+  "management": {
+    "kind": "authenticated-user",
+    "commandId": "human:hire-existing",
+    "principalId": "authenticated-test-manager",
+    "credentialGeneration": 2,
+    "policyRef": "test-explicit-personnel-manager/1",
+    "policyGeneration": "1",
+    "time": "2"
+  },
+  "sequence": 34,
+  "revision": 2,
+  "world": {
+    "intentId": "world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+    "planId": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+    "fee": {
+      "id": "original-charge",
+      "version": "1",
+      "policyRef": "clocky.organization.hiring-fee/1",
+      "operation": "hire-existing",
+      "positionEntityId": "fee-vacancy",
+      "from": "fee-cash",
+      "to": "fee-payee",
+      "unit": "credit",
+      "quantity": "6",
+      "grants": [],
+      "reservationPeriod": "5"
+    },
+    "approvals": []
+  },
+  "phase": "committed",
+  "settlement": {
+    "kind": "world",
+    "intentId": "world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+    "planId": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+    "transition": "committed",
+    "sequence": 36,
+    "time": "2"
+  }
+}

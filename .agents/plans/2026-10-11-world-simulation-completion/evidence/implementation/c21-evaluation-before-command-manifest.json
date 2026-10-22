@@ -1,0 +1,60 @@
+{
+  "scope": "Eight-case before-evaluation follow-up only, conditional cold2 original-owner deterministic completion; old96 matrix/fixtures preserved unchanged",
+  "fixtureHash": "745e14a525e4dbe0279cee7ed0197487672d3ae3d266d7588802617ede0e9ac8",
+  "fixtureFiles": [
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-external-fault/cordis.yml",
+      "bytes": 107,
+      "sha256": "e7aeeac0192a0b31546e275d7b72a6b4e6d2f54db95058e1cdb00852d1439bd2"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-fault-model.ts",
+      "bytes": 4262,
+      "sha256": "e1452017c2cedd8f0872284e709abf1899612b39a9488b63b1b7a24278aca9ef"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-fault-scenario.ts",
+      "bytes": 20999,
+      "sha256": "6e80895dc14be549e11093671684a097b73e8c10e5d3c4ccbb2b49f0cb2d2f54"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-fault.snapshot.ts",
+      "bytes": 5191,
+      "sha256": "9c321e305b9d536014cc3bbde248e991d14b5eea37755245a5680fb31285fd6e"
+    }
+  ],
+  "sourceHash": "abcf6065f1a8fb8471d6e3665b5ddd9d338abb38d28eba32150e4a7aed125f8b",
+  "compiledHash": "503691929390b28686c991b564d461a1c6e29e42ee40e6ecd5bbd2827fcf00f5",
+  "sourceFiles": 653,
+  "compiledFiles": 821,
+  "commands": [
+    {
+      "command": "fault_evidence_root=$(cat .local/world-completion/c21-external-faults/evaluation-before-completion/current-directory.txt)\nTMPDIR=\"$PWD/.local/world-completion/tmp\" WORLD_EXTERNAL_FAULT_EVIDENCE_ROOT=\"$fault_evidence_root\" WORLD_EXTERNAL_FAULT_ONLY=evaluation-append-before CLOCKY_SNAPSHOT_MAX_CONCURRENCY=2 pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-external-fault.snapshot.ts > .local/world-completion/c21-external-faults/evaluation-before-completion/final-source.log 2>&1",
+      "exitCode": 0,
+      "passed": 4,
+      "durationSeconds": 21.74
+    },
+    {
+      "command": "fault_evidence_root=$(cat .local/world-completion/c21-external-faults/evaluation-before-completion/current-directory.txt)\nTMPDIR=\"$PWD/.local/world-completion/tmp\" WORLD_EXTERNAL_FAULT_EVIDENCE_ROOT=\"$fault_evidence_root\" WORLD_EXTERNAL_FAULT_ONLY=evaluation-append-before CLOCKY_EXAMPLE_MODE=lib CLOCKY_SNAPSHOT_MAX_CONCURRENCY=2 pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-external-fault.snapshot.ts > .local/world-completion/c21-external-faults/evaluation-before-completion/final-lib.log 2>&1",
+      "exitCode": 0,
+      "passed": 4,
+      "durationSeconds": 4.7
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -p .local/world-completion/c21-external-faults/tsconfig-fault-fixture.json > .local/world-completion/c21-external-faults/evaluation-before-completion/types-final.log 2>&1",
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsx scripts/run-oxlint.ts --type-aware examples/simulation-company/tests/world-external-fault-scenario.ts examples/simulation-company/tests/world-external-fault-model.ts examples/simulation-company/tests/world-external-fault.snapshot.ts > .local/world-completion/c21-external-faults/evaluation-before-completion/lint-final.log 2>&1",
+      "exitCode": 0
+    }
+  ],
+  "evidenceRoot": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2",
+  "limits": [
+    "Unappended warm candidate is not an actual saved sample or evaluation.",
+    "Only the second cold evaluation-before case calls public commitWorldMutation on the original accepted plan; no models, activation, clock movement or production driver advance.",
+    "Reducer counter wraps and invokes the original installed domain method; unchanged retry counter plus unchanged revision/tail/full snapshot proves no duplicate reduction/append.",
+    "RecordedAt and sequence are produced at the first actual cold2 append, distinct from the earlier unappended candidate.",
+    "No production/API/schema/build changes; full X12 remains root audit scope."
+  ]
+}

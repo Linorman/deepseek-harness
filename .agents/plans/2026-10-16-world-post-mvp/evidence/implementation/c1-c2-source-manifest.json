@@ -1,0 +1,131 @@
+{
+  "schema": "clocky.post-mvp.c1-c2-source-evidence/1",
+  "date": "2026-10-19",
+  "journalVersion": 100,
+  "status": "source-frozen; final same-build journal-100 source/Loader/Host/cold-process snapshots passed",
+  "baseHead": "b49dd0edfddb2f19e27110576c5a0f2089cc30ba",
+  "files": {
+    "packages/simulation/simulation/src/world-generation.ts": "sha256:240cffe8b7bab551e3c6b3a023d184528c25a610aff393819ba5c2798d3461a9",
+    "packages/simulation/simulation/src/world-hiring-market.ts": "sha256:b0beb92409be7bcfa2691eeb53ce882dd7e7ba0fe1d52dbce13b5342b6f0893e",
+    "packages/simulation/simulation/src/world.ts": "sha256:2b3170c0d76b9c5a701fe19adcd623a22fc53eca1922284bd07dfde548842bc8",
+    "packages/simulation/simulation/src/budget.ts": "sha256:ea2c2d9f675a31993f8469337b654b1cf98c68af045af1c760f3686fa70a4542",
+    "packages/simulation/simulation/src/types.ts": "sha256:15f580199117efe31be319295f09ac7b2708b939e88ea9d6921d5f730ce4c619",
+    "packages/simulation/simulation/src/index.ts": "sha256:6fa20683776c67539c1d0a5497450de432a437b9aad0f416d16cb288ae088ff3",
+    "packages/simulation/simulation/package.json": "sha256:feb572afb26941d99351de9510b796308a2e41d7188471f684d7e7c907aa52ce",
+    "packages/simulation/simulation-local/src/world-generation.ts": "sha256:53739f1e20a050ecc3f4eb2ae4d0002bfdee28ea4a9db6fa0cbf1e386f9014b0",
+    "packages/simulation/simulation-local/src/world-hiring-market.ts": "sha256:590511bec08cac9c69bdb792204902df0d8278238105c5e3bc11c46449e80dee",
+    "packages/simulation/simulation-local/src/world.ts": "sha256:8ca2787e43a00e44a49651d3f4882ce31817b548d43e651c33601484fb15f379",
+    "packages/simulation/simulation-local/src/run.ts": "sha256:49a2bf0788fa32c28a5751fc01e9900ea6651f1cd997577346e91239c5d64c48",
+    "packages/simulation/simulation-local/src/journal.ts": "sha256:666201adfb30f09caed632aabddc8ecb3f17518cff0eea592e46d0d8091660be",
+    "packages/simulation/simulation-team/src/generation.ts": "sha256:8bf6c21fca9be726f17da19830f7b5d402179107b19643a88a7d96edf8914df9",
+    "packages/simulation/simulation-team/src/index.ts": "sha256:6febddac58f47272bd1a7fbfcad0d26418743b03596126920a80431760e93bbe",
+    "packages/simulation/simulation-team/src/types.ts": "sha256:5144bc94f9406fa4a456473405b5b7dba5e9231901d5def831bd167a63660896",
+    "packages/simulation/simulation-world/src/driver.ts": "sha256:6df20f6dbece0a1641534f7c7d1d4cab7ab3bd4f33bc3af6d82470d5d00c2010",
+    "packages/simulation/simulation-product/src/generation-schema.ts": "sha256:46a83cfd57978343843f15891c91ae1097cdd9a47ede14e99e9d5cffb5da5556",
+    "packages/simulation/simulation-product/src/generation-types.ts": "sha256:086694b17b4253b32d1c125c02ed80d44a310b34e4190ccd3c19b1075c3ca015",
+    "packages/simulation/simulation-product/src/administration.ts": "sha256:ae507f981dda40a84e9aa7fc9d55a0ae2ac453eea1ec38ec877b19b250bbd7ce",
+    "packages/simulation/simulation-product/src/world-owner.ts": "sha256:7d897e3438cfadb739cc788561249f1c0f93977b0e0d97c6cf5be87d493d2417",
+    "packages/simulation/simulation-product/src/index.ts": "sha256:5620a2cf86b411a15f0b3e26bc5e93153d868ad6829ecabd775814939e02df05",
+    "packages/simulation/simulation-product/package.json": "sha256:73736b79dd86cb3f230c25efcceb51b621a39544eebc9986b99adbaad16233f8",
+    "packages/simulation/simulation-local/tests/world-generation.spec.ts": "sha256:51c6663b12d1e226d9bbcd0a7f096c034157a27d97eb7f7d633144ccbdfd781a",
+    "packages/simulation/simulation-local/tests/world-planners.spec.ts": "sha256:acae2fb8a0d132ab7cb4ecb510a62565071c70c1bb352447fda24d6d020a37ae",
+    "packages/simulation/simulation-team/tests/generation.spec.ts": "sha256:b155ec5fc0a1d2f0f4d398d220ae1b1f3a848fad0678fca29308e27bb0126503",
+    "packages/simulation/simulation-team/tests/generation-stream.spec.ts": "sha256:24e6b7ecd148e07f5e43fc1b7b98d5d9691ad3e9b0672bc255a2cacfb932f2df",
+    "packages/simulation/simulation-team/tests/generation-middleware.spec.ts": "sha256:b89132133fab970fd1ad8c9d295fbd0ea08709eccae38a4bfa31ad879f7e77ef",
+    "packages/simulation/simulation-product/tests/world-management.spec.ts": "sha256:e3105bde6a9efb6f42b093efc2d67ab7ba77d033470f84ac5af5dbc16499e36b",
+    "examples/simulation-company/tests/world-generation-scenario.ts": "sha256:9b005e7582392e4980205a13c666aa339748f0a5a74baf38fc1a1f5a6d2439b4",
+    "examples/simulation-company/tests/world-generation.snapshot.ts": "sha256:6370746cd3266e944767411c55f36bc6ef9cb3fa28b76a3f2a050da7dc38416d",
+    "python/sdk/src/clocky/simulation_world_domain.py": "sha256:77e513d0d169a8a5479a7b4ea0f7c990c7c7c9d889c777154f2adc7bafb987af",
+    "python/sdk/tests/test_simulation_hiring_market.py": "sha256:db46eee5742511bcf405fee65c73753ebceb8c5fc79c1f761508596108e11cd6",
+    "packages/simulation/simulation/src/generation-identities.ts": "sha256:4ae7f5a901650ae1a18c447351040dfeaa588fbf643e1d0fb2c233f1be6325b3",
+    "packages/simulation/simulation-team/src/generation-evidence.ts": "sha256:7cb830d397acd5102440b8481b240513ff8cb7f0bd263af8fa8a56df1442ca75",
+    "packages/simulation/simulation-team/src/checkpoint.ts": "sha256:ec9fc2f3408f325fdb5daecb07d9c118df76b209ce59b99f05be9fda2e243652",
+    "packages/simulation/simulation-team/src/restore.ts": "sha256:d600f4fb78b795f279724d90852e74caa9d55d142a899518fe789f610cfde91e",
+    "packages/simulation/simulation-team/tests/generation-evidence.spec.ts": "sha256:f5ea64e0b92120ec64f70c9b0162660851b80f16defc79094f91bcfa4cd59b87",
+    "packages/simulation/simulation-product/src/maintenance-control.ts": "sha256:9202c90830d212b32590539be6d25565630af077201ffadadfea4b6a8c9164be",
+    "packages/simulation/simulation-local/src/scheduler.ts": "sha256:75a725ed2488968d796fec325267af434f73351343cbd4a3749341d3435f5774",
+    "packages/simulation/simulation-local/tests/ingress.spec.ts": "sha256:052215ef3bb21327c0eec8f3a1aadf47b1417c9790a77d95a69fb51b414a362b"
+  },
+  "retainedChecks": [
+    {
+      "path": ".local/post-mvp-c/integrity-tests.log",
+      "sha256": "fc17746a976e314e260c67e74959b0dcd4ba177d7fec91dde89576b4f0d34889",
+      "meaning": "6 protocol and queued-input tests passed before final static fixes"
+    },
+    {
+      "path": ".local/post-mvp-c/product-integrity-tests.log",
+      "sha256": "924801f887cc4d430b955621ccf4087c6318c3efb9dc401141b6f7908bb601de",
+      "meaning": "2 real Host/A2 and JS-property-id tests passed before final static fixes"
+    },
+    {
+      "path": ".local/post-mvp-c/python-market.log",
+      "sha256": "cf426ab35f3b06fccef8290fde5325d90af130a79da1d1752031518df77c4236",
+      "meaning": "3 Python A2 provenance tests passed"
+    },
+    {
+      "path": ".local/post-mvp-c/stream-tests.log",
+      "sha256": "1f2d5a11821f4f928cd3d740e4e72531626e27cce73a316f935e7ca8d66c44b7",
+      "meaning": "10 Native/Session/raw-stream tests passed before final static fixes"
+    },
+    {
+      "path": ".local/post-mvp-c/snapshot-focused.log",
+      "sha256": "b428b4c36d58d0a422b89cc80138469ca8397533e8abec51f70a41d97b62d471",
+      "meaning": "2 cold-process snapshots passed on prior built artifacts; MUST repeat on final journal 100 build"
+    },
+    {
+      "path": ".local/post-mvp-c/evidence-final-tests.log",
+      "sha256": "7bbff8de290422b75b68bff820b7ceab3220314933a29b935dafc4713e5a4ba7",
+      "meaning": "13 tests passed: original generation Native/Team/stream/middleware and two-backend real Session tampering/deletion checkpoint/restore/archive refusal"
+    },
+    {
+      "path": ".local/post-mvp-c/evidence-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "meaning": "tsc -b simulation-team simulation-product passed after opaque ID schemas"
+    },
+    {
+      "path": ".local/post-mvp-c/evidence-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "meaning": "focused oxlint passed after formatting"
+    },
+    {
+      "path": ".local/post-mvp-c/helper-ingress-tests.log",
+      "sha256": "ca2cc29919ca4d0dd855277b8714db509deb625b58f28d5005dae415164d9fb1",
+      "meaning": "4 JSON/SQLite Native/Host tests passed: helpers excluded from normal ingress and normal actors remain eligible"
+    },
+    {
+      "path": ".local/post-mvp-c/brand-tests-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "meaning": "tsc -b tsconfig.host.json passed with branded test identities"
+    },
+    {
+      "path": ".local/post-mvp-c/brand-tests-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "meaning": "focused generation types/tests lint passed"
+    },
+    {
+      "path": ".local/post-mvp-c/doc-verify-pairs-last.log",
+      "sha256": "d504d9d571e8de4fa851a2cd11ee2abc29b10862dcd6c81716093b45f7d71f78",
+      "meaning": "1159 documentation pairs consistent"
+    },
+    {
+      "path": ".local/post-mvp-c/doc-verify-types.log",
+      "sha256": "b6aa1b32a29314cb6cec72639fc4b33ecfc3afdc4e0eb6f46d20adc1af22ecdb",
+      "meaning": "390 type-equiv declarations match sources"
+    },
+    {
+      "path": ".local/post-mvp-c/final100-core-team-planners.log",
+      "sha256": "34b6c9b1100d73f61e418553395aa24e9f00dcc9396e0b6ef6f244cf537f39d9",
+      "meaning": "33 tests passed on final journal100: both-backend Native/Team/planners/ordinary ingress and actual Loader conflicting plans"
+    },
+    {
+      "path": ".local/post-mvp-c/final100-host.log",
+      "sha256": "ce48d7bdc87f6f28f86358d46cc585eccc6ef3dfcb2859ce47ded17e2bbe6e39",
+      "meaning": "2 actual Host-to-A2 bridge tests passed, including helper ingress refusal"
+    },
+    {
+      "path": ".local/post-mvp-c/final100-snapshot.log",
+      "sha256": "ec2532470be80ac03d9483dd662136a23ddcb1e5bd762d2b228a7d84bb5aecce",
+      "meaning": "2 cold-process snapshots passed on final same-build journal100; exactly1 then0 model calls"
+    }
+  ]
+}

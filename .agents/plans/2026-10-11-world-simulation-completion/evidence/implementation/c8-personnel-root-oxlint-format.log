@@ -1,0 +1,2 @@
+packages/simulation/simulation-local/src/world-personnel.ts:201:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:193:11: error typescript(no-unnecessary-condition): Unnecessary comparison between literal values.

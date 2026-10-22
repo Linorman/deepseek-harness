@@ -1,0 +1,435 @@
+{
+  "generatedAtUtc": "2026-10-12T00:35:44.047343+00:00",
+  "workspace": "/Volumes/projects-mac/deepseek-harness",
+  "ownership": "Only four new world-rehire fixture source/config files; no production/shared/SDK/UI/checklist changes.",
+  "files": [
+    {
+      "path": "examples/simulation-company/tests/world-rehire-scenario.ts",
+      "bytes": 30987,
+      "sha256": "f356f09d8aad34bf0e1776711ad1aa3deccf2eb42019617cf5ef105f368746b0"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-rehire-model.ts",
+      "bytes": 9837,
+      "sha256": "480ebe3575ada454b306f2a551dd9b1421b2ba3492577b0465656c22d31a48c5"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-rehire.snapshot.ts",
+      "bytes": 3261,
+      "sha256": "41e0f1c6c67c0c09d239f27706fe6ee9bbc12284a97daa8376d19afb13eee92d"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-rehire/cordis.yml",
+      "bytes": 99,
+      "sha256": "d5deb04d95da9ca3f08b0579a1199c4dd92e1882b9455c7d08489e281ec748c7"
+    }
+  ],
+  "commands": [
+    {
+      "command": "TMPDIR=$PWD/.local/world-completion/tmp CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-rehire.snapshot.ts --maxWorkers=1 > .local/world-completion/tmp/world-rehire-source-final-narrowed.log 2>&1",
+      "exitCode": 0,
+      "testsPassed": 4,
+      "durationSeconds": 81.63,
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-final-narrowed.log",
+        "bytes": 453,
+        "sha256": "17bee23a266bfe76cb13607df7a223bc4f9ba94071caa8df662f36a8ae4f0301"
+      }
+    },
+    {
+      "command": "TMPDIR=$PWD/.local/world-completion/tmp pnpm exec tsx scripts/run-oxlint.ts examples/simulation-company/tests/world-rehire-scenario.ts examples/simulation-company/tests/world-rehire-model.ts examples/simulation-company/tests/world-rehire.snapshot.ts > .local/world-completion/tmp/world-rehire-lint-narrowed.log 2>&1",
+      "exitCode": 0,
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lint-narrowed.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": "TMPDIR=$PWD/.local/world-completion/tmp pnpm exec tsc -b tsconfig.host.json > .local/world-completion/tmp/world-rehire-types-narrowed.log 2>&1",
+      "exitCode": 1,
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-types-narrowed.log",
+        "bytes": 127,
+        "sha256": "a8721905906fece13efd085acbc5204fae389d74fa35957dd68592d7532572da"
+      },
+      "failure": "Root-owned new WebScaffold.dispose typing error only; Root repaired to close and subsequent c13-build-frozen.log full Host/Client/Web build succeeded before lib."
+    },
+    {
+      "command": "TMPDIR=$PWD/.local/world-completion/tmp CLOCKY_EXAMPLE_MODE=lib CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-rehire.snapshot.ts --maxWorkers=1 > .local/world-completion/tmp/world-rehire-lib-final.log 2>&1",
+      "buildPrerequisite": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-build-frozen.log (Root confirmed terminal exit0, 197 artifacts)",
+      "exitCode": 0,
+      "testsPassed": 4,
+      "durationSeconds": 68.59,
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-final.log",
+        "bytes": 453,
+        "sha256": "ea7b4c0bcbe57b0d18ca02c54bb21f1222ae7ee38dfa833b324d0ea3c36bf6ba"
+      }
+    }
+  ],
+  "runtimeCoverage": [
+    "Actual compiled company/laboratory author inputs plus independent HR/witness committee; original candidate starts employed in old-role, never votes during retirement.",
+    "Actual keyless LlmAdapter with normal Agent Sessions and observe/stage/submit calls; actual Channel notification, Director resolution and Native personnel retire=true commit.",
+    "Original Person/Participant/Session/profile/private Channel persist; original assignment closes; explicit retirement activate and fresh public queueDecision refuse with zero Native change and zero additional model calls.",
+    "Trusted scenario owner explicitly admits one eligible-for-hire relation only after original departure obligations settle; strict existing-person approval freezes exact entity revision/profile hash; two original authorized independent voters each approve policy and exact hire.",
+    "Missing approval rejects with zero append; unique new-role assignment and original-person first-action private post/delivery receipt; original Session memory prefix remains, private Director rationale not exposed to candidate.",
+    "Original norm-announcement remains pending and has no decision while retired; complete original wake is accepted after rehire, actual same-epoch prepared view appears uniquely in original Session, with no fabricated consumption receipt for ordinary non-World message.",
+    "Actual shared counts combine pure Native projection with real canonical Team history: 4 nonterminated and historical Participants, resident limit3; assigned3 before/2 retired/3 rehired; candidate one retired quiesced activation then exactly two distinct same-Session activation IDs after rehire.",
+    "Exact original departure and rehire commit retries append nothing and infer nothing in both creation and cold process; separate OS process restores paused completed checkpoint, original business and private memory proof equal, resident/unreleased writers zero and model calls0."
+  ],
+  "budgets": "No timeout/quota raises after failures. Fixed C6 three-resident governance workload, original Native token/history/event/time budgets, World maxRequests32 and byte allowances65536 inherited from existing-hire; committee deadline100 unchanged.",
+  "scopeLimits": [
+    "Runtime fixture validates shared pure/Team counts; it does not claim UI/SDK product rendering coverage (Root owns those).",
+    "No provider credential/real remote LLM test; actual keyless scripted adapter is exercised through canonical Agent tools.",
+    "No SIGKILL/retirement timeout/unload claim from this O15 fixture; those have separate C11/C12/O17 evidence."
+  ],
+  "failureClassification": [
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-pilot.log",
+        "bytes": 3221,
+        "sha256": "baffb97a49b379aea81980a14630d17edd34cf99bac4dc4192b6a501bf738fdb"
+      },
+      "classification": "Root-owned people-schema temporary syntax while concurrently being authored; no flow execution."
+    },
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-pilot-counts.log",
+        "bytes": 1984,
+        "sha256": "4e8c7ab775cd124445b8bb51be1507c7b526588fb39fe828c433b3a15f21f8aa"
+      },
+      "classification": "New fixture author topology invalid: initial generic Engineering hire wake mismatched HR new-role authorization; fixed initial workload before compilation, no permission widening."
+    },
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-pilot-author-fixed.log",
+        "bytes": 3461,
+        "sha256": "d4d1b5e640819b5c3d3d41ada0c515dc7e540b8bb79be384138a1e2e7c0f45fe"
+      },
+      "classification": "Actual production bug: retired candidate targeted by retained public Norm announcement; retirement writer guard correctly rejected. Root repaired scheduling qualification without cancelling responsibility or loosening guard."
+    },
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-pilot-diagnostic.log",
+        "bytes": 3585,
+        "sha256": "1cf6e7e48689b16996710689b0364eb80df1b4703a6b80eb815dc242ef64752f"
+      },
+      "classification": "Read-only stage diagnostic of same production bug; monitor never suppressed failure."
+    },
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-pilot-actor-diagnostic.log",
+        "bytes": 4499,
+        "sha256": "c872f64ea1c76426df03665b4624c4c29de7d4c9b1b86367f85d5ad9984e3f44"
+      },
+      "classification": "Exact observer pending original Norm wake and frozen legal HR+witness electorate identified; transparent activation diagnostic removed before final runs."
+    },
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-final.log",
+        "bytes": 2699,
+        "sha256": "6325b7a2f5ec582bb5eb4ff80d46d3e66a0cd0e0641aad5ab34033aea22418f6"
+      },
+      "classification": "Added fixture assertion observed before actual Norm enactment, so publication wake not yet created; moved to real enactment stage."
+    },
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-announcement-fixed.log",
+        "bytes": 6323,
+        "sha256": "631c8cb8a28984c5ee66d9a0a7022a140b637b39d81aeb67a4e2e592f2128425"
+      },
+      "classification": "Added fixture assertion incorrectly demanded World-authority consumption on ordinary message; corrected to actual persisted canonical Session view and original epoch, preserving all business checks."
+    },
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lint-frozen.log",
+        "bytes": 167,
+        "sha256": "7808038c0b5f9d7587ac0148fb92d46ddc7390ad345a872c6232b092a2277da5"
+      },
+      "classification": "Own callback narrowing lost typed prepared view; fixed const readonly view after actual source4 terminal; no business semantic change."
+    },
+    {
+      "artifact": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lint-root-wake-fixed.log",
+        "bytes": 502,
+        "sha256": "07433ec4f264fcbea011cb736ce73cb5ee9afe467c58738003d111174fc1adeb"
+      },
+      "classification": "Tool misuse: ESLint default config not repository lint entry; formal run-oxlint immediately used and later passed."
+    }
+  ],
+  "precedingSource4": {
+    "passed": 4,
+    "durationSeconds": 109.34,
+    "input": {
+      "path": "examples/simulation-company/tests/world-rehire-scenario.ts",
+      "bytes": 30960,
+      "sha256": "26debf8ca78cb47d176f2f7d160968953c0d07977ec6e5efc5db053d21985da7",
+      "log": ".local/world-completion/tmp/world-rehire-source-frozen.log",
+      "passed": 4
+    },
+    "artifact": {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-frozen.log",
+      "bytes": 456,
+      "sha256": "ba5ccec99299cf71786a2a5a9088d4faa95d83235e086e4ed383f663458a1a75"
+    },
+    "difference": "Final source only captured already validated prepared context.view in a const so callback narrowing remains typed. Final source4 rerun passed with final hashes."
+  },
+  "rawResults": [
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-json-company-create.stdout.json",
+      "bytes": 720,
+      "sha256": "63bf6441ffb49bbd108a5ccf1da885844eb88bd8cf534af1db43e0debcc54606",
+      "mode": "source",
+      "backend": "json",
+      "scenario": "company",
+      "restored": false,
+      "modelCalls": 135,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-json-company-create.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-json-company-cold.stdout.json",
+      "bytes": 717,
+      "sha256": "2c0f29d5fc6812afde5e76942836b8cfab6a233f29a506236e008ee2a777fc0c",
+      "mode": "source",
+      "backend": "json",
+      "scenario": "company",
+      "restored": true,
+      "modelCalls": 0,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-json-company-cold.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-json-laboratory-create.stdout.json",
+      "bytes": 723,
+      "sha256": "7e5aa2edf5707bf3460d4eb04d1fa38247c0f70ddb6cdd1d12ef456c7008e604",
+      "mode": "source",
+      "backend": "json",
+      "scenario": "laboratory",
+      "restored": false,
+      "modelCalls": 135,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-json-laboratory-create.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-json-laboratory-cold.stdout.json",
+      "bytes": 720,
+      "sha256": "3234b101b4500f118bb778f002e644505e13270e4ec6cf51e7c58208e3321436",
+      "mode": "source",
+      "backend": "json",
+      "scenario": "laboratory",
+      "restored": true,
+      "modelCalls": 0,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-json-laboratory-cold.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-sqlite-company-create.stdout.json",
+      "bytes": 720,
+      "sha256": "63bf6441ffb49bbd108a5ccf1da885844eb88bd8cf534af1db43e0debcc54606",
+      "mode": "source",
+      "backend": "sqlite",
+      "scenario": "company",
+      "restored": false,
+      "modelCalls": 135,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-sqlite-company-create.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-sqlite-company-cold.stdout.json",
+      "bytes": 717,
+      "sha256": "2c0f29d5fc6812afde5e76942836b8cfab6a233f29a506236e008ee2a777fc0c",
+      "mode": "source",
+      "backend": "sqlite",
+      "scenario": "company",
+      "restored": true,
+      "modelCalls": 0,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-sqlite-company-cold.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-sqlite-laboratory-create.stdout.json",
+      "bytes": 723,
+      "sha256": "7e5aa2edf5707bf3460d4eb04d1fa38247c0f70ddb6cdd1d12ef456c7008e604",
+      "mode": "source",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "restored": false,
+      "modelCalls": 135,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-sqlite-laboratory-create.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-sqlite-laboratory-cold.stdout.json",
+      "bytes": 720,
+      "sha256": "3234b101b4500f118bb778f002e644505e13270e4ec6cf51e7c58208e3321436",
+      "mode": "source",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "restored": true,
+      "modelCalls": 0,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-source-sqlite-laboratory-cold.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-json-company-create.stdout.json",
+      "bytes": 720,
+      "sha256": "63bf6441ffb49bbd108a5ccf1da885844eb88bd8cf534af1db43e0debcc54606",
+      "mode": "lib",
+      "backend": "json",
+      "scenario": "company",
+      "restored": false,
+      "modelCalls": 135,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-json-company-create.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-json-company-cold.stdout.json",
+      "bytes": 717,
+      "sha256": "2c0f29d5fc6812afde5e76942836b8cfab6a233f29a506236e008ee2a777fc0c",
+      "mode": "lib",
+      "backend": "json",
+      "scenario": "company",
+      "restored": true,
+      "modelCalls": 0,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-json-company-cold.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-json-laboratory-create.stdout.json",
+      "bytes": 723,
+      "sha256": "7e5aa2edf5707bf3460d4eb04d1fa38247c0f70ddb6cdd1d12ef456c7008e604",
+      "mode": "lib",
+      "backend": "json",
+      "scenario": "laboratory",
+      "restored": false,
+      "modelCalls": 135,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-json-laboratory-create.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-json-laboratory-cold.stdout.json",
+      "bytes": 720,
+      "sha256": "3234b101b4500f118bb778f002e644505e13270e4ec6cf51e7c58208e3321436",
+      "mode": "lib",
+      "backend": "json",
+      "scenario": "laboratory",
+      "restored": true,
+      "modelCalls": 0,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-json-laboratory-cold.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-sqlite-company-create.stdout.json",
+      "bytes": 720,
+      "sha256": "63bf6441ffb49bbd108a5ccf1da885844eb88bd8cf534af1db43e0debcc54606",
+      "mode": "lib",
+      "backend": "sqlite",
+      "scenario": "company",
+      "restored": false,
+      "modelCalls": 135,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-sqlite-company-create.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-sqlite-company-cold.stdout.json",
+      "bytes": 717,
+      "sha256": "2c0f29d5fc6812afde5e76942836b8cfab6a233f29a506236e008ee2a777fc0c",
+      "mode": "lib",
+      "backend": "sqlite",
+      "scenario": "company",
+      "restored": true,
+      "modelCalls": 0,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-sqlite-company-cold.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-sqlite-laboratory-create.stdout.json",
+      "bytes": 723,
+      "sha256": "7e5aa2edf5707bf3460d4eb04d1fa38247c0f70ddb6cdd1d12ef456c7008e604",
+      "mode": "lib",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "restored": false,
+      "modelCalls": 135,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-sqlite-laboratory-create.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-sqlite-laboratory-cold.stdout.json",
+      "bytes": 720,
+      "sha256": "3234b101b4500f118bb778f002e644505e13270e4ec6cf51e7c58208e3321436",
+      "mode": "lib",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "restored": true,
+      "modelCalls": 0,
+      "stderr": {
+        "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/tmp/world-rehire-lib-sqlite-laboratory-cold.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "result": {
+    "sourcePassed": 4,
+    "libPassed": 4,
+    "actualCreateCallsPerCase": 135,
+    "independentColdCases": 8,
+    "coldCallsPerCase": 0,
+    "rawStdoutResults": 16,
+    "stderrResults": 16,
+    "finalFilesUnchanged": true
+  },
+  "buildArtifact": {
+    "path": "/Volumes/projects-mac/deepseek-harness/.agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-build-frozen.log",
+    "bytes": 378208,
+    "sha256": "d60e92d6060609a8ad83c2f0e16dfb2196fa3647721879f766a4e3559607ab3b"
+  }
+}

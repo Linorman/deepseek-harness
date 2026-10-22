@@ -43,6 +43,70 @@
     "./context-readers": {
       "types": "./lib/types/context-readers.d.ts",
       "default": "./lib/types/context-readers.js"
+    },
+    "./world-schema": {
+      "types": "./lib/types/world-schema.d.ts",
+      "default": "./lib/types/world-schema.js"
+    },
+    "./world-read-types": {
+      "types": "./lib/types/world-read-types.d.ts",
+      "default": "./lib/types/world-read-types.js"
+    },
+    "./world-read-schema": {
+      "types": "./lib/types/world-read-schema.d.ts",
+      "default": "./lib/types/world-read-schema.js"
+    },
+    "./world-management-types": {
+      "types": "./lib/types/world-management-types.d.ts",
+      "default": "./lib/types/world-management-types.js"
+    },
+    "./world-management-schema": {
+      "types": "./lib/types/world-management-schema.d.ts",
+      "default": "./lib/types/world-management-schema.js"
+    },
+    "./generation-schema": {
+      "types": "./lib/types/generation-schema.d.ts",
+      "default": "./lib/types/generation-schema.js"
+    },
+    "./generation-types": {
+      "types": "./lib/types/generation-types.d.ts",
+      "default": "./lib/types/generation-types.js"
+    },
+    "./external-effect-sandbox": {
+      "types": "./lib/types/external-effect-sandbox.d.ts",
+      "default": "./lib/types/external-effect-sandbox.js"
+    },
+    "./external-effect-owner": {
+      "types": "./lib/types/external-effect-owner.d.ts",
+      "default": "./lib/types/external-effect-owner.js"
+    },
+    "./external-effect-schema": {
+      "types": "./lib/types/external-effect-schema.d.ts",
+      "default": "./lib/types/external-effect-schema.js"
+    },
+    "./backup-import": {
+      "types": "./lib/types/backup-import.d.ts",
+      "default": "./lib/types/backup-import.js"
+    },
+    "./federation-mailbox": {
+      "types": "./lib/types/federation-mailbox.d.ts",
+      "default": "./lib/types/federation-mailbox.js"
+    },
+    "./federation-ownership": {
+      "types": "./lib/types/federation-ownership.d.ts",
+      "default": "./lib/types/federation-ownership.js"
+    },
+    "./federation-checkpoint": {
+      "types": "./lib/types/federation-checkpoint.d.ts",
+      "default": "./lib/types/federation-checkpoint.js"
+    },
+    "./experiment-schema": {
+      "types": "./lib/types/experiment-schema.d.ts",
+      "default": "./lib/types/experiment-schema.js"
+    },
+    "./experiment-types": {
+      "types": "./lib/types/experiment-types.d.ts",
+      "default": "./lib/types/experiment-types.js"
     }
   },
   "files": [
@@ -54,7 +118,8 @@
   "license": "MIT",
   "dependencies": {
     "@clocky/schemastery": "workspace:^",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "fast-json-stable-stringify": "^2.1.0"
   },
   "peerDependencies": {
     "@clocky/cordis": "workspace:^",
@@ -62,6 +127,7 @@
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-product-principal": "workspace:^",
     "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-scenario": "workspace:^",
     "@clocky/clocky-storage": "workspace:^",
     "@clocky/clocky-storage-log": "workspace:^",
     "@clocky/clocky-simulation-team": "workspace:^",
@@ -71,7 +137,8 @@
     "@clocky/clocky-agent-runtime": "workspace:^",
     "@clocky/clocky-agent-runtime-in-process": "workspace:^",
     "@clocky/clocky-team-human-actor": "workspace:^",
-    "@clocky/clocky-agent-default-model": "workspace:^"
+    "@clocky/clocky-agent-default-model": "workspace:^",
+    "@clocky/clocky-simulation-world": "workspace:^"
   },
   "devDependencies": {
     "@clocky/cordis": "workspace:^",
@@ -79,6 +146,7 @@
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-product-principal": "workspace:^",
     "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-scenario": "workspace:^",
     "@clocky/clocky-storage": "workspace:^",
     "@clocky/clocky-storage-log": "workspace:^",
     "@clocky/clocky-storage-json": "workspace:^",
@@ -99,6 +167,7 @@
     "@clocky/clocky-agent-runtime-in-process": "workspace:^",
     "@clocky/clocky-team-human-actor": "workspace:^",
     "@clocky/clocky-team-hub": "workspace:^",
-    "@clocky/clocky-agent-default-model": "workspace:^"
+    "@clocky/clocky-agent-default-model": "workspace:^",
+    "@clocky/clocky-simulation-world": "workspace:^"
   }
 }

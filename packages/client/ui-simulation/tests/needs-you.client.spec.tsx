@@ -7,7 +7,7 @@ import type { Key } from '../src/client/locales.ts'
 
 afterEach(cleanup)
 
-const translate = (locale: typeof en) => (key: Key, vars?: Record<string, unknown>) =>
+const translate = (locale: Record<Key, string>) => (key: Key, vars?: Record<string, unknown>) =>
   locale[key].replace(/\{(\w+)\}/g, (_match, name: string) => String(vars?.[name]))
 
 it.each([en, zh])('lists only pending items, totals them, and opens the surface that resolves each', (locale) => {

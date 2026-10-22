@@ -1,0 +1,14 @@
+{
+  "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+  "args": [
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-preparing-scenario.ts",
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-driver/cordis.yml"
+  ],
+  "backend": "json",
+  "scenario": "laboratory",
+  "recovery": 0,
+  "code": 0,
+  "signal": null,
+  "stdout": "{\"scenario\":\"laboratory\",\"restored\":false,\"readiness\":\"preparing\",\"maintenance\":0,\"ordinaryDecisions\":0,\"taskAttempts\":0,\"activations\":0,\"writer\":false,\"sessionMaterialized\":false,\"driverWake\":\"cancelled\",\"taskSource\":\"applied\",\"identityPreserved\":true,\"phase\":\"paused\",\"modelCalls\":0}\n",
+  "stderr": ""
+}

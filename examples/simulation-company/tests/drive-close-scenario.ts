@@ -27,7 +27,7 @@ const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ prov
   outboxMaxAttempts: 1, outboxRetryDelayMs: 0, maxDriveSteps: 1, maxMicrostepsPerTime: 2,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 5000, maxConflictRetries: 0,
   maxIngressBytes: 4096, maxEntities: 2, maxResidentActors: 1, maxDecisionsPerWindow: 1,
-  maxOperationsPerDecision: 1, maxResourceQuantity: '1', maxQueuedDecisions: 1, maxDispatchWaitRounds: 1,
+  maxOperationsPerDecision: 1, maxResourceReservationHistory: 128, maxResourceQuantity: '1', maxQueuedDecisions: 1, maxDispatchWaitRounds: 1,
   budgetInterval: '100', maxDecisionsPerInterval: 1, maxMessagesPerInterval: 1, maxTokensPerInterval: inputMode ? 100 : 0, tokensPerModelRequest: 10,
   maxPendingEvents: 2, maxPendingInteractions: 0, maxKnowledgeBytes: 4096, maxKnowledgePerQuery: 1, relationRules: [],
 } }))
@@ -95,7 +95,7 @@ try {
       }
     }())
     const entity = simulationEntityIdSchema.parse('observer')
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entity, entityKind: 'person', cognition: 'agent', profile: {} }),
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entity, entityKind: 'person', cognition: 'agent', profile: {} }),
       run.snapshot().revision)
     await connection.ensureParticipant(entity, { displayName: 'Observer', role: 'observer', capabilities: [],
       provider: 'in-process', preset: 'simulation', model: 'close-input/scripted' })
@@ -179,7 +179,7 @@ try {
     })
   } else if (lifecycle === 'recover') {
     const entity = simulationEntityIdSchema.parse('recovering')
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entity, entityKind: 'person', cognition: 'agent', profile: {} }),
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entity, entityKind: 'person', cognition: 'agent', profile: {} }),
       run.snapshot().revision)
     await connection.ensureParticipant(entity, { displayName: 'Recovering', role: 'observer', capabilities: [],
       provider: 'in-process', preset: 'simulation', model: 'unused' })
@@ -202,7 +202,7 @@ try {
   } else if (outbound || lifecycle === 'receive') {
     const sender = simulationEntityIdSchema.parse('sender'), recipient = simulationEntityIdSchema.parse('recipient')
     for (const id of [sender, recipient]) {
-      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }),
+      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }),
         run.snapshot().revision)
       await connection.ensureParticipant(id, { displayName: id, role: id, capabilities: [],
         provider: 'in-process', preset: 'simulation', model: 'unused' })

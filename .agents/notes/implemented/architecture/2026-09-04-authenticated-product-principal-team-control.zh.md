@@ -12,6 +12,8 @@ Loopback 可达性、Team id、participant id 或 Session header 都不能证明
 
 `ctx.productPrincipals`拥有可撤销的认证调用。Web composition 使用会轮换的本地 provider，并通过仅 owner 可读的 handoff document 交换 credential；bundled Python runtime 则将 handshake credential 与配置的 SHA-256 digest 比较。credential、digest、cookie 和 proof 都只存在于 runtime。Transport teardown 会先关闭 bootstrap admission，再撤销保留的 lease；浏览器 handoff 在 disposal 后即使处于进行中也不能发布新 artifact。Current-run start 的 retry identity 包含非 secret human owner，因此同一 key 不能重放另一 principal 的结果。
 
+浏览器 cookie 名包含实际可信监听端口，在绑定后延迟解析，并固定到 session manager 生命周期。HTTP cookie 不区分端口，共享名称会让并行本地 Host 互相替换或清除 cookie。替换、解析与过期只选择本监听器名称，不能由请求头选择命名空间。HttpOnly、SameSite、路径、lease 与 bootstrap 限制继续生效；命名用于避免冲突，不提供同主机机密性隔离。
+
 human Participant 保留封闭 owner：`{ kind: 'product-principal', principalId }`或`{ kind: 'system' }`。interactive TeamRun creation 从认证调用派生前者；unattended run 保留后者。当前 journal 和 checkpoint reader 会拒绝缺失、格式错误、被重新赋值或重复的 active product-principal owner。目录投影会跳过没有有效 principal 读取路径的 Team；重复 active owner 会先被持久日志恢复拒绝，无法进入目录投影。
 
 `team-human-actor`选择一个 active 且归属于 product principal 的 human，并为已解析的 operation、payload 与 cursor 或 revision 签发一次性 proof。Host 和 SDK wire contract 保持 actor-free。它们的 Team mutation 在 Hub 重验该 proof，覆盖 topology、channel、task、goal、detached archive 与 resume。current-run input、final wait、cancellation、coordinator prompt 与 SDK run record 还要求 caller 拥有该 run 的 durable human。Team-bound approval 和 question response 也会在结算 pending action 前执行同一 owner 检查。

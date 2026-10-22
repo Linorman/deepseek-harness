@@ -13,6 +13,7 @@ const settings = simulationCompanyPreparationSchema.parse({ version: '1', ownerN
   participant: { provider: 'in-process', preset: 'simulation', model: 'company/scripted' },
   checkpoint: { id: 'initial', maxDrainRounds: 4, maxAttempts: 3 } })
 const config = simulationCompanyDriverSchema.parse({ version: '1', maxControlSteps: 2, model: { provider: 'company', name: 'scripted' },
+  ...process.env.COMPANY_DRIVER_AUTO_RESIDENCY === 'true' ? { residency: { version: '1', idleFor: '0', maxCandidates: 2 } } : {},
   requestDelay: '5', reportDelay: '1', replyDelay: '20', completeDelay: '30' })
 const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 'open', spec: {
   runId: 'company-driver', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1',
@@ -21,7 +22,7 @@ const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 
   maxEntities: 16, maxResidentActors: Number(process.env.COMPANY_DRIVER_RESIDENTS ?? 2), maxTokensPerInterval: 1000000,
   tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 100, maxMessagesPerInterval: 100,
   maxPendingEvents: 100, maxPendingInteractions: 100, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 100,
-  maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [],
+  maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [],
 } })
 const recovering = process.env.COMPANY_DRIVER_RECOVER === 'true'
 const restored = recovering ? await ctx.simulationTeams.restore(selection, simulationCheckpointRestoreRequestSchema.parse({

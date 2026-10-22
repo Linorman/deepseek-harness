@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-11",
+  "timezone": "Asia/Tokyo",
+  "inputHash": "b9411c0062f7aa6f922ab23957dd9f21ed649ab6a286c7a8a9552490208a8f69",
+  "files": [
+    {
+      "path": ".agents/notes/proposed/feature/2026-10-08-world-director-mvp.md",
+      "sha256": "d6234b2458cc19a46793feff04feb083777b25dd388013a907d65a59861497cf"
+    },
+    {
+      "path": ".agents/notes/proposed/feature/2026-10-08-world-director-mvp.zh.md",
+      "sha256": "124ddb1fe197c05bb0666030226d3b0684322663ec4d0e4c48300e816999005f"
+    },
+    {
+      "path": "docs/subsystems/simulation.md",
+      "sha256": "d7e74923cf92754e7214ff8d6624a4a722fe31e5c0391aea1a969d273c88598f"
+    },
+    {
+      "path": "docs/subsystems/simulation.zh.md",
+      "sha256": "5334fda906413ef2440efbb0f03958824cb8f27484a3e6aaa13e3a775b91dd8a"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-product-scenario.ts",
+      "sha256": "993bf7b84c5b2dcd8f43b21b44d797e5b95150a13308ad676e7a9ee585f998f1"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-product.snapshot.ts",
+      "sha256": "64d8d77655d67a5196ea7ff34fa1f5fc68b9bcbd20f1b4c66ffb9e4e30784e32"
+    },
+    {
+      "path": "packages/extensions/tool-cordis/src/api-catalog.ts",
+      "sha256": "0113554bf020e667e0c0964f13801a1e74585711fdc900b9681ce466d34d7596"
+    },
+    {
+      "path": "packages/simulation/simulation-product/README.md",
+      "sha256": "27b7699a83e0b4b607a5227d5c353b3dd36dbd93c7c2dadf96c09e0a72b026cd"
+    },
+    {
+      "path": "packages/simulation/simulation-product/README.zh.md",
+      "sha256": "3cdc1a2781d53cebe7dd890da6e5d0f33e0a62e0b3a3d3f2d3be9f67ffa21aeb"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-schema.ts",
+      "sha256": "2c13da2422b0819c82304380ac52018f64bdecdcf77ac4922e1e3d057e570e65"
+    },
+    {
+      "path": "packages/simulation/simulation-product/tests/world-schema.spec.ts",
+      "sha256": "192c15b1000dc50d7abf11e8d33db58872736844f105a65525b8e07b6fb811f2"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/README.md",
+      "sha256": "6d2094febca6147ab1afa3b2db50bfdf501c3f83fe2ee11e1ea73036465f2eb6"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/README.zh.md",
+      "sha256": "956f27abc87171a4a0ee9898456a13650e170099326d9dfda73929d8e123e02a"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/package.json",
+      "sha256": "d0c67b2dc009ecbe6fc04655cac8ffd04a95e811338c0c5dfa93a2b0361d932a"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/compiler.ts",
+      "sha256": "e235171d090f0b5674c8401bec8f3c7dbdf9c6770cbb8eb8d4e41893d7660323"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/index.ts",
+      "sha256": "5bd75bda4f9cc60cda64c42dae10425e5731ceee645f7030e73144e47f35fa36"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/input.ts",
+      "sha256": "788a3c39a8c868b8f7f860393383ec68b58b14d2f3deb93434eee01e0790a313"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/types.ts",
+      "sha256": "19d0d5c740821e42cee91d0182ae54fd9c65b16c3dec327ea2b3051138dca349"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/tests/compiler.spec.ts",
+      "sha256": "93057acb55035703d31101ae9c3b9954c203e9ebc0bc2216c7b2808f8fe85b1a"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/tests/input.spec.ts",
+      "sha256": "b6c48c3ccfb7e004903b8c4fc05941f12f76709470d03db2a2339a017709a6e6"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "f83b30d1437eb6b5fe9a60797008f58d6b1c36e7c39e5789815daa8324bc95bd"
+    },
+    {
+      "path": "python/sdk/src/clocky/simulation_scenario.py",
+      "sha256": "d93aa065c1635ed775edb973a251b894d204c748863acfa40b5bee09f75d2166"
+    },
+    {
+      "path": "python/sdk/tests/test_simulation_scenario.py",
+      "sha256": "f91539df3f4c80485bd91178412182a708af65cbbdca8129a59a5b76f8eeb012"
+    }
+  ],
+  "formats": [
+    "json",
+    "yaml"
+  ],
+  "scenarioVersion": "clocky.world/v0",
+  "nativeStream": 60,
+  "driverVersion": "world/1",
+  "testBackends": [
+    "json",
+    "sqlite"
+  ],
+  "modes": [
+    "source",
+    "lib"
+  ],
+  "model": "keyless world-scripted/scripted v1 (paused creation: zero calls)"
+}

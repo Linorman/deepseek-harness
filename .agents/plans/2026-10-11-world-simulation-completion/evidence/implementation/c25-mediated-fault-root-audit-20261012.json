@@ -1,0 +1,343 @@
+{
+  "nativeStream": 75,
+  "inputHash": "65b648c1303e8078e9a1310c7fa5f9652494b6e5017a4139db48486a429c2741",
+  "currentInputFilesVerified": 5290,
+  "artifactFilesVerified": 582,
+  "cases": [
+    {
+      "stage": "adjudication-after",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-adjudication-after-XvXosR",
+      "originalRevision": 82,
+      "originalEntries": 83,
+      "barrierEntries": 3
+    },
+    {
+      "stage": "adjudication-before",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-adjudication-before-w2BSfC",
+      "originalRevision": 79,
+      "originalEntries": 80,
+      "barrierEntries": 3
+    },
+    {
+      "stage": "delayed-notification-lost",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-delayed-notification-lost-s55Ql7",
+      "originalRevision": 144,
+      "originalEntries": 145,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "leaf-after",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-leaf-after-FnlrPH",
+      "originalRevision": 124,
+      "originalEntries": 125,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "leaf-before",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-leaf-before-vSLXh2",
+      "originalRevision": 122,
+      "originalEntries": 123,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "plan-accepted-after",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-plan-accepted-after-2Gy7XP",
+      "originalRevision": 78,
+      "originalEntries": 79,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "request-accepted-after",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-request-accepted-after-9Jsh7L",
+      "originalRevision": 52,
+      "originalEntries": 53,
+      "barrierEntries": 4
+    },
+    {
+      "stage": "request-channel-before",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-request-channel-before-w6fnqa",
+      "originalRevision": 56,
+      "originalEntries": 57,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "request-notification-lost",
+      "backend": "json",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-json-request-notification-lost-ePbUvJ",
+      "originalRevision": 56,
+      "originalEntries": 57,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "adjudication-after",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-adjudication-after-VF2oLG",
+      "originalRevision": 82,
+      "originalEntries": 83,
+      "barrierEntries": 3
+    },
+    {
+      "stage": "adjudication-before",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-adjudication-before-HK4DFL",
+      "originalRevision": 79,
+      "originalEntries": 80,
+      "barrierEntries": 3
+    },
+    {
+      "stage": "delayed-notification-lost",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-delayed-notification-lost-s9igpA",
+      "originalRevision": 144,
+      "originalEntries": 145,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "leaf-after",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-leaf-after-B8Zl6u",
+      "originalRevision": 124,
+      "originalEntries": 125,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "leaf-before",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-leaf-before-02m50v",
+      "originalRevision": 122,
+      "originalEntries": 123,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "plan-accepted-after",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-plan-accepted-after-nODjWP",
+      "originalRevision": 78,
+      "originalEntries": 79,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "request-accepted-after",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-request-accepted-after-gxsLod",
+      "originalRevision": 52,
+      "originalEntries": 53,
+      "barrierEntries": 4
+    },
+    {
+      "stage": "request-channel-before",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-request-channel-before-eeeDFm",
+      "originalRevision": 56,
+      "originalEntries": 57,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "request-notification-lost",
+      "backend": "sqlite",
+      "face": "src",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/src/src-sqlite-request-notification-lost-SiOOLX",
+      "originalRevision": 56,
+      "originalEntries": 57,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "adjudication-after",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-adjudication-after-doJw1S",
+      "originalRevision": 82,
+      "originalEntries": 83,
+      "barrierEntries": 3
+    },
+    {
+      "stage": "adjudication-before",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-adjudication-before-YphJlK",
+      "originalRevision": 79,
+      "originalEntries": 80,
+      "barrierEntries": 3
+    },
+    {
+      "stage": "delayed-notification-lost",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-delayed-notification-lost-4hvYOR",
+      "originalRevision": 144,
+      "originalEntries": 145,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "leaf-after",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-leaf-after-reN9DG",
+      "originalRevision": 124,
+      "originalEntries": 125,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "leaf-before",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-leaf-before-rK7vTR",
+      "originalRevision": 122,
+      "originalEntries": 123,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "plan-accepted-after",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-plan-accepted-after-SZCEMD",
+      "originalRevision": 78,
+      "originalEntries": 79,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "request-accepted-after",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-request-accepted-after-1pbzn5",
+      "originalRevision": 52,
+      "originalEntries": 53,
+      "barrierEntries": 4
+    },
+    {
+      "stage": "request-channel-before",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-request-channel-before-GlZrGs",
+      "originalRevision": 56,
+      "originalEntries": 57,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "request-notification-lost",
+      "backend": "json",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-json-request-notification-lost-UkIQ6k",
+      "originalRevision": 56,
+      "originalEntries": 57,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "adjudication-after",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-adjudication-after-xtygP6",
+      "originalRevision": 82,
+      "originalEntries": 83,
+      "barrierEntries": 3
+    },
+    {
+      "stage": "adjudication-before",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-adjudication-before-Wk7Her",
+      "originalRevision": 79,
+      "originalEntries": 80,
+      "barrierEntries": 3
+    },
+    {
+      "stage": "delayed-notification-lost",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-delayed-notification-lost-iKlMcB",
+      "originalRevision": 144,
+      "originalEntries": 145,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "leaf-after",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-leaf-after-5mc56p",
+      "originalRevision": 124,
+      "originalEntries": 125,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "leaf-before",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-leaf-before-ZnYmXu",
+      "originalRevision": 122,
+      "originalEntries": 123,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "plan-accepted-after",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-plan-accepted-after-cd0Wzi",
+      "originalRevision": 78,
+      "originalEntries": 79,
+      "barrierEntries": 2
+    },
+    {
+      "stage": "request-accepted-after",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-request-accepted-after-4KXhU7",
+      "originalRevision": 52,
+      "originalEntries": 53,
+      "barrierEntries": 4
+    },
+    {
+      "stage": "request-channel-before",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-request-channel-before-rR61N6",
+      "originalRevision": 56,
+      "originalEntries": 57,
+      "barrierEntries": 1
+    },
+    {
+      "stage": "request-notification-lost",
+      "backend": "sqlite",
+      "face": "lib",
+      "root": ".local/world-completion/c25-mediated-fault/final-matrix-20261012/lib/lib-sqlite-request-notification-lost-CytBNx",
+      "originalRevision": 56,
+      "originalEntries": 57,
+      "barrierEntries": 1
+    }
+  ],
+  "distinctPids": 108,
+  "sigkill": 36,
+  "cold": 72,
+  "canonicalPosts": 88,
+  "lateLeaves": 16,
+  "coldModelCalls": 0,
+  "limitations": [
+    "company only; not a laboratory SIGKILL claim",
+    "cold preserves pending responsibilities, does not execute missing requests/leaf/notices",
+    "v3 representative-specific prepare/cancel fault extensions remain to be checked; v2 earlier X12 owner matrix remains separate"
+  ]
+}

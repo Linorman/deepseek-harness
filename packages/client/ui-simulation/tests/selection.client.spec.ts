@@ -45,3 +45,9 @@ it('normalizes bounded record, cognition and decision-knowledge selectors from u
   expect(normalize({ module: 'entities', search: '', objectId: 'entity', section: 'knowledge' }).section).toBe('knowledge')
   expect(normalize({ ...base, section: undefined }).section).toBeUndefined()
 })
+
+it('retains the supported institution impact route only for an original governance object', () => {
+  expect(normalize({ module: 'governance', search: '', objectId: 'proposal', worldSection: 'impact' }).worldSection).toBe('impact')
+  expect(normalize({ module: 'governance', search: '', worldSection: 'impact' }).worldSection).toBeUndefined()
+  expect(normalize({ module: 'organization', search: '', objectId: 'position', worldSection: 'impact' }).worldSection).toBeUndefined()
+})

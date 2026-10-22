@@ -1,0 +1,2 @@
+$ tsx scripts/verify-md-links.ts
+verify-md-links: 2336 file(s) checked, all relative cross-links and fragments resolve.

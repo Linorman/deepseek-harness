@@ -1,0 +1,2061 @@
+{
+  "backend": "sqlite",
+  "seed": {
+    "spec": {
+      "maxQueuedDecisions": 100,
+      "maxDispatchWaitRounds": 8,
+      "maxTokensPerInterval": 1000000,
+      "tokensPerModelRequest": 10000,
+      "budgetInterval": "100",
+      "maxDecisionsPerInterval": 100,
+      "maxMessagesPerInterval": 100,
+      "maxPendingEvents": 100,
+      "maxPendingInteractions": 100,
+      "maxResourceReservationHistory": 128,
+      "maxKnowledgeBytes": 65536,
+      "maxKnowledgePerQuery": 32,
+      "maxEntities": 16,
+      "maxResidentActors": 2,
+      "maxIngressBytes": 65536,
+      "maxConflictRetries": 2,
+      "decisionTimeoutMs": 60000,
+      "maxDecisionsPerWindow": 2,
+      "runId": "fee-owner",
+      "tickUnit": "minute",
+      "origin": "0",
+      "maxTime": "1000",
+      "rulesVersion": "1",
+      "policyVersion": "1",
+      "outboxMaxAttempts": 3,
+      "outboxRetryDelayMs": 10,
+      "maxDriveSteps": 32,
+      "maxMicrostepsPerTime": 32,
+      "phaseOrder": [
+        "delivery",
+        "decision",
+        "deadline"
+      ],
+      "maxOperationsPerDecision": 16,
+      "maxResourceQuantity": "10000",
+      "relationRules": [
+        {
+          "relation": "assignment",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "acyclic": false,
+          "scopeKinds": [
+            "organization"
+          ]
+        },
+        {
+          "relation": "can-hire",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "acyclic": false,
+          "scopeKinds": [
+            "organization"
+          ]
+        },
+        {
+          "relation": "eligible-for-hire",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "organization"
+          ],
+          "acyclic": false,
+          "scopeKinds": [
+            "organization"
+          ]
+        },
+        {
+          "relation": "committee-member",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "organization",
+            "position"
+          ],
+          "acyclic": false,
+          "scopeKinds": [
+            "organization"
+          ]
+        },
+        {
+          "relation": "route-coordinator",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "organization",
+            "position"
+          ],
+          "acyclic": false,
+          "scopeKinds": [
+            "organization"
+          ]
+        }
+      ]
+    },
+    "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+    "proposer": "buyer",
+    "scopeId": "fee-org",
+    "requestId": "world-request:b4e93eb6e13e43bb408e7bc86769dd08f095e14edc74a85406c72e953e44f5c7",
+    "revision": 221,
+    "routeId": "two-committees",
+    "source": {
+      "decisionId": "combined"
+    }
+  },
+  "responses": [
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "3c81fc0164573043f2efade38e444938",
+      "observedAt": 1792329382537,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "proposal",
+        "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "section": "record"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 1,
+        "total": 1,
+        "revision": 221,
+        "scope": "proposal/record",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "proposal",
+      "value": {
+        "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "title": {
+          "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+          "truncated": false
+        },
+        "committee": {
+          "text": "committee-a",
+          "truncated": false
+        },
+        "status": "passed",
+        "deadline": "10",
+        "tally": {
+          "for": 1,
+          "against": 0,
+          "abstain": 0,
+          "pending": 0,
+          "electorate": 1,
+          "threshold": 1,
+          "quorum": 1,
+          "rule": "unanimous",
+          "closure": "closed"
+        },
+        "runId": "governance",
+        "version": "1",
+        "bodyHash": "sha256:1c6f63ccc3ced3e5b05f34236a4b0b3f34ab4423d0926ab8efc95e3c3fce9d80",
+        "body": {
+          "state": "withheld"
+        },
+        "targetNorm": {
+          "id": "joint-rule",
+          "version": "1"
+        },
+        "frozenAt": "0",
+        "electorateMembers": [],
+        "sources": [
+          {
+            "kind": "operation",
+            "id": "simulation-operation:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9"
+          },
+          {
+            "kind": "decision",
+            "id": "combined"
+          },
+          {
+            "kind": "entity",
+            "id": "buyer"
+          },
+          {
+            "kind": "record",
+            "sequence": 95
+          },
+          {
+            "kind": "record",
+            "sequence": 104
+          }
+        ],
+        "resolution": {
+          "at": "0",
+          "outcome": "passed"
+        },
+        "enactment": {
+          "state": "awaiting-request"
+        }
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "3c81fc0164573043f2efade38e444938",
+      "observedAt": 1792329382540,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "governance",
+        "lens": "proposals"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 3,
+        "total": 3,
+        "revision": 221,
+        "scope": "governance/proposals",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "governance",
+      "value": {
+        "runId": "governance",
+        "coverage": {
+          "loaded": 3,
+          "total": 3,
+          "revision": 221,
+          "scope": "governance/proposals",
+          "complete": true,
+          "at": "0"
+        },
+        "now": "0",
+        "tickUnit": "minute",
+        "proposals": [
+          {
+            "id": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+            "title": {
+              "text": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+            "title": {
+              "text": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-b",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+            "title": {
+              "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          }
+        ],
+        "norms": []
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "3c81fc0164573043f2efade38e444938",
+      "observedAt": 1792329382676,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "proposal",
+        "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "section": "impact"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 1,
+        "total": 1,
+        "revision": 221,
+        "scope": "proposal/impact",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "proposal",
+      "value": {
+        "normImpact": {
+          "state": "withheld"
+        },
+        "normImpactInput": {
+          "state": "withheld"
+        },
+        "normImpactChoices": {
+          "state": "withheld"
+        },
+        "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "title": {
+          "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+          "truncated": false
+        },
+        "committee": {
+          "text": "committee-a",
+          "truncated": false
+        },
+        "status": "passed",
+        "deadline": "10",
+        "tally": {
+          "for": 1,
+          "against": 0,
+          "abstain": 0,
+          "pending": 0,
+          "electorate": 1,
+          "threshold": 1,
+          "quorum": 1,
+          "rule": "unanimous",
+          "closure": "closed"
+        },
+        "runId": "governance",
+        "version": "1",
+        "bodyHash": "sha256:1c6f63ccc3ced3e5b05f34236a4b0b3f34ab4423d0926ab8efc95e3c3fce9d80",
+        "body": {
+          "state": "withheld"
+        },
+        "targetNorm": {
+          "id": "joint-rule",
+          "version": "1"
+        },
+        "frozenAt": "0",
+        "electorateMembers": [],
+        "sources": [
+          {
+            "kind": "operation",
+            "id": "simulation-operation:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9"
+          },
+          {
+            "kind": "decision",
+            "id": "combined"
+          },
+          {
+            "kind": "entity",
+            "id": "buyer"
+          },
+          {
+            "kind": "record",
+            "sequence": 95
+          },
+          {
+            "kind": "record",
+            "sequence": 104
+          }
+        ],
+        "resolution": {
+          "at": "0",
+          "outcome": "passed"
+        },
+        "enactment": {
+          "state": "awaiting-request"
+        }
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "f6036e4e01c631164021b7a693681c24",
+      "observedAt": 1792329382861,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "proposal",
+        "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "section": "impact"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 1,
+        "total": 1,
+        "revision": 221,
+        "scope": "proposal/impact",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "proposal",
+      "value": {
+        "normImpact": {
+          "state": "withheld"
+        },
+        "normImpactInput": {
+          "state": "allowed",
+          "value": {
+            "normId": "joint-rule",
+            "scope": "fee-org",
+            "effectiveFrom": "0",
+            "effectiveUntil": null,
+            "enforcement": {
+              "kind": "advisory"
+            },
+            "impact": "future-admissions"
+          }
+        },
+        "normImpactChoices": {
+          "state": "allowed",
+          "value": {
+            "committeeId": "committee-a",
+            "positionIds": [
+              "fee-role",
+              "fee-vacancy"
+            ]
+          }
+        },
+        "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "title": {
+          "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+          "truncated": false
+        },
+        "committee": {
+          "text": "committee-a",
+          "truncated": false
+        },
+        "status": "passed",
+        "deadline": "10",
+        "tally": {
+          "for": 1,
+          "against": 0,
+          "abstain": 0,
+          "pending": 0,
+          "electorate": 1,
+          "threshold": 1,
+          "quorum": 1,
+          "rule": "unanimous",
+          "closure": "closed"
+        },
+        "runId": "governance",
+        "version": "1",
+        "bodyHash": "sha256:1c6f63ccc3ced3e5b05f34236a4b0b3f34ab4423d0926ab8efc95e3c3fce9d80",
+        "body": {
+          "state": "allowed",
+          "value": {
+            "text": "Same approved text",
+            "truncated": false
+          }
+        },
+        "reviewRoute": {
+          "id": "two-committees",
+          "revision": 1,
+          "hash": "sha256:f78a058984bd8a133a2c08c2cfa1ec9849adabe2582220182417785449597737",
+          "mode": "ordered",
+          "steps": [
+            {
+              "id": "step-0",
+              "proposalId": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "resolutionId": "governance-resolution:0ee3076185a6723fbe0830c9bf741044692a6369d1dcbcadabd7115075d850b0",
+              "resolutionHash": "sha256:438133ce36cf13c9ef3e379967723db5a44d12b2c2f6a004daefb0dff5f4c950",
+              "dependsOn": []
+            },
+            {
+              "id": "step-1",
+              "proposalId": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "resolutionId": "governance-resolution:0a3c0d49a43f62815263efd56291a3d4c929808ba8bb88982c6cc63c9f26a27c",
+              "resolutionHash": "sha256:04d43040a66e1371d307f609da7250c1e61d12911df9a8fd8f07c26e51856633",
+              "dependsOn": [
+                "step-0"
+              ]
+            }
+          ]
+        },
+        "targetNorm": {
+          "id": "joint-rule",
+          "version": "1"
+        },
+        "frozenAt": "0",
+        "electorateMembers": [],
+        "sources": [
+          {
+            "kind": "operation",
+            "id": "simulation-operation:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9"
+          },
+          {
+            "kind": "decision",
+            "id": "combined"
+          },
+          {
+            "kind": "entity",
+            "id": "buyer"
+          },
+          {
+            "kind": "record",
+            "sequence": 95
+          },
+          {
+            "kind": "record",
+            "sequence": 104
+          }
+        ],
+        "resolution": {
+          "at": "0",
+          "outcome": "passed"
+        },
+        "enactment": {
+          "state": "awaiting-request"
+        }
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "f6036e4e01c631164021b7a693681c24",
+      "observedAt": 1792329382864,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "governance",
+        "lens": "proposals"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 3,
+        "total": 3,
+        "revision": 221,
+        "scope": "governance/proposals",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "governance",
+      "value": {
+        "runId": "governance",
+        "coverage": {
+          "loaded": 3,
+          "total": 3,
+          "revision": 221,
+          "scope": "governance/proposals",
+          "complete": true,
+          "at": "0"
+        },
+        "now": "0",
+        "tickUnit": "minute",
+        "proposals": [
+          {
+            "id": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+            "title": {
+              "text": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+            "title": {
+              "text": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-b",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+            "title": {
+              "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          }
+        ],
+        "norms": []
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "f6036e4e01c631164021b7a693681c24",
+      "observedAt": 1792329384478,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "proposal",
+        "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "section": "impact"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 1,
+        "total": 1,
+        "revision": 221,
+        "scope": "proposal/impact",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "proposal",
+      "value": {
+        "normImpact": {
+          "state": "withheld"
+        },
+        "normImpactInput": {
+          "state": "allowed",
+          "value": {
+            "normId": "joint-rule",
+            "scope": "fee-org",
+            "effectiveFrom": "0",
+            "effectiveUntil": null,
+            "enforcement": {
+              "kind": "advisory"
+            },
+            "impact": "future-admissions"
+          }
+        },
+        "normImpactChoices": {
+          "state": "allowed",
+          "value": {
+            "committeeId": "committee-a",
+            "positionIds": [
+              "fee-role",
+              "fee-vacancy"
+            ]
+          }
+        },
+        "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "title": {
+          "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+          "truncated": false
+        },
+        "committee": {
+          "text": "committee-a",
+          "truncated": false
+        },
+        "status": "passed",
+        "deadline": "10",
+        "tally": {
+          "for": 1,
+          "against": 0,
+          "abstain": 0,
+          "pending": 0,
+          "electorate": 1,
+          "threshold": 1,
+          "quorum": 1,
+          "rule": "unanimous",
+          "closure": "closed"
+        },
+        "runId": "governance",
+        "version": "1",
+        "bodyHash": "sha256:1c6f63ccc3ced3e5b05f34236a4b0b3f34ab4423d0926ab8efc95e3c3fce9d80",
+        "body": {
+          "state": "allowed",
+          "value": {
+            "text": "Same approved text",
+            "truncated": false
+          }
+        },
+        "reviewRoute": {
+          "id": "two-committees",
+          "revision": 1,
+          "hash": "sha256:f78a058984bd8a133a2c08c2cfa1ec9849adabe2582220182417785449597737",
+          "mode": "ordered",
+          "steps": [
+            {
+              "id": "step-0",
+              "proposalId": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "resolutionId": "governance-resolution:0ee3076185a6723fbe0830c9bf741044692a6369d1dcbcadabd7115075d850b0",
+              "resolutionHash": "sha256:438133ce36cf13c9ef3e379967723db5a44d12b2c2f6a004daefb0dff5f4c950",
+              "dependsOn": []
+            },
+            {
+              "id": "step-1",
+              "proposalId": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "resolutionId": "governance-resolution:0a3c0d49a43f62815263efd56291a3d4c929808ba8bb88982c6cc63c9f26a27c",
+              "resolutionHash": "sha256:04d43040a66e1371d307f609da7250c1e61d12911df9a8fd8f07c26e51856633",
+              "dependsOn": [
+                "step-0"
+              ]
+            }
+          ]
+        },
+        "targetNorm": {
+          "id": "joint-rule",
+          "version": "1"
+        },
+        "frozenAt": "0",
+        "electorateMembers": [],
+        "sources": [
+          {
+            "kind": "operation",
+            "id": "simulation-operation:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9"
+          },
+          {
+            "kind": "decision",
+            "id": "combined"
+          },
+          {
+            "kind": "entity",
+            "id": "buyer"
+          },
+          {
+            "kind": "record",
+            "sequence": 95
+          },
+          {
+            "kind": "record",
+            "sequence": 104
+          }
+        ],
+        "resolution": {
+          "at": "0",
+          "outcome": "passed"
+        },
+        "enactment": {
+          "state": "awaiting-request"
+        }
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "f6036e4e01c631164021b7a693681c24",
+      "observedAt": 1792329384479,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "governance",
+        "lens": "proposals"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 3,
+        "total": 3,
+        "revision": 221,
+        "scope": "governance/proposals",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "governance",
+      "value": {
+        "runId": "governance",
+        "coverage": {
+          "loaded": 3,
+          "total": 3,
+          "revision": 221,
+          "scope": "governance/proposals",
+          "complete": true,
+          "at": "0"
+        },
+        "now": "0",
+        "tickUnit": "minute",
+        "proposals": [
+          {
+            "id": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+            "title": {
+              "text": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+            "title": {
+              "text": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-b",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+            "title": {
+              "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          }
+        ],
+        "norms": []
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "0ecbc6f2c120d653847dc2cc5a9fe9ea",
+      "observedAt": 1792329384815,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "proposal",
+        "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "section": "impact"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 1,
+        "total": 1,
+        "revision": 221,
+        "scope": "proposal/impact",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "proposal",
+      "value": {
+        "normImpact": {
+          "state": "allowed",
+          "value": {
+            "revision": 221,
+            "time": "0",
+            "scope": "fee-org",
+            "newOperations": [],
+            "futureCalendar": [],
+            "existingObligations": [
+              {
+                "kind": "world-case",
+                "id": "world-request:d2a2e6ee44f10eb87364fc963bf8bcb9f9637c659f0bb0399116833b46823864",
+                "sequence": 39
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:675da06f9b23b625445d1544f5c4053f6ab503d53f55f4dfe4087f4719248878",
+                "sequence": 52
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:a4550fcdaa178b0747d9a377da834b2d6a981d52f8b934dba81d7352305d9cb3",
+                "sequence": 61
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:28c357a743b3f4193ba43b7874d5d1912b2eb3ff6e64d48a825ef46db51f64b7",
+                "sequence": 69
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:21b1d9d0b8bbc0e1df5617d37c98cf4045fc069e996a62358a4b51ab942b27f4",
+                "sequence": 80
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9",
+                "sequence": 91
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:eab94fe94a61a2090326fe13021b0e1cb8f1ae90b4746c482b5fec6a98d0d7c7",
+                "sequence": 100
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:b4e93eb6e13e43bb408e7bc86769dd08f095e14edc74a85406c72e953e44f5c7",
+                "sequence": 111
+              }
+            ],
+            "existingObligationsPolicy": "preserve-original",
+            "policyCombination": {
+              "rule": "all-applicable-hiring-approvals",
+              "policies": []
+            },
+            "blocked": null
+          }
+        },
+        "normImpactInput": {
+          "state": "allowed",
+          "value": {
+            "normId": "joint-rule",
+            "scope": "fee-org",
+            "effectiveFrom": "0",
+            "effectiveUntil": null,
+            "enforcement": {
+              "kind": "advisory"
+            },
+            "impact": "future-admissions"
+          }
+        },
+        "normImpactChoices": {
+          "state": "allowed",
+          "value": {
+            "committeeId": "committee-a",
+            "positionIds": [
+              "fee-role",
+              "fee-vacancy"
+            ]
+          }
+        },
+        "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "title": {
+          "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+          "truncated": false
+        },
+        "committee": {
+          "text": "committee-a",
+          "truncated": false
+        },
+        "status": "passed",
+        "deadline": "10",
+        "tally": {
+          "for": 1,
+          "against": 0,
+          "abstain": 0,
+          "pending": 0,
+          "electorate": 1,
+          "threshold": 1,
+          "quorum": 1,
+          "rule": "unanimous",
+          "closure": "closed"
+        },
+        "runId": "governance",
+        "version": "1",
+        "bodyHash": "sha256:1c6f63ccc3ced3e5b05f34236a4b0b3f34ab4423d0926ab8efc95e3c3fce9d80",
+        "body": {
+          "state": "allowed",
+          "value": {
+            "text": "Same approved text",
+            "truncated": false
+          }
+        },
+        "reviewRoute": {
+          "id": "two-committees",
+          "revision": 1,
+          "hash": "sha256:f78a058984bd8a133a2c08c2cfa1ec9849adabe2582220182417785449597737",
+          "mode": "ordered",
+          "steps": [
+            {
+              "id": "step-0",
+              "proposalId": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "resolutionId": "governance-resolution:0ee3076185a6723fbe0830c9bf741044692a6369d1dcbcadabd7115075d850b0",
+              "resolutionHash": "sha256:438133ce36cf13c9ef3e379967723db5a44d12b2c2f6a004daefb0dff5f4c950",
+              "dependsOn": []
+            },
+            {
+              "id": "step-1",
+              "proposalId": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "resolutionId": "governance-resolution:0a3c0d49a43f62815263efd56291a3d4c929808ba8bb88982c6cc63c9f26a27c",
+              "resolutionHash": "sha256:04d43040a66e1371d307f609da7250c1e61d12911df9a8fd8f07c26e51856633",
+              "dependsOn": [
+                "step-0"
+              ]
+            }
+          ]
+        },
+        "targetNorm": {
+          "id": "joint-rule",
+          "version": "1"
+        },
+        "frozenAt": "0",
+        "electorateMembers": [],
+        "sources": [
+          {
+            "kind": "operation",
+            "id": "simulation-operation:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9"
+          },
+          {
+            "kind": "decision",
+            "id": "combined"
+          },
+          {
+            "kind": "entity",
+            "id": "buyer"
+          },
+          {
+            "kind": "record",
+            "sequence": 95
+          },
+          {
+            "kind": "record",
+            "sequence": 104
+          }
+        ],
+        "resolution": {
+          "at": "0",
+          "outcome": "passed"
+        },
+        "enactment": {
+          "state": "awaiting-request"
+        }
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "0ecbc6f2c120d653847dc2cc5a9fe9ea",
+      "observedAt": 1792329384817,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "governance",
+        "lens": "proposals"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 3,
+        "total": 3,
+        "revision": 221,
+        "scope": "governance/proposals",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "governance",
+      "value": {
+        "runId": "governance",
+        "coverage": {
+          "loaded": 3,
+          "total": 3,
+          "revision": 221,
+          "scope": "governance/proposals",
+          "complete": true,
+          "at": "0"
+        },
+        "now": "0",
+        "tickUnit": "minute",
+        "proposals": [
+          {
+            "id": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+            "title": {
+              "text": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+            "title": {
+              "text": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-b",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+            "title": {
+              "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          }
+        ],
+        "norms": []
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "0ecbc6f2c120d653847dc2cc5a9fe9ea",
+      "observedAt": 1792329386515,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "proposal",
+        "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "section": "impact"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 1,
+        "total": 1,
+        "revision": 221,
+        "scope": "proposal/impact",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "proposal",
+      "value": {
+        "normImpact": {
+          "state": "allowed",
+          "value": {
+            "revision": 221,
+            "time": "0",
+            "scope": "fee-org",
+            "newOperations": [],
+            "futureCalendar": [],
+            "existingObligations": [
+              {
+                "kind": "world-case",
+                "id": "world-request:d2a2e6ee44f10eb87364fc963bf8bcb9f9637c659f0bb0399116833b46823864",
+                "sequence": 39
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:675da06f9b23b625445d1544f5c4053f6ab503d53f55f4dfe4087f4719248878",
+                "sequence": 52
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:a4550fcdaa178b0747d9a377da834b2d6a981d52f8b934dba81d7352305d9cb3",
+                "sequence": 61
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:28c357a743b3f4193ba43b7874d5d1912b2eb3ff6e64d48a825ef46db51f64b7",
+                "sequence": 69
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:21b1d9d0b8bbc0e1df5617d37c98cf4045fc069e996a62358a4b51ab942b27f4",
+                "sequence": 80
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9",
+                "sequence": 91
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:eab94fe94a61a2090326fe13021b0e1cb8f1ae90b4746c482b5fec6a98d0d7c7",
+                "sequence": 100
+              },
+              {
+                "kind": "world-case",
+                "id": "world-request:b4e93eb6e13e43bb408e7bc86769dd08f095e14edc74a85406c72e953e44f5c7",
+                "sequence": 111
+              }
+            ],
+            "existingObligationsPolicy": "preserve-original",
+            "policyCombination": {
+              "rule": "all-applicable-hiring-approvals",
+              "policies": []
+            },
+            "blocked": null
+          }
+        },
+        "normImpactInput": {
+          "state": "allowed",
+          "value": {
+            "normId": "joint-rule",
+            "scope": "fee-org",
+            "effectiveFrom": "0",
+            "effectiveUntil": null,
+            "enforcement": {
+              "kind": "advisory"
+            },
+            "impact": "future-admissions"
+          }
+        },
+        "normImpactChoices": {
+          "state": "allowed",
+          "value": {
+            "committeeId": "committee-a",
+            "positionIds": [
+              "fee-role",
+              "fee-vacancy"
+            ]
+          }
+        },
+        "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "title": {
+          "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+          "truncated": false
+        },
+        "committee": {
+          "text": "committee-a",
+          "truncated": false
+        },
+        "status": "passed",
+        "deadline": "10",
+        "tally": {
+          "for": 1,
+          "against": 0,
+          "abstain": 0,
+          "pending": 0,
+          "electorate": 1,
+          "threshold": 1,
+          "quorum": 1,
+          "rule": "unanimous",
+          "closure": "closed"
+        },
+        "runId": "governance",
+        "version": "1",
+        "bodyHash": "sha256:1c6f63ccc3ced3e5b05f34236a4b0b3f34ab4423d0926ab8efc95e3c3fce9d80",
+        "body": {
+          "state": "allowed",
+          "value": {
+            "text": "Same approved text",
+            "truncated": false
+          }
+        },
+        "reviewRoute": {
+          "id": "two-committees",
+          "revision": 1,
+          "hash": "sha256:f78a058984bd8a133a2c08c2cfa1ec9849adabe2582220182417785449597737",
+          "mode": "ordered",
+          "steps": [
+            {
+              "id": "step-0",
+              "proposalId": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "resolutionId": "governance-resolution:0ee3076185a6723fbe0830c9bf741044692a6369d1dcbcadabd7115075d850b0",
+              "resolutionHash": "sha256:438133ce36cf13c9ef3e379967723db5a44d12b2c2f6a004daefb0dff5f4c950",
+              "dependsOn": []
+            },
+            {
+              "id": "step-1",
+              "proposalId": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "resolutionId": "governance-resolution:0a3c0d49a43f62815263efd56291a3d4c929808ba8bb88982c6cc63c9f26a27c",
+              "resolutionHash": "sha256:04d43040a66e1371d307f609da7250c1e61d12911df9a8fd8f07c26e51856633",
+              "dependsOn": [
+                "step-0"
+              ]
+            }
+          ]
+        },
+        "targetNorm": {
+          "id": "joint-rule",
+          "version": "1"
+        },
+        "frozenAt": "0",
+        "electorateMembers": [],
+        "sources": [
+          {
+            "kind": "operation",
+            "id": "simulation-operation:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9"
+          },
+          {
+            "kind": "decision",
+            "id": "combined"
+          },
+          {
+            "kind": "entity",
+            "id": "buyer"
+          },
+          {
+            "kind": "record",
+            "sequence": 95
+          },
+          {
+            "kind": "record",
+            "sequence": 104
+          }
+        ],
+        "resolution": {
+          "at": "0",
+          "outcome": "passed"
+        },
+        "enactment": {
+          "state": "awaiting-request"
+        }
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "0ecbc6f2c120d653847dc2cc5a9fe9ea",
+      "observedAt": 1792329386516,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "governance",
+        "lens": "proposals"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 3,
+        "total": 3,
+        "revision": 221,
+        "scope": "governance/proposals",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "governance",
+      "value": {
+        "runId": "governance",
+        "coverage": {
+          "loaded": 3,
+          "total": 3,
+          "revision": 221,
+          "scope": "governance/proposals",
+          "complete": true,
+          "at": "0"
+        },
+        "now": "0",
+        "tickUnit": "minute",
+        "proposals": [
+          {
+            "id": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+            "title": {
+              "text": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+            "title": {
+              "text": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-b",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+            "title": {
+              "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          }
+        ],
+        "norms": []
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "3658e59946f1365dc15a5b868f8c94c1",
+      "observedAt": 1792329386829,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "governance",
+        "lens": "proposals"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 3,
+        "total": 3,
+        "revision": 221,
+        "scope": "governance/proposals",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "governance",
+      "value": {
+        "runId": "governance",
+        "coverage": {
+          "loaded": 3,
+          "total": 3,
+          "revision": 221,
+          "scope": "governance/proposals",
+          "complete": true,
+          "at": "0"
+        },
+        "now": "0",
+        "tickUnit": "minute",
+        "proposals": [
+          {
+            "id": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+            "title": {
+              "text": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+            "title": {
+              "text": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-b",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+            "title": {
+              "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          }
+        ],
+        "norms": []
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "3658e59946f1365dc15a5b868f8c94c1",
+      "observedAt": 1792329386830,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "proposal",
+        "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "section": "impact"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 1,
+        "total": 1,
+        "revision": 221,
+        "scope": "proposal/impact",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "proposal",
+      "value": {
+        "normImpact": {
+          "state": "withheld"
+        },
+        "normImpactInput": {
+          "state": "allowed",
+          "value": {
+            "normId": "joint-rule",
+            "scope": "fee-org",
+            "effectiveFrom": "0",
+            "effectiveUntil": null,
+            "enforcement": {
+              "kind": "advisory"
+            },
+            "impact": "future-admissions"
+          }
+        },
+        "normImpactChoices": {
+          "state": "allowed",
+          "value": {
+            "committeeId": "committee-a",
+            "positionIds": [
+              "fee-role",
+              "fee-vacancy"
+            ]
+          }
+        },
+        "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "title": {
+          "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+          "truncated": false
+        },
+        "committee": {
+          "text": "committee-a",
+          "truncated": false
+        },
+        "status": "passed",
+        "deadline": "10",
+        "tally": {
+          "for": 1,
+          "against": 0,
+          "abstain": 0,
+          "pending": 0,
+          "electorate": 1,
+          "threshold": 1,
+          "quorum": 1,
+          "rule": "unanimous",
+          "closure": "closed"
+        },
+        "runId": "governance",
+        "version": "1",
+        "bodyHash": "sha256:1c6f63ccc3ced3e5b05f34236a4b0b3f34ab4423d0926ab8efc95e3c3fce9d80",
+        "body": {
+          "state": "allowed",
+          "value": {
+            "text": "Same approved text",
+            "truncated": false
+          }
+        },
+        "reviewRoute": {
+          "id": "two-committees",
+          "revision": 1,
+          "hash": "sha256:f78a058984bd8a133a2c08c2cfa1ec9849adabe2582220182417785449597737",
+          "mode": "ordered",
+          "steps": [
+            {
+              "id": "step-0",
+              "proposalId": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "resolutionId": "governance-resolution:0ee3076185a6723fbe0830c9bf741044692a6369d1dcbcadabd7115075d850b0",
+              "resolutionHash": "sha256:438133ce36cf13c9ef3e379967723db5a44d12b2c2f6a004daefb0dff5f4c950",
+              "dependsOn": []
+            },
+            {
+              "id": "step-1",
+              "proposalId": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "resolutionId": "governance-resolution:0a3c0d49a43f62815263efd56291a3d4c929808ba8bb88982c6cc63c9f26a27c",
+              "resolutionHash": "sha256:04d43040a66e1371d307f609da7250c1e61d12911df9a8fd8f07c26e51856633",
+              "dependsOn": [
+                "step-0"
+              ]
+            }
+          ]
+        },
+        "targetNorm": {
+          "id": "joint-rule",
+          "version": "1"
+        },
+        "frozenAt": "0",
+        "electorateMembers": [],
+        "sources": [
+          {
+            "kind": "operation",
+            "id": "simulation-operation:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9"
+          },
+          {
+            "kind": "decision",
+            "id": "combined"
+          },
+          {
+            "kind": "entity",
+            "id": "buyer"
+          },
+          {
+            "kind": "record",
+            "sequence": 95
+          },
+          {
+            "kind": "record",
+            "sequence": 104
+          }
+        ],
+        "resolution": {
+          "at": "0",
+          "outcome": "passed"
+        },
+        "enactment": {
+          "state": "awaiting-request"
+        }
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "3658e59946f1365dc15a5b868f8c94c1",
+      "observedAt": 1792329388543,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "proposal",
+        "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "section": "impact"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 1,
+        "total": 1,
+        "revision": 221,
+        "scope": "proposal/impact",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "proposal",
+      "value": {
+        "normImpact": {
+          "state": "withheld"
+        },
+        "normImpactInput": {
+          "state": "allowed",
+          "value": {
+            "normId": "joint-rule",
+            "scope": "fee-org",
+            "effectiveFrom": "0",
+            "effectiveUntil": null,
+            "enforcement": {
+              "kind": "advisory"
+            },
+            "impact": "future-admissions"
+          }
+        },
+        "normImpactChoices": {
+          "state": "allowed",
+          "value": {
+            "committeeId": "committee-a",
+            "positionIds": [
+              "fee-role",
+              "fee-vacancy"
+            ]
+          }
+        },
+        "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+        "title": {
+          "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+          "truncated": false
+        },
+        "committee": {
+          "text": "committee-a",
+          "truncated": false
+        },
+        "status": "passed",
+        "deadline": "10",
+        "tally": {
+          "for": 1,
+          "against": 0,
+          "abstain": 0,
+          "pending": 0,
+          "electorate": 1,
+          "threshold": 1,
+          "quorum": 1,
+          "rule": "unanimous",
+          "closure": "closed"
+        },
+        "runId": "governance",
+        "version": "1",
+        "bodyHash": "sha256:1c6f63ccc3ced3e5b05f34236a4b0b3f34ab4423d0926ab8efc95e3c3fce9d80",
+        "body": {
+          "state": "allowed",
+          "value": {
+            "text": "Same approved text",
+            "truncated": false
+          }
+        },
+        "reviewRoute": {
+          "id": "two-committees",
+          "revision": 1,
+          "hash": "sha256:f78a058984bd8a133a2c08c2cfa1ec9849adabe2582220182417785449597737",
+          "mode": "ordered",
+          "steps": [
+            {
+              "id": "step-0",
+              "proposalId": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "resolutionId": "governance-resolution:0ee3076185a6723fbe0830c9bf741044692a6369d1dcbcadabd7115075d850b0",
+              "resolutionHash": "sha256:438133ce36cf13c9ef3e379967723db5a44d12b2c2f6a004daefb0dff5f4c950",
+              "dependsOn": []
+            },
+            {
+              "id": "step-1",
+              "proposalId": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "resolutionId": "governance-resolution:0a3c0d49a43f62815263efd56291a3d4c929808ba8bb88982c6cc63c9f26a27c",
+              "resolutionHash": "sha256:04d43040a66e1371d307f609da7250c1e61d12911df9a8fd8f07c26e51856633",
+              "dependsOn": [
+                "step-0"
+              ]
+            }
+          ]
+        },
+        "targetNorm": {
+          "id": "joint-rule",
+          "version": "1"
+        },
+        "frozenAt": "0",
+        "electorateMembers": [],
+        "sources": [
+          {
+            "kind": "operation",
+            "id": "simulation-operation:a4cad401fed076af3f5202cf7c32ad3fe558a70dba65cb87b939a8e301da1cf9"
+          },
+          {
+            "kind": "decision",
+            "id": "combined"
+          },
+          {
+            "kind": "entity",
+            "id": "buyer"
+          },
+          {
+            "kind": "record",
+            "sequence": 95
+          },
+          {
+            "kind": "record",
+            "sequence": 104
+          }
+        ],
+        "resolution": {
+          "at": "0",
+          "outcome": "passed"
+        },
+        "enactment": {
+          "state": "awaiting-request"
+        }
+      }
+    },
+    {
+      "apiVersion": "clocky.world-read/v1",
+      "runId": "governance",
+      "snapshotRevision": 221,
+      "readVersion": "3658e59946f1365dc15a5b868f8c94c1",
+      "observedAt": 1792329388545,
+      "selection": {
+        "runId": "governance",
+        "limit": 20,
+        "kind": "governance",
+        "lens": "proposals"
+      },
+      "status": "found",
+      "coverage": {
+        "loaded": 3,
+        "total": 3,
+        "revision": 221,
+        "scope": "governance/proposals",
+        "complete": true,
+        "at": "0"
+      },
+      "kind": "governance",
+      "value": {
+        "runId": "governance",
+        "coverage": {
+          "loaded": 3,
+          "total": 3,
+          "revision": 221,
+          "scope": "governance/proposals",
+          "complete": true,
+          "at": "0"
+        },
+        "now": "0",
+        "tickUnit": "minute",
+        "proposals": [
+          {
+            "id": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+            "title": {
+              "text": "governance-proposal:eda9e564a0f1fee4336fe17b93aaa4f61fb478f13e8b81698486177d258b9a5c",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+            "title": {
+              "text": "governance-proposal:5a4a0f45bfd01d5d814ab8cef9e8ffa0899be349eee6e76002d58a9d51619341",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-b",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          },
+          {
+            "id": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+            "title": {
+              "text": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+              "truncated": false
+            },
+            "committee": {
+              "text": "committee-a",
+              "truncated": false
+            },
+            "status": "passed",
+            "deadline": "10",
+            "tally": {
+              "for": 1,
+              "against": 0,
+              "abstain": 0,
+              "pending": 0,
+              "electorate": 1,
+              "threshold": 1,
+              "quorum": 1,
+              "rule": "unanimous",
+              "closure": "closed"
+            }
+          }
+        ],
+        "norms": []
+      }
+    }
+  ],
+  "opens": 0,
+  "models": 0,
+  "errors": {
+    "warnings": [],
+    "pageErrors": []
+  },
+  "consoleErrors": []
+}

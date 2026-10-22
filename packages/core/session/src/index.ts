@@ -1,5 +1,6 @@
 export { resolveSessionContentOwner } from './ancestry.ts'
 import { isSimulationContextView, isSimulationContextViewEvent } from './simulation-context.ts'
+import { isSimulationGenerationEvent } from './simulation-generation.ts'
 /**
  * Event-sourced session service: append-only session log, in-memory store, and
  * the derived LLM message history. Persistence is a plugin concern (subscribe
@@ -185,6 +186,8 @@ function snapshotSessionHeader(id: SessionId, source?: SessionHeader): SessionHe
  * @returns the same event object with a validated, deeply frozen message.
  */
 export function adoptSessionEvent<T extends SessionEvent>(event: T): T {
+  if ((event.type === 'simulation/generation-input' || event.type === 'simulation/generation-output')
+    && !isSimulationGenerationEvent(event)) throw new Error('Simulation generation has invalid required event data')
   if (event.type === 'simulation/context-view'
     && !isSimulationContextViewEvent(event)) {
     throw new Error('simulation/context-view has invalid required context data')

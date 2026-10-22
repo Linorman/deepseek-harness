@@ -28,13 +28,18 @@
     },
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./simulation-administration": {
+      "types": "./lib/types/simulation-administration.d.ts",
+      "default": "./lib/simulation-administration.js"
+    }
   },
   "files": [
     "lib/index.js",
     "lib/invariant.js",
     "lib/startup.js",
     "cordis.patch.yml",
+    "lib/simulation-administration.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
@@ -148,7 +153,9 @@
     "@clocky/clocky-simulation-team": "workspace:^",
     "@clocky/clocky-simulation-product": "workspace:^",
     "@clocky/clocky-tool-simulation": "workspace:^",
-    "@clocky/clocky-client-ui-simulation": "workspace:^"
+    "@clocky/clocky-client-ui-simulation": "workspace:^",
+    "@clocky/clocky-simulation-world": "workspace:^",
+    "@clocky/clocky-simulation-scenario": "workspace:^"
   },
   "peerDependencies": {
     "@clocky/cordis-plugin-loader": "workspace:^",

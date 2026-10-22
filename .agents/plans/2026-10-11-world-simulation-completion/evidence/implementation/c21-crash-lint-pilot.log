@@ -1,0 +1,10 @@
+examples/simulation-company/tests/world-external-crash-scenario.ts:10:33: error eslint(no-unused-vars): Identifier 'simulationWorldDomainRequestSchema' is imported but never used. help: Consider removing this import.
+examples/simulation-company/tests/world-external-crash-scenario.ts:10:69: error eslint(no-unused-vars): Identifier 'simulationExternalInteractRequestSchema' is imported but never used. help: Consider removing this import.
+examples/simulation-company/tests/world-external-crash-scenario.ts:11:3: error eslint(no-unused-vars): Identifier 'simulationExternalInteractPlanSchema' is imported but never used. help: Consider removing this import.
+examples/simulation-company/tests/world-external-crash-scenario.ts:11:41: error eslint(no-unused-vars): Identifier 'simulationExternalInteractResultSchema' is imported but never used. help: Consider removing this import.
+examples/simulation-company/tests/world-external-crash-scenario.ts:11:81: error eslint(no-unused-vars): Identifier 'simulationExternalInteractionSchema' is imported but never used. help: Consider removing this import.
+examples/simulation-company/tests/world-external-crash-scenario.ts:11:118: error eslint(no-unused-vars): Identifier 'checkpointWorldState' is imported but never used. help: Consider removing this import.
+examples/simulation-company/tests/world-external-crash-scenario.ts:67:1: error @stylistic(max-len): This line has a length of 145. Maximum allowed is 140.
+examples/simulation-company/tests/world-external-crash.snapshot.ts:36:15: error typescript(no-unsafe-assignment): Unsafe array destructuring of an any array value.
+examples/simulation-company/tests/world-external-crash.snapshot.ts:38:77: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+examples/simulation-company/tests/world-external-crash.snapshot.ts:38:93: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.

@@ -1,0 +1,78 @@
+{
+  "writtenAt": "2026-10-11T18:18:28.631067+00:00",
+  "scope": "Native governance proposal/vote/close pure admission and independent Agent/Session Loader scenarios; checklist unchanged by this agent",
+  "files": [
+    {
+      "path": "packages/simulation/simulation/src/world-governance-types.ts",
+      "sha256": "3997999bd5a194aa49e15e89a5f23b87ab17d587ea0ffea32f3626605280cc8e",
+      "bytes": 2401
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance.ts",
+      "sha256": "7dbe5e42c0fa8507b7f9afbd1dfbf2697aa5c34e38ec142b18045d5a01be62fd",
+      "bytes": 6465
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance-domains.ts",
+      "sha256": "0c554a9ffe4bda12cd93a6b9d0bdab68ac527b074bb2746a9bc345206262036e",
+      "bytes": 2706
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-governance.ts",
+      "sha256": "274eff842240cef290152b8164a18d6cfcd7c56da4aea62f6e7bc20afb201a95",
+      "bytes": 34996
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-governance.spec.ts",
+      "sha256": "0232d145a87fb6c5195c0adaf4160f4a2a7a0933fe9d96840e7fd94cc5dd1a2e",
+      "bytes": 19903
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance-model.ts",
+      "sha256": "d0b24a32e6eae787c23675940e153538924ef048ec723ee1ba0135303063ae21",
+      "bytes": 5169
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance-scenario.ts",
+      "sha256": "960a72a4898b5b38a91d832851de2e17334a48a9223d92450f7da37219c6ab06",
+      "bytes": 10517
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance.snapshot.ts",
+      "sha256": "a3dd4d9ff6cd3f8ac5296aa13b05156ecdfe6661f914ca574e15e229dbb9f2a2",
+      "bytes": 2213
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-governance/cordis.yml",
+      "sha256": "3c8e2f9836d9f43f1195b3084663d607e96e401a02dffa99b34e805ad24c6512",
+      "bytes": 103
+    }
+  ],
+  "verification": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation-local/tests/world-governance.spec.ts",
+      "log": "c3-governance-tests.log",
+      "result": "30 passed"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-governance.snapshot.ts",
+      "log": "c3-governance-source-current.log",
+      "result": "4 passed; company/laboratory x json/sqlite; each create then process cold restore; actual model calls 39 then 0"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -b tsconfig.host.json --pretty false",
+      "log": "c3-governance-types-agent-host.log",
+      "result": "exit 0"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec oxlint packages/simulation/simulation/src/world-governance*.ts packages/simulation/simulation-local/src/world-governance.ts packages/simulation/simulation-local/tests/world-governance.spec.ts examples/simulation-company/tests/world-governance*.ts",
+      "log": "c3-governance-lint.log",
+      "result": "exit 0"
+    }
+  ],
+  "remaining": [
+    "Root owns latest built lib scenario validation",
+    "Automatic governance deadline scheduler/driver closure is not implemented here",
+    "Norm enactment/policy/fault matrix and public SDK/UI contracts remain outside this subtask"
+  ]
+}

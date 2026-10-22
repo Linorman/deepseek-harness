@@ -1,0 +1,333 @@
+{
+  "nativeStream": 74,
+  "scope": "Narrow current-regression subset for no-recycled-channel Native rejection; old full C20 matrix remains frozen separately",
+  "scenes": [
+    "company"
+  ],
+  "backends": [
+    "json",
+    "sqlite"
+  ],
+  "faces": [
+    "src",
+    "lib"
+  ],
+  "cases": [
+    "retained-keeper",
+    "channel-io"
+  ],
+  "totals": {
+    "cases": 8,
+    "processes": 24,
+    "cold0Model": 16,
+    "sigkill": 0
+  },
+  "inputManifest": ".local/world-completion/c20-external-contact-current/input-manifest.json",
+  "sourceAndFixtureHashesBeforeAndAfterMatch": true,
+  "builtArtifactsCapturedAfterRuntime": [
+    {
+      "path": "packages/simulation/simulation-local/lib/index.js",
+      "sha256": "a6a6ccbb9600fd079e3b3d0711531f581a880183242aa8b3083c83f4fefdf086"
+    },
+    {
+      "path": "packages/simulation/simulation-world/lib/index.js",
+      "sha256": "3bd0c3829d0e10529e195945167b5c6c829bf19f06f9b12b1866afaa55929417"
+    },
+    {
+      "path": "packages/simulation/simulation/lib/index.js",
+      "sha256": "38349073a91bc0d8917c2ca7c70cd37ba12f3d3d108ea4679715b993790a47b3"
+    }
+  ],
+  "artifactHashes": [
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-baseline.json",
+      "sha256": "ed305928d32eba54c648932b376d9a0618b3b5a3c8e6dc40f35ca70797127437"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-held.json",
+      "sha256": "08c43b67367ef13ee1959632decd22b70fc04c4da9d1ec7c2a74b1ccf1031faf"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-input.json",
+      "sha256": "688edd9cac5abaa8db60ad4bfd6e5c6389518bf091044d42db644d1b9fccbf34"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-journal.json",
+      "sha256": "3d88170a807219dd58f36dd8f3a4fca56b9c57949e69697623c6fbe1ef2724a3"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-model-inputs.json",
+      "sha256": "bf15b5029f4c05516329f4501d0cd95efb81ce45d25828d0eb0f1603271b0b0f"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-original.json",
+      "sha256": "31ffa58adaa129a9eeec91f39884a78b697ab4b201521a9675c9eab316d6719c"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-process-0.json",
+      "sha256": "2e0b8418561ab840522818dfae4777ab182ed9ea4ef4f435310458b2b1088066"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-process-1.json",
+      "sha256": "5629d381162da38a03470a0712e54c311fce188e95b0bfa1312099d40e7baa7b"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-retained-keeper-process-2.json",
+      "sha256": "2798f4682b707240c96afc0fa2a4918fc7ebf66c1d9d0f3dbcc054c960383097"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-baseline.json",
+      "sha256": "10118c9c4ee2df3be6585e891588c33f4f87db7b556b12566302971a7deec774"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-held.json",
+      "sha256": "435baff19e5d1619504ac2669ad39ecefd8a0f95efa7c780633c065819ae20b0"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-input.json",
+      "sha256": "e6f6bd0c3b4bb9bb296bb7f2af999e78ecea9a7bb0e2b7fa8dadd0f449e2b5e0"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-journal.json",
+      "sha256": "19ea5000b280db74060b929cd33393821ba43f941cbc5bc7dc4fafb166949b69"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-model-inputs.json",
+      "sha256": "7e5bb538251df4d1e6fa10f7b2b294f8b61bf44f7e1790c60e7c4396fe5e6d48"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-original.json",
+      "sha256": "bcd6961c86ab89eb6a3e745d433ec66cfe2451f91a7dd11470bae9eec440073a"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-process-0.json",
+      "sha256": "11b21d8f958b7fe7bd99ae3512e8dbe5799412e2337e5676262c4d9cebb3ca75"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-process-1.json",
+      "sha256": "9a6ddb6a092e7b7f873f6231f4ed1604f2c3107ef8aa870c419eae3cdb02d6e2"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-json-channel-io-process-2.json",
+      "sha256": "0c802618319b352dfad47a3bbcc6c47d938836db962999eb4b0c6a537618bd59"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-baseline.json",
+      "sha256": "46d8f53e2515b763459f1da66f2589c0e7797620bfae4773109dc7ee9f4b2d38"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-held.json",
+      "sha256": "c860f78e4cfe7104dc9c8fd6ef9e7e984ddf36b9dbc0dfbc6e47a865fe8b77a5"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-input.json",
+      "sha256": "688edd9cac5abaa8db60ad4bfd6e5c6389518bf091044d42db644d1b9fccbf34"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-journal.json",
+      "sha256": "4c1a9526ad01b08796ddf88fadbe97af83c7a53bb15d5d0cf5867d6c97f12f45"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-model-inputs.json",
+      "sha256": "a5958219ccead273b03f99e7274f5c7e672b291153a14828b1c34a09cc6d8dc8"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-original.json",
+      "sha256": "e2355fc6ddb54af460bb6284847349efa132164fff89659c733ebab0629d2a74"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-process-0.json",
+      "sha256": "ac5a347046221d89186f9dae23e4077b25381d5fd5d5a40bcb4c7e7548c380ac"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-process-1.json",
+      "sha256": "588ab884ecdfa1f889bcb2af00bc5cfd0cfc55f3b8e4a28fbc1541fce7e7bd16"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-retained-keeper-process-2.json",
+      "sha256": "4aef7f51cd86d91da59a1dbd323a3eb63671724aee222ce9692c1ef4b1bb8c8d"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-baseline.json",
+      "sha256": "06db9fef79b9d16b2a4350d91c26b60328739a5690a313b4e06f2335787d30ef"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-held.json",
+      "sha256": "95735f8f7ca09584ce986aa7129c1c608542f2d1e3c98cd370a18823a955b4f7"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-input.json",
+      "sha256": "e6f6bd0c3b4bb9bb296bb7f2af999e78ecea9a7bb0e2b7fa8dadd0f449e2b5e0"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-journal.json",
+      "sha256": "a23b2237d3870e30dd4587956a3f64be4003abdf60627244b0504a7faaf4fa45"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-model-inputs.json",
+      "sha256": "a0544578721b37c50fdbbaf3fde45a38314ee70dda995d81d1420a89fc280317"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-original.json",
+      "sha256": "f5f2d26b63d20e197271eb592471f1d879f4eb5a2fb30895b7dfa62869a32890"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-process-0.json",
+      "sha256": "b18dee67980a26d3256c5d53b732c47feac6ce6ba6670f8a143d0614258eb654"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-process-1.json",
+      "sha256": "c91699854117c97faa67a0e580950c405e7e5872bbfe13c04127ed14cfed288c"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/src-company-sqlite-channel-io-process-2.json",
+      "sha256": "3ff78fe5cc400c5320ecab9226f59b5d5ac8a25c18e3a5a9637afafc2110b7f3"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-baseline.json",
+      "sha256": "66fd32715fc6dcda711ab070c49bbf28988b355c7f4ea2a1f08e0bec1103f003"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-held.json",
+      "sha256": "60e734844ba6df675b21e12f5a164e18480ba7a6a3e61f0161ccd54b7aae6b0b"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-input.json",
+      "sha256": "688edd9cac5abaa8db60ad4bfd6e5c6389518bf091044d42db644d1b9fccbf34"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-journal.json",
+      "sha256": "a9972a5e5575c04e052bbe08641991e66e394209a11ad78a831e630c5e6dfe77"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-model-inputs.json",
+      "sha256": "7183a409afb34d8c3dc6bbd95f39c271b417712587959b1de9f5aba89ee2d94f"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-original.json",
+      "sha256": "30fadc7b7e2f6c03002622a8fca3f060ae7dcee3e6be683314f6051cf14593c0"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-process-0.json",
+      "sha256": "7ebf8a9bf6d2b7c2bfdfe719d6823c3fdb0007740e767a8344e83f1f99c10c36"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-process-1.json",
+      "sha256": "de37b5592fa18a9d1102c2803813460ac925165c52386862f9640a60fae5c488"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-retained-keeper-process-2.json",
+      "sha256": "c999f16dd03b96a4be024683844ed51a78c672d6406457cd251b05932a7ee318"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-baseline.json",
+      "sha256": "d3cb8025e35b8ffcdbe3cfdbef1d50939726b0cf44f373eaa6f1fcf67117863f"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-held.json",
+      "sha256": "7e2e6a0cdf6fa6feef9063a8681c8417f5ed7d75e31657ac1b468aff5ca170b9"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-input.json",
+      "sha256": "e6f6bd0c3b4bb9bb296bb7f2af999e78ecea9a7bb0e2b7fa8dadd0f449e2b5e0"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-journal.json",
+      "sha256": "51f468031603648633396b92b47447ce62e6af220c3fd716259ca82dae1bfdc8"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-model-inputs.json",
+      "sha256": "8124c84f9455cb33b3c82193cfe3833dd8b9c5cc84fa192e35be357edfef7387"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-original.json",
+      "sha256": "5ad301a3c2d1dc1c89c953acbbf0353ac543d416af7622d37436619b24393068"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-process-0.json",
+      "sha256": "64fe636d6310be6ee6c6beb459005ddcf377de34c15d4937839a14567b8a02ed"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-process-1.json",
+      "sha256": "02b7fad5018c2077579b1680deb4c438c65d72f7b89ddf7fc410243503711206"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-json-channel-io-process-2.json",
+      "sha256": "b9ca935de34cdf8b1e2b5b71c2e8428e619d8b5f42577cd0dff430ecd5b70362"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-baseline.json",
+      "sha256": "08708f1238088c4a9ce9a88cb062a04009a8fe25fa788486865826eaa659c29c"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-held.json",
+      "sha256": "203130a48a3c4a7ad4047d7e6a2aaa4e27fba603329778747ccb537491ef1093"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-input.json",
+      "sha256": "688edd9cac5abaa8db60ad4bfd6e5c6389518bf091044d42db644d1b9fccbf34"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-journal.json",
+      "sha256": "032ac6de1a09266dfe6f03a0a1c5da89df1711b1833caed603659257e811cbc2"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-model-inputs.json",
+      "sha256": "4f108b0b789c529a24c83e1e0136ef6241619c942d27cd4184f1f35e79526406"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-original.json",
+      "sha256": "7b48d836563862ce9c610378d734b693606f2f8f318788c7e1cb9c328ddfc21d"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-process-0.json",
+      "sha256": "75846174eab1938dad689bb92391624f900ac92316260c64c17fbf69c2ed401a"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-process-1.json",
+      "sha256": "b4e1dfba5a9ff560cbaccc130f4dbfee02308821627c3295bfd96ad3839bb4f0"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-retained-keeper-process-2.json",
+      "sha256": "1355b79e3808788407f07e218de26d21a416dbb416f88c25a5b99e13f80fa335"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-baseline.json",
+      "sha256": "ffaf8a91a0fc7952253b599b5d4eb1686bc5f9ba2f589565da9e36133a86d164"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-held.json",
+      "sha256": "74cac4bfa436a80c0385c2b83e833ef83a946395ab32304f526704d56475387d"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-input.json",
+      "sha256": "e6f6bd0c3b4bb9bb296bb7f2af999e78ecea9a7bb0e2b7fa8dadd0f449e2b5e0"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-journal.json",
+      "sha256": "7cdc13636fd9023e64eb586f09fc8d24180d81eff93d043520892841d099452c"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-model-inputs.json",
+      "sha256": "f9f439e0eb14f9eee29c15a587ba65f7c961b691836eff09d19160b47b9e62bf"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-original.json",
+      "sha256": "4c1eadc7e007b38081059e932a9382362f8941e9cba8c7da936f24aa06de2123"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-process-0.json",
+      "sha256": "3d47dbd554659f5ea6109321618bd187d1f157d940ed6956cf13c4b6e4d8a8b7"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-process-1.json",
+      "sha256": "7e8ea9c5d13cba6f0fa2c243a2694ba27525369dc0335b80ff09a0bf9cbc9523"
+    },
+    {
+      "path": ".local/world-completion/c20-external-contact-current/lib-company-sqlite-channel-io-process-2.json",
+      "sha256": "ed435c320e477bc6a2035ef380ed35b31d9d1a3827f95fdb5d9a3b0444b8ea98"
+    }
+  ],
+  "oldFullMatrixNotOverwritten": true,
+  "checkedX12": false
+}

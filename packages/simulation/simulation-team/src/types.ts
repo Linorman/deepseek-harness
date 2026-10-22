@@ -12,6 +12,8 @@ export interface SimulationCheckpointCollection {
   readonly channels: readonly import('@clocky/clocky-team').TeamPersistenceReference[]
   readonly sessions: readonly ((import('@clocky/clocky-session-persistence').SessionPersistenceReference & { readonly kind: 'materialized' })
     | Extract<import('@clocky/clocky-simulation').SimulationCheckpointManifest['sessions'][number], { kind: 'unmaterialized' }>)[]
+  /** Export the complete protected owner and attachment closure without deleting or compacting sources. */
+  exportArchive(limits: { readonly maxEntries: number; readonly maxBytes: number; readonly pageSize: number }): Promise<import('./archive.ts').WorldArchiveBody>
   /**
    * Revalidate and publish this candidate for a request already retained in its run cut.
    * @param id - Pending checkpoint request captured by this candidate.
@@ -40,13 +42,15 @@ export interface SimulationInputDispatch {
   readonly inputId: import('@clocky/clocky-session').SimulationContextViewEventData['inputId']
   readonly status: 'queued' | 'consumed' | 'in-flight'
 }
-/** An unconfirmed writer is never treated as available actor capacity. */
+/** Unconfirmed epochs remain charged; recovery names their owner, while capacity names the actor awaiting placement. */
 export type SimulationResidencyResult = { readonly status: 'resident'; readonly lease: TeamActivationLease }
   | { readonly status: 'capacity' | 'recovery-required'; readonly entityId: SimulationEntityId }
 /** Caller-owned placement and ordered eviction policy, outside model tools. */
 export interface SimulationResidencyChoice {
   readonly activation: SimulationActivationRequest
   readonly evict: readonly SimulationEntityId[]
+  /** Optional retained automatic idle policy; absent preserves the caller's exact candidate order. */
+  readonly policy?: import('./residency-policy.ts').SimulationResidencyPolicy
 }
 /** A bounded coordinator stop; it never hides a sleeping recipient or technical retry deadline. */
 export interface SimulationTeamDriveResult {
@@ -81,6 +85,51 @@ export interface SimulationTaskReviewRequest {
 /** One run's attachment to its canonical execution Team. */
 export interface SimulationTeamConnection {
   /**
+   * Execute one accepted tool-free generation using the dedicated canonical Session and shared model pool.
+   * @param jobId - Original Native job; retained or unknown attempts are never regenerated.
+   * @param authorize - Live input disclosure authorization, checked before dispatch and validation.
+   * @param signal - Caller cancellation combined with connection shutdown.
+   * @returns retained and validated output, or retained unknown responsibility on interrupted IO.
+   */
+  generate(jobId: string, authorize: (job: import('@clocky/clocky-simulation').SimulationGenerationJob) => void,
+    signal?: AbortSignal): Promise<import('@clocky/clocky-simulation').SimulationGenerationRecord>
+
+  /**
+   * Settle only an originally reserved personnel mutation under actual canonical owner serializers and Native proof validation.
+   * @param id - Original retained transfer/departure reservation identity; maintenance must already be quiescent.
+   * @returns original atomic business result; unresolved duties or source movement preserve the reservation and fence.
+   */
+  commitPersonnel(id: import('@clocky/clocky-simulation').WorldIntentId): Promise<import('@clocky/clocky-simulation').SimulationWorldResult>
+
+  /**
+   * Inventory the selected original person's Native and canonical Team/Channel obligations without producing any work.
+   * @param request - Exact person/assignment revisions and complete metadata output limits.
+   * @returns source coverage and original responsibility references; complete coverage never grants transfer or departure authority.
+   */
+  inspectPersonnelObligations(request: import('@clocky/clocky-simulation').PersonnelObligationQuery):
+  Promise<import('@clocky/clocky-simulation').PersonnelObligationReport>
+
+  /**
+   * Persist original case cancellation, drain accepted preparation and reconcile exact target cleanup before Native settlement.
+   * @param request - Original trusted cancellation command; exact retries preserve its case and result.
+   * @returns the retained receipt after proven cleanup, or the original already-resolved/committed result without further IO.
+   * Unknown target outcomes reject while Native retains cancel-requested and occupancy; no model or automatic resume is performed.
+   */
+  cancelWorldCase(request: import('@clocky/clocky-simulation').SimulationWorldCancelRequest):
+  Promise<import('@clocky/clocky-simulation').SimulationWorldCancellation>
+
+  /**
+   * Persist exclusive maintenance, drain accepted work and retire canonical writers through the checkpoint owner path.
+   * @param request - Immutable Native maintenance owner request.
+   * @param maxDrainRounds - Positive bound on retirement-queue stability observations.
+   * @param maxAttempts - Total positive bound on fresh-cut attempts, including durable pause/cancel source movement.
+   * @param signal - Optional cancellation; failure retains draining responsibility and never resumes scheduling.
+   * @returns quiescent maintenance, or its historical completion; caller owns preparation and explicit finishMaintenance.
+   */
+  quiesceForMaintenance(request: import('@clocky/clocky-simulation').SimulationMaintenanceRequest,
+    maxDrainRounds: number, maxAttempts: number, signal?: AbortSignal): Promise<import('@clocky/clocky-simulation').SimulationMaintenanceOperation>
+
+  /**
    * Persist a request, collect owners and atomically publish its complete manifest.
    * @param request - Stable caller id, implementation identity and collector bounds.
    * @param signal - Optional cancellation before publication.
@@ -93,9 +142,10 @@ export interface SimulationTeamConnection {
    * @param maxDrainRounds - Run retirement-queue stability bound.
    * @param maxAttempts - Positive maximum attempts after cursor/source movement.
    * @param signal - Optional acquisition cancellation; returned candidates still require explicit release.
+   * @param mode - 'quiescent' rejects live writers instead of pausing or retiring any owner.
    * @returns caller-owned candidate; this does not pin history or publish a manifest.
    */
-  collectCheckpointCandidate(maxDrainRounds: number, maxAttempts: number, signal?: AbortSignal): Promise<SimulationCheckpointCollection>
+  collectCheckpointCandidate(maxDrainRounds: number, maxAttempts: number, signal?: AbortSignal, mode?: 'quiescent'): Promise<SimulationCheckpointCollection>
   /**
    * Establish actor residency using caller-selected safe eviction candidates.
    * @param entityId - Required canonical actor.
@@ -348,10 +398,15 @@ export interface SimulationTeamConnection {
 }
 
 /** Model tools never select their own run, entity, writer or decision identity. */
-export type SimulationModelRequest = { readonly kind: 'observe' | 'submit' }
+export type SimulationModelRequest = { readonly kind: 'observe'; readonly detail?: 'full'; readonly sections?: readonly string[] }
+  | { readonly kind: 'submit'; readonly notification?: { readonly resultId: string } }
   | { readonly kind: 'stage'; readonly proposals: readonly SimulationProposal[] }
 /** Observation and proposal acknowledgement do not claim world effects have succeeded. */
 export type SimulationModelResult =
-  | { readonly status: 'observed'; readonly time: string; readonly sections: import('@clocky/clocky-session').SimulationContextSection[] }
+  | { readonly status: 'observed'
+    readonly time: string
+    readonly sections: import('@clocky/clocky-session').SimulationContextSection[]
+    readonly context?: { readonly inputId: string
+      readonly hash: string } }
   | { readonly status: 'staged'; readonly count: number; readonly effects: 'none' }
   | { readonly status: 'accepted' | 'submitted'; readonly operationIds: import('@clocky/clocky-simulation').SimulationOperationId[]; readonly effects: 'pending' }

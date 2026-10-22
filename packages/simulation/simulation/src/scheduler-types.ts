@@ -50,6 +50,28 @@ export interface SimulationDriveResult {
 }
 /** Recorded scheduler stop requiring explicit intervention. */
 export type SimulationStall = {
+  readonly code: 'SIM_EXTERNAL_ADJUDICATION_BLOCKED'
+  readonly eventId: SimulationEventId
+  readonly reason: import('./world-external-mediated-types.ts').SimulationExternalAdjudicatedEventState['blocks'][number]['code']
+  readonly recovery: 'inspect-original-duty-and-explicitly-resume'
+} | {
+  readonly code: 'SIM_WORLD_SUBMISSION_BLOCKED'
+  readonly decisionId: SimulationDecisionId
+  readonly recovery: 'inspect-original-submission-and-create-new-scenario'
+} | {
+  readonly code: 'SIM_ACTIVATION_HISTORY_LIMIT'
+  readonly entityId: SimulationEntityId
+  readonly recovery: 'reconcile-startup-and-create-new-scenario'
+} | {
+  readonly code: 'SIM_COMPACTION_MODEL_POOL_CAPACITY'
+  readonly entityId: SimulationEntityId
+  readonly compactionId: import('./tokens.ts').SimulationCompactionTokenRequest['compactionId']
+  readonly recovery: 'release-capacity-and-explicitly-resume'
+} | {
+  readonly code: 'SIM_MODEL_POOL_CAPACITY'
+  readonly decisionId: SimulationDecisionId
+  readonly recovery: 'release-capacity-and-explicitly-resume'
+} | {
   readonly code: 'SIM_QUEUE_CAPACITY'
   readonly capacity: import('./capacity.ts').SimulationCapacityKind
   readonly used: number
@@ -60,6 +82,18 @@ export type SimulationStall = {
   readonly code: 'SIM_TOKEN_RESERVATION_EXCEEDED'
   readonly reservationId: import('./tokens.ts').SimulationTokenReservationId
   readonly recovery: 'acknowledge-overrun-and-cover-usage'
+} | {
+  readonly code: 'SIM_MESSAGE_SUBMISSION_BLOCKED'
+  readonly decisionId: SimulationDecisionId
+  readonly recovery: 'inspect-message-rejection-and-correct-original-input'
+} | {
+  readonly code: 'SIM_CONTEXT_INTEGRITY' | 'SIM_DECISION_TIMEOUT'
+  readonly decisionId: SimulationDecisionId
+  readonly recovery: 'inspect-original-decision-before-explicit-resume'
+} | {
+  readonly code: 'SIM_REQUEST_BUDGET_EXCEEDED'
+  readonly decisionId: SimulationDecisionId
+  readonly recovery: 'compact-context-or-create-run-with-larger-request-budget'
 } | {
   readonly code: 'SIM_BUDGET_LIMIT'
   readonly budget: import('./budget.ts').SimulationBudgetKind

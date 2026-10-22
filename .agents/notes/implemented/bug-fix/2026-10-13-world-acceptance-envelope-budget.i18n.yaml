@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-10-13-world-acceptance-envelope-budget.md
+2026-10-13-world-acceptance-envelope-budget.md: 0e3581d140d08cc1aadaceba3a17ab67836500b2
+2026-10-13-world-acceptance-envelope-budget.zh.md: 34baa001e6b3a68deb642c56aa6bf95bea1726e2

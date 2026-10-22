@@ -18,6 +18,8 @@ Activation request 的 cursor 保护初始接纳。Provider 在 Team queue 外�
 
 `clocky-team-agent-client`会在 Link connection 或 inbox admission 前将 Session provenance 与持久 binding 同步。它只接收准确的 running 或 idle epoch，并把 Link claim 用作最终的 inbox authorization。Link 会在 post 和 receipt operation 中携带准确的 activation 与 Session，因此 Hub 会在 Team-to-channel lock 下拒绝 stopping、offline 或已替换 epoch。
 
+status 与 quiescence 更新保留 activation 内的顺序，并按 Team 串行执行读取、proof 和写回。因此，同时退休的兄弟 epoch 数量超过重试额度时，不会制造 controller 内部的 cursor 冲突。Provider 终止仍可并发；其他 Team 写入仍使用有界冲突重试。双后端容量测试以一次 status 尝试退休十个 epoch。
+
 ## Alternatives considered
 
 **让 Team Hub 创建 AgentRuntime activation。** 不予采纳，因为 Hub 拥有可回放的 Team fact，而 placement 和 handle teardown 属于 AgentRuntime provider 及其由调用方拥有的 handle。

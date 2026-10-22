@@ -1,0 +1,309 @@
+{
+  "checks": {
+    "worldIntegrity": true,
+    "horizon": false,
+    "decisionCoverage": false,
+    "checkpointCoverage": false,
+    "recoveryCheck": false
+  },
+  "mechanicallyComplete": false,
+  "day": 12,
+  "coverage": {
+    "decisions": 62,
+    "materialDecisions": 45,
+    "activeWeeks": 2,
+    "actors": 11,
+    "teamIdentities": 11,
+    "checkpoints": 2,
+    "checkpointDays": 2,
+    "maxCheckpointGap": 5
+  },
+  "balances": {
+    "cash": 11924,
+    "stocks": {
+      "food": 349,
+      "water": 264,
+      "medicine": 64,
+      "fuel": 95
+    },
+    "cashFlow": {
+      "initial": 12420,
+      "in": 0,
+      "out": 496
+    },
+    "resourceFlow": {
+      "food": {
+        "initial": 428,
+        "in": 60,
+        "out": 139
+      },
+      "water": {
+        "initial": 373,
+        "in": 50,
+        "out": 159
+      },
+      "medicine": {
+        "initial": 72,
+        "in": 4,
+        "out": 12
+      },
+      "fuel": {
+        "initial": 110,
+        "in": 10,
+        "out": 25
+      }
+    }
+  },
+  "openOrders": [
+    {
+      "id": "order-rival-water-oldtown-d2",
+      "seller": "rival",
+      "buyer": "oldtown",
+      "resource": "water",
+      "quantity": 10,
+      "escrow": 40,
+      "amount": 40,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 6,
+      "createdDecision": "decision-fbe8f24458b6548598e1362495d8296749f405706936f78bf6f841d72395e261",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-coop-offer-water-north-d3",
+      "seller": "coop",
+      "buyer": "north",
+      "resource": "water",
+      "quantity": 14,
+      "escrow": 56,
+      "amount": 56,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 6,
+      "createdDecision": "decision-0792a0e4f6179e074cde14b4200ac61fb144b0204ce0c62df09e6c90e35780da",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-rival-food-west-d6",
+      "seller": "rival",
+      "buyer": "west",
+      "resource": "food",
+      "quantity": 14,
+      "escrow": 84,
+      "amount": 84,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 6,
+      "createdDecision": "decision-6a51b4d5ffa01243da4dbf95893c3b3c4d547a2347a38806f4f1edcc77e561d2",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-coop-offer-water-riverside-d2",
+      "seller": "coop",
+      "buyer": "riverside",
+      "resource": "water",
+      "quantity": 14,
+      "escrow": 56,
+      "amount": 56,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 6,
+      "createdDecision": "decision-493259b51cab509d5ff41caa0a28fea091cd4d7733dd4a40cf2f048f22c3fd0a",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-coop-offer-food-riverside-d3",
+      "seller": "coop",
+      "buyer": "riverside",
+      "resource": "food",
+      "quantity": 10,
+      "escrow": 60,
+      "amount": 60,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 6,
+      "createdDecision": "decision-493259b51cab509d5ff41caa0a28fea091cd4d7733dd4a40cf2f048f22c3fd0a",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-offer-sup-d6b-rival-water",
+      "seller": "supplier",
+      "buyer": "rival",
+      "resource": "water",
+      "quantity": 20,
+      "escrow": 60,
+      "amount": 60,
+      "dueDay": 9,
+      "phase": "open",
+      "createdDay": 7,
+      "createdDecision": "decision-00d6dca49af2c5dbbe37d16a8cfbfe62f80e432f128ef290351145659cd22905",
+      "breachedAt": 10
+    },
+    {
+      "id": "order-offer-sup-d6b-rival-food",
+      "seller": "supplier",
+      "buyer": "rival",
+      "resource": "food",
+      "quantity": 40,
+      "escrow": 160,
+      "amount": 160,
+      "dueDay": 9,
+      "phase": "open",
+      "createdDay": 7,
+      "createdDecision": "decision-00d6dca49af2c5dbbe37d16a8cfbfe62f80e432f128ef290351145659cd22905",
+      "breachedAt": 10
+    },
+    {
+      "id": "order-offer-sup-d6-rival-fuel",
+      "seller": "supplier",
+      "buyer": "rival",
+      "resource": "fuel",
+      "quantity": 10,
+      "escrow": 60,
+      "amount": 60,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 7,
+      "createdDecision": "decision-00d6dca49af2c5dbbe37d16a8cfbfe62f80e432f128ef290351145659cd22905",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-offer-sup-d6b-coop-fuel",
+      "seller": "supplier",
+      "buyer": "coop",
+      "resource": "fuel",
+      "quantity": 10,
+      "escrow": 60,
+      "amount": 60,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 7,
+      "createdDecision": "decision-1c9c555123b2c3e8c652b9156759421ba3382849c9c322ab1026b75ef830b915",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-offer-sup-d6b-council-fuel",
+      "seller": "supplier",
+      "buyer": "council",
+      "resource": "fuel",
+      "quantity": 6,
+      "escrow": 36,
+      "amount": 36,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 7,
+      "createdDecision": "decision-210c4e4bfffabde3f50ebd5d1dca981e08e90dc9da58362e1fe655e588760f54",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-coop-offer-water-oldtown-d7",
+      "seller": "coop",
+      "buyer": "oldtown",
+      "resource": "water",
+      "quantity": 12,
+      "escrow": 48,
+      "amount": 48,
+      "dueDay": 8,
+      "phase": "open",
+      "createdDay": 7,
+      "createdDecision": "decision-f60c11cbfdbee4adbbfe2e9a4a779dafed8b905115c35f25130393a00ea5c32e",
+      "breachedAt": 9
+    },
+    {
+      "id": "order-coop-offer-food-oldtown-d7",
+      "seller": "coop",
+      "buyer": "oldtown",
+      "resource": "food",
+      "quantity": 14,
+      "escrow": 84,
+      "amount": 84,
+      "dueDay": 9,
+      "phase": "open",
+      "createdDay": 7,
+      "createdDecision": "decision-f60c11cbfdbee4adbbfe2e9a4a779dafed8b905115c35f25130393a00ea5c32e",
+      "breachedAt": 10
+    },
+    {
+      "id": "order-coop-offer-water-west-d7",
+      "seller": "coop",
+      "buyer": "west",
+      "resource": "water",
+      "quantity": 14,
+      "escrow": 56,
+      "amount": 56,
+      "dueDay": 10,
+      "phase": "open",
+      "createdDay": 8,
+      "createdDecision": "decision-cdcb0ce789784422cda48748f3dfb6eb8bdda18807b1ee4f34c84124414456d2",
+      "breachedAt": 11
+    },
+    {
+      "id": "order-offer-sup-d6b-coop-water",
+      "seller": "supplier",
+      "buyer": "coop",
+      "resource": "water",
+      "quantity": 20,
+      "escrow": 60,
+      "amount": 60,
+      "dueDay": 13,
+      "phase": "open",
+      "createdDay": 11,
+      "createdDecision": "decision-55a5664d105764dba161ec5ea0d5b8eb4a7dd5f3027cbe7ea0de11b45bd50e79"
+    },
+    {
+      "id": "order-offer-sup-d7-rival-water",
+      "seller": "supplier",
+      "buyer": "rival",
+      "resource": "water",
+      "quantity": 20,
+      "escrow": 60,
+      "amount": 60,
+      "dueDay": 12,
+      "phase": "open",
+      "createdDay": 11,
+      "createdDecision": "decision-a858e950854668f8916b654bd9c59005f50570bfb6e477b4dc350ebb0a4ac714"
+    },
+    {
+      "id": "order-offer-sup-d11-clinic-med",
+      "seller": "supplier",
+      "buyer": "clinic",
+      "resource": "medicine",
+      "quantity": 5,
+      "escrow": 60,
+      "amount": 60,
+      "dueDay": 14,
+      "phase": "open",
+      "createdDay": 11,
+      "createdDecision": "decision-e7cd21b7ddba48dcd9f1ce428b462359b196be3b36f3b2cefa76c2fbc9a45bee"
+    },
+    {
+      "id": "order-offer-sup-d11-council-food",
+      "seller": "supplier",
+      "buyer": "council",
+      "resource": "food",
+      "quantity": 30,
+      "escrow": 120,
+      "amount": 120,
+      "dueDay": 14,
+      "phase": "open",
+      "createdDay": 11,
+      "createdDecision": "decision-006c13667252dda7695dac52328f44b91737b4c4e9c0859c94c420d1927ff3b3"
+    },
+    {
+      "id": "order-rival-food-north-d6",
+      "seller": "rival",
+      "buyer": "north",
+      "resource": "food",
+      "quantity": 12,
+      "escrow": 72,
+      "amount": 72,
+      "dueDay": 13,
+      "phase": "open",
+      "createdDay": 11,
+      "createdDecision": "decision-c767975a287253b74a088d355530ecf8a406883d98d00a5a8cdcafc3e03893c8"
+    }
+  ],
+  "openLoans": [],
+  "unpaidCosts": [],
+  "requiresHumanReview": "核对 Team 身份、独立决策、记忆质量与长期因果；机械审计不证明模型自主性。"
+}

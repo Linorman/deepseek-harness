@@ -1,0 +1,288 @@
+{
+  "inputHash": "8daeef20014bc9c26dcbb89afeb9138c4c581b26e75722d3ad86199493f487a1",
+  "capturedFiles": 5742,
+  "nativeVersion": 82,
+  "actualProcessCount": 16,
+  "cases": [
+    {
+      "face": "lib",
+      "backend": "json",
+      "scenario": "laboratory",
+      "pids": [
+        25135,
+        25157
+      ],
+      "modelCalls": 15,
+      "coldModelCalls": 0,
+      "revision": 139,
+      "receiptInputId": "simulation-input:b8ec0a97f9da4feef3477e94907454873f919b61f610cfc31c205f007f805413",
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-8Whxln/process-warm.json",
+          "sha256": "2ae2a65c6bcd96f35fdbe079a3f9b5bec99fece54308ca374f11e76635248357"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-8Whxln/process-cold.json",
+          "sha256": "10eb0c88afe011c1b5029d989b826e6aeb0451b3ec3119473df8e1c1287da384"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-8Whxln/booking-proof.json",
+          "sha256": "f8ba81d7c421baadc4501d26e225b593c767a87c4609051faa68e95e4dc2f6bb"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-8Whxln/booking-journal.json",
+          "sha256": "d0b2685dcb923a2a066902546bd6c5f5b402137f71404d8fb41efd34fe8aee19"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-8Whxln/booking-model-inputs.json",
+          "sha256": "7ecf5d3e4543b0c60163f8d8d7a9f3bc87713f90bb437074c54b1eed48deaf49"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scenario": "company",
+      "pids": [
+        25024,
+        25132
+      ],
+      "modelCalls": 15,
+      "coldModelCalls": 0,
+      "revision": 139,
+      "receiptInputId": "simulation-input:c057dc768b25723cd8bac958d1edca64c05c23c0839f2ed00b6923f3d6d377b9",
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Bf4xpf/process-warm.json",
+          "sha256": "9fc02a48b22122387d9bc18ec40fc328e5be17465e2ed5d4b46cc63a81f09b02"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Bf4xpf/process-cold.json",
+          "sha256": "5e52c4f45538f35ebbdefd4e34c05d2bf1b6e52ee7f3eecba2a4bb5981308296"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Bf4xpf/booking-proof.json",
+          "sha256": "3c9c52033bc9371b2470fbac9ea2377a87437a39b74fc917e87e38f8bdc52ff5"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Bf4xpf/booking-journal.json",
+          "sha256": "f63ca738da856aaa6eb0f446bad95585a5ce75923a383a445eb6fbec99dad12a"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Bf4xpf/booking-model-inputs.json",
+          "sha256": "13cbb9a2913088e65a1450be6b252a4d5f99dcbd6b86a60dd57fcaf6697ebc6e"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "pids": [
+        25162,
+        25163
+      ],
+      "modelCalls": 15,
+      "coldModelCalls": 0,
+      "revision": 139,
+      "receiptInputId": "simulation-input:b8ec0a97f9da4feef3477e94907454873f919b61f610cfc31c205f007f805413",
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Hcdhjq/process-warm.json",
+          "sha256": "89d7f79e0bd0b946ef1e02d6d0bfe4afe7cde35fe3bc77292921081904a7946e"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Hcdhjq/process-cold.json",
+          "sha256": "a82e9a4ca8521e8d3c1dc51da2452546aa6011e4b5faaa1236f0dbb87db74930"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Hcdhjq/booking-proof.json",
+          "sha256": "8f88f21ea35c4ff0ff5f57536571b3a40aee137b974693e60ac0f65daf53bd45"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Hcdhjq/booking-journal.json",
+          "sha256": "febdfb441341a5f3572a473cacd9a81788945b449c057e17f80338191b95e18f"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-Hcdhjq/booking-model-inputs.json",
+          "sha256": "7072f76d09bd0cce055b144624d149c9f33d83cc56b7f5d613878c591ff38152"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scenario": "company",
+      "pids": [
+        25158,
+        25161
+      ],
+      "modelCalls": 15,
+      "coldModelCalls": 0,
+      "revision": 139,
+      "receiptInputId": "simulation-input:c057dc768b25723cd8bac958d1edca64c05c23c0839f2ed00b6923f3d6d377b9",
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-ZKPcF8/process-warm.json",
+          "sha256": "cf7eea63e8b734502f3b34ef69bb54b88f740ea96e96fd47e4ed5d7fbbffa030"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-ZKPcF8/process-cold.json",
+          "sha256": "8de4fca206dcdcbe5e6002c511670944f5dbc913a4c16f3eff6ca469d402790c"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-ZKPcF8/booking-proof.json",
+          "sha256": "2a054e64169d92c5096d71a941c07143186c30ad6c17e3908af72496617a9a1b"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-ZKPcF8/booking-journal.json",
+          "sha256": "88935080f30972b453b8d035d84ec0440200f2d2065b188b3a88c9bc0c4cf8d7"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/lib/world-booking-ZKPcF8/booking-model-inputs.json",
+          "sha256": "a664d257f7956533bc264f5ab119f9010c7ba102957c2e62f07796114ae0fbf0"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "pids": [
+        24987,
+        25006
+      ],
+      "modelCalls": 15,
+      "coldModelCalls": 0,
+      "revision": 139,
+      "receiptInputId": "simulation-input:b8ec0a97f9da4feef3477e94907454873f919b61f610cfc31c205f007f805413",
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-MmbK5G/process-warm.json",
+          "sha256": "ce1065c5b27d424da1f7ddcee5203554b4f2df1c459d7700085b72c3808fa554"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-MmbK5G/process-cold.json",
+          "sha256": "359f9233addf4cbf49d1158e8f5c5d34feeb7c77085ced0fc3d6bde7bc880aba"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-MmbK5G/booking-proof.json",
+          "sha256": "901e285dd590fa017edb410abf95d97d61d348239cb54018ba1309d6fa76c370"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-MmbK5G/booking-journal.json",
+          "sha256": "b47fa73a79016e76d07c87464fcffa17bcd0265ac64330ff3e59ec3c24321768"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-MmbK5G/booking-model-inputs.json",
+          "sha256": "956eef03f5d720ceb0eb2ad1dc8201a16b82d9543148fa2956491210c8c6706c"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scenario": "company",
+      "pids": [
+        24582,
+        24696
+      ],
+      "modelCalls": 15,
+      "coldModelCalls": 0,
+      "revision": 139,
+      "receiptInputId": "simulation-input:c057dc768b25723cd8bac958d1edca64c05c23c0839f2ed00b6923f3d6d377b9",
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UKfKYD/process-warm.json",
+          "sha256": "d98d215d37661c059086eab9a5e9e654112b6b7f7a985c3ebd6a89329e681ff2"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UKfKYD/process-cold.json",
+          "sha256": "ff7c70285ecd347eddd7d2d32a9cb8ea5f344c058c6bec47328c8260d58fe91c"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UKfKYD/booking-proof.json",
+          "sha256": "85b5a8ad14726969b7e301bf34c65e62553baf4f9e3907f6efd1730544fc7809"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UKfKYD/booking-journal.json",
+          "sha256": "87110416f5b90a7b34843c19fa81f33143f679fede558b421901454caa9d5af5"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UKfKYD/booking-model-inputs.json",
+          "sha256": "e9ddccd4435693cf7a9f01386e6a7c910ea355c85ffe533c5a4a60f40f3ea12b"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scenario": "laboratory",
+      "pids": [
+        24720,
+        24737
+      ],
+      "modelCalls": 15,
+      "coldModelCalls": 0,
+      "revision": 139,
+      "receiptInputId": "simulation-input:b8ec0a97f9da4feef3477e94907454873f919b61f610cfc31c205f007f805413",
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UQLfT1/process-warm.json",
+          "sha256": "9aa87faef6529435002db80de14b2952ae7c203f28bc0af3bccf0b2ba809d634"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UQLfT1/process-cold.json",
+          "sha256": "26174d2feb35c866f82a0b355833013f3232e32ca5a9278fdde7e3a00c4be4cb"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UQLfT1/booking-proof.json",
+          "sha256": "8a3ed74d8edcc2d0c79d099ff4eaea5d772f1b89c10292d9377f3f061bd85260"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UQLfT1/booking-journal.json",
+          "sha256": "b78d726234d626c269785e7911cd240637b9d708b4b4cdb59dfa32bd10f3c2c3"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-UQLfT1/booking-model-inputs.json",
+          "sha256": "e3a5c567f69d54a8a2c8ac76840b794c017cc6403dd8a3ff2d4a4902c65088e0"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scenario": "company",
+      "pids": [
+        24869,
+        24874
+      ],
+      "modelCalls": 15,
+      "coldModelCalls": 0,
+      "revision": 139,
+      "receiptInputId": "simulation-input:c057dc768b25723cd8bac958d1edca64c05c23c0839f2ed00b6923f3d6d377b9",
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-dmRK0f/process-warm.json",
+          "sha256": "784ff383f278cca4f6dbea0722c97d08a1407ef0c4acbeeb514a8f3b6252ccd7"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-dmRK0f/process-cold.json",
+          "sha256": "81b380a3a9d63fae48692feea04170bcaf8e64ba4fc56fcab8faddcada7afd45"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-dmRK0f/booking-proof.json",
+          "sha256": "27bb90f18d29048f2c480d4d49c0b1152d6bd001d2ad86cb69df8de4e6948219"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-dmRK0f/booking-journal.json",
+          "sha256": "8fd20d9eb1392bc1c8688831d91968e6862f0851c6ed80c44b56687130ef35f1"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-receipt/final-matrix/src/world-booking-dmRK0f/booking-model-inputs.json",
+          "sha256": "e5420382119a7d9ba47e4dd9b036c904cb44c6cd22c37932e2d94960b08f9a48"
+        }
+      ]
+    }
+  ]
+}

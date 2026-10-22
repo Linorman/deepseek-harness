@@ -1,0 +1,334 @@
+{
+  "workload": {
+    "version": 1,
+    "date": "2026-10-19",
+    "scope": "Native bounded readonly inspection prefix projection; not full B01/B19 acceptance",
+    "backends": [
+      "json",
+      "sqlite"
+    ],
+    "entities": 512,
+    "profileUpdates": 1024,
+    "repetitions": 21,
+    "warmup": 3,
+    "mode": "source",
+    "modelPolicy": "no model calls",
+    "limitations": [
+      "Entire journal bytes are still read and hashed under existing inspection limits",
+      "Single in-memory prefix cache per provider",
+      "No persistent on-disk index publication or cold recovery speedup claim"
+    ],
+    "target": {
+      "warmP50RatioMaximum": 0.9,
+      "identicalSnapshots": true,
+      "unchangedHistory": true
+    }
+  },
+  "control": "Pre-index bounded read/fold/assert/owner strategy, with current parsers and limits",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro",
+    "node": "v25.9.0"
+  },
+  "results": [
+    {
+      "backend": "json",
+      "revision": 1537,
+      "entities": 512,
+      "rebuildMs": 237.37862499999937,
+      "modelCalls": 0,
+      "tokenUsage": 0,
+      "cost": 0,
+      "samples": [
+        {
+          "baselineMs": 10.441375000000335,
+          "coldMs": 59.512917000000016,
+          "warmMs": 12.587333999999828,
+          "rss": 516915200
+        },
+        {
+          "baselineMs": 9.944707999999082,
+          "coldMs": 84.53408400000262,
+          "warmMs": 7.357707999999548,
+          "rss": 548487168
+        },
+        {
+          "baselineMs": 19.853541000000405,
+          "coldMs": 63.60283300000083,
+          "warmMs": 10.837707999999111,
+          "rss": 601063424
+        },
+        {
+          "baselineMs": 13.919167000000016,
+          "coldMs": 76.38087499999892,
+          "warmMs": 4.29791699999987,
+          "rss": 629948416
+        },
+        {
+          "baselineMs": 14.281707999998616,
+          "coldMs": 65.59562499999811,
+          "warmMs": 8.842832999998791,
+          "rss": 681181184
+        },
+        {
+          "baselineMs": 20.504415999999765,
+          "coldMs": 119.5982499999991,
+          "warmMs": 8.602624999999534,
+          "rss": 708788224
+        },
+        {
+          "baselineMs": 14.54712500000096,
+          "coldMs": 74.12604199999987,
+          "warmMs": 11.916167000003043,
+          "rss": 709509120
+        },
+        {
+          "baselineMs": 21.973041999997804,
+          "coldMs": 80.17670800000269,
+          "warmMs": 6.236582999998063,
+          "rss": 709640192
+        },
+        {
+          "baselineMs": 17.37133399999948,
+          "coldMs": 74.39666600000055,
+          "warmMs": 9.648167000003014,
+          "rss": 709640192
+        },
+        {
+          "baselineMs": 11.858541999998124,
+          "coldMs": 66.66533399999753,
+          "warmMs": 6.849750000001222,
+          "rss": 709640192
+        },
+        {
+          "baselineMs": 15.08887500000128,
+          "coldMs": 82.13716699999713,
+          "warmMs": 16.879292000001442,
+          "rss": 709672960
+        },
+        {
+          "baselineMs": 28.065833000000566,
+          "coldMs": 94.12833300000057,
+          "warmMs": 13.091542000001937,
+          "rss": 709672960
+        },
+        {
+          "baselineMs": 18.899666999997862,
+          "coldMs": 83.03829199999745,
+          "warmMs": 8.80370799999946,
+          "rss": 708952064
+        },
+        {
+          "baselineMs": 12.298374999998487,
+          "coldMs": 84.11724999999933,
+          "warmMs": 7.466291999997338,
+          "rss": 709328896
+        },
+        {
+          "baselineMs": 13.613250000002154,
+          "coldMs": 75.92183300000033,
+          "warmMs": 6.96441699999923,
+          "rss": 709689344
+        },
+        {
+          "baselineMs": 15.132000000001426,
+          "coldMs": 90.671792000001,
+          "warmMs": 9.451916999998502,
+          "rss": 709689344
+        },
+        {
+          "baselineMs": 26.6395420000008,
+          "coldMs": 71.62762500000099,
+          "warmMs": 10.060083000000304,
+          "rss": 709689344
+        },
+        {
+          "baselineMs": 23.97783299999719,
+          "coldMs": 88.72570799999812,
+          "warmMs": 14.637625000003027,
+          "rss": 709689344
+        },
+        {
+          "baselineMs": 28.2902920000015,
+          "coldMs": 88.57624999999825,
+          "warmMs": 8.62645799999882,
+          "rss": 708968448
+        },
+        {
+          "baselineMs": 22.387332999998762,
+          "coldMs": 65.48675000000003,
+          "warmMs": 11.851542000000336,
+          "rss": 709689344
+        },
+        {
+          "baselineMs": 11.85674999999901,
+          "coldMs": 88.59433400000125,
+          "warmMs": 12.246750000002066,
+          "rss": 709689344
+        }
+      ],
+      "baselineP50Ms": 15.132000000001426,
+      "baselineP95Ms": 28.065833000000566,
+      "baselineP99Ms": 28.2902920000015,
+      "warmToBaselineRatio": 0.6246310467881054,
+      "baselineTargetPassed": true,
+      "coldP50Ms": 80.17670800000269,
+      "warmP50Ms": 9.451916999998502,
+      "coldP95Ms": 94.12833300000057,
+      "warmP95Ms": 14.637625000003027,
+      "coldP99Ms": 119.5982499999991,
+      "warmP99Ms": 16.879292000001442,
+      "warmP50Ratio": 0.11788856434462469
+    },
+    {
+      "backend": "sqlite",
+      "revision": 1537,
+      "entities": 512,
+      "rebuildMs": 128.70275000000038,
+      "modelCalls": 0,
+      "tokenUsage": 0,
+      "cost": 0,
+      "samples": [
+        {
+          "baselineMs": 6.866041999997833,
+          "coldMs": 80.5213330000006,
+          "warmMs": 4.845916999998735,
+          "rss": 660865024
+        },
+        {
+          "baselineMs": 17.78216600000087,
+          "coldMs": 52.94279100000131,
+          "warmMs": 5.204583000002458,
+          "rss": 660013056
+        },
+        {
+          "baselineMs": 11.440833000000566,
+          "coldMs": 77.1638329999987,
+          "warmMs": 7.644749999999476,
+          "rss": 661241856
+        },
+        {
+          "baselineMs": 11.016791000001831,
+          "coldMs": 68.82649999999921,
+          "warmMs": 7.193124999997963,
+          "rss": 661585920
+        },
+        {
+          "baselineMs": 13.298541999996814,
+          "coldMs": 67.10070799999812,
+          "warmMs": 10.20824999999968,
+          "rss": 661553152
+        },
+        {
+          "baselineMs": 16.45679200000086,
+          "coldMs": 62.993124999997235,
+          "warmMs": 6.665125000003172,
+          "rss": 661553152
+        },
+        {
+          "baselineMs": 11.7377919999999,
+          "coldMs": 70.17983300000196,
+          "warmMs": 4.322499999998399,
+          "rss": 661553152
+        },
+        {
+          "baselineMs": 16.716333000000304,
+          "coldMs": 53.62970800000039,
+          "warmMs": 9.976042000002053,
+          "rss": 660832256
+        },
+        {
+          "baselineMs": 7.334458000001177,
+          "coldMs": 79.92445799999768,
+          "warmMs": 6.506583999998838,
+          "rss": 661553152
+        },
+        {
+          "baselineMs": 11.97595800000272,
+          "coldMs": 79.55725000000166,
+          "warmMs": 10.186290999998164,
+          "rss": 661553152
+        },
+        {
+          "baselineMs": 37.85304200000246,
+          "coldMs": 76.27733399999852,
+          "warmMs": 6.257750000000669,
+          "rss": 661372928
+        },
+        {
+          "baselineMs": 13.188833000000159,
+          "coldMs": 61.58799999999974,
+          "warmMs": 10.670624999998836,
+          "rss": 661372928
+        },
+        {
+          "baselineMs": 11.392917000001034,
+          "coldMs": 74.6215830000001,
+          "warmMs": 17.146292000001267,
+          "rss": 660652032
+        },
+        {
+          "baselineMs": 21.529082999997627,
+          "coldMs": 77.01483300000109,
+          "warmMs": 7.232833000001847,
+          "rss": 661340160
+        },
+        {
+          "baselineMs": 11.372707999998966,
+          "coldMs": 108.50116699999853,
+          "warmMs": 8.536291000000347,
+          "rss": 661340160
+        },
+        {
+          "baselineMs": 22.454750000000786,
+          "coldMs": 73.22837499999878,
+          "warmMs": 7.723458000000392,
+          "rss": 661258240
+        },
+        {
+          "baselineMs": 9.357959000000847,
+          "coldMs": 73.61104200000045,
+          "warmMs": 8.531332999998995,
+          "rss": 660406272
+        },
+        {
+          "baselineMs": 10.25458300000173,
+          "coldMs": 120.46745800000281,
+          "warmMs": 5.51458300000013,
+          "rss": 661389312
+        },
+        {
+          "baselineMs": 10.912915999997495,
+          "coldMs": 129.21700000000055,
+          "warmMs": 4.7667920000021695,
+          "rss": 661323776
+        },
+        {
+          "baselineMs": 22.122290999999677,
+          "coldMs": 133.83749999999782,
+          "warmMs": 10.365915999998833,
+          "rss": 660602880
+        },
+        {
+          "baselineMs": 10.410916999997426,
+          "coldMs": 136.6964169999992,
+          "warmMs": 32.37604099999953,
+          "rss": 661323776
+        }
+      ],
+      "baselineP50Ms": 11.7377919999999,
+      "baselineP95Ms": 22.454750000000786,
+      "baselineP99Ms": 37.85304200000246,
+      "warmToBaselineRatio": 0.6512937015751805,
+      "baselineTargetPassed": true,
+      "coldP50Ms": 76.27733399999852,
+      "warmP50Ms": 7.644749999999476,
+      "coldP95Ms": 133.83749999999782,
+      "warmP95Ms": 17.146292000001267,
+      "coldP99Ms": 136.6964169999992,
+      "warmP99Ms": 32.37604099999953,
+      "warmP50Ratio": 0.10022308855209366
+    }
+  ]
+}

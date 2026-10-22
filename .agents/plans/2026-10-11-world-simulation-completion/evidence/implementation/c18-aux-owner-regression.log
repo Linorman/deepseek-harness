@@ -1,0 +1,338 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts (396 tests | 30 failed | 366 skipped) 777ms
+   × denies a model attempt before adapter dispatch when its token reservation cannot fit 62ms
+   × releases token capacity when cancellation is proven to precede downstream model dispatch 29ms
+   × uses the deployment budget and prevents inference after required context overflow 24ms
+   × holds auxiliary model capacity until cancelled provider cleanup and retains partial usage 23ms
+   × rejects unmarked auxiliary requests before model IO 23ms
+   × rejects cloned auxiliary requests before model IO 25ms
+   × rejects changed auxiliary requests before model IO 21ms
+   × rejects ended auxiliary requests before model IO 22ms
+   × rejects unrouted auxiliary requests before model IO 22ms
+   × rejects foreign-session auxiliary requests before model IO 22ms
+   × rejects unclassified auxiliary requests before model IO 22ms
+   × protects Simulation Team and channel history even from valid scheduler compaction proofs 22ms
+   × rebudgets only selected report bodies and retains evidence and presentation history 22ms
+   × retains auxiliary ownership when the request flush fails 22ms
+   × retains auxiliary ownership when the usage flush fails 22ms
+   × rejects a prepared context with another deployment byte budget before model IO 36ms
+   × rechecks the recorded conversation after token reservation and before provider IO 22ms
+   × rejects request-header config drift during token reservation 23ms
+   × rejects request-header system drift during token reservation 23ms
+   × rejects request-header tools drift during token reservation 21ms
+   × retains an auxiliary model and Session until hibernate cleanup settles 23ms
+   × retains an auxiliary model and Session until close cleanup settles 22ms
+   × retains an auxiliary model and Session until checkpoint cleanup settles 21ms
+   × retains an auxiliary model and Session until lease cleanup settles 23ms
+   × retains an auxiliary model and Session until service-bootstrap cleanup settles 24ms
+   × retires auxiliary streams only for their exact writer while another actor keeps running 67ms
+   × refuses auxiliary inference for a canonical Session without a resident writer 21ms
+   × rejects a auxiliary completion when its registry owner disappears during flush 21ms
+   × refuses advertised tools outside the bound Simulation decision before model or budget admission 21ms
+   × pins assignment proof to exact fields, refuses channel wake authority and revokes the token after settlement 20ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 30 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > denies a model attempt before adapter dispatch when its token reservation cannot fit
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:45:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > releases token capacity when cancellation is proven to precede downstream model dispatch
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:62:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > uses the deployment budget and prevents inference after required context overflow
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:634:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > holds auxiliary model capacity until cancelled provider cleanup and retains partial usage
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:755:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects unmarked auxiliary requests before model IO
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects cloned auxiliary requests before model IO
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects changed auxiliary requests before model IO
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects ended auxiliary requests before model IO
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects unrouted auxiliary requests before model IO
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects foreign-session auxiliary requests before model IO
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects unclassified auxiliary requests before model IO
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:801:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > protects Simulation Team and channel history even from valid scheduler compaction proofs
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ preparedPost packages/simulation/simulation-team/tests/lifecycle.spec.ts:1683:81
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:1135:28
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rebudgets only selected report bodies and retains evidence and presentation history
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ preparedPost packages/simulation/simulation-team/tests/lifecycle.spec.ts:1683:81
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:2910:81
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > retains auxiliary ownership when the request flush fails
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > retains auxiliary ownership when the usage flush fails
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:3051:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects a prepared context with another deployment byte budget before model IO
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:4490:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rechecks the recorded conversation after token reservation and before provider IO
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ inputHarness packages/simulation/simulation-team/tests/lifecycle.spec.ts:1599:17
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:4816:66
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects request-header config drift during token reservation
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects request-header system drift during token reservation
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects request-header tools drift during token reservation
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ inputHarness packages/simulation/simulation-team/tests/lifecycle.spec.ts:1599:17
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:4840:66
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > retains an auxiliary model and Session until hibernate cleanup settles
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > retains an auxiliary model and Session until close cleanup settles
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > retains an auxiliary model and Session until checkpoint cleanup settles
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > retains an auxiliary model and Session until lease cleanup settles
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > retains an auxiliary model and Session until service-bootstrap cleanup settles
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:5036:73
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > retires auxiliary streams only for their exact writer while another actor keeps running
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ preparedPost packages/simulation/simulation-team/tests/lifecycle.spec.ts:1683:81
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:5123:64
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > refuses auxiliary inference for a canonical Session without a resident writer
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:5295:54
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > rejects a auxiliary completion when its registry owner disappears during flush
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:5546:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > refuses advertised tools outside the bound Simulation decision before model or budget admission
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ inputHarness packages/simulation/simulation-team/tests/lifecycle.spec.ts:1599:17
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:5756:66
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/30]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/lifecycle.spec.ts > pins assignment proof to exact fields, refuses channel wake authority and revokes the token after settlement
+PersonnelDomainError: Personnel commit source requires the original admitted canonical lifecycle owner
+ ❯ LocalSimulationRun.onPersonnelCommitAuthority packages/simulation/simulation-local/src/run.ts:177:13
+    175|     if (this.closing || this.state.teamReservation?.confirmed !== true
+    176|       || owner !== this.state.teamReservation.creation.rules['activati…
+    177|       throw new PersonnelDomainError('SIM_PERSONNEL_AUTHORITY', 'Perso…
+       |             ^
+    178|     if (this.personnelCommitAuthorities.has(owner)) throw new Error('P…
+    179|     this.personnelCommitAuthorities.set(owner, resolve)
+ ❯ PersonnelSettlementAuthority.attach packages/simulation/simulation-team/src/personnel-settlement.ts:30:16
+ ❯ Proxy.attach packages/simulation/simulation-team/src/index.ts:729:57
+ ❯ setup packages/simulation/simulation-team/tests/lifecycle.spec.ts:38:31
+ ❯ preparedTask packages/simulation/simulation-team/tests/lifecycle.spec.ts:1331:59
+ ❯ packages/simulation/simulation-team/tests/lifecycle.spec.ts:5889:49
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/30]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  30 failed | 10 passed | 366 skipped (406)
+   Start at  14:13:30
+   Duration  2.44s (transform 1.99s, setup 249ms, import 2.35s, tests 1.31s, environment 0ms)
+

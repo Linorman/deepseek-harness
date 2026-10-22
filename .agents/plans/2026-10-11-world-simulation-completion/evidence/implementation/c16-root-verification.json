@@ -1,0 +1,191 @@
+{
+  "sources": 1963,
+  "built": 2572,
+  "fixtureArtifacts": 73,
+  "matrix": [
+    {
+      "mode": "source",
+      "scene": "company",
+      "backend": "json",
+      "contacts": 3,
+      "representatives": 1,
+      "channels": 2,
+      "processes": [
+        {
+          "pid": 59138,
+          "modelCalls": 48
+        },
+        {
+          "pid": 59317,
+          "modelCalls": 0
+        },
+        {
+          "pid": 59340,
+          "modelCalls": 0
+        }
+      ]
+    },
+    {
+      "mode": "source",
+      "scene": "company",
+      "backend": "sqlite",
+      "contacts": 3,
+      "representatives": 1,
+      "channels": 2,
+      "processes": [
+        {
+          "pid": 59452,
+          "modelCalls": 48
+        },
+        {
+          "pid": 59467,
+          "modelCalls": 0
+        },
+        {
+          "pid": 59490,
+          "modelCalls": 0
+        }
+      ]
+    },
+    {
+      "mode": "source",
+      "scene": "laboratory",
+      "backend": "json",
+      "contacts": 3,
+      "representatives": 1,
+      "channels": 2,
+      "processes": [
+        {
+          "pid": 59601,
+          "modelCalls": 48
+        },
+        {
+          "pid": 59627,
+          "modelCalls": 0
+        },
+        {
+          "pid": 59754,
+          "modelCalls": 0
+        }
+      ]
+    },
+    {
+      "mode": "source",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "contacts": 3,
+      "representatives": 1,
+      "channels": 2,
+      "processes": [
+        {
+          "pid": 59770,
+          "modelCalls": 48
+        },
+        {
+          "pid": 59903,
+          "modelCalls": 0
+        },
+        {
+          "pid": 59908,
+          "modelCalls": 0
+        }
+      ]
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "json",
+      "contacts": 3,
+      "representatives": 1,
+      "channels": 2,
+      "processes": [
+        {
+          "pid": 62975,
+          "modelCalls": 48
+        },
+        {
+          "pid": 63089,
+          "modelCalls": 0
+        },
+        {
+          "pid": 63090,
+          "modelCalls": 0
+        }
+      ]
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "contacts": 3,
+      "representatives": 1,
+      "channels": 2,
+      "processes": [
+        {
+          "pid": 63091,
+          "modelCalls": 48
+        },
+        {
+          "pid": 63092,
+          "modelCalls": 0
+        },
+        {
+          "pid": 63098,
+          "modelCalls": 0
+        }
+      ]
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "contacts": 3,
+      "representatives": 1,
+      "channels": 2,
+      "processes": [
+        {
+          "pid": 63101,
+          "modelCalls": 48
+        },
+        {
+          "pid": 63121,
+          "modelCalls": 0
+        },
+        {
+          "pid": 63122,
+          "modelCalls": 0
+        }
+      ]
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "contacts": 3,
+      "representatives": 1,
+      "channels": 2,
+      "processes": [
+        {
+          "pid": 63123,
+          "modelCalls": 48
+        },
+        {
+          "pid": 63235,
+          "modelCalls": 0
+        },
+        {
+          "pid": 63236,
+          "modelCalls": 0
+        }
+      ]
+    }
+  ],
+  "processes": 24,
+  "coldProcesses": 16,
+  "coldModelCalls": 0,
+  "nativeStream": 72,
+  "limits": [
+    "X06 nonempty supplier commitments unproven",
+    "No cancellation cleanup or SIGKILL acceptance"
+  ]
+}

@@ -1,6 +1,7 @@
+import { simulationResourceTransaction } from './resource-reservation.ts'
 /** Durable task attempt reservations before cross-owner assignment. @module @clocky/clocky-simulation/task-execution */
 import { z } from 'zod'
-import { SessionId } from '@clocky/clocky-session'
+import { SessionId } from '@clocky/clocky-session/types'
 import { teamIdSchema, teamTaskIdSchema, participantIdSchema, activationIdSchema, activationReservationIdSchema,
   taskAttemptIdSchema } from '@clocky/clocky-team'
 import { simulationRunIdSchema } from './schema.ts'
@@ -137,8 +138,8 @@ readonly import('./business-types.ts').SimulationOperationId[] | undefined {
     const decision = state.decisions[association.request.decisionId], operation = state.operations[id]
     return association.input !== undefined && decision?.status === 'accepted' && decision.epoch === value.request.epoch
       && decision.operationIds.includes(id) && operation?.result?.status === 'applied'
-      && operation.entityId === request.entityId && operation.action.kind === 'resource/transfer'
-      && operation.action.transaction.commitmentId === commitment.id
+      && operation.entityId === request.entityId
+      && simulationResourceTransaction(state, operation)?.commitmentId === commitment.id
   })))) return undefined
   return commitment.evidence
 }

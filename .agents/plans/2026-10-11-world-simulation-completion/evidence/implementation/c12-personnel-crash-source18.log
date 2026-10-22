@@ -1,0 +1,1132 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-personnel-crash.snapshot.ts (18 tests | 2 failed) 171692ms
+     × restores the original durable prefix at notification-lost 10250ms
+     × restores the original durable prefix at notification-lost 9530ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-personnel-crash.snapshot.ts > json actual personnel process loss > restores the original durable prefix at notification-lost
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+... Skipped lines
+
+  {
+    'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb': {
+      action: {
+        channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
+        deliverAt: '1',
+...
+          },
++         {
++           finishedAt: 1791762622048,
++           number: 2,
++           outcome: 'applied',
++           startedAt: 1791762622041
++         }
+        ],
+        budgetStart: 0,
+        ready: true,
++       receipt: {
++         channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
++         envelopeId: 'envelope-15aefdc2-7e98-46a7-84aa-05e2d395418f',
++         fingerprint: 'sha256:b04ad782c8870a4cf28b0b8c196b2918b7507fe12dba4a5bb8bbf8edf88e1210',
++         operationId: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
++         recipientId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
++         runId: 'personnel-crash-company-notification-lost',
++         sequence: 9,
++         teamId: 'team-70a6a49e-e0cc-4f27-a77c-59296aab36dd'
++       }
+      },
++     result: {
++       code: 'SIM_POSTED',
++       operationId: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
++       sequence: 176,
++       status: 'applied',
++       time: '1'
++     },
++     status: 'applied'
+-     status: 'pending'
+    },
+    'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0': {
+      action: {
+        kind: 'world/resolve',
+        requestId: 'world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-personnel-crash-scenario.ts:113:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: {
+    'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318': {
+      id: 'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+      decisionId: 'world/1/decision/1',
+      index: 0,
+      entityId: 'observer',
+      action: {
+        kind: 'world/request',
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        businessKey: 'original-person-transfer',
+        expectedTime: null,
+        evidence: [],
+        payload: {
+          organizationEntityId: 'studio',
+          personId: 'requester',
+          assignmentId: 'initial-assignment',
+          assignmentRevision: 1,
+          requestedEffectiveAt: null,
+          description: 'Transfer the original colleague at the next proven safe boundary, preserving identity and memory.',
+          targetPositionId: 'new-responsibility'
+        }
+      },
+      dependencies: [],
+      fingerprint: 'sha256:02b66e719b926f1d20b3ae694da557182ee928d226c68cc39c5c9804f3af40e4',
+      status: 'applied',
+      worldPin: {
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1',
+        generation: 1
+      },
+      result: {
+        operationId: 'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+        status: 'applied',
+        code: 'SIM_APPLIED',
+        sequence: 73,
+        time: '1'
+      }
+    },
+    'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816': {
+      id: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+      decisionId: 'world/1/decision/1',
+      index: 1,
+      entityId: 'observer',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
+        text: '{"requestId":"world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318","hash":"sha256:02b66e719b926f1d20b3ae694da557182ee928d226c68cc39c5c9804f3af40e4"}',
+        deliverAt: '1'
+      },
+      dependencies: [
+        'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318'
+      ],
+      fingerprint: 'sha256:a78566f79835e0c5ee75f0cd34767029314d0672f356df48ebd04fcbad15517f',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          {
+            number: 1,
+            startedAt: 1791762618230,
+            outcome: 'applied',
+            finishedAt: 1791762618244
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-70a6a49e-e0cc-4f27-a77c-59296aab36dd',
+          recipientId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          sequence: 7,
+          operationId: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+          fingerprint: 'sha256:a78566f79835e0c5ee75f0cd34767029314d0672f356df48ebd04fcbad15517f',
+          channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
+          envelopeId: 'envelope-c7c0ec98-4b23-432e-8d01-3fb108429378'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+        status: 'applied',
+        sequence: 76,
+        time: '1',
+        code: 'SIM_POSTED'
+      },
+      delivery: {
+        wakeId: 'simulation-delivery:simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+        sessionId: 'e6d28632-6381-474f-a127-f37d00730443',
+        sequence: 81,
+        time: '1',
+        receipt: {
+          type: 'channel/receipt',
+          sequence: 8,
+          createdAt: 1791762618309,
+          participantId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          envelopeId: 'envelope-c7c0ec98-4b23-432e-8d01-3fb108429378',
+          cursor: 7
+        }
+      }
+    },
+    'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0': {
+      id: 'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0',
+      decisionId: 'world/1/decision/2',
+      index: 0,
+      entityId: 'director',
+      action: {
+        kind: 'world/resolve',
+        requestId: 'world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+        supersedes: null,
+        resolution: {
+          kind: 'apply',
+          payload: {
+            organizationEntityId: 'studio',
+            personId: 'requester',
+            assignmentId: 'initial-assignment',
+            assignmentRevision: 1,
+            requestedEffectiveAt: null,
+            description: 'Transfer the original colleague at the next proven safe boundary, preserving identity and memory.',
+            targetPositionId: 'new-responsibility'
+          },
+          rationale: 'DIRECTOR-PRIVATE-PERSONNEL-CANARY'
+        }
+      },
+      dependencies: [],
+      fingerprint: 'sha256:a723fecf106e196a9f6d8df970aa63413b9e36da10f6d8e37dc42ed5ba237721',
+      status: 'applied',
+      worldPin: {
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1',
+        generation: 1
+      },
+      result: {
+        operationId: 'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0',
+        status: 'applied',
+        code: 'SIM_APPLIED',
+        sequence: 116,
+        time: '1'
+      }
+    },
+    'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806': {
+      id: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+      decisionId: 'world/1/decision/3',
+      index: 0,
+      entityId: 'requester',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-4c918ed4-dbd8-4d58-aa1d-f3c2f9cba328',
+        text: 'The original colleague acknowledges the recorded new assignment and its declared responsibilities.',
+        deliverAt: '1'
+      },
+      dependencies: [],
+      fingerprint: 'sha256:1e33f1401ca756dd2d6b87dbc004d272347ed79515e023ba7b38c647a9fa148a',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          {
+            number: 1,
+            startedAt: 1791762618871,
+            outcome: 'applied',
+            finishedAt: 1791762618904
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-70a6a49e-e0cc-4f27-a77c-59296aab36dd',
+          recipientId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          sequence: 7,
+          operationId: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+          fingerprint: 'sha256:1e33f1401ca756dd2d6b87dbc004d272347ed79515e023ba7b38c647a9fa148a',
+          channelId: 'channel-4c918ed4-dbd8-4d58-aa1d-f3c2f9cba328',
+          envelopeId: 'envelope-a9783f07-8506-4289-9798-5298d0b2d6b3'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+        status: 'applied',
+        sequence: 159,
+        time: '1',
+        code: 'SIM_POSTED'
+      },
+      delivery: {
+        wakeId: 'simulation-delivery:simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+        sessionId: 'e6d28632-6381-474f-a127-f37d00730443',
+        sequence: 164,
+        time: '1',
+        receipt: {
+          type: 'channel/receipt',
+          sequence: 8,
+          createdAt: 1791762618969,
+          participantId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          envelopeId: 'envelope-a9783f07-8506-4289-9798-5298d0b2d6b3',
+          cursor: 7
+        }
+      }
+    },
+    'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb': {
+      id: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
+      decisionId: 'world/1/decision/4',
+      index: 0,
+      entityId: 'observer',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
+        text: '{"resultId":"world-result:world-intent:7a716249a98970e7ce8843b5c5c42c9211ab9de804d90f159e4e994f4accabba","outcome":{"kind":"committed"},"payload":{"entityId":"requester","organizationEntityId":"studio","closedAssignmentId":"initial-assignment","previousPositionId":"engineering","requestedEffectiveAt":null,"actualEffectiveAt":"1","closedAuthorityRelationIds":["hiring-authority"],"revokedAuthorityRelationIds":["hiring-authority"],"newAssignmentId":"world-transfer-assignment:world-intent:7a716249a98970e7ce8843b5c5c42c9211ab9de804d90f159e4e994f4accabba","targetPositionId":"new-responsibility"}}',
+        deliverAt: '1'
+      },
+      dependencies: [],
+      fingerprint: 'sha256:b04ad782c8870a4cf28b0b8c196b2918b7507fe12dba4a5bb8bbf8edf88e1210',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          { number: 1, startedAt: 1791762618982, outcome: 'in-flight' },
+          {
+            number: 2,
+            startedAt: 1791762622041,
+            outcome: 'applied',
+            finishedAt: 1791762622048
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-70a6a49e-e0cc-4f27-a77c-59296aab36dd',
+          recipientId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          sequence: 9,
+          operationId: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
+          fingerprint: 'sha256:b04ad782c8870a4cf28b0b8c196b2918b7507fe12dba4a5bb8bbf8edf88e1210',
+          channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
+          envelopeId: 'envelope-15aefdc2-7e98-46a7-84aa-05e2d395418f'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
+        status: 'applied',
+        sequence: 176,
+        time: '1',
+        code: 'SIM_POSTED'
+      }
+    }
+  },
+  expected: {
+    'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318': {
+      id: 'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+      decisionId: 'world/1/decision/1',
+      index: 0,
+      entityId: 'observer',
+      action: {
+        kind: 'world/request',
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        businessKey: 'original-person-transfer',
+        expectedTime: null,
+        evidence: [],
+        payload: {
+          organizationEntityId: 'studio',
+          personId: 'requester',
+          assignmentId: 'initial-assignment',
+          assignmentRevision: 1,
+          requestedEffectiveAt: null,
+          description: 'Transfer the original colleague at the next proven safe boundary, preserving identity and memory.',
+          targetPositionId: 'new-responsibility'
+        }
+      },
+      dependencies: [],
+      fingerprint: 'sha256:02b66e719b926f1d20b3ae694da557182ee928d226c68cc39c5c9804f3af40e4',
+      status: 'applied',
+      worldPin: {
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1',
+        generation: 1
+      },
+      result: {
+        operationId: 'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+        status: 'applied',
+        code: 'SIM_APPLIED',
+        sequence: 73,
+        time: '1'
+      }
+    },
+    'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816': {
+      id: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+      decisionId: 'world/1/decision/1',
+      index: 1,
+      entityId: 'observer',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
+        text: '{"requestId":"world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318","hash":"sha256:02b66e719b926f1d20b3ae694da557182ee928d226c68cc39c5c9804f3af40e4"}',
+        deliverAt: '1'
+      },
+      dependencies: [
+        'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318'
+      ],
+      fingerprint: 'sha256:a78566f79835e0c5ee75f0cd34767029314d0672f356df48ebd04fcbad15517f',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          {
+            number: 1,
+            startedAt: 1791762618230,
+            outcome: 'applied',
+            finishedAt: 1791762618244
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-70a6a49e-e0cc-4f27-a77c-59296aab36dd',
+          recipientId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          sequence: 7,
+          operationId: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+          fingerprint: 'sha256:a78566f79835e0c5ee75f0cd34767029314d0672f356df48ebd04fcbad15517f',
+          channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
+          envelopeId: 'envelope-c7c0ec98-4b23-432e-8d01-3fb108429378'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+        status: 'applied',
+        sequence: 76,
+        time: '1',
+        code: 'SIM_POSTED'
+      },
+      delivery: {
+        wakeId: 'simulation-delivery:simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+        sessionId: 'e6d28632-6381-474f-a127-f37d00730443',
+        sequence: 81,
+        time: '1',
+        receipt: {
+          type: 'channel/receipt',
+          sequence: 8,
+          createdAt: 1791762618309,
+          participantId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          envelopeId: 'envelope-c7c0ec98-4b23-432e-8d01-3fb108429378',
+          cursor: 7
+        }
+      }
+    },
+    'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0': {
+      id: 'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0',
+      decisionId: 'world/1/decision/2',
+      index: 0,
+      entityId: 'director',
+      action: {
+        kind: 'world/resolve',
+        requestId: 'world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+        supersedes: null,
+        resolution: {
+          kind: 'apply',
+          payload: {
+            organizationEntityId: 'studio',
+            personId: 'requester',
+            assignmentId: 'initial-assignment',
+            assignmentRevision: 1,
+            requestedEffectiveAt: null,
+            description: 'Transfer the original colleague at the next proven safe boundary, preserving identity and memory.',
+            targetPositionId: 'new-responsibility'
+          },
+          rationale: 'DIRECTOR-PRIVATE-PERSONNEL-CANARY'
+        }
+      },
+      dependencies: [],
+      fingerprint: 'sha256:a723fecf106e196a9f6d8df970aa63413b9e36da10f6d8e37dc42ed5ba237721',
+      status: 'applied',
+      worldPin: {
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1',
+        generation: 1
+      },
+      result: {
+        operationId: 'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0',
+        status: 'applied',
+        code: 'SIM_APPLIED',
+        sequence: 116,
+        time: '1'
+      }
+    },
+    'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806': {
+      id: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+      decisionId: 'world/1/decision/3',
+      index: 0,
+      entityId: 'requester',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-4c918ed4-dbd8-4d58-aa1d-f3c2f9cba328',
+        text: 'The original colleague acknowledges the recorded new assignment and its declared responsibilities.',
+        deliverAt: '1'
+      },
+      dependencies: [],
+      fingerprint: 'sha256:1e33f1401ca756dd2d6b87dbc004d272347ed79515e023ba7b38c647a9fa148a',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          {
+            number: 1,
+            startedAt: 1791762618871,
+            outcome: 'applied',
+            finishedAt: 1791762618904
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-70a6a49e-e0cc-4f27-a77c-59296aab36dd',
+          recipientId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          sequence: 7,
+          operationId: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+          fingerprint: 'sha256:1e33f1401ca756dd2d6b87dbc004d272347ed79515e023ba7b38c647a9fa148a',
+          channelId: 'channel-4c918ed4-dbd8-4d58-aa1d-f3c2f9cba328',
+          envelopeId: 'envelope-a9783f07-8506-4289-9798-5298d0b2d6b3'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+        status: 'applied',
+        sequence: 159,
+        time: '1',
+        code: 'SIM_POSTED'
+      },
+      delivery: {
+        wakeId: 'simulation-delivery:simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+        sessionId: 'e6d28632-6381-474f-a127-f37d00730443',
+        sequence: 164,
+        time: '1',
+        receipt: {
+          type: 'channel/receipt',
+          sequence: 8,
+          createdAt: 1791762618969,
+          participantId: 'participant-53cb7fc0-402f-4667-a744-b581171fa95a',
+          envelopeId: 'envelope-a9783f07-8506-4289-9798-5298d0b2d6b3',
+          cursor: 7
+        }
+      }
+    },
+    'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb': {
+      id: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
+      decisionId: 'world/1/decision/4',
+      index: 0,
+      entityId: 'observer',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-f97d67e3-f18a-4bc2-af33-c4d7e8e5ff09',
+        text: '{"resultId":"world-result:world-intent:7a716249a98970e7ce8843b5c5c42c9211ab9de804d90f159e4e994f4accabba","outcome":{"kind":"committed"},"payload":{"entityId":"requester","organizationEntityId":"studio","closedAssignmentId":"initial-assignment","previousPositionId":"engineering","requestedEffectiveAt":null,"actualEffectiveAt":"1","closedAuthorityRelationIds":["hiring-authority"],"revokedAuthorityRelationIds":["hiring-authority"],"newAssignmentId":"world-transfer-assignment:world-intent:7a716249a98970e7ce8843b5c5c42c9211ab9de804d90f159e4e994f4accabba","targetPositionId":"new-responsibility"}}',
+        deliverAt: '1'
+      },
+      dependencies: [],
+      fingerprint: 'sha256:b04ad782c8870a4cf28b0b8c196b2918b7507fe12dba4a5bb8bbf8edf88e1210',
+      status: 'pending',
+      outbox: {
+        ready: true,
+        attempts: [
+          { number: 1, startedAt: 1791762618982, outcome: 'in-flight' }
+        ],
+        budgetStart: 0
+      }
+    }
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-personnel-crash.snapshot.ts:50:43
+     48|         try {
+     49|           const [exit] = await restored.exited as [number | null]
+     50|           expect(exit, restored.errors()).toBe(0)
+       |                                           ^
+     51|           const observed: unknown = JSON.parse(restored.output())
+     52|           expect(observed).toMatchObject({ scenario: 'company', stage,…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  examples/simulation-company/tests/world-personnel-crash.snapshot.ts > sqlite actual personnel process loss > restores the original durable prefix at notification-lost
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+... Skipped lines
+
+  {
+    'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb': {
+      action: {
+        channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
+        deliverAt: '1',
+...
+          },
++         {
++           finishedAt: 1791762705556,
++           number: 2,
++           outcome: 'applied',
++           startedAt: 1791762705553
++         }
+        ],
+        budgetStart: 0,
+        ready: true,
++       receipt: {
++         channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
++         envelopeId: 'envelope-ab7f8a86-06f4-4718-9695-5a0fa08f8760',
++         fingerprint: 'sha256:570f24bad940be049e2896665f2964cdf7956742a3e7be2fca955a6c8112dd1e',
++         operationId: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
++         recipientId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
++         runId: 'personnel-crash-company-notification-lost',
++         sequence: 9,
++         teamId: 'team-8b73cd05-bf2f-49e1-87f0-42a7069c7fac'
++       }
+      },
++     result: {
++       code: 'SIM_POSTED',
++       operationId: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
++       sequence: 176,
++       status: 'applied',
++       time: '1'
++     },
++     status: 'applied'
+-     status: 'pending'
+    },
+    'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0': {
+      action: {
+        kind: 'world/resolve',
+        requestId: 'world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-personnel-crash-scenario.ts:113:12) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: {
+    'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318': {
+      id: 'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+      decisionId: 'world/1/decision/1',
+      index: 0,
+      entityId: 'observer',
+      action: {
+        kind: 'world/request',
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        businessKey: 'original-person-transfer',
+        expectedTime: null,
+        evidence: [],
+        payload: {
+          organizationEntityId: 'studio',
+          personId: 'requester',
+          assignmentId: 'initial-assignment',
+          assignmentRevision: 1,
+          requestedEffectiveAt: null,
+          description: 'Transfer the original colleague at the next proven safe boundary, preserving identity and memory.',
+          targetPositionId: 'new-responsibility'
+        }
+      },
+      dependencies: [],
+      fingerprint: 'sha256:02b66e719b926f1d20b3ae694da557182ee928d226c68cc39c5c9804f3af40e4',
+      status: 'applied',
+      worldPin: {
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1',
+        generation: 1
+      },
+      result: {
+        operationId: 'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+        status: 'applied',
+        code: 'SIM_APPLIED',
+        sequence: 73,
+        time: '1'
+      }
+    },
+    'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816': {
+      id: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+      decisionId: 'world/1/decision/1',
+      index: 1,
+      entityId: 'observer',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
+        text: '{"requestId":"world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318","hash":"sha256:02b66e719b926f1d20b3ae694da557182ee928d226c68cc39c5c9804f3af40e4"}',
+        deliverAt: '1'
+      },
+      dependencies: [
+        'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318'
+      ],
+      fingerprint: 'sha256:73ea418386aa3ea5196ff9d75499448acd53074c5a047f864af65160b598d6e9',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          {
+            number: 1,
+            startedAt: 1791762702162,
+            outcome: 'applied',
+            finishedAt: 1791762702167
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-8b73cd05-bf2f-49e1-87f0-42a7069c7fac',
+          recipientId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          sequence: 7,
+          operationId: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+          fingerprint: 'sha256:73ea418386aa3ea5196ff9d75499448acd53074c5a047f864af65160b598d6e9',
+          channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
+          envelopeId: 'envelope-74abd58b-e671-482e-95db-495715940b0c'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+        status: 'applied',
+        sequence: 76,
+        time: '1',
+        code: 'SIM_POSTED'
+      },
+      delivery: {
+        wakeId: 'simulation-delivery:simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+        sessionId: 'cf8a0a4b-644d-4e1d-846b-418502715277',
+        sequence: 81,
+        time: '1',
+        receipt: {
+          type: 'channel/receipt',
+          sequence: 8,
+          createdAt: 1791762702200,
+          participantId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          envelopeId: 'envelope-74abd58b-e671-482e-95db-495715940b0c',
+          cursor: 7
+        }
+      }
+    },
+    'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0': {
+      id: 'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0',
+      decisionId: 'world/1/decision/2',
+      index: 0,
+      entityId: 'director',
+      action: {
+        kind: 'world/resolve',
+        requestId: 'world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+        supersedes: null,
+        resolution: {
+          kind: 'apply',
+          payload: {
+            organizationEntityId: 'studio',
+            personId: 'requester',
+            assignmentId: 'initial-assignment',
+            assignmentRevision: 1,
+            requestedEffectiveAt: null,
+            description: 'Transfer the original colleague at the next proven safe boundary, preserving identity and memory.',
+            targetPositionId: 'new-responsibility'
+          },
+          rationale: 'DIRECTOR-PRIVATE-PERSONNEL-CANARY'
+        }
+      },
+      dependencies: [],
+      fingerprint: 'sha256:a723fecf106e196a9f6d8df970aa63413b9e36da10f6d8e37dc42ed5ba237721',
+      status: 'applied',
+      worldPin: {
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1',
+        generation: 1
+      },
+      result: {
+        operationId: 'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0',
+        status: 'applied',
+        code: 'SIM_APPLIED',
+        sequence: 116,
+        time: '1'
+      }
+    },
+    'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806': {
+      id: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+      decisionId: 'world/1/decision/3',
+      index: 0,
+      entityId: 'requester',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-6a44689a-3f94-4e04-9e1b-5306ad8c15ec',
+        text: 'The original colleague acknowledges the recorded new assignment and its declared responsibilities.',
+        deliverAt: '1'
+      },
+      dependencies: [],
+      fingerprint: 'sha256:ab4c547ed105f6cdd66e3eda32562f3502ea4b25f3cdbe7081c96b7c75e87900',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          {
+            number: 1,
+            startedAt: 1791762702533,
+            outcome: 'applied',
+            finishedAt: 1791762702536
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-8b73cd05-bf2f-49e1-87f0-42a7069c7fac',
+          recipientId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          sequence: 7,
+          operationId: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+          fingerprint: 'sha256:ab4c547ed105f6cdd66e3eda32562f3502ea4b25f3cdbe7081c96b7c75e87900',
+          channelId: 'channel-6a44689a-3f94-4e04-9e1b-5306ad8c15ec',
+          envelopeId: 'envelope-2ced1097-7538-49f7-95ba-260582a2fca7'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+        status: 'applied',
+        sequence: 159,
+        time: '1',
+        code: 'SIM_POSTED'
+      },
+      delivery: {
+        wakeId: 'simulation-delivery:simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+        sessionId: 'cf8a0a4b-644d-4e1d-846b-418502715277',
+        sequence: 164,
+        time: '1',
+        receipt: {
+          type: 'channel/receipt',
+          sequence: 8,
+          createdAt: 1791762702564,
+          participantId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          envelopeId: 'envelope-2ced1097-7538-49f7-95ba-260582a2fca7',
+          cursor: 7
+        }
+      }
+    },
+    'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb': {
+      id: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
+      decisionId: 'world/1/decision/4',
+      index: 0,
+      entityId: 'observer',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
+        text: '{"resultId":"world-result:world-intent:7a716249a98970e7ce8843b5c5c42c9211ab9de804d90f159e4e994f4accabba","outcome":{"kind":"committed"},"payload":{"entityId":"requester","organizationEntityId":"studio","closedAssignmentId":"initial-assignment","previousPositionId":"engineering","requestedEffectiveAt":null,"actualEffectiveAt":"1","closedAuthorityRelationIds":["hiring-authority"],"revokedAuthorityRelationIds":["hiring-authority"],"newAssignmentId":"world-transfer-assignment:world-intent:7a716249a98970e7ce8843b5c5c42c9211ab9de804d90f159e4e994f4accabba","targetPositionId":"new-responsibility"}}',
+        deliverAt: '1'
+      },
+      dependencies: [],
+      fingerprint: 'sha256:570f24bad940be049e2896665f2964cdf7956742a3e7be2fca955a6c8112dd1e',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          { number: 1, startedAt: 1791762702568, outcome: 'in-flight' },
+          {
+            number: 2,
+            startedAt: 1791762705553,
+            outcome: 'applied',
+            finishedAt: 1791762705556
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-8b73cd05-bf2f-49e1-87f0-42a7069c7fac',
+          recipientId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          sequence: 9,
+          operationId: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
+          fingerprint: 'sha256:570f24bad940be049e2896665f2964cdf7956742a3e7be2fca955a6c8112dd1e',
+          channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
+          envelopeId: 'envelope-ab7f8a86-06f4-4718-9695-5a0fa08f8760'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
+        status: 'applied',
+        sequence: 176,
+        time: '1',
+        code: 'SIM_POSTED'
+      }
+    }
+  },
+  expected: {
+    'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318': {
+      id: 'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+      decisionId: 'world/1/decision/1',
+      index: 0,
+      entityId: 'observer',
+      action: {
+        kind: 'world/request',
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        businessKey: 'original-person-transfer',
+        expectedTime: null,
+        evidence: [],
+        payload: {
+          organizationEntityId: 'studio',
+          personId: 'requester',
+          assignmentId: 'initial-assignment',
+          assignmentRevision: 1,
+          requestedEffectiveAt: null,
+          description: 'Transfer the original colleague at the next proven safe boundary, preserving identity and memory.',
+          targetPositionId: 'new-responsibility'
+        }
+      },
+      dependencies: [],
+      fingerprint: 'sha256:02b66e719b926f1d20b3ae694da557182ee928d226c68cc39c5c9804f3af40e4',
+      status: 'applied',
+      worldPin: {
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1',
+        generation: 1
+      },
+      result: {
+        operationId: 'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+        status: 'applied',
+        code: 'SIM_APPLIED',
+        sequence: 73,
+        time: '1'
+      }
+    },
+    'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816': {
+      id: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+      decisionId: 'world/1/decision/1',
+      index: 1,
+      entityId: 'observer',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
+        text: '{"requestId":"world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318","hash":"sha256:02b66e719b926f1d20b3ae694da557182ee928d226c68cc39c5c9804f3af40e4"}',
+        deliverAt: '1'
+      },
+      dependencies: [
+        'simulation-operation:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318'
+      ],
+      fingerprint: 'sha256:73ea418386aa3ea5196ff9d75499448acd53074c5a047f864af65160b598d6e9',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          {
+            number: 1,
+            startedAt: 1791762702162,
+            outcome: 'applied',
+            finishedAt: 1791762702167
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-8b73cd05-bf2f-49e1-87f0-42a7069c7fac',
+          recipientId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          sequence: 7,
+          operationId: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+          fingerprint: 'sha256:73ea418386aa3ea5196ff9d75499448acd53074c5a047f864af65160b598d6e9',
+          channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
+          envelopeId: 'envelope-74abd58b-e671-482e-95db-495715940b0c'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+        status: 'applied',
+        sequence: 76,
+        time: '1',
+        code: 'SIM_POSTED'
+      },
+      delivery: {
+        wakeId: 'simulation-delivery:simulation-operation:dad383cf076daf69f767405454f11671fa8631eaffc90b80608f07a38fe4b816',
+        sessionId: 'cf8a0a4b-644d-4e1d-846b-418502715277',
+        sequence: 81,
+        time: '1',
+        receipt: {
+          type: 'channel/receipt',
+          sequence: 8,
+          createdAt: 1791762702200,
+          participantId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          envelopeId: 'envelope-74abd58b-e671-482e-95db-495715940b0c',
+          cursor: 7
+        }
+      }
+    },
+    'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0': {
+      id: 'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0',
+      decisionId: 'world/1/decision/2',
+      index: 0,
+      entityId: 'director',
+      action: {
+        kind: 'world/resolve',
+        requestId: 'world-request:c2f4c5d3a23f20b0c1f99ec494705ae931ca45113d7a83d2d9bb62214df10318',
+        supersedes: null,
+        resolution: {
+          kind: 'apply',
+          payload: {
+            organizationEntityId: 'studio',
+            personId: 'requester',
+            assignmentId: 'initial-assignment',
+            assignmentRevision: 1,
+            requestedEffectiveAt: null,
+            description: 'Transfer the original colleague at the next proven safe boundary, preserving identity and memory.',
+            targetPositionId: 'new-responsibility'
+          },
+          rationale: 'DIRECTOR-PRIVATE-PERSONNEL-CANARY'
+        }
+      },
+      dependencies: [],
+      fingerprint: 'sha256:a723fecf106e196a9f6d8df970aa63413b9e36da10f6d8e37dc42ed5ba237721',
+      status: 'applied',
+      worldPin: {
+        domain: 'organization',
+        operation: 'transfer',
+        version: '1',
+        schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1',
+        generation: 1
+      },
+      result: {
+        operationId: 'simulation-operation:24ecd07c886abeaa33569caafb6c8f5a061a92a573089428ba72dba6409794c0',
+        status: 'applied',
+        code: 'SIM_APPLIED',
+        sequence: 116,
+        time: '1'
+      }
+    },
+    'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806': {
+      id: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+      decisionId: 'world/1/decision/3',
+      index: 0,
+      entityId: 'requester',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-6a44689a-3f94-4e04-9e1b-5306ad8c15ec',
+        text: 'The original colleague acknowledges the recorded new assignment and its declared responsibilities.',
+        deliverAt: '1'
+      },
+      dependencies: [],
+      fingerprint: 'sha256:ab4c547ed105f6cdd66e3eda32562f3502ea4b25f3cdbe7081c96b7c75e87900',
+      status: 'applied',
+      outbox: {
+        ready: true,
+        attempts: [
+          {
+            number: 1,
+            startedAt: 1791762702533,
+            outcome: 'applied',
+            finishedAt: 1791762702536
+          }
+        ],
+        budgetStart: 0,
+        receipt: {
+          runId: 'personnel-crash-company-notification-lost',
+          teamId: 'team-8b73cd05-bf2f-49e1-87f0-42a7069c7fac',
+          recipientId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          sequence: 7,
+          operationId: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+          fingerprint: 'sha256:ab4c547ed105f6cdd66e3eda32562f3502ea4b25f3cdbe7081c96b7c75e87900',
+          channelId: 'channel-6a44689a-3f94-4e04-9e1b-5306ad8c15ec',
+          envelopeId: 'envelope-2ced1097-7538-49f7-95ba-260582a2fca7'
+        }
+      },
+      result: {
+        operationId: 'simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+        status: 'applied',
+        sequence: 159,
+        time: '1',
+        code: 'SIM_POSTED'
+      },
+      delivery: {
+        wakeId: 'simulation-delivery:simulation-operation:5fe2f6e75163c5cada9134c9bf358842c32016ca824566e9eb88c147a4603806',
+        sessionId: 'cf8a0a4b-644d-4e1d-846b-418502715277',
+        sequence: 164,
+        time: '1',
+        receipt: {
+          type: 'channel/receipt',
+          sequence: 8,
+          createdAt: 1791762702564,
+          participantId: 'participant-a8017d81-93d7-4577-b7cb-382576cbfba0',
+          envelopeId: 'envelope-2ced1097-7538-49f7-95ba-260582a2fca7',
+          cursor: 7
+        }
+      }
+    },
+    'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb': {
+      id: 'simulation-operation:224740d4c0b0bea5228dd1f7c1b5c0ddfeb128ae62de22b9113feda386af5ffb',
+      decisionId: 'world/1/decision/4',
+      index: 0,
+      entityId: 'observer',
+      action: {
+        kind: 'communication/post',
+        recipient: 'director',
+        channelId: 'channel-b7423742-1cc2-4931-b5a1-da629a43a6e5',
+        text: '{"resultId":"world-result:world-intent:7a716249a98970e7ce8843b5c5c42c9211ab9de804d90f159e4e994f4accabba","outcome":{"kind":"committed"},"payload":{"entityId":"requester","organizationEntityId":"studio","closedAssignmentId":"initial-assignment","previousPositionId":"engineering","requestedEffectiveAt":null,"actualEffectiveAt":"1","closedAuthorityRelationIds":["hiring-authority"],"revokedAuthorityRelationIds":["hiring-authority"],"newAssignmentId":"world-transfer-assignment:world-intent:7a716249a98970e7ce8843b5c5c42c9211ab9de804d90f159e4e994f4accabba","targetPositionId":"new-responsibility"}}',
+        deliverAt: '1'
+      },
+      dependencies: [],
+      fingerprint: 'sha256:570f24bad940be049e2896665f2964cdf7956742a3e7be2fca955a6c8112dd1e',
+      status: 'pending',
+      outbox: {
+        ready: true,
+        attempts: [
+          { number: 1, startedAt: 1791762702568, outcome: 'in-flight' }
+        ],
+        budgetStart: 0
+      }
+    }
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-personnel-crash.snapshot.ts:50:43
+     48|         try {
+     49|           const [exit] = await restored.exited as [number | null]
+     50|           expect(exit, restored.errors()).toBe(0)
+       |                                           ^
+     51|           const observed: unknown = JSON.parse(restored.output())
+     52|           expect(observed).toMatchObject({ scenario: 'company', stage,…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 16 passed (18)
+   Start at  08:49:14
+   Duration  172.17s (transform 168ms, setup 136ms, import 234ms, tests 171.69s, environment 0ms)
+

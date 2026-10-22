@@ -1,0 +1,7 @@
+packages/simulation/simulation-local/tests/personnel-obligations.spec.ts(84,32): error TS2322: Type '{ [x: string]: { id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }; }' is not assignable to type 'Readonly<Record<WorldIntentId, SimulationWorldIntent>>'.
+  'string' and 'string & { readonly [BRAND]: "SimulationWorldIntentId"; }' index signatures are incompatible.
+    Type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'requestId' are incompatible.
+        Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+          Type 'undefined' is not assignable to type 'WorldRequestId'.
+            Type 'undefined' is not assignable to type 'string'.

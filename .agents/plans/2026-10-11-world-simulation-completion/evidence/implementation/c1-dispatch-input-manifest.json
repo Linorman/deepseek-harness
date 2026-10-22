@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-12",
+  "scope": "C1c hiring execution dispatch and responsibility retention",
+  "files": [
+    {
+      "path": "packages/simulation/simulation-world/src/driver.ts",
+      "sha256": "e8695c7ff974d9b3c9f1fe0985da0ee2b71c36103c32a4b2578a3f9be0b60238"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/execution.ts",
+      "sha256": "05a0f21d94a829c3eaddd2695be00d62da568f0c2f9d24077950c0819fba8fc5"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/organization.ts",
+      "sha256": "4bc848355f21772b941b70c82ba4f21b4c774cdaca9b6cc5846ee7ff5814b210"
+    },
+    {
+      "path": "packages/simulation/simulation-world/tests/execution.spec.ts",
+      "sha256": "c20ee2464d150a9aa029d24bf0574e5a048520339cea076d0aeb07427ec1668c"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domains.ts",
+      "sha256": "e65d30cf6a97ec814d89d81bb80bc6a8d574a559942ccda2bba599a9fe20a74c"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-owner.ts",
+      "sha256": "00748acea89f91681e87e8222deac42331a44a5cc69e7636c5e26e8160afbca2"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/administration.ts",
+      "sha256": "8ae886435d02440540e8c5f09f4fa1c0bd27f638e144deec39cc3033e62076b6"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-driver-scenario.ts",
+      "sha256": "c84682b6900e6143e391304d2e03ffe305706f63c55f3892a7d5ace532df1dff"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-model-pool-scenario.ts",
+      "sha256": "02b53c5b0269eb84ae24fbfc56b5ca2f5f8ee445449de78c6944856eafffe9b7"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-execution-retirement.snapshot.ts",
+      "sha256": "2d98e40649ce64b684a5d33c7f9e70dcf2499316f0a8ae4191f1c80b9d06a3d3"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-driver.snapshot.ts",
+      "sha256": "44c648f0fa9f869efdafda5c1dce6a4751f8727f376c1a4fa89d969d32ed3fe4"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-autonomous.snapshot.ts",
+      "sha256": "2075ae4d143b1b4ed1f33f8488b67331e3da71aa796c7d84596ccc4f4003fd08"
+    },
+    {
+      "path": "packages/simulation/simulation-world/README.md",
+      "sha256": "f47599adf5de96a9fd6c447d364f0764727fefa82259d42725462e33d423c345"
+    },
+    {
+      "path": "packages/simulation/simulation-world/README.zh.md",
+      "sha256": "c005c0e706d52ec29a6dd85e3824d1ef13a2e668cc27e1059dcde63645a83d09"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/world-fixtures.client.ts",
+      "sha256": "c13c547a63665174d30d540d4d9ea96d807ca1cd4f1244a8b702a482948a75db"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/world-draft.client.spec.ts",
+      "sha256": "5613a9af986127e703d812dbbaa99cc7c1e1a7c1361f528f903154b6ca2720f5"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/world-author.client.spec.tsx",
+      "sha256": "268d009cd0fdffa9928e6a1eb64abb7301e477516e0300f408f48e5074cb2ed4"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/world-modules.client.spec.tsx",
+      "sha256": "e405fe8af6e7920faabec9c50f34f726055ffdfa8977b8a3129169d1882b96d5"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/world-components.client.spec.tsx",
+      "sha256": "f67c2a8906feb3fd3556fd0ac8fa2f3c98b79ce946cc7dfb41eba44deda2f06f"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/workspace.client.spec.tsx",
+      "sha256": "281ad438d96d8316ea727f55a48e3d11d48e60654b294945f48d4b52d234e88c"
+    }
+  ]
+}

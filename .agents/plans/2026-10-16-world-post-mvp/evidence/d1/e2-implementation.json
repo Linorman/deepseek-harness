@@ -1,0 +1,22 @@
+{
+  "command": "TMPDIR=$PWD/.tmp pnpm exec vitest run packages/simulation/simulation-product/tests/federation-ownership.spec.ts packages/simulation/simulation-product/tests/federation-checkpoint.spec.ts",
+  "log": "e2-owner-tests.log",
+  "backend": [
+    "json",
+    "sqlite"
+  ],
+  "tests": 4,
+  "sourceHashes": {
+    "packages/simulation/simulation-product/src/federation-ownership.ts": "756be8b8eb3365928f0cd85fabe29ad985bd7008a684938de84e020d5841ca1a",
+    "packages/simulation/simulation-product/src/federation-checkpoint.ts": "7eb331affa9fec28a1e0f0cf60cf25deef4792bb30ed599dad4b34fa17455767",
+    "packages/simulation/simulation-product/src/federation-mailbox.ts": "78af1c42cda1a1bcd3959bb52ccd8b6a5dc75e0d887591fd645e5692843f7549",
+    "packages/simulation/simulation-product/tests/federation-ownership.spec.ts": "7960152d35ca082a15c068c6bf75916b7b3d0e81d5e577084b687fe3dca3e763",
+    "packages/simulation/simulation-product/tests/federation-checkpoint.spec.ts": "5b067f7456c34271f0614b1547f83187213c0ce1a9a7e00e279326a546ca7952"
+  },
+  "evidence": {
+    "E09": "Unique home generation, stale source/target fenced; no coordinator availability grants local write. Exact coordinator principal policy replayed.",
+    "E12": "Whole-resource reservation blocks both partitions until explicit target confirm and coordinator settle; confirmed/reserved survive coordinator reopen; durable spend with lost response replays once and retries exact original. Resource is independently owned federation credit, not a mirrored Native balance.",
+    "E14": "Stable mailbox->Native->registry cut order matches actual clock sync. Actual Native append barrier plus concurrent sync/capture finishes after release without deadlock. All per-run D1 archives restore into fresh roots through actual owner parsers. Registry and original inbox/outbox incl. lost receipts/undelivered originals restore in empty backend. Hash/requiredunknown/omitted source/byte/entry rejection tested. Mailbox created policy and actual target-principal receipt are cross-checked against coordinator original partition policy."
+  },
+  "referenceRemediation": "federation-reference-remediation.json"
+}

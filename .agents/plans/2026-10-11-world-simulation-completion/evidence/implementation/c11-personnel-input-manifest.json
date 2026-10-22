@@ -1,0 +1,1580 @@
+{
+  "date": "2026-10-12",
+  "scope": "O16 actual cancellation/commit serializer races plus actual unconfirmed raw dispose cleanup original command, not full O14 timeout/unload/lateepoch or personnel SIGKILL matrix",
+  "nativeStream": 69,
+  "checkpointManifest": 3,
+  "sessionFormat": 0,
+  "files": [
+    {
+      "path": ".agents/notes/proposed/feature/2026-10-08-world-director-mvp.i18n.yaml",
+      "bytes": 509,
+      "sha256": "2d4f509afb7426384c781daa8c6a81fe42e27474e38266724b584191d7000b21"
+    },
+    {
+      "path": ".agents/notes/proposed/feature/2026-10-08-world-director-mvp.md",
+      "bytes": 43508,
+      "sha256": "6c747713d2426cf436a6985163a0d9276a0132aa9179e7aa98e38c9a5b1802a7"
+    },
+    {
+      "path": ".agents/notes/proposed/feature/2026-10-08-world-director-mvp.zh.md",
+      "bytes": 37087,
+      "sha256": "4a3592242282c8f2016e84ea81b8ae97b17a53f5f0ae3530273a86444011fb6a"
+    },
+    {
+      "path": "docs/config-catalog.i18n.yaml",
+      "bytes": 438,
+      "sha256": "6fd9172175fc4c759bbc8a8970607fabbbede19e52d7290faadf2f9fdda21ccf"
+    },
+    {
+      "path": "docs/config-catalog.md",
+      "bytes": 173419,
+      "sha256": "9d311b31cce652f1828045c65870d0b2d5ecb175e50c736e4a7102a45b8564bc"
+    },
+    {
+      "path": "docs/config-catalog.zh.md",
+      "bytes": 173889,
+      "sha256": "3640f690d48d3173d0d23462576ce79781f87cc4b2baeaa8af404d184ad6a266"
+    },
+    {
+      "path": "docs/event-producer-consumer.i18n.yaml",
+      "bytes": 465,
+      "sha256": "c9ae7410f72f4c2b2594f8420f41e321333086b5ca85e0937311666b13720bb9"
+    },
+    {
+      "path": "docs/event-producer-consumer.md",
+      "bytes": 28507,
+      "sha256": "6cfd2155cb0ff8aa6b50b7078a6d738a528bc5c78fefd5de420f931ca88202bd"
+    },
+    {
+      "path": "docs/event-producer-consumer.zh.md",
+      "bytes": 28740,
+      "sha256": "4e720b09324f80e5f2b0da77df8c7939cb4bec52c58b26752b957fe2705ad559"
+    },
+    {
+      "path": "docs/subsystems/team.i18n.yaml",
+      "bytes": 419,
+      "sha256": "6d78e648a6d71ad5e9ef3caa35251ed758ec722d28b81e6981803204a9c07d32"
+    },
+    {
+      "path": "docs/subsystems/team.md",
+      "bytes": 138136,
+      "sha256": "e352d1565340653570d653dd86b1154ea85323652af64892812ef783450e7fc4"
+    },
+    {
+      "path": "docs/subsystems/team.zh.md",
+      "bytes": 137476,
+      "sha256": "9d406d789fb3e52fc85cc38fe816f91476303e33908724fdb54187423e4894fa"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-departure/cordis.yml",
+      "bytes": 102,
+      "sha256": "1778ecc67db1478b4ffdef361f70dbf507aa4db0e5d72f609ede3c3a6d8a3626"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-personnel-cancellation/cordis.yml",
+      "bytes": 115,
+      "sha256": "5b2dc9de573bed85b2a73284f8acc1b5215e9b1586a095bbb00606ec4f54fbf3"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-personnel-obligations/cordis.yml",
+      "bytes": 114,
+      "sha256": "d6ed6af5b9feb69b6e15707daf08284091b0a48c341082ec5e6725a4a275f0af"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-personnel-time/cordis.yml",
+      "bytes": 107,
+      "sha256": "bcc6b885608d894417fa65a124d0dedde482f563f9fe99e4aeae21f9d6b2284e"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-personnel/cordis.yml",
+      "bytes": 102,
+      "sha256": "0e5651c5cab4535192e08efdaded6ef97822f4e7c5fdfd21721b7e98900395f2"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-booking-domain.ts",
+      "bytes": 7117,
+      "sha256": "bf5dfca8c9ae9325097ad572ef6052a729a95eb615eb998ef05a31cfa2bf4791"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-departure-model.ts",
+      "bytes": 5635,
+      "sha256": "334b5879189097db1cf1bf4d739e913a86236eab292bddbc2a4d34362e495321"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-departure-scenario.ts",
+      "bytes": 26177,
+      "sha256": "4caeb22b600a1954aed9ddd417bc3cad5668735b5adca6b9e0160c071291b22c"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-departure.snapshot.ts",
+      "bytes": 3733,
+      "sha256": "19ed4d07e560a0ba160c488a5abcd6da4d0284ae3205efb0515b24284345dc5a"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-cancellation-model.ts",
+      "bytes": 6363,
+      "sha256": "bbc6e94f363ddac050fab5f4f88bcb474b19838878d8ed50d5bc27c146d6740e"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-cancellation-scenario.ts",
+      "bytes": 22094,
+      "sha256": "9fd247f1a2e4d6da3f73b1116db9f8c901dfc0732aaaa75324fa8fbeb2f32a45"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-cancellation.snapshot.ts",
+      "bytes": 3616,
+      "sha256": "362e7d150a1eacae58c70d57bc550df8a8899699dde534a2aed2536c3a3a5011"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-model.ts",
+      "bytes": 6337,
+      "sha256": "07813d21575ac7e2768ed3d9c719098ea5f73c0970d0ac9e7813915589e46a21"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-obligations-model.ts",
+      "bytes": 3469,
+      "sha256": "2d4edbc8a7dddd7096b4e55d64bb12a8bf2b1e31f4c6647572975705e03d0420"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-obligations-scenario.ts",
+      "bytes": 18404,
+      "sha256": "191d60d9d4e8d88dc32b1e848fd62a89643821a922a289fbee1c2af507fd9e14"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-obligations.snapshot.ts",
+      "bytes": 2559,
+      "sha256": "79c19ee54e61935fac79cb5412a45b6e23d145297147502c785b57329d4eed78"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-scenario.ts",
+      "bytes": 17966,
+      "sha256": "e197118359fb4d46fc67aeff24c8683c507cc0d3b83e7def76813f9c3610e1a2"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-time-model.ts",
+      "bytes": 6410,
+      "sha256": "171275722ee51f1da8778936b1cd15fa0d8b3db06aae7ed318f12cd8eb45f56c"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-time-scenario.ts",
+      "bytes": 18399,
+      "sha256": "3f5976e9248da3efc2180daa9a6f12ce4104cc3009b0c1abb5ab5d7bf9036017"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-time.snapshot.ts",
+      "bytes": 3045,
+      "sha256": "c901b4e61bc4c578f76d830f72c7e7e79a4273b4a96797ae96b085552ecbfa38"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel.snapshot.ts",
+      "bytes": 2951,
+      "sha256": "60c5c89207f07c0a83eda097ab057c9027cc2f4fe5428d9fb5497a618f775cda"
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/locales.ts",
+      "bytes": 93272,
+      "sha256": "3fe7608f239664b07b1ed7686c00876770e8b846ca96d21b527ab50553dd8ea2"
+    },
+    {
+      "path": "packages/core/team/src/index.ts",
+      "bytes": 18270,
+      "sha256": "96d5dfdc8ea0527ffc2379d1d4d27ccb2caa10fba8d5ce5769e91a4ad79bdb43"
+    },
+    {
+      "path": "packages/core/team/src/runtime.ts",
+      "bytes": 204259,
+      "sha256": "2e77f97d57b7ccb07552e2158cb9c5f7e46623b8ee03f838db44545fad545a4c"
+    },
+    {
+      "path": "packages/core/team/src/schema.ts",
+      "bytes": 285613,
+      "sha256": "588a31cd66f3b14c938253f22b4356d146497a777b3fdb06f808d9df31121534"
+    },
+    {
+      "path": "packages/core/team/src/types.ts",
+      "bytes": 324541,
+      "sha256": "1348c6f7491ba9d44dc553bb5d854b5d731eba642dd32b4888ca5e2995e34bc1"
+    },
+    {
+      "path": "packages/core/team/tests/personnel-settlement-cut.spec.ts",
+      "bytes": 1497,
+      "sha256": "dd2959b551e7c5daff8f5fb904d106e6af6fe8b8efb8426a663380ab518514fe"
+    },
+    {
+      "path": "packages/extensions/tool-cordis/src/api-catalog.ts",
+      "bytes": 886487,
+      "sha256": "34d0af2dd97fe8a4ab013611e993d1c52b8b1c4746b091e55cb955e38bb4fff3"
+    },
+    {
+      "path": "packages/simulation/simulation-local/README.i18n.yaml",
+      "bytes": 446,
+      "sha256": "4fdba921460d18bf44e8ef32b8c73e800d2948b6a35c576075a299d7ff1deae1"
+    },
+    {
+      "path": "packages/simulation/simulation-local/README.md",
+      "bytes": 24861,
+      "sha256": "c084b602577e2dcdd653e1053f5c2dc817cfd4a0aa2738a87e84589595ad6749"
+    },
+    {
+      "path": "packages/simulation/simulation-local/README.zh.md",
+      "bytes": 21072,
+      "sha256": "d121c45d01bc41d4d4a37627dbc65847aec7ed1c145ed78bd12ec9ec0d15221c"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/activation-admission.ts",
+      "bytes": 4087,
+      "sha256": "e9ed17f389c58b9888798ac478b690009bc0286ab09a9ebb0a2fcf67ab7eb0d4"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/budget.ts",
+      "bytes": 4241,
+      "sha256": "48042139321de1c0e55c80c2f3224fc9791f0d3c30c8d538f073ac7310569900"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/business-error.ts",
+      "bytes": 817,
+      "sha256": "b70ec3969b98adc2e7c558b99364ef1f5f9e0c6f832d58261db66b1fb471753b"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/business.ts",
+      "bytes": 10472,
+      "sha256": "f1748b54d8a013ccd971a2b19741b180a80af0d601ad428956733b4aa4ce558b"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/capacity.ts",
+      "bytes": 5037,
+      "sha256": "e266990c849ed8f6fd7b2d93bd0e738a7c9dda59566eb9d6144ee688a86b0f46"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/checkpoints.ts",
+      "bytes": 5233,
+      "sha256": "842f5059cdd3ef9f6c83a9fdedc5a3207d535243cb4456c70a1c757397f4429e"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/compaction-admission.ts",
+      "bytes": 5125,
+      "sha256": "54f99e899620f2c66f439b6dc5c775c37eb8d282f0e732e4c0a54f91036212a8"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/context.ts",
+      "bytes": 17621,
+      "sha256": "b524f7a8e5a6419e3d8f18c8125e96264dc2d6312c4a7bc23a2a78cbb87a5d6f"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/decisions.ts",
+      "bytes": 52437,
+      "sha256": "d6cfe12fcff03377f54b9b0c6e132e8fbb7aec67973d9b45f043e8ed0c7d98e9"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/dispatch.ts",
+      "bytes": 12204,
+      "sha256": "a3a55145f87a4c1482b06eb1df80f78ca3e9a5a5b915b6f3f77150a70bef7efc"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/entities.ts",
+      "bytes": 10788,
+      "sha256": "18d1d0c922a83ccac7a417545acca5fa984d29eeac7090a5c74c1bd258b85d0a"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/index.ts",
+      "bytes": 15190,
+      "sha256": "77b078776f389b408a3dd960581c8158d603d8c368c6ca3e1615916fdf680af5"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/interactions.ts",
+      "bytes": 9889,
+      "sha256": "00b6d50e172613f49d324826e61b9b0a1622b247fdc72d641af5d7c437e10813"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/invariant.ts",
+      "bytes": 1795,
+      "sha256": "cf711557f3dc4fe353bdcba20fdec088c03fb4d2912c1a7ec0f9caaace72a01b"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/journal.ts",
+      "bytes": 21683,
+      "sha256": "f46bb8c99b70ff90fcb92319dd9dc549a194a97e843c064d09353b104f65c927"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/knowledge.ts",
+      "bytes": 6959,
+      "sha256": "140122a80d0ce1095dc8689975504973238a6c9fe2b6867da89df4d81a82251c"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/maintenance.ts",
+      "bytes": 5494,
+      "sha256": "068d97fe1aca4f09fc6800926db9909ae77de73937044229db889bc56bab00cf"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/management.ts",
+      "bytes": 3044,
+      "sha256": "34e4858c40663ce7dbbd198ad11015f50dd5b0635b3f00a829289bde670ec0d6"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/outbox.ts",
+      "bytes": 17428,
+      "sha256": "e1cd116e91e83e73a67efb4e6740c4c351cd84abc6d587546462380f301dae46"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/owner.ts",
+      "bytes": 1849,
+      "sha256": "fc33fcf6e32dc9154d4b7acebb13b1b0607cbc4cea88c3f510b70531d469dc3c"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/personnel-obligations.ts",
+      "bytes": 18240,
+      "sha256": "2ac038ea0526eb716c627e5ef2d8ef8882f3522840015334a2acc0890276d1ee"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/run.ts",
+      "bytes": 130501,
+      "sha256": "547cd2ad0182b180c5f85749f8f239898e33c66479bfca6e9bdafc09e28f951a"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/scheduler.ts",
+      "bytes": 42151,
+      "sha256": "897668355dcd867c6777b7d070232951d345e55e34aee77f007af7877d62a3e7"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/task-evidence.ts",
+      "bytes": 6529,
+      "sha256": "cf235404dc5c2dfeccdf04247a24d68b85be1e289fef82f98e180d470c71b2db"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/task-execution.ts",
+      "bytes": 24706,
+      "sha256": "85e931ec4524a83464f1c8b4a4fdf78febff5c02611ef4277e12de75fff80a69"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/tokens.ts",
+      "bytes": 10281,
+      "sha256": "476db0163b0ee87d84d64adc0fb9ebb23e1d36e5bedd26019d4d33a99b9b99c6"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-execution-time.ts",
+      "bytes": 5129,
+      "sha256": "8adf47596c1a6e114568a36996206df4b58a93000a9d391234ce042f4f16a826"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-facts.ts",
+      "bytes": 8096,
+      "sha256": "d6ed3f7c46b3c290469848986709d82c7e9914375cf5cbbd7704458375bf8b62"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-governance-deadline.ts",
+      "bytes": 8686,
+      "sha256": "7d689c4b4c74f06f5fa666dac415ceabe67f3577ed7f0b9e75b70f1c467c7079"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-governance.ts",
+      "bytes": 36467,
+      "sha256": "2a7a783216e16b2eb5ee65ffda5deea5998f2e10f4235aeb63ea2e0c30e5ce21"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-hire-approval.ts",
+      "bytes": 19359,
+      "sha256": "ea1dbd09c70b0e21821dac43c3ffff7ae897135bf93cc0e50ba1739e7779c53d"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-hire-existing.ts",
+      "bytes": 20214,
+      "sha256": "d25815343858c46338f0027f84b492ace1da8a96edd65efa1833faa2bcbd4a12"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-hire.ts",
+      "bytes": 30975,
+      "sha256": "acb220b8230fbeb4c561b843ba8f3902f3868197ce04de4d31e6f6d88a4c64a8"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-mutation.ts",
+      "bytes": 5201,
+      "sha256": "ef18321fab6b5bb5e4bdea391a555814a0a3e3642d3581e37019abed25ce5767"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-norm-announcement.ts",
+      "bytes": 7858,
+      "sha256": "a03fbfe2eed2dc3c3cf58c09c4974caac7063e608e82a68bbc564877fccc1394"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-norms.ts",
+      "bytes": 34649,
+      "sha256": "f6fbcc0aee9f11630ff3c5efcebf9a85c89e7872b6eddf4e3c5ff628ef96ba53"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-organization.ts",
+      "bytes": 13937,
+      "sha256": "a7974d64b821a69a012276e7313a5bbe98da94a44fdaf95bb6ba2881bddbc111"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-personnel-domain.ts",
+      "bytes": 29960,
+      "sha256": "e88ebfeaccf1a52a7848be9ebe60ba4f2ced6c930f0bbf60eb23c77b38e84f48"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-personnel.ts",
+      "bytes": 31996,
+      "sha256": "0e08dc22dc9284533e765bf50712cb1e12c1b24a63c99e5e0433b41ee3f4aa12"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-runtime.ts",
+      "bytes": 3152,
+      "sha256": "e4af6064ac8bced068b088afb3c284585089e91606eaba52bf1dcdf7b0f35f62"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world.ts",
+      "bytes": 66085,
+      "sha256": "895e9a90d812f307af94d190b28ba03879f1625896ed1dac7bcd766782b46f9a"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/writers.ts",
+      "bytes": 13272,
+      "sha256": "3782ff5d2960f5459649cd50cae98182a638a32fc5b133d4cdda1e7bd28ab8ad"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/personnel-admission.spec.ts",
+      "bytes": 23424,
+      "sha256": "ddae994e8872a8b478ceec58d0aebd6e925152cae77ea53fa679cbc790767415"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/personnel-obligations.spec.ts",
+      "bytes": 23352,
+      "sha256": "e4bf304cf9d59a68c39749bd39e09e93c6268295fdb657807a30ae35cc3ede11"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-execution-time.spec.ts",
+      "bytes": 15706,
+      "sha256": "1609671b45b8c8ce9eab100f9e48e2d971baa863b5c44f52eee1f880a6f3ccab"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-hire-approval.spec.ts",
+      "bytes": 19907,
+      "sha256": "fa98dcacc392027a8dab08f20ce8ab73461eb000157d4ec5b045b33d3136d7a5"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/administration-schema.ts",
+      "bytes": 13791,
+      "sha256": "634caf9e9387fd7255cb21cf7519ffbf886448ea38c9300fb25d27a93338c8aa"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/administration-types.ts",
+      "bytes": 8417,
+      "sha256": "4e8ed93fa013a64e585419ab797022460baf4d09eb9d25e75966e6779556978c"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/administration.ts",
+      "bytes": 108530,
+      "sha256": "8ae886435d02440540e8c5f09f4fa1c0bd27f638e144deec39cc3033e62076b6"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/case-cancel-schema.ts",
+      "bytes": 973,
+      "sha256": "63510eea0d86aa68b565ae97b8750dc777551cefbb86b9a35a81b55e9d58ba9c"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/case-cancel-types.ts",
+      "bytes": 602,
+      "sha256": "510367bb6721e70ad632a82cf0a6f48a655f742eebb4314631a344f38a052c5f"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/case-schema.ts",
+      "bytes": 11840,
+      "sha256": "4e68d9d7de19d28001c163e1e385a360004b808e7e372cb78dbd8040b4500b86"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/case-types.ts",
+      "bytes": 8520,
+      "sha256": "df56333378ef1b4a2e59849f6d8f15682a824d20288d0849737ca5e3f4b6cc11"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/cases.ts",
+      "bytes": 8891,
+      "sha256": "dac8516c88d7779ec94ebbe7a4ffb3383fa45ba88356eb896777b58106f3b48f"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/collections-schema.ts",
+      "bytes": 17416,
+      "sha256": "568da1b1404e2e5d0585ffc32eb4324a3e34f5251ee6309ac8613c5db29ba34f"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/collections-types.ts",
+      "bytes": 15872,
+      "sha256": "802e2bea5b425ab3cf207859c95e925d2a01b44c74090cd124d11fef7e06b6d8"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/collections.ts",
+      "bytes": 14960,
+      "sha256": "44bca475f398f95d714be4bf3d9801b386e0fac241d0c5060c800bda6c8c3859"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/company-driver.ts",
+      "bytes": 29867,
+      "sha256": "ad65f21ad17e88af5cdedcd8f5740f3468a3f4d4e76e887503e5126f88ddbfb6"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/company-owner.ts",
+      "bytes": 26946,
+      "sha256": "5202759b0dcc848ea7ab80ed205a4d7e8fc42a6522acb9c719bcb61e0f344ac1"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/company-preparation.ts",
+      "bytes": 9098,
+      "sha256": "e242abebf85e11f7b51b8332e8603dca857660106c9805c5421a71385442f6f4"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/company-review.ts",
+      "bytes": 6786,
+      "sha256": "2b0985f12f560286723f4459fdb0c4862bfccd2ebf8aa4e3d9e16106ab31f58a"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/company-task-policies.ts",
+      "bytes": 12232,
+      "sha256": "3185f3a698b28ebcd82896dde6b7e1c9d20444b720c14b7472866dddad356863"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/context-details.ts",
+      "bytes": 4265,
+      "sha256": "24901c7a17cbc3d635483ae9110dcb89ed89a45e6c4792bf89db178c48574a65"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/context-readers.ts",
+      "bytes": 2415,
+      "sha256": "c2d122c65a7bb4bae6c3df8fcb0e8714428c89ac42ac8873f2040f14e8743efa"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/control-schema.ts",
+      "bytes": 9558,
+      "sha256": "e160f2ec1bddff2baf3590a816612aa7d969401bf73af8156dcbec6f9d7d63a5"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/control-types.ts",
+      "bytes": 8743,
+      "sha256": "9ed14e745d6fd92c10a4c82fc7979add0cd0f06cf37a10688d7bed51425825a3"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/creation-book.ts",
+      "bytes": 4411,
+      "sha256": "967fcbc30619a3379e47e30dc04cc2d2127fa1163d0e4adc664bf33eec49a326"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/creation-preflight.ts",
+      "bytes": 3805,
+      "sha256": "71b97ded5c8ca224c0d527c3c498ebca05a77d8b06adfac1b8c2edc8a9881783"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/creation-schema.ts",
+      "bytes": 8023,
+      "sha256": "b79df8567255901c3fe6cdb3c5a0ecafd129334c331447889824038c9f19e7ef"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/creation-store.ts",
+      "bytes": 5791,
+      "sha256": "a9cc999793d9becd97cf863c3ea9fd63014efc6a92313ff0c2572af058bb41a9"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/creation-types.ts",
+      "bytes": 4382,
+      "sha256": "3ef54d464ddce45ec5933b955c245f3575683f79d01e64fa4fc157c7d687e08d"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/cursor.ts",
+      "bytes": 4552,
+      "sha256": "6d7bb41fd8866c045d2a56aad4d5350a0eedcece04ba736db37780172754d584"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/directory.ts",
+      "bytes": 2760,
+      "sha256": "c08cf971243d5b2e7d07619971b8f72fb19e3fae041f9e26135fa22dd5b089a1"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/driver-residency.ts",
+      "bytes": 1366,
+      "sha256": "726057c9c2be0cc071dd59b607d93ca77938e920add47ee375a729d96b1899b2"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/envelope-source.ts",
+      "bytes": 5383,
+      "sha256": "7011dd3a9bf7ddaea8170ece8cf18ea4e5ce37164b621e34e9b4f32cabeeef89"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/errors.ts",
+      "bytes": 855,
+      "sha256": "f403cc5cc78710229398b1464d1e063dbcd1c1973e078165e79a081a3bf38dc5"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/index.ts",
+      "bytes": 62390,
+      "sha256": "36d12dbbe198f1c46cc5694db689efdbc67faa69858e2a7868b5f34175fe4b59"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/invariant.ts",
+      "bytes": 909,
+      "sha256": "b03836cfd737bad4ae79163c6caab6c59649c2f2c0c0bbceb5d14689e8b7c1c8"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/knowledge-details.ts",
+      "bytes": 6085,
+      "sha256": "a782be987381c52f9017d0e75b41a6cec2747237de5e6b58a24275be651f58af"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/knowledge-types.ts",
+      "bytes": 2918,
+      "sha256": "c46d4c1a5f481191a22745de3be5160017f469d614a8b4a4d305a3078fa6fe80"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/maintenance-control.ts",
+      "bytes": 4945,
+      "sha256": "7444d91421339fe9bf79d9250ef3067dfbd6a9e88765501843ae5ef02c6c919d"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/maintenance-schema.ts",
+      "bytes": 3775,
+      "sha256": "8d663c12dec0657fb2d657b9c131ea3108711c4418b97bc142290a88426d4183"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/maintenance-types.ts",
+      "bytes": 2479,
+      "sha256": "01efba9076db19df22998078d3ac266e5b09f73a0b63a295f91ef9c660682641"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/management-read.ts",
+      "bytes": 811,
+      "sha256": "25d6e7a77cbbda88177f6430773af3de1924c5ebd90c7ba89fb46d18a9920998"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/model-pool.ts",
+      "bytes": 1063,
+      "sha256": "a4327bb0f988383127ccb9b79146c7b9a7931e2bead5b3d8b6436a5cb12d617a"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/operation-retry-schema.ts",
+      "bytes": 1833,
+      "sha256": "4795f2acb5f6bc385884df30a86044fc288c467ff6a2b6a09f693cc0b81422f2"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/operation-retry-types.ts",
+      "bytes": 1252,
+      "sha256": "4d9984ec74edd2bb786a3e3dbb9a1b269dce71be08f0265cf67317c8a6fe71d7"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/records-schema.ts",
+      "bytes": 2281,
+      "sha256": "6aa6dd24777e3dcd8ad7063ecdc62b7779f65ede1b7d2ea76b6dc113ac3ad6f6"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/records-types.ts",
+      "bytes": 1983,
+      "sha256": "a5307c12491d3820f50a87d026d3d577fb5e8c7caeb582ec1c09caa96731be50"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/records.ts",
+      "bytes": 2565,
+      "sha256": "8b0d1d8f9020bfaf3c4c5e2a4171a38e342a111bc2a02c87239610364dcb27c5"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/registration-types.ts",
+      "bytes": 4767,
+      "sha256": "5edd1ffff040b8bb0728c514714a4ae4cf737295a5dfa6db44769def565c38f5"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/review-schema.ts",
+      "bytes": 3944,
+      "sha256": "350c06c496fa9c3236d05ae16d7a9f237f2bd2147fe58c1aed33ff5c347d518f"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/review-types.ts",
+      "bytes": 2704,
+      "sha256": "f4c8656379df768bdd4aa424952d675d8eaf1ea0eeb745409624e03a60832e5c"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/scenario-review.ts",
+      "bytes": 4292,
+      "sha256": "e173b494eeea16c8d7caf068b109f2cd7b3b67bfc7bfb44832a382ef75d6c01c"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/scenario-topology.ts",
+      "bytes": 4939,
+      "sha256": "9f9f6bb452cd4d8d95e663591cc9686c101b785c2cd24d9263e74425cb5157c2"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/schema-common.ts",
+      "bytes": 754,
+      "sha256": "adb49f6532e26ce3c5ef0e5955f2fdfcb8250df8a5ad2098d86f1cf8b39924a4"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/schema.ts",
+      "bytes": 6013,
+      "sha256": "2f1c3b4562c19fa1e85cb8fe46ed9120c56f750c2666008ab18c49c04effab71"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/sources-schema.ts",
+      "bytes": 2948,
+      "sha256": "868a9ee1a3c27260bb1d82b1b9fbb3b7d243677afdd82638add7f4dbe705f2ff"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/sources-types.ts",
+      "bytes": 2374,
+      "sha256": "baa58b3b36a3ec7a7930771a1317ffb7a4387bf18affdfae8770b8742c1ebd73"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/task-control-schema.ts",
+      "bytes": 3246,
+      "sha256": "5620989b97d352fbb6756bf68dffb774f782e01b019e06a85c14482c2b0ef404"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/task-control-types.ts",
+      "bytes": 2325,
+      "sha256": "839b8a9d6fedaa56ec9f65dc6eda35c9f3a08219429dcff17a59281938ca3099"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/task-executor.ts",
+      "bytes": 24372,
+      "sha256": "f7725528034f18d8d7536581e5e86e0e96b0f1ff1eb04c87a2b6b8e6c3855e0f"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/task-scenario-config.ts",
+      "bytes": 2699,
+      "sha256": "be6f4d160a7220a882daefed013e3b17ecdf0c2ce5d6935a2899d67f3e201b1f"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/task-scenario-driver.ts",
+      "bytes": 17202,
+      "sha256": "ff1dffed2295e3a348fe791703778296918a1b84d449267f5bf92e046e9a3711"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/task-scenario-policies.ts",
+      "bytes": 7497,
+      "sha256": "2b96108e15ebd0fc7379f5806ff6ddaf50754ed60c9b7a5c487290c39d2d62af"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/template-model.ts",
+      "bytes": 2939,
+      "sha256": "603e6d79c32b9a0ac17cdd7a890fd76ac2c5b6afd48fdcf76cbad52c669f3579"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/types.ts",
+      "bytes": 4695,
+      "sha256": "b1d0e3992fdf4150b49207366a6ce9acba35e31d7a3d956a498ff42f9cab84e3"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/watch-schema.ts",
+      "bytes": 1547,
+      "sha256": "393a9262c8663a8030ccafe15259c52a83049a0cf353361edec7deab647e521b"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/watch-types.ts",
+      "bytes": 1422,
+      "sha256": "4ab5c081747706a70a9461e693e768a5f403dd25f68a7f7d72d2a086e99c5f02"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-creation.ts",
+      "bytes": 16251,
+      "sha256": "cc5be24e9e60649066b54a8499894fc57b3af2001adcc50de7edb0beb6cc70d8"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-owner.ts",
+      "bytes": 27895,
+      "sha256": "45dd327f9aaecd8df9211e0fd4099ffed68a965cc0409fd120a27766990e23bd"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-preflight.ts",
+      "bytes": 4458,
+      "sha256": "b70956d5ef734737b661a23e4a0efba1864b00229faf289a4d3740a994707057"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-preparation.ts",
+      "bytes": 17785,
+      "sha256": "06ea27e79755b1e0784570a2732e5d36bea8e2d6d08e6ae5bdf94ea8eb541f7d"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-preview.ts",
+      "bytes": 2200,
+      "sha256": "c560dd4883ecbacd34e00a1ce645de2be62872162b92e58862051121ea3939c3"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-schema.ts",
+      "bytes": 5097,
+      "sha256": "2c13da2422b0819c82304380ac52018f64bdecdcf77ac4922e1e3d057e570e65"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-types.ts",
+      "bytes": 3066,
+      "sha256": "7a4a7368b7a060091c81f19d5cfd257b74b75ba3de632e807c3f02d571503908"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/compiler.ts",
+      "bytes": 12129,
+      "sha256": "1848b39f0877fbca91765945403d641a08bbd10e71d8795631ede0b5957c06f9"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/index.ts",
+      "bytes": 893,
+      "sha256": "317fb77fa24748079313a170478618013521ae17aacd533e83874a8def526f4a"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/input.ts",
+      "bytes": 11482,
+      "sha256": "788a3c39a8c868b8f7f860393383ec68b58b14d2f3deb93434eee01e0790a313"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/invariant.ts",
+      "bytes": 758,
+      "sha256": "2bb972ad119bf5dc107551cfd98790d6bbeba18a5e56ee8ea299ae1f69d92e74"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/schema.ts",
+      "bytes": 5020,
+      "sha256": "fc4855cff25f2d2d4d79be9b3ad4fd4c0c65764b74dc74a87f73f12c38a07643"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/types.ts",
+      "bytes": 5770,
+      "sha256": "f30d56742a27b0c246ff98b802b3bdc355092fffbba648bf92141b3abc26a685"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/validation.ts",
+      "bytes": 13010,
+      "sha256": "bd135493846fc2322766c3cbcee326c018b78ae8bfb9fb5c020ff1cfa52d1eff"
+    },
+    {
+      "path": "packages/simulation/simulation-team/README.i18n.yaml",
+      "bytes": 445,
+      "sha256": "1699a1e22cb594bc08e98a2e0990246cde1d14fc84c88ef1a5811630042144e5"
+    },
+    {
+      "path": "packages/simulation/simulation-team/README.md",
+      "bytes": 37060,
+      "sha256": "24ed827d45c8fcab2a8325335635e561ac9f4b6c6118d2b6436a319343514fa1"
+    },
+    {
+      "path": "packages/simulation/simulation-team/README.zh.md",
+      "bytes": 31393,
+      "sha256": "a1028428cc44fd117bdef0da552c6d6d56436c607db982e50889483590cb2e39"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/activation-admission-evidence.ts",
+      "bytes": 1504,
+      "sha256": "92ecdab9d5d1fc5e46a5e66de7a5a1047ea7b87c03e541364b2a13433cec92a8"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/bootstrap.ts",
+      "bytes": 4536,
+      "sha256": "1269c170ff30fe79fd564984192c97afdeb8b5aadcfe1f2111e726af8cdc978c"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/channels.ts",
+      "bytes": 9635,
+      "sha256": "152f2e75a2a45edd8b5bad119b2ab6cd9a14892bd6be98aaa3b5c78084ea394e"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/checkpoint-failure.ts",
+      "bytes": 2937,
+      "sha256": "0ad375f4f44f226cea7806e616fcc49cf5f4acbefbd76eda6fb3c0cef17b5d8c"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/checkpoint.ts",
+      "bytes": 14558,
+      "sha256": "ffe49684272e2b26566965a196c3d580272d3f9443e57cbde60d524f3380efdd"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/compaction.ts",
+      "bytes": 3772,
+      "sha256": "aca587d3d23dc5543c9234451f385ba59af2471595d2092324c9afc4e55caf49"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/context-consumption.ts",
+      "bytes": 5202,
+      "sha256": "f4b26c8c915ff6aae40489cdba2d4f6c5e7a20d3c71f965ec8651581053a3cf1"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/deadline.ts",
+      "bytes": 4584,
+      "sha256": "4012ad3259595c51c33f55e325d233f625e7df239edac08a5a2be78b28b85c31"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/decision.ts",
+      "bytes": 4110,
+      "sha256": "425b42b40c23193589dca4076ecf99ed4a48bc3ca6f010059afeffa527bb7bfa"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/delivery.ts",
+      "bytes": 16893,
+      "sha256": "eba76a5c9c33422daf63fcd6e5529b20448bd7564a10b6066a66a46917bdf775"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/deterministic.ts",
+      "bytes": 4865,
+      "sha256": "b51e314798a2a673bf09e65a3043fbeb2f32d7fcada63e5553e5c252edc822ac"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/driver.ts",
+      "bytes": 3719,
+      "sha256": "5823b6fad0a9ec58c1d574f3a0042dcdbbea977a7828ec75eed6b4bfd2c03c48"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/index.ts",
+      "bytes": 94443,
+      "sha256": "0fe6a42713679446e7401dbf0a87ad711bb77e455f95697fb798e7c221431b58"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/input.ts",
+      "bytes": 2276,
+      "sha256": "49dacdbf3e7628d6635f69ae4fdd78168fff45c637755bb16ae072e3f4bd2d25"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/invariant.ts",
+      "bytes": 934,
+      "sha256": "17ae92d14fa60c6934b82060f5f6501195ba94e03acd58020464744dcfab1c74"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/invitation.ts",
+      "bytes": 5456,
+      "sha256": "162d854fbe40be42673dea70403d8e69572b72508ec56e09684f07a125bacf7c"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/knowledge.ts",
+      "bytes": 4443,
+      "sha256": "1bcd20e3ad5c2d01977ee3888aeef92797c211679271cafb2cb60614a165f742"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/metered-stream.ts",
+      "bytes": 2328,
+      "sha256": "4738d06d8f0677d9e342eabe7cb0f34651be34424d0b026fe1eab4b1dc585efb"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/model-admission-evidence.ts",
+      "bytes": 3402,
+      "sha256": "89b98fe58fadf9c62cc4de0ea2d27b26623739d470afadfdf3ba3e76f9ec859e"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/model-capacity.ts",
+      "bytes": 3681,
+      "sha256": "205e76764b27245ebc93b0b1e9b75b40da47f0342f366b00c5cef6dcc1860b5e"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/model.ts",
+      "bytes": 4767,
+      "sha256": "6128a67d553426587b2f771020bc896ebf857df3cce47d064bce3acf2be54cb5"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/participants.ts",
+      "bytes": 8485,
+      "sha256": "70665cb5f71e823e8e340e4fb498e7cecdedd86643efbc7e8f06e9f18aad88b0"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/pause.ts",
+      "bytes": 964,
+      "sha256": "ba23989d50988ebfcde167e06c71d3c4fdf8cdc2d6aa1f2d685760dc8594518d"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/personnel-obligations.ts",
+      "bytes": 8826,
+      "sha256": "bee4567e53562904b3eafbe407146a60f5130de8576b422f3cd46359ac0ce196"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/personnel-settlement.ts",
+      "bytes": 7118,
+      "sha256": "adabfd650852ec199e500ce53548860f4d35f573ab9da759988dc49d12693926"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/personnel-source-types.ts",
+      "bytes": 1423,
+      "sha256": "92477935fe9e9bbc517066d81b9195feb7235269b3e5606f1733caa4e2be4d55"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/personnel-sources.ts",
+      "bytes": 5276,
+      "sha256": "8a1e2238190be538b7ce6a4096f3abefe71d0e1b954171e66bbd7001d04c349a"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/personnel-terminal.ts",
+      "bytes": 2934,
+      "sha256": "ab11affeb98d2e31eec01f6a1f68ded3e984a8889064dceeb3bdbfbaf75b6fff"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/provisioning-queue.ts",
+      "bytes": 1335,
+      "sha256": "efc60b07826b97d983a31ae8c7deb5d1ed297793d9d7ed718da4e443c840fe91"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/residency.ts",
+      "bytes": 3913,
+      "sha256": "2ca171cf551932c761ab92302a11449bb12a648f740fed95bc33098215829a6d"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/restore.ts",
+      "bytes": 12967,
+      "sha256": "6ee113cd65c5fe0c65526b6e9d1f2f91a69712365d0922b00675ff4d87b16431"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/summary.ts",
+      "bytes": 3719,
+      "sha256": "54306798f600aab47a4d740962d704e45bd67deee8d894f5613fbe21c9eb9919"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/target-references.ts",
+      "bytes": 5396,
+      "sha256": "172977d85bbc17c0c06595ddc0597b20b4f4d5ed77aed250e52662a5dc9675a9"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/task-assignment.ts",
+      "bytes": 5393,
+      "sha256": "b52995f8ceea42c319032c05b9ec50050994a03455f1b2a42402249ff7a4e09f"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/task-completion.ts",
+      "bytes": 5822,
+      "sha256": "5178b029771fb48b152817f9ab8738b3c44c1f3fbc35e77f29f0420c69c91797"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/task-decision.ts",
+      "bytes": 4624,
+      "sha256": "a5693bc49b864661961528d8b561b152280e8489d1564aa3695574186cf72c9c"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/task-evidence.ts",
+      "bytes": 2239,
+      "sha256": "74b95e76957fc1fc475da5a4ea5bf92d516d8a09ccc951fb6fd65c90bf4d29e8"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/task-retirement.ts",
+      "bytes": 2729,
+      "sha256": "65a786c8daaf3a47a27dd405054c63286a08805c2004834203f6a8f3b8d04611"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/task-review.ts",
+      "bytes": 5049,
+      "sha256": "c16c5c2b6e7516f5197ffc085b96576747697e8db8f3652e8139720bc7cde7ca"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/task-transport.ts",
+      "bytes": 16955,
+      "sha256": "fe33e584f885f846c67091356a4863fae38abed1478a1d3e87a936e2fde4cb96"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/transport.ts",
+      "bytes": 6172,
+      "sha256": "00f0489cd599f3b5ff532ce27612109b7912db5581be194dea0a226520a7ccb1"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/types.ts",
+      "bytes": 26038,
+      "sha256": "9969fdae925df6283e05e7add85c3294b5d0c3e9628da6cf9f3ad77562726027"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/world-cleanup.ts",
+      "bytes": 9257,
+      "sha256": "06b193da3b8ec0db69ec4611b59a1232f80e46e6f031f012d4b88d20d5f6fb89"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/world-submission-evidence.ts",
+      "bytes": 2278,
+      "sha256": "148db5178109690679bf8846af2e2fd1b833c1c24835781fd70cf1e521887714"
+    },
+    {
+      "path": "packages/simulation/simulation-team/tests/personnel-obligations.spec.ts",
+      "bytes": 12020,
+      "sha256": "0d030ccf1342705bf2aeff31450de0f54951bca7abf679b9e526104feba92431"
+    },
+    {
+      "path": "packages/simulation/simulation-team/tests/personnel-retirement-unknown.spec.ts",
+      "bytes": 14693,
+      "sha256": "fc5eb2b09156760df5bc737326548d4d081c0e7ffef2739950275e45c1eeba5c"
+    },
+    {
+      "path": "packages/simulation/simulation-team/tests/personnel-terminal-evidence.spec.ts",
+      "bytes": 21655,
+      "sha256": "3172361e20632c4960cc317fc709b34d0f690bd60ada3d07addb3fe2c3d04314"
+    },
+    {
+      "path": "packages/simulation/simulation-team/tests/world.spec.ts",
+      "bytes": 140350,
+      "sha256": "086ddea4a553687f51e05b1392cc17277a0909a63a5462092c89143a33fc3c7d"
+    },
+    {
+      "path": "packages/simulation/simulation-world/README.i18n.yaml",
+      "bytes": 446,
+      "sha256": "7109b287a96292c52dbd83900afd8655d3c93a8889808aa11fb608309bfdb36e"
+    },
+    {
+      "path": "packages/simulation/simulation-world/README.md",
+      "bytes": 10533,
+      "sha256": "173d2c8c1f664ce809346bebee6c89f6d054394cb75d204e676091a9a7b50d0e"
+    },
+    {
+      "path": "packages/simulation/simulation-world/README.zh.md",
+      "bytes": 8709,
+      "sha256": "72f73dbf6c049b3b4db3b28317852aa3300feed718a9c0ae5932dba27a5d12ec"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/driver.ts",
+      "bytes": 20243,
+      "sha256": "2d68c5646608a7b495ec30224f1d7c4e0b829919fa47f23710f1db6a41946b95"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/execution.ts",
+      "bytes": 9049,
+      "sha256": "dd4e548bfead4f7ce6e1f653eb95279241707fefb59384b43d07192214dc3a10"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/governance.ts",
+      "bytes": 1952,
+      "sha256": "78f0a70b6bf39ef63456e7a27da82c47c4dededce6fb7f1822530f03e02d0ed8"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/hire-existing.ts",
+      "bytes": 2754,
+      "sha256": "d21583f0e7180aa3f3ecf8078252ca2dafcaab2f587278fea9145b365a725e52"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/index.ts",
+      "bytes": 554,
+      "sha256": "ba24302208b25d1b76208d608a119fb28005339208973d6dfb44abc5dee38dd2"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/invariant.ts",
+      "bytes": 676,
+      "sha256": "38032fa37c49b0cc1e815908a39a634e7c35d4284fa9729b42446def1c95326e"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/norms.ts",
+      "bytes": 2207,
+      "sha256": "423436a575ada1e3e4c1f24772700341648093612d3d8815aacb3b9958dc86b8"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/organization.ts",
+      "bytes": 9340,
+      "sha256": "3660cefa6c65749dd554b931aede6e996e35ce753f74116b778347fbe94397f2"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/personnel.ts",
+      "bytes": 7013,
+      "sha256": "e03b1e55d3003de2e78e64a82bbb2bf95a4c8f5ffffc3da110da4e0cb302110b"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/types.ts",
+      "bytes": 1514,
+      "sha256": "f86ebab7863341a6752c6d571bfc6d7bb371c15aa68136f98c59a6eba126935a"
+    },
+    {
+      "path": "packages/simulation/simulation/src/activation-admission.ts",
+      "bytes": 1082,
+      "sha256": "d8fd0ea1db90d1a0dabeffe28b6956fff900b606a09e02b09a9541ed31d05acf"
+    },
+    {
+      "path": "packages/simulation/simulation/src/binding-types.ts",
+      "bytes": 432,
+      "sha256": "eb17f83c823b46425a7efe97542f895ceec6f1ac8c8008ff77ec443a0695350b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/budget.ts",
+      "bytes": 4518,
+      "sha256": "387066389c0417d3554010f4f3bc7bc66fe33a99eedfa5aa2bec4d329d081360"
+    },
+    {
+      "path": "packages/simulation/simulation/src/business-types.ts",
+      "bytes": 9063,
+      "sha256": "fc0d6b86d3791ff5bc2811bc9a453746970a43b1422f06d8b42892bfe706da07"
+    },
+    {
+      "path": "packages/simulation/simulation/src/business.ts",
+      "bytes": 5771,
+      "sha256": "b6e6791414293b5b981745eff9e53f9667569b035c7e658639ac493e414cad23"
+    },
+    {
+      "path": "packages/simulation/simulation/src/capacity.ts",
+      "bytes": 1452,
+      "sha256": "9066f3eabd8e71179f83e073dbbc24a09653e645753a397c10fe422445c9d35d"
+    },
+    {
+      "path": "packages/simulation/simulation/src/checkpoint-diagnostics-schema.ts",
+      "bytes": 1978,
+      "sha256": "260a3c7c680cef51c0c0f872fc80903cb1d17e8b710290f7e089d03e86aa46ef"
+    },
+    {
+      "path": "packages/simulation/simulation/src/checkpoint-diagnostics-types.ts",
+      "bytes": 1538,
+      "sha256": "4b992df1231c8f1e45da1e3010ae405dc62227ca43e17031c0968921654999b7"
+    },
+    {
+      "path": "packages/simulation/simulation/src/checkpoint-diagnostics.ts",
+      "bytes": 2281,
+      "sha256": "398e56bffa6defa5c2f35f1299e8c5d67990156a354b9f2ea6882d3e0e62b7f4"
+    },
+    {
+      "path": "packages/simulation/simulation/src/checkpoint-reference.ts",
+      "bytes": 1399,
+      "sha256": "ab352f1547f8c93e525b4379b7564b16cad88b7dfacad2dc35f1f913ba07d04b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/checkpoint.ts",
+      "bytes": 12540,
+      "sha256": "f0bfc36d83625abba2d8812eea70a9a5427ad05ed41a3ab421cf4ce4bbb35da9"
+    },
+    {
+      "path": "packages/simulation/simulation/src/context-consumption.ts",
+      "bytes": 1754,
+      "sha256": "2beb15e1206ec8e14e60bd5db97e33ecf4c051914cc7bfd6541b26c3b993826f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/context.ts",
+      "bytes": 3401,
+      "sha256": "dcf3eb25831669e6ba12bc95c91cab949267be72fedee7ac80e6e3c184a593c2"
+    },
+    {
+      "path": "packages/simulation/simulation/src/deterministic.ts",
+      "bytes": 1819,
+      "sha256": "072e478dabade3fef044fd37fc7e27a025916e47e5b77b4fb3d062af2e0a51be"
+    },
+    {
+      "path": "packages/simulation/simulation/src/dispatch.ts",
+      "bytes": 2682,
+      "sha256": "e13c8529e9ef22c390c4d3082bf11970238cf44b5f41e1a7afd2cbd5279b0715"
+    },
+    {
+      "path": "packages/simulation/simulation/src/entity-types.ts",
+      "bytes": 2691,
+      "sha256": "70ad45aef772f9150a47732954b4bb2b1256ad725d201395ee80e312350f9a10"
+    },
+    {
+      "path": "packages/simulation/simulation/src/entity.ts",
+      "bytes": 3143,
+      "sha256": "4355ac43e785df346e57bd890b8ee473c660455e5029ff4100c441722c15dd5c"
+    },
+    {
+      "path": "packages/simulation/simulation/src/identities.ts",
+      "bytes": 1578,
+      "sha256": "2b8ae6b7edbe077694615301fe27bd163d567f238a5f75a7a5dd1cda85fbc778"
+    },
+    {
+      "path": "packages/simulation/simulation/src/index.ts",
+      "bytes": 6508,
+      "sha256": "d299b1052794a8138184baad91107d028f418dac13ee42e25afe9e431b44aca0"
+    },
+    {
+      "path": "packages/simulation/simulation/src/ingress.ts",
+      "bytes": 989,
+      "sha256": "eac41dd19404de898c13437d34a095843a127b1df58fc35a6c959184ff688597"
+    },
+    {
+      "path": "packages/simulation/simulation/src/inspection.ts",
+      "bytes": 1553,
+      "sha256": "6ff6bba5266d844ba681a6e8f22247dd132d42a8cff156ba8b20cd5e593ede0e"
+    },
+    {
+      "path": "packages/simulation/simulation/src/interaction.ts",
+      "bytes": 576,
+      "sha256": "693b6eede8090bcb822106ee66837502dd4a874297b4c7d3227686ae85f12e2a"
+    },
+    {
+      "path": "packages/simulation/simulation/src/invariant.ts",
+      "bytes": 745,
+      "sha256": "a597cbad0bce1490c651b31e78aa94f909623ac2597b537227f6116a6569d06a"
+    },
+    {
+      "path": "packages/simulation/simulation/src/knowledge-query.ts",
+      "bytes": 3925,
+      "sha256": "01bc4b59fb9755abe8286325f33f3dbe8deec4752a1c4d05d9faaf95c3189d89"
+    },
+    {
+      "path": "packages/simulation/simulation/src/knowledge.ts",
+      "bytes": 4663,
+      "sha256": "bcb2144b00e731abc8c52f7998f1bbe0a1336940408ce3bdc3bf33b83af6af01"
+    },
+    {
+      "path": "packages/simulation/simulation/src/maintenance-types.ts",
+      "bytes": 500,
+      "sha256": "45f4b2ea850c127a0c01437e272f144f6c9e4253a358f6438c38822fb3cf90b8"
+    },
+    {
+      "path": "packages/simulation/simulation/src/maintenance.ts",
+      "bytes": 2798,
+      "sha256": "770d8902435da953d96f750ecfd37a9d2ddb676e11964a968758479b27b31eea"
+    },
+    {
+      "path": "packages/simulation/simulation/src/management.ts",
+      "bytes": 1363,
+      "sha256": "27b7be65880686f71ef8ded0cc889493e7443831663076952cc402df1f5337fa"
+    },
+    {
+      "path": "packages/simulation/simulation/src/metrics-types.ts",
+      "bytes": 1493,
+      "sha256": "41ee3e902fec3a9517a648fffd38e577e8738e0f34cd1357b1bcc14b96f2ecff"
+    },
+    {
+      "path": "packages/simulation/simulation/src/metrics.ts",
+      "bytes": 3072,
+      "sha256": "3887d94b711f3492090e6c47388cc3e512ca0e9febc41ac0d016d899494015d2"
+    },
+    {
+      "path": "packages/simulation/simulation/src/model-admission.ts",
+      "bytes": 2050,
+      "sha256": "e0de281b654d02c38e04c282c8035919f5344f8664a9bce134710d5287669163"
+    },
+    {
+      "path": "packages/simulation/simulation/src/outbox-retry.ts",
+      "bytes": 3959,
+      "sha256": "8fddaaacd1103f20722e7698b243201c5463ae4dc30302641c153e76e112857e"
+    },
+    {
+      "path": "packages/simulation/simulation/src/outbox-types.ts",
+      "bytes": 3739,
+      "sha256": "8729b4265a2e58a48370599c095554d64a9a6567740bf158ade44b59b4be92b1"
+    },
+    {
+      "path": "packages/simulation/simulation/src/outbox.ts",
+      "bytes": 1959,
+      "sha256": "ef396ce486d5dd20e7d3093294d1bf0a167321b31e9dc34ec74a2629ef04ebd3"
+    },
+    {
+      "path": "packages/simulation/simulation/src/pause.ts",
+      "bytes": 781,
+      "sha256": "23a3238ad56591431cf3b1281eb039072658690923abfe765dc129145cc410a4"
+    },
+    {
+      "path": "packages/simulation/simulation/src/personnel-obligations.ts",
+      "bytes": 13603,
+      "sha256": "6346d20feed9ad722485ed9a4ba66fff2e2fc47fe5f0446c5b36a373602bed81"
+    },
+    {
+      "path": "packages/simulation/simulation/src/personnel-state.ts",
+      "bytes": 7727,
+      "sha256": "0df7360799ec0a73546971fdf03bf3fd5cf6f33a5a9afad7ca51d2610d563649"
+    },
+    {
+      "path": "packages/simulation/simulation/src/personnel-terminal.ts",
+      "bytes": 2148,
+      "sha256": "c02578d446aaea517cdd90a800e5402b36f70f1ad5ab3d2cca78704841536e51"
+    },
+    {
+      "path": "packages/simulation/simulation/src/scheduler-types.ts",
+      "bytes": 4928,
+      "sha256": "0844ec57c8b05fd45bd830460250854b9886af801132e02a2b9c1c031d368cec"
+    },
+    {
+      "path": "packages/simulation/simulation/src/scheduler.ts",
+      "bytes": 3295,
+      "sha256": "7869f7f140d6836c133d8ae8c58293694edce80cc6f4ac2ae5e124e0a4230140"
+    },
+    {
+      "path": "packages/simulation/simulation/src/schema.ts",
+      "bytes": 4175,
+      "sha256": "30220e9e288c4a65f23d70ac656c21ae8a9f46a1b91ecf868bbd9e24fe62dc60"
+    },
+    {
+      "path": "packages/simulation/simulation/src/task-cancellation.ts",
+      "bytes": 1031,
+      "sha256": "a0cd0b7bf1a95eebd9bf285237db2668d9c5edb16c4ace63dc97c29cb86f9306"
+    },
+    {
+      "path": "packages/simulation/simulation/src/task-completion.ts",
+      "bytes": 3151,
+      "sha256": "a9d4900d832480d19702f48bbe681182c6cbaac9e62354b5c3c77379eb49338d"
+    },
+    {
+      "path": "packages/simulation/simulation/src/task-evidence.ts",
+      "bytes": 2419,
+      "sha256": "90364e7646e8ee1a8456ed3e6a14796d34a8dd681b8abd8f78562475afe1bc33"
+    },
+    {
+      "path": "packages/simulation/simulation/src/task-execution.ts",
+      "bytes": 11203,
+      "sha256": "17bfd2a00fa1593fae88af1fd663f733e9d54e54e557d498e3e3f39accfbae62"
+    },
+    {
+      "path": "packages/simulation/simulation/src/task-outbox.ts",
+      "bytes": 2692,
+      "sha256": "fd947c67520538c0ab3a7763adcd6d83d33b9533a6a856b6b9640558c7cc0b3f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/task-report-continuation.ts",
+      "bytes": 4862,
+      "sha256": "ac72ce5bae0233542268904f6a40ea892c00e45e49ca8f3f7361f3f5e544045b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/time-types.ts",
+      "bytes": 273,
+      "sha256": "2b74572813f1ca4a99a0f92ce3da361a8d6d66cb1c5fa7de6d54bc17897f2830"
+    },
+    {
+      "path": "packages/simulation/simulation/src/time.ts",
+      "bytes": 791,
+      "sha256": "0fccf39f2b0cb2fd34a730478dde73c336cb369fb26b5500feae2b91bafc1f2f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/tokens.ts",
+      "bytes": 4345,
+      "sha256": "65836774c3c8323be0dbf7e6b1d3c06f808124b5761816ce7a6134cf7382a430"
+    },
+    {
+      "path": "packages/simulation/simulation/src/types.ts",
+      "bytes": 48383,
+      "sha256": "538541063f5f5744816e054dbebf3b33b034175def254800ec32a81420f342f3"
+    },
+    {
+      "path": "packages/simulation/simulation/src/window.ts",
+      "bytes": 1530,
+      "sha256": "d077d15eeee3afdd828831b0c7fa7dea393af375d12c0570c7f79053fce87aac"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain-registry.ts",
+      "bytes": 13116,
+      "sha256": "76622bdd295ce23a83ff7739729908895e719413fe76182d7629900ef1e536a8"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain-types.ts",
+      "bytes": 5863,
+      "sha256": "bdc977026a95206eadaae517f4221f2b38a9f3dd09f47807a43d18d67bc5d71f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain.ts",
+      "bytes": 7766,
+      "sha256": "877b23e3a5bec1939ed86467696c2b78d2f3548f40ddad25fa278a424fcc4b01"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domains.ts",
+      "bytes": 3386,
+      "sha256": "ca747896d5eacb1295fc1aa38bc89a3a8393a52adfa181900ab3d7948c63bae0"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-errors.ts",
+      "bytes": 1592,
+      "sha256": "82e94985cd8cdddcb2d54bf9aff8ff5a7f4a83e8c974c59129cac4d92c58823f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-facts-types.ts",
+      "bytes": 2579,
+      "sha256": "1ce4ca641b8550472e152e241f1ced81c3aecacc83c0afae2b334d4bdbecac75"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-facts.ts",
+      "bytes": 9802,
+      "sha256": "69c2a09b658ac749998c930b5a51a06d073305f6e90a3d2d0a37e71687521272"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance-domains.ts",
+      "bytes": 2714,
+      "sha256": "e3bbea61893c228e2a90fb0855591e0acb6063c8ca5959c701b5711267637535"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance-types.ts",
+      "bytes": 2401,
+      "sha256": "3997999bd5a194aa49e15e89a5f23b87ab17d587ea0ffea32f3626605280cc8e"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance.ts",
+      "bytes": 7778,
+      "sha256": "64c5a3064e3dce01586442576323a21b97ac1deccf93bc588e2ef83802529bd5"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval-domains.ts",
+      "bytes": 1813,
+      "sha256": "e95ccc3b7fb744a2c33d859cad8363bee9f9f6a670340fdb63c7a56725d7a241"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval-types.ts",
+      "bytes": 652,
+      "sha256": "9a2704923ee96f64523701d2d20fdfed730cbf71713462de6bcb01ced0dd02fe"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval.ts",
+      "bytes": 3275,
+      "sha256": "96e917370032971ebd18ddc807bd464cb19176337862a5192acf352205d4aca1"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-existing.ts",
+      "bytes": 2665,
+      "sha256": "f765b963eebf02d8a65b7188d504e9d4276555257bef51b775895042bba3cc96"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-types.ts",
+      "bytes": 3065,
+      "sha256": "f81a17fd66f121246514ff0191c287ac9a61e35b45e4059cafbd68567487d334"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire.ts",
+      "bytes": 6699,
+      "sha256": "e3e87090618c703a43129003b9be31cbbba12be06095f1168267e56ecf48e2c0"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-native-types.ts",
+      "bytes": 8014,
+      "sha256": "3dee24342ebbdce49ead080a9d7d4b474f7176700350cfe07d93c89d015fdc14"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-norm-domains.ts",
+      "bytes": 2264,
+      "sha256": "1a829fecea3215aafbda5f8fd628fff4f5c22ca83829dcbe8c08fc8d1de8bf27"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-norms-types.ts",
+      "bytes": 4542,
+      "sha256": "81ebc11e0aebe178e2d704988c5116ca669695938c19f0794f1af195681f282b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-norms.ts",
+      "bytes": 15625,
+      "sha256": "7bb7e549eb5265d6b58f0a1e978516e98c08d0da73debce31a0d03a826c2de2c"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-personnel.ts",
+      "bytes": 6186,
+      "sha256": "ac38c766007646be4723ae559027d6b4db83e32644862054e5b6b436406ee590"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-role-permissions.ts",
+      "bytes": 707,
+      "sha256": "b3e5d64866ee08d3ef91b4708f6c4dfaad5ca0bbac901f3dad2781252494b67e"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-submission.ts",
+      "bytes": 1551,
+      "sha256": "7f92b3cc85c948095d0ee3c5ac1201d435125d307bf6ce5351f1ea2ce3d4536b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-types.ts",
+      "bytes": 11034,
+      "sha256": "5ad5bfddda3d2115c69944bdee93c24a5607188b81d9ca83b9ce780229dfc998"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world.ts",
+      "bytes": 13514,
+      "sha256": "05dabfb63519c75e60637c146029aec753fea081e4c304b4b4e709da9695acd3"
+    },
+    {
+      "path": "packages/simulation/simulation/src/writer-types.ts",
+      "bytes": 11712,
+      "sha256": "0ef71016341a68566c8847cee959f4427d5a97baea00275b828f3ad9678ba1cb"
+    },
+    {
+      "path": "packages/simulation/simulation/src/writer.ts",
+      "bytes": 1745,
+      "sha256": "1f16563e52b12b82f7d6ecc3e25ffac9ddc78569c2dcbb721b034d4068988b8b"
+    },
+    {
+      "path": "packages/simulation/simulation/tests/world-protocol.spec.ts",
+      "bytes": 11875,
+      "sha256": "f8bbdaf304ca9ba56769f9a0423d1f3e5d17fa5942a4f813f0129881d2652c4a"
+    },
+    {
+      "path": "packages/simulation/simulation/tests/world.spec.ts",
+      "bytes": 22573,
+      "sha256": "b4d1eaf311f05977a5214946f55ab1902230f580d8299dbc023d2fdcd3d1acd8"
+    },
+    {
+      "path": "packages/team/team-hub/src/index.ts",
+      "bytes": 922465,
+      "sha256": "352a095ce0298c228d7ab7429ac74c9c3cbbf24cb6a48eb60a343daa3e9156ac"
+    },
+    {
+      "path": "packages/team/team-hub/tests/personnel-settlement-cut.spec.ts",
+      "bytes": 17507,
+      "sha256": "0590d876e7acd6c8874962a8533cef7eb247578ebdd31129d4c2962bf7d19991"
+    },
+    {
+      "path": "python/sdk/src/clocky/simulation.py",
+      "bytes": 69489,
+      "sha256": "aac4a9da31b4e4312393a3b1866775683c3b57ff14e8f5a8f3376a33f1c4f7b0"
+    }
+  ],
+  "inputHash": "71efa0772dfd0bc513126618ce6edc9c50e722e89fe2658c22e1e68c758becb1"
+}

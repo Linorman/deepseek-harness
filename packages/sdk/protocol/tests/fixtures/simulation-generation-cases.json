@@ -1,0 +1,425 @@
+[
+  {
+    "name": "generation original input",
+    "valid": true,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\":\"generation:job\",\"role\":\"user\",\"source\":{\"kind\":\"plugin\",\"plugin\":\"simulation-team\"},\"content\":[{\"type\":\"text\",\"text\":\"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation retained raw output",
+    "valid": true,
+    "event": {
+      "type": "simulation/generation-output",
+      "seq": 1,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "content": "unvalidated raw output",
+        "usage": {
+          "inputTokens": 2,
+          "outputTokens": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "generation required cannot be ignored",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\":\"generation:job\",\"role\":\"user\",\"source\":{\"kind\":\"plugin\",\"plugin\":\"simulation-team\"},\"content\":[{\"type\":\"text\",\"text\":\"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      },
+      "ignorable": true
+    }
+  },
+  {
+    "name": "generation no surface replacement",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\":\"generation:job\",\"role\":\"user\",\"source\":{\"kind\":\"plugin\",\"plugin\":\"simulation-team\"},\"content\":[{\"type\":\"text\",\"text\":\"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      },
+      "surfaceOp": "append"
+    }
+  },
+  {
+    "name": "generation bad sequence",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": -1,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\":\"generation:job\",\"role\":\"user\",\"source\":{\"kind\":\"plugin\",\"plugin\":\"simulation-team\"},\"content\":[{\"type\":\"text\",\"text\":\"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation bool counter",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-output",
+      "seq": 1,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "content": "unvalidated raw output",
+        "usage": {
+          "inputTokens": true,
+          "outputTokens": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "generation negative usage",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-output",
+      "seq": 1,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "content": "unvalidated raw output",
+        "usage": {
+          "inputTokens": 2,
+          "outputTokens": -1
+        }
+      }
+    }
+  },
+  {
+    "name": "generation unknown usage field",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-output",
+      "seq": 1,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "content": "unvalidated raw output",
+        "usage": {
+          "inputTokens": 2,
+          "outputTokens": 3,
+          "cost": 0
+        }
+      }
+    }
+  },
+  {
+    "name": "generation empty audience",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [],
+        "message": "{\"id\":\"generation:job\",\"role\":\"user\",\"source\":{\"kind\":\"plugin\",\"plugin\":\"simulation-team\"},\"content\":[{\"type\":\"text\",\"text\":\"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation duplicate audience",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader",
+          "reader"
+        ],
+        "message": "{\"id\":\"generation:job\",\"role\":\"user\",\"source\":{\"kind\":\"plugin\",\"plugin\":\"simulation-team\"},\"content\":[{\"type\":\"text\",\"text\":\"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation empty policy version",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\":\"generation:job\",\"role\":\"user\",\"source\":{\"kind\":\"plugin\",\"plugin\":\"simulation-team\"},\"content\":[{\"type\":\"text\",\"text\":\"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": ""
+      }
+    }
+  },
+  {
+    "name": "generation malformed request JSON",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation serialized request primitive",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "null",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation unknown input field",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\":\"generation:job\",\"role\":\"user\",\"source\":{\"kind\":\"plugin\",\"plugin\":\"simulation-team\"},\"content\":[{\"type\":\"text\",\"text\":\"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1",
+        "secret": "DIRECTOR_CANARY"
+      }
+    }
+  },
+  {
+    "name": "generation other job message",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\": \"generation:other\", \"role\": \"user\", \"source\": {\"kind\": \"plugin\", \"plugin\": \"simulation-team\"}, \"content\": [{\"type\": \"text\", \"text\": \"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation wrong role",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\": \"generation:job\", \"role\": \"system\", \"source\": {\"kind\": \"plugin\", \"plugin\": \"simulation-team\"}, \"content\": [{\"type\": \"text\", \"text\": \"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation wrong source",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\": \"generation:job\", \"role\": \"user\", \"source\": {\"kind\": \"user\"}, \"content\": [{\"type\": \"text\", \"text\": \"PUBLIC_CANARY\"}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation tool request",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-input",
+      "seq": 0,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "scope": "public",
+        "audience": [
+          "reader"
+        ],
+        "message": "{\"id\": \"generation:job\", \"role\": \"user\", \"source\": {\"kind\": \"plugin\", \"plugin\": \"simulation-team\"}, \"content\": [{\"type\": \"text\", \"text\": \"PUBLIC_CANARY\"}], \"tools\": [{}]}",
+        "provider": "mock",
+        "model": "fixture",
+        "modelVersion": "1",
+        "promptVersion": "1",
+        "policyVersion": "1"
+      }
+    }
+  },
+  {
+    "name": "generation output null usage",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-output",
+      "seq": 1,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "content": "unvalidated raw output",
+        "usage": null
+      }
+    }
+  },
+  {
+    "name": "generation bad output",
+    "valid": false,
+    "event": {
+      "type": "simulation/generation-output",
+      "seq": 1,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "content": {},
+        "usage": {
+          "inputTokens": 2,
+          "outputTokens": 3
+        }
+      }
+    }
+  },
+  {
+    "name": "generation unknown usage remains absent",
+    "valid": true,
+    "event": {
+      "type": "simulation/generation-output",
+      "seq": 1,
+      "time": 0,
+      "data": {
+        "jobId": "job",
+        "content": "unvalidated raw output"
+      }
+    }
+  }
+]

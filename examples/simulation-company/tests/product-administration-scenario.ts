@@ -18,6 +18,7 @@ const { runId: _runId, ...spec } = simulationRunSpecSchema.parse({ runId: 'templ
   tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 100, maxMessagesPerInterval: 100,
   maxPendingEvents: 100, maxPendingInteractions: 100, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32,
   maxQueuedDecisions: 100, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16,
+  maxResourceReservationHistory: 128,
   maxResourceQuantity: '10000', relationRules: [] })
 process.env.COMPANY_PRODUCT_TEMPLATES = JSON.stringify([{ id: 'company', version: '1', name: 'Company procurement',
   provider: 'local', spec, preset: 'simulation', objective: 'Deliver one inventory unit',
@@ -64,9 +65,15 @@ try {
     const run = await open(...args)
     await hold('native')
     const change = run.change.bind(run)
-    run.change = async (...input) => { const value = await change(...input); await hold('entity'); return value }
+    run.change = async (...input) => {
+      const value = await change(...input)
+      if (input[0].kind === 'entity/create') assert.equal(value.entities[input[0].id]?.readiness, 'preparing')
+      await hold(input[0].kind === 'entity/readiness' ? 'ready' : 'entity')
+      return value
+    }
     const acquire = run.acquireCheckpointCut.bind(run)
     run.acquireCheckpointCut = async (...input) => {
+      assert.ok(Object.values(run.snapshot().entities).every(entity => entity.readiness === 'ready'))
       const cut = await acquire(...input)
       const publish = cut.publish.bind(cut)
       cut.publish = async (manifest) => { const value = await publish(manifest); await hold('checkpoint'); return value }

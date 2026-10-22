@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "date": "2026-10-20",
+  "scope": "Explicit opt-in local durable test sink, cross-run durable inbox/outbox, and Native-enforced conservative time. No external email/payment/provider call or production enablement.",
+  "verifiedItems": [
+    "E02",
+    "E03",
+    "E04",
+    "E05",
+    "E06",
+    "E10",
+    "E11",
+    "E13"
+  ],
+  "command": "pnpm exec vitest run packages/simulation/simulation-product/tests/external-effect.spec.ts packages/simulation/simulation-product/tests/external-effect-loader.spec.ts packages/simulation/simulation-product/tests/federation-mailbox.spec.ts packages/simulation/simulation-product/tests/federation-checkpoint.spec.ts packages/simulation/simulation-local/tests/federation-time.spec.ts packages/simulation/simulation-local/tests/scheduler.spec.ts",
+  "result": {
+    "files": 6,
+    "passed": 44,
+    "failed": 0
+  },
+  "durability": "JSON and SQLite; real Loader with local credential leases; separate process restart after provider sink acceptance with lost receipt; original key reused only for query; unknown occupancy retained; strict receipt/authority/generation/cause checks; Native direct-drive/collect/scheduler-fold enforcement survives reopen. Grant expiry at the durable-dispatch barrier prevents Host IO. Exact boundary retries do not append duplicates. Mailbox recovery refuses changes to the original principal/peer policy, including a history containing only the creation policy and time boundary. Independent-review fixes enforce source/generation business identities, same-source causal prerequisites, target-only receipt authority, source-scoped receipt positions, shared grant-ID uniqueness on live commit and replay, and current Host quota on recovered reservations. Native time is exclusive, zero freezes initial consumption, and each fence retains an exact mailbox prefix cursor and complete archive-prefix SHA-256.",
+  "remaining": {
+    "E01": "Deferred by the user for this local-test-only implementation. No actual external business action/provider or separately specified real user authorization responsibility has been supplied. The implemented action is a local test ledger.",
+    "E07": "Deferred by the user for this local-test-only implementation. Mock/fault and local sandbox evidence exists; qualification against a real provider test environment and separately authorized production enablement are absent.",
+    "E08": "Deferred by the user for this local-test-only implementation. No single-host measurement or independent deployment requirement establishes distributed production demand.",
+    "E09/E12/E14": "Owned by the separate federation ownership/resource/checkpoint implementation and its evidence; not claimed by mailbox acceptance.",
+    "E15": "Deferred by the user for this local-test-only implementation. Actual external permission review and independent cross-partition protocol review remain required. The mailbox does not represent arbitrary Native business settlement."
+  },
+  "additionalChecks": [
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-product/tests/federation-mailbox.spec.ts packages/simulation/simulation-product/tests/federation-checkpoint.spec.ts",
+      "files": 2,
+      "passed": 12,
+      "failed": 0,
+      "scope": "Final wrong receipt cursor live/replay rejection and generation-scoped message identity."
+    }
+  ]
+}

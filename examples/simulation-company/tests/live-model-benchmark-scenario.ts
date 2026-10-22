@@ -55,7 +55,7 @@ try {
     outboxMaxAttempts: 1, outboxRetryDelayMs: 0, maxDriveSteps: 1, maxMicrostepsPerTime: 2,
     phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: options.durationMs, maxConflictRetries: 0,
     maxIngressBytes: 4096, maxEntities: 1, maxResidentActors: 1, maxDecisionsPerWindow: 1,
-    maxOperationsPerDecision: 1, maxResourceQuantity: '1', maxQueuedDecisions: 1, maxDispatchWaitRounds: 1,
+    maxOperationsPerDecision: 1, maxResourceReservationHistory: 128, maxResourceQuantity: '1', maxQueuedDecisions: 1, maxDispatchWaitRounds: 1,
     budgetInterval: '100', maxDecisionsPerInterval: 1, maxMessagesPerInterval: 0,
     maxTokensPerInterval: options.tokenBudget, tokensPerModelRequest: options.tokensPerRequest,
     maxPendingEvents: 2, maxPendingInteractions: 0, maxKnowledgeBytes: 4096, maxKnowledgePerQuery: 1, relationRules: [],
@@ -65,7 +65,7 @@ try {
     budgets: {} }, 'simulation/live-sample')
   const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/live-sample')
   const entity = simulationEntityIdSchema.parse('observer')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entity, entityKind: 'observer', cognition: 'agent', profile: {} }),
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entity, entityKind: 'observer', cognition: 'agent', profile: {} }),
     run.snapshot().revision)
   await connection.ensureParticipant(entity, { displayName: 'Observer', role: 'observer', capabilities: [],
     provider: 'in-process', preset: 'simulation', model: options.model })

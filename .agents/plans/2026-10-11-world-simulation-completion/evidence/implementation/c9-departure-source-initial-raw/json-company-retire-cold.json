@@ -1,0 +1,4473 @@
+{
+  "scenario": "company",
+  "backend": "json",
+  "retire": true,
+  "restored": true,
+  "modelCalls": 0,
+  "originalIdentity": {
+    "personId": "requester",
+    "binding": {
+      "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+      "participantId": "participant-aa2da944-7799-4cee-8161-28bd62a24eb2",
+      "sessionId": "80eec4a4-c6f7-4488-9947-7e03bca3df82"
+    },
+    "profile": {
+      "name": "Recruiter",
+      "description": "A colleague at Northstar Studio.",
+      "persona": {
+        "name": "Recruiter",
+        "skills": [
+          "engineering"
+        ],
+        "traits": [
+          "patient"
+        ],
+        "goals": [
+          "build"
+        ]
+      }
+    },
+    "profileRevision": 1,
+    "assignment": {
+      "id": "initial-assignment",
+      "subject": "requester",
+      "relation": "assignment",
+      "object": "engineering",
+      "scope": "studio",
+      "validFrom": "0",
+      "validUntil": null,
+      "revision": 1
+    },
+    "channelId": "channel-ce3a007a-b3e4-4f4f-8fc7-7c261e072804",
+    "entityIds": [
+      "departure-admin",
+      "director",
+      "engineering",
+      "observer",
+      "requester",
+      "studio"
+    ]
+  },
+  "heldEvidence": {
+    "nativeRevision": 72,
+    "request": {
+      "id": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+      "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+      "operationId": "simulation-operation:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+      "notificationOperationId": "simulation-operation:ad84a905900961bd383811cf468889c7dca191521d3aabf7d8c8fbb6214406a8",
+      "requesterEntityId": "observer",
+      "proposal": {
+        "kind": "world/request",
+        "domain": "organization",
+        "operation": "depart",
+        "version": "1",
+        "businessKey": "original-person-departure",
+        "expectedTime": null,
+        "evidence": [],
+        "payload": {
+          "organizationEntityId": "studio",
+          "personId": "requester",
+          "assignmentId": "initial-assignment",
+          "assignmentRevision": 1,
+          "requestedEffectiveAt": null,
+          "description": "Close the original assignment after its actual obligations settle.",
+          "retire": true
+        }
+      },
+      "pin": {
+        "domain": "organization",
+        "operation": "depart",
+        "version": "1",
+        "schemaRef": "clocky.organization.depart/schema/1",
+        "implementationRef": "clocky.organization.depart/native/1",
+        "generation": 1
+      },
+      "source": {
+        "kind": "decision",
+        "decisionId": "world/1/decision/1",
+        "epoch": "1",
+        "binding": {
+          "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+          "participantId": "participant-e058b6b6-aaf7-4318-ba10-28390638528f",
+          "sessionId": "70363ee1-1ffa-4bc5-aeaf-b34777664ed8"
+        }
+      },
+      "description": "Close the original assignment after its actual obligations settle.",
+      "payloadHash": "sha256:66d66b47a626e78ff9efde8ab9b6b2bbc73714d4ea854262215c54ec93a29ddd",
+      "sequence": 66,
+      "plans": [],
+      "status": "open"
+    },
+    "intent": {
+      "id": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+      "pin": {
+        "domain": "organization",
+        "operation": "depart",
+        "version": "1",
+        "schemaRef": "clocky.organization.depart/schema/1",
+        "implementationRef": "clocky.organization.depart/native/1",
+        "generation": 1
+      },
+      "businessKey": "original-person-departure",
+      "requesterEntityId": "observer",
+      "scopeEntityId": "studio",
+      "expectedTime": null,
+      "evidence": [],
+      "description": "Close the original assignment after its actual obligations settle.",
+      "payload": {
+        "organizationEntityId": "studio",
+        "personId": "requester",
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1,
+        "requestedEffectiveAt": null,
+        "description": "Close the original assignment after its actual obligations settle.",
+        "retire": true
+      },
+      "sequence": 66,
+      "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b"
+    },
+    "fence": {
+      "assignmentId": "initial-assignment",
+      "personId": "requester",
+      "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+      "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+      "generation": 1,
+      "sequence": 66,
+      "status": "active"
+    },
+    "originalAssignment": {
+      "id": "initial-assignment",
+      "subject": "requester",
+      "relation": "assignment",
+      "object": "engineering",
+      "scope": "studio",
+      "validFrom": "0",
+      "validUntil": null,
+      "revision": 1
+    },
+    "originalWriter": {
+      "epoch": "1",
+      "coordinatorId": "e385f4aa-2b27-4cf0-971e-64eeff93cc4d",
+      "reservationId": "activation-reservation-afb01f59-65d9-46f6-87ff-f11216e0a31d",
+      "provider": "in-process",
+      "phase": "active",
+      "activationId": "activation-1abf2594-a934-46b7-9f7e-3e0354ad82ad"
+    },
+    "population": {
+      "entities": 6,
+      "chargedActors": 2
+    },
+    "inventory": {
+      "runId": "departure-company-true",
+      "cursor": 72,
+      "time": "2",
+      "selector": {
+        "kind": "assignment",
+        "personId": "requester",
+        "personRevision": 5,
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1
+      },
+      "status": "covered",
+      "complete": true,
+      "coverage": {
+        "native": "complete",
+        "team": {
+          "kind": "observed",
+          "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+          "participantId": "participant-aa2da944-7799-4cee-8161-28bd62a24eb2",
+          "cursor": 20,
+          "channels": [
+            {
+              "channelId": "channel-9ef134c3-0b10-4857-82cc-e7d230382ad2",
+              "cursor": 7
+            },
+            {
+              "channelId": "channel-ce3a007a-b3e4-4f4f-8fc7-7c261e072804",
+              "cursor": 6
+            }
+          ],
+          "hash": "sha256:36a0b5ed3d628846849967bdaf7a64e814bed8d2058f382ad78421984ce08d77"
+        }
+      },
+      "items": [
+        {
+          "ref": {
+            "kind": "relation",
+            "id": "hiring-authority",
+            "revision": 1,
+            "relation": "can-hire",
+            "subject": "requester",
+            "object": "engineering",
+            "scope": "studio",
+            "validFrom": "0",
+            "validUntil": null
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "departure-company-true",
+            "subsystem": "relation"
+          },
+          "category": "authority-relation",
+          "state": "current",
+          "certainty": "recorded",
+          "dispositions": [
+            "update-supported"
+          ]
+        },
+        {
+          "ref": {
+            "kind": "world-case",
+            "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+            "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+            "sequence": 66
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "departure-company-true",
+            "subsystem": "world"
+          },
+          "category": "world-case",
+          "state": "open",
+          "certainty": "recorded",
+          "dispositions": [
+            "wait",
+            "cancel-supported"
+          ]
+        },
+        {
+          "ref": {
+            "kind": "writer",
+            "entityId": "requester",
+            "epoch": "1",
+            "reservationId": "activation-reservation-afb01f59-65d9-46f6-87ff-f11216e0a31d",
+            "activationId": "activation-1abf2594-a934-46b7-9f7e-3e0354ad82ad"
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "departure-company-true",
+            "subsystem": "writer"
+          },
+          "category": "writer",
+          "state": "active",
+          "certainty": "recorded",
+          "dispositions": [
+            "wait"
+          ]
+        },
+        {
+          "ref": {
+            "kind": "team-activation",
+            "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+            "activationId": "activation-1abf2594-a934-46b7-9f7e-3e0354ad82ad",
+            "reservationId": "activation-reservation-afb01f59-65d9-46f6-87ff-f11216e0a31d"
+          },
+          "owner": {
+            "kind": "team",
+            "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244"
+          },
+          "category": "team-activation",
+          "state": "idle",
+          "certainty": "outcome-unknown",
+          "dispositions": [
+            "wait"
+          ]
+        }
+      ],
+      "totalCount": 4,
+      "overflow": null
+    },
+    "envelope": {
+      "id": "envelope-761437f2-50fb-4964-9f39-4842e07b3e10",
+      "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+      "channelId": "channel-9ef134c3-0b10-4857-82cc-e7d230382ad2",
+      "sequence": 7,
+      "senderId": "participant-e058b6b6-aaf7-4318-ba10-28390638528f",
+      "audience": [
+        "participant-43fd586b-0ddd-4d90-b81e-0d8003ef4148"
+      ],
+      "kind": "message",
+      "payload": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"requestId\":\"world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b\",\"hash\":\"sha256:66d66b47a626e78ff9efde8ab9b6b2bbc73714d4ea854262215c54ec93a29ddd\"}"
+          }
+        ]
+      },
+      "delivery": "context",
+      "correlationId": "[\"departure-company-true\",\"world/1/decision/1\",\"simulation-operation:ad84a905900961bd383811cf468889c7dca191521d3aabf7d8c8fbb6214406a8\",65]",
+      "traceId": "sha256:2e6ad1a0ac763a08ff0a2da41dc0a444d27856cd18a05e30d88b86d94ee1b77c",
+      "priority": "normal",
+      "createdAt": 1791757440051
+    }
+  },
+  "memoryPrefix": [
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 0,
+      "time": 1791757439820,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "inserted": [
+          {
+            "id": "simulation-input:3fdafaba972509fe983e6c71dbfcb3d05f2226ce3dbb35c2738f5ccbc295cc35",
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Process the prepared simulation decision."
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "simulation-team"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 1,
+      "time": 1791757439822,
+      "data": {
+        "turn": 1
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 2,
+      "time": 1791757439822,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "simulation/context-view",
+      "seq": 3,
+      "time": 1791757439824,
+      "data": {
+        "version": 1,
+        "runId": "departure-company-true",
+        "entityId": "requester",
+        "windowId": "world/1/window/0",
+        "slot": "0",
+        "epoch": "1",
+        "time": "1",
+        "inputId": "simulation-input:3fdafaba972509fe983e6c71dbfcb3d05f2226ce3dbb35c2738f5ccbc295cc35",
+        "projections": {
+          "run": 35,
+          "entity": 5,
+          "team": 14
+        },
+        "versions": {
+          "rules": "world-rules-1",
+          "policy": "sha256:2ae1880efb7ca37fb2dce57a1c4f491854257003917a3075abd8c47d9f9dec1e",
+          "persona": "world/1",
+          "model": "1"
+        },
+        "sources": [],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"entityId\":\"requester\",\"persona\":{\"name\":\"Recruiter\",\"description\":\"A colleague at Northstar Studio.\",\"persona\":{\"name\":\"Recruiter\",\"skills\":[\"engineering\"],\"traits\":[\"patient\"],\"goals\":[\"build\"]}},\"organization\":{\"name\":\"Northstar Studio\",\"description\":\"Members collaborate through private channels.\"}}"
+              }
+            ]
+          },
+          {
+            "kind": "authority",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"assignments\":[{\"positionId\":\"engineering\",\"position\":{\"name\":\"Engineer\",\"description\":\"Engineer\"}}]}"
+              }
+            ]
+          },
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"wakeId\":\"original-departure-memory\",\"reason\":\"{\\\"kind\\\":\\\"private-person-memory\\\",\\\"text\\\":\\\"ORIGINAL-DEPARTURE-PRIVATE-MEMORY-CANARY\\\"}\"}"
+              },
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-background\",\"worldFacts\":{\"viewer\":\"requester\",\"cursor\":35,\"time\":\"1\",\"items\":[],\"unknown\":[]},\"norms\":{\"viewer\":\"requester\",\"cursor\":35,\"time\":\"1\",\"items\":[],\"unknown\":[]}}"
+              }
+            ]
+          },
+          {
+            "kind": "goals",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-driver\",\"entityId\":\"requester\",\"contextKey\":\"original-departure-memory\",\"purpose\":\"message\",\"instruction\":\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\"}"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"instruction\":\"Accepted effects remain pending until Native execution. A submitted plan is not employment; notify only recorded results.\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/start",
+      "seq": 4,
+      "time": 1791757439832,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "user/message",
+      "seq": 5,
+      "time": 1791757439832,
+      "data": {
+        "id": "simulation-input:3fdafaba972509fe983e6c71dbfcb3d05f2226ce3dbb35c2738f5ccbc295cc35",
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Process the prepared simulation decision."
+          }
+        ],
+        "source": {
+          "kind": "plugin",
+          "plugin": "simulation-team"
+        }
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "request/header",
+      "seq": 6,
+      "time": 1791757439833,
+      "data": {
+        "header": {
+          "config": {
+            "provider": "world-departure-scripted",
+            "model": "scripted"
+          },
+          "system": "You are a simulation participant. Use the recorded simulation context and the Simulation observe, stage and submit tools. Propose only actions allowed by that context; messages do not grant additional authority.",
+          "tools": [
+            {
+              "name": "simulation_observe",
+              "description": "Read the authorized observations prepared for your current simulation decision. This does not query newer or hidden world state.",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "simulation_stage",
+              "description": "Replace your complete staged proposal list. No world effects occur until a submitted proposal is executed. Send an empty list to stage no actions.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "proposals": {
+                    "type": "array",
+                    "description": "The complete replacement proposal list. Times and quantities are non-negative decimal strings. Dependencies name earlier indices or accepted operation ids.",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "after": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "action": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "world/request"
+                                },
+                                "domain": {
+                                  "type": "string"
+                                },
+                                "operation": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string"
+                                },
+                                "businessKey": {
+                                  "type": "string"
+                                },
+                                "expectedTime": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "evidence": {
+                                  "type": "array",
+                                  "items": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "entity"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "resource"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "world-definition"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "external"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "relation"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          },
+                                          "effectiveFrom": {
+                                            "type": "string"
+                                          },
+                                          "effectiveUntil": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision",
+                                          "effectiveFrom",
+                                          "effectiveUntil"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "relation-set"
+                                          },
+                                          "relation": {
+                                            "type": "string"
+                                          },
+                                          "object": {
+                                            "type": "string"
+                                          },
+                                          "scope": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "relation",
+                                          "object",
+                                          "scope",
+                                          "hash"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "authority"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "generation": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "generation"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "norm"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "version": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "version"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "proposal"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "hash"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "resolution"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "hash"
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "payload": {
+                                  "type": "object",
+                                  "additionalProperties": true
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "domain",
+                                "operation",
+                                "version",
+                                "businessKey",
+                                "expectedTime",
+                                "evidence",
+                                "payload"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "world/resolve"
+                                },
+                                "requestId": {
+                                  "type": "string"
+                                },
+                                "supersedes": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "resolution": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "apply"
+                                        },
+                                        "payload": {
+                                          "type": "object",
+                                          "additionalProperties": true
+                                        },
+                                        "rationale": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "payload",
+                                        "rationale"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "reject"
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "enum": [
+                                            "insufficient-information",
+                                            "unauthorized",
+                                            "capacity-full",
+                                            "unsupported",
+                                            "policy"
+                                          ]
+                                        },
+                                        "rationale": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "reason",
+                                        "rationale"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "requestId",
+                                "supersedes",
+                                "resolution"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "task/create"
+                                },
+                                "task": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "subject": {
+                                      "type": "string"
+                                    },
+                                    "description": {
+                                      "type": "string"
+                                    },
+                                    "blockedBy": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "requiredCapabilities": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "priority": {
+                                      "type": "integer"
+                                    },
+                                    "readScopes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "writeScopes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "workspaceMode": {
+                                      "type": "string",
+                                      "enum": [
+                                        "shared",
+                                        "worktree",
+                                        "sandbox",
+                                        "remote"
+                                      ]
+                                    },
+                                    "reviewPolicy": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "none"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "participant"
+                                            },
+                                            "reviewerId": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "reviewerId"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "budget": {
+                                      "type": "object",
+                                      "additionalProperties": true
+                                    },
+                                    "maxAttempts": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "subject",
+                                    "description",
+                                    "blockedBy",
+                                    "requiredCapabilities",
+                                    "priority",
+                                    "readScopes",
+                                    "writeScopes",
+                                    "workspaceMode",
+                                    "reviewPolicy",
+                                    "budget",
+                                    "maxAttempts"
+                                  ]
+                                },
+                                "deliverAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "task",
+                                "deliverAt"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "communication/post"
+                                },
+                                "recipient": {
+                                  "type": "string"
+                                },
+                                "channelId": {
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "type": "string"
+                                },
+                                "deliverAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "recipient",
+                                "channelId",
+                                "text",
+                                "deliverAt"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/request"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "assignee": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "replyBy": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "completeBy": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "fulfillment": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "explicit"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "task-completed"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "transfer"
+                                        },
+                                        "from": {
+                                          "type": "string"
+                                        },
+                                        "to": {
+                                          "type": "string"
+                                        },
+                                        "quantity": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "from",
+                                        "to",
+                                        "quantity"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "assignee",
+                                "description",
+                                "replyBy",
+                                "completeBy",
+                                "fulfillment"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/accept"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/reject"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/defer"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "until": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "until",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/cancel"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/confirm"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/result"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "evidence": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "evidence"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/transfer"
+                                },
+                                "transaction": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "commitmentId": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reads": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "resourceId": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "resourceId",
+                                          "revision"
+                                        ]
+                                      }
+                                    },
+                                    "transfers": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "string"
+                                          },
+                                          "to": {
+                                            "type": "string"
+                                          },
+                                          "quantity": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "quantity"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "commitmentId",
+                                    "reads",
+                                    "transfers"
+                                  ]
+                                },
+                                "grants": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "transaction",
+                                "grants"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/grant"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "grantee": {
+                                  "type": "string"
+                                },
+                                "resources": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "transaction": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "commitmentId": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reads": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "resourceId": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "resourceId",
+                                          "revision"
+                                        ]
+                                      }
+                                    },
+                                    "transfers": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "string"
+                                          },
+                                          "to": {
+                                            "type": "string"
+                                          },
+                                          "quantity": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "quantity"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "commitmentId",
+                                    "reads",
+                                    "transfers"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "grantee",
+                                "resources",
+                                "transaction"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/revoke-grant"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "after",
+                        "action"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "proposals"
+                ]
+              }
+            },
+            {
+              "name": "simulation_submit",
+              "description": "Submit the complete staged proposal list and end this decision. A submitted window proposal awaits ordered acceptance; accepted proposals await execution. Results arrive in a later decision.",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          ]
+        },
+        "reason": "initial"
+      }
+    },
+    {
+      "type": "request/context",
+      "seq": 7,
+      "time": 1791757439833,
+      "data": {
+        "provider": "world-departure-scripted",
+        "model": "scripted"
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 8,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 9,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-departure-memory:0",
+          "name": "simulation_observe",
+          "argumentsDelta": "{}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 10,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-departure-memory:0",
+            "name": "simulation_observe",
+            "arguments": "{}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 11,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 12,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 13,
+      "time": 1791757439850,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-departure-memory:0",
+              "name": "simulation_observe",
+              "arguments": "{}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-departure-scripted",
+            "model": "scripted"
+          },
+          "id": "18be97b4-366e-4184-add3-6772b9d50118"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 14,
+      "time": 1791757439850,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "requester/original-departure-memory:0",
+        "name": "simulation_observe",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 15,
+      "time": 1791757439852,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-departure-memory:0"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-departure-memory:0",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"observed\",\"time\":\"1\",\"sections\":[{\"kind\":\"identity\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"entityId\\\":\\\"requester\\\",\\\"persona\\\":{\\\"name\\\":\\\"Recruiter\\\",\\\"description\\\":\\\"A colleague at Northstar Studio.\\\",\\\"persona\\\":{\\\"name\\\":\\\"Recruiter\\\",\\\"skills\\\":[\\\"engineering\\\"],\\\"traits\\\":[\\\"patient\\\"],\\\"goals\\\":[\\\"build\\\"]}},\\\"organization\\\":{\\\"name\\\":\\\"Northstar Studio\\\",\\\"description\\\":\\\"Members collaborate through private channels.\\\"}}\"}]},{\"kind\":\"authority\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"assignments\\\":[{\\\"positionId\\\":\\\"engineering\\\",\\\"position\\\":{\\\"name\\\":\\\"Engineer\\\",\\\"description\\\":\\\"Engineer\\\"}}]}\"}]},{\"kind\":\"input\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"wakeId\\\":\\\"original-departure-memory\\\",\\\"reason\\\":\\\"{\\\\\\\"kind\\\\\\\":\\\\\\\"private-person-memory\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"ORIGINAL-DEPARTURE-PRIVATE-MEMORY-CANARY\\\\\\\"}\\\"}\"},{\"type\":\"text\",\"text\":\"{\\\"kind\\\":\\\"world-background\\\",\\\"worldFacts\\\":{\\\"viewer\\\":\\\"requester\\\",\\\"cursor\\\":35,\\\"time\\\":\\\"1\\\",\\\"items\\\":[],\\\"unknown\\\":[]},\\\"norms\\\":{\\\"viewer\\\":\\\"requester\\\",\\\"cursor\\\":35,\\\"time\\\":\\\"1\\\",\\\"items\\\":[],\\\"unknown\\\":[]}}\"}]},{\"kind\":\"goals\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"kind\\\":\\\"world-driver\\\",\\\"entityId\\\":\\\"requester\\\",\\\"contextKey\\\":\\\"original-departure-memory\\\",\\\"purpose\\\":\\\"message\\\",\\\"instruction\\\":\\\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\\\"}\"}]},{\"kind\":\"commitments\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"instruction\\\":\\\"Accepted effects remain pending until Native execution. A submitted plan is not employment; notify only recorded results.\\\"}\"}]}]}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "08750e1c-3f50-4dcb-ae60-516b7fea5a6f"
+        }
+      },
+      "sourceEventSeqs": [
+        14
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 16,
+      "time": 1791757439852,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 17,
+      "time": 1791757439855,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 18,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 19,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-departure-memory:1",
+          "name": "simulation_stage",
+          "argumentsDelta": "{\"proposals\":[]}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 20,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-departure-memory:1",
+            "name": "simulation_stage",
+            "arguments": "{\"proposals\":[]}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 21,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 22,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 23,
+      "time": 1791757439866,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-departure-memory:1",
+              "name": "simulation_stage",
+              "arguments": "{\"proposals\":[]}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-departure-scripted",
+            "model": "scripted"
+          },
+          "id": "b0bf6fa2-dfd6-4479-9f7a-23af64ad2554"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 24,
+      "time": 1791757439866,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "requester/original-departure-memory:1",
+        "name": "simulation_stage",
+        "arguments": "{\"proposals\":[]}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 25,
+      "time": 1791757439867,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-departure-memory:1"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-departure-memory:1",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"staged\",\"count\":0,\"effects\":\"none\"}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "7148bb92-adb7-42f0-a82e-eaace868d599"
+        }
+      },
+      "sourceEventSeqs": [
+        24
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 26,
+      "time": 1791757439867,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 27,
+      "time": 1791757439870,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 28,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 29,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-departure-memory:2",
+          "name": "simulation_submit",
+          "argumentsDelta": "{}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 30,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-departure-memory:2",
+            "name": "simulation_submit",
+            "arguments": "{}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 31,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 32,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 33,
+      "time": 1791757439882,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-departure-memory:2",
+              "name": "simulation_submit",
+              "arguments": "{}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-departure-scripted",
+            "model": "scripted"
+          },
+          "id": "e4cf1c7d-d071-48d2-8cc3-03193bc75967"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 34,
+      "time": 1791757439882,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "callId": "requester/original-departure-memory:2",
+        "name": "simulation_submit",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 35,
+      "time": 1791757439886,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-departure-memory:2"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-departure-memory:2",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"submitted\",\"operationIds\":[],\"effects\":\"pending\"}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "2fe397ef-96ba-45ca-be2d-ca3f48662c59"
+        }
+      },
+      "sourceEventSeqs": [
+        34
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 36,
+      "time": 1791757439887,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 37,
+      "time": 1791757439887,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ],
+  "request": {
+    "id": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+    "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+    "operationId": "simulation-operation:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+    "notificationOperationId": "simulation-operation:ad84a905900961bd383811cf468889c7dca191521d3aabf7d8c8fbb6214406a8",
+    "requesterEntityId": "observer",
+    "proposal": {
+      "kind": "world/request",
+      "domain": "organization",
+      "operation": "depart",
+      "version": "1",
+      "businessKey": "original-person-departure",
+      "expectedTime": null,
+      "evidence": [],
+      "payload": {
+        "organizationEntityId": "studio",
+        "personId": "requester",
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1,
+        "requestedEffectiveAt": null,
+        "description": "Close the original assignment after its actual obligations settle.",
+        "retire": true
+      }
+    },
+    "pin": {
+      "domain": "organization",
+      "operation": "depart",
+      "version": "1",
+      "schemaRef": "clocky.organization.depart/schema/1",
+      "implementationRef": "clocky.organization.depart/native/1",
+      "generation": 1
+    },
+    "source": {
+      "kind": "decision",
+      "decisionId": "world/1/decision/1",
+      "epoch": "1",
+      "binding": {
+        "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+        "participantId": "participant-e058b6b6-aaf7-4318-ba10-28390638528f",
+        "sessionId": "70363ee1-1ffa-4bc5-aeaf-b34777664ed8"
+      }
+    },
+    "description": "Close the original assignment after its actual obligations settle.",
+    "payloadHash": "sha256:66d66b47a626e78ff9efde8ab9b6b2bbc73714d4ea854262215c54ec93a29ddd",
+    "sequence": 66,
+    "plans": [
+      "world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb"
+    ],
+    "status": "committed"
+  },
+  "intent": {
+    "id": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+    "pin": {
+      "domain": "organization",
+      "operation": "depart",
+      "version": "1",
+      "schemaRef": "clocky.organization.depart/schema/1",
+      "implementationRef": "clocky.organization.depart/native/1",
+      "generation": 1
+    },
+    "businessKey": "original-person-departure",
+    "requesterEntityId": "observer",
+    "scopeEntityId": "studio",
+    "expectedTime": null,
+    "evidence": [],
+    "description": "Close the original assignment after its actual obligations settle.",
+    "payload": {
+      "organizationEntityId": "studio",
+      "personId": "requester",
+      "assignmentId": "initial-assignment",
+      "assignmentRevision": 1,
+      "requestedEffectiveAt": null,
+      "description": "Close the original assignment after its actual obligations settle.",
+      "retire": true
+    },
+    "sequence": 66,
+    "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b"
+  },
+  "plan": {
+    "id": "world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+    "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+    "operationId": "simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+    "proposal": {
+      "kind": "world/resolve",
+      "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+      "supersedes": null,
+      "resolution": {
+        "kind": "apply",
+        "payload": {
+          "organizationEntityId": "studio",
+          "personId": "requester",
+          "assignmentId": "initial-assignment",
+          "assignmentRevision": 1,
+          "requestedEffectiveAt": null,
+          "description": "Close the original assignment after its actual obligations settle.",
+          "retire": true
+        },
+        "rationale": "DIRECTOR-PRIVATE-DEPARTURE-CANARY"
+      }
+    },
+    "pin": {
+      "domain": "organization",
+      "operation": "depart",
+      "version": "1",
+      "schemaRef": "clocky.organization.depart/schema/1",
+      "implementationRef": "clocky.organization.depart/native/1",
+      "generation": 1
+    },
+    "reads": [
+      {
+        "kind": "world-definition",
+        "id": "world-definition:departure-company-true",
+        "revision": 26
+      },
+      {
+        "kind": "relation",
+        "id": "departure-permission",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation",
+        "id": "departure-admin-assignment",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "entity-profile",
+        "id": "requester",
+        "revision": 1,
+        "hash": "sha256:112ade64b0526a738aa9677c1a4a168893e5b8e2b514f449217a6ead13e4b56a"
+      },
+      {
+        "kind": "entity-binding",
+        "id": "requester",
+        "hash": "sha256:786a6f4b3380859225331d02ee889a01d40b7cd90f84c5f4a0b06ad8ab568f45"
+      },
+      {
+        "kind": "entity",
+        "id": "engineering",
+        "revision": 1
+      },
+      {
+        "kind": "relation",
+        "id": "departure-permission",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation",
+        "id": "hiring-authority",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation",
+        "id": "initial-assignment",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation-subject-set",
+        "relation": "assignment",
+        "subject": "requester",
+        "hash": "sha256:e745709fc7818b80a08617268d3da232e100f088e1c2aed2bbe5fa40eceb0ef5"
+      }
+    ],
+    "baseRevision": 83,
+    "sequence": 96,
+    "hash": "sha256:a7f603c582c9524040431ab5de0b62b4593eb550a46fcf67024719455cddd11f",
+    "status": "accepted"
+  },
+  "result": {
+    "id": "world-result:world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+    "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+    "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+    "source": {
+      "kind": "plan",
+      "planId": "world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb"
+    },
+    "outcome": {
+      "kind": "committed"
+    },
+    "payload": {
+      "entityId": "requester",
+      "organizationEntityId": "studio",
+      "closedAssignmentId": "initial-assignment",
+      "previousPositionId": "engineering",
+      "requestedEffectiveAt": null,
+      "actualEffectiveAt": "2",
+      "closedAuthorityRelationIds": [
+        "hiring-authority"
+      ],
+      "revokedAuthorityRelationIds": [
+        "hiring-authority"
+      ],
+      "retire": true
+    },
+    "time": "2",
+    "sequence": 107
+  },
+  "reservation": {
+    "id": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+    "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+    "request": {
+      "planId": "world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+      "maintenance": {
+        "id": "world/1/personnel/world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+        "owner": "world-departure/company/true/resolved-cd1f64826df2c56a0a3ad6459469b8bfb9e03160df78cb66276c77d31254183b"
+      }
+    },
+    "personId": "requester",
+    "binding": {
+      "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+      "participantId": "participant-aa2da944-7799-4cee-8161-28bd62a24eb2",
+      "sessionId": "80eec4a4-c6f7-4488-9947-7e03bca3df82"
+    },
+    "assignmentId": "initial-assignment",
+    "assignmentRevision": 1,
+    "targetPositionId": null,
+    "authorityGeneration": 1,
+    "closedAuthorityRelationIds": [
+      "hiring-authority"
+    ],
+    "revokedAuthorityRelationIds": [
+      "hiring-authority"
+    ],
+    "status": "committed",
+    "sequence": 98,
+    "updatedSequence": 107,
+    "evidence": {
+      "runId": "departure-company-true",
+      "cursor": 105,
+      "time": "2",
+      "selector": {
+        "kind": "assignment",
+        "personId": "requester",
+        "personRevision": 7,
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1
+      },
+      "status": "covered",
+      "complete": true,
+      "coverage": {
+        "native": "complete",
+        "team": {
+          "kind": "observed",
+          "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+          "participantId": "participant-aa2da944-7799-4cee-8161-28bd62a24eb2",
+          "cursor": 30,
+          "channels": [
+            {
+              "channelId": "channel-9ef134c3-0b10-4857-82cc-e7d230382ad2",
+              "cursor": 8
+            },
+            {
+              "channelId": "channel-ce3a007a-b3e4-4f4f-8fc7-7c261e072804",
+              "cursor": 6
+            }
+          ],
+          "hash": "sha256:0111e3c07437ef6ce3023381b199197db55a4236b243a79b707e140aba82425d"
+        }
+      },
+      "items": [
+        {
+          "ref": {
+            "kind": "relation",
+            "id": "hiring-authority",
+            "revision": 1,
+            "relation": "can-hire",
+            "subject": "requester",
+            "object": "engineering",
+            "scope": "studio",
+            "validFrom": "0",
+            "validUntil": null
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "departure-company-true",
+            "subsystem": "relation"
+          },
+          "category": "authority-relation",
+          "state": "current",
+          "certainty": "recorded",
+          "dispositions": [
+            "update-supported"
+          ]
+        },
+        {
+          "ref": {
+            "kind": "world-case",
+            "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+            "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+            "sequence": 66
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "departure-company-true",
+            "subsystem": "world"
+          },
+          "category": "world-case",
+          "state": "open",
+          "certainty": "recorded",
+          "dispositions": [
+            "wait",
+            "cancel-supported"
+          ]
+        },
+        {
+          "ref": {
+            "kind": "world-reservation",
+            "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+            "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+            "planId": "world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+            "updatedSequence": 98
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "departure-company-true",
+            "subsystem": "world"
+          },
+          "category": "world-reservation",
+          "state": "fenced",
+          "certainty": "recorded",
+          "dispositions": [
+            "wait",
+            "cancel-supported"
+          ]
+        }
+      ],
+      "totalCount": 3,
+      "overflow": null
+    },
+    "actualEffectiveAt": "2",
+    "terminalTasks": []
+  },
+  "assignment": {
+    "id": "initial-assignment",
+    "subject": "requester",
+    "relation": "assignment",
+    "object": "engineering",
+    "scope": "studio",
+    "validFrom": "0",
+    "validUntil": "2",
+    "revision": 2
+  },
+  "mutations": {
+    "world-mutation:world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb": {
+      "kind": "world/mutation",
+      "id": "world-mutation:world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+      "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+      "planId": "world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+      "pin": {
+        "domain": "organization",
+        "operation": "depart",
+        "version": "1",
+        "schemaRef": "clocky.organization.depart/schema/1",
+        "implementationRef": "clocky.organization.depart/native/1",
+        "generation": 1
+      },
+      "time": "2",
+      "sequence": 107,
+      "recordedAt": 1791757440343,
+      "payload": {
+        "organizationEntityId": "studio",
+        "personId": "requester",
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1,
+        "requestedEffectiveAt": null,
+        "description": "Close the original assignment after its actual obligations settle.",
+        "retire": true
+      }
+    }
+  },
+  "personnel": {
+    "reservations": {
+      "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9": {
+        "id": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+        "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+        "request": {
+          "planId": "world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+          "maintenance": {
+            "id": "world/1/personnel/world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+            "owner": "world-departure/company/true/resolved-cd1f64826df2c56a0a3ad6459469b8bfb9e03160df78cb66276c77d31254183b"
+          }
+        },
+        "personId": "requester",
+        "binding": {
+          "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+          "participantId": "participant-aa2da944-7799-4cee-8161-28bd62a24eb2",
+          "sessionId": "80eec4a4-c6f7-4488-9947-7e03bca3df82"
+        },
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1,
+        "targetPositionId": null,
+        "authorityGeneration": 1,
+        "closedAuthorityRelationIds": [
+          "hiring-authority"
+        ],
+        "revokedAuthorityRelationIds": [
+          "hiring-authority"
+        ],
+        "status": "committed",
+        "sequence": 98,
+        "updatedSequence": 107,
+        "evidence": {
+          "runId": "departure-company-true",
+          "cursor": 105,
+          "time": "2",
+          "selector": {
+            "kind": "assignment",
+            "personId": "requester",
+            "personRevision": 7,
+            "assignmentId": "initial-assignment",
+            "assignmentRevision": 1
+          },
+          "status": "covered",
+          "complete": true,
+          "coverage": {
+            "native": "complete",
+            "team": {
+              "kind": "observed",
+              "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+              "participantId": "participant-aa2da944-7799-4cee-8161-28bd62a24eb2",
+              "cursor": 30,
+              "channels": [
+                {
+                  "channelId": "channel-9ef134c3-0b10-4857-82cc-e7d230382ad2",
+                  "cursor": 8
+                },
+                {
+                  "channelId": "channel-ce3a007a-b3e4-4f4f-8fc7-7c261e072804",
+                  "cursor": 6
+                }
+              ],
+              "hash": "sha256:0111e3c07437ef6ce3023381b199197db55a4236b243a79b707e140aba82425d"
+            }
+          },
+          "items": [
+            {
+              "ref": {
+                "kind": "relation",
+                "id": "hiring-authority",
+                "revision": 1,
+                "relation": "can-hire",
+                "subject": "requester",
+                "object": "engineering",
+                "scope": "studio",
+                "validFrom": "0",
+                "validUntil": null
+              },
+              "owner": {
+                "kind": "native",
+                "runId": "departure-company-true",
+                "subsystem": "relation"
+              },
+              "category": "authority-relation",
+              "state": "current",
+              "certainty": "recorded",
+              "dispositions": [
+                "update-supported"
+              ]
+            },
+            {
+              "ref": {
+                "kind": "world-case",
+                "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+                "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+                "sequence": 66
+              },
+              "owner": {
+                "kind": "native",
+                "runId": "departure-company-true",
+                "subsystem": "world"
+              },
+              "category": "world-case",
+              "state": "open",
+              "certainty": "recorded",
+              "dispositions": [
+                "wait",
+                "cancel-supported"
+              ]
+            },
+            {
+              "ref": {
+                "kind": "world-reservation",
+                "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+                "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+                "planId": "world-plan:simulation-operation:99e10872ffe60006c77f901d9a3e0b74565e9f447e3cab03fb71ea492c9fbefb",
+                "updatedSequence": 98
+              },
+              "owner": {
+                "kind": "native",
+                "runId": "departure-company-true",
+                "subsystem": "world"
+              },
+              "category": "world-reservation",
+              "state": "fenced",
+              "certainty": "recorded",
+              "dispositions": [
+                "wait",
+                "cancel-supported"
+              ]
+            }
+          ],
+          "totalCount": 3,
+          "overflow": null
+        },
+        "actualEffectiveAt": "2",
+        "terminalTasks": []
+      }
+    },
+    "fences": {
+      "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9": {
+        "assignmentId": "initial-assignment",
+        "personId": "requester",
+        "intentId": "world-intent:8562fbd134d6755830d178f73a6d310e92cb7ae27c2a663bf75414d8e93a8bd9",
+        "requestId": "world-request:44ced8386b341502b6f58cd7529968142189884ad26ba18b3765495f4c95175b",
+        "generation": 1,
+        "sequence": 66,
+        "status": "closed"
+      }
+    },
+    "generations": {
+      "requester": 2
+    },
+    "operationGrants": []
+  },
+  "originalSessionPrefix": [
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 0,
+      "time": 1791757439820,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "inserted": [
+          {
+            "id": "simulation-input:3fdafaba972509fe983e6c71dbfcb3d05f2226ce3dbb35c2738f5ccbc295cc35",
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Process the prepared simulation decision."
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "simulation-team"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 1,
+      "time": 1791757439822,
+      "data": {
+        "turn": 1
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 2,
+      "time": 1791757439822,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "simulation/context-view",
+      "seq": 3,
+      "time": 1791757439824,
+      "data": {
+        "version": 1,
+        "runId": "departure-company-true",
+        "entityId": "requester",
+        "windowId": "world/1/window/0",
+        "slot": "0",
+        "epoch": "1",
+        "time": "1",
+        "inputId": "simulation-input:3fdafaba972509fe983e6c71dbfcb3d05f2226ce3dbb35c2738f5ccbc295cc35",
+        "projections": {
+          "run": 35,
+          "entity": 5,
+          "team": 14
+        },
+        "versions": {
+          "rules": "world-rules-1",
+          "policy": "sha256:2ae1880efb7ca37fb2dce57a1c4f491854257003917a3075abd8c47d9f9dec1e",
+          "persona": "world/1",
+          "model": "1"
+        },
+        "sources": [],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"entityId\":\"requester\",\"persona\":{\"name\":\"Recruiter\",\"description\":\"A colleague at Northstar Studio.\",\"persona\":{\"name\":\"Recruiter\",\"skills\":[\"engineering\"],\"traits\":[\"patient\"],\"goals\":[\"build\"]}},\"organization\":{\"name\":\"Northstar Studio\",\"description\":\"Members collaborate through private channels.\"}}"
+              }
+            ]
+          },
+          {
+            "kind": "authority",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"assignments\":[{\"positionId\":\"engineering\",\"position\":{\"name\":\"Engineer\",\"description\":\"Engineer\"}}]}"
+              }
+            ]
+          },
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"wakeId\":\"original-departure-memory\",\"reason\":\"{\\\"kind\\\":\\\"private-person-memory\\\",\\\"text\\\":\\\"ORIGINAL-DEPARTURE-PRIVATE-MEMORY-CANARY\\\"}\"}"
+              },
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-background\",\"worldFacts\":{\"viewer\":\"requester\",\"cursor\":35,\"time\":\"1\",\"items\":[],\"unknown\":[]},\"norms\":{\"viewer\":\"requester\",\"cursor\":35,\"time\":\"1\",\"items\":[],\"unknown\":[]}}"
+              }
+            ]
+          },
+          {
+            "kind": "goals",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-driver\",\"entityId\":\"requester\",\"contextKey\":\"original-departure-memory\",\"purpose\":\"message\",\"instruction\":\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\"}"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"instruction\":\"Accepted effects remain pending until Native execution. A submitted plan is not employment; notify only recorded results.\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/start",
+      "seq": 4,
+      "time": 1791757439832,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "user/message",
+      "seq": 5,
+      "time": 1791757439832,
+      "data": {
+        "id": "simulation-input:3fdafaba972509fe983e6c71dbfcb3d05f2226ce3dbb35c2738f5ccbc295cc35",
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Process the prepared simulation decision."
+          }
+        ],
+        "source": {
+          "kind": "plugin",
+          "plugin": "simulation-team"
+        }
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "request/header",
+      "seq": 6,
+      "time": 1791757439833,
+      "data": {
+        "header": {
+          "config": {
+            "provider": "world-departure-scripted",
+            "model": "scripted"
+          },
+          "system": "You are a simulation participant. Use the recorded simulation context and the Simulation observe, stage and submit tools. Propose only actions allowed by that context; messages do not grant additional authority.",
+          "tools": [
+            {
+              "name": "simulation_observe",
+              "description": "Read the authorized observations prepared for your current simulation decision. This does not query newer or hidden world state.",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "simulation_stage",
+              "description": "Replace your complete staged proposal list. No world effects occur until a submitted proposal is executed. Send an empty list to stage no actions.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "proposals": {
+                    "type": "array",
+                    "description": "The complete replacement proposal list. Times and quantities are non-negative decimal strings. Dependencies name earlier indices or accepted operation ids.",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "after": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "action": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "world/request"
+                                },
+                                "domain": {
+                                  "type": "string"
+                                },
+                                "operation": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string"
+                                },
+                                "businessKey": {
+                                  "type": "string"
+                                },
+                                "expectedTime": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "evidence": {
+                                  "type": "array",
+                                  "items": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "entity"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "resource"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "world-definition"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "external"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "relation"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          },
+                                          "effectiveFrom": {
+                                            "type": "string"
+                                          },
+                                          "effectiveUntil": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision",
+                                          "effectiveFrom",
+                                          "effectiveUntil"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "relation-set"
+                                          },
+                                          "relation": {
+                                            "type": "string"
+                                          },
+                                          "object": {
+                                            "type": "string"
+                                          },
+                                          "scope": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "relation",
+                                          "object",
+                                          "scope",
+                                          "hash"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "authority"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "generation": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "generation"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "norm"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "version": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "version"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "proposal"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "hash"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "resolution"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "hash"
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "payload": {
+                                  "type": "object",
+                                  "additionalProperties": true
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "domain",
+                                "operation",
+                                "version",
+                                "businessKey",
+                                "expectedTime",
+                                "evidence",
+                                "payload"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "world/resolve"
+                                },
+                                "requestId": {
+                                  "type": "string"
+                                },
+                                "supersedes": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "resolution": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "apply"
+                                        },
+                                        "payload": {
+                                          "type": "object",
+                                          "additionalProperties": true
+                                        },
+                                        "rationale": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "payload",
+                                        "rationale"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "reject"
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "enum": [
+                                            "insufficient-information",
+                                            "unauthorized",
+                                            "capacity-full",
+                                            "unsupported",
+                                            "policy"
+                                          ]
+                                        },
+                                        "rationale": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "reason",
+                                        "rationale"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "requestId",
+                                "supersedes",
+                                "resolution"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "task/create"
+                                },
+                                "task": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "subject": {
+                                      "type": "string"
+                                    },
+                                    "description": {
+                                      "type": "string"
+                                    },
+                                    "blockedBy": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "requiredCapabilities": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "priority": {
+                                      "type": "integer"
+                                    },
+                                    "readScopes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "writeScopes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "workspaceMode": {
+                                      "type": "string",
+                                      "enum": [
+                                        "shared",
+                                        "worktree",
+                                        "sandbox",
+                                        "remote"
+                                      ]
+                                    },
+                                    "reviewPolicy": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "none"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "participant"
+                                            },
+                                            "reviewerId": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "reviewerId"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "budget": {
+                                      "type": "object",
+                                      "additionalProperties": true
+                                    },
+                                    "maxAttempts": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "subject",
+                                    "description",
+                                    "blockedBy",
+                                    "requiredCapabilities",
+                                    "priority",
+                                    "readScopes",
+                                    "writeScopes",
+                                    "workspaceMode",
+                                    "reviewPolicy",
+                                    "budget",
+                                    "maxAttempts"
+                                  ]
+                                },
+                                "deliverAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "task",
+                                "deliverAt"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "communication/post"
+                                },
+                                "recipient": {
+                                  "type": "string"
+                                },
+                                "channelId": {
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "type": "string"
+                                },
+                                "deliverAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "recipient",
+                                "channelId",
+                                "text",
+                                "deliverAt"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/request"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "assignee": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "replyBy": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "completeBy": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "fulfillment": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "explicit"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "task-completed"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "transfer"
+                                        },
+                                        "from": {
+                                          "type": "string"
+                                        },
+                                        "to": {
+                                          "type": "string"
+                                        },
+                                        "quantity": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "from",
+                                        "to",
+                                        "quantity"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "assignee",
+                                "description",
+                                "replyBy",
+                                "completeBy",
+                                "fulfillment"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/accept"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/reject"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/defer"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "until": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "until",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/cancel"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/confirm"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/result"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "evidence": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "evidence"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/transfer"
+                                },
+                                "transaction": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "commitmentId": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reads": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "resourceId": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "resourceId",
+                                          "revision"
+                                        ]
+                                      }
+                                    },
+                                    "transfers": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "string"
+                                          },
+                                          "to": {
+                                            "type": "string"
+                                          },
+                                          "quantity": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "quantity"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "commitmentId",
+                                    "reads",
+                                    "transfers"
+                                  ]
+                                },
+                                "grants": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "transaction",
+                                "grants"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/grant"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "grantee": {
+                                  "type": "string"
+                                },
+                                "resources": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "transaction": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "commitmentId": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reads": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "resourceId": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "resourceId",
+                                          "revision"
+                                        ]
+                                      }
+                                    },
+                                    "transfers": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "string"
+                                          },
+                                          "to": {
+                                            "type": "string"
+                                          },
+                                          "quantity": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "quantity"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "commitmentId",
+                                    "reads",
+                                    "transfers"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "grantee",
+                                "resources",
+                                "transaction"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/revoke-grant"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "after",
+                        "action"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "proposals"
+                ]
+              }
+            },
+            {
+              "name": "simulation_submit",
+              "description": "Submit the complete staged proposal list and end this decision. A submitted window proposal awaits ordered acceptance; accepted proposals await execution. Results arrive in a later decision.",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          ]
+        },
+        "reason": "initial"
+      }
+    },
+    {
+      "type": "request/context",
+      "seq": 7,
+      "time": 1791757439833,
+      "data": {
+        "provider": "world-departure-scripted",
+        "model": "scripted"
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 8,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 9,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-departure-memory:0",
+          "name": "simulation_observe",
+          "argumentsDelta": "{}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 10,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-departure-memory:0",
+            "name": "simulation_observe",
+            "arguments": "{}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 11,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 12,
+      "time": 1791757439846,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 13,
+      "time": 1791757439850,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-departure-memory:0",
+              "name": "simulation_observe",
+              "arguments": "{}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-departure-scripted",
+            "model": "scripted"
+          },
+          "id": "18be97b4-366e-4184-add3-6772b9d50118"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 14,
+      "time": 1791757439850,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "requester/original-departure-memory:0",
+        "name": "simulation_observe",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 15,
+      "time": 1791757439852,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-departure-memory:0"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-departure-memory:0",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"observed\",\"time\":\"1\",\"sections\":[{\"kind\":\"identity\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"entityId\\\":\\\"requester\\\",\\\"persona\\\":{\\\"name\\\":\\\"Recruiter\\\",\\\"description\\\":\\\"A colleague at Northstar Studio.\\\",\\\"persona\\\":{\\\"name\\\":\\\"Recruiter\\\",\\\"skills\\\":[\\\"engineering\\\"],\\\"traits\\\":[\\\"patient\\\"],\\\"goals\\\":[\\\"build\\\"]}},\\\"organization\\\":{\\\"name\\\":\\\"Northstar Studio\\\",\\\"description\\\":\\\"Members collaborate through private channels.\\\"}}\"}]},{\"kind\":\"authority\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"assignments\\\":[{\\\"positionId\\\":\\\"engineering\\\",\\\"position\\\":{\\\"name\\\":\\\"Engineer\\\",\\\"description\\\":\\\"Engineer\\\"}}]}\"}]},{\"kind\":\"input\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"wakeId\\\":\\\"original-departure-memory\\\",\\\"reason\\\":\\\"{\\\\\\\"kind\\\\\\\":\\\\\\\"private-person-memory\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"ORIGINAL-DEPARTURE-PRIVATE-MEMORY-CANARY\\\\\\\"}\\\"}\"},{\"type\":\"text\",\"text\":\"{\\\"kind\\\":\\\"world-background\\\",\\\"worldFacts\\\":{\\\"viewer\\\":\\\"requester\\\",\\\"cursor\\\":35,\\\"time\\\":\\\"1\\\",\\\"items\\\":[],\\\"unknown\\\":[]},\\\"norms\\\":{\\\"viewer\\\":\\\"requester\\\",\\\"cursor\\\":35,\\\"time\\\":\\\"1\\\",\\\"items\\\":[],\\\"unknown\\\":[]}}\"}]},{\"kind\":\"goals\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"kind\\\":\\\"world-driver\\\",\\\"entityId\\\":\\\"requester\\\",\\\"contextKey\\\":\\\"original-departure-memory\\\",\\\"purpose\\\":\\\"message\\\",\\\"instruction\\\":\\\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\\\"}\"}]},{\"kind\":\"commitments\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"instruction\\\":\\\"Accepted effects remain pending until Native execution. A submitted plan is not employment; notify only recorded results.\\\"}\"}]}]}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "08750e1c-3f50-4dcb-ae60-516b7fea5a6f"
+        }
+      },
+      "sourceEventSeqs": [
+        14
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 16,
+      "time": 1791757439852,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 17,
+      "time": 1791757439855,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 18,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 19,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-departure-memory:1",
+          "name": "simulation_stage",
+          "argumentsDelta": "{\"proposals\":[]}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 20,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-departure-memory:1",
+            "name": "simulation_stage",
+            "arguments": "{\"proposals\":[]}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 21,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 22,
+      "time": 1791757439862,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 23,
+      "time": 1791757439866,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-departure-memory:1",
+              "name": "simulation_stage",
+              "arguments": "{\"proposals\":[]}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-departure-scripted",
+            "model": "scripted"
+          },
+          "id": "b0bf6fa2-dfd6-4479-9f7a-23af64ad2554"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 24,
+      "time": 1791757439866,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "requester/original-departure-memory:1",
+        "name": "simulation_stage",
+        "arguments": "{\"proposals\":[]}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 25,
+      "time": 1791757439867,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-departure-memory:1"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-departure-memory:1",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"staged\",\"count\":0,\"effects\":\"none\"}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "7148bb92-adb7-42f0-a82e-eaace868d599"
+        }
+      },
+      "sourceEventSeqs": [
+        24
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 26,
+      "time": 1791757439867,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 27,
+      "time": 1791757439870,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 28,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 29,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-departure-memory:2",
+          "name": "simulation_submit",
+          "argumentsDelta": "{}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 30,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-departure-memory:2",
+            "name": "simulation_submit",
+            "arguments": "{}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 31,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 32,
+      "time": 1791757439878,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 33,
+      "time": 1791757439882,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-departure-memory:2",
+              "name": "simulation_submit",
+              "arguments": "{}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-departure-scripted",
+            "model": "scripted"
+          },
+          "id": "e4cf1c7d-d071-48d2-8cc3-03193bc75967"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 34,
+      "time": 1791757439882,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "callId": "requester/original-departure-memory:2",
+        "name": "simulation_submit",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 35,
+      "time": 1791757439886,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-departure-memory:2"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-departure-memory:2",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"submitted\",\"operationIds\":[],\"effects\":\"pending\"}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "2fe397ef-96ba-45ca-be2d-ca3f48662c59"
+        }
+      },
+      "sourceEventSeqs": [
+        34
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 36,
+      "time": 1791757439887,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 37,
+      "time": 1791757439887,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ],
+  "originalCutCoverage": {
+    "native": "complete",
+    "team": {
+      "kind": "observed",
+      "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+      "participantId": "participant-aa2da944-7799-4cee-8161-28bd62a24eb2",
+      "cursor": 30,
+      "channels": [
+        {
+          "channelId": "channel-9ef134c3-0b10-4857-82cc-e7d230382ad2",
+          "cursor": 8
+        },
+        {
+          "channelId": "channel-ce3a007a-b3e4-4f4f-8fc7-7c261e072804",
+          "cursor": 6
+        }
+      ],
+      "hash": "sha256:0111e3c07437ef6ce3023381b199197db55a4236b243a79b707e140aba82425d"
+    }
+  },
+  "actualTeamActivations": [
+    {
+      "reservationId": "activation-reservation-afb01f59-65d9-46f6-87ff-f11216e0a31d",
+      "activation": {
+        "id": "activation-1abf2594-a934-46b7-9f7e-3e0354ad82ad",
+        "teamId": "team-be2d0787-81f4-48e8-9643-028e59284244",
+        "participantId": "participant-aa2da944-7799-4cee-8161-28bd62a24eb2",
+        "status": "offline"
+      },
+      "sessionId": "80eec4a4-c6f7-4488-9947-7e03bca3df82",
+      "provider": "in-process",
+      "selection": {
+        "preset": "simulation",
+        "provider": "world-departure-scripted",
+        "model": "scripted"
+      },
+      "quiescedAt": 1791757440080,
+      "quiescenceSource": "quiesced",
+      "quiescedWakeChannelIds": []
+    }
+  ],
+  "prefixHash": "sha256:c5dc6297f5ee210dbd6a19c4c78b8a6c7f4fcc4545855950f1dffd7815389132",
+  "retainedPrefixHash": "sha256:c5dc6297f5ee210dbd6a19c4c78b8a6c7f4fcc4545855950f1dffd7815389132",
+  "unchangedBudgets": {
+    "native": {
+      "tickUnit": "minute",
+      "origin": "0",
+      "maxTime": "1000",
+      "rulesVersion": "world-rules-1",
+      "budgetInterval": "100",
+      "maxResourceQuantity": "10000",
+      "phaseOrder": [
+        "delivery",
+        "decision",
+        "deadline"
+      ],
+      "maxQueuedDecisions": 100,
+      "maxDispatchWaitRounds": 8,
+      "maxTokensPerInterval": 1000000,
+      "tokensPerModelRequest": 10000,
+      "maxDecisionsPerInterval": 100,
+      "maxMessagesPerInterval": 100,
+      "maxPendingEvents": 100,
+      "maxPendingInteractions": 100,
+      "maxKnowledgeBytes": 65536,
+      "maxKnowledgePerQuery": 32,
+      "maxEntities": 16,
+      "maxResidentActors": 2,
+      "maxIngressBytes": 65536,
+      "maxConflictRetries": 2,
+      "decisionTimeoutMs": 60000,
+      "maxDecisionsPerWindow": 2,
+      "outboxMaxAttempts": 3,
+      "outboxRetryDelayMs": 10,
+      "maxDriveSteps": 32,
+      "maxMicrostepsPerTime": 32,
+      "maxOperationsPerDecision": 16,
+      "policyVersion": "world-policy-1",
+      "relationRules": [
+        {
+          "relation": "assignment",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "scopeKinds": [
+            "organization"
+          ],
+          "acyclic": true
+        },
+        {
+          "relation": "can-hire",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "scopeKinds": [
+            "organization"
+          ],
+          "acyclic": true
+        },
+        {
+          "relation": "can-depart",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "scopeKinds": [
+            "organization"
+          ],
+          "acyclic": false
+        }
+      ]
+    },
+    "world": {
+      "maxRequests": 10,
+      "maxPlansPerRequest": 3,
+      "maxBytesPerRequest": 4096,
+      "maxBytesPerPlan": 4096
+    }
+  }
+}

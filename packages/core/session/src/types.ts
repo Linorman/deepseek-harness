@@ -334,6 +334,29 @@ export interface SessionEventMap {
    * required because omitting it would change model-history reconstruction.
    */
   'team/channel-view': TeamChannelViewEventData
+  /** Exact tool-free helper input, persisted before provider admission. @mode append */
+  'simulation/generation-input': {
+    jobId: string
+    scope: string
+    audience: readonly string[]
+    message: string
+    provider: string
+    model: string
+    modelVersion: string
+    promptVersion: string
+    policyVersion: string
+  }
+  /** Original raw helper output retained before schema validation. @mode append */
+  'simulation/generation-output': {
+    jobId: string
+    content: string
+    usage?: {
+      inputTokens: number
+      outputTokens: number
+      cacheReadTokens?: number | undefined
+      cacheWriteTokens?: number | undefined
+    }
+  }
   /** Exact supplementary Simulation context; source references do not duplicate Team message content. */
   'simulation/context-view': SimulationContextViewEventData
   /** Raw stream chunk — token-level replay fidelity. */

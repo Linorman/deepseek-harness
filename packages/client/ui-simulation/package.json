@@ -56,9 +56,12 @@
     "@clocky/clocky-client-runtime": "workspace:^",
     "@clocky/clocky-client-ui-conversation": "workspace:^",
     "@clocky/clocky-client-ui-layout": "workspace:^",
+    "@clocky/clocky-client-ui-settings": "workspace:^",
     "@clocky/clocky-client-ui-sidebar": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-simulation": "workspace:^",
     "@clocky/clocky-simulation-product": "workspace:^",
+    "@clocky/clocky-simulation-scenario": "workspace:^",
     "@clocky/cordis": "workspace:^"
   },
   "devDependencies": {
@@ -68,15 +71,19 @@
     "@clocky/clocky-client-ui-conversation": "workspace:^",
     "@clocky/clocky-client-ui-layout": "workspace:^",
     "@clocky/clocky-client-ui-primitives": "workspace:^",
+    "@clocky/clocky-client-ui-settings": "workspace:^",
     "@clocky/clocky-client-ui-sidebar": "workspace:^",
     "@clocky/clocky-client-ui-slots": "workspace:^",
     "@clocky/clocky-client-ui-viz": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-simulation": "workspace:^",
     "@clocky/clocky-simulation-product": "workspace:^",
+    "@clocky/clocky-simulation-scenario": "workspace:^",
     "@clocky/cordis": "workspace:^",
     "@types/react": "~18.3.1",
+    "@types/react-dom": "~18.3.7",
     "react": "^18.2.0",
-    "@clocky/clocky-client-ui-settings": "workspace:^"
+    "react-dom": "^18.3.1"
   },
   "files": [
     "lib/index.js",
@@ -85,6 +92,7 @@
     "lib/types/**/*.d.ts"
   ],
   "dependencies": {
+    "clsx": "^2.0.0",
     "zod": "4.4.3"
   }
 }

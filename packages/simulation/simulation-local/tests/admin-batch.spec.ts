@@ -10,7 +10,7 @@ describe.each(['json', 'sqlite'] as const)('%s administrative batches', (backend
     ] })
     try {
       const old = await h.actor('old'); const next = await h.actor('next')
-      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'department', entityKind: 'org',
+      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'department', entityKind: 'org',
         cognition: 'none', profile: {} }), h.run.snapshot().revision)
       await h.run.change(simulationChangeSchema.parse({ kind: 'relation/create', id: 'old-role', relation: 'manager',
         subject: 'department', object: old.id, validFrom: '0', validUntil: null }), h.run.snapshot().revision)

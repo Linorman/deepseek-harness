@@ -1,0 +1,242 @@
+[
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-association-TFNrsl/case-duties-0.json",
+    "views": 6,
+    "modelCalls": 99,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-association-TFNrsl/case-duties-1.json",
+    "views": 6,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-association-TFNrsl/case-duties-2.json",
+    "views": 6,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-association-TFNrsl/case-duties-3.json",
+    "views": 6,
+    "modelCalls": 0,
+    "schemaRefusals": 24
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-association-TFNrsl/case-duties-4.json",
+    "views": 6,
+    "modelCalls": 0,
+    "schemaRefusals": 24
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-company-ndcokA/case-duties-0.json",
+    "views": 11,
+    "modelCalls": 189,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-company-ndcokA/case-duties-1.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-company-ndcokA/case-duties-2.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-company-ndcokA/case-duties-3.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-company-ndcokA/case-duties-4.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-laboratory-gmMzEp/case-duties-0.json",
+    "views": 11,
+    "modelCalls": 189,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-laboratory-gmMzEp/case-duties-1.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-laboratory-gmMzEp/case-duties-2.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-laboratory-gmMzEp/case-duties-3.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-json-laboratory-gmMzEp/case-duties-4.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-association-pILm11/case-duties-0.json",
+    "views": 6,
+    "modelCalls": 99,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-association-pILm11/case-duties-1.json",
+    "views": 6,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-association-pILm11/case-duties-2.json",
+    "views": 6,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-association-pILm11/case-duties-3.json",
+    "views": 6,
+    "modelCalls": 0,
+    "schemaRefusals": 24
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-association-pILm11/case-duties-4.json",
+    "views": 6,
+    "modelCalls": 0,
+    "schemaRefusals": 24
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-company-aJibpg/case-duties-0.json",
+    "views": 11,
+    "modelCalls": 189,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-company-aJibpg/case-duties-1.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-company-aJibpg/case-duties-2.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-company-aJibpg/case-duties-3.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-company-aJibpg/case-duties-4.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-laboratory-55Mvoi/case-duties-0.json",
+    "views": 11,
+    "modelCalls": 189,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-laboratory-55Mvoi/case-duties-1.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-laboratory-55Mvoi/case-duties-2.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-laboratory-55Mvoi/case-duties-3.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader/src-sqlite-laboratory-55Mvoi/case-duties-4.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-json-company-QqXcyM/case-duties-0.json",
+    "views": 11,
+    "modelCalls": 189,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-json-company-QqXcyM/case-duties-1.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-json-company-QqXcyM/case-duties-2.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-json-company-QqXcyM/case-duties-3.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-json-company-QqXcyM/case-duties-4.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-sqlite-company-WDxtZs/case-duties-0.json",
+    "views": 11,
+    "modelCalls": 189,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-sqlite-company-WDxtZs/case-duties-1.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-sqlite-company-WDxtZs/case-duties-2.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 0
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-sqlite-company-WDxtZs/case-duties-3.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  },
+  {
+    "path": ".local/world-completion/p12-case-duties/loader-lib/lib-sqlite-company-WDxtZs/case-duties-4.json",
+    "views": 11,
+    "modelCalls": 0,
+    "schemaRefusals": 44
+  }
+]

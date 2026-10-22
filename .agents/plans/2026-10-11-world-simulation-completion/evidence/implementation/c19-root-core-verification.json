@@ -1,0 +1,1221 @@
+{
+  "nativeStream": 73,
+  "scope": "Representative preparation and cancellation only; shared contact and request/rule sampling fault acceptance pending.",
+  "cases": 72,
+  "processes": 216,
+  "intentionalSIGKILL": 24,
+  "coldProcesses": 144,
+  "coldModelCalls": 0,
+  "matrix": [
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "before-reserve",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "participant-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "commit-wins",
+      "outcome": "committed",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "unknown-read",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "unknown-close",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "crash-channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "crash-abandon-before-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "case": "crash-abandon-after-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "before-reserve",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "participant-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "commit-wins",
+      "outcome": "committed",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "unknown-read",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "unknown-close",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "crash-channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "crash-abandon-before-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "crash-abandon-after-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "before-reserve",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "participant-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "commit-wins",
+      "outcome": "committed",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "unknown-read",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "unknown-close",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "crash-channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "crash-abandon-before-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "crash-abandon-after-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "before-reserve",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "participant-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "commit-wins",
+      "outcome": "committed",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "unknown-read",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "unknown-close",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "crash-channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "crash-abandon-before-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "crash-abandon-after-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "before-reserve",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "participant-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "commit-wins",
+      "outcome": "committed",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "unknown-read",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "unknown-close",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "crash-channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "crash-abandon-before-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "case": "crash-abandon-after-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "before-reserve",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "participant-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "commit-wins",
+      "outcome": "committed",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "unknown-read",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "unknown-close",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "crash-channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "crash-abandon-before-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "case": "crash-abandon-after-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "before-reserve",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "participant-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "commit-wins",
+      "outcome": "committed",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "unknown-read",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "unknown-close",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "crash-channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "crash-abandon-before-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "case": "crash-abandon-after-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "before-reserve",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "participant-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "commit-wins",
+      "outcome": "committed",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "unknown-read",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "unknown-close",
+      "outcome": "cancelled",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "crash-channel-io",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "crash-abandon-before-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "case": "crash-abandon-after-append",
+      "outcome": "cancelled",
+      "modelCalls": [
+        0,
+        0
+      ]
+    }
+  ],
+  "rawHashes": {
+    ".local/world-completion/c19-external-cleanup/src-company-json-before-reserve-original.json": "31c49936183fae0538b274991d94e418fea04a4ab9d7ca237a6ffd654c94580a",
+    ".local/world-completion/c19-external-cleanup/src-company-json-before-reserve-input.json": "ebc5a18405e81496444f460f63dc73887f354e65e6a059ad964c275eb95e5e3c",
+    ".local/world-completion/c19-external-cleanup/src-company-json-before-reserve-process-0.json": "7856b915df5e4490343b5da2bd593dcbab2e0cd051469fc79cb2b7b7397a0a5d",
+    ".local/world-completion/c19-external-cleanup/src-company-json-before-reserve-process-1.json": "a3779b15cb66122a0bb8e7d65449202ad59b4d69456b5a65dae5c5ce2e16b7d4",
+    ".local/world-completion/c19-external-cleanup/src-company-json-before-reserve-process-2.json": "0f5fb356d7a8d6c65217ec1cbbe73b6ef82ca19fd17d2dcf5f449bdb9bf19015",
+    ".local/world-completion/c19-external-cleanup/src-company-json-participant-io-original.json": "cf40e7f42738943b45c1109285e558c534430f9e96d4da20e816f95f1b2f4ee6",
+    ".local/world-completion/c19-external-cleanup/src-company-json-participant-io-input.json": "97989d4e09807f2f28273219c289684406c004733687f1491b34bf84f4fe476a",
+    ".local/world-completion/c19-external-cleanup/src-company-json-participant-io-held.json": "6875f9e628404f60c28f9f6df4c05e05d39adda3c3784c24e5f60c50102c8416",
+    ".local/world-completion/c19-external-cleanup/src-company-json-participant-io-process-0.json": "3f2ac1b97ba4b7ffb69ffd42bf317dc1256cb9428cdc1b1c53edfb9a6f464130",
+    ".local/world-completion/c19-external-cleanup/src-company-json-participant-io-process-1.json": "3c7b7a205ca112a4b4b6b6cfad2605b1ae2c127fb84362818d8eb4f839d4ffed",
+    ".local/world-completion/c19-external-cleanup/src-company-json-participant-io-process-2.json": "55527bdcbe0cf6bcde1987430b1a2a3218de802757f2317d617f2df57240b9a5",
+    ".local/world-completion/c19-external-cleanup/src-company-json-channel-io-original.json": "bbd307741682f39654d4b9b91f229d3a9ede954f7516395f3e88563cf81dd775",
+    ".local/world-completion/c19-external-cleanup/src-company-json-channel-io-input.json": "f10a7c84b9f3785b9879ec4b86f0334c2c902b30a1a5df787fce7ce8bdcf4378",
+    ".local/world-completion/c19-external-cleanup/src-company-json-channel-io-process-0.json": "11bab5af15cbb5d12fb3c9b677a065e747b242eb6a45fb42989697e268b8b7a7",
+    ".local/world-completion/c19-external-cleanup/src-company-json-channel-io-process-1.json": "8de0d101642aec8aaef6f1b3d1c9be370b716e3e144cbe4ae849a581dbc8f05d",
+    ".local/world-completion/c19-external-cleanup/src-company-json-channel-io-process-2.json": "f1576a6c53da75d218668b7c94396656b3115c04e704c01a1d4276a3c6253553",
+    ".local/world-completion/c19-external-cleanup/src-company-json-commit-wins-original.json": "2d04d202e16fd24bc7c9eee56baac1e69ff4c2d118e734f4011d2263f9ecd408",
+    ".local/world-completion/c19-external-cleanup/src-company-json-commit-wins-input.json": "7521a613aec7e1ca185c2ee2d8d68c5bd410b61748bd5e787ed0de3556a6b26e",
+    ".local/world-completion/c19-external-cleanup/src-company-json-commit-wins-process-0.json": "312442e68c719e5c77e29336011e534a279fdf2f19a1bfa9cfadcf57d45bea6b",
+    ".local/world-completion/c19-external-cleanup/src-company-json-commit-wins-process-1.json": "7a1d0cf10da4cc4154794708957659313f31a5f3253450a98177de2ba2cd2a2c",
+    ".local/world-completion/c19-external-cleanup/src-company-json-commit-wins-process-2.json": "c1d2001fefe974574304c8af8ddc83660256c2a82627858db47f0889a13a7494",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-read-original.json": "13439c1591fa141e4f8eaa56e4cbfd44e17bb006737fda0987aaa695e71c4d94",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-read-input.json": "84a72ce0f296befbf24e3f3d2f33c40ffa1535f385d44e3b1a2db2b14364eadf",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-read-process-0.json": "843ffcd524b74d3e79664f101a9037aad673494708cb327bd3136b8fb1d9102e",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-read-process-1.json": "d64edaf4eb3541709afb02c81047cb78ba01d11f2139e8aa2a89c19eb63120aa",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-read-process-2.json": "9051714daa66a5283ba8f94391d32c65c9e44c52df367f08347a0928aeaf6111",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-close-original.json": "dc1564ecfa0662767a815f2944f60ee568bdb97bdc5b0f7d91c5ff94ba286bf2",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-close-input.json": "d5529216797a36551baa6165d138c6f224297e4ebc99de6449c9af2fe56a730a",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-close-process-0.json": "7623d919dc77cc73a81b8e28c457e3228634ced173b363c91c2fc846d655dbfc",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-close-process-1.json": "2ba0314bfbcb38687a485ea5bc8be818c401b201491d8e086d6e9d9778e381cf",
+    ".local/world-completion/c19-external-cleanup/src-company-json-unknown-close-process-2.json": "5d934a5057e1309d2eb6679e0cbab0c2003946ad4a2447d9ab06583a399c8ad7",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-channel-io-original.json": "729acd0328a60b34fb0d20417d4ecd4e22a0e6bb0ac93c06b547ce88633fcda6",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-channel-io-input.json": "6247c4be3f610664c06ab10c408c9823a8f59421d5b35719b92b128766b9f2a8",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-channel-io-process-0.json": "a049b73e2193008d1aa31f0fd5996bbccdedc56547beaa03346e994871d1a6bb",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-channel-io-process-1.json": "3cd3bc86e477e17ffa49618ccce583405a3c7f37711abc898cea5a51c2e8228e",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-channel-io-process-2.json": "ef1021756ddc001be7a092a593c9b1d2ce2eda9e3bec9fb3045c900a4686800b",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-before-append-original.json": "53485560697cb9c5abd3c092a347cc6929e51eb673255ee62b0d52af794c81b5",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-before-append-input.json": "49c53881544b4ff347b8799c75b10a546049d7cbe28397e8f0983a3ba58df906",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-before-append-process-0.json": "be1cd63c9cd02f142f9e4d56fa7caa3fe0c45d781672b2c0bce34f98d78e850d",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-before-append-process-1.json": "6123271099990927edc0fd38eb340214e8fdc434b2617240e02f0b7633d022a1",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-before-append-process-2.json": "74448cd8b4bc4c38751e139512aec8c065a4f4236d4457943540a02b95f0bf48",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-after-append-original.json": "c4eceea77c22d535068619b78aef566ffe6961664a3dfe477cee43761f4620d7",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-after-append-input.json": "9421a355ee15ca032ea828f642f36222b811c9299e5cc2e62e18f95b34b741b0",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-after-append-process-0.json": "6a3dc65f1a191b2cbf3eb4d87165aee7ad50688c724b941fd984598580a89aee",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-after-append-process-1.json": "f7d77de0fb522f97f01afc07ba6717185ab16c146f58aa0d3a68665729062854",
+    ".local/world-completion/c19-external-cleanup/src-company-json-crash-abandon-after-append-process-2.json": "fd5c1760a9b16ab90335f599388c9c03b518e7a8932aa23457b25617550c99b8",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-before-reserve-original.json": "fdacebd547fe950691ac39d670137144a8b4c81eecbaa022b4494966cada31d9",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-before-reserve-input.json": "ebc5a18405e81496444f460f63dc73887f354e65e6a059ad964c275eb95e5e3c",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-before-reserve-process-0.json": "60b619a81d891ff1918ba0d8496f1ad5f1db7a1359dd83a72f048e036a93937c",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-before-reserve-process-1.json": "a363045775793175360d5b0406c0fa8ad93fc3ab4136866e6cbfd88b2d2569b3",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-before-reserve-process-2.json": "f2d56d138417c7458b6e2ff0a26259db6d9f7a757131082e7e091d30a569d342",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-participant-io-original.json": "86c33f095dd88f5d5c1c2f55535af3009655852d93b116b9bad386c05550291d",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-participant-io-input.json": "97989d4e09807f2f28273219c289684406c004733687f1491b34bf84f4fe476a",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-participant-io-held.json": "2a337f139e11a79f3d4c7590486359e620e741388d7dfc1149c8a0695795a1da",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-participant-io-process-0.json": "7cc150dcabb54ea9b6ea2883a5c8facc224d86ae1075dbff15b1fc348bad721a",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-participant-io-process-1.json": "9643a9a7ed17f3f79f9c1413c1d9ab84540b74fe1d27a83a22ac98043bb844fc",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-participant-io-process-2.json": "049b898e5cf097c770749b7d3b11bb04dd7b413685c6549ac4d70f7c9502e58d",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-channel-io-original.json": "dfcca7288fba1186aafd52082cbc35b1bbb8c71f705d43c52109829ac8caa448",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-channel-io-input.json": "f10a7c84b9f3785b9879ec4b86f0334c2c902b30a1a5df787fce7ce8bdcf4378",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-channel-io-process-0.json": "b6ae2d5d14ed41b0ac1518de8619d0572c9dab0b90f5dc3caabd806cfb4e6edf",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-channel-io-process-1.json": "6de5c34e46c419a847bb79f88bc1442c84f591805ca697e025238eeb0ae6ad57",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-channel-io-process-2.json": "107ee2db5ee56efaf803fed077ad27b35bcf6f577f1f60eb9d5c68c4c117b4b7",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-commit-wins-original.json": "81d0e8e97549eefc251b1a7a50a27a2106a4f2de28b7a0c6b55ea1cdf6f0d737",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-commit-wins-input.json": "7521a613aec7e1ca185c2ee2d8d68c5bd410b61748bd5e787ed0de3556a6b26e",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-commit-wins-process-0.json": "3f697996b5417bc2da602cb75b0e669bef9b872e6ba21ad503bc99842211c1ba",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-commit-wins-process-1.json": "ab036553ade42bb09b5aa08b57d0a87e45f934285841df8302212a31748ae4c0",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-commit-wins-process-2.json": "c8b81075a489b0c9851a000fcce74af92cd0e6f259ab2bfb95acce1bfa64e6ff",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-read-original.json": "d93d24ed2575ebf83ea5a1a3cd3f7f0aa68b021229eee6bfa23e5ad6ca421d92",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-read-input.json": "84a72ce0f296befbf24e3f3d2f33c40ffa1535f385d44e3b1a2db2b14364eadf",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-read-process-0.json": "00b4c4827d000a069868dc11456e7478fd7587c27c5e7e04aa8345c21d7694f1",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-read-process-1.json": "123c35d1ffe9cd0fcef5862f79ee8c173e227839b4cddb486cfb97517607b635",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-read-process-2.json": "97f98d55b6688c01ad98f3df0963a845e5dfc4086366f3b402b1a0e888935a26",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-close-original.json": "682362688ce5ec73e0c80ddd5b583c06cf1f7026b5d6201df0ea669ec4a7dad3",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-close-input.json": "d5529216797a36551baa6165d138c6f224297e4ebc99de6449c9af2fe56a730a",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-close-process-0.json": "719109914df198a44bae1440d432c8987e7ff7a71f2addd1dc8f3afecade48c4",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-close-process-1.json": "34e128867802eb1cbe1bed7ebac121a40ec48aff58fa71ced43ef71ffbe8ad3d",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-unknown-close-process-2.json": "8b2f7507f2b88644457e5dd9a04b0ab1b814aad4211d096f4d4ead4e35e1b05f",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-channel-io-original.json": "0c770a47a8e69e8e85b16b3285e644662ca9594e0f2217e048877b552f96b768",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-channel-io-input.json": "6247c4be3f610664c06ab10c408c9823a8f59421d5b35719b92b128766b9f2a8",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-channel-io-process-0.json": "e898c519beb72de9914084d0754e4875d1bbe5bec0aeb2777848cf339178c667",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-channel-io-process-1.json": "61acbcbfa3260c0d886679cfd7c28421270313b0d04249987db67f54cc8c0a07",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-channel-io-process-2.json": "8114f5520a7e19ff062c0b1dbf84b6a191eaaff853401563de52fcf84f2314c0",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-before-append-original.json": "9f07afa0878fca0c133aa54f8627f7127624702f9d7c79d5d40a4f3aee9e073e",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-before-append-input.json": "49c53881544b4ff347b8799c75b10a546049d7cbe28397e8f0983a3ba58df906",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-before-append-process-0.json": "ab778d417b66bec39b9470cffb7de6674bb0cdbe9b8b02dabc520b9e3d0ab1da",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-before-append-process-1.json": "8ae2043bf492bc744a975b65242602b1b9cd0ee241083d5ac7ff5a3e9a3787c0",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-before-append-process-2.json": "fcbff7f3c56f8615aad988ea36d7f1fbb5766f5151415b1e4ee6817f45fd4691",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-after-append-original.json": "adabbeb37685452c1a75cb652ddb85c8b4966aa4669edbed17c049b6db190a6d",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-after-append-input.json": "9421a355ee15ca032ea828f642f36222b811c9299e5cc2e62e18f95b34b741b0",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-after-append-process-0.json": "5ad0eb182a8ee0eaed1bdb2d695919d0a199ae1720de66c7dd9ddb775fe1e6fc",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-after-append-process-1.json": "e3824cc26fb540c17cb08bba3a5da5e0fd0d5d845a1584dc6fce15b5efb0dfb3",
+    ".local/world-completion/c19-external-cleanup/src-company-sqlite-crash-abandon-after-append-process-2.json": "30e302a8ed3c2581d00ea2c817f604d12bdc0cbe2de6ac01f6e56ce618314d26",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-before-reserve-original.json": "c6a474150e038e0ccba752f23441a24af7ca8164e75138281dfc86746f2ace72",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-before-reserve-input.json": "e439c6e577210689d5d62284631eaac3101f16e32f6296cdfc94c5ab042cd723",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-before-reserve-process-0.json": "e8a93eaa1eadd74467e84957bc43799739be50cc295611b441073a1d0ee41f21",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-before-reserve-process-1.json": "8e8907036fedcea9b80be3d61a7c084ec08b9cdedd658a267757c9ee82d8321f",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-before-reserve-process-2.json": "4092da1a4dd9b1576233e348452bd23532fb5195ab84e0f89001953502de662e",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-participant-io-original.json": "e64a3e348491e08624f8c9b4aa182f29b6e266700190d8ed77bb35a85121a741",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-participant-io-input.json": "7c60fcaa3753743adbe9c0c5ca3da24cdc6dbc26002431ef747b2dc438684784",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-participant-io-held.json": "55af3bec75b42fccf40bfd16f7d7e362326ad2f85fdbb816e25ac2bf2505781f",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-participant-io-process-0.json": "453b5c84a9bf13e4d027fb2267cb5355ef27f02278ae66f745698b379411f8fb",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-participant-io-process-1.json": "05c204a64426fc5c30f9c26de06df16773d3ad755fd0827bdb7afc1062a1e392",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-participant-io-process-2.json": "02e0962b466205907becf3c733755019103867ca669f75b925ebc0f6e6361749",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-channel-io-original.json": "bc5979b896e7a2d38615c1c80b40a70dbf531ed07e7d7b956a96d4b910e58120",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-channel-io-input.json": "6ae166e70a892eff7ff50aab936de2ce7612344c028ecc0bf44ae1b36864cf48",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-channel-io-process-0.json": "7fdba64ee11d3915c4f6af6802e2494bbdc2b75aa66127630252cf702eec13b2",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-channel-io-process-1.json": "3c8a285758f37a8d59f827e788d52c75ee282ffcef3320be91e9ce6eaa4f6324",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-channel-io-process-2.json": "061a2964964ffde6fff1ce7dcf368b046037381391a1d7bad7cc4d8277be36ff",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-commit-wins-original.json": "689a5926bf930203ff582bf5966d5c865e46da92b1d8a5c37539eb511721cd90",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-commit-wins-input.json": "1f66d732bc363fbc4bdbba7343466aa80a2d24ffe48af0dc3a72325c48ea100c",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-commit-wins-process-0.json": "6512ee1cb18cea3dfc46201cc88c995961433bef170f81f41578c3b85965dd56",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-commit-wins-process-1.json": "09dbdcc6a067d63477b4b72d1713be71fd05b09623891054b80586ae6f48f9b7",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-commit-wins-process-2.json": "45e32ca63fdeafda2e3af91b8a6e6d6bce8a1f164b2ef170e0266a60de78d4b4",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-read-original.json": "07758e8cfe67e54b5364f515394d79977509d4d98ee1a8541b09f342035c443e",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-read-input.json": "ceae13b7c153979f4db476ef1c07130187c93ea040eacfba2786c099e594e61a",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-read-process-0.json": "4f4f5318977e80cac473d326fec9b2b3ef7bf6a6cdcac39a6e0ff6237e3ab19f",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-read-process-1.json": "44d2efb5978d48d926ac1dcaf93e1e3a3f0b75ece3fdbe32dcae636d990e3786",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-read-process-2.json": "837e66aad091abb1b87c862d68b559db7098f070ca837bf2e96c94c7630ddc9e",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-close-original.json": "196c6657e618dab53fb9660035e0ce288df841dc92be1da1c9272b87b53e59c4",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-close-input.json": "9e4b4e5cf67a00ba81d7053aa0f760426678a4c970422586391409dce041d495",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-close-process-0.json": "27547313367a941c208b3a43208c3995e4e29044d4766f2581f55323cf1fe4c3",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-close-process-1.json": "c42dfa845b679809941f6d8f6625e40ff0926471236024a353f650643270b89e",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-unknown-close-process-2.json": "b71e62866fe7befc3e39a061ac098980134374adc2dcd045d9b0848c20849325",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-channel-io-original.json": "07103469694acb88bb371706136f551c867c6b3a80a24bb9d6c50fcabcb933b2",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-channel-io-input.json": "47abccf2349b84d9c5370ff9a22d3ec29722e07c7dedb2255186402e2fe0b7dd",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-channel-io-process-0.json": "628a1338aaa1a769b4d270e75032f60d321871b33550594fb920aec9f8c6d3d2",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-channel-io-process-1.json": "9482fb70680aa90d7fb06390bec60dd0b1fcb545e4707a19bbf55748fc369e3f",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-channel-io-process-2.json": "60169953674173422979a7cd89b3cbbd0e5d29a28e540ace9c17d8b52e29d528",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-before-append-original.json": "1a1b3df316f2be309d5f0fef6c1ab41076e6941687fd00a9bb3891e80b48ef46",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-before-append-input.json": "ad5473c4682053cd48744a55c4b5243e982f9376c4b59cd8bf38ae0d5834c2ad",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-before-append-process-0.json": "6634e6c81bae0264821cc4eef8de0662e0dc54679bbe5fb5f36e9d215cdae66f",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-before-append-process-1.json": "00cec0b15cbfb7fb66f82e26adf280701406d073e79be1ea91af1e61aad312c8",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-before-append-process-2.json": "af63827c5a7bccb00e629d1c8707338f9e8c4363f4fd762da5e497066b1b55cd",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-after-append-original.json": "791d75f784de5a3e9e4567dff58b43d5cf4608ef923d236686d93875a8eca874",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-after-append-input.json": "83d78d3ed88ff82b4ae59344c42e1b546ccc3d5d4e706c459ab975126c8cdae2",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-after-append-process-0.json": "daeb9b22e41421293c704748a5bb51f7eeb4619181c2172ac6c241bc6a87aa58",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-after-append-process-1.json": "eb3c752489f28df3d88049f1791a0e1bd5d1355ab0aa47925d5463e014a5d952",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-json-crash-abandon-after-append-process-2.json": "1382e779b64578b2f312b7a6a538462fbb0c0773ed42446a79f5e0a89f9a9eb8",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-before-reserve-original.json": "2f1b4ac5f1be47930923a55e6f17fce177ba573c11437aae04a1a174f64530f4",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-before-reserve-input.json": "e439c6e577210689d5d62284631eaac3101f16e32f6296cdfc94c5ab042cd723",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-before-reserve-process-0.json": "2665608ab6fec95f5f1639b010fab3a8cda2485278a1186f7dc5e0cd46b99246",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-before-reserve-process-1.json": "a16f637d67ddeab2ac3f266b2187d60c3599733cba02b7f0b97908094af1149a",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-before-reserve-process-2.json": "51e8522d28d0782f1385571c2c26f8fc001bf197494b16e796b0bf9eae52ece6",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-participant-io-original.json": "f82f05aa0f8e83e19172fa4e2d66d7d7473cf9cc57ff4d3ed4fc4cdca24d14c4",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-participant-io-input.json": "7c60fcaa3753743adbe9c0c5ca3da24cdc6dbc26002431ef747b2dc438684784",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-participant-io-held.json": "f3f240a031c08fb1cba75588ec624f36602e1e166bdf4520da9c90b0ac1870b6",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-participant-io-process-0.json": "6401194b007ca39809a2d0a326a56419334c226caa0cc8d3972043551b610f27",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-participant-io-process-1.json": "fa8614ca9d61865b6c412c287683eae5915dbe9279c844ac3fa43efc1583ad61",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-participant-io-process-2.json": "d2c6c28850601e37f1d97b5df639cbcd21ee50325f0df1c9a1ff6f36910ced15",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-channel-io-original.json": "cad3d155e52ff3331a2d129fdf590fad4efaea145fb745d685254cc56b68d5db",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-channel-io-input.json": "6ae166e70a892eff7ff50aab936de2ce7612344c028ecc0bf44ae1b36864cf48",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-channel-io-process-0.json": "3f3248409f1486f36601faaea370f8d4c7a4eb5768331f39e10d1b9933bec130",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-channel-io-process-1.json": "7e51e9b41055daa99776a22aca4d9a777774f709a37fb379ffdaee315f5fbb14",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-channel-io-process-2.json": "598fef613c7fe594045ccc0d1558581439b05616e4ba2b6b5cda4a35b53ecaa3",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-commit-wins-original.json": "b69a3284c736e9b9d4507b00862f364d97ad3a9a3c3640c0fe2af9af18903d47",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-commit-wins-input.json": "1f66d732bc363fbc4bdbba7343466aa80a2d24ffe48af0dc3a72325c48ea100c",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-commit-wins-process-0.json": "06a8767b4f352ffc5fdb8c1f08c1d0e326db02b5abe7df9de35ca0805bf8eed6",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-commit-wins-process-1.json": "7aa1447a31098dea8cb587f4686649d3ca5ca261e74ef614b89657b74cf52a17",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-commit-wins-process-2.json": "54e7605b20cdf72719d835843b9b384ff14a4e49f4db6f56c274cf46a3801cf5",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-read-original.json": "995060dba0434ef530a88caf90ec7f7a65654cda64f0f23fc241af053a96e9d8",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-read-input.json": "ceae13b7c153979f4db476ef1c07130187c93ea040eacfba2786c099e594e61a",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-read-process-0.json": "2d67f3093e369bc48773fa5c4f018970d62c3f0482539783451cbbeb67068a43",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-read-process-1.json": "a39f68bb33833314373dc6925407a84002c5d9534be82b84afa51301d25c3ca9",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-read-process-2.json": "8bbc6c6335247ffb4c1cfa6d9a2bb852a2cddc1fd03ef75427bf64af2882547d",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-close-original.json": "8bbeb789c634433fc039bf58c5b1ab23396ba862810d09816c6c0360e1b70f09",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-close-input.json": "9e4b4e5cf67a00ba81d7053aa0f760426678a4c970422586391409dce041d495",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-close-process-0.json": "eb67f7acf6ec5dd950c26f91270a0e925d48daf5e36e2ffe893f454d776725bd",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-close-process-1.json": "131319286f74fa6cbcc52a9025ca377d963cd446b8a58b832e18b640a02500d7",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-unknown-close-process-2.json": "666ca9f9abfcc766d3a65d000b5102c578daf64fdc7842bdae610cabf2e460af",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-channel-io-original.json": "e0fadf9d10085c63efab7decb3b40b48874462ee83c0f30398b90f8fd337a72d",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-channel-io-input.json": "47abccf2349b84d9c5370ff9a22d3ec29722e07c7dedb2255186402e2fe0b7dd",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-channel-io-process-0.json": "d068512a37ab52cb1357bdd88617e8d828a2a35a61be6029630124b9e70c3cdd",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-channel-io-process-1.json": "9dace57b5e0baa79826675d74c03031ec4b353cb811adb05aaf7233dfa946053",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-channel-io-process-2.json": "19273c5b05d850659cf8f3649811f71a1a260af8dd7fcac8ef00a11c3a5cbc55",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-before-append-original.json": "ce566c30b993a06c6691d3da5bdb15e54a310d23e51b7b85c8b6001bcbe73b13",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-before-append-input.json": "ad5473c4682053cd48744a55c4b5243e982f9376c4b59cd8bf38ae0d5834c2ad",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-before-append-process-0.json": "5b511650b16cb6bec8cf424eda97efc3d45454dc7b2ccae8cdf331fc9d6fe442",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-before-append-process-1.json": "c3e59ed3fb79874f6e037c09e46600014745e217249b97ec8e329bb3605b9d41",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-before-append-process-2.json": "60d13ce8a9ee1bcf79c88d7ad8dd311fe2994cee000e616e61cdb08102c90508",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-after-append-original.json": "7b11c6268329e6114ffc7c22e47201780852603df62da58f956a9ad4608041bc",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-after-append-input.json": "83d78d3ed88ff82b4ae59344c42e1b546ccc3d5d4e706c459ab975126c8cdae2",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-after-append-process-0.json": "9cc2f184a33499c1db7ee4bf4856d7e9872ed3f83cfb5ba94c983be8720a14d9",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-after-append-process-1.json": "36ebaca47cc06bbeb39aff638ba46bd615a35ff4a99ffbbb8b6d70eb88530d42",
+    ".local/world-completion/c19-external-cleanup/src-laboratory-sqlite-crash-abandon-after-append-process-2.json": "a86f32d2b0b77e9524f285ed256287f483e5124025229b45cbd64f0c93758d42",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-before-reserve-original.json": "990d5d98618170845c9de77d463d15c11ab6e70b6e42e958c5967b0cfdbecc68",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-before-reserve-input.json": "ebc5a18405e81496444f460f63dc73887f354e65e6a059ad964c275eb95e5e3c",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-before-reserve-process-0.json": "9e7a70b3854067da7cb02b22d96b584d7fbe6434b5d86a9235f1f556d7b79b0e",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-before-reserve-process-1.json": "d33a16fc9763610cd802c6053bed5095fa1dcab8664d09a4c6ea202f32106753",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-before-reserve-process-2.json": "f41ad0a55d1549ea271db9e6e8745b86cac56a395355fbe62bc813b1d060a21c",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-participant-io-original.json": "77be7edd6f9c159547139f5159c341c1c848f6a0b78ed75ce5ec158d53c5a7ae",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-participant-io-input.json": "97989d4e09807f2f28273219c289684406c004733687f1491b34bf84f4fe476a",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-participant-io-held.json": "0e58d7c76a0fcbd24a98002b5fe4cc1526a1a439ca6c62d5f828852a8c6965c1",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-participant-io-process-0.json": "0d82ae9e1e8a0d306277fd3f2ae4244eba43a88b67dd231408545329a1e782d2",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-participant-io-process-1.json": "e187677f7ab96da75cfb8b7e76b401bfbde6c43b82a87db1124648714d990483",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-participant-io-process-2.json": "398f926b60e33cb5e28de4596154face7be87bd9e79b0ee6e20c656f732f2d1e",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-channel-io-original.json": "e11d80a14194f2ae9a43398e2921da2e99f1d065eec48f6985686f2525eebffd",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-channel-io-input.json": "f10a7c84b9f3785b9879ec4b86f0334c2c902b30a1a5df787fce7ce8bdcf4378",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-channel-io-process-0.json": "480422c59be6489b4838367ed473fa3809325c0fbe2733617395a9d4e8985807",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-channel-io-process-1.json": "a8fcea89d3ad7f64aed401b56189fa260da757a2c2547ef3b2914ae5770f6454",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-channel-io-process-2.json": "1aa67413f433b302689c6d3ec593f78130e102be293c36fba29aa3d4a4e8e342",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-commit-wins-original.json": "bf12a653867dd37306352429c1947f713d8d2d8fc6f528e859dcf1c584c993dd",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-commit-wins-input.json": "7521a613aec7e1ca185c2ee2d8d68c5bd410b61748bd5e787ed0de3556a6b26e",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-commit-wins-process-0.json": "b290263c03b06e25c7b47f508eaeac9afd19daec9ff300953152c3b9f46cb935",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-commit-wins-process-1.json": "2e6d28a44ad6ab80fe3c4388868926404036907109cf4679718d48ce598338d3",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-commit-wins-process-2.json": "f49ae28500f2fb0ab8be77822013f7c66be9e44ab924cc1854bddca5c631e18d",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-read-original.json": "58467045a77d094a3a4e3fd8a55f15b30e44280a30e12562d90d33c67e021be0",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-read-input.json": "84a72ce0f296befbf24e3f3d2f33c40ffa1535f385d44e3b1a2db2b14364eadf",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-read-process-0.json": "e71a6bf21d80f1714b8dab3e548b93e00cea03f1efb4be980a3044d75db97aa7",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-read-process-1.json": "4d276393f68808ada78b5a2938a0f81d039365dfd38ac11960e2983cdfad6cb0",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-read-process-2.json": "90874028db7357024ea807dd8872d1261c4016bfd71f83af8df64fe2c4b8dd06",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-close-original.json": "80b3e4af4a1522132beb90e5fe25c9910b011e6182f7fe15e26604a6b2464cfc",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-close-input.json": "d5529216797a36551baa6165d138c6f224297e4ebc99de6449c9af2fe56a730a",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-close-process-0.json": "30b8100c4a119a93df43b1284ea1e3baa6805671ffbe3088c87193f716e7c0b7",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-close-process-1.json": "38c2284209e9f974e5273a570d2450c870f9636a149a881599a579397b9031a0",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-unknown-close-process-2.json": "adeb54093cb06a96d1d973e85d52b987092f2e97655314c2c9b52df86296b61e",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-channel-io-original.json": "d40151f6efad55b96767aed1ac617a29d29c7a0b5e5945bd18dd84e0e329fe8c",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-channel-io-input.json": "6247c4be3f610664c06ab10c408c9823a8f59421d5b35719b92b128766b9f2a8",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-channel-io-process-0.json": "dfc90f749eac257a913cf03a1d426c9fc9336beaaa9f424766c0f2c0ff7ae2ef",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-channel-io-process-1.json": "31a19c480a1ad0d45e3d7212bd06dddb4c372484bdf9bcabf0c8da661c4c5f80",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-channel-io-process-2.json": "edce531aa72745dd3c9a70cf493626c96c0243bb20655436395637b076dc9905",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-before-append-original.json": "83d6a9bdf95078dd8ccd520262ee08dae6def4f820116b5c5d21ac9e85ecf766",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-before-append-input.json": "49c53881544b4ff347b8799c75b10a546049d7cbe28397e8f0983a3ba58df906",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-before-append-process-0.json": "52ed2621ef90807a230c73661a21dec9eef6e599713c99ed24b5d71bb663e8a5",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-before-append-process-1.json": "8676d12a4f2c2e00f253411cd4031acc98b18cd357654772199c6e2482469708",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-before-append-process-2.json": "3df7943359c0d050c7095fb133fb608e06ce8ab72d905de091d0918af9946111",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-after-append-original.json": "5d10a4208aad2d59b4a90117744a8e69c89b0e81ae9898d9f1f06eb42d31617c",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-after-append-input.json": "9421a355ee15ca032ea828f642f36222b811c9299e5cc2e62e18f95b34b741b0",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-after-append-process-0.json": "6644014b644c08352e7257694b52652e5810beaf162566462a09f2bc328567cb",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-after-append-process-1.json": "2f51a8e9c2f5a8866267a9406ffa4e0ac87b0b6c242579e7e34c368f1c180c7a",
+    ".local/world-completion/c19-external-cleanup/lib-company-json-crash-abandon-after-append-process-2.json": "10a8c741b3ed2f1c4a9256e5fdace5bd3ea5246fb4ce2e265dcf627590c25d6c",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-before-reserve-original.json": "6b3a569b481dfda2f3e6bb677fd061859af7d2d2d5a8bc0bf394876c663d3804",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-before-reserve-input.json": "ebc5a18405e81496444f460f63dc73887f354e65e6a059ad964c275eb95e5e3c",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-before-reserve-process-0.json": "0f213c3baff1d669c23d5b12300d2611d91af389d2cd440ffbb5bd0d80ffe0a1",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-before-reserve-process-1.json": "26bb28fb393c765fe96c00c146b8119d6f260a3c8d8e27b47d1d05004469fd33",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-before-reserve-process-2.json": "5fc09481f2253e898b4af365c6e6fdbb40a5e2da6de7dd7c201be5fb3cd13b42",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-participant-io-original.json": "46ab30904f3062fb7a9db28a09989bcdca9caee35af56f8974875657e492d52e",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-participant-io-input.json": "97989d4e09807f2f28273219c289684406c004733687f1491b34bf84f4fe476a",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-participant-io-held.json": "d8e65b46c092edecb391ce855f44aa16e250e1ec2a35a30b2b64c0afe01f9b6d",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-participant-io-process-0.json": "8f527245cc5b5ee7bb436b1feb2185293f229f8743618e08e1f0ea3850e742f0",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-participant-io-process-1.json": "bf12ab46eb2d8d963ab2de0e2a63a6097dc84f966dc92cecfecc59380d1abea1",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-participant-io-process-2.json": "990fa37a75ff4c89dc4e01782ec061c945106d7ed252b7910ab34f5698d57054",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-channel-io-original.json": "2587d90e21944184d6771c3c34b1e60a2d6d5dfa8368aa57104ab49b25949408",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-channel-io-input.json": "f10a7c84b9f3785b9879ec4b86f0334c2c902b30a1a5df787fce7ce8bdcf4378",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-channel-io-process-0.json": "5f50560dabf9a19a9214dc73a3505f1d85244be1723123055b3e1ba435cf1eb9",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-channel-io-process-1.json": "fe1fb25582103eaf15c7e9bbbcddb9db4bc90f0c63eff240d58e947e785c28d8",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-channel-io-process-2.json": "f6a7c5abd3cb30544134d4a7187aa0153250a11455555d54d6bccb2fa17e0e4b",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-commit-wins-original.json": "afc88ee0d0ef5f93d42c7c9daa16f864e26a4773b2353c503fab140524a41b4b",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-commit-wins-input.json": "7521a613aec7e1ca185c2ee2d8d68c5bd410b61748bd5e787ed0de3556a6b26e",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-commit-wins-process-0.json": "6299f0012e636833bb88ecd60d114e6fedb68ce432f80ffb7fe72b397df35cb9",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-commit-wins-process-1.json": "428f3cc9d904e30f9c5f8e0d1600d969b02e0f65347d8e004f787952a2f0ecbe",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-commit-wins-process-2.json": "90590adce21f59dd0284a1992f5778557b376a0f00156979c64ad7a30a075f8c",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-read-original.json": "00752cd4cd09d42bd07867772f9a8660d12fa0f7d1f83318bfa94bfd8a7564aa",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-read-input.json": "84a72ce0f296befbf24e3f3d2f33c40ffa1535f385d44e3b1a2db2b14364eadf",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-read-process-0.json": "9c455d54678db3328325bea5a9955b18875023bd0e164d6cf9e8104ed8248885",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-read-process-1.json": "8f42e13e4bd7a82a666013640d89c89370ed76d5686846f41a5c0e1b21dd8e73",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-read-process-2.json": "fa378176d78918d6b00e0f4f99de3c6c751f8cb87266b33c27a37b23641ba8d7",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-close-original.json": "7c9a736d2683b3ef76a81e298580b6873a1d698677a4d79ec401424e808af358",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-close-input.json": "d5529216797a36551baa6165d138c6f224297e4ebc99de6449c9af2fe56a730a",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-close-process-0.json": "e68a93c131d42f42415a679c6e74e072533eb43300a3de537280a1bcd7feefb3",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-close-process-1.json": "83966a5b3b46488ba60c06c8b32124cd1db819e5092e90c147f6325132c5f1dc",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-unknown-close-process-2.json": "cf01b504687edde097d70dd8a08b7162ee577247422bc677ef7800fd3239d57e",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-channel-io-original.json": "474e79b460f8138037f60db4bd3f3c466e725382e24c36b7c2d9f03481e1c55e",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-channel-io-input.json": "6247c4be3f610664c06ab10c408c9823a8f59421d5b35719b92b128766b9f2a8",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-channel-io-process-0.json": "4d9f4d7417c993500a29f85e7cdd6ce39a9e85b95159506588b958460d33a81f",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-channel-io-process-1.json": "28a7057ca93f9af3af56bb5a100c5afaf1aac80533b1ee562e52867475b9874f",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-channel-io-process-2.json": "130c9ce22277b31d32e41d7aa15e77995453176b87cf3e8fe54fefb16caf85bf",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-before-append-original.json": "a9810b26a6e7986c641b3e10476e9f62a16215327663c4b30c00dad8c1d5dcf3",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-before-append-input.json": "49c53881544b4ff347b8799c75b10a546049d7cbe28397e8f0983a3ba58df906",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-before-append-process-0.json": "f4e2b9ebbf24c4a12e989a05fda1f6a0ec35b3972764eb978d247cdc0b1db1ed",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-before-append-process-1.json": "c6d81c86417c89645f9306482e85219c058f819a94637c669d5df3303892812e",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-before-append-process-2.json": "b8016f4b6d18490e13fcc29fd6d4efb4e870edfe0d061ec8c907a83c6e31aa91",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-after-append-original.json": "b43b3c86d92cf0030a8aac8d2424cf02572fabf236f9dc2300b7698d3d2b3e2d",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-after-append-input.json": "9421a355ee15ca032ea828f642f36222b811c9299e5cc2e62e18f95b34b741b0",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-after-append-process-0.json": "9b90988d75eb53201bb2d950b017c86acaadc6f41c4bb90ce85d975cc9e3e1a7",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-after-append-process-1.json": "56fc49910c5aef61c0311407dbfa8f460583b3549d28e7984331f2e8536ddde2",
+    ".local/world-completion/c19-external-cleanup/lib-company-sqlite-crash-abandon-after-append-process-2.json": "5f0d5ce2a969fc1aa4354acd80b9743f3db4621c90f31111bf09a5e18b0669d1",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-before-reserve-original.json": "9fe3035de3ec70c61f414207cd6e0859a52ea290df8dccbaa8d7b3353acae267",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-before-reserve-input.json": "e439c6e577210689d5d62284631eaac3101f16e32f6296cdfc94c5ab042cd723",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-before-reserve-process-0.json": "4c6deab17218e3d43d166052d8656a09418584167795d5aa64d42eb8a145895e",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-before-reserve-process-1.json": "26c4261e6b64a9b5cf38435d1a16bd20f6dfcc2b71b68f702bd8c3bc5bba9506",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-before-reserve-process-2.json": "cf3ef34468898d914d3c8bdf1c4d42a9df5a81e16128119ae34a2ae5ad98ff92",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-participant-io-original.json": "31a068ee98871440b913d6e304964dbb6bdc8fd2d7497cb3bd7e9f825e175312",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-participant-io-input.json": "7c60fcaa3753743adbe9c0c5ca3da24cdc6dbc26002431ef747b2dc438684784",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-participant-io-held.json": "01397fb8cebb6280a9dad682acd01cbb4cc2cc925a71875e842ac72917d6efb7",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-participant-io-process-0.json": "54119032b780a0e06abcbc05bc90adb922785900397738d45bc02098097f8990",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-participant-io-process-1.json": "40397568fdc5dc172526cdafb9af0f19d21f77a8961058493942158565e7a852",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-participant-io-process-2.json": "aee246929b5a085f58e2dd6658128c0f4fd9b6aeb92f2987db8988a88cdd1a23",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-channel-io-original.json": "9ebdee750abb925f7c524e8c7611a61ae692c8ce38a5a34549511597717fb32e",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-channel-io-input.json": "6ae166e70a892eff7ff50aab936de2ce7612344c028ecc0bf44ae1b36864cf48",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-channel-io-process-0.json": "d684ecdb7167715556ec7a6af62e1e6e6025ce0e6a2f8889cdd197b7e12f114d",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-channel-io-process-1.json": "3d0c7249f576d8ef7f391777fe6445818da442b5d067770839df6230340dc1d1",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-channel-io-process-2.json": "b002bccb3e5c3448a1dfcf9d0e6d36cf301a0dd40161f5c2b7fb49c6316cf9fb",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-commit-wins-original.json": "ee121387fdb7181bd015033e02e27dbe3aec81b36ba454b0753d0153337433e6",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-commit-wins-input.json": "1f66d732bc363fbc4bdbba7343466aa80a2d24ffe48af0dc3a72325c48ea100c",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-commit-wins-process-0.json": "8cc780709bb06719bd62d5f859adcd24e7722d2e443b350d292e502cb7d36220",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-commit-wins-process-1.json": "d1344e2de794ecfdf068a71a131342c7a7f8e25cc6b472505aaa080ef2d92adb",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-commit-wins-process-2.json": "1df7b775eb0dd6dc36bb14619a8af1b2fb4a6e7891eac1df110b16c719536a6d",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-read-original.json": "ee3ac5fe2a8d07a1e163133eb83154674e2f10d436fb63708688b600b6aa3711",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-read-input.json": "ceae13b7c153979f4db476ef1c07130187c93ea040eacfba2786c099e594e61a",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-read-process-0.json": "df897e8740ff61afd67897fe69d93069db57c050868d0549552079cbdaf62a1b",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-read-process-1.json": "4702a96ec7439287df3b3296c8008ffb150eb3e830b8dd15922a483eec5f906d",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-read-process-2.json": "7b69bc730a1dd4393ae066fe5c56be17cbd60517cefe2696b1845c02b1769a95",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-close-original.json": "46b6548ea3a4761703c34a50405d2d2b98a10ffefd1953281e933606f84ba275",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-close-input.json": "9e4b4e5cf67a00ba81d7053aa0f760426678a4c970422586391409dce041d495",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-close-process-0.json": "e7b0dac7c2567d8297003140a3cd664452336443631b4e2075379bd1256c5c45",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-close-process-1.json": "aafbc9a5efaea3f3788f67297a1b2310c46f10f12cb6ade2e425e701555b46b8",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-unknown-close-process-2.json": "1b55a2ebcdb82fc6afed2fd5f5bacbed5e9b0a9e445b4f92f392a312206287a2",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-channel-io-original.json": "97b90dd9971b0010272a1a9ebf789e646eabecc66c8427c9edccdce2de6da9f1",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-channel-io-input.json": "47abccf2349b84d9c5370ff9a22d3ec29722e07c7dedb2255186402e2fe0b7dd",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-channel-io-process-0.json": "b06f40c16cdfed26c05ca3b9010fdfe76e58afc682b522aa690a2d0a91216361",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-channel-io-process-1.json": "f266ec0008dffc9be767d4e9e0e21e0c1dd66f7f9ac9f9c00fab27ef580f663d",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-channel-io-process-2.json": "4efd872cc616f1dc48a6dc87c263c7d2437174a8d916afa9348517ccab8818c0",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-before-append-original.json": "40aff0c2968f92a7b79f5e96471a2bea6c1daebb72c75cb62610c68299561431",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-before-append-input.json": "ad5473c4682053cd48744a55c4b5243e982f9376c4b59cd8bf38ae0d5834c2ad",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-before-append-process-0.json": "04b00559c508fa63b366484d5c8d8da86134d23cd28e273cdbe88f8181637afd",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-before-append-process-1.json": "6438dabe962eab8b390abf25d909217658250b41870ab1220d20ec56069eb99c",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-before-append-process-2.json": "1f955fe3b96423d0c18b186dacffd3964d58f61a80de7274bacc76ea1725f825",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-after-append-original.json": "a73d8435a4a5ab06695ccdd363e6bdb7d6bcebb85bef7cd304a9368932ca7d12",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-after-append-input.json": "83d78d3ed88ff82b4ae59344c42e1b546ccc3d5d4e706c459ab975126c8cdae2",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-after-append-process-0.json": "6cf6a35951bd196be1eaa0b2414b2b25b1e8c457a6d0204378fcbdd7222b1352",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-after-append-process-1.json": "ea7aa8abdb0eaf96540054397758eb1a3df94e758bee2c90dac26498c2222951",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-json-crash-abandon-after-append-process-2.json": "bf4ffb97e3e9c13931d58963359f02d37abb1ff833ac970ab151fff4fbe8b962",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-before-reserve-original.json": "c0ed5139c6a8e7e457ef5220668e63df2b3b166119ac3fe7c89e2b3decbbf5e6",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-before-reserve-input.json": "e439c6e577210689d5d62284631eaac3101f16e32f6296cdfc94c5ab042cd723",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-before-reserve-process-0.json": "1afdc1705e3404556ea2d3a757cf475b265b602e924d49c6e973491d90b4d279",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-before-reserve-process-1.json": "45bfe2b1983ebf8e165a85892188521c4482f19b604e9a67f791513eb3dc6f26",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-before-reserve-process-2.json": "8966e89b4a303352ea8eb44a53420e4d207cdf617ead16afe3ba6a82e181e52e",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-participant-io-original.json": "d1df95649c48c37d659ebc96d8601057c7a3fc5b7059e579f4e0a829632c47d9",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-participant-io-input.json": "7c60fcaa3753743adbe9c0c5ca3da24cdc6dbc26002431ef747b2dc438684784",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-participant-io-held.json": "205d6e0140fc3ccef5403b977c5a33fa7d6f87462356b0f849fd001075c6ae91",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-participant-io-process-0.json": "7b22bfa1c7d6aa8408e83e6983a5eb09d84700d9f36a2b5430af4b22d27a13a4",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-participant-io-process-1.json": "d6ee45b4d2b141de337494a456ec9e75ba58846538030649c4b0bf35f9ea4944",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-participant-io-process-2.json": "4faf624c3d1afe7dfecc869a7525f7542c96cb255e9091b4d10383bda45aa40d",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-channel-io-original.json": "9e1dbb3d043efe1ac7921472af81cdba7e5de6afd47488fc1fa840b31a07887a",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-channel-io-input.json": "6ae166e70a892eff7ff50aab936de2ce7612344c028ecc0bf44ae1b36864cf48",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-channel-io-process-0.json": "daf2194e658c645b0ee895c6f786c1b043cfe0a94f67a3c44c9763a8a03a9983",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-channel-io-process-1.json": "c265f6e3bd34eecb1d6ced4cbf0091db9665b225a8d63e0ca5699f99130fa765",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-channel-io-process-2.json": "b89cda29d9680e373a85d6a7f2f824d1c63799360a47c6d12c3915c655af1d78",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-commit-wins-original.json": "76f38f0e9b05e6abd696b6a3ca8d78aa4e003bd9ecadab314f30c451a4e9020e",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-commit-wins-input.json": "1f66d732bc363fbc4bdbba7343466aa80a2d24ffe48af0dc3a72325c48ea100c",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-commit-wins-process-0.json": "a94bd7c02affe8e3ffc27abf5a31101e779c6bd1376167c3772987523733aab3",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-commit-wins-process-1.json": "dc3e709989fa02d3215fc2fd941ac46e496131c42983c7b040c37c2898be10fb",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-commit-wins-process-2.json": "b19dd8a6333b76bb088e665e3a4741dcfdefd6c911808f7b9562c57591a7060e",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-read-original.json": "a35d78f53b477d50d138aa9559c46f3c8284c5e821e148f7de5bd6657829101c",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-read-input.json": "ceae13b7c153979f4db476ef1c07130187c93ea040eacfba2786c099e594e61a",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-read-process-0.json": "169c18a7b5990dff92da5a5492334eba405a9f3d4c286db7c31e520914eb01a4",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-read-process-1.json": "3c44e11985159563e678e89971fe43e7e47c0c8ea66f3b7410a506d0f55c07b9",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-read-process-2.json": "9c43df73a75601512dac6bd5d637ede28a345b402006c9e1c7fc55fe7626674a",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-close-original.json": "9e4449ff9fe3df68f11cce0621a8cfb46954ac9899e453ca5b93a7d1515e0275",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-close-input.json": "9e4b4e5cf67a00ba81d7053aa0f760426678a4c970422586391409dce041d495",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-close-process-0.json": "789fdd7f61fdc545b49b15646a31933485c06fe82265b3afa531258200f30ddc",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-close-process-1.json": "113ba10b81d5201e4272b18251920f6f6950db8e8de5ece34f15d48fae60f9a7",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-unknown-close-process-2.json": "335cfc2b699a2d43bce012e2bbb1d2f147515b0e747e48bf7b493782813be737",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-channel-io-original.json": "c318405bb10c01e70e7077f80d3cae29243bae31d7d247604cca6d4251277f5e",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-channel-io-input.json": "47abccf2349b84d9c5370ff9a22d3ec29722e07c7dedb2255186402e2fe0b7dd",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-channel-io-process-0.json": "7166fb216721960138efa4eee7ad68745f6b6b4eb6b44d3af7d0de37f892e713",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-channel-io-process-1.json": "d9c59d8c7fc3b1f4749b1a1b16e7ecd75bb7d35c99374fdeb1c8566ac7b48d57",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-channel-io-process-2.json": "a39e1a55d27b1596ea372fafcda5a389bc2f70773bd7bf8580b05d4a395f9137",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-before-append-original.json": "569c76405e512f49c2136043614ccb0a430008c1a67c87fb2838ab3e2aa09365",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-before-append-input.json": "ad5473c4682053cd48744a55c4b5243e982f9376c4b59cd8bf38ae0d5834c2ad",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-before-append-process-0.json": "e57ebc7c393f89a6b87ab603e11093ffbd0e55a0f52de2c3042a85eba66a8d19",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-before-append-process-1.json": "d0d75ad49829ee8046a363317e67a610d5d07c819fa1f11870b40f4db2744a71",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-before-append-process-2.json": "e9a7351613caa34057fad1ef9caff0e2774b5384832bc3affeb5fcd19efda69b",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-after-append-original.json": "631a7eae7596bdfb810bc5d5fde5c7089d8c21ec733775757d370a0b36d44f9c",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-after-append-input.json": "83d78d3ed88ff82b4ae59344c42e1b546ccc3d5d4e706c459ab975126c8cdae2",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-after-append-process-0.json": "1b3ba04c0f3e70a7d3cf3db5f5b74e5fce9827feaf5ec2cbc27cc3322e706fa9",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-after-append-process-1.json": "df39376bcb79bf489866dc8c9d41b8d3e76cd41aec880eb3a0bfd75dfe162dc5",
+    ".local/world-completion/c19-external-cleanup/lib-laboratory-sqlite-crash-abandon-after-append-process-2.json": "3404da50a502bae150a387a639f2c7d670b598146f2b1784534b7ed39f61cc56"
+  }
+}

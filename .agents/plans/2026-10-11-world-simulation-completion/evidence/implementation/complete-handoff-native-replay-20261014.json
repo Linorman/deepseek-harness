@@ -1,0 +1,149 @@
+{
+  "passed": true,
+  "reports": [
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/source/src-sqlite-laboratory-lKvuLn",
+      "backend": "sqlite",
+      "face": "src",
+      "scene": "laboratory",
+      "pid": 28070,
+      "observedRevision": 1569,
+      "originalRevision": 1569,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/source/src-sqlite-association-LkSnJm",
+      "backend": "sqlite",
+      "face": "src",
+      "scene": "association",
+      "pid": 28070,
+      "observedRevision": 808,
+      "originalRevision": 808,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/source/src-json-company-HBJhaN",
+      "backend": "json",
+      "face": "src",
+      "scene": "company",
+      "pid": 28070,
+      "observedRevision": 1569,
+      "originalRevision": 1569,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/source/src-json-laboratory-znh3lH",
+      "backend": "json",
+      "face": "src",
+      "scene": "laboratory",
+      "pid": 28070,
+      "observedRevision": 1569,
+      "originalRevision": 1569,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/source/src-json-association-27EUYx",
+      "backend": "json",
+      "face": "src",
+      "scene": "association",
+      "pid": 28070,
+      "observedRevision": 808,
+      "originalRevision": 808,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/source/src-sqlite-company-a5fJHD",
+      "backend": "sqlite",
+      "face": "src",
+      "scene": "company",
+      "pid": 28070,
+      "observedRevision": 1569,
+      "originalRevision": 1569,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/lib/lib-json-laboratory-Y2DWh4",
+      "backend": "json",
+      "face": "lib",
+      "scene": "laboratory",
+      "pid": 28070,
+      "observedRevision": 1569,
+      "originalRevision": 1569,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/lib/lib-sqlite-laboratory-HoVXko",
+      "backend": "sqlite",
+      "face": "lib",
+      "scene": "laboratory",
+      "pid": 28070,
+      "observedRevision": 1569,
+      "originalRevision": 1569,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/lib/lib-json-company-qiTK9T",
+      "backend": "json",
+      "face": "lib",
+      "scene": "company",
+      "pid": 28070,
+      "observedRevision": 1569,
+      "originalRevision": 1569,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/lib/lib-sqlite-company-pSCSyb",
+      "backend": "sqlite",
+      "face": "lib",
+      "scene": "company",
+      "pid": 28070,
+      "observedRevision": 1569,
+      "originalRevision": 1569,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/lib/lib-json-association-vbZWIN",
+      "backend": "json",
+      "face": "lib",
+      "scene": "association",
+      "pid": 28070,
+      "observedRevision": 808,
+      "originalRevision": 808,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/r05-current/lib/lib-sqlite-association-K4lnfL",
+      "backend": "sqlite",
+      "face": "lib",
+      "scene": "association",
+      "pid": 28070,
+      "observedRevision": 808,
+      "originalRevision": 808,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    }
+  ]
+}

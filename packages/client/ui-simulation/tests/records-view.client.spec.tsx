@@ -7,6 +7,7 @@ import { createSnapshotStore, simulationRecordsScope } from '@clocky/clocky-clie
 import type { SimulationRecordExportState, SimulationRuntimeState } from '@clocky/clocky-client-runtime/client'
 import { RecordsView } from '../src/client/RecordsView.tsx'
 import { en } from '../src/client/locales.ts'
+import { simulationRuntimeFixture } from './simulation-fixtures.client.ts'
 
 afterEach(cleanup)
 const runId = 'run' as never
@@ -22,15 +23,11 @@ const original = { ...metadata, mode: 'original' as const, selection: { sequence
     text: '<script>ORIGINAL_RECORD()</script>', part: 0, parts: 2 } }] }
 
 function setup(recordSequence?: number, recordKind?: string) {
-  const unloaded = { loading: false, stale: false }
-  const state = createSnapshotStore<SimulationRuntimeState>({ connected: true, generation: 1, authorizationVersion: 1,
-    unknownOperations: unloaded, statuses: unloaded, reviews: unloaded, catalog: unloaded, preflight: unloaded,
-    tasks: unloaded, persistentRequests: unloaded, control: unloaded, directory: unloaded, run: unloaded,
-    collection: unloaded, recovery: unloaded, object: unloaded, source: unloaded,
+  const state = createSnapshotStore<SimulationRuntimeState>(simulationRuntimeFixture({
     observation: { loading: false, stale: false, value: { runId, readVersion, cursor: 'watch' as never,
       status: 'changed' as const, observedAt: 1, world: { status: 'observed' as const, revision: 4 } } },
     records: { scope: simulationRecordsScope({ runId, mode: 'metadata', kind: recordKind }), loading: false, stale: false, value: metadata },
-    record: { scope: simulationRecordsScope({ runId, mode: 'original', sequence: recordSequence }), loading: false, stale: false, value: original } })
+    record: { scope: simulationRecordsScope({ runId, mode: 'original', sequence: recordSequence }), loading: false, stale: false, value: original } }))
   const exportState = createSnapshotStore<SimulationRecordExportState>({ pending: false, records: 0, bytes: 0, status: 'idle' })
   const read = vi.fn(async () => {})
   const close = vi.fn()
@@ -95,7 +92,7 @@ it('keeps route, runtime and export failure states public without leaking origin
   expect(h.view.getByText(en.loading)).toBeDefined()
   act(() => { h.state.set({ ...snapshot(), records: { ...snapshot().records, loading: false, stale: true } }) })
   rerender()
-  expect(h.view.getByText(en.stale)).toBeDefined()
+  expect(h.view.queryByText(en.stale)).toBeNull()
   act(() => { h.state.set({ ...snapshot(), records: { ...snapshot().records, stale: false, error: 'unavailable' } }) })
   rerender()
   expect(h.view.getByRole('alert').textContent).toBe(en.unavailable)
@@ -224,10 +221,10 @@ it('rejects reads while blocked, replaces stale route scopes, and preserves deta
   rerender(7, undefined)
   act(() => { h.state.set({ ...h.state.getSnapshot(), record: { ...h.state.getSnapshot().record, loading: true } }) })
   rerender(7, undefined)
-  expect(within(h.view.getByRole('complementary', { name: en.recordOriginal })).getByText(en.loading)).toBeDefined()
+  expect(within(h.view.getByRole('complementary', { name: en.recordOriginal })).queryByText(en.loading)).toBeNull()
   act(() => { h.state.set({ ...h.state.getSnapshot(), record: { ...h.state.getSnapshot().record, loading: false, stale: true } }) })
   rerender(7, undefined)
-  expect(within(h.view.getByRole('complementary', { name: en.recordOriginal })).getByText(en.stale)).toBeDefined()
+  expect(within(h.view.getByRole('complementary', { name: en.recordOriginal })).queryByText(en.stale)).toBeNull()
   act(() => { h.state.set({ ...h.state.getSnapshot(), record: { ...h.state.getSnapshot().record,
     stale: false, value: { ...original, items: [] } } }) })
   rerender(7, undefined)

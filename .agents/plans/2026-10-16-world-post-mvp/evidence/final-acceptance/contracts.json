@@ -1,0 +1,316 @@
+{
+  "date": "2026-10-20",
+  "status": "passed-with-declared-scope",
+  "scope": "H01-H04 for completed F/A/B/C01-C14/D and user-authorized local E implementation; no production qualification or human quality evaluation claim.",
+  "sourceManifests": [
+    {
+      "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-final-validation.json",
+      "sha256": "767d7ce4f6e56a5cd4238cf3e59b2ce37f16b5ec88060f5c0abebfa33a50bee9",
+      "sourceCount": 1605
+    },
+    {
+      "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/hashes.json",
+      "sha256": "56ccc519c035f23b9911e02c970bc15f10726dfa34e2856273ef73ee4fbb97c6",
+      "sourceCount": 26
+    }
+  ],
+  "mergedSourceVerification": {
+    "algorithm": "SHA-256 over current bytes; de-review replaces same-path de-final-validation entries",
+    "count": 1613,
+    "drift": [],
+    "areaCounts": {
+      "packages/host/apiproxy/": 84,
+      "packages/client/runtime/": 135,
+      "packages/client/connection/": 39,
+      "packages/sdk/": 82,
+      "python/sdk/": 69
+    }
+  },
+  "originalLogVerification": {
+    "count": 34,
+    "drift": [],
+    "entries": [
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-build.log",
+        "expectedSha256": "7709ba7d25045cd33bc1de5eb12a62ea414396ff74f73e0c01b5c1f28a62948e",
+        "actualSha256": "7709ba7d25045cd33bc1de5eb12a62ea414396ff74f73e0c01b5c1f28a62948e",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-typecheck.log",
+        "expectedSha256": "f781804e0ce9dff6cd9f854fab0fc1d38c982510c5d42b1201d28a7c3c1f829b",
+        "actualSha256": "f781804e0ce9dff6cd9f854fab0fc1d38c982510c5d42b1201d28a7c3c1f829b",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-lint.log",
+        "expectedSha256": "5ab93e893da8c5f0748aa794bd2eb7d7a9f0b0cd29d66dcb19d907219df202f5",
+        "actualSha256": "5ab93e893da8c5f0748aa794bd2eb7d7a9f0b0cd29d66dcb19d907219df202f5",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-doc-sync.log",
+        "expectedSha256": "bd1c74469a6159e9ca68693b7e0cffbb99f71ff578e3b6238f216c74aae83560",
+        "actualSha256": "bd1c74469a6159e9ca68693b7e0cffbb99f71ff578e3b6238f216c74aae83560",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-contracts.log",
+        "expectedSha256": "fb14683e18d704379057de7ece0ea974f1e8fbb391c3bfe3879f24a06c99c224",
+        "actualSha256": "fb14683e18d704379057de7ece0ea974f1e8fbb391c3bfe3879f24a06c99c224",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-simulation.log",
+        "expectedSha256": "62c9c557e3a273702306a08eb005169afe6e57a290e3377b659920d809d97830",
+        "actualSha256": "62c9c557e3a273702306a08eb005169afe6e57a290e3377b659920d809d97830",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-simulation-retry.log",
+        "expectedSha256": "97a12fdae77bf60e950c1d250a1f1fdfec6692f7a514492f2d12775fa7e3c44f",
+        "actualSha256": "97a12fdae77bf60e950c1d250a1f1fdfec6692f7a514492f2d12775fa7e3c44f",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-disposal-retry.log",
+        "expectedSha256": "178e3e131ad5abf03e2490e6f639a83f70ec1d7cb93e73a3a05d1a850e23307e",
+        "actualSha256": "178e3e131ad5abf03e2490e6f639a83f70ec1d7cb93e73a3a05d1a850e23307e",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-product.log",
+        "expectedSha256": "32ed5be1250198601ae2a5b3ce4a2117e8275b891a52909e0143936f75d541b2",
+        "actualSha256": "32ed5be1250198601ae2a5b3ce4a2117e8275b891a52909e0143936f75d541b2",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-snapshots.log",
+        "expectedSha256": "696d0404f1f4fe0ebdfcd132d3f0e56af9b127223042db87019223cce61c7788",
+        "actualSha256": "696d0404f1f4fe0ebdfcd132d3f0e56af9b127223042db87019223cce61c7788",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-built-snapshots.log",
+        "expectedSha256": "38358ffc69e49f0336d9ea501c35ab867a5dcdc18517ebb7174b5a5439703ee5",
+        "actualSha256": "38358ffc69e49f0336d9ea501c35ab867a5dcdc18517ebb7174b5a5439703ee5",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-python.log",
+        "expectedSha256": "29f227be2eb3b91535ae9fd1ac6f8afa5156a1686ed67f9f927a47d91cd50880",
+        "actualSha256": "29f227be2eb3b91535ae9fd1ac6f8afa5156a1686ed67f9f927a47d91cd50880",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-node-next.log",
+        "expectedSha256": "93028e431f47dbf27d714290d0a36c72f913a5d19d93e64f82ac084e1691144f",
+        "actualSha256": "93028e431f47dbf27d714290d0a36c72f913a5d19d93e64f82ac084e1691144f",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-constraints.log",
+        "expectedSha256": "018fe605fb12870f7d9d1184b775b8e471acb61e3266c7cf275d1847eb98cefe",
+        "actualSha256": "018fe605fb12870f7d9d1184b775b8e471acb61e3266c7cf275d1847eb98cefe",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-invariants.log",
+        "expectedSha256": "f789939c7bd645894fa3ecc687588adc9ffcb8edb9d36155931ada8777f63378",
+        "actualSha256": "f789939c7bd645894fa3ecc687588adc9ffcb8edb9d36155931ada8777f63378",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-diff.log",
+        "expectedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "actualSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-final-tests-types.log",
+        "expectedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "actualSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-disposal-lint.log",
+        "expectedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "actualSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-built-invariants.log",
+        "expectedSha256": "2e770e5e103a121676e529252790582c8298c35d4cdcd8d4faa622b994ff1cd4",
+        "actualSha256": "2e770e5e103a121676e529252790582c8298c35d4cdcd8d4faa622b994ff1cd4",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-install.log",
+        "expectedSha256": "e81d805e2a67eed0a78217fefdbc6e990f49ebe5924e45433e375a90f5989bb2",
+        "actualSha256": "e81d805e2a67eed0a78217fefdbc6e990f49ebe5924e45433e375a90f5989bb2",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/d-identity-before.log",
+        "expectedSha256": "b1dc87f2c6f2cfe0a82e5e99433a0801fe7206cbdc0d6439b88fc1c0f32e816d",
+        "actualSha256": "b1dc87f2c6f2cfe0a82e5e99433a0801fe7206cbdc0d6439b88fc1c0f32e816d",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/d-session-before.log",
+        "expectedSha256": "f8837f3341d903b22a960223e444ac0b89334b483cce1742318c8a750bf6a85b",
+        "actualSha256": "f8837f3341d903b22a960223e444ac0b89334b483cce1742318c8a750bf6a85b",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/d-focused.log",
+        "expectedSha256": "68a85c2e9ced54b999b36e8c9f215aec65b323011feee82085c9009862393a8f",
+        "actualSha256": "68a85c2e9ced54b999b36e8c9f215aec65b323011feee82085c9009862393a8f",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/e-before.log",
+        "expectedSha256": "64994c1b8e251fb216670228592600ade0b4c9913528d023e17b7596edb92b29",
+        "actualSha256": "64994c1b8e251fb216670228592600ade0b4c9913528d023e17b7596edb92b29",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/e-ownership-before.log",
+        "expectedSha256": "789a94e09b074e24931813bde5a7b7790422dfc9707b599c148f4855aaf400d7",
+        "actualSha256": "789a94e09b074e24931813bde5a7b7790422dfc9707b599c148f4855aaf400d7",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/e-final.log",
+        "expectedSha256": "e1febb135181ef5c43129d6abb803b70eb6b82fed5aa460959e90c6a311f06f4",
+        "actualSha256": "e1febb135181ef5c43129d6abb803b70eb6b82fed5aa460959e90c6a311f06f4",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/product-final.log",
+        "expectedSha256": "36c408b125b83bc500b00210fd60da981144d0a7ba8f8fc9825fda352808b1f1",
+        "actualSha256": "36c408b125b83bc500b00210fd60da981144d0a7ba8f8fc9825fda352808b1f1",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/built-snapshots.log",
+        "expectedSha256": "11e80a2b0bea9e772389d61f41b7c6c07b6356c42daa9cfef435f1041ca3c9b9",
+        "actualSha256": "11e80a2b0bea9e772389d61f41b7c6c07b6356c42daa9cfef435f1041ca3c9b9",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/catalog-tests.log",
+        "expectedSha256": "135b6480e3ab166d27683f61cac652c29ab8cac45ffb59b9ff351180c7a30e22",
+        "actualSha256": "135b6480e3ab166d27683f61cac652c29ab8cac45ffb59b9ff351180c7a30e22",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/build.log",
+        "expectedSha256": "482819bad3612991eb969b5f983a5a11f49ae618a0c78f4111cf05e6def72673",
+        "actualSha256": "482819bad3612991eb969b5f983a5a11f49ae618a0c78f4111cf05e6def72673",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/lint.log",
+        "expectedSha256": "5ab93e893da8c5f0748aa794bd2eb7d7a9f0b0cd29d66dcb19d907219df202f5",
+        "actualSha256": "5ab93e893da8c5f0748aa794bd2eb7d7a9f0b0cd29d66dcb19d907219df202f5",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/doc-sync.log",
+        "expectedSha256": "d423343af9f40eb8066845a0edc0c5116e806afe34d6a3e1ba562adfb730c7a9",
+        "actualSha256": "d423343af9f40eb8066845a0edc0c5116e806afe34d6a3e1ba562adfb730c7a9",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/diff.log",
+        "expectedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "actualSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/doc-sync-before-catalog.log",
+        "expectedSha256": "cc3721a068b75d66d18583cfb64bcf9f84032867a60b0f6c6f053e30f07850f3",
+        "actualSha256": "cc3721a068b75d66d18583cfb64bcf9f84032867a60b0f6c6f053e30f07850f3",
+        "matches": true
+      }
+    ]
+  },
+  "historicalArtifactVerification": {
+    "count": 12,
+    "changed": [
+      {
+        "path": "packages/simulation/simulation-team/lib/index.js",
+        "historicalSha256": "2be80e465deb659f67c7e43346b9d0e1fff0dff2aad8b2e57ffb1425612f5b20",
+        "currentSha256": "55ce9a023aab9fbc3a8f01bf69f6bd1c55b2afd3c95707048aba6352f19351ff"
+      }
+    ],
+    "interpretation": "Historical manifest remains unchanged; latest de-review build and 6 built snapshot passes supersede the old Team bundle evidence. Current changed artifact hash is recorded here."
+  },
+  "items": {
+    "H01": {
+      "conclusion": "accepted-with-declared-scope",
+      "evidence": [
+        "packages/simulation/simulation-product/src/experiment-schema.ts",
+        "packages/simulation/simulation-product/src/experiment-store.ts",
+        "packages/simulation/simulation-product/src/external-effect-schema.ts",
+        "packages/simulation/simulation-team/src/backup.ts",
+        "packages/sdk/server/tests/simulation-world.spec.ts",
+        "python/sdk/tests/test_simulation_experiments.py",
+        "python/sdk/tests/test_simulation_retention.py"
+      ],
+      "observed": "Public and persisted strict parsers reject extra fields, malformed status-dependent fields, unsupported versions and invalid original identities; backup owners verify complete hash/reference closure. SDK tests cover strict scalar and UTF-16 bounds."
+    },
+    "H02": {
+      "conclusion": "accepted-with-declared-scope",
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/review.md",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/d1/product-import-matrix.json",
+        "packages/simulation/simulation-product/tests/experiments.spec.ts",
+        "packages/simulation/simulation-product/tests/federation-checkpoint.spec.ts"
+      ],
+      "observed": "JSON/SQLite tests and real Loader processes cover write-before-failure, committed reply loss, exact retry, lazy Session reservation recovery, import SIGKILL, original receipts, unknown reservations and source time promises."
+    },
+    "H03": {
+      "conclusion": "accepted-with-declared-scope",
+      "evidence": [
+        "packages/sdk/client/tests/simulation-world.spec.ts",
+        "python/sdk/tests/test_simulation_scenario.py",
+        "packages/session/session-persistence/tests/coordinator-contract.ts",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-contracts.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/de-python.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/built-snapshots.log"
+      ],
+      "observed": "Host/Client/TS contracts 2242 and Python 1003 existing passes have unchanged inputs. TS/Python reject unknown required events and omit only unknown ignorable:true events from typed transcript; Python verifies the core event vocabulary. Latest full build and plain Node built snapshots 6/6 cover the subsequent Team change."
+    },
+    "H04": {
+      "conclusion": "accepted-with-declared-scope",
+      "evidence": [
+        "packages/host/apiproxy/tests/world-creation.spec.ts",
+        "packages/host/apiproxy/tests/simulation-request-recovery.spec.ts",
+        "packages/client/runtime/tests/simulation-administration.client.spec.ts",
+        "packages/client/runtime/tests/simulation-request-recovery.client.spec.ts",
+        "packages/simulation/simulation-product/tests/experiments.spec.ts"
+      ],
+      "observed": "Authenticated fetch concurrent duplicate requests return the same run; changed original payload rejects. Runtime tests retain exact commands through timeout/disconnect and cold request discovery, coalesce competing sends and reconcile original receipts. Preview/export/query tests assert zero model calls."
+    }
+  },
+  "reusedTestEvidence": {
+    "contracts": 2242,
+    "python": 1003,
+    "deReviewFocused": 95,
+    "latestBuiltSnapshots": 6,
+    "testsRerunDuringThisAudit": false
+  },
+  "limitations": [
+    "C15/C16 human scoring remains deferred.",
+    "E01/E07/E08/E15 remain unaccepted; E is a local test implementation.",
+    "Supported initial/settled seed, text memory and local protocols retain their prior documented restrictions.",
+    "No exhaustive proof of every possible malformed value or failure interleaving; conclusions use the owner rejection and recovery matrix already recorded."
+  ],
+  "auditCommands": [
+    "Python hashlib verification of sourceSha256 with latest-manifest overlay, each original logSha256 and existing artifactSha256.",
+    "Read-only semantic inspection of cited source/tests and original build/test logs."
+  ],
+  "publication": "No commit or push; no source or checklist mutation."
+}

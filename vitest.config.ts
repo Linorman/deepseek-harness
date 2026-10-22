@@ -134,6 +134,9 @@ const processBoundTests = [
 export default defineConfig({
   plugins: [pathsPlugin(), standardDecoratorPlugin()],
   test: {
+    // Real journal suites share host CPU and durable IO. CPU-count forks can starve their fixed deadlines.
+    // Explicit CI/coverage --maxWorkers budgets still override this local default.
+    maxWorkers: 4,
     setupFiles: ['./scripts/test-invariants.ts', './scripts/test-dom.ts'],
     // .tsx: client component specs (jsdom via per-file @vitest-environment pragma).
     include: testIncludes,

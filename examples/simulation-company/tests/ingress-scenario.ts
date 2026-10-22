@@ -13,7 +13,7 @@ const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ prov
   runId: 'ingress', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1',
   outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2,
-  maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [],
+  maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [],
 } }))
 const release = Promise.withResolvers<undefined>()
 const started = Promise.withResolvers<undefined>()
@@ -25,7 +25,7 @@ const hold = async (stage: string) => {
 try {
   const entityId = simulationEntityIdSchema.parse('receiver')
   const team = await ctx.simulationTeams.ensureTeam(run, { goal: { objective: 'Process ordered external inputs', budgets: {} }, budgets: {} }, 'simulation/ingress')
-  if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId,
+  if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId,
     entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/ingress')
   await connection.ensureParticipant(entityId, { displayName: 'Receiver', role: 'receiver', capabilities: [],

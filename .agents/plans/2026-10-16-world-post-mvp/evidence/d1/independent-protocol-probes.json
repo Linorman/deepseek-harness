@@ -1,0 +1,13 @@
+{
+  "causalOracle": {
+    "beforePrivateMessage": "Federation blocked: missing sequence or causal predecessor",
+    "afterPrivateMessage": "probe",
+    "foreignInboxInspection": "Federation authorization unavailable"
+  },
+  "duplicateGrantReplay": {
+    "firstGrant": "grant-a",
+    "secondGrant": "grant-a",
+    "replayedEffectStatus": "confirmed",
+    "dispatchCalls": 1
+  }
+}

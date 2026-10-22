@@ -43,6 +43,9 @@
     },
     {
       "path": "../ui-settings"
+    },
+    {
+      "path": "../../simulation/simulation-scenario"
     }
   ]
 }

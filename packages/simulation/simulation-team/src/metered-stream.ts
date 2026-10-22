@@ -10,17 +10,21 @@ import type { SimulationTokenReservation, SimulationTokenUsage, SimulationWriter
  * @param check - Final asynchronous admission check before entering downstream code.
  * @param flush - Canonical Session durability barrier before token settlement.
  * @param signal - Final cancellation check after asynchronous authority validation.
+ * @param beforeDispatch - Synchronous live authority check immediately before downstream entry.
+ * @param onOverrun - Optional owner cleanup after retaining actual usage; never rewrites or retries the charged request.
  * @returns forwarded chunks while retaining accurate terminal accounting.
  */
 export async function* meteredStream(writer: SimulationWriterLease, reservation: SimulationTokenReservation,
   next: () => AsyncIterable<StreamChunk>, check: () => void | Promise<void>, flush: () => Promise<boolean>,
-  signal: AbortSignal): AsyncIterable<StreamChunk> {
+  signal: AbortSignal, beforeDispatch?: () => void,
+  onOverrun?: (reservation: SimulationTokenReservation) => Promise<void>): AsyncIterable<StreamChunk> {
   let usage: SimulationTokenUsage | undefined
   let complete = false
   let dispatched = false
   try {
     await check()
     signal.throwIfAborted()
+    beforeDispatch?.()
     dispatched = true
     for await (const chunk of next()) {
       if (chunk.type === 'usage') usage = { inputTokens: chunk.usage.inputTokens, outputTokens: chunk.usage.outputTokens,
@@ -32,8 +36,9 @@ export async function* meteredStream(writer: SimulationWriterLease, reservation:
     }
   } finally {
     if (!await flush()) throw new Error('Simulation token settlement requires durable Session usage')
-    await writer.settleModelTokens(reservation.id, !dispatched ? { kind: 'not-dispatched' }
+    const settled = await writer.settleModelTokens(reservation.id, !dispatched ? { kind: 'not-dispatched' }
       : complete && usage !== undefined ? { kind: 'complete', usage }
         : { kind: 'unknown', ...usage === undefined ? {} : { observedUsage: usage } })
+    if (settled.overrunAcknowledged === false) await onOverrun?.(settled)
   }
 }

@@ -1,5 +1,7 @@
 # @clocky/clocky-compaction
 
+`./no-gain` 叶模块导出持久化无收益证据和诊断 payload 的纯校验函数，不导入运行时服务或 Node 模块，并与 SDK transcript 边界共用。
+
 [English](README.md) | 中文
 
 **`CompactionEngine`**（`ctx.compaction`）定义压缩（compaction）做什么，即判定历史记录是否过大，并将较早范围摘要为单个表层节点，但不规定如何实现。

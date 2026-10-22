@@ -1,0 +1,1 @@
+{"report":".local/world-completion/c15-external-actor/verification-report.json","totals":{"cases":8,"processes":24,"coldRestoresWithoutInference":16,"canonicalPosts":24,"rawArtifacts":56,"logArtifacts":2,"hashedArtifacts":58},"inputs":{"owned":5,"sources":1963,"libraries":2577}}

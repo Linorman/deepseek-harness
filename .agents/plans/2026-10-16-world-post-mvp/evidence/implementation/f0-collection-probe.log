@@ -1,0 +1,20 @@
+Command: PYTHONDONTWRITEBYTECODE=1 python3 scripts/world-post-mvp-acceptance.py --laboratory .local/world-post-mvp/f0-longitudinal/1792333087908875000 --association .local/world-post-mvp/f0-longitudinal/1792337889212043000 --company .local/world-post-mvp/f0-longitudinal/1792338832170825000 --output .tmp/world-post-mvp/f0-collection-probe
+Exit code: 1 (expected: company baseline remains in progress)
+Original stdout:
+{"complete": false, "rows": 4, "output": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/f0-collection-probe/summary.json"}
+
+The collection report contains four accepted laboratory/association backend rows.
+All current issues concern company; laboratory and association have no issues.
+Issues read from the resulting summary.json:
+company/company-json/cold.stderr: missing or invalid evidence (FileNotFoundError)
+company/company-json/cold.stdout: missing or invalid evidence (FileNotFoundError)
+company/company-sqlite/cold.stderr: missing or invalid evidence (FileNotFoundError)
+company/company-sqlite/cold.stdout: missing or invalid evidence (FileNotFoundError)
+company/company-sqlite/warm.stderr: missing or invalid evidence (FileNotFoundError)
+company/company-sqlite/warm.stdout: missing or invalid evidence (FileNotFoundError)
+company/input-drift.json: missing or invalid evidence (FileNotFoundError)
+company: ('company', 'json', False): expected exactly one process record, found 0
+company: ('company', 'json', True): expected exactly one process record, found 0
+company: ('company', 'sqlite', False): expected exactly one process record, found 0
+company: ('company', 'sqlite', True): expected exactly one process record, found 0
+company: Missing, invalid or nonempty input-drift evidence

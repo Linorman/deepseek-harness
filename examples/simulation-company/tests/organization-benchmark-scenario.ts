@@ -41,7 +41,8 @@ const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 
   maxDriveSteps: options.sampleEvery, maxMicrostepsPerTime: options.operations * 6,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: options.timeoutMs, maxConflictRetries: 0,
   maxIngressBytes: 4096, maxEntities: options.entities, maxResidentActors: options.residents, maxDecisionsPerWindow: 1,
-  maxOperationsPerDecision: 1, maxResourceQuantity: String(options.operations), maxQueuedDecisions: people.length,
+  maxOperationsPerDecision: 1,
+  maxResourceReservationHistory: 128, maxResourceQuantity: String(options.operations), maxQueuedDecisions: people.length,
   maxDispatchWaitRounds: people.length, budgetInterval: String(options.days + 2), maxDecisionsPerInterval: options.operations * 3,
   maxMessagesPerInterval: 0, maxTokensPerInterval: 0, tokensPerModelRequest: 1,
   maxPendingEvents: options.operations * 2, maxPendingInteractions: options.operations, maxKnowledgeBytes: 4096, maxKnowledgePerQuery: 1,
@@ -66,7 +67,7 @@ try {
     ...departments.map(id => ({ id, entityKind: 'department', cognition: 'none' }))]
   for (let start = 0; start < entities.length; start += options.entityBatchSize) {
     await run.changeMany(entities.slice(start, start + options.entityBatchSize).map(entity => simulationChangeSchema.parse({
-      kind: 'entity/create', ...entity, profile: {},
+      kind: 'entity/create', readiness: 'ready', ...entity, profile: {},
     })), run.snapshot().revision)
   }
   for (const [index, id] of people.entries()) {

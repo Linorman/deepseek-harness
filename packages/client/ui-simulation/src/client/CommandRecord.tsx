@@ -24,10 +24,11 @@ export function CommandRecord({ value, connected, query, retry, t, navigate, nav
   const input = value.command.input
   const id = 'commandId' in input ? input.commandId : 'managementId' in input ? input.managementId : input.ingressId
   const result = value.receipt
+  const management = result?.kind === 'request' ? result.worldManagementOutcome : undefined
   const kind = value.command.kind === 'retry-request' && result?.kind === 'request' ? result.value.kind : value.command.kind
   const observation = value.requestObservation
   const authoritativeTerminal = observation !== undefined && observation.status !== 'accepted'
-  const retryBlocked = value.notAccepted || value.requestObservationUnavailable || authoritativeTerminal || observation?.comparison === 'conflict'
+  const retryBlocked = value.notAccepted || value.unknown && !value.notFound || value.requestObservationUnavailable || authoritativeTerminal || observation?.comparison === 'conflict'
   const unresolved = value.requestObservationUnavailable || value.unknown || result === undefined || result.value.status === 'accepted' || result.value.status === 'in-progress'
     || observation?.comparison === 'conflict'
     || result.kind === 'ingress' && (result.value.status === 'pending' || result.value.status === 'claimed')
@@ -38,6 +39,15 @@ export function CommandRecord({ value, connected, query, retry, t, navigate, nav
     {result.kind === 'request' && result.value.diagnostic !== undefined && <CheckpointDiagnostic value={result.value.diagnostic}
       runId={result.value.runId} t={t} navigate={navigate} navigateApplication={navigateApplication} />}
     {result.kind === 'request' && result.value.failure !== undefined && <p>{t(`requestFailure.${result.value.failure}`)}</p>}
+    {management !== undefined && <>
+      {management.execution !== undefined && <p>{t('world.track.execution')}: {t(`cases.execution.${management.execution.phase}`)}</p>}
+      {management.execution?.reason !== undefined && management.execution.reason !== null
+        && <p>{t(`status.stop.${management.execution.reason}`)}</p>}
+      <p>{management.result === undefined ? t('cases.noResult') : t(`cases.status.${management.result.status}`)}</p>
+      {navigate !== undefined && <Button variant="secondary" onClick={() => {
+        navigate({ runId: management.runId, module: 'cases', objectId: management.requestId, caseSection: 'execution', search: '' })
+      }}>{t('cases.openOriginal')}</Button>}
+    </>}
   </>
   const outcomeUnknown = value.unknown && !authoritativeTerminal
   return <section className={css.command} aria-label={t('originalCommand')} data-outcome-unknown={outcomeUnknown || undefined}>
@@ -71,7 +81,8 @@ export function CommandRecord({ value, connected, query, retry, t, navigate, nav
       <Button disabled={!connected || value.pending} aria-busy={value.pending} onClick={() => { void query() }}>{t('queryOriginal')}</Button>
       {!retryBlocked && <Button variant="secondary" disabled={!connected || value.pending} aria-busy={value.pending} onClick={() => { void retry() }}>{t('retryOriginal')}</Button>}
     </div>}
-    {!unresolved && (alwaysQuery || result.kind === 'request' && result.value.diagnostic !== undefined) && <Button disabled={!connected || value.pending} aria-busy={value.pending}
+    {!unresolved && (alwaysQuery || value.command.kind === 'world-management'
+      || result.kind === 'request' && result.value.diagnostic !== undefined) && <Button disabled={!connected || value.pending} aria-busy={value.pending}
       onClick={() => { void query() }}>{t('queryOriginal')}</Button>}
   </section>
 }

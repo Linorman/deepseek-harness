@@ -1,0 +1,38 @@
+packages/simulation/simulation/src/world-domains.ts:27:1: error @stylistic(max-len): This line has a length of 157. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-mutation.ts:39:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-organization.ts:68:1: error @stylistic(max-len): This line has a length of 152. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-organization.ts:84:1: error @stylistic(max-len): This line has a length of 194. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-organization.ts:91:1: error @stylistic(max-len): This line has a length of 148. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-organization.ts:139:1: error @stylistic(max-len): This line has a length of 157. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-hire.ts:212:1: error @stylistic(max-len): This line has a length of 151. Maximum allowed is 140.
+packages/simulation/simulation-scenario/src/compiler.ts:93:1: error @stylistic(max-len): This line has a length of 147. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:187:63: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-local/src/world.ts:127:1: error @stylistic(max-len): This line has a length of 149. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:172:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:191:1: error @stylistic(max-len): This line has a length of 149. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:211:1: error @stylistic(max-len): This line has a length of 161. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:233:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:355:1: error @stylistic(max-len): This line has a length of 165. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:449:1: error @stylistic(max-len): This line has a length of 166. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:554:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:572:1: error @stylistic(max-len): This line has a length of 165. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:619:1: error @stylistic(max-len): This line has a length of 147. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:697:1: error @stylistic(max-len): This line has a length of 146. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:337:64: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/src/world.ts:337:78: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/src/run.ts:127:1: error @stylistic(max-len): This line has a length of 159. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:178:1: error @stylistic(max-len): This line has a length of 145. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:245:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:309:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:354:1: error @stylistic(max-len): This line has a length of 149. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:955:1: error @stylistic(max-len): This line has a length of 142. Maximum allowed is 140.
+examples/simulation-company/tests/world-booking-domain.ts:68:1: error @stylistic(max-len): This line has a length of 142. Maximum allowed is 140.
+packages/simulation/simulation-local/src/decisions.ts:126:1: error @stylistic(max-len): This line has a length of 155. Maximum allowed is 140.
+packages/simulation/simulation-local/src/index.ts:135:1: error @stylistic(max-len): This line has a length of 149. Maximum allowed is 140.
+packages/simulation/simulation/src/world.ts:5:1: error @stylistic(max-len): This line has a length of 147. Maximum allowed is 140.
+examples/simulation-company/tests/world-booking-scenario.ts:59:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-product/src/cases.ts:81:1: error @stylistic(max-len): This line has a length of 160. Maximum allowed is 140.
+packages/simulation/simulation-product/src/world-preparation.ts:158:1: error @stylistic(max-len): This line has a length of 162. Maximum allowed is 140.
+packages/simulation/simulation-product/src/world-preparation.ts:165:1: error @stylistic(max-len): This line has a length of 190. Maximum allowed is 140.
+packages/simulation/simulation-product/src/world-preparation.ts:242:1: error @stylistic(max-len): This line has a length of 152. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:588:9: error typescript(no-unnecessary-condition): This condition will always return the same value since the types have no overlap.

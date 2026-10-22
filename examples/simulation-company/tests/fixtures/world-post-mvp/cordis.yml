@@ -1,0 +1,3 @@
+- name: cordis:include
+  config:
+    path: ../../../cordis.yml

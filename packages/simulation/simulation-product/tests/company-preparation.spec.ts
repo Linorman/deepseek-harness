@@ -34,6 +34,7 @@ it.each(['json', 'sqlite'] as const)('prepares and retries a paused company with
     expect(result.checkpoint.manifest.sessions.every(value => value.kind === 'unmaterialized')).toBe(true)
     expect(result.checkpoint.manifest.channels).toHaveLength(1)
     expect(h.run.snapshot().phase).toBe('paused')
+    expect(Object.values(h.run.snapshot().entities).map(entity => entity.readiness)).toEqual(['ready', 'ready'])
     expect(h.run.population().chargedActors).toBe(0)
     expect(h.ctx.simulationTeams.modelUsage().active).toBe(0)
     expect(await h.ctx.sessionPersistence.list()).toEqual([])
@@ -119,7 +120,7 @@ it('refuses changed retained entity and resource facts before any further topolo
   const h = await fixture()
   try {
     const id = simulationEntityIdSchema.parse('buyer')
-    await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent',
+    await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent',
       profile: { name: 'Different' } }), h.run.snapshot().revision)
     const before = h.run.snapshot()
     expect(() => prepareSimulationCompany(h.ctx.simulationTeams, h.run, settings)).toThrow('retained entity differs')
@@ -127,7 +128,7 @@ it('refuses changed retained entity and resource facts before any further topolo
   } finally { await h.close() }
   const resource = await fixture()
   try {
-    await resource.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'buyer', entityKind: 'person', cognition: 'agent',
+    await resource.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'buyer', entityKind: 'person', cognition: 'agent',
       profile: { name: settings.buyerName } }), resource.run.snapshot().revision)
     await resource.run.createResource(simulationResourceSpecSchema.parse({ id: 'received', owner: 'buyer', quantity: '1',
       kind: 'inventory', unit: 'item', controllers: ['buyer'] }), resource.run.snapshot().revision)

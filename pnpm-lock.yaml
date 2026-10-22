@@ -222,6 +222,9 @@ importers:
       '@clocky/clocky-simulation-team':
         specifier: workspace:^
         version: link:../../packages/simulation/simulation-team
+      '@clocky/clocky-simulation-world':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-world
       '@clocky/clocky-skill':
         specifier: workspace:^
         version: link:../../packages/skill/skill
@@ -355,6 +358,9 @@ importers:
 
   apps/web:
     devDependencies:
+      '@clocky/clocky-client-connection':
+        specifier: workspace:^
+        version: link:../../packages/client/connection
       '@clocky/clocky-client-modules':
         specifier: workspace:^
         version: link:../../packages/client/modules
@@ -364,9 +370,6 @@ importers:
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../../packages/client/ui-slots
-      '@clocky/clocky-client-ui-viz':
-        specifier: workspace:^
-        version: link:../../packages/client/ui-viz
       '@clocky/clocky-client-web':
         specifier: workspace:^
         version: link:../../packages/client/web
@@ -376,6 +379,9 @@ importers:
       '@clocky/clocky-pwsh-local':
         specifier: workspace:^
         version: link:../../packages/shell/pwsh-local
+      '@clocky/clocky-simulation-scenario':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-scenario
       '@clocky/cordis-plugin-group':
         specifier: workspace:^
         version: link:../../vendor/group
@@ -412,6 +418,9 @@ importers:
       vitest:
         specifier: ^4.1.8
         version: 4.1.8(@opentelemetry/api@1.9.0)(@types/node@22.20.0)(@vitest/coverage-v8@4.1.8)(jsdom@29.1.1)(vite@6.4.3(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   examples:
     dependencies:
@@ -670,9 +679,15 @@ importers:
       '@clocky/clocky-simulation-product':
         specifier: workspace:^
         version: link:../packages/simulation/simulation-product
+      '@clocky/clocky-simulation-scenario':
+        specifier: workspace:^
+        version: link:../packages/simulation/simulation-scenario
       '@clocky/clocky-simulation-team':
         specifier: workspace:^
         version: link:../packages/simulation/simulation-team
+      '@clocky/clocky-simulation-world':
+        specifier: workspace:^
+        version: link:../packages/simulation/simulation-world
       '@clocky/clocky-skill':
         specifier: workspace:*
         version: link:../packages/skill/skill
@@ -868,6 +883,9 @@ importers:
       '@clocky/cordis-plugin-timer':
         specifier: workspace:*
         version: link:../vendor/timer
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       typescript:
         specifier: ^6.0.3
@@ -1913,9 +1931,15 @@ importers:
       '@clocky/clocky-simulation-product':
         specifier: workspace:^
         version: link:../../simulation/simulation-product
+      '@clocky/clocky-simulation-scenario':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-scenario
       '@clocky/clocky-simulation-team':
         specifier: workspace:^
         version: link:../../simulation/simulation-team
+      '@clocky/clocky-simulation-world':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-world
       '@clocky/clocky-storage':
         specifier: workspace:^
         version: link:../../storage/storage
@@ -3278,6 +3302,9 @@ importers:
 
   packages/client/ui-simulation:
     dependencies:
+      clsx:
+        specifier: ^2.0.0
+        version: 2.1.1
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -3315,18 +3342,30 @@ importers:
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-simulation':
+        specifier: workspace:^
+        version: link:../../simulation/simulation
       '@clocky/clocky-simulation-product':
         specifier: workspace:^
         version: link:../../simulation/simulation-product
+      '@clocky/clocky-simulation-scenario':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-scenario
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
+      '@types/react-dom':
+        specifier: ~18.3.7
+        version: 18.3.7(@types/react@18.3.31)
       react:
         specifier: ^18.2.0
         version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
 
   packages/client/ui-skill:
     devDependencies:
@@ -3656,9 +3695,6 @@ importers:
 
   packages/client/ui-viz:
     dependencies:
-      clsx:
-        specifier: ^2.0.0
-        version: 2.1.1
       d3-force:
         specifier: ^3.0.0
         version: 3.0.0
@@ -7222,6 +7258,9 @@ importers:
 
   packages/sdk/client:
     devDependencies:
+      '@clocky/clocky-compaction':
+        specifier: workspace:^
+        version: link:../../compaction/compaction
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -8331,6 +8370,9 @@ importers:
 
   packages/simulation/simulation:
     dependencies:
+      moment-timezone:
+        specifier: 0.6.5
+        version: 0.6.5
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -8341,6 +8383,9 @@ importers:
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../../core/session
@@ -8363,12 +8408,18 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@clocky/clocky-agent-presets':
+        specifier: workspace:^
+        version: link:../../preset/agent-presets
       '@clocky/clocky-app-boot':
         specifier: workspace:^
         version: link:../../boot/app-boot
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
       '@clocky/clocky-loader-smoke':
         specifier: workspace:^
         version: link:../../test-support/loader-smoke
@@ -8390,15 +8441,30 @@ importers:
       '@clocky/clocky-team':
         specifier: workspace:^
         version: link:../../core/team
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-tool-simulation':
+        specifier: workspace:^
+        version: link:../tool-simulation
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
+      '@clocky/cordis-plugin-include':
+        specifier: workspace:^
+        version: link:../../../vendor/include
+      '@clocky/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
 
   packages/simulation/simulation-product:
     dependencies:
       '@clocky/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      fast-json-stable-stringify:
+        specifier: ^2.1.0
+        version: 2.1.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -8439,9 +8505,15 @@ importers:
       '@clocky/clocky-simulation':
         specifier: workspace:^
         version: link:../simulation
+      '@clocky/clocky-simulation-scenario':
+        specifier: workspace:^
+        version: link:../simulation-scenario
       '@clocky/clocky-simulation-team':
         specifier: workspace:^
         version: link:../simulation-team
+      '@clocky/clocky-simulation-world':
+        specifier: workspace:^
+        version: link:../simulation-world
       '@clocky/clocky-storage':
         specifier: workspace:^
         version: link:../../storage/storage
@@ -8482,6 +8554,28 @@ importers:
         specifier: workspace:^
         version: link:../../../vendor/loader
 
+  packages/simulation/simulation-scenario:
+    dependencies:
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-simulation':
+        specifier: workspace:^
+        version: link:../simulation
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
   packages/simulation/simulation-team:
     dependencies:
       '@clocky/schemastery':
@@ -8509,6 +8603,12 @@ importers:
       '@clocky/clocky-app-boot':
         specifier: workspace:^
         version: link:../../boot/app-boot
+      '@clocky/clocky-attachment':
+        specifier: workspace:^
+        version: link:../../attachment/attachment
+      '@clocky/clocky-attachment-local':
+        specifier: workspace:^
+        version: link:../../attachment/attachment-local
       '@clocky/clocky-compaction':
         specifier: workspace:^
         version: link:../../compaction/compaction
@@ -8539,6 +8639,9 @@ importers:
       '@clocky/clocky-simulation-local':
         specifier: workspace:^
         version: link:../simulation-local
+      '@clocky/clocky-simulation-world':
+        specifier: workspace:^
+        version: link:../simulation-world
       '@clocky/clocky-storage':
         specifier: workspace:^
         version: link:../../storage/storage
@@ -8575,6 +8678,28 @@ importers:
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../../core/tools
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/simulation/simulation-world:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-simulation':
+        specifier: workspace:^
+        version: link:../simulation
+      '@clocky/clocky-simulation-scenario':
+        specifier: workspace:^
+        version: link:../simulation-scenario
+      '@clocky/clocky-simulation-team':
+        specifier: workspace:^
+        version: link:../simulation-team
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -10903,9 +11028,15 @@ importers:
       '@clocky/clocky-simulation-product':
         specifier: workspace:^
         version: link:../../packages/simulation/simulation-product
+      '@clocky/clocky-simulation-scenario':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-scenario
       '@clocky/clocky-simulation-team':
         specifier: workspace:^
         version: link:../../packages/simulation/simulation-team
+      '@clocky/clocky-simulation-world':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-world
       '@clocky/clocky-skill':
         specifier: workspace:^
         version: link:../../packages/skill/skill
@@ -12526,10 +12657,12 @@ packages:
 
   '@modelcontextprotocol/server-everything@2026.7.4':
     resolution: {integrity: sha512-ydMW/M6rk9tK23b+U38trsNLHhd5eF+ntiv2Vr+RPMDhbiKY/IKrZU25ukvSXVPUBvy7TxTPWpeV4KcYcXg72w==}
+    deprecated: 'Date-based versions are no longer published. This package has resumed semantic versioning at 1.0.0: install the latest version.'
     hasBin: true
 
   '@modelcontextprotocol/server-filesystem@2026.7.10':
     resolution: {integrity: sha512-Mmjg4anFBD5OzbPnGJOA0jPPN8645ERhQk38HQLpSenx1ox9bfdPkmAzUnNjeQtqQGFLtKe13J20RtLBmUKMZA==}
+    deprecated: 'Date-based versions are no longer published. This package has resumed semantic versioning at 1.0.0: install the latest version.'
     hasBin: true
 
   '@napi-rs/wasm-runtime@1.1.5':
@@ -15491,6 +15624,12 @@ packages:
 
   mitt@3.0.1:
     resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
+
+  moment-timezone@0.6.5:
+    resolution: {integrity: sha512-KKzZAxGv2Qx4cnk6eSlvf4C+DLFW52vmMY5MN7UARY7GONbozkutylQG3DrrtmLCTXdQ5XZrqao9cI16bLFzXA==}
+
+  moment@2.31.0:
+    resolution: {integrity: sha512-0acOTfMiWOheYS4eoWb80yYMb/JLvVv9SHbs2PehaDzfUG0Bw855SKyk0IKTnPGa5+U2bmi3W68l1+sGLX/pvw==}
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -20892,6 +21031,12 @@ snapshots:
       minipass: 7.1.3
 
   mitt@3.0.1: {}
+
+  moment-timezone@0.6.5:
+    dependencies:
+      moment: 2.31.0
+
+  moment@2.31.0: {}
 
   mri@1.2.0: {}
 

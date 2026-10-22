@@ -1,0 +1,1 @@
+examples/simulation-company/tests/world-external-crash-scenario.ts:145:1: error @stylistic(max-len): This line has a length of 142. Maximum allowed is 140.

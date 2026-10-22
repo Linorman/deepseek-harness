@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 /** Cold discovery preserves original identity and does not restore private authoring input. */
 import { afterEach, expect, it, vi } from 'vitest'
+import { useState } from 'react'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import type { SimulationProductRequestsPage, SimulationCommand, SimulationCommandState } from '@clocky/clocky-client-runtime/client'
 import { simulationCommandKey } from '@clocky/clocky-client-runtime/client'
@@ -42,7 +43,25 @@ it('uses an already retained full original for an explicit retry and disables un
     templateId: 'company' as never, templateVersion: '1', expectedModel: { provider: 'company', name: 'scripted' }, name: 'Private original',
     parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } } },
   pending: false, unknown: true, notFound: false }
-  const view = render(<PersistentRequests {...base} commands={{ [key]: original }} />)
+  const query = vi.fn<(key: string) => Promise<SimulationCommandState | undefined>>()
+  function Harness() {
+    const [commands, setCommands] = useState({ [key]: original })
+    query.mockImplementation(async () => {
+      const missing: SimulationCommandState = { ...original, notFound: true }
+      setCommands({ [key]: missing }); return missing
+    })
+    return <PersistentRequests {...base} commands={commands} query={query}
+      renderOriginal={record => <CommandRecord value={record} connected alwaysQuery
+        query={() => query(simulationCommandKey(record.command))}
+        retry={() => base.submit(simulationCommandKey(record.command))} t={key => en[key]} />} />
+  }
+  const view = render(<Harness />)
+  expect(view.queryByRole('button', { name: en.retryOriginal })).toBeNull()
+  expect(base.submit).not.toHaveBeenCalled()
+  fireEvent.click(view.getByRole('button', { name: en.queryOriginal }))
+  await view.findByText(en.commandNotFound)
+  expect(query).toHaveBeenCalledWith(key)
+  expect(base.submit).not.toHaveBeenCalled()
   fireEvent.click(view.getByRole('button', { name: en.retryOriginal }))
   await waitFor(() => { expect(base.submit).toHaveBeenCalledWith(key) })
   expect(base.retain).not.toHaveBeenCalled()
@@ -163,13 +182,14 @@ it('renders unresolved ingress and maintenance originals without leaking their p
   expect(query).toHaveBeenCalledOnce()
 })
 
-it('renders empty, loading and stale persistent-request pages distinctly', () => {
+it('retains the empty request page during silent background refresh', () => {
   const base = props()
   const empty: SimulationProductRequestsPage = { runId: page.runId, snapshotRevision: 1, total: 0, items: [] }
   const view = render(<PersistentRequests {...base} value={{ value: empty, loading: true, stale: false }} />)
-  expect(view.getByRole('status').textContent).toBe(en.loading)
+  expect(view.queryByText(en.loading)).toBeNull()
+  expect(view.getByText(en['requests.empty'])).toBeDefined()
   view.rerender(<PersistentRequests {...base} value={{ value: empty, loading: false, stale: true }} />)
-  expect(view.getByText(en.stale)).toBeDefined()
+  expect(view.queryByText(en.stale)).toBeNull()
   expect(view.getByText(en['requests.empty'])).toBeDefined()
 })
 

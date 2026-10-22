@@ -1,5 +1,7 @@
 # @clocky/clocky-storage
 
+Read-only snapshot allowance failures carry `StorageError.code = read-limit`; invalid observation configuration remains `invalid-value`. Version mismatch and corrupt-medium failures retain their own codes.
+
 English | [中文](README.zh.md)
 
 `LogReadLimits` and `LogReadSnapshot` define bounded detached history for consumers that must not acquire writer handles. The JSON and SQLite providers export medium-specific readers; descriptor/config validation precedes IO, and complete returned JSON plus retained-row allowances reject overflow. These observations grant no application authorization or compaction authority.
@@ -31,3 +33,5 @@ Independent of live requests: the hub never touches a request prefix, so it cann
 ## Known Limitations and Deferred Work
 
 - **Forms resolve lazily** — reading `ctx.storage.domain` or `ctx.storage.log` before its plugin mounts throws `form-not-mounted`; assemblies order plugins accordingly (misconfiguration fails loud rather than silently deferring).
+
+`captureLogArchive(stream, cursor, limits)` exports a complete original prefix under its domain owner's serializer. It requires first sequence zero, exact tail, contiguous entries and finite aggregate entry/byte/page limits; it does not acquire ownership or compact history. The archive keeps original stream names, format versions and sequence numbers for owner-validated restoration.

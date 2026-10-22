@@ -8,6 +8,17 @@ it('preserves an exact channel destination and keeps the empty first-input route
   expect(workspaceRouteIdentity(undefined)).toBe('')
 })
 
+it('round-trips an exact Envelope and rejects missing, imprecise or incompatible Channel coordinates', () => {
+  const route = readWorkspaceRoute('http://localhost/?team=team&view=channels&channel=channel&envelope=original&envelopeSequence=7')!
+  expect(readWorkspaceRoute(workspaceRouteUrl('http://localhost/', route))).toEqual(route)
+  expect(workspaceRouteIdentity({ ...route, envelopeId: 'another' })).not.toBe(workspaceRouteIdentity(route))
+  for (const query of ['envelope=one', 'envelopeSequence=1', 'envelope=one&envelopeSequence=-1',
+    'envelope=one&envelopeSequence=1.5', 'envelope=one&envelopeSequence=9007199254740992']) {
+    expect(() => readWorkspaceRoute(`http://localhost/?team=team&view=channels&channel=channel&${query}`)).toThrow('Envelope')
+  }
+  expect(() => readWorkspaceRoute('http://localhost/?team=team&view=overview&channel=channel&envelope=one&envelopeSequence=1')).toThrow('Envelope')
+})
+
 it('round-trips opaque identifiers and Unicode search while preserving unrelated parameters', () => {
   const route = readWorkspaceRoute('http://localhost/?team=team-1&view=tasks&task=task-2&session=session-3&participant=worker-4&q=%E6%8E%A5%E5%8F%A3&status=review')!
   const url = workspaceRouteUrl('http://localhost/?theme=dark&team=older&view=overview', route)

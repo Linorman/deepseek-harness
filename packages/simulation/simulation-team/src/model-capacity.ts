@@ -6,6 +6,14 @@ interface Waiter {
   readonly abort: () => void
 }
 
+/** Typed refusal preserving the exact occupied pool and queue at admission. */
+export class SimulationModelCapacityExceeded extends Error {
+  /** @param usage - Observed occupancy at the failed admission, independent of later releases. */
+  constructor(readonly usage: { readonly active: number; readonly queued: number; readonly limit: number; readonly queueLimit: number }) {
+    super('Simulation model admission queue capacity exceeded')
+  }
+}
+
 /** A permit remains charged until its stream owner confirms completion. */
 export class SimulationModelCapacity {
   private readonly active = new Set<symbol>()
@@ -23,7 +31,7 @@ export class SimulationModelCapacity {
     if (this.closed) return Promise.reject(new Error('Simulation model admission is closed'))
     if (signal?.aborted) return Promise.reject(this.cancelled(signal))
     if (this.active.size < this.limit && this.queue.length === 0) return Promise.resolve(this.grant())
-    if (this.queue.length >= this.queueLimit) return Promise.reject(new Error('Simulation model admission queue capacity exceeded'))
+    if (this.queue.length >= this.queueLimit) return Promise.reject(new SimulationModelCapacityExceeded(this.snapshot()))
     return new Promise((resolve, reject) => {
       const waiter: Waiter = { resolve, reject, ...signal === undefined ? {} : { signal }, abort: () => {
         const index = this.queue.indexOf(waiter)

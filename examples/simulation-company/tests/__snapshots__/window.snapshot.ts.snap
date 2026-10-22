@@ -562,7 +562,7 @@ exports[`'json' model decision window timeout=true limit=2 close=undefined > kee
 {
   "decisions": [
     {
-      "cancellation": "writer-revoked",
+      "cancellation": "interrupted-before-recovery",
       "id": "a",
       "slot": "0",
       "status": "cancelled",
@@ -618,9 +618,8 @@ exports[`'json' model decision window timeout=true limit=2 close=undefined > kee
   },
   "tokenAttempts": {
     "not-dispatched": 0,
-    "reserved": 1,
     "settled": 6,
-    "unknown": 1,
+    "unresolved": 2,
   },
   "tokens": {
     "limit": 1000000,
@@ -1252,7 +1251,7 @@ exports[`'sqlite' model decision window timeout=true limit=2 close=undefined > k
 {
   "decisions": [
     {
-      "cancellation": "writer-revoked",
+      "cancellation": "interrupted-before-recovery",
       "id": "a",
       "slot": "0",
       "status": "cancelled",
@@ -1308,9 +1307,8 @@ exports[`'sqlite' model decision window timeout=true limit=2 close=undefined > k
   },
   "tokenAttempts": {
     "not-dispatched": 0,
-    "reserved": 1,
     "settled": 6,
-    "unknown": 1,
+    "unresolved": 2,
   },
   "tokens": {
     "limit": 1000000,

@@ -1,0 +1,16 @@
+{
+  "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+  "args": [
+    "--import",
+    "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-preparing-scenario.ts",
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-driver/cordis.yml"
+  ],
+  "backend": "json",
+  "scenario": "company",
+  "recovery": 0,
+  "code": 1,
+  "signal": null,
+  "stdout": "",
+  "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Missing expected rejection.\n    at async denied (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-preparing-scenario.ts:120:7)\n    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-preparing-scenario.ts:126:5) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: /no durable activation/,\n  operator: 'rejects',\n  diff: 'simple'\n}\n\nNode.js v25.9.0\n"
+}

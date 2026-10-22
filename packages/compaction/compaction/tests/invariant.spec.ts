@@ -407,3 +407,34 @@ describe('compaction invariants', () => {
     expect(() => { action(session) }).toThrow(message)
   })
 })
+
+
+describe('no-gain evidence invariants', () => {
+  const evidence = {
+    fingerprint: 'a'.repeat(64), contextFingerprint: 'b'.repeat(64), prefixFingerprint: 'c'.repeat(64),
+    generation: 0, selectedNodes: 2, selectedTokens: 50, summaryTokens: 60,
+  }
+
+  it('rejects malformed persisted evidence and contradictory summary success before commit', async () => {
+    const ctx = await setup()
+    const session = ctx.sessions.create()
+    session.append('compaction/start', { compactionId: TEST_COMPACTION_ID, turn: null })
+    const end = { compactionId: TEST_COMPACTION_ID, turn: null, error: 'no gain', noGain: evidence }
+    for (const invalid of [
+      { ...evidence, fingerprint: 'bad' },
+      { ...evidence, summaryTokens: 49 },
+      { ...evidence, selectedNodes: 0 },
+      { ...evidence, generation: -1 },
+      { ...evidence, selectedTokens: 1.5 },
+      { ...evidence, extra: 'private data' },
+    ]) {
+      expect(() => session.append('compaction/end', { ...end, noGain: invalid })).toThrow(/noGain requires/)
+    }
+    expect(() => session.append('compaction/end', { compactionId: TEST_COMPACTION_ID, turn: null, noGain: evidence })).toThrow(/noGain requires/)
+    session.append('compaction/end', end)
+    const other = ctx.sessions.create()
+    other.append('compaction/start', { compactionId: TEST_COMPACTION_ID, turn: null })
+    other.append('compaction/summary', summary())
+    expect(() => other.append('compaction/end', end)).toThrow(/noGain requires/)
+  })
+})

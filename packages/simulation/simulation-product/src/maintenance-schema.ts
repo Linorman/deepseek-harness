@@ -9,7 +9,8 @@ import type { SimulationProductCheckpointInput, SimulationProductRestoreInput, S
   SimulationProductIngressQuery, SimulationProductIngressReceipt, SimulationProductIngressResult } from './maintenance-types.ts'
 
 /** Preserve exact native full-checkpoint identity at the public boundary. */
-export const simulationProductCheckpointIdSchema = z.string().min(1).transform(value => value as SimulationCheckpointId)
+export const simulationProductCheckpointIdSchema: z.ZodType<SimulationCheckpointId> = z.string().min(1)
+  .transform(value => value as SimulationCheckpointId)
 const ingressId = z.string().min(1).transform(value => value as SimulationIngressId)
 const entityId = z.string().min(1).transform(value => value as SimulationEntityId)
 const decimal = z.string().regex(/^(0|[1-9][0-9]*)$/).transform(value => value as SimTime)

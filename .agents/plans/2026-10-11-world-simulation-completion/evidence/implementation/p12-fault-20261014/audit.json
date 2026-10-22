@@ -1,0 +1,609 @@
+{
+  "groups": 24,
+  "processes": 72,
+  "sigkills": 24,
+  "cold_processes": 48,
+  "dtos": 768,
+  "reports": [
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-json-armed-Td5el0",
+      "face": "source",
+      "stage": "armed",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1058,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-armed-Td5el0/process-0.json",
+          "sha256": "a348dc1bb4c74908200220ed9e103b5cba9bf9d2e8cbf81b691cdad1706d0b04"
+        },
+        {
+          "round": 1,
+          "pid": 1202,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-armed-Td5el0/process-1.json",
+          "sha256": "29a882fd1234f27849e08676f31a44ca4e6f91c4a9cd10e54d4c1c9aca4042df"
+        },
+        {
+          "round": 2,
+          "pid": 1301,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-armed-Td5el0/process-2.json",
+          "sha256": "d4e752f3a6a691651a84c12a99b9e73eb1b8e9dd8deb5238f466e4807a8609b7"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-json-blocked-2lmtUq",
+      "face": "source",
+      "stage": "blocked",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 857,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-blocked-2lmtUq/process-0.json",
+          "sha256": "12c1c8fc6fd96bb9644d0de981c27442760f6096426a94de8eebc2176ba204a4"
+        },
+        {
+          "round": 1,
+          "pid": 1026,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-blocked-2lmtUq/process-1.json",
+          "sha256": "8d7a1a5f88aec5c7de643480fc22e819257d3bb2e1c5f91522ef6e8681483969"
+        },
+        {
+          "round": 2,
+          "pid": 1032,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-blocked-2lmtUq/process-2.json",
+          "sha256": "5b364f5d839b707a6416b40b10b2f3a40b6eb169cebaa7d891ab503eb01a2a0c"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-json-committed-Jix1Qv",
+      "face": "source",
+      "stage": "committed",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1841,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-committed-Jix1Qv/process-0.json",
+          "sha256": "4bf379c9133821821e494400d935556669bae8dcf36dd58f28aa154b5b78ebc8"
+        },
+        {
+          "round": 1,
+          "pid": 1877,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-committed-Jix1Qv/process-1.json",
+          "sha256": "3c1fd889f2f11636ccc25c64e8c895aae53bb3eaa401135ce5dae88b1f8a1fef"
+        },
+        {
+          "round": 2,
+          "pid": 1995,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-committed-Jix1Qv/process-2.json",
+          "sha256": "02e4109d7aee97df4b5fa2e81f6737aedd95aadcfb1b2224113ad56f2f06bbe0"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-json-notification-ogQOlW",
+      "face": "source",
+      "stage": "notification",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 2004,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-notification-ogQOlW/process-0.json",
+          "sha256": "5c4edee21fd90428917a941e6fbbeb80628f365ab1bf1fc2adf72e18d51c1766"
+        },
+        {
+          "round": 1,
+          "pid": 2309,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-notification-ogQOlW/process-1.json",
+          "sha256": "dd126945490b3df89013d7e5a5a1fa2bcf9c4e4541cb39502b55cc2248837c4a"
+        },
+        {
+          "round": 2,
+          "pid": 2440,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-notification-ogQOlW/process-2.json",
+          "sha256": "c36f4f0973fbd57b475b6c1677ad76cfab94bdfb79da2cd5dd826e3018406439"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-json-participant-izveT6",
+      "face": "source",
+      "stage": "participant",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1510,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-participant-izveT6/process-0.json",
+          "sha256": "8141cdbd5db9e26a9318f2495670b0088e885e00731cfebe5b584be87191cca1"
+        },
+        {
+          "round": 1,
+          "pid": 1695,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-participant-izveT6/process-1.json",
+          "sha256": "32471a786df333e57e36b09ba497d95f0abda555d6fc86008a03ac6e862a5b84"
+        },
+        {
+          "round": 2,
+          "pid": 1707,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-participant-izveT6/process-2.json",
+          "sha256": "ca5a4ad113152b510a122fd099091fd7c43fc834cd5e248d2d19fe4bb0119824"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-json-rejected-Dpd7rk",
+      "face": "source",
+      "stage": "rejected",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 223,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-rejected-Dpd7rk/process-0.json",
+          "sha256": "47a7ae36ad257918e63e115a71132923954ef3a7ba8283c681dcc0293e78b5b1"
+        },
+        {
+          "round": 1,
+          "pid": 561,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-rejected-Dpd7rk/process-1.json",
+          "sha256": "1320ade795b6b10adef2b23670946e44ea17e6936d26ff643dee5a8516f4b5f0"
+        },
+        {
+          "round": 2,
+          "pid": 668,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-json-rejected-Dpd7rk/process-2.json",
+          "sha256": "870ac2d5b1d84b9a5ec3967d1de7ac765a03c72eeecd3460e5a26caba780d45e"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-armed-2jRPc9",
+      "face": "source",
+      "stage": "armed",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 2931,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-armed-2jRPc9/process-0.json",
+          "sha256": "6adbd040101f892c8fb217db0436b1249fc9f60ba38cccd9535ea1a001be133b"
+        },
+        {
+          "round": 1,
+          "pid": 3065,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-armed-2jRPc9/process-1.json",
+          "sha256": "9454a7b24e22817a048af9eb93117ba5d1e63b663ae29f5248d2deeef2a8cba4"
+        },
+        {
+          "round": 2,
+          "pid": 3078,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-armed-2jRPc9/process-2.json",
+          "sha256": "a929a3f349cf8389bb1bc962a5674ccae4c1e5c4ec57115b8d147464bfbb8cd6"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-blocked-HwBjeN",
+      "face": "source",
+      "stage": "blocked",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 2692,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-blocked-HwBjeN/process-0.json",
+          "sha256": "502b5424e0cdb468f3cd3f7a81f1d52e4f90cff9a0c61717f273b369b8111318"
+        },
+        {
+          "round": 1,
+          "pid": 2769,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-blocked-HwBjeN/process-1.json",
+          "sha256": "25f535ce6eedf2c3919edfb644be2bf7d65c4b2b87bf9a0bf332721f8306be0f"
+        },
+        {
+          "round": 2,
+          "pid": 2925,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-blocked-HwBjeN/process-2.json",
+          "sha256": "6b5c5addcfbd2db635db9f8b78e35e0b8292ddcbac39e8726d59c8a9bf95c157"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-committed-Jt30Et",
+      "face": "source",
+      "stage": "committed",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 3366,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-committed-Jt30Et/process-0.json",
+          "sha256": "d26975aa175ffe77b7b3925e9e89e0034462e314f6282e3f07a05c1f0416d5fb"
+        },
+        {
+          "round": 1,
+          "pid": 3395,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-committed-Jt30Et/process-1.json",
+          "sha256": "e0c456ad320b26f24e843715af16b1bfb17de1113301a2abcd7110ff6e97566b"
+        },
+        {
+          "round": 2,
+          "pid": 3511,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-committed-Jt30Et/process-2.json",
+          "sha256": "aef80b38c2cf6e85888a18c3c5a516d43adb5fd4e62e33d2132b02fdc049df18"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-notification-tPd9vd",
+      "face": "source",
+      "stage": "notification",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 3529,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-notification-tPd9vd/process-0.json",
+          "sha256": "829386280b2c609df2083ae32bb6ac047988b5cbb7c7c010f8880dc7cb642fac"
+        },
+        {
+          "round": 1,
+          "pid": 3725,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-notification-tPd9vd/process-1.json",
+          "sha256": "d7b108badb4e31a1e0a865c38a532c226d84dc745f96c0c56dff542155ca65f0"
+        },
+        {
+          "round": 2,
+          "pid": 3846,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-notification-tPd9vd/process-2.json",
+          "sha256": "2aa8bd0af7b7eb605c720620d34f103c0f7a44161be8c47b6e4cb45c64abb6da"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-participant-qzLlP7",
+      "face": "source",
+      "stage": "participant",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 3108,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-participant-qzLlP7/process-0.json",
+          "sha256": "1c8f2057682c1c7ddf6054fc209db6000d5bcd3e5c94ea5e06c713907a138b5c"
+        },
+        {
+          "round": 1,
+          "pid": 3230,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-participant-qzLlP7/process-1.json",
+          "sha256": "1d8cfd265301be87a018b6045a5212574f454c4814084ba4f8185744f1f55589"
+        },
+        {
+          "round": 2,
+          "pid": 3258,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-participant-qzLlP7/process-2.json",
+          "sha256": "d4eb1410dd8e1ff4c2723f8b7ff3bb7a1980415c67be98be7e975626332492a9"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-rejected-YMi2tR",
+      "face": "source",
+      "stage": "rejected",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 2444,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-rejected-YMi2tR/process-0.json",
+          "sha256": "382c066cd5ce8033187aa261356c9c11388265118346d9164a9363e2136a8386"
+        },
+        {
+          "round": 1,
+          "pid": 2595,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-rejected-YMi2tR/process-1.json",
+          "sha256": "d2c04ea3dee0f9321d08ae5c742fc13b0084a44cd1448ec0fd0e4a7b6fc1d6e4"
+        },
+        {
+          "round": 2,
+          "pid": 2604,
+          "path": ".local/world-completion/p12-execution-faults/verified-source/src-sqlite-rejected-YMi2tR/process-2.json",
+          "sha256": "a0165f7dbce318599b81b5828e713ea7e4550fcb5425935c1eca1acda90f8bea"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-armed-SoibkO",
+      "face": "lib",
+      "stage": "armed",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 589,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-armed-SoibkO/process-0.json",
+          "sha256": "f62def6bf1b7755aa39b10a339350908eccad42c1d8b81196561a44d83f0e50c"
+        },
+        {
+          "round": 1,
+          "pid": 673,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-armed-SoibkO/process-1.json",
+          "sha256": "39a15b4797e2296bfa0c97715a3eda9f6df044aa379e4b5a0a7179da4a8e35e3"
+        },
+        {
+          "round": 2,
+          "pid": 848,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-armed-SoibkO/process-2.json",
+          "sha256": "cd4beb1ee10c181cc03e8425d83b06ca65b98764730a69fc23520cb2e1b3246e"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-blocked-uCdI7Q",
+      "face": "lib",
+      "stage": "blocked",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 553,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-blocked-uCdI7Q/process-0.json",
+          "sha256": "07a00bc2311db5712924d4c7c95d284767d1b7bfd71dcee06c4773c1adb9954a"
+        },
+        {
+          "round": 1,
+          "pid": 568,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-blocked-uCdI7Q/process-1.json",
+          "sha256": "ba8ddf5a26d726b72d2caf4b7ec41ac86a95836bea9bceb18381caf14484de95"
+        },
+        {
+          "round": 2,
+          "pid": 587,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-blocked-uCdI7Q/process-2.json",
+          "sha256": "ffedf9f608b3b574249b01a8b2b92099d6dc8282f72ed51a6e1c586286ec45a6"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-committed-T8rV96",
+      "face": "lib",
+      "stage": "committed",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 861,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-committed-T8rV96/process-0.json",
+          "sha256": "faf1772fb692dad676e163d354f36f023dfafb6f68776618b273c222cc652e15"
+        },
+        {
+          "round": 1,
+          "pid": 874,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-committed-T8rV96/process-1.json",
+          "sha256": "c3b0121fc464658a87239fe7ebc93eecf1eb7a791695c28301b32ffd80de01b2"
+        },
+        {
+          "round": 2,
+          "pid": 893,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-committed-T8rV96/process-2.json",
+          "sha256": "01b3eb88fec852fd93bff383596017051e11c507506394431bd5be550ad51f97"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-notification-8VV9wC",
+      "face": "lib",
+      "stage": "notification",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 894,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-notification-8VV9wC/process-0.json",
+          "sha256": "3759fb2d59a19174687ba743d98286f064ad7443098407a5e18b7fd8d3bc7543"
+        },
+        {
+          "round": 1,
+          "pid": 1027,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-notification-8VV9wC/process-1.json",
+          "sha256": "3e768f7e8f73fbeb2e752c58fc3678443a4d5beba102f502a9cddf29766a688e"
+        },
+        {
+          "round": 2,
+          "pid": 1031,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-notification-8VV9wC/process-2.json",
+          "sha256": "8d3f47b0bb55ae456459b22a8bb20005233de4b21ed5638d749c30ee31c9df0e"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-participant-MrrnRt",
+      "face": "lib",
+      "stage": "participant",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 849,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-participant-MrrnRt/process-0.json",
+          "sha256": "d45eff5196484906c8ff4f3da7e7aa18e8e67d734c9cbafe0f5c64d30bec3b67"
+        },
+        {
+          "round": 1,
+          "pid": 858,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-participant-MrrnRt/process-1.json",
+          "sha256": "02d9cf738308bc035f876f4edb35659751e6f0711b9e81561b2ca17cf00fd22c"
+        },
+        {
+          "round": 2,
+          "pid": 860,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-participant-MrrnRt/process-2.json",
+          "sha256": "9bc7a11adbfee6c70c098d137e462dc1026530e0bd66b064db50865266f572ad"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-rejected-eVbaGX",
+      "face": "lib",
+      "stage": "rejected",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 257,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-rejected-eVbaGX/process-0.json",
+          "sha256": "ab0180d632a0b31077b936d3ce4a558f7e5987d96c5c699a6126ff1a4a494092"
+        },
+        {
+          "round": 1,
+          "pid": 539,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-rejected-eVbaGX/process-1.json",
+          "sha256": "522bc61797de18a5f744b3ed09f890b65e342850208b575eeb8413bbcdc253be"
+        },
+        {
+          "round": 2,
+          "pid": 547,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-json-rejected-eVbaGX/process-2.json",
+          "sha256": "392dd3a5c812bea4006ce834f9769d8b2e3c4511983169cf42121a9aae6b5bba"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-armed-6OOzr3",
+      "face": "lib",
+      "stage": "armed",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1185,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-armed-6OOzr3/process-0.json",
+          "sha256": "e5bbccbe8486f3d72b5aecf6c9fb2d5b796af14eff25de3a6814649b1d85fd5e"
+        },
+        {
+          "round": 1,
+          "pid": 1195,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-armed-6OOzr3/process-1.json",
+          "sha256": "82b7dc03817fb59464ba045d858a8787bee45f5df04ebd8b1f9dfa0d33b5628e"
+        },
+        {
+          "round": 2,
+          "pid": 1196,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-armed-6OOzr3/process-2.json",
+          "sha256": "320fe21a7da9142e5f8d8bde9535f5c5d62b11a06b7e1d27ae5195252a3c183a"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-blocked-VgTJX0",
+      "face": "lib",
+      "stage": "blocked",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1041,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-blocked-VgTJX0/process-0.json",
+          "sha256": "339bc29f59e8e88ca32020fca0109ebd8594d494fc4ca448dc1bb5575cfdc214"
+        },
+        {
+          "round": 1,
+          "pid": 1059,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-blocked-VgTJX0/process-1.json",
+          "sha256": "a4ae5d65d03db15eab3823016a104cc34da87bf26f934fa5f2ec2b77c0b39f8c"
+        },
+        {
+          "round": 2,
+          "pid": 1184,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-blocked-VgTJX0/process-2.json",
+          "sha256": "99eacedb8b2d13c34fa85c9715e79ea6a51b794ff9c2671756471e996d4724de"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-committed-wiUP7s",
+      "face": "lib",
+      "stage": "committed",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1209,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-committed-wiUP7s/process-0.json",
+          "sha256": "53484180030ac9c616b0a18722ba5bfadc8ded5b7a352667b5f9da88ac8270c9"
+        },
+        {
+          "round": 1,
+          "pid": 1245,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-committed-wiUP7s/process-1.json",
+          "sha256": "3d4c99ca5695d55fd1dbec246cffd20d8358e315da21fb38e5a659488eb15f2d"
+        },
+        {
+          "round": 2,
+          "pid": 1426,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-committed-wiUP7s/process-2.json",
+          "sha256": "e59c664827c3d69187484d6c22b9233009a52e842492ec3f41ca7e9ca32d276b"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-notification-BhPtiG",
+      "face": "lib",
+      "stage": "notification",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1429,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-notification-BhPtiG/process-0.json",
+          "sha256": "36ba63e8847ade0569fe7113585e46dc6c2046efa91a64ce044b396586d6b0b7"
+        },
+        {
+          "round": 1,
+          "pid": 1433,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-notification-BhPtiG/process-1.json",
+          "sha256": "2131cb8698e6576028cd037e40faeb98a2cb3e9c62be3f709516e51f3190e4ef"
+        },
+        {
+          "round": 2,
+          "pid": 1517,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-notification-BhPtiG/process-2.json",
+          "sha256": "6fb812ed4555f962533a3094ec63305fa1ce8706065bd8d862f22e8d7af8bcff"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-participant-7D34dN",
+      "face": "lib",
+      "stage": "participant",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1199,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-participant-7D34dN/process-0.json",
+          "sha256": "5d60313d51537cb91b2b02996547338cf447f380207fa12b7a581ef62e2c20fe"
+        },
+        {
+          "round": 1,
+          "pid": 1203,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-participant-7D34dN/process-1.json",
+          "sha256": "7496d25175d8bd4aa4fb5dc56a3187f01a7f487c4a8f17e26e7f36ed7ce807e6"
+        },
+        {
+          "round": 2,
+          "pid": 1205,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-participant-7D34dN/process-2.json",
+          "sha256": "b77250b1d4d07ae21d56439dcb9d19685f5eb511af40dd72cd331cf08e9e9d43"
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-rejected-3tGl7Y",
+      "face": "lib",
+      "stage": "rejected",
+      "processes": [
+        {
+          "round": 0,
+          "pid": 1033,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-rejected-3tGl7Y/process-0.json",
+          "sha256": "d944b640eb98ea0408956861c5a179ae319b92b8e518fac0ce2f4812e6d915ee"
+        },
+        {
+          "round": 1,
+          "pid": 1034,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-rejected-3tGl7Y/process-1.json",
+          "sha256": "0819daa854e2270ab05be0e6afd1d76a6709012618a3505dc482640c472af556"
+        },
+        {
+          "round": 2,
+          "pid": 1040,
+          "path": ".local/world-completion/p12-execution-faults/verified-lib/lib-sqlite-rejected-3tGl7Y/process-2.json",
+          "sha256": "62b7ae40be64f247e76c0936b40294489246c1b441588e4b8c4923c7372cd75f"
+        }
+      ]
+    }
+  ]
+}

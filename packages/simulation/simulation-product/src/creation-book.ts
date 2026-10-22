@@ -11,7 +11,7 @@ export const simulationCreationEntrySchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('command/completed'), commandId: simulationProductCommandIdSchema }),
   z.strictObject({ kind: z.literal('command/failed'), commandId: simulationProductCommandIdSchema,
     failure: z.enum(['preparation-required', 'recovery-required', 'unavailable', 'checkpoint-failed', 'restore-failed', 'review-failed',
-      'retry-operation-failed', 'cancel-task-failed']), diagnostic: simulationCheckpointDiagnosticSchema.optional() }),
+      'retry-operation-failed', 'cancel-task-failed', 'cancel-world-case-failed', 'world-management-failed']), diagnostic: simulationCheckpointDiagnosticSchema.optional() }),
 ])
 /**
  * Replay one strict administration record while retaining original creation and terminal request identities.
@@ -29,14 +29,23 @@ export function foldCreationEntry(state: SimulationCreationBook, input: unknown)
       if (command.receipt.status !== 'accepted' || commands.has(command.receipt.commandId)) {
         throw new Error('Simulation administration command repeats or has no original accepted state')
       }
-      if (command.kind === 'create') {
+      if (command.kind === 'create' || command.kind === 'world-create') {
         if (creations.has(command.receipt.runId)) throw new Error('Simulation creation repeats a run ownership identity')
-        creations.set(command.receipt.runId, Object.freeze(structuredClone(command.creation)))
+        const creation = command.kind === 'create' ? { ...command.creation, kind: 'company' as const }
+          : { ...command.creation, kind: 'world' as const }
+        creations.set(command.receipt.runId, Object.freeze(structuredClone(creation)))
       } else {
         const creation = creations.get(command.receipt.runId)
         if (creation === undefined || creation.record.ownerPrincipalId !== command.ownerPrincipalId) {
           throw new Error('Simulation preparation has no owned original creation')
         }
+        if ((command.kind === 'world-prepare' || command.kind === 'cancel-world-case' || command.kind === 'world-management') && creation.kind !== 'world'
+          || command.kind === 'prepare' && creation.kind !== 'company') {
+          throw new Error('Simulation preparation command has another original creation family')
+        }
+        if (command.kind === 'world-management' && (creation.kind !== 'world'
+          || command.native.action.payload.organizationEntityId !== creation.preparation.resolved.world.organizationEntityId))
+          throw new Error('World management original organization differs from its owned creation')
       }
       commands.set(command.receipt.commandId, Object.freeze(structuredClone(command)))
       break

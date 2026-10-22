@@ -181,6 +181,7 @@ export function apply(ctx: Context, config?: ConnectionConfig): void {
     : new ProductAuthSessions(
       productPrincipals,
       productPrincipalProvider,
+      () => ctx.webServer.port,
       (handoffId) => { ctx.emit('product-auth/browser-handoff-consumed', handoffId) },
     )
   if (productAuth !== undefined) {

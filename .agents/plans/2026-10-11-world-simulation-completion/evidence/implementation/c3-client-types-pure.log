@@ -1,0 +1,22 @@
+packages/client/runtime/src/client/index.ts(215,5): error TS2717: Subsequent property declarations must have the same type.  Property 'sessions' must be of type 'SessionStore', but here has type 'ISessions'.
+packages/client/runtime/src/client/slots.ts(414,9): error TS2322: Type '() => Session[]' is not assignable to type 'HostObservable<unknown>'.
+packages/client/runtime/src/client/slots.ts(415,31): error TS2339: Property 'currentProvideInfo' does not exist on type 'SessionStore'.
+packages/client/runtime/src/client/slots.ts(416,30): error TS2339: Property 'connection' does not exist on type 'SessionStore'.
+packages/client/runtime/src/client/slots.ts(422,5): error TS2322: Type 'SlotRendererHost | undefined' is not assignable to type 'SlotRendererHost'.
+  Type 'undefined' is not assignable to type 'SlotRendererHost'.
+packages/client/ui-simulation/src/client/index.ts(80,18): error TS2339: Property 'clear' does not exist on type 'SessionStore'.
+packages/client/ui-simulation/src/client/index.ts(95,78): error TS2339: Property 'clear' does not exist on type 'SessionStore'.
+packages/client/runtime/tests/client-apply.client.spec.ts(71,13): error TS2352: Conversion of type 'SessionStore | undefined' to type 'SessionRuntime' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'SessionStore' is missing the following properties from type 'SessionRuntime': rootCtx, searchResultLimit, connection, manager, and 32 more.
+packages/client/runtime/tests/client-apply.client.spec.ts(81,13): error TS2352: Conversion of type 'SessionStore | undefined' to type '{ list: { getSnapshot(): { ids: string[]; }; }; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'SessionStore' is not comparable to type '{ list: { getSnapshot(): { ids: string[]; }; }; }'.
+    Types of property 'list' are incompatible.
+      Type '() => Session[]' is not comparable to type '{ getSnapshot(): { ids: string[]; }; }'.
+packages/client/runtime/tests/client-apply.client.spec.ts(112,22): error TS2352: Conversion of type 'SessionStore | undefined' to type 'SessionRuntime' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'SessionStore' is missing the following properties from type 'SessionRuntime': rootCtx, searchResultLimit, connection, manager, and 32 more.
+packages/client/runtime/tests/client-apply.client.spec.ts(126,22): error TS2352: Conversion of type 'SessionStore | undefined' to type 'SessionRuntime' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'SessionStore' is missing the following properties from type 'SessionRuntime': rootCtx, searchResultLimit, connection, manager, and 32 more.
+packages/client/runtime/tests/client-apply.client.spec.ts(163,22): error TS2352: Conversion of type 'SessionStore | undefined' to type 'SessionRuntime' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'SessionStore' is missing the following properties from type 'SessionRuntime': rootCtx, searchResultLimit, connection, manager, and 32 more.
+packages/client/ui-input-trigger/tests/apply.client.spec.ts(79,8): error TS2352: Conversion of type 'SessionStore | undefined' to type '{ scope(id: SessionId): Context; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'scope' is missing in type 'SessionStore' but required in type '{ scope(id: SessionId): Context; }'.

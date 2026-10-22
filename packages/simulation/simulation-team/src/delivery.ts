@@ -1,3 +1,4 @@
+import { assertAcceptedSimulationEnvelope } from './accepted-envelope.ts'
 /** Durable recipient admission before receipt. @module @clocky/clocky-simulation-team/delivery */
 import { isDeepStrictEqual } from 'node:util'
 import type { Agent } from '@clocky/clocky-agent'
@@ -130,7 +131,8 @@ export class SimulationDeliveryAuthority {
             channelId: envelope.channelId, envelopeId: envelope.envelopeId })) : undefined
         if (claim !== undefined) {
           const found = await this.findEnvelope(envelope.channelId, binding.activation.participantId, envelope.envelopeId)
-          if (found.sequence !== envelope.sequence || !isDeepStrictEqual(renderDirectV4EnvelopeInput(found), expected)) {
+          assertAcceptedSimulationEnvelope(run.snapshot(), operation, found)
+          if (!isDeepStrictEqual(renderDirectV4EnvelopeInput(found), expected)) {
             throw new Error('Simulation target content or position differs from its accepted intent')
           }
           if (!valid()) throw new Error('Simulation delivery authority retired before input admission')

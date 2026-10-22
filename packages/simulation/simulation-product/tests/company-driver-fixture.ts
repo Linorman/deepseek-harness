@@ -9,6 +9,7 @@ import * as Direct from '@clocky/clocky-team-channel-direct'
 import * as Tools from '@clocky/clocky-tool-simulation'
 import * as Role from '@clocky/clocky-tool-simulation/role'
 import { createContext } from '../../simulation-team/tests/harness.ts'
+import { SimulationWorldExecutions } from '@clocky/clocky-simulation-world'
 import { simulationRunSelectionSchema, simulationPhaseManagementRequestSchema } from '@clocky/clocky-simulation'
 import { prepareSimulationCompany, simulationCompanyPreparationSchema } from '../src/company-preparation.ts'
 import { SimulationCompanyDriver, simulationCompanyDriverSchema } from '../src/company-driver.ts'
@@ -22,10 +23,14 @@ export const companyConfig = simulationCompanyDriverSchema.parse({ version: '1',
   model: { provider: 'company', name: 'scripted' }, requestDelay: '5', reportDelay: '1', replyDelay: '20', completeDelay: '30' })
 
 export async function companyFixture(backend: 'json' | 'sqlite' = 'json', prepare = true, overrides: Record<string, unknown> = {},
-  alter?: (stage: string, proposals: unknown[]) => unknown[]) {
+  alter?: (stage: string, proposals: unknown[]) => unknown[],
+  contextLimits?: { maxContextBytes?: number; requestPolicy?: Parameters<typeof createContext>[6] }) {
   await mkdir('.tmp', { recursive: true })
   const root = await mkdtemp(join(process.cwd(), '.tmp', 'company-driver-unit-'))
-  const { ctx } = await createContext(root, backend)
+  const { ctx, serviceFiber } = await createContext(root, backend, contextLimits?.maxContextBytes,
+    undefined, undefined, undefined, contextLimits?.requestPolicy)
+  const worldExecutionsFiber = ctx.plugin(SimulationWorldExecutions)
+  await worldExecutionsFiber
   await ctx.plugin(Direct)
   await ctx.plugin(Loader)
   ctx.baseUrl = pathToFileURL(root).href + '/'
@@ -43,7 +48,7 @@ export async function companyFixture(backend: 'json' | 'sqlite' = 'json', prepar
     maxEntities: 16, maxResidentActors: 2, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100',
     maxDecisionsPerInterval: 100, maxMessagesPerInterval: 100, maxPendingEvents: 100, maxPendingInteractions: 100,
     maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 100, maxDispatchWaitRounds: 8,
-    maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [], ...overrides,
+    maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [], ...overrides,
   } })
   const run = await ctx.simulations.open(selection)
   const prepared = prepare ? await prepareSimulationCompany(ctx.simulationTeams, run, companySettings)
@@ -56,7 +61,7 @@ export async function companyFixture(backend: 'json' | 'sqlite' = 'json', prepar
   const modelRegistration = ctx.llm.registerAdapter(['company'], adapter)
   const lifetime = new AbortController()
   const driver = new SimulationCompanyDriver(run, connection, companySettings, companyConfig, lifetime.signal)
-  return { ctx, run, connection, driver, lifetime, requests, adapter, selection, modelRegistration,
+  return { ctx, serviceFiber, run, connection, driver, lifetime, requests, adapter, selection, modelRegistration, worldExecutionsFiber,
     async start() { await run.managePhase(simulationPhaseManagementRequestSchema.parse({ id: 'start', phase: 'running' })) },
     async close() {
       await driver.drain(); await run.close(); await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true })

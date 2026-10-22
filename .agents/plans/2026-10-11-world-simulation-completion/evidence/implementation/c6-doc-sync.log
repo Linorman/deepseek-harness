@@ -1,0 +1,101 @@
+$ tsx scripts/run-gates.ts doc-sync
+run-gates: doc-sync running 29 gate(s) with 4 worker(s) from 12 available CPU(s), doc-sync cap 4.
+run-gates: start doc-typecheck
+run-gates: start documentation build
+run-gates: start doc graphs
+run-gates: start markdown links
+run-gates: PASS markdown links (13.81s)
+run-gates: start type equivalence
+run-gates: PASS type equivalence (12.44s)
+run-gates: start cordis catalog
+run-gates: PASS doc-typecheck (43.82s)
+run-gates: start verify-mermaid
+run-gates: PASS documentation build (44.39s)
+run-gates: start scoped events
+run-gates: PASS verify-mermaid (11.27s)
+run-gates: start translation pairing
+
+== FAILED doc graphs (56.68s) ==
+command: pnpm run verify-doc-graphs
+outcome: exit 1
+$ tsx scripts/gen-doc-graphs.ts --check
+gen-doc-graphs: stale graph doc(s): docs/event-producer-consumer.md. Run `pnpm run gen-doc-graphs` and commit the result.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start markdown wrap
+run-gates: PASS markdown wrap (5.30s)
+run-gates: start client catalog
+run-gates: PASS scoped events (19.81s)
+run-gates: start export jsdoc
+run-gates: PASS client catalog (2.33s)
+run-gates: start tool catalog
+run-gates: PASS cordis catalog (39.28s)
+run-gates: start config catalog
+run-gates: PASS translation pairing (11.02s)
+run-gates: start persistence catalog
+
+== FAILED config catalog (1.20s) ==
+command: pnpm run verify-config-catalog
+outcome: exit 1
+$ tsx scripts/gen-config-catalog.ts --check
+gen-config-catalog: docs/config-catalog.md is stale. Run `pnpm run gen-config-catalog` and commit docs/config-catalog.md.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start module graph
+run-gates: PASS tool catalog (2.75s)
+run-gates: start public repository links
+run-gates: PASS module graph (0.50s)
+run-gates: start doc refs
+run-gates: PASS persistence catalog (1.16s)
+run-gates: start package paths
+
+== FAILED export jsdoc (3.13s) ==
+command: pnpm run verify-export-jsdoc
+outcome: exit 1
+$ tsx scripts/verify-export-jsdoc.ts
+verify-export-jsdoc: 2 JSDoc completeness violation(s) (see AGENTS.md):
+  exported function 'foldSchedulerRecord' (packages/simulation/simulation-local/src/scheduler.ts:191) is missing @param runtime.
+  exported function 'assertSchedulerProjection' (packages/simulation/simulation-local/src/scheduler.ts:496) is missing @param runtime.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start config source ownership
+run-gates: PASS config source ownership (0.85s)
+run-gates: start package README model experience
+run-gates: PASS doc refs (1.00s)
+run-gates: start agent note classification
+run-gates: PASS package paths (0.99s)
+run-gates: start agent note format
+run-gates: PASS agent note classification (0.49s)
+run-gates: start archived agent notes
+run-gates: PASS agent note format (0.52s)
+run-gates: start skill invocation metadata
+run-gates: PASS skill invocation metadata (0.48s)
+run-gates: start translation prompt
+run-gates: PASS archived agent notes (0.62s)
+run-gates: start doc budgets
+run-gates: PASS public repository links (2.34s)
+run-gates: start documentation site checks
+run-gates: PASS translation prompt (0.45s)
+run-gates: start package README limitations
+run-gates: PASS doc budgets (0.45s)
+
+== FAILED package README model experience (2.30s) ==
+command: pnpm run verify-package-readme-model-experience
+outcome: exit 1
+$ tsx scripts/verify-package-readme-model-experience.ts
+verify-package-readme-model-experience failed:
+  packages/simulation/simulation-local/README.md: line 70: content after #### KV Cache effect paragraph must be a titled H5 plus `markdown` fence owned by that field
+  packages/simulation/simulation-world/README.md: line 54: content after #### KV Cache effect paragraph must be a titled H5 plus `markdown` fence owned by that field
+  packages/simulation/simulation/README.md: line 94: content after #### KV Cache effect paragraph must be a titled H5 plus `markdown` fence owned by that field
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: PASS package README limitations (2.17s)
+run-gates: PASS documentation site checks (3.56s)
+
+run-gates: 25 passed, 4 failed, 0 skipped in 72.96s.
+run-gates: unsuccessful gates:
+  - FAILED doc graphs (56.68s, exit 1)
+    pnpm run verify-doc-graphs
+  - FAILED export jsdoc (3.13s, exit 1)
+    pnpm run verify-export-jsdoc
+  - FAILED config catalog (1.20s, exit 1)
+    pnpm run verify-config-catalog
+  - FAILED package README model experience (2.30s, exit 1)
+    pnpm run verify-package-readme-model-experience
+[ELIFECYCLE] Command failed with exit code 1.

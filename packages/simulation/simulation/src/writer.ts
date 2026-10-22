@@ -1,7 +1,7 @@
 /** Durable cognition identities parsed independently of runtime handles. @module @clocky/clocky-simulation/writer */
 import { z } from 'zod'
-import { activationIdSchema, activationReservationIdSchema, participantIdSchema, teamIdSchema } from '@clocky/clocky-team'
-import { SessionId } from '@clocky/clocky-session'
+import { activationIdSchema, activationReservationIdSchema, participantIdSchema, teamIdSchema } from '@clocky/clocky-team/schema'
+import { SessionId } from '@clocky/clocky-session/types'
 import type { SimulationCoordinatorId, SimulationEntityBinding, SimulationWriterActivation, SimulationWriterReservation, SimulationWriterEpoch } from './writer-types.ts'
 
 /** One immutable Team/Participant/Session assignment. */

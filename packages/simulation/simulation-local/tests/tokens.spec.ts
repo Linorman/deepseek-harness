@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { simulationDecisionIdSchema, simulationBudgetGrantRequestSchema, simulationCompactionTokenRequestSchema } from '@clocky/clocky-simulation'
+import type { LogStream } from '@clocky/clocky-storage'
+import { describe, expect, it, vi } from 'vitest'
+import { simulationDecisionIdSchema, simulationBudgetGrantRequestSchema, simulationCompactionTokenRequestSchema, simulationPhaseManagementRequestSchema } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from './business-harness.ts'
 import { contextRequest } from './context-fixture.ts'
 
@@ -115,4 +116,50 @@ describe.each(['json', 'sqlite'] as const)('%s model token reservations', (backe
       expect(h.run.budgetUsage().tokens).toEqual({ used: 120, limit: 120 })
     } finally { await h.close() }
   })
+  it('acknowledges the exact complete overrun atomically without starting and replays it idempotently', async () => {
+    const h = await createBusinessHarness(backend, { tokensPerModelRequest: 16384, maxTokensPerInterval: 16384 })
+    try {
+      const a = await h.actor('a'), id = simulationDecisionIdSchema.parse('decision')
+      await a.lease.openDecision(id, h.run.snapshot().revision)
+      await a.lease.prepareContext(id, contextRequest()); await a.lease.startDecision(id, 0)
+      const reservation = await a.lease.reserveModelTokens(id, request)
+      await a.lease.settleModelTokens(reservation.id, { kind: 'complete',
+        usage: { inputTokens: 11295, cacheReadTokens: 14848, outputTokens: 847 } })
+      const command = simulationPhaseManagementRequestSchema.parse({ id: 'ack', phase: 'paused', tokenRecovery: {
+        reservationId: reservation.id, reserved: 16384, used: 26990, interval: '0', additionalTokens: 10606 } })
+      await expect(h.run.managePhase(command)).rejects.toThrow(/paused/)
+      await a.lease.cancelDecision(id)
+      await h.run.setPhase('paused', h.run.snapshot().revision)
+      await expect(h.run.managePhase({ ...command, tokenRecovery: { ...command.tokenRecovery!, used: 26991 } })).rejects.toThrow(/quote/)
+      const stream = (h.run as unknown as { stream: LogStream }).stream
+      const append = stream.append.bind(stream)
+      const failure = vi.spyOn(stream, 'append').mockImplementation(async (cursor, values, options) => {
+        if (JSON.stringify(values).includes('management/completed')) throw new Error('Terminal batch unavailable')
+        return await append(cursor, values, options)
+      })
+      await expect(h.run.managePhase(command)).rejects.toThrow(/Terminal batch/)
+      failure.mockRestore()
+      expect(h.run.snapshot().tokenReservations?.[reservation.id]?.overrunAcknowledged).toBe(false)
+      expect(h.run.budgetUsage().tokens.limit).toBe(16384)
+      const result = await h.run.managePhase(command)
+      expect(result.status).toBe('completed')
+      expect(h.run.snapshot().phase).toBe('paused')
+      expect(h.run.snapshot().spec.tokensPerModelRequest).toBe(16384)
+      expect(h.run.budgetUsage().tokens).toEqual({ used: 26990, limit: 26990 })
+      const revision = h.run.snapshot().revision
+      expect(await h.run.managePhase(command)).toEqual(result)
+      expect(h.run.snapshot().revision).toBe(revision)
+      await expect(h.run.managePhase({ ...command,
+        tokenRecovery: { ...command.tokenRecovery!, additionalTokens: 1 } })).rejects.toThrow(/changed/)
+      for (const lease of h.leases) { await lease.revoke(); await lease.release() }
+      await h.run.close()
+      const reopened = await h.provider.open({ ...h.selection, mode: 'open' })
+      try {
+        expect(await reopened.managePhase(command)).toEqual(result)
+        expect(reopened.snapshot().phase).toBe('paused')
+        expect(reopened.budgetUsage().tokens).toEqual({ used: 26990, limit: 26990 })
+      } finally { await reopened.close() }
+    } finally { await h.close() }
+  })
+
 })

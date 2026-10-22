@@ -20,6 +20,7 @@ const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ prov
   outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 32, maxMicrostepsPerTime: 64,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2,
   maxIngressBytes: 65536, maxEntities: 16, maxResidentActors: 3, maxDecisionsPerWindow: 3, maxOperationsPerDecision: 16,
+  maxResourceReservationHistory: 128,
   maxResourceQuantity: '10000', maxQueuedDecisions: 32, maxDispatchWaitRounds: 8,
   budgetInterval: '100', maxDecisionsPerInterval: 100, maxMessagesPerInterval: 100,
   maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, maxPendingEvents: 100, maxPendingInteractions: 100,
@@ -41,13 +42,13 @@ try {
   }
   const dormant = simulationEntityIdSchema.parse('dormant')
   if (run.snapshot().entities[dormant] === undefined) {
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: dormant, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: dormant, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   }
   const dormantBinding = await connection.ensureParticipant(dormant, { displayName: 'Dormant', role: 'observer', capabilities: [],
     provider: 'in-process', preset: 'simulation', model: 'knowledge/scripted' })
   assert.equal(await ctx.sessionPersistence.isUnmaterialized(dormantBinding.sessionId), true)
   for (const entityId of [a, b, c]) {
-    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId, entityKind: 'person',
+    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId, entityKind: 'person',
       cognition: 'agent', profile: { initialBelief: entityId === a ? 'SECRET-X' : 'No private belief' } }), run.snapshot().revision)
     await connection.ensureParticipant(entityId, { displayName: entityId, role: entityId === a ? 'coordinator' : entityId, capabilities: [],
       provider: 'in-process', preset: 'simulation', model: 'knowledge/scripted' })

@@ -10,6 +10,7 @@ Team 与 Simulation 工作区的呈现型可视化层：确定性布局函数、
 
 - `layoutLayered(nodeIds, edges, options)` 按最长路径把有向图分层，并用重心扫描为每层排序。闭合环路的边作为 `backEdges` 返回，不会死循环。`longestChain` 返回权重最大的链；调用方只在整张图都已加载时把它画成关键路径。
 - `layoutRadialSwarm({ nodes, links, seed, previous })` 围绕固定中心运行带种子的 `d3-force` 模拟：环 0 是中心，环号越大越靠外，`cluster` 相同的节点聚在同一个锚点周围。模拟一旦冷却到稳定阈值以下就停止。`previous` 中传入的位置保持固定，因此新节点加入时不会移动用户已经定位过的节点。
+- `terrainContours(seed, options)` 返回围绕若干种子山顶、平滑扰动的嵌套等高线闭环。它只读取种子，因此同一运行每次访问都有同一张地形，地形不编码任何运行数据。
 - `layoutLanes({ lanes, items, position })` 把条目放进泳道，重叠的条目堆叠成多行。时间到 x 坐标的函数由调用方注入。`decimalTimeScale(origin, end, width)` 通过 `BigInt` 映射精确的十进制时间字符串，因此超过 2^53 的 Simulation 时间仍能精确到像素。
 
 ## 渲染与交互
@@ -22,7 +23,7 @@ Team 与 Simulation 工作区的呈现型可视化层：确定性布局函数、
 
 动效遵循 [web-styling.md](../../../docs/web-styling.zh.md) 中的四个层级，元素在动画期间带有 `data-motion-tier`。
 
-- **L0**：`AmbientBackdrop` 绘制静态模式光晕，不创建动画或可见性订阅。空轨道与已结束工作不旋转，目录星图保持静态。
+- **L0**：`AmbientBackdrop` 在点阵上绘制模式色光晕。Simulation 模式另有地形层：工作区发布的场景对应的 `terrainContours`，没有场景时为中性星图；地形按 `--clocky-duration-drift` 缓慢漂移，光晕错相呼吸。同一舞台上的工作区以冒泡的 `AMBIENT_SIGNAL` 事件通信（`useAmbientScene`、`pulseAmbient`、`signalAmbient`）；`pulse` 从给定点扩散一圈，1.2 秒内的多次脉冲合并。色调只是氛围。页面隐藏、60 秒无指针/滚轮/键盘输入、减少动效，或观看者通过 `useAmbientMotion` 关闭背景动效（保存在浏览器存储，不进 URL）时，整层静止；高对比与打印隐藏地形。空轨道与已结束工作不旋转，目录星图保持静态。
 - **L1**：`GraphView` 的 `signals` 让粒子沿连线飞行，关键帧是从连线曲线采样得到的 WAAPI `translate`；或者让节点响一次脉冲。同时最多飞行 `MAX_PARTICLES`（24）个粒子，超出部分合并成一个“+N”脉冲。隐藏或离屏的画面直接丢弃信号，不排队；减少动效下，一次飞行替换为一次不透明度闪烁。
 - **L2**：`Odometer`、`RadialProgress`、`ViewSwitch` 和 `GraphView` 的 `changedIds` 只在所属方把变化标记为实时时才产生动画。
 - **L3**：`Moment` 在每次 `generation` 递增时播放一次集结、收敛、点火、封存或停滞，时长不超过 `--clocky-duration-celebrate`，任意指针或按键输入会立即结束它。`GraphView` 的 `assemble` 让节点错峰入场、连线依次绘入；这个连线绘入是唯一有文档记录的 `stroke-dashoffset` 动画。

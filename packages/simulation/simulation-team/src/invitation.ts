@@ -3,6 +3,7 @@ import type { Context } from '@clocky/cordis'
 import { channelInvitationIdempotencyKeySchema } from '@clocky/clocky-team'
 import type { ChannelAdmissionSnapshot, ChannelId, SimulationChannelInvitationAcknowledgeScope, TeamId, TeamSystemChannelAdmissionProof } from '@clocky/clocky-team'
 import type { SimulationEntityId, SimulationRun } from '@clocky/clocky-simulation'
+import { assertSimulationWorldPreparationAdmission } from '@clocky/clocky-simulation'
 
 /** Named owner of exact invitation consent; no model request or activation is needed. */
 export class SimulationInvitationAuthority {
@@ -51,6 +52,13 @@ export class SimulationInvitationAuthority {
   private async confirm(run: SimulationRun, entityId: SimulationEntityId, channelId: ChannelId, teamId: TeamId,
     lifecycleOwner: string, accepting: () => boolean): Promise<ChannelAdmissionSnapshot> {
     if (!accepting()) throw new Error('Simulation invitation admission is closed')
+    const checkPreparation = (): void => {
+      const state = run.snapshot()
+      const channel = Object.values(state.channelReservations ?? {}).find(value => value.channelId === channelId)
+      assertSimulationWorldPreparationAdmission(state, [entityId, ...channel?.spec.members.map(member => member.entityId) ?? []],
+        channel?.spec.key)
+    }
+    checkPreparation()
     const observed = run.inspectEntity(entityId)
     const binding = observed.entity?.binding
     if (binding?.teamId !== teamId) throw new Error('Simulation invitation requires a canonical entity binding')
@@ -68,6 +76,7 @@ export class SimulationInvitationAuthority {
     Object.defineProperty(token, 'toJSON', { enumerable: true, value: (): never => { throw new TypeError('Simulation invitation authority is runtime-only') } })
     const proof = Object.freeze(token) as TeamSystemChannelAdmissionProof
     this.proofs.set(proof, () => {
+      checkPreparation()
       const entity = run.inspectEntity(entityId).entity
       return accepting() && entity?.phase === 'active' && entity.binding?.teamId === teamId
         && entity.binding.participantId === scope.participantId && entity.binding.sessionId === scope.sessionId ? scope : undefined

@@ -1,0 +1,94 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-driver.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts (8 tests | 8 failed) 23553ms
+     × drives 'company' with pauseDuringMaintenance=false to independent newborn and idle 3933ms
+     × drives 'company' with pauseDuringMaintenance=true to independent newborn and idle 3058ms
+     × drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle 2939ms
+     × drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle 2987ms
+     × drives 'company' with pauseDuringMaintenance=false to independent newborn and idle 2628ms
+     × drives 'company' with pauseDuringMaintenance=true to independent newborn and idle 2642ms
+     × drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle 2656ms
+     × drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle 2709ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'company' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'company' with pauseDuringMaintenance=true to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'company' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'company' with pauseDuringMaintenance=true to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:185
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"}],"details":[{"id":"world/1/decision/0","actor":"requester","scope":"request","errors":[{"type":"tool-result","toolCallId":"requester/world-initial:world-intent:28e72be522c84e743cf96d1cd798adc713e7981009eaf3a17025b8200c4eb5d7-2","content":[{"type":"text","text":"Error: World operations require an installed Native domain catalog"}],"isError":true}]}],"failures":["LlmError: {\"marker\":{\"kind\":\"world-driver\",\"entityId\":\"requester\",\"contextKey\":\"world-initial:world-intent:28e72be522c84e743cf96d1cd798adc713e7981009eaf3a17025b8200c4eb5d7\",\"purpose\":\"request\",\"instruction\":\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\"},\"index\":3,\"roles\":[{\"role\":\"user\",\"blocks\":[\"text\",\"text\",\"text\",\"text\",\"text\",\"text\"]},{\"role\":\"user\",\"blocks\":[\"text\"]},{\"role\":\"assistant\",\"blocks\":[\"tool-call\"]},{\"role\":\"user\",\"blocks\":[\"tool-result\"]},{\"role\":\"assistant\",\"blocks\":[\"tool-call\"]},{\"role\":\"user\",\"blocks\":[\"tool-result\"]},{\"role\":\"assistant\",\"blocks\":[\"tool-call\"]},{\"role\":\"user\",\"blocks\":[\"tool-result\"]}]}\n    at ReactLoopAgent.step (/Volumes/projects-mac/deepseek-harness/packages/core/agent-loop/src/agent.ts:413:17)\n    at async ReactLoopAgent.turn (/Volumes/projects-mac/deepseek-harness/packages/core/agent-loop/src/agent.ts:313:27)\n    at async ReactLoopAgent.kick (/Volumes/projects-mac/deepseek-harness/packages/core/agent-loop/src/agent.ts:232:14)"]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:185:9) {
+  [cause]: Error: Simulation model turn ended without submitting its identified decision
+      at executeDecision (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-team/src/decision.ts:61:11)
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ executeDecision packages/simulation/simulation-team/src/decision.ts:61:11
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:185
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[{"purpose":"request","entityId":"requester","tool":"simulation_observe"},{"purpose":"request","entityId":"requester","tool":"simulation_stage"},{"purpose":"request","entityId":"requester","tool":"simulation_submit"}],"details":[{"id":"world/1/decision/0","actor":"requester","scope":"request","errors":[{"type":"tool-result","toolCallId":"requester/world-initial:world-intent:daa0b7e1312b4f9b675ba999312192d44a6ff7f153cab77cc0e4feb820ae9cb7-2","content":[{"type":"text","text":"Error: World operations require an installed Native domain catalog"}],"isError":true}]}],"failures":["LlmError: {\"marker\":{\"kind\":\"world-driver\",\"entityId\":\"requester\",\"contextKey\":\"world-initial:world-intent:daa0b7e1312b4f9b675ba999312192d44a6ff7f153cab77cc0e4feb820ae9cb7\",\"purpose\":\"request\",\"instruction\":\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\"},\"index\":3,\"roles\":[{\"role\":\"user\",\"blocks\":[\"text\",\"text\",\"text\",\"text\",\"text\",\"text\"]},{\"role\":\"user\",\"blocks\":[\"text\"]},{\"role\":\"assistant\",\"blocks\":[\"tool-call\"]},{\"role\":\"user\",\"blocks\":[\"tool-result\"]},{\"role\":\"assistant\",\"blocks\":[\"tool-call\"]},{\"role\":\"user\",\"blocks\":[\"tool-result\"]},{\"role\":\"assistant\",\"blocks\":[\"tool-call\"]},{\"role\":\"user\",\"blocks\":[\"tool-result\"]}]}\n    at ReactLoopAgent.step (/Volumes/projects-mac/deepseek-harness/packages/core/agent-loop/src/agent.ts:413:17)\n    at async ReactLoopAgent.turn (/Volumes/projects-mac/deepseek-harness/packages/core/agent-loop/src/agent.ts:313:27)\n    at async ReactLoopAgent.kick (/Volumes/projects-mac/deepseek-harness/packages/core/agent-loop/src/agent.ts:232:14)"]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:185:9) {
+  [cause]: Error: Simulation model turn ended without submitting its identified decision
+      at executeDecision (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-team/src/decision.ts:61:11)
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ executeDecision packages/simulation/simulation-team/src/decision.ts:61:11
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed (8)
+   Start at  01:35:34
+   Duration  23.84s (transform 149ms, setup 122ms, import 74ms, tests 23.55s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

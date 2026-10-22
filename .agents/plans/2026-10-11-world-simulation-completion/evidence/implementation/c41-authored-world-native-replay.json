@@ -1,0 +1,149 @@
+{
+  "passed": true,
+  "reports": [
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/lib/lib-json-association-mk1Tvh",
+      "backend": "json",
+      "face": "lib",
+      "scene": "association",
+      "pid": 52303,
+      "observedRevision": 808,
+      "originalRevision": 808,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/lib/lib-json-company-Wz8rjI",
+      "backend": "json",
+      "face": "lib",
+      "scene": "company",
+      "pid": 52303,
+      "observedRevision": 1423,
+      "originalRevision": 1423,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/lib/lib-json-laboratory-pDR5ms",
+      "backend": "json",
+      "face": "lib",
+      "scene": "laboratory",
+      "pid": 52303,
+      "observedRevision": 1423,
+      "originalRevision": 1423,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/lib/lib-sqlite-association-HKazAy",
+      "backend": "sqlite",
+      "face": "lib",
+      "scene": "association",
+      "pid": 52303,
+      "observedRevision": 808,
+      "originalRevision": 808,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/lib/lib-sqlite-company-4AGWcf",
+      "backend": "sqlite",
+      "face": "lib",
+      "scene": "company",
+      "pid": 52303,
+      "observedRevision": 1423,
+      "originalRevision": 1423,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/lib/lib-sqlite-laboratory-dcIWY0",
+      "backend": "sqlite",
+      "face": "lib",
+      "scene": "laboratory",
+      "pid": 52303,
+      "observedRevision": 1423,
+      "originalRevision": 1423,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/src/src-json-association-yLaOCH",
+      "backend": "json",
+      "face": "src",
+      "scene": "association",
+      "pid": 52303,
+      "observedRevision": 808,
+      "originalRevision": 808,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/src/src-json-company-k8WRCT",
+      "backend": "json",
+      "face": "src",
+      "scene": "company",
+      "pid": 52303,
+      "observedRevision": 1423,
+      "originalRevision": 1423,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/src/src-json-laboratory-ArszlY",
+      "backend": "json",
+      "face": "src",
+      "scene": "laboratory",
+      "pid": 52303,
+      "observedRevision": 1423,
+      "originalRevision": 1423,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/src/src-sqlite-association-gMc34e",
+      "backend": "sqlite",
+      "face": "src",
+      "scene": "association",
+      "pid": 52303,
+      "observedRevision": 808,
+      "originalRevision": 808,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/src/src-sqlite-company-X6uwuH",
+      "backend": "sqlite",
+      "face": "src",
+      "scene": "company",
+      "pid": 52303,
+      "observedRevision": 1423,
+      "originalRevision": 1423,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c41-complete-world/final-matrix-20261013-stable/src/src-sqlite-laboratory-pXGRqi",
+      "backend": "sqlite",
+      "face": "src",
+      "scene": "laboratory",
+      "pid": 52303,
+      "observedRevision": 1423,
+      "originalRevision": 1423,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    }
+  ]
+}

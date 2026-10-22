@@ -35,6 +35,10 @@ it.each([['Original reason', 'Later reason'], ['  Original reason  ', '  Origina
       submit.mockImplementation(async () => uncertain())
       query.mockImplementation(async () => {
         if (original?.kind !== 'review') throw new Error('Review original missing')
+        if (query.mock.calls.length === 1) {
+          const record: SimulationCommandState = { command: original, unknown: true, pending: false, notFound: true }
+          setCommands({ original: record }); return record
+        }
         const record: SimulationCommandState = { command: original, unknown: false, pending: false, notFound: false,
           receipt: { kind: 'request', value: { runId: page.runId, commandId: original.input.commandId,
             kind: 'review', acceptedAt: 1, status: 'completed' } } }
@@ -60,11 +64,17 @@ it.each([['Original reason', 'Later reason'], ['  Original reason  ', '  Origina
     fireEvent.click(view.getByRole('button', { name: /Open review draft/ }))
     dialog = within(view.getByRole('dialog', { name: en['reviews.open'] }))
     expect((dialog.getByLabelText<HTMLTextAreaElement>(en['reviews.reason'])).value).toBe(laterReason)
+    expect(dialog.queryByRole('button', { name: en.retryOriginal })).toBeNull()
+    expect(submit).toHaveBeenCalledOnce()
+    fireEvent.click(dialog.getByRole('button', { name: en.queryOriginal }))
+    await dialog.findByText(en.commandNotFound)
+    expect(query).toHaveBeenCalledWith('original')
+    expect(submit).toHaveBeenCalledOnce()
     fireEvent.click(dialog.getByRole('button', { name: en.retryOriginal }))
     await waitFor(() => { expect(submit).toHaveBeenCalledTimes(2) })
     expect(retain).toHaveBeenCalledOnce()
     fireEvent.click(dialog.getByRole('button', { name: en.queryOriginal }))
-    await waitFor(() => { expect(query).toHaveBeenCalledOnce() })
+    await waitFor(() => { expect(query).toHaveBeenCalledTimes(2) })
     expect((dialog.getByLabelText<HTMLTextAreaElement>(en['reviews.reason'])).value).toBe(laterReason)
     expect(original?.kind === 'review' && original.input.reason).toBe('Original reason')
   })

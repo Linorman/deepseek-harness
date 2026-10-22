@@ -10,10 +10,15 @@
 ```mermaid
 flowchart LR
   pkg_simulation_product["simulation-product"]
+  svc_externalEffectSandbox["ctx.externalEffectSandbox<br/>Explicit local effect test environment"]
+  svc_federationMailbox["ctx.federationMailbox<br/>Durable cross-run message bridge"]
+  svc_federationOwnership["ctx.federationOwnership<br/>Single federated resource coordinator"]
+  pkg_simulation_world["simulation-world"]
+  svc_simulationWorldExecutions["ctx.simulationWorldExecutions<br/>World execution factory admission"]
+  pkg_simulation_team["simulation-team"]
   svc_simulationAdministration["ctx.simulationAdministration<br/>Persistent company creation owner"]
   pkg_host_apiproxy["host-apiproxy"]
   svc_simulationProducts["ctx.simulationProducts<br/>Simulation product registration and reads"]
-  pkg_simulation_team["simulation-team"]
   svc_simulationTeams["ctx.simulationTeams<br/>Simulation cognition coordination"]
   pkg_tool_simulation["tool-simulation"]
   pkg_simulation["simulation"]
@@ -352,9 +357,13 @@ flowchart LR
   pkg_shell_env --> svc_shellEnv
   pkg_simulation --> svc_simulations
   pkg_simulation_local --> svc_simulations
+  pkg_simulation_product --> svc_externalEffectSandbox
+  pkg_simulation_product --> svc_federationMailbox
+  pkg_simulation_product --> svc_federationOwnership
   pkg_simulation_product --> svc_simulationAdministration
   pkg_simulation_product --> svc_simulationProducts
   pkg_simulation_team --> svc_simulationTeams
+  pkg_simulation_world --> svc_simulationWorldExecutions
   pkg_skill --> svc_skills
   pkg_skill_filesystem --> svc_skills
   pkg_spill --> svc_spillStore
@@ -431,6 +440,8 @@ flowchart LR
   svc_dynamicCordisRunner --> pkg_tool_cordis
   svc_e2b --> pkg_fs_e2b
   svc_e2b --> pkg_subprocess_e2b
+  svc_federationMailbox --> pkg_simulation_product
+  svc_federationOwnership --> pkg_simulation_product
   svc_fs --> pkg_tool_fs
   svc_invariants --> pkg_agent
   svc_invariants --> pkg_agent_loop
@@ -483,6 +494,8 @@ flowchart LR
   svc_simulationAdministration --> pkg_host_apiproxy
   svc_simulationProducts --> pkg_host_apiproxy
   svc_simulationTeams --> pkg_tool_simulation
+  svc_simulationWorldExecutions --> pkg_simulation_product
+  svc_simulationWorldExecutions --> pkg_simulation_team
   svc_simulations --> pkg_simulation_product
   svc_simulations --> pkg_simulation_team
   svc_skills --> pkg_tool_skill
@@ -580,6 +593,10 @@ flowchart LR
 
 | ctx key | Role | Owner | Implementations | Direct consumers | Companion plugins | Note |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.externalEffectSandbox` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | - | - | 显式启用的 Host 服务保留独立用户授权并查询不确定的本地测试账本回执；不提供生产适配器。 |
+| `ctx.federationMailbox` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`simulation-product`](../packages/simulation/simulation-product) | - | 明确的 peer generation 拥有 inbox/outbox 回执、保守 Native 时间屏障与受保护 checkpoint cut。 |
+| `ctx.federationOwnership` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`simulation-product`](../packages/simulation/simulation-product) | - | 单一持久协调者隔离资源所有权 generation，并在明确的目标确认和结算之前保留预留。 |
+| `ctx.simulationWorldExecutions` | `core` | [`simulation-world`](../packages/simulation/simulation-world) | - | [`simulation-team`](../packages/simulation/simulation-team), [`simulation-product`](../packages/simulation/simulation-product) | - | 安装精确 generation 工厂，验证原恢复合同，并在无 IO 的条件下绑定完整 run-owned handler 集合。 |
 | `ctx.simulationAdministration` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | 保留已认证原分配和不可变准备结果，登记发现，拥有 paused 原生句柄。 |
 | `ctx.simulationProducts` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | 登记不可变的主体所有元数据，并投影已认证原生历史，不取得执行所有权。 |
 | `ctx.simulationTeams` | `core` | [`simulation-team`](../packages/simulation/simulation-team) | - | [`tool-simulation`](../packages/simulation/tool-simulation) | - | 将持久实体绑定连接到控制器持有的本地 activation epoch。 |

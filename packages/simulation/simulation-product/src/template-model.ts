@@ -25,15 +25,18 @@ export function currentTemplateModel(ctx: Context, template: SimulationInstalled
  * @param ctx - Registered provider owner.
  * @param template - Current installed definition.
  * @param signal - Authenticated read/admission lifetime.
+ * @param observeContext - Optional synchronous sink for actual provider context capacity; no extra metadata lookup occurs.
  * @returns bounded readiness; adapter failure details and credentials are withheld.
  */
 export async function resolveTemplateModel(ctx: Context, template: SimulationInstalledCompanyTemplate,
-  signal: AbortSignal): Promise<SimulationProductModelReadiness> {
+  signal: AbortSignal, observeContext?: (contextWindow: number | undefined) => void): Promise<SimulationProductModelReadiness> {
   const current = currentTemplateModel(ctx, template)
   if (current.status !== 'ready') return current
   if (!templateProviderAvailable(ctx, current.model)) return { status: 'unavailable', reason: 'provider-unavailable' }
-  try { await ctx.llm.resolveModelInfo(current.model.provider, current.model.name, signal) }
+  let info: Awaited<ReturnType<typeof ctx.llm.resolveModelInfo>>
+  try { info = await ctx.llm.resolveModelInfo(current.model.provider, current.model.name, signal) }
   catch { return { status: 'unavailable', reason: 'metadata-unavailable' } }
+  observeContext?.(info.context?.contextWindow)
   return current
 }
 

@@ -1,0 +1,507 @@
+[
+  {
+    "name": "director-event-with-run-evidence",
+    "valid": true,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"director-event\",\"pin\":{\"domain\":\"external\",\"operation\":\"interact\",\"version\":\"3\",\"schemaRef\":\"clocky.external.interact.mediated/schema/1\",\"implementationRef\":\"clocky.external.interact.mediated/native/1\",\"generation\":1},\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"businessKey\":\"calendar/0\",\"scopeEntityId\":\"studio\",\"targetEntityId\":\"outside-vendor\",\"baseRevision\":9}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "scenario-resolve-with-run-evidence",
+    "valid": true,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"scenario-resolve\",\"pin\":{\"domain\":\"external\",\"operation\":\"interact\",\"version\":\"3\",\"schemaRef\":\"clocky.external.interact.mediated/schema/1\",\"implementationRef\":\"clocky.external.interact.mediated/native/1\",\"generation\":1},\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"intentId\":\"intent\",\"requestId\":\"request\",\"reads\":[],\"baseRevision\":9}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "scenario-result-with-run-evidence",
+    "valid": true,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"scenario-result\",\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"intentId\":\"intent\",\"resultId\":\"result\",\"baseRevision\":9}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "scenario-result-with-original-delayed-event-leaf",
+    "valid": true,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"scenario-result\",\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"intentId\":\"intent\",\"resultId\":\"result\",\"baseRevision\":9,\"externalEventId\":\"original-delayed-event\"}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "invented-business-source",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "director-event",
+            "eventId": "calendar-event",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"director-event\",\"pin\":{\"domain\":\"external\",\"operation\":\"interact\",\"version\":\"3\",\"schemaRef\":\"clocky.external.interact.mediated/schema/1\",\"implementationRef\":\"clocky.external.interact.mediated/native/1\",\"generation\":1},\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"businessKey\":\"calendar/0\",\"scopeEntityId\":\"studio\",\"targetEntityId\":\"outside-vendor\",\"baseRevision\":9}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "cross-run-source",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "other",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"director-event\",\"pin\":{\"domain\":\"external\",\"operation\":\"interact\",\"version\":\"3\",\"schemaRef\":\"clocky.external.interact.mediated/schema/1\",\"implementationRef\":\"clocky.external.interact.mediated/native/1\",\"generation\":1},\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"businessKey\":\"calendar/0\",\"scopeEntityId\":\"studio\",\"targetEntityId\":\"outside-vendor\",\"baseRevision\":9}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "future-run-source",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 10
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"director-event\",\"pin\":{\"domain\":\"external\",\"operation\":\"interact\",\"version\":\"3\",\"schemaRef\":\"clocky.external.interact.mediated/schema/1\",\"implementationRef\":\"clocky.external.interact.mediated/native/1\",\"generation\":1},\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"businessKey\":\"calendar/0\",\"scopeEntityId\":\"studio\",\"targetEntityId\":\"outside-vendor\",\"baseRevision\":9}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "duplicate-run-source",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"director-event\",\"pin\":{\"domain\":\"external\",\"operation\":\"interact\",\"version\":\"3\",\"schemaRef\":\"clocky.external.interact.mediated/schema/1\",\"implementationRef\":\"clocky.external.interact.mediated/native/1\",\"generation\":1},\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"businessKey\":\"calendar/0\",\"scopeEntityId\":\"studio\",\"targetEntityId\":\"outside-vendor\",\"baseRevision\":9}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "empty-invented-channel",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "team-envelope",
+            "teamId": "team",
+            "channelId": "",
+            "envelopeId": "fake"
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"director-event\",\"pin\":{\"domain\":\"external\",\"operation\":\"interact\",\"version\":\"3\",\"schemaRef\":\"clocky.external.interact.mediated/schema/1\",\"implementationRef\":\"clocky.external.interact.mediated/native/1\",\"generation\":1},\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"businessKey\":\"calendar/0\",\"scopeEntityId\":\"studio\",\"targetEntityId\":\"outside-vendor\",\"baseRevision\":9}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "injected-business-authority-on-view-envelope",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"director-event\",\"pin\":{\"domain\":\"external\",\"operation\":\"interact\",\"version\":\"3\",\"schemaRef\":\"clocky.external.interact.mediated/schema/1\",\"implementationRef\":\"clocky.external.interact.mediated/native/1\",\"generation\":1},\"trigger\":{\"declarationId\":\"finite-director-request\",\"calendarId\":\"finite-stock-calendar\",\"occurrence\":0,\"eventId\":\"calendar-event\",\"time\":\"0\",\"sequence\":8,\"bootstrapSequence\":1},\"businessKey\":\"calendar/0\",\"scopeEntityId\":\"studio\",\"targetEntityId\":\"outside-vendor\",\"baseRevision\":9}"
+              }
+            ]
+          }
+        ],
+        "trigger": {
+          "declarationId": "finite-director-request",
+          "calendarId": "finite-stock-calendar",
+          "occurrence": 0,
+          "eventId": "calendar-event",
+          "time": "0",
+          "sequence": 8,
+          "bootstrapSequence": 1
+        }
+      }
+    }
+  }
+]

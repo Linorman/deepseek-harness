@@ -1,0 +1,71 @@
+{
+  "writtenAt": "2026-10-11T19:51:14.162497+00:00",
+  "scope": "F02/F03/G11 real Native Norm history and actual independent Agent/Session visibility. No production core, previous fixture or checklist edits by this agent.",
+  "files": [
+    {
+      "path": "examples/simulation-company/tests/world-norm-history-model.ts",
+      "bytes": 10373,
+      "sha256": "48b4b48c3837a5ea1aa7b5d1266b88001b200b8f2b29853f76e3d1aa9e0e989e"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-norm-history-scenario.ts",
+      "bytes": 25749,
+      "sha256": "616228153f3785e50963900b2b13d7a6d794cee788c5e1700e549c72660b5516"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-norm-history.snapshot.ts",
+      "bytes": 2406,
+      "sha256": "d7f794fb61c1e18ec14c4daa4f99d399ad80d3121609f041f58182a21bdb7527"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-norm-history/cordis.yml",
+      "bytes": 105,
+      "sha256": "ba2f70a20b4e4ad5ac6e8d90ce0164f91ab4e8e787947b11330e08b5467dba74"
+    }
+  ],
+  "verification": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-norm-history.snapshot.ts",
+      "log": "c5-history-source-final.log",
+      "result": "4 passed; 312.54 seconds"
+    },
+    {
+      "command": "CLOCKY_EXAMPLE_MODE=lib TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-norm-history.snapshot.ts",
+      "log": "c5-history-lib.log",
+      "result": "4 passed; 264.90 seconds; actual plain Node child without tsx source import"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -b tsconfig.host.json --pretty false",
+      "log": "c5-history-types.log",
+      "result": "exit 0"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec oxlint examples/simulation-company/tests/world-norm-history*.ts",
+      "log": "c5-history-lint.log",
+      "result": "exit 0"
+    }
+  ],
+  "coverage": [
+    "Company/laboratory x JSON/SQLite; each true create followed by a separate process cold restore with zero model calls.",
+    "Actual V1 normative proposal, independent committee Agent/Session votes, original Channel enactment, separate single-hire approval votes, actual hire and newcomer first action.",
+    "Actual V2 correction with its own proposal/votes/enactment; availability now and effectiveness later; original V1 unchanged and separate immutable closure ends the original interval.",
+    "Private V2 canary is visible in authorized actual model inputs while unauthorized newcomer ordinary Agent inputs and Native views never contain it.",
+    "Native future boundary switches hard effective authority independently of announcement and audience; scoped known queries retain their separate semantics.",
+    "Actual V3 repeal uses its own proposal/votes/Channel and a new version; effective immediately, available later; hard authority is already empty while the ordinary unauthorized actor cannot yet observe V3.",
+    "After actual availability boundary, ordinary actor sees the public revocation document; no private V2 canary leaks.",
+    "Canonical Session events match the Native prepared view, have one entered control input after that view, and are flushed; ordinary decisions do not fabricate world-only Native consumption receipts.",
+    "Old contexts, actual sources, original consumption receipts and their exact SHA-256 remain unchanged after corrections/repeal and cold restore.",
+    "Original V1/V2 versions, old independent votes, committed hire reservation/approval basis/profile/assignment/result remain unchanged."
+  ],
+  "runtimeFormatOnlyRepair": {
+    "log": "c5-history-format-runtime.log",
+    "detail": "After source/lib terminal pass, only semicolons in erased savedHistory type annotation were reformatted. Minified emitted JavaScript before/after is byte-identical. Static gates rerun; no unnecessary runtime rerun.",
+    "emittedSha256": "714d32336ae38ed0c7c33cd9267afd20429fa23ffb541d75719e8380a50f48c4"
+  },
+  "limits": [
+    "Trusted v0 fixture composition is not evidence for v1 authoring or UI completion.",
+    "No GUI is exercised; screenshots do not apply. Raw projection/history proof files are built and compared inside each repository-local test root, then removed by test cleanup; reproducible source/assertions and pass logs are retained.",
+    "Original microstep/model budgets are preserved; goals and probes use separate simulated times and bounded horizons.",
+    "Root owns the SIGKILL vote/close/enact fault matrix and global docs/build evidence."
+  ]
+}

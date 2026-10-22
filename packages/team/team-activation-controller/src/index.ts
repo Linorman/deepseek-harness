@@ -4,6 +4,7 @@ import type { TeamMemberExecutionSources } from '@clocky/clocky-team'
 import type { ActivationControllerStartupStallPhaseScope, ActivationReservationSnapshot } from '@clocky/clocky-team'
 import { randomUUID } from 'node:crypto'
 import { activationReservationIdSchema, liveActivationLimit } from '@clocky/clocky-team'
+import { activationHistoryLimitDetails, jsonObjectSchema } from '@clocky/clocky-team'
 import type { ActivationReservationInput, ActivationReservationId } from '@clocky/clocky-team'
 /**
  * Local AgentRuntime-to-Team activation binder. It makes a published local
@@ -257,6 +258,7 @@ class ManagedTeamActivationLease implements TeamActivationLease {
  */
 export class TeamActivationController extends Service {
   private readonly entries = new Map<string, ActivationEntry>()
+  private readonly teamStatusTails = new Map<TeamId, Promise<void>>()
   private readonly lifecycle: LifecycleOwners
   private readonly pending = new Map<string, PendingActivation>()
   private readonly recoveries = new Map<string, Promise<unknown>>()
@@ -811,9 +813,6 @@ export class TeamActivationController extends Service {
   private async coldReplaceOwned(request: TeamActivationColdReplaceRequest): Promise<TeamActivationLease> {
     await assertRecoveryAuthorization(request.authorization, request.teamId)
     const binding = await this.currentColdReplaceBinding(request)
-    const lifecycleState = await this.ctx.teams.getTeam({ teamId: request.teamId })
-    await this.lifecycle.recover(lifecycleState.rules, activationKey(request.teamId, request.participantId), binding)
-    await this.lifecycle.revoke(activationKey(request.teamId, request.participantId))
     const recovery = binding.recovery
     if (recovery === undefined) {
       throw new TeamError(
@@ -821,6 +820,9 @@ export class TeamActivationController extends Service {
         'TEAM_ACTIVATION_RECOVERY_UNSUPPORTED',
       )
     }
+    const lifecycleState = await this.ctx.teams.getTeam({ teamId: request.teamId })
+    await this.lifecycle.recover(lifecycleState.rules, activationKey(request.teamId, request.participantId), binding)
+    await this.lifecycle.revoke(activationKey(request.teamId, request.participantId))
     request.signal.throwIfAborted()
     assertColdReplaceableQuiescence(binding)
     const providerAvailable = this.ctx.agentRuntimes.getProvider(binding.provider) !== undefined
@@ -1088,7 +1090,18 @@ export class TeamActivationController extends Service {
       try {
         await this.disposeUnpublishedStart(start)
       } catch (cleanupError: unknown) {
+        const refusal = activationHistoryLimitDetails(error)
+        if (refusal?.cleanup === 'pending') {
+          throw new TeamError('Historical activation capacity is exhausted and rejected startup cleanup is unconfirmed',
+            'TEAM_CHANNEL_BACKPRESSURE', { details: jsonObjectSchema.parse({ ...refusal, cleanup: 'unconfirmed' }),
+              cause: new AggregateError([error, cleanupError], 'Team activation binding failed and raw handle cleanup also failed') })
+        }
         throw new AggregateError([error, cleanupError], 'Team activation binding failed and raw handle cleanup also failed')
+      }
+      const refusal = activationHistoryLimitDetails(error)
+      if (refusal?.cleanup === 'pending') {
+        throw new TeamError('Historical activation capacity is exhausted; rejected startup cleanup is confirmed',
+          'TEAM_CHANNEL_BACKPRESSURE', { details: jsonObjectSchema.parse({ ...refusal, cleanup: 'confirmed' }), cause: error })
       }
       throw error
     }
@@ -1456,6 +1469,21 @@ export class TeamActivationController extends Service {
 
   /** Reread an accepted entry before each status operation; only cursor conflicts consume retry allowance. */
   private async withCurrentEntryBinding(
+    entry: ActivationEntry,
+    operation: (state: TeamStateSnapshot, current: ActivationBindingSnapshot) => Promise<void>,
+  ): Promise<void> {
+    const teamId = entry.binding.activation.teamId
+    const previous = this.teamStatusTails.get(teamId) ?? Promise.resolve()
+    const work = previous.then(() => this.updateCurrentEntryBinding(entry, operation))
+    // The caller receives work's failure; the queue tail still admits the next independently owned epoch.
+    const tail = work.then(() => undefined, () => undefined)
+    this.teamStatusTails.set(teamId, tail)
+    void tail.then(() => { if (this.teamStatusTails.get(teamId) === tail) this.teamStatusTails.delete(teamId) })
+    await work
+  }
+
+  /** One Team cursor protects all its epochs; sibling status writes must not exhaust each other's conflict retries. */
+  private async updateCurrentEntryBinding(
     entry: ActivationEntry,
     operation: (state: TeamStateSnapshot, current: ActivationBindingSnapshot) => Promise<void>,
   ): Promise<void> {

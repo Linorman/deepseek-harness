@@ -1,19 +1,26 @@
+import { simulationProductWorldManagementCommandIdSchema } from './schema-common.ts'
+import { simulationProductWorldManagementSubmitInputSchema, simulationProductWorldManagementOutcomeSchema } from './world-management-schema.ts'
+import { simulationProductWorldCaseCancelInputSchema } from './case-cancel-schema.ts'
 /** Browser-safe parser for product creation, explicit preparation and persistent request lookup. */
 import { simulationProductTaskReviewResolveInputSchema } from './review-schema.ts'
 import { simulationProductOperationRetryInputSchema } from './operation-retry-schema.ts'
 import { simulationCheckpointDiagnosticSchema } from '@clocky/clocky-simulation/checkpoint-diagnostics-schema'
+import type { SimulationCheckpointDiagnostic } from '@clocky/clocky-simulation/checkpoint-diagnostics-types'
+import type { SimulationCheckpointId } from '@clocky/clocky-simulation/identities'
 import { z } from 'zod'
+import { worldScenarioV1Schema } from '@clocky/clocky-simulation-scenario'
 import { simulationProductTaskCancelInputSchema } from './task-control-schema.ts'
-import { simulationProductRunIdSchema, simulationProductTextSchema, simulationProductCursorSchema } from './schema-common.ts'
-import type { SimulationProductCommandId, SimulationProductTemplateId, SimulationProductCreateInput,
+import { simulationProductCommandIdSchema, simulationProductRunIdSchema, simulationProductTextSchema, simulationProductCursorSchema } from './schema-common.ts'
+import type { SimulationProductTemplateId, SimulationProductCreateInput,
   SimulationProductPrepareInput, SimulationProductRequestInput, SimulationProductRequestReceipt, SimulationProductRequestResult,
   SimulationProductCatalog, SimulationProductPreflightInput, SimulationProductPreflightResult,
   SimulationProductRequestsInput, SimulationProductRequestsPage, SimulationProductRetryRequestInput,
   SimulationProductModelReadiness, SimulationProductOriginalCreateInput } from './administration-types.ts'
+const diagnostic: z.ZodType<SimulationCheckpointDiagnostic> = simulationCheckpointDiagnosticSchema
+const checkpointId: z.ZodType<SimulationCheckpointId> = z.string().min(1).transform(value => value as SimulationCheckpointId)
 /** Empty catalog query carries no actor or deployment configuration. */
 export const simulationProductCatalogInputSchema = z.strictObject({})
-/** Brand a caller-retained command at its wire/file boundary. */
-export const simulationProductCommandIdSchema = z.string().min(1).transform(value => value as SimulationProductCommandId)
+export { simulationProductCommandIdSchema } from './schema-common.ts'
 /** Brand a deployment-selected template identifier. */
 export const simulationProductTemplateIdSchema = z.string().trim().min(1).transform(value => value as SimulationProductTemplateId)
 /** Company parameters contain only bounded-by-deployment names and canonical positive stock quantity. */
@@ -75,19 +82,24 @@ export const simulationProductRetryRequestInputSchema = z.strictObject({ runId: 
   commandId: simulationProductCommandIdSchema }) satisfies z.ZodType<SimulationProductRetryRequestInput>
 /** The original terminal result remains historical after later preparation attempts. */
 export const simulationProductRequestReceiptSchema = z.strictObject({ commandId: simulationProductCommandIdSchema,
-  runId: simulationProductRunIdSchema, kind: z.enum(['create', 'prepare', 'checkpoint', 'restore', 'review', 'retry-operation', 'cancel-task']), acceptedAt: z.number().int().nonnegative(),
-  status: z.enum(['accepted', 'completed', 'failed']), checkpointId: z.string().min(1).transform(value => value as import('@clocky/clocky-simulation/identities').SimulationCheckpointId).optional(),
+  runId: simulationProductRunIdSchema,
+  kind: z.enum(['create', 'prepare', 'world-create', 'world-prepare', 'checkpoint', 'restore', 'review', 'retry-operation', 'cancel-task', 'cancel-world-case', 'world-management']),
+  acceptedAt: z.number().int().nonnegative(),
+  status: z.enum(['accepted', 'completed', 'failed']), checkpointId: checkpointId.optional(),
   failure: z.enum(['preparation-required', 'recovery-required', 'unavailable', 'checkpoint-failed', 'restore-failed', 'review-failed',
-    'retry-operation-failed', 'cancel-task-failed']).optional(),
-  diagnostic: simulationCheckpointDiagnosticSchema.optional(),
-}).refine(value => (value.status === 'failed') === (value.failure !== undefined), 'Only failed requests carry a failure category').refine(value =>
+    'retry-operation-failed', 'cancel-task-failed', 'cancel-world-case-failed', 'world-management-failed']).optional(),
+  diagnostic: diagnostic.optional(),
+}).refine(value => value.kind !== 'world-management' || simulationProductWorldManagementCommandIdSchema.safeParse(value.commandId).success,
+  'Management receipts retain the Native command identity bound').refine(value => (value.status === 'failed') === (value.failure !== undefined), 'Only failed requests carry a failure category').refine(value =>
   (value.kind === 'checkpoint' || value.kind === 'restore') === (value.checkpointId !== undefined),
 'Maintenance receipts must carry their exact checkpoint identity').refine((value) => {
   if (value.status !== 'failed' || value.failure === 'recovery-required' || value.failure === 'unavailable') return true
   return value.kind === 'checkpoint' ? value.failure === 'checkpoint-failed'
     : value.kind === 'restore' ? value.failure === 'restore-failed' : value.kind === 'review' ? value.failure === 'review-failed'
       : value.kind === 'retry-operation' ? value.failure === 'retry-operation-failed'
-        : value.kind === 'cancel-task' ? value.failure === 'cancel-task-failed' : value.failure === 'preparation-required'
+        : value.kind === 'cancel-task' ? value.failure === 'cancel-task-failed'
+          : value.kind === 'cancel-world-case' ? value.failure === 'cancel-world-case-failed'
+            : value.kind === 'world-management' ? value.failure === 'world-management-failed' : value.failure === 'preparation-required'
 }, 'Failure category does not belong to the original operation kind').refine(value => value.diagnostic === undefined
   || value.status === 'failed' && (value.kind === 'checkpoint' || value.kind === 'restore'),
 'Only failed checkpoint or restore requests carry source diagnoses') satisfies
@@ -100,11 +112,14 @@ export const simulationProductRequestsPageSchema = z.strictObject({ runId: simul
   && new Set(value.items.map(item => item.commandId)).size === value.items.length,
 'Request page must contain distinct original commands from its selected run') satisfies z.ZodType<SimulationProductRequestsPage>
 /** Unknown results must remain distinct from persisted failure. */
-export const simulationProductRequestResultSchema = z.discriminatedUnion('status', [
+export const simulationProductRequestResultSchema: z.ZodType<SimulationProductRequestResult> = z.discriminatedUnion('status', [
   z.strictObject({ status: z.literal('not-found'), commandId: simulationProductCommandIdSchema }),
   z.strictObject({ status: z.literal('found'), request: simulationProductRequestReceiptSchema,
     review: simulationProductTaskReviewResolveInputSchema.optional(),
     cancellation: simulationProductTaskCancelInputSchema.optional(),
+    worldManagement: simulationProductWorldManagementSubmitInputSchema.optional(),
+    worldManagementOutcome: simulationProductWorldManagementOutcomeSchema.optional(),
+    worldCancellation: simulationProductWorldCaseCancelInputSchema.optional(),
     retryOperation: simulationProductOperationRetryInputSchema.optional() }),
 ]).refine(value => value.status !== 'found' || (value.request.kind === 'review') === (value.review !== undefined),
   'Only review requests carry their exact original review payload').refine(value => value.status !== 'found' || value.review === undefined
@@ -119,7 +134,20 @@ export const simulationProductRequestResultSchema = z.discriminatedUnion('status
 'Only cancellation requests carry their exact original cancellation payload').refine(value => value.status !== 'found'
   || value.cancellation === undefined || value.cancellation.commandId === value.request.commandId
   && value.cancellation.runId === value.request.runId,
-'Cancellation result must carry the input of its exact original command') satisfies z.ZodType<SimulationProductRequestResult>
+'Cancellation result must carry the input of its exact original command').refine(value => value.status !== 'found'
+  || (value.request.kind === 'cancel-world-case') === (value.worldCancellation !== undefined),
+'Only World cancellation requests carry their original case selector').refine(value => value.status !== 'found'
+  || value.worldCancellation === undefined || value.worldCancellation.commandId === value.request.commandId
+  && value.worldCancellation.runId === value.request.runId,
+'World cancellation must carry the selector of its exact original command').refine(value => value.status !== 'found'
+  || (value.request.kind === 'world-management') === (value.worldManagement !== undefined),
+'Only personnel management carries its original confirmed form').refine(value => value.status !== 'found'
+  || value.worldManagement === undefined || value.worldManagement.commandId === value.request.commandId
+  && value.worldManagement.runId === value.request.runId,
+'Personnel management must carry its exact original command').refine(value => value.status !== 'found'
+  || value.worldManagementOutcome === undefined || value.request.kind === 'world-management'
+  && value.worldManagementOutcome.commandId === value.request.commandId && value.worldManagementOutcome.runId === value.request.runId,
+'Personnel outcome must belong to its original management command') satisfies z.ZodType<SimulationProductRequestResult>
 /** Safe catalog metadata omits private deployment spec, paths, owner identity and credentials. */
 export const simulationProductCatalogSchema = z.strictObject({ items: z.array(z.strictObject({
   id: simulationProductTemplateIdSchema, version: z.literal('1'), name: simulationProductTextSchema,
@@ -127,4 +155,5 @@ export const simulationProductCatalogSchema = z.strictObject({ items: z.array(z.
   tickUnit: simulationProductTextSchema, execution: z.enum(['cognition-only', 'automatic-tasks']), review: z.enum(['none', 'buyer', 'participant']), maxStock: z.string().regex(/^[1-9][0-9]*$/),
   cognition: z.enum(['model', 'deterministic']).optional(),
   configuration: simulationProductConfigurationSchema.extend({ editable: z.array(simulationProductLimitKeySchema) }).optional(),
-})) }) satisfies z.ZodType<SimulationProductCatalog>
+})), worldTemplates: z.array(z.strictObject({ id: z.string().min(1), version: z.string().min(1), name: z.string().min(1),
+  definition: worldScenarioV1Schema })).optional() }) satisfies z.ZodType<SimulationProductCatalog>

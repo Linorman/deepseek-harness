@@ -883,3 +883,24 @@ describe('compactNow transaction and failure classification', () => {
     await expect(region).resolves.toMatchObject({ shadowedSeqs: nodes.slice(0, 2) })
   })
 })
+
+
+it('manual maintenance overrides prior automatic no-gain suppression for one attempt', async () => {
+  const h = await loopHarness()
+  try {
+    await seedHistory(h)
+    h.compact.summary = [{ type: 'text', text: 'cannot shrink '.repeat(3000) }]
+    h.ctx.on('agent/pre-step', async ({ agent, signal }, next) => {
+      await h.compact.compactIfNeeded(agent, 'context-overflow', signal)
+      return next()
+    })
+    h.agent.followup(createUserMessage({ content: [{ type: 'text', text: 'continue' }], source: { kind: 'user' } }))
+    await h.agent.whenIdle()
+    expect(h.compact.calls).toHaveLength(1)
+    expect((await rejection(h.compact.compactNow(h.agent, SIGNAL))).code).toBe('summary')
+    expect(h.compact.calls).toHaveLength(2)
+    expect(await h.compact.compactIfNeeded(h.agent, 'context-overflow', SIGNAL)).toBeNull()
+    expect(h.compact.calls).toHaveLength(2)
+    expect(h.agent.session.events.filter(event => event.type === 'compaction/summary')).toHaveLength(0)
+  } finally { await h.ctx.fiber.dispose() }
+})

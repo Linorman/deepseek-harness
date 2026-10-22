@@ -1,0 +1,17 @@
+{
+  "newChecklistItems": 55,
+  "allInitiallyUnchecked": true,
+  "originalChecklist": {
+    "total": 112,
+    "checked": 108,
+    "unchecked": [
+      "B04",
+      "R08",
+      "R09",
+      "R13"
+    ]
+  },
+  "linksChecked": 28,
+  "sourceAndOriginalChecklistChanged": [],
+  "errors": []
+}

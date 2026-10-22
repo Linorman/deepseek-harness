@@ -8,16 +8,28 @@ import { REPO_ROOT } from './support.ts'
 import { LlmAdapter, type GenerateOptions, type LlmModelInfo } from '@clocky/clocky-llm'
 import type { SimulationRun } from '@clocky/clocky-simulation'
 import { companyModel } from '../../../packages/simulation/simulation-product/tests/company-model.ts'
+import { defaultWorldModel } from './default-world-model.ts'
 import type {} from '../../../examples/headless-agent/tests/fixtures/simulation/simulation-administration/model.ts'
 
 type Stage = 'accepted-create' | 'completed-checkpoint' | 'completed-review'
-interface Settings { workspaceCwd: string; persistenceRoot: string; overlay?: string; port: number; published?: boolean; model?: string }
+interface Settings {
+  workspaceCwd: string
+  persistenceRoot: string
+  overlay?: string
+  port: number
+  published?: boolean
+  model?: string
+  world?: boolean
+}
 type Command = { type: 'arm'; stage: Stage } | { type: 'observe' }
 interface Ready { type: 'ready'; pid: number; baseUrl: string; credential: string }
 interface Held { type: 'held'; stage: Stage; runId: string; commandId: string; checkpointId?: string }
 interface Observation {
   type: 'observation'
   requests: number
+  postCompactionSubmissions?: number
+  correctedReplies?: number
+  compactions?: number
   opens?: number
   tasks: number
   reports: number
@@ -71,7 +83,7 @@ function parseMessage(value: unknown): Message {
       }
       break
     case 'observation':
-      if (['requests', 'tasks', 'reports', 'transfers', 'completedCheckpoints', 'entityCount', 'channelCount',
+      if (['correctedReplies', 'postCompactionSubmissions', 'compactions', 'requests', 'tasks', 'reports', 'transfers', 'completedCheckpoints', 'entityCount', 'channelCount',
         'decisionCount', 'ingressCount'].every(key =>
         typeof input[key] === 'number' && Number.isSafeInteger(input[key]) && input[key] >= 0)
         && ['phase', 'teamPhase', 'teamStallCode', 'stock', 'received', 'time', 'driver', 'stop'].every(key => input[key] === undefined || typeof input[key] === 'string')
@@ -95,6 +107,7 @@ function parseSettings(value: unknown): Settings {
     && (input.overlay === undefined || typeof input.overlay === 'string')
     && (input.published === undefined || typeof input.published === 'boolean')
     && (input.model === undefined || typeof input.model === 'string')
+    && (input.world === undefined || typeof input.world === 'boolean')
     && (input.published === true || typeof input.overlay === 'string')
     && typeof input.port === 'number' && Number.isSafeInteger(input.port) && input.port > 0 && input.port < 65536) {
     return input as unknown as Settings
@@ -138,23 +151,36 @@ export async function launchSimulationProcessHost(settings: Settings): Promise<S
     else { const waiter = waiters.splice(index, 1)[0]!; clearTimeout(waiter.timer); waiter.resolve(parsed) }
   })
   const exited = new Promise<void>((resolveExit) => { child.once('exit', () => { resolveExit() }) })
-  child.once('exit', () => {
-    for (const waiter of waiters.splice(0)) { clearTimeout(waiter.timer); waiter.reject(new Error('Independent Simulation Host exited')) }
-  })
+  const rejectWaiters = (cause: Error) => {
+    for (const waiter of waiters.splice(0)) { clearTimeout(waiter.timer); waiter.reject(cause) }
+  }
+  child.once('exit', () => { rejectWaiters(new Error('Independent Simulation Host exited')) })
   const next = <T extends Message['type']>(type: T): Promise<Extract<Message, { type: T }>> => {
     const index = pending.findIndex(message => message.type === type)
     if (index >= 0) return Promise.resolve(pending.splice(index, 1)[0] as Extract<Message, { type: T }>)
+    if (!child.connected) return Promise.reject(new Error('Independent Simulation Host is disconnected'))
     return new Promise((resolveNext, reject) => {
-      const timer = setTimeout(() => { reject(new Error(`Simulation Host did not publish ${type}`)) }, 30000)
-      waiters.push({ type, resolve: (message) => { resolveNext(message as Extract<Message, { type: T }>) }, reject, timer })
+      const timer = setTimeout(() => {
+        const index = waiters.indexOf(waiter)
+        if (index >= 0) waiters.splice(index, 1)
+        reject(new Error(`Simulation Host did not publish ${type}`))
+      }, 30000)
+      const waiter: Waiter = { type, resolve: (message) => { resolveNext(message as Extract<Message, { type: T }>) }, reject, timer }
+      waiters.push(waiter)
     })
+  }
+  const request = async <T extends 'armed' | 'observation'>(type: T, command: Command): Promise<Extract<Message, { type: T }>> => {
+    if (!child.connected) throw new Error('Independent Simulation Host is disconnected')
+    const result = next(type)
+    child.send(command, (cause: Error | null) => { if (cause !== null) rejectWaiters(cause) })
+    return await result
   }
   try {
     const ready = await next('ready')
     return { ready,
-      async arm(stage) { const armed = next('armed'); child.send({ type: 'arm', stage }); await armed },
+      async arm(stage) { await request('armed', { type: 'arm', stage }) },
       held: () => next('held'),
-      async observe() { const result = next('observation'); child.send({ type: 'observe' }); return await result },
+      async observe() { return await request('observation', { type: 'observe' }) },
       async kill() { if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL'); await exited },
     }
   } catch (cause: unknown) { child.kill('SIGKILL'); await exited; throw cause }
@@ -170,18 +196,32 @@ async function serveChild(): Promise<void> {
   let publishedRun: SimulationRun | undefined
   let opens = 0
   const requests: Array<{ stage: string; tools: string[]; goal: string }> = []
+  // Residency may evict SessionStore entries before observation; retain only event positions, never model bodies.
+  const compactionProofs = new Map<string, { views: Map<string, number>; shadowed: Set<number> }>()
+  scaffold.ctx.on('session/event', (session, event) => {
+    if (event.type !== 'simulation/context-view' && event.type !== 'compaction/summary') return
+    const proof = compactionProofs.get(session.id) ?? { views: new Map<string, number>(), shadowed: new Set<number>() }
+    compactionProofs.set(session.id, proof)
+    if (event.type === 'simulation/context-view') proof.views.set(event.data.inputId, event.seq)
+    else for (const seq of event.data.shadowedSeqs) proof.shadowed.add(seq)
+  }, { global: true })
   if (settings.published) {
     const open = scaffold.ctx.simulations.open.bind(scaffold.ctx.simulations)
     scaffold.ctx.simulations.open = async (...args) => { opens++; publishedRun = await open(...args); return publishedRun }
     const scripts = new WeakMap<SimulationRun, ReturnType<typeof companyModel>>()
+    const worldScript = settings.world ? defaultWorldModel(requests) : undefined
     scaffold.ctx.llm.registerAdapter(['published-restart'], new class extends LlmAdapter {
       override listModels(provider: string): Promise<readonly LlmModelInfo[]> {
         return Promise.resolve([{ provider, id: settings.model ?? 'procurement', name: 'Procurement replay' }])
       }
+      override async resolveModel(provider: string, model: string) {
+        return settings.world ? { provider, id: model, name: model, context: { contextWindow: 1048576 } }
+          : super.resolveModel(provider, model)
+      }
       override async *stream(options: GenerateOptions) {
         if (publishedRun === undefined) throw new Error('Published model request has no accepted world')
         let script = scripts.get(publishedRun)
-        if (script === undefined) { script = companyModel(publishedRun, requests); scripts.set(publishedRun, script) }
+        if (script === undefined) { script = worldScript ?? companyModel(publishedRun, requests); scripts.set(publishedRun, script) }
         // External response pacing leaves real accepted work to pause/recover;
         // production driver timers and native scheduling remain unchanged.
         for await (const chunk of script.stream(options)) { await delay(100); yield chunk }
@@ -226,6 +266,15 @@ async function serveChild(): Promise<void> {
     }
     const control = state === undefined ? undefined : administration.held.get(String(state.spec.runId))?.owner?.observe()
     const observation: Extract<Message, { type: 'observation' }> = { type: 'observation',
+      postCompactionSubmissions: Object.values(state?.decisions ?? {}).filter((decision) => {
+        const proof = decision.consumption
+        if (proof === undefined) return false
+        const evidence = compactionProofs.get(proof.sessionId)
+        return (evidence?.views.get(proof.inputId) ?? -1) > proof.consumedSequence
+          && evidence?.shadowed.has(proof.viewSequence) === true
+      }).length,
+      correctedReplies: requests.filter(value => value.stage === 'reply-correction').length,
+      compactions: requests.filter(value => value.stage === 'compaction').length,
       requests: settings.published ? requests.length : scaffold.ctx.simulationBrowserProbe.systemPrompts.length,
       ...settings.published ? { opens } : {},
       tasks: Object.values(state?.taskExecutions ?? {}).length,

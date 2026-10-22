@@ -1,0 +1,52 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-personnel.snapshot.ts (4 tests | 1 failed | 3 skipped) 4589ms
+     × preserves the original person and Session in company 4588ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-personnel.snapshot.ts > json actual personnel transfer > preserves the original person and Session in company
+AssertionError: {"originalCommitFailure":{"name":"PersonnelDomainError","message":"Personnel complete atomic records exceed the original plan envelope allowance"},"maxBytesPerPlan":4096}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: {"result":{"reason":"plan-stale","controlSteps":4,"revision":109,"time":"2"},"reservations":{"world-intent:9a53d1b2067ad0c685ab857cbc57da0ab372823fdc0f365721b3b4655d7da454":{"id":"world-intent:9a53d1b2067ad0c685ab857cbc57da0ab372823fdc0f365721b3b4655d7da454","requestId":"world-request:bf8a6d3fc9f2e3affe8462744aa8207456190ae90cf6c30f3b63bc7cdca26923","request":{"planId":"world-plan:simulation-operation:0724178254a6fcad32b0ca2280207c2e4d1803175c79c67bf29e99a2c6a8bb05","maintenance":{"id":"world/1/personnel/world-plan:simulation-operation:0724178254a6fcad32b0ca2280207c2e4d1803175c79c67bf29e99a2c6a8bb05","owner":"world-personnel/company/resolved-4c3402cc454c4b919d493a55d9adfad14815e1b5472ba4fd5962cc23e0bb8468"}},"personId":"requester","binding":{"teamId":"team-ba335fa4-5136-498b-986d-26c1e3d964e3","participantId":"participant-5b0f52a1-5ed4-4b5c-91ae-0f0aa77fb5a0","sessionId":"a1833b5b-c271-4024-b4b7-40a22bda58a0"},"assignmentId":"initial-assignment","assignmentRevision":1,"targetPositionId":"new-responsibility","authorityGeneration":0,"closedAuthorityRelationIds":["hiring-authority"],"status":"fenced","sequence":101,"updatedSequence":102,"evidence":null,"actualEffectiveAt":null}}}
+    at advance (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-personnel-scenario.ts:91:12)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-personnel-scenario.ts:119:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ advance examples/simulation-company/tests/world-personnel-scenario.ts:91:12
+ ❯ examples/simulation-company/tests/world-personnel.snapshot.ts:28:32
+     26|         try {
+     27|           const [code] = await exited as unknown[]
+     28|           expect(code, errors).toBe(0)
+       |                                ^
+     29|           const result = JSON.parse(output) as { modelCalls: number }
+     30|           expect(result).toMatchObject({ scenario, originalIdentity: t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 skipped (4)
+   Start at  06:59:33
+   Duration  5.14s (transform 153ms, setup 218ms, import 224ms, tests 4.59s, environment 0ms)
+

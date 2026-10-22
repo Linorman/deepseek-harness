@@ -1,5 +1,5 @@
 /** Published configuration executes only after the real Start confirmation and keeps paused history on refresh. */
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { chromium } from 'playwright'
 import { expect, it } from 'vitest'
@@ -72,5 +72,11 @@ it('creates paused default work, confirms Start, records native events, pauses a
     expect(calls.length).toBe(requests)
     await page.screenshot({ path: join(root, 'default-simulation-paused.png') })
     expect(errors.pageErrors).toEqual([])
+  } catch (cause: unknown) {
+    await writeFile(join(root, 'default-lifecycle-failure.json'), JSON.stringify({
+      error: String(cause), calls, page: await page.locator('body').innerText(),
+    }, null, 2))
+    await page.screenshot({ path: join(root, 'default-lifecycle-failure.png') })
+    throw cause
   } finally { registration(); await browser.close(); await scaffold.close() }
 }, 90_000)

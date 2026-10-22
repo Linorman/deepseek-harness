@@ -1,0 +1,1367 @@
+{
+  "nativeStream": 72,
+  "cases": 104,
+  "processes": 312,
+  "coldProcesses": 208,
+  "coldModelCalls": 0,
+  "matrix": [
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "entities",
+      "stop": "entity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "participants",
+      "stop": "identity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "reuse-channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        21,
+        0,
+        0
+      ],
+      "chargedTokens": 315
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "bytes-reserve",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "bytes-commit",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "director-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "representative-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "director-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "representative-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "director-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "representative-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "json",
+      "mode": "resident-owner",
+      "stop": "owner-resident-capacity",
+      "modelCalls": [
+        15,
+        0,
+        0
+      ],
+      "chargedTokens": 225
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "entities",
+      "stop": "entity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "participants",
+      "stop": "identity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "reuse-channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        21,
+        0,
+        0
+      ],
+      "chargedTokens": 315
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "bytes-reserve",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "bytes-commit",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "director-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "representative-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "director-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "representative-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "director-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "representative-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "resident-owner",
+      "stop": "owner-resident-capacity",
+      "modelCalls": [
+        15,
+        0,
+        0
+      ],
+      "chargedTokens": 225
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "entities",
+      "stop": "entity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "participants",
+      "stop": "identity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "reuse-channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        21,
+        0,
+        0
+      ],
+      "chargedTokens": 315
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "bytes-reserve",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "bytes-commit",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "director-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "representative-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "director-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "representative-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "director-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "representative-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "resident-owner",
+      "stop": "owner-resident-capacity",
+      "modelCalls": [
+        15,
+        0,
+        0
+      ],
+      "chargedTokens": 225
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "entities",
+      "stop": "entity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "participants",
+      "stop": "identity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "reuse-channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        21,
+        0,
+        0
+      ],
+      "chargedTokens": 315
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "bytes-reserve",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "bytes-commit",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "director-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "representative-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "director-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "representative-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "director-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "representative-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "resident-owner",
+      "stop": "owner-resident-capacity",
+      "modelCalls": [
+        15,
+        0,
+        0
+      ],
+      "chargedTokens": 225
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "entities",
+      "stop": "entity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "participants",
+      "stop": "identity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "reuse-channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        21,
+        0,
+        0
+      ],
+      "chargedTokens": 315
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "bytes-reserve",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "bytes-commit",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "director-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "representative-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "director-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "representative-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "director-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "representative-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "json",
+      "mode": "resident-owner",
+      "stop": "owner-resident-capacity",
+      "modelCalls": [
+        15,
+        0,
+        0
+      ],
+      "chargedTokens": 225
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "entities",
+      "stop": "entity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "participants",
+      "stop": "identity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "reuse-channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        21,
+        0,
+        0
+      ],
+      "chargedTokens": 315
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "bytes-reserve",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "bytes-commit",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "director-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "representative-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "director-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "representative-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "director-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "representative-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "mode": "resident-owner",
+      "stop": "owner-resident-capacity",
+      "modelCalls": [
+        15,
+        0,
+        0
+      ],
+      "chargedTokens": 225
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "entities",
+      "stop": "entity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "participants",
+      "stop": "identity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "reuse-channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        21,
+        0,
+        0
+      ],
+      "chargedTokens": 315
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "bytes-reserve",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "bytes-commit",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "director-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "representative-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "director-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "representative-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "director-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "representative-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "mode": "resident-owner",
+      "stop": "owner-resident-capacity",
+      "modelCalls": [
+        15,
+        0,
+        0
+      ],
+      "chargedTokens": 225
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "entities",
+      "stop": "entity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "participants",
+      "stop": "identity-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "reuse-channels",
+      "stop": "channel-capacity",
+      "modelCalls": [
+        21,
+        0,
+        0
+      ],
+      "chargedTokens": 315
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "bytes-reserve",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "bytes-commit",
+      "stop": "world-byte-limit",
+      "modelCalls": [
+        6,
+        0,
+        0
+      ],
+      "chargedTokens": 90
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "director-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "representative-tokens",
+      "stop": "budget-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "director-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "representative-pool",
+      "stop": "model-pool-capacity",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "director-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        3,
+        0,
+        0
+      ],
+      "chargedTokens": 45
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "representative-history",
+      "stop": "activation-history-limit",
+      "modelCalls": [
+        9,
+        0,
+        0
+      ],
+      "chargedTokens": 135
+    },
+    {
+      "face": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "mode": "resident-owner",
+      "stop": "owner-resident-capacity",
+      "modelCalls": [
+        15,
+        0,
+        0
+      ],
+      "chargedTokens": 225
+    }
+  ],
+  "rawFiles": 832,
+  "limits": [
+    "Resident case proves explicit canonical owner refusal; normal driver may evict and continue.",
+    "Finite Persona choice uses original director streams; no extra free generation inference.",
+    "No cancellation cleanup, SIGKILL, real-provider quality or complete v1/API/UI acceptance."
+  ]
+}

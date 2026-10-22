@@ -1,0 +1,89 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json structural maintenance > retains its original responsibility at crash=completed 1`] = `
+{
+  "chargedActors": 0,
+  "identityPreserved": true,
+  "maintenance": "completed",
+  "modelCalls": 0,
+  "ownerPreserved": true,
+  "phase": "paused",
+}
+`;
+
+exports[`json structural maintenance > retains its original responsibility at crash=draining 1`] = `
+{
+  "chargedActors": 0,
+  "identityPreserved": true,
+  "maintenance": "completed",
+  "modelCalls": 0,
+  "ownerPreserved": true,
+  "phase": "paused",
+}
+`;
+
+exports[`json structural maintenance > retains its original responsibility at crash=quiescent 1`] = `
+{
+  "chargedActors": 0,
+  "identityPreserved": true,
+  "maintenance": "completed",
+  "modelCalls": 0,
+  "ownerPreserved": true,
+  "phase": "paused",
+}
+`;
+
+exports[`json structural maintenance > retains its original responsibility at crash=undefined 1`] = `
+{
+  "chargedActors": 0,
+  "identityPreserved": true,
+  "maintenance": "completed",
+  "modelCalls": 0,
+  "ownerPreserved": true,
+  "phase": "paused",
+}
+`;
+
+exports[`sqlite structural maintenance > retains its original responsibility at crash=completed 1`] = `
+{
+  "chargedActors": 0,
+  "identityPreserved": true,
+  "maintenance": "completed",
+  "modelCalls": 0,
+  "ownerPreserved": true,
+  "phase": "paused",
+}
+`;
+
+exports[`sqlite structural maintenance > retains its original responsibility at crash=draining 1`] = `
+{
+  "chargedActors": 0,
+  "identityPreserved": true,
+  "maintenance": "completed",
+  "modelCalls": 0,
+  "ownerPreserved": true,
+  "phase": "paused",
+}
+`;
+
+exports[`sqlite structural maintenance > retains its original responsibility at crash=quiescent 1`] = `
+{
+  "chargedActors": 0,
+  "identityPreserved": true,
+  "maintenance": "completed",
+  "modelCalls": 0,
+  "ownerPreserved": true,
+  "phase": "paused",
+}
+`;
+
+exports[`sqlite structural maintenance > retains its original responsibility at crash=undefined 1`] = `
+{
+  "chargedActors": 0,
+  "identityPreserved": true,
+  "maintenance": "completed",
+  "modelCalls": 0,
+  "ownerPreserved": true,
+  "phase": "paused",
+}
+`;

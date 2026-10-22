@@ -1,0 +1,57 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-preparing.snapshot.ts (4 tests | 4 failed) 14782ms
+     × denies ordinary company cognition through every owner and cold restore 5575ms
+     × denies ordinary laboratory cognition through every owner and cold restore 3275ms
+     × denies ordinary company cognition through every owner and cold restore 2952ms
+     × denies ordinary laboratory cognition through every owner and cold restore 2979ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-preparing.snapshot.ts > json preparing admission > denies ordinary company cognition through every owner and cold restore
+ FAIL  examples/simulation-company/tests/world-preparing.snapshot.ts > json preparing admission > denies ordinary laboratory cognition through every owner and cold restore
+ FAIL  examples/simulation-company/tests/world-preparing.snapshot.ts > sqlite preparing admission > denies ordinary company cognition through every owner and cold restore
+ FAIL  examples/simulation-company/tests/world-preparing.snapshot.ts > sqlite preparing admission > denies ordinary laboratory cognition through every owner and cold restore
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Missing expected rejection.
+    at async denied (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-preparing-scenario.ts:120:7)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-preparing-scenario.ts:126:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: undefined,
+  expected: /no durable activation/,
+  operator: 'rejects',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ denied examples/simulation-company/tests/world-preparing-scenario.ts:120:7
+ ❯ examples/simulation-company/tests/world-preparing.snapshot.ts:36:32
+     34|                 stdout: output, stderr: errors }, null, 2) + '\n')
+     35|           }
+     36|           expect(code, errors).toBe(0)
+       |                                ^
+     37|           expect(JSON.parse(output)).toEqual({ scenario, restored: rec…
+     38|             ordinaryDecisions: 0, taskAttempts: 0, activations: 0, wri…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  11:09:50
+   Duration  15.54s (transform 260ms, setup 352ms, import 305ms, tests 14.78s, environment 0ms)
+

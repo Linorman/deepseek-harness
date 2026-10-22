@@ -1,0 +1,59 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts (156 tests | 3 failed) 130803ms
+   × refuses 'json' 'wrong-sender' private request input and requires the exact persisted original before planning 10094ms
+   × retains json stale predecessors and bounds explicit model replanning without a new business case 5434ms
+   × retains sqlite stale predecessors and bounds explicit model replanning without a new business case 6641ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses 'json' 'wrong-sender' private request input and requires the exact persisted original before planning
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:277:144
+    275|
+    276| it.each((['json', 'sqlite'] as const).flatMap(backend =>
+    277|   (['copied-request', 'wrong-hash', 'wrong-envelope', 'wrong-sender', …
+       |                                                                                                                                                ^
+    278|   'refuses $backend $alteration private request input and requires the…
+    279|     const h = await publishedCaseFixture(backend, rejectedResolution)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > refuses 'json' 'wrong-sender' private request input and requires the exact persisted original before planning
+Error: Team activation controller disposal exceeded 5000ms
+ ❯ packages/team/team-activation-controller/src/index.ts:1825:63
+    1823| /** Bound one controller shutdown without abandoning accepted handles …
+    1824| function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Pro…
+    1825|   return withTeamOperationTimeout(operation, timeoutMs, () => new Erro…
+       |                                                               ^
+    1826| }
+    1827|
+ ❯ Timeout.<anonymous> packages/core/team/src/operation-timeout.ts:14:39
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > retains json stale predecessors and bounds explicit model replanning without a new business case
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/world.spec.ts > retains sqlite stale predecessors and bounds explicit model replanning without a new business case
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ packages/simulation/simulation-team/tests/world.spec.ts:473:36
+    471| })
+    472|
+    473| it.each(['json', 'sqlite'] as const)('retains %s stale predecessors an…
+       |                                    ^
+    474|   const h = await hireFixture(backend)
+    475|   const originals = [h.plan]
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+
+ Test Files  1 failed | 5 passed (6)
+      Tests  3 failed | 231 passed (234)
+   Start at  08:07:35
+   Duration  136.36s (transform 15.97s, setup 5.34s, import 17.38s, tests 139.12s, environment 0ms)
+

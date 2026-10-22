@@ -397,11 +397,21 @@ def test_runtime_usage_and_shared_pool_are_separate_strict_observations() -> Non
         SimulationModelPoolObserved.model_validate({**pool, "active": 3})
     with pytest.raises(ValidationError):
         SimulationModelPoolUnavailable.model_validate({"status": "unavailable", "clock": "real", "observedAt": 1, "active": 0})
-    metrics = {"budgets": {"interval": "9007199254740993", "width": "100", "tokens": {"charged": 101, "limit": 100, "unknownAttempts": 1},
+    usage = {"inputTokens": 0, "outputTokens": 0, "cacheReadTokens": 0, "cacheWriteTokens": 0}
+    bucket = {"attempts": 0, "statuses": {"reserved": 0, "unknown": 0, "settled": 0, "not-dispatched": 0},
+              "outstandingReservedTokens": 0, "settled": usage, "unknownReported": usage}
+    attribution = {"total": bucket, "categories": {key: bucket for key in
+                   ("business-choice", "adjudication", "result-closeout", "communication", "compaction", "unknown")}}
+    metrics = {"tokenAttribution": attribution, "budgets": {"interval": "9007199254740993", "width": "100", "tokens": {"charged": 101, "limit": 100, "unknownAttempts": 1},
                             "decisions": {"used": 3, "limit": 5}, "messages": {"used": 2, "limit": 5}},
                "residentSlots": {"used": 2, "limit": 2, "recoveryRequired": 1}, "pendingDecisionCount": 1,
                "pendingExternalOperationCount": 2, "unknownOperationCount": 1}
     assert SimulationRunMetrics.model_validate(metrics).budgets.tokens.charged == 101
+    with pytest.raises(ValidationError):
+        SimulationRunMetrics.model_validate({**metrics, "tokenAttribution": {**attribution, "categories": {}}})
+    with pytest.raises(ValidationError):
+        SimulationRunMetrics.model_validate({**metrics, "tokenAttribution": {**attribution,
+            "total": {**bucket, "attempts": 1}}})
     with pytest.raises(ValidationError):
         SimulationRunMetrics.model_validate({**metrics, "residentSlots": {"used": 1, "limit": 2, "recoveryRequired": 2}})
     with pytest.raises(ValidationError):
@@ -741,3 +751,121 @@ def test_installed_templates_preserve_bounded_model_readiness_without_a_route(re
         SimulationCatalog.model_validate({"items": [{**item, "readiness": {**readiness, "model": CREATE.expectedModel}}]})
     with pytest.raises(ValidationError):
         SimulationCreateInput.model_validate({key: value for key, value in CREATE.model_dump().items() if key != "expectedModel"})
+
+
+WORLD_STOPS = ["idle", "maintenance-blocked", "position-capacity", "authority-missing", "plan-stale", "plan-budget",
+               "entity-capacity", "identity-capacity", "channel-capacity", "world-byte-limit", "world-request-limit",
+               "world-command-limit", "world-birth-limit", "world-expansion-limit", "world-mutation-limit", "budget-limit", "context-limit", "microstep-limit", "model-pool-capacity", "activation-history-limit", "message-byte-limit"]
+
+
+@pytest.mark.parametrize("stop", WORLD_STOPS)
+def test_world_stops_survive_control_and_operational_parsing_through_both_public_clients(stop: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from clocky.simulation import SimulationOperationalObserved, SimulationRunStatusesInput
+    scenario = {"status": "observed", "templateId": {"text": "world-company", "truncated": False},
+                "version": "1", "driverVersion": "1", "execution": "cognition-only"}
+    operational = {"status": "observed", "observedAt": 1, "scenario": scenario, "owner": "held",
+                   "driver": "waiting", "inFlight": False, "stop": stop}
+    output = {**CONTROL, "stop": stop, "versions": {"rulesVersion": {"text": "1", "truncated": False},
+        "policyVersion": {"text": "1", "truncated": False}, "tickUnit": {"text": "minute", "truncated": False}, "scenario": scenario}}
+    statuses = {"items": [{"run": SUMMARY, "status": "missing", "operational": operational}]}
+    assert SimulationControl.model_validate(output).stop == stop
+    assert SimulationOperationalObserved.model_validate(operational).model_dump(exclude_none=True) == operational
+    low = HarnessClient(HarnessConfig())
+    high = Clocky(ClockyConfig(credential="test", provider="test", model="test"))
+    high._client = low
+    monkeypatch.setattr(high, "start", lambda: None)
+    monkeypatch.setattr(low, "_request_raw", lambda method, *_args, **_kwargs:
+                        output if method == "simulation/runs-control" else statuses)
+    for api in [low, high]:
+        assert api.get_simulation_control(SimulationControlInput(runId="run")).model_dump(exclude_none=True) == output
+        assert api.get_simulation_run_statuses(SimulationRunStatusesInput(runIds=["run"])).model_dump(exclude_none=True) == statuses
+    with pytest.raises(ValidationError) as error:
+        SimulationControlAction.model_validate({"allowed": False, "reason": stop})
+    assert error.value.errors()[0]["loc"] == ("reason",)
+
+
+@pytest.mark.parametrize("stop", ["unknown-world-stop", "position-full", "hire-required", "", 0])
+def test_unknown_world_stops_are_rejected_in_control_operational_and_public_clients(stop, monkeypatch: pytest.MonkeyPatch) -> None:
+    from clocky.simulation import SimulationOperationalObserved, SimulationRunStatusesInput
+    operational = {"status": "observed", "observedAt": 1, "scenario": {"status": "unavailable"},
+                   "owner": "held", "driver": "waiting", "inFlight": False, "stop": stop}
+    for model, payload in [(SimulationControl, {**CONTROL, "stop": stop}), (SimulationOperationalObserved, operational)]:
+        with pytest.raises(ValidationError) as error:
+            model.model_validate(payload)
+        assert error.value.errors()[0]["loc"] == ("stop",)
+    low = HarnessClient(HarnessConfig())
+    high = Clocky(ClockyConfig(credential="test", provider="test", model="test"))
+    high._client = low
+    monkeypatch.setattr(high, "start", lambda: None)
+    monkeypatch.setattr(low, "_request_raw", lambda method, *_args, **_kwargs:
+                        {**CONTROL, "stop": stop} if method == "simulation/runs-control"
+                        else {"items": [{"run": SUMMARY, "status": "missing", "operational": operational}]})
+    for api in [low, high]:
+        with pytest.raises(SdkProtocolError):
+            api.get_simulation_control(SimulationControlInput(runId="run"))
+        with pytest.raises(SdkProtocolError):
+            api.get_simulation_run_statuses(SimulationRunStatusesInput(runIds=["run"]))
+
+
+def test_world_stops_keep_existing_start_reasons_and_scenario_execution_vocabulary() -> None:
+    for reason in ["ready", "scenario-blocked", "recovery-required", "outcome-unknown"]:
+        assert SimulationControlAction.model_validate({"allowed": reason == "ready", "reason": reason}).reason == reason
+    scenario = {"status": "observed", "templateId": {"text": "world-company", "truncated": False},
+                "version": "1", "driverVersion": "1", "execution": "cognition-only"}
+    assert SimulationScenarioObserved.model_validate(scenario).model_dump() == scenario
+    for execution in ["cognition-only", "automatic-tasks"]:
+        assert SimulationScenarioObserved.model_validate({**scenario, "execution": execution}).execution == execution
+    for execution in ["world-director", "world", "automatic-world"]:
+        with pytest.raises(ValidationError) as error:
+            SimulationScenarioObserved.model_validate({**scenario, "execution": execution})
+        assert error.value.errors()[0]["loc"] == ("execution",)
+
+
+def test_world_case_cancellation_keeps_exact_original_payload_and_refuses_cross_command(monkeypatch):
+    from clocky import SimulationWorldCaseCancelInput
+    original = SimulationWorldCaseCancelInput(runId="world", commandId="cancel", requestId="case", previewRevision=3, previewHash="sha256:" + "a" * 64)
+    receipt = SimulationRequestReceipt(commandId="cancel", runId="world", kind="cancel-world-case", acceptedAt=1, status="completed")
+    value = SimulationRequestResult(status="found", request=receipt, worldCancellation=original)
+    assert value.worldCancellation == original
+    for selected in [None, {**original.model_dump(), "commandId": "another"}, {**original.model_dump(), "runId": "another"}]:
+        with pytest.raises(ValidationError):
+            SimulationRequestResult.model_validate({"status": "found", "request": receipt.model_dump(), "worldCancellation": selected})
+    for key in ["actor", "principalId", "planId", "maintenance"]:
+        with pytest.raises(ValidationError):
+            SimulationWorldCaseCancelInput.model_validate({**original.model_dump(), key: "injected"})
+    low = HarnessClient(HarnessConfig())
+    sent = []
+    def send(method, params, **kwargs):
+        sent.append((method, params))
+        return receipt
+    monkeypatch.setattr(low, "request", send)
+    assert low.cancel_simulation_world_case(original) == receipt
+    assert sent == [("simulation/world-case-cancel", original.model_dump())]
+    monkeypatch.setattr(low, "request", lambda *_args, **_kwargs: receipt.model_copy(update={"commandId": "another"}))
+    with pytest.raises(SdkProtocolError):
+        low.cancel_simulation_world_case(original)
+
+
+def test_decision_pause_cancellation_is_explicit_without_relabelling_unknown_usage() -> None:
+    from clocky.simulation import SimulationDecisionDetail
+    value = {"collection": "decisions", "section": "execution", "id": "decision",
+             "summary": {"id": "decision", "entityId": "actor", "slot": "1", "time": "0",
+                         "snapshotRevision": 1, "status": "cancelled", "operationCount": 0},
+             "context": {"status": "absent"}, "cancellation": "paused", "closedAt": 2}
+    assert SimulationDecisionDetail.model_validate(value).cancellation == "paused"
+    with pytest.raises(ValidationError):
+        SimulationDecisionDetail.model_validate({**value, "cancellation": "silently-stopped"})
+
+
+def test_world_presence_is_optional_but_known_values_are_strict_boolean_metadata():
+    base = {"run": SUMMARY, "status": "observed", "world": {"revision": 1, "phase": "paused", "time": "0",
+            "tickUnit": {"text": "minute", "truncated": False}, "owner": "unowned", "entityCount": 0,
+            "decisionCount": 0, "operationCount": 0, "observedAt": 1}}
+    assert SimulationInspection.model_validate(base).world.worldInitialized is None
+    assert "worldInitialized" not in SimulationInspection.model_validate(base).model_dump(exclude_none=True)["world"]
+    for known in [True, False]:
+        parsed = SimulationInspection.model_validate({**base, "world": {**base["world"], "worldInitialized": known}})
+        assert parsed.world.worldInitialized is known
+    for malformed in [None, 0, 1, "true", "false", {}, []]:
+        with pytest.raises(ValidationError):
+            SimulationInspection.model_validate({**base, "world": {**base["world"], "worldInitialized": malformed}})

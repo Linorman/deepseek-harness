@@ -1,0 +1,39 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-personnel-crash.snapshot.ts (14 tests | 2 failed | 12 skipped) 7523ms
+     × restores the original durable prefix at transfer-commit-after 4143ms
+     × restores the original durable prefix at depart-accepted-fence-after 3379ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-personnel-crash.snapshot.ts > json actual personnel process loss > restores the original durable prefix at transfer-commit-after
+ FAIL  examples/simulation-company/tests/world-personnel-crash.snapshot.ts > json actual personnel process loss > restores the original durable prefix at depart-accepted-fence-after
+Error: The actual original append barrier was not reached: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-personnel-crash-scenario.ts:243
+    throw new Error('The real requested personnel crash barrier was not reached')
+          ^
+
+Error: The real requested personnel crash barrier was not reached
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-personnel-crash-scenario.ts:243:11)
+
+Node.js v25.9.0
+
+ ❯ <anonymous> examples/simulation-company/tests/world-personnel-crash-scenario.ts:243:11
+ ❯ examples/simulation-company/tests/world-personnel-crash.snapshot.ts:38:41
+     36|     try {
+     37|       const ready = await Promise.race([once(first.child, 'message').t…
+     38|         first.exited.then(() => { throw new Error(`The actual original…
+       |                                         ^
+     39|       expect(ready).toBe('durable')
+     40|       first.child.kill('SIGKILL')
+ ❯ examples/simulation-company/tests/world-personnel-crash.snapshot.ts:37:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 12 skipped (14)
+   Start at  08:38:13
+   Duration  7.90s (transform 166ms, setup 143ms, import 115ms, tests 7.52s, environment 0ms)
+

@@ -11,6 +11,8 @@ export interface SimulationResidentSlots {
 
 /** Current interval charges and unresolved administrative responsibilities; no private bodies or configuration paths. */
 export interface SimulationRuntimeMetrics {
+  /** Lifetime mutually exclusive request attribution; unknown and unsettled buckets remain explicit. */
+  readonly tokenAttribution: import('./token-attribution.ts').SimulationTokenAttribution
   readonly budgets: {
     readonly interval: SimTime
     readonly width: SimTime

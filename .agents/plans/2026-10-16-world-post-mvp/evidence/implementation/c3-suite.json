@@ -1,0 +1,17 @@
+{
+  "version": "supply-evaluation/1",
+  "registeredBeforeExecution": true,
+  "scenarioSplits": {
+    "fixed": [[2,3,4,3],[1,2,3,4],[4,4,4,4]],
+    "holdout": [[5,1,6,2],[6,6,1,1],[2,6,6,6]]
+  },
+  "strategies": ["supply-fixed/1", "supply-seasonal/1"],
+  "initialState": {"generation":1,"inventory":6,"committed":2,"capacity":20,"sourceLimit":3,"sinkLimit":6,"step":1,"lastTime":null},
+  "interventions": "Only the installed supply model varies; demand, stock, source/sink limits and all other inputs are identical within pairs.",
+  "metrics": ["unmet-demand","stock-conservation","commitment-coverage","source-sink-bounds"],
+  "humanRubric": {"version":"supply-review/1","questions":["Does each trace preserve its stated stock and commitments?","Are simulated outputs clearly distinguished from real facts?","Does the explanation of unmet demand agree with recorded inputs?","Is any unsupported psychological realism claim present?"],"scale":"pass / fail / unclear; explain using trial and step references","status":"pending"},
+  "modelJudge": null,
+  "stopping": {"stepsPerTrial":4,"modelCalls":0,"tokenBudget":0},
+  "privacyProbe": "No personal data or actor Session input is admitted by the supply schema.",
+  "nonDeterminism": "These installed models are deterministic. Fresh live-model experiments are not covered and would require model/version and nondeterminism reporting. No seed-based general quality claim is made."
+}

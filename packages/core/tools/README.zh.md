@@ -106,7 +106,7 @@ ctx.tools.register(defineTool({
 
 ### 强制执行的原始 JSON Schema 子集
 
-`JsonSchemaNode` 是工具输出、Code Mode 生成、subagent 和工作流共享的原始 JSON Schema 对应类型。它允许任意 JSON 根、仅含注解且不施加约束的 JSON 节点，以及恰好匹配一个分支的 `oneOf`；注解必须保持为无损 JSON。`assertSupportedJsonSchema()` 拒绝不受支持的构造，而 `validateJsonSchemaValue()` 返回带路径的违规信息。subagent 和工作流通过 `assertObjectJsonSchema()` 与 `ObjectJsonSchema` 保留调用方定义的对象根要求，而不是依赖共享词汇的限制。
+`JsonSchemaNode` 是工具输出、Code Mode 生成、subagent 和工作流共享的原始 JSON Schema 对应类型。它允许任意 JSON 根、仅含注解且不施加约束的 JSON 节点，以及恰好匹配一个分支的 `oneOf`；注解必须保持为无损 JSON。`assertSupportedJsonSchema()` 拒绝不受支持的构造，而 `validateJsonSchemaValue()` 返回带路径的违规信息。对象联合若具有共同必填、取值唯一的 `const` 标签，零匹配错误还会包含对应分支的字段错误。仍会校验全部分支；标签缺失或有歧义时保留通用联合诊断。subagent 和工作流通过 `assertObjectJsonSchema()` 与 `ObjectJsonSchema` 保留调用方定义的对象根要求，而不是依赖共享词汇的限制。
 
 ### 由工具定义的 UI 呈现
 

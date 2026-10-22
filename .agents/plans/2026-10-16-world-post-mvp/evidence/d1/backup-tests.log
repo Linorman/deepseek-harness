@@ -1,0 +1,33 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/simulation/simulation-team/tests/backup.spec.ts (6 tests | 1 failed) 24ms
+     × includes exact cuts, original implementation versions and unmaterialized identities without materializing records 9ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/simulation/simulation-team/tests/backup.spec.ts > private full backup format and evidence-preserving offline migration > includes exact cuts, original implementation versions and unmaterialized identities without materializing records
+AssertionError: expected '{"version":1,"snapshot":{"phase":"pau…' to be '{"version":1,"snapshot":{"phase":"pau…' // Object.is equality
+
+Expected: "{"version":1,"snapshot":{"phase":"paused","revision":0,"spec":{"runId":"test"}},"native":{"name":"native/test","version":1,"entries":[{"sequence":0,"value":{"kind":"original-evidence"}}]},"owners":[{"name":"team/test","version":2,"entries":[]}],"sessions":[],"attachments":[],"references":{"run":{"runId":"test","stream":{"name":"native/test","version":1},"firstSequence":0,"cursor":0},"team":{"stream":{"name":"team/test","version":2},"firstSequence":0,"cursor":-1},"channels":[],"sessions":[{"kind":"unmaterialized","sessionId":"never-created"}]}}"
+Received: "{"version":1,"snapshot":{"phase":"paused","revision":0,"spec":{"runId":"test"}},"references":{"run":{"runId":"test","stream":{"name":"native/test","version":1},"firstSequence":0,"cursor":0},"team":{"stream":{"name":"team/test","version":2},"firstSequence":0,"cursor":-1},"channels":[],"sessions":[{"kind":"unmaterialized","sessionId":"never-created"}]},"native":{"name":"native/test","version":1,"entries":[{"sequence":0,"value":{"kind":"original-evidence"}}]},"owners":[{"name":"team/test","version":2,"entries":[]}],"sessions":[],"attachments":[]}"
+
+ ❯ packages/simulation/simulation-team/tests/backup.spec.ts:23:41
+     21|       unmaterializedSessions: ['never-created'], executionPolicy: { cr…
+     22|         paths: 'explicit-target-mapping', realEffects: 'disabled', act…
+     23|     expect(JSON.stringify(bundle.body)).toBe(before)
+       |                                         ^
+     24|     expect(bundle.body).not.toBe(body)
+     25|     expect(verifyWorldBackup(JSON.stringify(bundle), limits)).toEqual(…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 passed (6)
+   Start at  15:43:51
+   Duration  952ms (transform 570ms, setup 162ms, import 643ms, tests 24ms, environment 0ms)
+

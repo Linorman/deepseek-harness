@@ -1,0 +1,28 @@
+{
+  "scene": "laboratory",
+  "backend": "json",
+  "mode": "lib",
+  "round": 0,
+  "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+  "args": [
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-external-scenario.ts",
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-external/cordis.yml"
+  ],
+  "pid": 86401,
+  "exitCode": 0,
+  "signal": null,
+  "stdout": "{\"identities\":2,\"evaluations\":3,\"stableKey\":true,\"unknownPreserved\":true,\"resourcesUnchanged\":true,\"unsafePayloadRejected\":true,\"recordedOutcome\":true,\"checkpointComplete\":true,\"modelCalls\":36,\"phase\":\"paused\"}\n",
+  "stderr": "",
+  "result": {
+    "identities": 2,
+    "evaluations": 3,
+    "stableKey": true,
+    "unknownPreserved": true,
+    "resourcesUnchanged": true,
+    "unsafePayloadRejected": true,
+    "recordedOutcome": true,
+    "checkpointComplete": true,
+    "modelCalls": 36,
+    "phase": "paused"
+  }
+}

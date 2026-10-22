@@ -1,0 +1,118 @@
+packages/simulation/simulation-local/src/world-norms.ts(8,80): error TS6133: 'simulationNormReferenceSchema' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-norms.ts(9,26): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'WORLD_NORM_ENACT_PIN'. Did you mean to use 'import WORLD_NORM_ENACT_PIN from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-norms.ts(9,48): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'WORLD_NORM_REVOKE_PIN'. Did you mean to use 'import WORLD_NORM_REVOKE_PIN from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-norms.ts(10,3): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'WORLD_NORM_ENACT_DEFINITION'. Did you mean to use 'import WORLD_NORM_ENACT_DEFINITION from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-norms.ts(10,32): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'WORLD_NORM_REVOKE_DEFINITION'. Did you mean to use 'import WORLD_NORM_REVOKE_DEFINITION from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-norms.ts(101,34): error TS18046: 'parsed.enforcement' is of type 'unknown'.
+packages/simulation/simulation-local/src/world-norms.ts(102,20): error TS18046: 'parsed.enforcement' is of type 'unknown'.
+packages/simulation/simulation-local/src/world-norms.ts(104,34): error TS7006: Parameter 'id' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-organization.ts(117,21): error TS2339: Property 'ref' does not exist on type '{ schemaRef: WorldSchemaRef; subject: SimulationEntityId; scope: SimulationEntityId; body: string; bodyHash: string; proposal: { ...; }; ... 12 more ...; version: WorldNormVersion; }'.
+packages/simulation/simulation-local/src/world-organization.ts(117,44): error TS2339: Property 'ref' does not exist on type '{ schemaRef: WorldSchemaRef; subject: SimulationEntityId; scope: SimulationEntityId; body: string; bodyHash: string; proposal: { ...; }; ... 12 more ...; version: WorldNormVersion; }'.
+packages/simulation/simulation-product/src/world-owner.ts(96,5): error TS2322: Type '{ actions: { start: { allowed: boolean; reason: SimulationProductControlReason; }; pause: { allowed: boolean; reason: "ready" | "retiring" | "checkpoint-in-progress"; }; }; ... 11 more ...; inFlight: boolean; }' is not assignable to type 'Omit<SimulationProductControl, "administration"> & { readonly unstarted: boolean; }'.
+  Type '{ actions: { start: { allowed: boolean; reason: SimulationProductControlReason; }; pause: { allowed: boolean; reason: "ready" | "retiring" | "checkpoint-in-progress"; }; }; ... 11 more ...; inFlight: boolean; }' is not assignable to type 'Omit<SimulationProductControl, "administration">'.
+    Types of property 'stop' are incompatible.
+      Type '"retry" | "recovery-required" | "paused" | "stalled" | "idle" | "until" | "work-limit" | "decision-required" | "outcome-unknown" | "recipient-required" | "recipient-busy" | ... 20 more ... | "approval-required"' is not assignable to type '"retry" | "completed" | "recovery-required" | "paused" | "stalled" | "idle" | "until" | "work-limit" | "decision-required" | "outcome-unknown" | "recipient-required" | "recipient-busy" | ... 22 more ... | undefined'.
+        Type '"approval-required"' is not assignable to type '"retry" | "completed" | "recovery-required" | "paused" | "stalled" | "idle" | "until" | "work-limit" | "decision-required" | "outcome-unknown" | "recipient-required" | "recipient-busy" | ... 22 more ... | undefined'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(15,56): error TS6196: 'SimulationHireApprovalTarget' is declared but never used.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(43,5): error TS2322: Type 'string' is not assignable to type 'SimulationEntityId'.
+  Type 'string' is not assignable to type '{ readonly [BRAND]: "SimulationEntityId"; }'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(68,14): error TS2322: Type '{ readonly directorEntityId: SimulationEntityId; readonly organizationEntityId: SimulationEntityId; readonly operations: readonly { readonly schemaRef: WorldSchemaRef; ... 4 more ...; readonly version: string; }[]; ... 5 more ...; readonly limits: { ...; }; }' is not assignable to type '{ directorEntityId: SimulationEntityId; organizationEntityId: SimulationEntityId; operations: { schemaRef: WorldSchemaRef; ... 4 more ...; version: string; }[]; ... 5 more ...; limits: { ...; }; }'.
+  Types of property 'operations' are incompatible.
+    The type 'readonly { readonly schemaRef: WorldSchemaRef; readonly implementationRef: WorldImplementationRef; readonly generation: number; readonly domain: string; readonly operation: string; readonly version: string; }[]' is 'readonly' and cannot be assigned to the mutable type '{ schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }[]'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(68,69): error TS2322: Type '{ [x: string]: { id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }; }' is not assignable to type 'Readonly<Record<WorldIntentId, SimulationWorldIntent>>'.
+  'string' and 'string & { readonly [BRAND]: "SimulationWorldIntentId"; }' index signatures are incompatible.
+    Type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'requestId' are incompatible.
+        Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+          Type 'undefined' is not assignable to type 'WorldRequestId'.
+            Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(107,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(109,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(111,41): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(126,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(133,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(135,41): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(141,51): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(142,41): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(144,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(146,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(147,41): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(149,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(155,41): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(157,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(163,41): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(169,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(185,11): error TS2375: Type '{ businessKey: string; id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 7 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/tests/world-hire-approval.spec.ts(187,47): error TS2379: Argument of type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 8 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to parameter of type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.

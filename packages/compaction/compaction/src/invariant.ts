@@ -8,6 +8,7 @@ import type { CompactionId } from './brand.ts'
 import { isCompactCheckpointSource } from './checkpoint.ts'
 import type { CompactionCheckpointSource } from './checkpoint.ts'
 import type {} from './types.ts'
+import { isCompactionAssessment, isCompactionNoGain } from './no-gain.ts'
 
 const PACKAGE_NAME = '@clocky/clocky-compaction'
 
@@ -141,6 +142,10 @@ function validateCompactionEvent(
   event: SessionEvent,
   fail: InvariantFailure,
 ): CompactionTransition | undefined {
+  if (event.type === 'compaction/assessment') {
+    if (!isCompactionAssessment(event.data)) fail('invalid compaction/assessment estimates')
+    return undefined
+  }
   if (event.type === 'session/end-seed') return { kind: 'end-seed' }
   if (event.type === 'user/message'
     && isReplacementSurfaceEvent(event)
@@ -225,6 +230,10 @@ function validateCompactionEvent(
     fail(`compaction/end owner ${String(event.data.turn)} does not match compaction/start owner ${String(open.turn)}`)
   }
   validateOwner(open.turn, trace.openTurn, event.type, fail)
+  if (event.data.noGain !== undefined
+    && (!isCompactionNoGain(event.data.noGain) || open.summarized || event.data.error === undefined)) {
+    fail('compaction/end noGain requires valid non-shrinking evidence and an unsuccessful unsummarized attempt')
+  }
   if (event.data.error === undefined && !open.summarized) {
     fail('successful compaction/end requires one compaction/summary')
   }

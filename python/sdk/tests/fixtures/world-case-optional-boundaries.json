@@ -1,0 +1,2743 @@
+[
+  {
+    "kind": "inspection",
+    "label": "actual-transfer-request",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+      "section": "request",
+      "snapshotRevision": 47,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "request",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "transfer",
+          "version": "1",
+          "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+          "intentId": "world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:transfer"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+                "mode": "execute",
+                "sequence": 47,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "source": {
+          "kind": "authenticated-user",
+          "commandId": "human:transfer",
+          "sequence": 33,
+          "payloadHash": "sha256:cbd8cdaad90de5c9b3cdf85314d9acdb37d3f1aaafe774120ba612cdee81496d"
+        },
+        "description": {
+          "status": "withheld"
+        },
+        "evidence": {
+          "inputRevision": 0
+        }
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ],
+      [
+        "value",
+        "evidence"
+      ],
+      [
+        "value",
+        "evidence",
+        "latestChallenge"
+      ],
+      [
+        "value",
+        "evidence",
+        "latestRevision"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-transfer-plans",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+      "section": "plans",
+      "snapshotRevision": 47,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "plans",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "transfer",
+          "version": "1",
+          "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+          "intentId": "world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:transfer"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+                "mode": "execute",
+                "sequence": 47,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "total": 1,
+        "items": [
+          {
+            "id": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+            "sequence": 33,
+            "hash": "sha256:de6284c1c78563ce30dd60e84ba3e3cffcabede4b60803fb8e5bd5a83066cb60",
+            "status": "accepted",
+            "resolution": "apply",
+            "rationale": {
+              "status": "withheld"
+            },
+            "persona": {
+              "status": "not-applicable"
+            },
+            "predecessor": null,
+            "operationId": null
+          }
+        ]
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "stale"
+      ],
+      [
+        "value",
+        "nextCursor"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "operationId"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "predecessor"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-transfer-execution",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+      "section": "execution",
+      "snapshotRevision": 47,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "execution",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "transfer",
+          "version": "1",
+          "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+          "intentId": "world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:transfer"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+                "mode": "execute",
+                "sequence": 47,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "observation": {
+          "planId": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+          "mode": "execute",
+          "sequence": 47,
+          "updates": 2,
+          "time": "2",
+          "status": "settled",
+          "reason": null
+        },
+        "result": {
+          "id": "world-result:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+          "sequence": 44,
+          "time": "2",
+          "source": {
+            "kind": "plan",
+            "planId": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec"
+          },
+          "outcome": {
+            "kind": "committed"
+          },
+          "payload": {
+            "entityId": "fee-candidate",
+            "organizationEntityId": "fee-org",
+            "closedAssignmentId": "management-assignment",
+            "previousPositionId": "management-old-role",
+            "requestedEffectiveAt": null,
+            "actualEffectiveAt": "2",
+            "closedAuthorityRelationIds": [],
+            "revokedAuthorityRelationIds": [],
+            "newAssignmentId": "world-transfer-assignment:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+            "targetPositionId": "fee-vacancy"
+          }
+        },
+        "responsibilities": [
+          {
+            "kind": "personnel",
+            "id": "world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+            "planId": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+            "sequence": 35,
+            "updatedSequence": 44,
+            "status": "committed"
+          }
+        ]
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ],
+      [
+        "value",
+        "observation"
+      ],
+      [
+        "value",
+        "reservation"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "responsibilities"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ],
+      [
+        "value",
+        "observation",
+        "reason"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-transfer-notification",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+      "section": "notification",
+      "snapshotRevision": 47,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "firstAction": {
+          "wake": {
+            "id": "simulation-world-first:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+            "status": "scheduled"
+          }
+        },
+        "section": "notification",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "transfer",
+          "version": "1",
+          "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+          "intentId": "world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:transfer"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+                "mode": "execute",
+                "sequence": 47,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "request": null
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "firstAction"
+      ],
+      [
+        "value",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "firstAction",
+        "post"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "request"
+      ],
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-depart-request",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+      "section": "request",
+      "snapshotRevision": 45,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "request",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "depart",
+          "version": "1",
+          "requestId": "world-management-request:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+          "intentId": "world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:depart"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+                "mode": "execute",
+                "sequence": 45,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8"
+              }
+            },
+            "notification": {
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "source": {
+          "kind": "authenticated-user",
+          "commandId": "human:depart",
+          "sequence": 33,
+          "payloadHash": "sha256:ecef4db1409573a9ac6ade6a12bfd3392c8f6dd1a8c276496e261dee599d8154"
+        },
+        "description": {
+          "status": "withheld"
+        },
+        "evidence": {
+          "inputRevision": 0
+        }
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "evidence"
+      ],
+      [
+        "value",
+        "evidence",
+        "latestChallenge"
+      ],
+      [
+        "value",
+        "evidence",
+        "latestRevision"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-depart-plans",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+      "section": "plans",
+      "snapshotRevision": 45,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "plans",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "depart",
+          "version": "1",
+          "requestId": "world-management-request:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+          "intentId": "world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:depart"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+                "mode": "execute",
+                "sequence": 45,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8"
+              }
+            },
+            "notification": {
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "total": 1,
+        "items": [
+          {
+            "id": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+            "sequence": 33,
+            "hash": "sha256:596b0db4d9a6817960fd599c4c73b96a0f1b9416a277207d991422530e2958ff",
+            "status": "accepted",
+            "resolution": "apply",
+            "rationale": {
+              "status": "withheld"
+            },
+            "persona": {
+              "status": "not-applicable"
+            },
+            "predecessor": null,
+            "operationId": null
+          }
+        ]
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "stale"
+      ],
+      [
+        "value",
+        "nextCursor"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "operationId"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "predecessor"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-depart-execution",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+      "section": "execution",
+      "snapshotRevision": 45,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "execution",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "depart",
+          "version": "1",
+          "requestId": "world-management-request:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+          "intentId": "world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:depart"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+                "mode": "execute",
+                "sequence": 45,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8"
+              }
+            },
+            "notification": {
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "observation": {
+          "planId": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+          "mode": "execute",
+          "sequence": 45,
+          "updates": 2,
+          "time": "2",
+          "status": "settled",
+          "reason": null
+        },
+        "result": {
+          "id": "world-result:world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8",
+          "sequence": 43,
+          "time": "2",
+          "source": {
+            "kind": "plan",
+            "planId": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062"
+          },
+          "outcome": {
+            "kind": "committed"
+          },
+          "payload": {
+            "entityId": "fee-candidate",
+            "organizationEntityId": "fee-org",
+            "closedAssignmentId": "management-assignment",
+            "previousPositionId": "management-old-role",
+            "requestedEffectiveAt": null,
+            "actualEffectiveAt": "2",
+            "closedAuthorityRelationIds": [],
+            "revokedAuthorityRelationIds": [],
+            "retire": false
+          }
+        },
+        "responsibilities": [
+          {
+            "kind": "personnel",
+            "id": "world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8",
+            "planId": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+            "sequence": 35,
+            "updatedSequence": 43,
+            "status": "committed"
+          }
+        ]
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "observation"
+      ],
+      [
+        "value",
+        "reservation"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "responsibilities"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ],
+      [
+        "value",
+        "observation",
+        "reason"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-depart-notification",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+      "section": "notification",
+      "snapshotRevision": 45,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "notification",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "depart",
+          "version": "1",
+          "requestId": "world-management-request:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+          "intentId": "world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:depart"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:c3e7c6bd4ca46b859356cddf9459349cd77f0ad97ac673d1df6a74bc43a21062",
+                "mode": "execute",
+                "sequence": 45,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:938e037454d89f9b15aa95a0bad736c12489e5096f4ae4a22367e003156ffac8"
+              }
+            },
+            "notification": {
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "request": null
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "request"
+      ],
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-hire-existing-request",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+      "section": "request",
+      "snapshotRevision": 43,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "request",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "hire-existing",
+          "version": "1",
+          "requestId": "world-management-request:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+          "intentId": "world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:hire-existing"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "fee-vacancy",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+                "mode": "execute",
+                "sequence": 39,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "source": {
+          "kind": "authenticated-user",
+          "commandId": "human:hire-existing",
+          "sequence": 32,
+          "payloadHash": "sha256:c3cef31eb8562a7a45a52626c9d4cb24bee92f1bf909c3c098ea0fcddf17eb0f"
+        },
+        "description": {
+          "status": "withheld"
+        },
+        "evidence": {
+          "inputRevision": 0
+        }
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ],
+      [
+        "value",
+        "evidence"
+      ],
+      [
+        "value",
+        "evidence",
+        "latestChallenge"
+      ],
+      [
+        "value",
+        "evidence",
+        "latestRevision"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-hire-existing-plans",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+      "section": "plans",
+      "snapshotRevision": 43,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "plans",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "hire-existing",
+          "version": "1",
+          "requestId": "world-management-request:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+          "intentId": "world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:hire-existing"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "fee-vacancy",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+                "mode": "execute",
+                "sequence": 39,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "total": 1,
+        "items": [
+          {
+            "id": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+            "sequence": 32,
+            "hash": "sha256:83e1a8d0c384bda38024eac9bc56a120124ce155a405e7be8ddf4f94dd95fae9",
+            "status": "accepted",
+            "resolution": "apply",
+            "rationale": {
+              "status": "withheld"
+            },
+            "persona": {
+              "status": "not-applicable"
+            },
+            "predecessor": null,
+            "operationId": null
+          }
+        ]
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "stale"
+      ],
+      [
+        "value",
+        "nextCursor"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "operationId"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "predecessor"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-hire-existing-execution",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+      "section": "execution",
+      "snapshotRevision": 43,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "section": "execution",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "hire-existing",
+          "version": "1",
+          "requestId": "world-management-request:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+          "intentId": "world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:hire-existing"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "fee-vacancy",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+                "mode": "execute",
+                "sequence": 39,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "observation": {
+          "planId": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+          "mode": "execute",
+          "sequence": 39,
+          "updates": 2,
+          "time": "2",
+          "status": "settled",
+          "reason": null
+        },
+        "result": {
+          "id": "world-result:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+          "sequence": 36,
+          "time": "2",
+          "source": {
+            "kind": "plan",
+            "planId": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488"
+          },
+          "outcome": {
+            "kind": "committed"
+          },
+          "payload": {
+            "entityId": "fee-candidate",
+            "relationId": "world-existing-assignment:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e"
+          }
+        }
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ],
+      [
+        "value",
+        "observation"
+      ],
+      [
+        "value",
+        "reservation"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "responsibilities"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ],
+      [
+        "value",
+        "observation",
+        "reason"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "actual-hire-existing-notification",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "requestId": "world-management-request:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+      "section": "notification",
+      "snapshotRevision": 43,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "status": "found",
+      "value": {
+        "firstAction": {
+          "wake": {
+            "id": "simulation-world-first:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+            "status": "scheduled"
+          }
+        },
+        "section": "notification",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "hire-existing",
+          "version": "1",
+          "requestId": "world-management-request:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+          "intentId": "world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:hire-existing"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "fee-vacancy",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:ab6aebaa24c28c92a2ed1daa8d185a176fa90a511a2fc3042581811b2ef76488",
+                "mode": "execute",
+                "sequence": 39,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:65f41d83aa0d7be55dcb5373f585a1d8ddd791fdd18eac0150ef0255cb1f5f0e",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        },
+        "request": null
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "firstAction"
+      ],
+      [
+        "value",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "firstAction",
+        "post"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "request"
+      ],
+      [
+        "value",
+        "summary",
+        "requesterEntityId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "wire-role-request",
+    "value": {
+      "runId": "run",
+      "requestId": "case",
+      "section": "request",
+      "snapshotRevision": 3,
+      "readVersion": "policy",
+      "observedAt": 1,
+      "status": "found",
+      "value": {
+        "section": "request",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "generate-and-hire",
+          "version": "1",
+          "requestId": "case",
+          "intentId": "intent",
+          "status": "open",
+          "requesterEntityId": "member",
+          "origin": {
+            "kind": "decision"
+          },
+          "organizationEntityId": "organization",
+          "targetEntityId": "position",
+          "cancel": {
+            "allowed": false,
+            "reason": "recovery-required"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "open"
+            },
+            "plan": {
+              "status": "none"
+            },
+            "execution": {
+              "callback": {
+                "status": "none"
+              },
+              "business": {
+                "status": "none"
+              }
+            },
+            "notification": {
+              "request": null
+            }
+          }
+        },
+        "source": {
+          "kind": "decision",
+          "operationId": "request",
+          "sequence": 1,
+          "payloadHash": "hash"
+        },
+        "description": {
+          "status": "withheld"
+        }
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "evidence"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "wire-role-plans",
+    "value": {
+      "runId": "run",
+      "requestId": "case",
+      "section": "plans",
+      "snapshotRevision": 3,
+      "readVersion": "policy",
+      "observedAt": 1,
+      "status": "found",
+      "value": {
+        "section": "plans",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "generate-and-hire",
+          "version": "1",
+          "requestId": "case",
+          "intentId": "intent",
+          "status": "open",
+          "requesterEntityId": "member",
+          "origin": {
+            "kind": "decision"
+          },
+          "organizationEntityId": "organization",
+          "targetEntityId": "position",
+          "cancel": {
+            "allowed": false,
+            "reason": "recovery-required"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "open"
+            },
+            "plan": {
+              "id": "plan",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "status": "none"
+              },
+              "business": {
+                "status": "none"
+              }
+            },
+            "notification": {
+              "request": null
+            }
+          }
+        },
+        "total": 1,
+        "items": [
+          {
+            "id": "plan",
+            "operationId": "resolve",
+            "sequence": 2,
+            "hash": "hash",
+            "status": "accepted",
+            "resolution": "apply",
+            "rationale": {
+              "status": "withheld"
+            },
+            "persona": {
+              "status": "withheld"
+            },
+            "predecessor": null
+          }
+        ]
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "stale"
+      ],
+      [
+        "value",
+        "nextCursor"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ],
+      [
+        "value",
+        "items",
+        0,
+        "predecessor"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "wire-role-execution",
+    "value": {
+      "runId": "run",
+      "requestId": "case",
+      "section": "execution",
+      "snapshotRevision": 3,
+      "readVersion": "policy",
+      "observedAt": 1,
+      "status": "found",
+      "value": {
+        "section": "execution",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "generate-and-hire",
+          "version": "1",
+          "requestId": "case",
+          "intentId": "intent",
+          "status": "open",
+          "requesterEntityId": "member",
+          "origin": {
+            "kind": "decision"
+          },
+          "organizationEntityId": "organization",
+          "targetEntityId": "position",
+          "cancel": {
+            "allowed": false,
+            "reason": "recovery-required"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "open"
+            },
+            "plan": {
+              "status": "none"
+            },
+            "execution": {
+              "callback": {
+                "status": "none"
+              },
+              "business": {
+                "status": "none"
+              }
+            },
+            "notification": {
+              "request": null
+            }
+          }
+        }
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "observation"
+      ],
+      [
+        "value",
+        "reservation"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "responsibilities"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "inspection",
+    "label": "wire-role-notification",
+    "value": {
+      "runId": "run",
+      "requestId": "case",
+      "section": "notification",
+      "snapshotRevision": 3,
+      "readVersion": "policy",
+      "observedAt": 1,
+      "status": "found",
+      "value": {
+        "request": {
+          "operationId": "notify",
+          "status": "pending",
+          "publication": "unpublished",
+          "delivery": "not-received",
+          "channelId": "private"
+        },
+        "section": "notification",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "generate-and-hire",
+          "version": "1",
+          "requestId": "case",
+          "intentId": "intent",
+          "status": "open",
+          "requesterEntityId": "member",
+          "origin": {
+            "kind": "decision"
+          },
+          "organizationEntityId": "organization",
+          "targetEntityId": "position",
+          "cancel": {
+            "allowed": false,
+            "reason": "recovery-required"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "open"
+            },
+            "plan": {
+              "status": "none"
+            },
+            "execution": {
+              "callback": {
+                "status": "none"
+              },
+              "business": {
+                "status": "none"
+              }
+            },
+            "notification": {
+              "request": {
+                "operationId": "notify",
+                "status": "pending",
+                "publication": "unpublished",
+                "delivery": "not-received",
+                "channelId": "private"
+              }
+            }
+          }
+        }
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "request",
+        "envelopeId"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "firstAction"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request",
+        "envelopeId"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ]
+    ],
+    "requiredNullPaths": []
+  },
+  {
+    "kind": "inspection",
+    "label": "wire-role-committed",
+    "value": {
+      "runId": "run",
+      "requestId": "case",
+      "section": "execution",
+      "snapshotRevision": 4,
+      "readVersion": "policy",
+      "observedAt": 1,
+      "status": "found",
+      "value": {
+        "section": "execution",
+        "summary": {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "generate-and-hire",
+          "version": "1",
+          "requestId": "case",
+          "intentId": "intent",
+          "status": "committed",
+          "requesterEntityId": "member",
+          "origin": {
+            "kind": "decision"
+          },
+          "organizationEntityId": "organization",
+          "targetEntityId": "position",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "status": "none"
+            },
+            "execution": {
+              "callback": {
+                "status": "none"
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "result"
+              }
+            },
+            "notification": {
+              "request": null
+            }
+          }
+        },
+        "reservation": {
+          "id": "intent",
+          "planId": "plan",
+          "status": "committed",
+          "sequence": 3,
+          "updatedSequence": 4,
+          "newborn": {
+            "entityId": "newborn",
+            "readiness": "ready",
+            "phase": "active"
+          },
+          "assignment": {
+            "relationId": "assignment",
+            "status": "retained"
+          }
+        },
+        "result": {
+          "id": "result",
+          "sequence": 4,
+          "time": "5",
+          "source": {
+            "kind": "plan",
+            "planId": "plan"
+          },
+          "outcome": {
+            "kind": "committed"
+          },
+          "payload": {
+            "entityId": "newborn",
+            "relationId": "assignment"
+          }
+        }
+      }
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ],
+      [
+        "value",
+        "summary",
+        "cancel",
+        "preview"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "value",
+        "observation"
+      ],
+      [
+        "value",
+        "reservation"
+      ],
+      [
+        "value",
+        "reservation",
+        "cleanup"
+      ],
+      [
+        "value",
+        "result"
+      ],
+      [
+        "value",
+        "responsibilities"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "value",
+        "summary",
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "page",
+    "label": "actual-summary-page",
+    "value": {
+      "runId": "python-actual-managed-proof",
+      "snapshotRevision": 47,
+      "readVersion": "actual-native96-user-prefix",
+      "observedAt": 0,
+      "total": 1,
+      "items": [
+        {
+          "apiVersion": "clocky.world-case/v4",
+          "domain": "organization",
+          "operation": "transfer",
+          "version": "1",
+          "requestId": "world-management-request:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+          "intentId": "world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+          "status": "committed",
+          "origin": {
+            "kind": "authenticated-user",
+            "commandId": "human:transfer"
+          },
+          "organizationEntityId": "fee-org",
+          "targetEntityId": "management-old-role",
+          "cancel": {
+            "allowed": false,
+            "reason": "terminal"
+          },
+          "lifecycle": {
+            "request": {
+              "status": "committed"
+            },
+            "plan": {
+              "id": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+              "status": "accepted",
+              "resolution": "apply"
+            },
+            "execution": {
+              "callback": {
+                "planId": "world-management-plan:dc20c3a651db71fa1774c8e971e5c4e911281b1d39c4df2d36fe096c7c779bec",
+                "mode": "execute",
+                "sequence": 47,
+                "updates": 2,
+                "time": "2",
+                "status": "settled",
+                "reason": null
+              },
+              "business": {
+                "status": "committed",
+                "resultId": "world-result:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a"
+              }
+            },
+            "notification": {
+              "firstAction": {
+                "wake": {
+                  "id": "simulation-world-first:world-intent:e9f707bc4cd9ed82103ee57e8c5d33aefcb8d7b98f95b17871d6bf0f1f10a84a",
+                  "status": "scheduled"
+                }
+              },
+              "request": null
+            }
+          },
+          "requesterEntityId": null
+        }
+      ]
+    },
+    "forbiddenNullPaths": [
+      [
+        "items",
+        0,
+        "cancel",
+        "preview"
+      ],
+      [
+        "items",
+        0,
+        "lifecycle",
+        "notification",
+        "result"
+      ],
+      [
+        "items",
+        0,
+        "lifecycle",
+        "notification",
+        "firstAction"
+      ],
+      [
+        "items",
+        0,
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "wake",
+        "decisionId"
+      ],
+      [
+        "items",
+        0,
+        "lifecycle",
+        "notification",
+        "firstAction",
+        "post"
+      ],
+      [
+        "nextCursor"
+      ]
+    ],
+    "requiredNullPaths": [
+      [
+        "items",
+        0,
+        "requesterEntityId"
+      ],
+      [
+        "items",
+        0,
+        "lifecycle",
+        "execution",
+        "callback",
+        "reason"
+      ],
+      [
+        "items",
+        0,
+        "lifecycle",
+        "notification",
+        "request"
+      ]
+    ]
+  },
+  {
+    "kind": "input",
+    "label": "case-selector",
+    "value": {
+      "runId": "run",
+      "requestId": "case",
+      "section": "plans"
+    },
+    "forbiddenNullPaths": [
+      [
+        "expectedRevision"
+      ],
+      [
+        "readVersion"
+      ],
+      [
+        "cursor"
+      ],
+      [
+        "limit"
+      ]
+    ],
+    "requiredNullPaths": []
+  },
+  {
+    "kind": "list-input",
+    "label": "case-list-selector",
+    "value": {
+      "runId": "run"
+    },
+    "forbiddenNullPaths": [
+      [
+        "status"
+      ],
+      [
+        "expectedRevision"
+      ],
+      [
+        "cursor"
+      ],
+      [
+        "limit"
+      ]
+    ],
+    "requiredNullPaths": []
+  },
+  {
+    "kind": "inspection",
+    "label": "missing",
+    "value": {
+      "runId": "run",
+      "requestId": "case",
+      "section": "request",
+      "snapshotRevision": 3,
+      "readVersion": "policy",
+      "observedAt": 1,
+      "status": "missing"
+    },
+    "forbiddenNullPaths": [
+      [
+        "value"
+      ]
+    ],
+    "requiredNullPaths": []
+  }
+]

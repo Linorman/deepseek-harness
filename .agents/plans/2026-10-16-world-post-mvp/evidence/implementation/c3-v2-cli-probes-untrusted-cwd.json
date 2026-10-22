@@ -1,0 +1,159 @@
+{
+  "version": "environment-cli-probes/1",
+  "probes": [
+    {
+      "probe": "run-before-registration",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "run"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "output": "node:internal/fs/promises:1281\n  return new FileHandle(await PromisePrototypeThen(\n                        ^\n\nError: ENOENT: no such file or directory, open '/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-registration.json'\n    at async open (node:internal/fs/promises:1281:25)\n    at async readFile (node:internal/fs/promises:1929:14)\n    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:32:27) {\n  errno: -2,\n  code: 'ENOENT',\n  syscall: 'open',\n  path: '/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-registration.json'\n}\n\nNode.js v25.9.0\n"
+    },
+    {
+      "probe": "register",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "register"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "output": "{\"registered\":\"/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-registration.json\",\"sources\":{\".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-suite.json\":\"c42d48d3900c95e0a2b808b92012e32d40d43511f371c40605755ac392c7e563\",\"scripts/world-environment-registered-evaluate.ts\":\"7ed8465eec9e11cdc400484194669793ccde4ebcaf27f65bcc37f2061b700865\",\"packages/simulation/simulation/tests/environment-registered-evaluation.ts\":\"25e44a04836bf9b9312039c47d218888130cf3491caf27818b16df1e9df5cb2d\",\"packages/simulation/simulation/tests/environment-registered-evaluate-command.ts\":\"c325806b2370cc4be21862bc7a1ed27234699271b48ce18f7573499729bcc0ef\",\"packages/simulation/simulation/src/world-environment.ts\":\"289e500c5fbcbfe2860232b1d733fd817549456c125c260cc8fa68b4ac6b7ff6\",\"packages/simulation/simulation-local/src/world-environment-domain.ts\":\"843b9c397403398b5671f0d34fcc00efe58caf03a58b347fd8651cb62b6e563e\",\"packages/simulation/simulation-world/src/evolution.ts\":\"ebc31bc12b488d84746047d70e27f53799cb9f45066824303c68e9b869e9ca42\"}}\n"
+    },
+    {
+      "probe": "registration-never-overwritten",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "register"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "output": "node:internal/fs/promises:1281\n  return new FileHandle(await PromisePrototypeThen(\n                        ^\n\nError: EEXIST: file already exists, open '/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-registration.json'\n    at async open (node:internal/fs/promises:1281:25)\n    at async writeFile (node:internal/fs/promises:1899:14)\n    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:26:3) {\n  errno: -17,\n  code: 'EEXIST',\n  syscall: 'open',\n  path: '/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-registration.json'\n}\n\nNode.js v25.9.0\n"
+    },
+    {
+      "probe": "source-drift-before-run",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "run"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "output": "/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:34\n  if (JSON.stringify(registration.sources) !== JSON.stringify(sources)) throw new Error('Registered source or suite drift; create a separately versioned experiment')\n                                                                              ^\n\nError: Registered source or suite drift; create a separately versioned experiment\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:34:79)\n\nNode.js v25.9.0\n"
+    },
+    {
+      "probe": "execute-registered-suite",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "run"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "output": "{\"trials\":24,\"samples\":5376,\"failures\":[],\"privacy\":[{\"id\":\"private-history\",\"rejected\":true},{\"id\":\"caller-sample\",\"rejected\":true},{\"id\":\"private-state\",\"rejected\":true}],\"assessment\":{\"automated\":{\"source\":\"installed deterministic rules and arithmetic/schema probes\",\"rubricVersion\":\"supply-review/2\"},\"human\":{\"source\":null,\"status\":\"deferred-by-user\",\"ratings\":[]},\"modelJudge\":null},\"resultPath\":\"/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-results.json\"}\n"
+    },
+    {
+      "probe": "raw-result-never-overwritten",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "run"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "output": "node:internal/fs/promises:1281\n  return new FileHandle(await PromisePrototypeThen(\n                        ^\n\nError: EEXIST: file already exists, open '/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-results.json'\n    at async open (node:internal/fs/promises:1281:25)\n    at async writeFile (node:internal/fs/promises:1899:14)\n    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:47:5) {\n  errno: -17,\n  code: 'EEXIST',\n  syscall: 'open',\n  path: '/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-results.json'\n}\n\nNode.js v25.9.0\n"
+    },
+    {
+      "probe": "deterministic-verification",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "verify"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "output": "{\"trials\":24,\"samples\":5376,\"failures\":[],\"privacy\":[{\"id\":\"private-history\",\"rejected\":true},{\"id\":\"caller-sample\",\"rejected\":true},{\"id\":\"private-state\",\"rejected\":true}],\"assessment\":{\"automated\":{\"source\":\"installed deterministic rules and arithmetic/schema probes\",\"rubricVersion\":\"supply-review/2\"},\"human\":{\"source\":null,\"status\":\"deferred-by-user\",\"ratings\":[]},\"modelJudge\":null},\"resultPath\":\"/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture/.agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-results.json\"}\n"
+    },
+    {
+      "probe": "tampered-result-rejected",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "verify"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "output": "/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:45\n      throw new Error('Retained results differ from the registered deterministic computation')\n            ^\n\nError: Retained results differ from the registered deterministic computation\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:45:13)\n\nNode.js v25.9.0\n"
+    },
+    {
+      "probe": "future-registration-rejected",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "run"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "output": "/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:36\n  if (Date.parse(registration.registeredAt) > Date.parse(startedAt)) throw new Error('Registration must precede execution')\n                                                                           ^\n\nError: Registration must precede execution\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:36:76)\n\nNode.js v25.9.0\n"
+    },
+    {
+      "probe": "unknown-registration-field-rejected",
+      "command": [
+        "node",
+        "--import",
+        "/Volumes/projects-mac/deepseek-harness/node_modules/tsx/dist/esm/index.mjs",
+        "/Volumes/projects-mac/deepseek-harness/scripts/world-environment-registered-evaluate.ts",
+        "verify"
+      ],
+      "cwd": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/c3-v2/cli-fixture",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "output": "/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:33\n  const registration = environmentRegistrationSchema.parse(JSON.parse(registrationRaw))\n                                                     ^\n\nZodError: [\n  {\n    \"code\": \"unrecognized_keys\",\n    \"keys\": [\n      \"unexpectedPrivateHistory\"\n    ],\n    \"path\": [],\n    \"message\": \"Unrecognized key: \\\"unexpectedPrivateHistory\\\"\"\n  }\n]\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/tests/environment-registered-evaluate-command.ts:33:54)\n\nNode.js v25.9.0\n"
+    }
+  ],
+  "allPassed": true,
+  "resultSha256": "2651860f2cf5a089dfb8ed65d9840deec5de7098453436c09fab21112825e2e5",
+  "registrationSha256": "b7d89bcf6e8535372b3134f572fe292a8190b1dd0f70542f7c6787d960e6bac0",
+  "note": "The original command loads its original modules; a project-local fixture contains byte-identical files for registration/hash-read tests. Drift probes alter only fixture copies, never shared implementation files."
+}

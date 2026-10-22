@@ -1,0 +1,64 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-autonomous.snapshot.ts examples/simulation-company/tests/world-execution-retirement.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-autonomous.snapshot.ts (4 tests | 4 failed) 13301ms
+     × creates a company case without a prebuilt HireIntent and restores the original result 3465ms
+     × creates a laboratory case without a prebuilt HireIntent and restores the original result 3274ms
+     × creates a company case without a prebuilt HireIntent and restores the original result 3306ms
+     × creates a laboratory case without a prebuilt HireIntent and restores the original result 3256ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-autonomous.snapshot.ts > json autonomous world requests > creates a company case without a prebuilt HireIntent and restores the original result
+ FAIL  examples/simulation-company/tests/world-autonomous.snapshot.ts > json autonomous world requests > creates a laboratory case without a prebuilt HireIntent and restores the original result
+ FAIL  examples/simulation-company/tests/world-autonomous.snapshot.ts > sqlite autonomous world requests > creates a company case without a prebuilt HireIntent and restores the original result
+ FAIL  examples/simulation-company/tests/world-autonomous.snapshot.ts > sqlite autonomous world requests > creates a laboratory case without a prebuilt HireIntent and restores the original result
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert.ok(created.result.ok)
+
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts:156:14)
+    at async AuthenticatedLease.withCall (/Volumes/projects-mac/deepseek-harness/packages/core/product-principal/src/index.ts:195:14)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts:124:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ <anonymous> examples/simulation-company/tests/world-owner-scenario.ts:156:14
+ ❯ AuthenticatedLease.withCall packages/core/product-principal/src/index.ts:195:14
+ ❯ examples/simulation-company/tests/world-autonomous.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, originalProdu…
+     31|             independentNewcomer: true, phase: 'paused', originalStartR…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  4 failed | 4 passed (8)
+   Start at  01:51:50
+   Duration  27.87s (transform 308ms, setup 500ms, import 150ms, tests 40.75s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

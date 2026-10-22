@@ -1,0 +1,305 @@
+{
+  "date": "2026-10-13 Asia/Tokyo",
+  "browser": "Chromium via repository Playwright; Browser plugin not available",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "cases": [
+    {
+      "root": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-n4Ac8x",
+      "proof": {
+        "backend": "json",
+        "scenario": "company",
+        "runId": "11305ecc-4337-4278-9dad-8ea9c7e7a3aa",
+        "decisionId": "world/1/decision/2",
+        "modelCalls": 36,
+        "currentPrincipal": "world-browser-user",
+        "body": "PRIVATE-WORLD-CONTEXT-USER-CANARY",
+        "ownerAloneWithheld": true,
+        "wrongEntityWithheld": true,
+        "exactGrantAllowed": true,
+        "revokedCleared": true,
+        "lateResponseRetired": true,
+        "reloadWithheld": true,
+        "nativeUnchanged": true,
+        "noReadInference": true,
+        "url": "http://127.0.0.1:51694/?workspace=simulation&simulation=11305ecc-4337-4278-9dad-8ea9c7e7a3aa&simulationModule=decisions&simulationObject=world%2F1%2Fdecision%2F2&simulationSection=context",
+        "title": "Clocky",
+        "errors": {
+          "warnings": [],
+          "pageErrors": []
+        }
+      },
+      "lastDecision": [
+        [
+          "world/1/decision/10",
+          "accepted"
+        ],
+        [
+          "world/1/decision/11",
+          "submitted"
+        ]
+      ],
+      "artifacts": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-n4Ac8x/proof.json",
+          "sha256": "94eb60310473233ffa0d06f4e25fdee8760b8e6c8e8b073a4a590afa92a08761",
+          "bytes": 756
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-n4Ac8x/native.json",
+          "sha256": "cce74d049c48cff4b23541344a7c1e9ef5835e4f2bfa6c413a47d969846c2ac1",
+          "bytes": 180247
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-n4Ac8x/director-session.json",
+          "sha256": "ec68430cd5b3396e68fdbe34813aa0f2699165b816a7e549c2a4459cbeab65a8",
+          "bytes": 78548
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-n4Ac8x/authorized-pending-response.json",
+          "sha256": "69467e588cee44fcd62e623ce979eb37eba90bdb24a2cca6c2d6c7678bbb4995",
+          "bytes": 7315
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-n4Ac8x/00-preview.png",
+          "sha256": "8226221a6c80fae52b31ab1d0de3e34de6721e4d702ffc7bb9b11ae909c6b729",
+          "bytes": 227463
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-n4Ac8x/01-authorized-context.png",
+          "sha256": "a476dc21567834cb3c9fa33025f513a29b0811eace6c92f47d0e4d14542a776c",
+          "bytes": 230952
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-n4Ac8x/02-revoked-late-context.png",
+          "sha256": "fbf414d2a770296fce35c8e433d5dcd67092f2e825056e609ffa645036d58f76",
+          "bytes": 232377
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-kBbJQJ",
+      "proof": {
+        "backend": "json",
+        "scenario": "laboratory",
+        "runId": "2d2c9073-738a-4635-b652-6fb15d12a43b",
+        "decisionId": "world/1/decision/2",
+        "modelCalls": 36,
+        "currentPrincipal": "world-browser-user",
+        "body": "PRIVATE-WORLD-CONTEXT-USER-CANARY",
+        "ownerAloneWithheld": true,
+        "wrongEntityWithheld": true,
+        "exactGrantAllowed": true,
+        "revokedCleared": true,
+        "lateResponseRetired": true,
+        "reloadWithheld": true,
+        "nativeUnchanged": true,
+        "noReadInference": true,
+        "url": "http://127.0.0.1:51721/?workspace=simulation&simulation=2d2c9073-738a-4635-b652-6fb15d12a43b&simulationModule=decisions&simulationObject=world%2F1%2Fdecision%2F2&simulationSection=context",
+        "title": "Clocky",
+        "errors": {
+          "warnings": [],
+          "pageErrors": []
+        }
+      },
+      "lastDecision": [
+        [
+          "world/1/decision/10",
+          "accepted"
+        ],
+        [
+          "world/1/decision/11",
+          "submitted"
+        ]
+      ],
+      "artifacts": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-kBbJQJ/proof.json",
+          "sha256": "7a71acac17c38abfbd4f5a5c77e99b4d3d9d2aa833586de29f1f281a52d308a7",
+          "bytes": 759
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-kBbJQJ/native.json",
+          "sha256": "0f506dcf78c07fe0a7047a6971b0053b2ee1afba10e3fe375b478bac19b501f1",
+          "bytes": 180981
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-kBbJQJ/director-session.json",
+          "sha256": "378b5647b861044198e5fc52946bd37acd3c3641fffbb754f4fae8c031372d63",
+          "bytes": 78676
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-kBbJQJ/authorized-pending-response.json",
+          "sha256": "e309aea10b18479576485d920bb46c89a79eee28c2b4190604c70c965d16c380",
+          "bytes": 7341
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-kBbJQJ/00-preview.png",
+          "sha256": "1520813f6c181b88461e4110a0eaea0c7fec5d5e86e049cad17502f054b943d7",
+          "bytes": 222967
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-kBbJQJ/01-authorized-context.png",
+          "sha256": "535aec8517f2d93fb35db4b450bb11ffa27c6c52ed411a7dffafe9d5f40b11ad",
+          "bytes": 230798
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-kBbJQJ/02-revoked-late-context.png",
+          "sha256": "e69c97a50342464bdbbb1a1400809c44bfceb7f5e489456ee89056bf0fd2a62a",
+          "bytes": 232251
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-Up6MGa",
+      "proof": {
+        "backend": "sqlite",
+        "scenario": "company",
+        "runId": "3f914172-07b2-483d-b54a-66c406973474",
+        "decisionId": "world/1/decision/2",
+        "modelCalls": 36,
+        "currentPrincipal": "world-browser-user",
+        "body": "PRIVATE-WORLD-CONTEXT-USER-CANARY",
+        "ownerAloneWithheld": true,
+        "wrongEntityWithheld": true,
+        "exactGrantAllowed": true,
+        "revokedCleared": true,
+        "lateResponseRetired": true,
+        "reloadWithheld": true,
+        "nativeUnchanged": true,
+        "noReadInference": true,
+        "url": "http://127.0.0.1:51743/?workspace=simulation&simulation=3f914172-07b2-483d-b54a-66c406973474&simulationModule=decisions&simulationObject=world%2F1%2Fdecision%2F2&simulationSection=context",
+        "title": "Clocky",
+        "errors": {
+          "warnings": [],
+          "pageErrors": []
+        }
+      },
+      "lastDecision": [
+        [
+          "world/1/decision/10",
+          "accepted"
+        ],
+        [
+          "world/1/decision/11",
+          "accepted"
+        ]
+      ],
+      "artifacts": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-Up6MGa/proof.json",
+          "sha256": "40fdae78e1ed78c9047c93edb594cc30175616f3f98223b03008ec3f79260024",
+          "bytes": 758
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-Up6MGa/native.json",
+          "sha256": "523716e8c3d11512eabb535220350687b9c046ea85123e2bc5bfd1ac6957ece2",
+          "bytes": 180312
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-Up6MGa/director-session.json",
+          "sha256": "b508409ceda50a468da0722886a7dcaf8c533148c47bccf6f394183974caf523",
+          "bytes": 78548
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-Up6MGa/authorized-pending-response.json",
+          "sha256": "6afeb434cb55e871b8fca3bc034ff7fb9a752f529892401b162da8e1e1e4f137",
+          "bytes": 7315
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-Up6MGa/00-preview.png",
+          "sha256": "8226221a6c80fae52b31ab1d0de3e34de6721e4d702ffc7bb9b11ae909c6b729",
+          "bytes": 227463
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-Up6MGa/01-authorized-context.png",
+          "sha256": "4d56b6f9e948d192201b5b031f685b6b2f9ca0cef33404c831c3c12058fa6354",
+          "bytes": 232212
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-Up6MGa/02-revoked-late-context.png",
+          "sha256": "a0d85347d3e726710c4ac40f75b3f0249206562f9345c1754ae05630442e5c98",
+          "bytes": 232074
+        }
+      ]
+    },
+    {
+      "root": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-G78P7h",
+      "proof": {
+        "backend": "sqlite",
+        "scenario": "laboratory",
+        "runId": "f0fc39e2-230c-4a70-b98c-60541e36729f",
+        "decisionId": "world/1/decision/2",
+        "modelCalls": 36,
+        "currentPrincipal": "world-browser-user",
+        "body": "PRIVATE-WORLD-CONTEXT-USER-CANARY",
+        "ownerAloneWithheld": true,
+        "wrongEntityWithheld": true,
+        "exactGrantAllowed": true,
+        "revokedCleared": true,
+        "lateResponseRetired": true,
+        "reloadWithheld": true,
+        "nativeUnchanged": true,
+        "noReadInference": true,
+        "url": "http://127.0.0.1:51784/?workspace=simulation&simulation=f0fc39e2-230c-4a70-b98c-60541e36729f&simulationModule=decisions&simulationObject=world%2F1%2Fdecision%2F2&simulationSection=context",
+        "title": "Clocky",
+        "errors": {
+          "warnings": [],
+          "pageErrors": []
+        }
+      },
+      "lastDecision": [
+        [
+          "world/1/decision/10",
+          "accepted"
+        ],
+        [
+          "world/1/decision/11",
+          "accepted"
+        ]
+      ],
+      "artifacts": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-G78P7h/proof.json",
+          "sha256": "7ca4d9c8c3d8f3acc638ab36352b2e6ae7c78be3e1f9a10d1b987e4651cf0a8a",
+          "bytes": 761
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-G78P7h/native.json",
+          "sha256": "fe61e733741130d3200c1c94c29b23e6fb498b82e78894018ab4e9a4ec6cd8e4",
+          "bytes": 181046
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-G78P7h/director-session.json",
+          "sha256": "950312c07376b06c0c1b5779554a76b00573d50f246a27139db09241f4df7350",
+          "bytes": 78676
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-G78P7h/authorized-pending-response.json",
+          "sha256": "d77ddee39b796d54b8c3ad23a3d50b73d1287a745450c42ba77bdaf5eae7e75f",
+          "bytes": 7341
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-G78P7h/00-preview.png",
+          "sha256": "1520813f6c181b88461e4110a0eaea0c7fec5d5e86e049cad17502f054b943d7",
+          "bytes": 222967
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-G78P7h/01-authorized-context.png",
+          "sha256": "2a82fb7b13e25af69c66b608969c783ea008008adbb7ace110df5d33c91a8cf5",
+          "bytes": 232540
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-G78P7h/02-revoked-late-context.png",
+          "sha256": "3488bc5af2a4198126d47ce98977bf928579e8448dc910fabc99fe276871904d",
+          "bytes": 232472
+        }
+      ]
+    }
+  ],
+  "businessModelCalls": 144,
+  "readModelCalls": 0,
+  "scope": "Authorized body reading and revocation only; page displays an existing failed driver, so this is not full U14/U15 acceptance."
+}

@@ -1,0 +1,1 @@
+examples/simulation-company/tests/world-personnel-scenario.ts:156:53: error typescript(no-unsafe-member-access): Unsafe member access .status on an `error` typed value.

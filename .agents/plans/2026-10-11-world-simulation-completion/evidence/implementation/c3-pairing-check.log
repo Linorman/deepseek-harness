@@ -1,0 +1,4 @@
+$ tsx scripts/verify-translation-pairing.ts
+verify-translation-pairing: bilingual pairing rules violated (see docs/i18n/README.md):
+  docs/event-producer-consumer.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/event-producer-consumer.i18n.yaml (bring the other side along, then re-record with --write)
+[ELIFECYCLE] Command failed with exit code 1.

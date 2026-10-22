@@ -19,7 +19,7 @@ import type { CommandItem } from './commands.ts'
 import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@clocky/clocky-client-ui-slots'
 import { SessionStage } from './SessionStage.tsx'
 import { WORKSPACE_NAVIGATION_EVENT } from './navigation.ts'
-import { computeColumns, computePane, PANE_MAX, PANE_MIN, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_DEFAULT } from './columns.ts'
+import { computeColumns, computePane, PANE_MAX, PANE_MIN, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_COLLAPSED, SIDEBAR_DEFAULT, SIDEBAR_DRAWER } from './columns.ts'
 import type { createLayoutStore } from './stores.ts'
 import css from './AppFrame.module.css'
 
@@ -236,11 +236,20 @@ export function AppFrame({
   const sidebarPreference = sidebarCollapsed
     ? 0
     : panels.sidebar === 0 ? SIDEBAR_DEFAULT : panels.sidebar
+  // Below the drawer breakpoint an expanded sidebar overlays the center: the grid keeps the rail and the center its width.
+  const drawer = !sidebarCollapsed && viewport < SIDEBAR_DRAWER
+  const drawerWidth = Math.min(sidebarPreference, Math.max(SIDEBAR_COLLAPSED, viewport - SIDEBAR_COLLAPSED))
+  useEffect(() => {
+    if (!drawer) return
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') actions.toggleSidebar() }
+    window.addEventListener('keydown', close)
+    return () => { window.removeEventListener('keydown', close) }
+  }, [actions, drawer])
   const detailsPreference = detailsSession === undefined ? 0 : panels.details
   // A Team page with an open Session shows the conversation as a pane inside
   // the center column; the details column then lives inside that pane.
   const paneOpen = inspecting && sessionId !== undefined
-  const cols = computeColumns(viewport, sidebarPreference, paneOpen ? 0 : detailsPreference)
+  const cols = computeColumns(viewport, drawer ? 0 : sidebarPreference, paneOpen ? 0 : detailsPreference)
   const paneCols = paneOpen ? computePane(cols.center, panels.pane, detailsPreference, panels.paneExpanded) : undefined
   const detailsWidth = paneCols?.details ?? cols.details
   const colsRef = useRef(cols)
@@ -285,7 +294,9 @@ export function AppFrame({
       data-details-collapsed={detailsWidth === 0 || undefined}
       data-dragging={dragging || undefined}
     >
-      <div className={css.sidebarCol} data-clocky-navigation>
+      {drawer && <div className={css.drawerScrim} aria-hidden="true" data-sidebar-scrim onClick={() => { actions.toggleSidebar() }} />}
+      <div className={css.sidebarCol} data-clocky-navigation data-drawer={drawer || undefined}
+        style={drawer ? { width: `${String(drawerWidth)}px` } : undefined}>
         {/* Render-site slot call with live concession output: a closed
             sidebar keeps the mounted slot at the compact-rail width, and the
             component sees its rendered state as owner params decided here
@@ -294,7 +305,7 @@ export function AppFrame({
         {renderSlot('sidebar', {
           workspace: panels.workspace,
           collapsed: sidebarCollapsed,
-          width: cols.sidebar,
+          width: drawer ? drawerWidth : cols.sidebar,
         })}
       </div>
       <>

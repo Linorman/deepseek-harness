@@ -31,6 +31,7 @@
   ],
   "license": "MIT",
   "peerDependencies": {
+    "@clocky/clocky-compaction": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-sdk-protocol": "workspace:^",
@@ -39,6 +40,7 @@
     "@clocky/cordis": "workspace:^"
   },
   "devDependencies": {
+    "@clocky/clocky-compaction": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-sdk-protocol": "workspace:^",

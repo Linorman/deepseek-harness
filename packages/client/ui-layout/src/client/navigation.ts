@@ -4,11 +4,12 @@ import type { TeamId, TeamTaskId, ParticipantId, SessionId, ChannelId } from '@c
 /** Same-document navigation notification consumed by workspace route owners. */
 export const WORKSPACE_NAVIGATION_EVENT = 'clocky:workspace-navigation'
 /** Team-owned URL fields, including forms which an inspection link must never inherit. */
-export const TEAM_ROUTE_KEYS = ['team', 'view', 'viz', 'task', 'plan', 'action', 'form', 'formTask', 'channel', 'session', 'participant', 'q', 'status'] as const
+export const TEAM_ROUTE_KEYS = ['team', 'view', 'viz', 'task', 'plan', 'action', 'form', 'formTask', 'channel', 'envelope', 'envelopeSequence', 'session', 'participant', 'q', 'status'] as const
 /** Simulation-owned viewing fields; no command identity or private draft is included. */
 export const SIMULATION_ROUTE_KEYS = ['simulation', 'simulationModule', 'simulationObject', 'simulationSearch', 'simulationStatus',
   'simulationCognition', 'simulationEntity', 'simulationDecision', 'simulationRecordKind', 'simulationSequence',
-  'simulationSource', 'simulationSection', 'simulationKnowledge', 'simulationKnowledgeRevision', 'simulationDisplay'] as const
+  'simulationSource', 'simulationSection', 'simulationKnowledge', 'simulationKnowledgeRevision', 'simulationDisplay',
+  'simulationCaseSection', 'simulationLens', 'simulationAt', 'simulationAuthor', 'simulationDomain', 'simulationNeedsAction', 'simulationWorldSection'] as const
 
 /**
  * Read a single bounded source route from browser history without trusting its contents.
@@ -83,7 +84,10 @@ function cleanWorkspaceRoute(value: unknown, href: string): string | undefined {
 export type TeamInspectionTarget = { readonly teamId: TeamId } & (
   | { readonly kind: 'team' }
   | { readonly kind: 'task'; readonly taskId: TeamTaskId }
-  | { readonly kind: 'channel'; readonly channelId: ChannelId }
+  | { readonly kind: 'channel'
+    readonly channelId: ChannelId
+    readonly envelopeId?: string | undefined
+    readonly envelopeSequence?: number | undefined }
   | { readonly kind: 'session'; readonly sessionId: SessionId; readonly participantId: ParticipantId })
 
 /**
@@ -100,7 +104,13 @@ export function teamInspectionUrl(href: string, target: TeamInspectionTarget): s
   switch (target.kind) {
     case 'team': break
     case 'task': url.searchParams.set('task', target.taskId); break
-    case 'channel': url.searchParams.set('channel', target.channelId); break
+    case 'channel':
+      url.searchParams.set('channel', target.channelId)
+      if (target.envelopeId !== undefined && target.envelopeSequence !== undefined) {
+        url.searchParams.set('envelope', target.envelopeId)
+        url.searchParams.set('envelopeSequence', String(target.envelopeSequence))
+      }
+      break
     case 'session':
       url.searchParams.set('session', target.sessionId)
       url.searchParams.set('participant', target.participantId)

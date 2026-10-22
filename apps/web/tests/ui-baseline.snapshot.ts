@@ -264,7 +264,7 @@ describe('ui baseline', () => {
       run = await scaffold.ctx.simulations.open(scaffold.ctx.simulations.resolve({ provider: 'local', spec, mode: 'create' }))
       await run.setPhase('running', 0)
       for (const id of ['仓储中心', '采购人员', '运输组织']) {
-        await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'org', cognition: 'none',
+        await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'org', cognition: 'none',
           profile: { name: `${id}：供应链上下文`, secret: 'private-world-body' } }), run.snapshot().revision)
       }
       await run.change(simulationChangeSchema.parse({ kind: 'relation/create', id: 'source-a', relation: 'supplies', subject: '运输组织', object: '采购人员',
@@ -283,7 +283,7 @@ describe('ui baseline', () => {
       await workspace.getByRole('button', { name: '概览', exact: true }).first().waitFor()
       await captureMatrix(page, '21-simulation-overview', manifest)
       for (const [name, state] of [['实体', '22-simulation-entities'], ['决策', '23-simulation-decisions'],
-        ['操作', '24-simulation-operations'], ['检查点', '25-simulation-checkpoints'], ['记录', '26-simulation-journal']] as const) {
+        ['操作', '24-simulation-operations'], ['检查点', '25-simulation-checkpoints'], ['历史', '26-simulation-journal']] as const) {
         const tab = workspace.getByRole('button', { name, exact: true }).first()
         if (await tab.count() === 0) continue
         await tab.click()

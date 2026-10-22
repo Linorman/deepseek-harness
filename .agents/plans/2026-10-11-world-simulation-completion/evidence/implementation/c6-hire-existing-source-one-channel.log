@@ -1,0 +1,82 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ × examples/simulation-company/tests/world-hire-existing.snapshot.ts > json existing-person hiring > reuses original identity and remembered Session in company 163ms
+   → node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-existing-scenario.ts:211:91: ERROR: Expected ")" but found "s"
+    at failureErrorWithLog (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1748:15)
+    at /Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1017:50
+    at responseCallbacks.<computed> (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:884:9)
+    at handleIncomingPacket (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:939:12)
+    at Socket.readFromStdout (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:862:7)
+    at Socket.emit (node:events:509:20)
+    at addChunk (node:internal/streams/readable:564:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:515:3)
+    at Readable.push (node:internal/streams/readable:395:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+ ↓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > json existing-person hiring > reuses original identity and remembered Session in laboratory
+ ↓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > sqlite existing-person hiring > reuses original identity and remembered Session in company
+ ↓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > sqlite existing-person hiring > reuses original identity and remembered Session in laboratory
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-hire-existing.snapshot.ts > json existing-person hiring > reuses original identity and remembered Session in company
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-hire-existing-scenario.ts:211:91: ERROR: Expected ")" but found "s"
+    at failureErrorWithLog (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1748:15)
+    at /Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1017:50
+    at responseCallbacks.<computed> (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:884:9)
+    at handleIncomingPacket (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:939:12)
+    at Socket.readFromStdout (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:862:7)
+    at Socket.emit (node:events:509:20)
+    at addChunk (node:internal/streams/readable:564:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:515:3)
+    at Readable.push (node:internal/streams/readable:395:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ failureErrorWithLog node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1748:15
+ ❯ node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:1017:50
+ ❯ responseCallbacks.<computed> node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:884:9
+ ❯ handleIncomingPacket node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:939:12
+ ❯ Socket.readFromStdout node_modules/.pnpm/esbuild@0.28.1/node_modules/esbuild/lib/main.js:862:7
+ ❯ examples/simulation-company/tests/world-hire-existing.snapshot.ts:28:32
+     26|         try {
+     27|           const [code] = await exited as unknown[]
+     28|           expect(code, errors).toBe(0)
+       |                                ^
+     29|           const result = JSON.parse(output) as { modelCalls: number }
+     30|           expect(result).toMatchObject({ scenario, originalIdentity: t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 skipped (4)
+   Start at  05:19:57
+   Duration  607ms (transform 220ms, setup 184ms, import 113ms, tests 164ms, environment 0ms)
+

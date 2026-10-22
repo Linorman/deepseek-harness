@@ -1,0 +1,65 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-personnel.snapshot.ts (4 tests | 4 failed) 20620ms
+     × preserves the original person and Session in company 4439ms
+     × preserves the original person and Session in laboratory 5330ms
+     × preserves the original person and Session in company 5672ms
+     × preserves the original person and Session in laboratory 5179ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-personnel.snapshot.ts > json actual personnel transfer > preserves the original person and Session in company
+ FAIL  examples/simulation-company/tests/world-personnel.snapshot.ts > json actual personnel transfer > preserves the original person and Session in laboratory
+ FAIL  examples/simulation-company/tests/world-personnel.snapshot.ts > sqlite actual personnel transfer > preserves the original person and Session in company
+ FAIL  examples/simulation-company/tests/world-personnel.snapshot.ts > sqlite actual personnel transfer > preserves the original person and Session in laboratory
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-personnel-domain.ts:217
+      throw new SimulationWorldError('SIM_WORLD_LIMIT', 'Transfer target is occupied or retained by original pending reservations', 'position')
+            ^
+
+SimulationWorldError: Transfer target is occupied or retained by original pending reservations
+    at TransferNativeWorldDomain.occupancy (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-personnel-domain.ts:217:13)
+    at TransferNativeWorldDomain.current (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-personnel-domain.ts:188:60)
+    at TransferNativeWorldDomain.admitRequest (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-personnel-domain.ts:229:27)
+    at worldExecutionReads (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:140:27)
+    at worldPlanStaleReason (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:167:17)
+    at foldWorldMutation (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-mutation.ts:46:7)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:199:24)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:2010:26) {
+  code: 'SIM_WORLD_LIMIT',
+  failure: { code: 'SIM_WORLD_LIMIT', limit: 'position' }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ TransferNativeWorldDomain.occupancy packages/simulation/simulation-local/src/world-personnel-domain.ts:217:13
+ ❯ TransferNativeWorldDomain.current packages/simulation/simulation-local/src/world-personnel-domain.ts:188:60
+ ❯ TransferNativeWorldDomain.admitRequest packages/simulation/simulation-local/src/world-personnel-domain.ts:229:27
+ ❯ worldExecutionReads packages/simulation/simulation-local/src/world.ts:140:27
+ ❯ worldPlanStaleReason packages/simulation/simulation-local/src/world.ts:167:17
+ ❯ foldWorldMutation packages/simulation/simulation-local/src/world-mutation.ts:46:7
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:199:24
+ ❯ examples/simulation-company/tests/world-personnel.snapshot.ts:28:32
+     26|         try {
+     27|           const [code] = await exited as unknown[]
+     28|           expect(code, errors).toBe(0)
+       |                                ^
+     29|           const result = JSON.parse(output) as { modelCalls: number }
+     30|           expect(result).toMatchObject({ scenario, originalIdentity: t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  06:55:37
+   Duration  20.98s (transform 159ms, setup 131ms, import 127ms, tests 20.62s, environment 0ms)
+

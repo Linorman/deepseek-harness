@@ -42,7 +42,7 @@ it('keeps a tenfold larger world bounded to one page with no per-row inspect rea
     try {
       run = await scaffold.ctx.simulations.open(scaffold.ctx.simulations.resolve({ provider: 'local', spec, mode: 'create' }))
       for (let index = 0; index < total; index++) {
-        await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: `entity-${String(index).padStart(3, '0')}`,
+        await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: `entity-${String(index).padStart(3, '0')}`,
           entityKind: 'org', cognition: 'none', profile: { name: `Entity ${String(index).padStart(3, '0')}` } }), run.snapshot().revision)
       }
       const before = run.snapshot()

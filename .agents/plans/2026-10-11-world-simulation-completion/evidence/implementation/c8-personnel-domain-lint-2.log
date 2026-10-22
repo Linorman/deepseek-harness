@@ -1,0 +1,1 @@
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:118:18: error typescript(no-confusing-void-expression): Returning a void expression from an arrow function shorthand is forbidden. help: Add braces to the arrow function.

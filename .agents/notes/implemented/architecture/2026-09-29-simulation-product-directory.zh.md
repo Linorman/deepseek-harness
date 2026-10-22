@@ -2,6 +2,8 @@
 
 Status: implemented
 
+World 控制在进程重启后读取持久回调与 outbox 的不确定状态；调度器缺失不证明业务效果失败。恢复不以已有 maintenance 为前提，对账原 armed 回调，保持暂停并拒绝未完成确认。内存 driver 提示被清空或后台计时器触发，都不能把保留的未知责任变成新执行。
+
 [English](2026-09-29-simulation-product-directory.md) | 中文
 
 ## Problem
@@ -18,7 +20,7 @@ Status: implemented
 
 列表与检查使用当前仅运行时产品调用上下文。缺失与私有产品身份使用同一拒绝。凭据退役与取消在 provider IO 前及成功或失败后检查。公开观察省略主体关联、provider/spec/路径、profile、知识与模型上下文；保留精确十进制时间、revision、行政 phase、数量及观察到的所有权。检查不打开、不恢复、不修改 run，持久 running phase 不表示调度正在执行。
 
-加密分页绑定服务生命周期、凭据代际、主体 issuer/subject/ID、目录 revision、搜索与 limit。公开 UTF-8 额度覆盖完整请求/结果、包装与游标。持久登记字节使用独立限额，因此降低公开限额不会阻止恢复私有 spec。文本截断明确标记。配置准入限制独立读取；卸载排空已接受工作后再释放目录存储。
+加密分页绑定服务生命周期、凭据代际、主体 issuer/subject/ID、目录 revision、搜索与 limit。公开 UTF-8 额度覆盖完整请求/结果、包装与游标。持久登记字节使用独立限额，因此降低公开限额不会阻止恢复私有 spec。World 领域分页根据完整回复的序列化字节数缩减行数，每个游标仍保留原查询 limit。下一偏移量只跨过已返回行；单条记录超限时拒绝。普通多行超限因此仍可继续分页，同时保持完整回复限额。文本截断明确标记。配置准入限制独立读取；卸载排空已接受工作后再释放目录存储。
 
 Host fetch 与类型化 carrier 提供 `simulation.runs.list/inspect`。已知 forbidden、invalid 和 unavailable 失败保留各自类别；未知失败返回通用内部消息。精确 run 响应解析器拒绝身份替换。
 
@@ -59,6 +61,14 @@ Host fetch 与类型化 carrier 提供 `simulation.runs.list/inspect`。已知 f
 每个不可变登记只允许所属主体访问，没有可变 ACL/删除操作。目录列表包含未观察元数据，对象分页携带精确原生 revision。原生完整历史重放虽有界但可能昂贵，不承诺性能改善。浏览器所有者提供来源检查与独立 Team 权限刷新，完整交互矩阵仍独立跟踪。
 
 [浏览器查看决策](2026-09-29-simulation-browser-viewing.zh.md) 负责可选浏览器组装；[公司准备决策](2026-09-29-company-initial-preparation.zh.md) 负责初始原生拓扑对账。两者均不替代目录的授权或只读观察规则。
+
+必填 `clocky.world-case/v2` 摘要携带同一 Native 前缀的请求、当前计划、回调/业务和通知事实。即使可选领域扩展尚不可用，浏览器也直接使用这些摘要；不能以 run 级停止原因替代案件状态。分区 parser 拒绝矛盾的回调、结果和通知事实，部分计划页仅在原历史结束时核验最终计划。案件元数据与正文、Persona、Team/Session 授权相互独立。补证答案使用案件正文授权及 IO 后最终检查，阻止已撤销的响应返回预先构建的答案。查看原计划或恢复选项只导航，不提交命令。
+
+案件执行元数据分别投影原人事、代表和单案联系责任，与计划授权、不可变业务结果和通知送达分开。共享联系引用首次代表准备，不声明第二个身份。仅返回持久状态和原 intent/plan/序号引用；未完成准备不证明失败、结果未知或可重试。TypeScript 与 Python 解析器拒绝不匹配的选择器、重复责任类别、错误案件归属、倒退序号及私密载荷字段。
+
+`readWorldDomain` 通过 `simulation.world.domain.read` 及共享 SDK 方法公开九类严格选择的 `clocky.world-read/v1` metadata。每个响应保留完整原查询、revision／read version 及精确有界覆盖；续页绑定查询、读者、policy generation 和来源 fingerprint。仅末页不能证明全量覆盖。提案／制度正文、Persona 与案件 business key 使用独立授权，并在异步读取后重验。typed 来源引用保留 Native 身份及精确 canonical Envelope／task metadata，不授予目标正文权限。冷人员盘点组合 Native 与 canonical Team owners，不打开或恢复执行。不支持的历史生命周期查询明确拒绝，不替换为当前状态。浏览器窗口彼此独立；Native 推进遮蔽过期正文，而 metadata 追上时不能废弃当前或更新响应。
+
+外部交互页同时包含实际 simulated-actor 联系、规则结果及 director 裁决。原询问 receipt 与已完成 Native delivery wake 关联已记录的代表回复决策；该 metadata 投影不证明 Session 消费。代表 ready 或联系 committed 不能推断回复。不同来源 kind 保留原 intent 身份不变。引用必须有 canonical Envelope sequence 或 decision/source ordinal，显示与选择的 Envelope 身份一致。身份页数组与所声明覆盖一致，包括明确为空的代表页。
 
 ## Verification
 

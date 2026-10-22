@@ -106,7 +106,7 @@ it('reports exact empty states, missing reads and disabled continuation without 
   view.rerender(<CollectionWorkspace {...base} object={missing}
     data={{ ...data, object: { value: missing, loading: false, stale: true } }}
     view={{ runId: 'run', module: 'entities', search: '', objectId: 'entity' }} />)
-  expect(view.getByText(en.stale)).toBeDefined()
+  expect(view.queryByText(en.stale)).toBeNull()
   expect(view.getByText(en.detailMissing)).toBeDefined()
   expect(view.queryByText(en.contextPart)).toBeNull()
 })

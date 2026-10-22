@@ -1,0 +1,3 @@
+packages/simulation/simulation/src/personnel-counts.ts:36:29: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/personnel-counts.ts:36:62: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/personnel-counts.ts:37:33: error @stylistic(member-delimiter-style): Unexpected separator (;).

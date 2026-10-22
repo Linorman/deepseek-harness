@@ -1,3 +1,7 @@
+import { externalRepresentativeChannelCleanup, externalRepresentativeCleanupReservation } from './world-external-actor.ts'
+import { worldActorPreparations } from '@clocky/clocky-simulation'
+import { assertSimulationMaintenanceAdmission, personnelRetired } from '@clocky/clocky-simulation'
+import { worldHireChannelCleanup, worldHireCleanupReservation } from './world-hire.ts'
 /** Writer transitions share the run journal serializer with decision admission. @module @clocky/clocky-simulation-local/writers */
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
@@ -107,6 +111,12 @@ export function foldWriterChange(state: SimulationSnapshot, change: WriterChange
       break
     }
     case 'writer/reserved': {
+      if (personnelRetired(state, entity.id)) throw new Error('Original personnel departure requested confirmed retirement')
+      if (state.activationAdmissionBlocks?.some(value => value.entityId === change.entityId)) {
+        throw new Error('Simulation frozen Activation history does not admit another startup')
+      }
+      assertSimulationMaintenanceAdmission(state)
+      if (entity.readiness !== 'ready') throw new Error('Simulation writer requires a ready entity')
       if (entity.phase !== 'active' || entity.binding === undefined) throw new Error('Writer reservation requires an active bound entity')
       if (entity.writer !== undefined && entity.writer.phase !== 'released') throw new Error('Simulation writer has not been proven stopped')
       if (simulationResidentSlots(state).used >= state.spec.maxResidentActors) throw new Error('Simulation resident actor capacity exceeded')
@@ -115,6 +125,9 @@ export function foldWriterChange(state: SimulationSnapshot, change: WriterChange
       break
     }
     case 'writer/activated': {
+      if (personnelRetired(state, entity.id)) throw new Error('Original personnel departure requested confirmed retirement')
+      assertSimulationMaintenanceAdmission(state)
+      if (entity.readiness !== 'ready') throw new Error('Simulation writer requires a ready entity')
       requireWriterEpoch(state, change.entityId, change.epoch)
       if (entity.writer?.phase !== 'reserved' || entity.phase !== 'active') throw new Error('Simulation writer is not reserved for activation')
       assertWriterActivation(entity, change.activation)
@@ -151,12 +164,33 @@ function assertNever(value: never): never {
  * @param state - Published or replayed projection at a complete journal tail.
  */
 export function assertWriterProjection(state: SimulationSnapshot): void {
-  if (Object.values(state.entities).filter(entity => entity.phase !== 'terminated').length > state.spec.maxEntities
+  const virtual = worldActorPreparations(state).filter(reservation => reservation.status === 'reserved'
+    && !Object.hasOwn(state.entities, reservation.identities.entityId)).length
+  if (Object.values(state.entities).filter(entity => entity.phase !== 'terminated').length + virtual > state.spec.maxEntities
     || simulationResidentSlots(state).used > state.spec.maxResidentActors) throw new Error('Simulation population exceeds its persisted capacity limits')
+  for (const entity of Object.values(state.entities)) {
+    if (entity.readiness !== 'ready' && entity.writer !== undefined
+      && (entity.writer.phase === 'reserved' || entity.writer.phase === 'active')) {
+      throw new Error('Simulation nonready entity cannot own an admitting writer')
+    }
+  }
   const reserved = state.teamReservation
   if (reserved === undefined) return
   for (const channel of Object.values(state.channelReservations ?? {})) {
-    if (!reserved.confirmed || channel.spec.members.some(member => state.entities[member.entityId]?.binding?.teamId !== reserved.teamId)) {
+    const preparedHire = !channel.confirmed ? worldActorPreparations(state).find(reservation =>
+      (reservation.status === 'preparing' || reservation.status === 'cancel-requested')
+      && reservation.identities.channels.some(identity =>
+        identity.key === channel.spec.key && identity.channelId === channel.channelId)) : undefined
+    if (!reserved.confirmed || channel.spec.members.some((member) => {
+      const entity = state.entities[member.entityId]
+      const cleanup = worldHireChannelCleanup(state, channel) ?? externalRepresentativeChannelCleanup(state, channel)
+      const cleanedIdentity = !channel.confirmed && cleanup !== undefined
+        ? worldHireCleanupReservation(state, member.entityId) ?? externalRepresentativeCleanupReservation(state, member.entityId)
+        : undefined
+      const binding = entity?.binding ?? (preparedHire?.identities.entityId === member.entityId || cleanedIdentity !== undefined
+        ? entity?.participantReservation?.binding : undefined)
+      return binding?.teamId !== reserved.teamId
+    })) {
       throw new Error('Simulation channel membership differs from its canonical Team')
     }
   }
@@ -186,7 +220,7 @@ export function assertWriterAdmission(state: SimulationSnapshot, previousRevisio
     }
     if (decision.closedAt <= previousRevision) continue
     const entity = state.entities[decision.entityId]
-    if (entity?.phase !== 'active' || entity.writer?.phase !== 'active' || entity.writer.epoch !== decision.epoch) {
+    if (entity?.readiness !== 'ready' || entity.phase !== 'active' || entity.writer?.phase !== 'active' || entity.writer.epoch !== decision.epoch) {
       throw new Error('Simulation accepted decision is outside its active writer interval')
     }
   }

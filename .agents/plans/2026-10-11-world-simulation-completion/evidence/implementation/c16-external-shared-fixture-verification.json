@@ -1,0 +1,126 @@
+{
+  "matrix": [
+    {
+      "mode": "source",
+      "scene": "company",
+      "backend": "json",
+      "modelCalls": [
+        48,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2
+    },
+    {
+      "mode": "source",
+      "scene": "company",
+      "backend": "sqlite",
+      "modelCalls": [
+        48,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2
+    },
+    {
+      "mode": "source",
+      "scene": "laboratory",
+      "backend": "json",
+      "modelCalls": [
+        48,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2
+    },
+    {
+      "mode": "source",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "modelCalls": [
+        48,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "json",
+      "modelCalls": [
+        48,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "modelCalls": [
+        48,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "modelCalls": [
+        48,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "modelCalls": [
+        48,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2
+    }
+  ],
+  "processes": 24,
+  "coldProcesses": 16,
+  "coldModelCalls": 0,
+  "assertedArtifacts": 73,
+  "limits": [
+    "No SIGKILL recovery proof",
+    "No cancellation cleanup proof",
+    "No actual provider quality claim",
+    "No v1 authoring or UI/SDK completeness claim"
+  ]
+}

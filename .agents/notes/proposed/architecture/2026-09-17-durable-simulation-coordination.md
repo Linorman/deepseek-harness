@@ -4,6 +4,12 @@ Status: proposed
 
 English | [中文](2026-09-17-durable-simulation-coordination.zh.md)
 
+
+[World driver revision collisions](../../implemented/bug-fix/2026-10-13-world-driver-revision-collisions.md) classify Native optimistic cursor refusal without bypassing admission or hiding unrelated IO failure; the broader proposal below remains independently scoped.
+
+
+The [local resource hold ledger](../../implemented/architecture/2026-10-13-native-resource-reservation-ledger.md) supplies conserved availability and simulated expiry; financial hiring and unknown cross-owner cleanup remain separate requirements.
+
 ## Problem
 
 Long-running social, organizational, and resource simulations need durable identities, responsibilities, beliefs, and simulation time beyond one Agent activation. Chat history cannot establish whether a request was accepted, whether a promise was fulfilled, or whether an action changed the world. Thousands of entities must not require thousands of resident model loops.
@@ -11,6 +17,8 @@ Long-running social, organizational, and resource simulations need durable ident
 Clocky's Team already owns reliable collaboration. A simulation must preserve its authority and Session reconstruction rules while adding business state, delayed perception, deterministic commit ordering, and restart recovery. It must not turn an execution parent into a manager, a delivery receipt into acceptance, or a model's assertion into world truth.
 
 ## Proposal
+
+The [world director MVP](../../implemented/feature/2026-10-08-world-director-mvp.md) implements separately scoped local world domains, actor-requested hiring, durable generated Personas and runtime identity preparation. It preserves this note's coordination and recovery rules; its development plan does not claim delivery of this note's deferred capabilities.
 
 Add an opt-in Simulation composition above Team. Keep Entity, Interaction, World, Knowledge, and scheduling as distinct logical owners, with one Simulation journal and one serialized writer per run in the first provider. This gives Decision acceptance and its outbox a real atomic write without requiring cross-stream transactions. Split storage or packages only when independent evolution requires it.
 
@@ -27,6 +35,8 @@ Decision slots fix the entity, writer epoch and input revision before inference.
 Scheduled keys and counters are journal facts, not wall-clock timers. Wake/deadline creation shares the originating business batch; consumption atomically transfers responsibility into a durable wake or deadline outcome. A microstep stall retains pending work until an explicit cancellation and resume, rather than silently moving the clock past it.
 
 Outbox attempts retain the exact accepted channel and payload fingerprint. Transport IO does not hold the run serializer; terminal receipts or uncertain attempts return through that serializer. A retry budget limits automatic technical retries, while an explicit recovery record permits further idempotent reconciliation. Sender retirement cannot remove the accepted operation, and permission loss only permits reconciliation of an already committed target result.
+
+The v1 foundation freezes complete initial authoring data in a prior Native initialization record. A single later record publishes world/readiness, original facts and beliefs, scenario-origin institutions, resources, simulated identities and finite calendars. Exact retries retain canonical identities; same-record initial facts prove their full original prior source. Scenario institutions do not invent governance votes, and subsequent real proposals use frozen committee policies. Calendar occurrences record trigger-time recipients and one bounded successor. Public v1 preflight/create/export now retain the full original projection and metadata with actual domain-pin availability checks. Both SDK parsers accept its strict definition and preview; Python preserves required null interval ends during wire serialization. Complete authoring UI, SDK distribution flows and director event execution remain pending; unsupported event execution returns field diagnostics. This foundation does not complete the MVP.
 
 ## Existing implementation and required extensions
 

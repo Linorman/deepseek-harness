@@ -1,0 +1,6 @@
+packages/simulation/simulation-team/src/personnel-obligations.ts:90:31: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-team/src/personnel-obligations.ts:48:1: error @stylistic(indent): Expected indentation of 6 spaces but found 8.
+packages/simulation/simulation-team/src/personnel-obligations.ts:52:1: error @stylistic(indent): Expected indentation of 4 spaces but found 6.
+packages/simulation/simulation-team/src/personnel-obligations.ts:53:1: error @stylistic(indent): Expected indentation of 6 spaces but found 8.
+packages/simulation/simulation-team/src/personnel-obligations.ts:61:1: error @stylistic(indent): Expected indentation of 4 spaces but found 6.
+packages/simulation/simulation-team/src/personnel-obligations.ts:75:1: error @stylistic(indent): Expected indentation of 4 spaces but found 6.

@@ -1,0 +1,2368 @@
+[
+  {
+    "scene": "company",
+    "backend": "json",
+    "recover": false,
+    "command": [
+      "node",
+      "--import",
+      "tsx/esm",
+      "examples/simulation-company/tests/world-longitudinal-company.ts",
+      "examples/simulation-company/tests/fixtures/world-longitudinal-company/cordis.yml"
+    ],
+    "exitCode": 0,
+    "elapsedMs": 5273403.701874998,
+    "result": {
+      "backend": "json",
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "scenario": "company",
+      "rounds": 32,
+      "samples": [
+        {
+          "round": 1,
+          "time": "6",
+          "elapsedMs": 12443.691917,
+          "modelCalls": 78,
+          "offers": 1,
+          "assignments": 1,
+          "rss": 625278976,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 826,
+            "time": "6",
+            "assignedPeople": 2,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 195
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 3,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 195
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 2,
+          "time": "12",
+          "elapsedMs": 24284.964291,
+          "modelCalls": 156,
+          "offers": 2,
+          "assignments": 2,
+          "rss": 794394624,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 1453,
+            "time": "12",
+            "assignedPeople": 3,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 303
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 17,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 303
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 3,
+          "time": "18",
+          "elapsedMs": 32639.584582999996,
+          "modelCalls": 234,
+          "offers": 3,
+          "assignments": 3,
+          "rss": 853721088,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 2096,
+            "time": "18",
+            "assignedPeople": 4,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 427
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 35,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 427
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 4,
+          "time": "24",
+          "elapsedMs": 39152.85191699999,
+          "modelCalls": 312,
+          "offers": 4,
+          "assignments": 4,
+          "rss": 822116352,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 2739,
+            "time": "24",
+            "assignedPeople": 5,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 551
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 53,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 551
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 5,
+          "time": "30",
+          "elapsedMs": 47395.69612499999,
+          "modelCalls": 390,
+          "offers": 5,
+          "assignments": 5,
+          "rss": 870219776,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 3382,
+            "time": "30",
+            "assignedPeople": 6,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 675
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 71,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 675
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 6,
+          "time": "36",
+          "elapsedMs": 58073.150292000006,
+          "modelCalls": 468,
+          "offers": 6,
+          "assignments": 6,
+          "rss": 944717824,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 4025,
+            "time": "36",
+            "assignedPeople": 7,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 799
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 89,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 799
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 7,
+          "time": "42",
+          "elapsedMs": 67373.78704099997,
+          "modelCalls": 546,
+          "offers": 7,
+          "assignments": 7,
+          "rss": 1096204288,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 4668,
+            "time": "42",
+            "assignedPeople": 8,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 923
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 107,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 923
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 8,
+          "time": "48",
+          "elapsedMs": 80075.79041700001,
+          "modelCalls": 624,
+          "offers": 8,
+          "assignments": 8,
+          "rss": 1039302656,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 5311,
+            "time": "48",
+            "assignedPeople": 9,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1047
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 125,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1047
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 9,
+          "time": "54",
+          "elapsedMs": 85227.79529200005,
+          "modelCalls": 702,
+          "offers": 9,
+          "assignments": 9,
+          "rss": 1148354560,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 5954,
+            "time": "54",
+            "assignedPeople": 10,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1171
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 143,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1171
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 10,
+          "time": "60",
+          "elapsedMs": 108602.38720900001,
+          "modelCalls": 780,
+          "offers": 10,
+          "assignments": 10,
+          "rss": 1211187200,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 6597,
+            "time": "60",
+            "assignedPeople": 11,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1295
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 161,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1295
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 11,
+          "time": "66",
+          "elapsedMs": 102613.11795900005,
+          "modelCalls": 858,
+          "offers": 11,
+          "assignments": 11,
+          "rss": 1245528064,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 7240,
+            "time": "66",
+            "assignedPeople": 12,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1419
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 179,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1419
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 12,
+          "time": "72",
+          "elapsedMs": 112920.65854199999,
+          "modelCalls": 936,
+          "offers": 12,
+          "assignments": 12,
+          "rss": 1271873536,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 7883,
+            "time": "72",
+            "assignedPeople": 13,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1543
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 197,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1543
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 13,
+          "time": "78",
+          "elapsedMs": 122081.05087500007,
+          "modelCalls": 1014,
+          "offers": 13,
+          "assignments": 13,
+          "rss": 1396785152,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 8526,
+            "time": "78",
+            "assignedPeople": 14,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1667
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 215,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1667
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 14,
+          "time": "84",
+          "elapsedMs": 140520.837083,
+          "modelCalls": 1092,
+          "offers": 14,
+          "assignments": 14,
+          "rss": 1415757824,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 9169,
+            "time": "84",
+            "assignedPeople": 15,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1791
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 233,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1791
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 15,
+          "time": "90",
+          "elapsedMs": 141442.63995799993,
+          "modelCalls": 1170,
+          "offers": 15,
+          "assignments": 15,
+          "rss": 1565786112,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 9812,
+            "time": "90",
+            "assignedPeople": 16,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1915
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 251,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 1915
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 16,
+          "time": "96",
+          "elapsedMs": 152416.77929099998,
+          "modelCalls": 1248,
+          "offers": 16,
+          "assignments": 16,
+          "rss": 1563475968,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 10455,
+            "time": "96",
+            "assignedPeople": 17,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2039
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 269,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2039
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 17,
+          "time": "102",
+          "elapsedMs": 171494.824333,
+          "modelCalls": 1326,
+          "offers": 17,
+          "assignments": 17,
+          "rss": 1605320704,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 11098,
+            "time": "102",
+            "assignedPeople": 18,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2163
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 287,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2163
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 18,
+          "time": "108",
+          "elapsedMs": 177894.99870800017,
+          "modelCalls": 1404,
+          "offers": 18,
+          "assignments": 18,
+          "rss": 1536606208,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 11741,
+            "time": "108",
+            "assignedPeople": 19,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2287
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 305,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2287
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 19,
+          "time": "114",
+          "elapsedMs": 181926.16137500014,
+          "modelCalls": 1482,
+          "offers": 19,
+          "assignments": 19,
+          "rss": 1455702016,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 12384,
+            "time": "114",
+            "assignedPeople": 20,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2411
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 323,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2411
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 20,
+          "time": "120",
+          "elapsedMs": 202620.2938329999,
+          "modelCalls": 1560,
+          "offers": 20,
+          "assignments": 20,
+          "rss": 1713553408,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 13027,
+            "time": "120",
+            "assignedPeople": 21,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2535
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 341,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2535
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 21,
+          "time": "126",
+          "elapsedMs": 201579.25745899975,
+          "modelCalls": 1638,
+          "offers": 21,
+          "assignments": 21,
+          "rss": 1788231680,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 13670,
+            "time": "126",
+            "assignedPeople": 22,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2659
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 359,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2659
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 22,
+          "time": "132",
+          "elapsedMs": 213836.95912500005,
+          "modelCalls": 1716,
+          "offers": 22,
+          "assignments": 22,
+          "rss": 1538392064,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 14313,
+            "time": "132",
+            "assignedPeople": 23,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2783
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 377,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2783
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 23,
+          "time": "138",
+          "elapsedMs": 227911.14349999977,
+          "modelCalls": 1794,
+          "offers": 23,
+          "assignments": 23,
+          "rss": 1895841792,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 14956,
+            "time": "138",
+            "assignedPeople": 24,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2907
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 395,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 2907
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 24,
+          "time": "144",
+          "elapsedMs": 243467.55824999977,
+          "modelCalls": 1872,
+          "offers": 24,
+          "assignments": 24,
+          "rss": 1778171904,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 15599,
+            "time": "144",
+            "assignedPeople": 25,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3031
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 413,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3031
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 25,
+          "time": "150",
+          "elapsedMs": 247633.1696250001,
+          "modelCalls": 1950,
+          "offers": 25,
+          "assignments": 25,
+          "rss": 1930854400,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 16242,
+            "time": "150",
+            "assignedPeople": 26,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3155
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 431,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3155
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 26,
+          "time": "156",
+          "elapsedMs": 258335.39520900045,
+          "modelCalls": 2028,
+          "offers": 26,
+          "assignments": 26,
+          "rss": 2120105984,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 16885,
+            "time": "156",
+            "assignedPeople": 27,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3279
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 449,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3279
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 27,
+          "time": "162",
+          "elapsedMs": 276317.03429200035,
+          "modelCalls": 2106,
+          "offers": 27,
+          "assignments": 27,
+          "rss": 2103918592,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 17528,
+            "time": "162",
+            "assignedPeople": 28,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3403
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 467,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3403
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 28,
+          "time": "168",
+          "elapsedMs": 280299.97074999986,
+          "modelCalls": 2184,
+          "offers": 28,
+          "assignments": 28,
+          "rss": 2207383552,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 18171,
+            "time": "168",
+            "assignedPeople": 29,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3527
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 485,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3527
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 29,
+          "time": "174",
+          "elapsedMs": 289906.7876670002,
+          "modelCalls": 2262,
+          "offers": 29,
+          "assignments": 29,
+          "rss": 2179022848,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 18814,
+            "time": "174",
+            "assignedPeople": 30,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3651
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 503,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3651
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 30,
+          "time": "180",
+          "elapsedMs": 308480.6433329992,
+          "modelCalls": 2340,
+          "offers": 30,
+          "assignments": 30,
+          "rss": 2276163584,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 19457,
+            "time": "180",
+            "assignedPeople": 31,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3775
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 521,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3775
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 31,
+          "time": "186",
+          "elapsedMs": 316495.1349579999,
+          "modelCalls": 2418,
+          "offers": 31,
+          "assignments": 31,
+          "rss": 2091761664,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 20100,
+            "time": "186",
+            "assignedPeople": 32,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3899
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 539,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 3899
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 32,
+          "time": "192",
+          "elapsedMs": 334791.7027500002,
+          "modelCalls": 2496,
+          "offers": 32,
+          "assignments": 32,
+          "rss": 2387738624,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 20743,
+            "time": "192",
+            "assignedPeople": 33,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 4023
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 557,
+              "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+              "cursor": 4023
+            }
+          },
+          "activeActors": 34
+        }
+      ],
+      "modelCalls": 2496,
+      "tokens": {
+        "input": 24960,
+        "output": 12480,
+        "costUnits": 0,
+        "basis": "scripted fixture usage"
+      },
+      "recoveredProcess": false,
+      "restored": true
+    }
+  },
+  {
+    "scene": "company",
+    "backend": "json",
+    "recover": true,
+    "command": [
+      "node",
+      "--import",
+      "tsx/esm",
+      "examples/simulation-company/tests/world-longitudinal-company.ts",
+      "examples/simulation-company/tests/fixtures/world-longitudinal-company/cordis.yml"
+    ],
+    "exitCode": 0,
+    "elapsedMs": 41269.07899999787,
+    "result": {
+      "backend": "json",
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "scenario": "company",
+      "rounds": 32,
+      "recoveredProcess": true,
+      "coldRestoreMs": 38411.333209,
+      "modelCalls": 0,
+      "restored": true
+    }
+  },
+  {
+    "scene": "company",
+    "backend": "sqlite",
+    "recover": false,
+    "command": [
+      "node",
+      "--import",
+      "tsx/esm",
+      "examples/simulation-company/tests/world-longitudinal-company.ts",
+      "examples/simulation-company/tests/fixtures/world-longitudinal-company/cordis.yml"
+    ],
+    "exitCode": 0,
+    "elapsedMs": 4565005.139749999,
+    "result": {
+      "backend": "sqlite",
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "scenario": "company",
+      "rounds": 32,
+      "samples": [
+        {
+          "round": 1,
+          "time": "6",
+          "elapsedMs": 8043.741291999999,
+          "modelCalls": 78,
+          "offers": 1,
+          "assignments": 1,
+          "rss": 487931904,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 826,
+            "time": "6",
+            "assignedPeople": 2,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 195
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 3,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 195
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 2,
+          "time": "12",
+          "elapsedMs": 15316.982000000002,
+          "modelCalls": 156,
+          "offers": 2,
+          "assignments": 2,
+          "rss": 567115776,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 1453,
+            "time": "12",
+            "assignedPeople": 3,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 303
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 17,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 303
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 3,
+          "time": "18",
+          "elapsedMs": 22653.492291000002,
+          "modelCalls": 234,
+          "offers": 3,
+          "assignments": 3,
+          "rss": 762511360,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 2096,
+            "time": "18",
+            "assignedPeople": 4,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 427
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 35,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 427
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 4,
+          "time": "24",
+          "elapsedMs": 29864.021708,
+          "modelCalls": 312,
+          "offers": 4,
+          "assignments": 4,
+          "rss": 878690304,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 2739,
+            "time": "24",
+            "assignedPeople": 5,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 551
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 53,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 551
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 5,
+          "time": "30",
+          "elapsedMs": 36591.49737499999,
+          "modelCalls": 390,
+          "offers": 5,
+          "assignments": 5,
+          "rss": 979681280,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 3382,
+            "time": "30",
+            "assignedPeople": 6,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 675
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 71,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 675
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 6,
+          "time": "36",
+          "elapsedMs": 45921.77291700001,
+          "modelCalls": 468,
+          "offers": 6,
+          "assignments": 6,
+          "rss": 1131577344,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 4025,
+            "time": "36",
+            "assignedPeople": 7,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 799
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 89,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 799
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 7,
+          "time": "42",
+          "elapsedMs": 53573.10162499998,
+          "modelCalls": 546,
+          "offers": 7,
+          "assignments": 7,
+          "rss": 1154154496,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 4668,
+            "time": "42",
+            "assignedPeople": 8,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 923
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 107,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 923
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 8,
+          "time": "48",
+          "elapsedMs": 61393.019375,
+          "modelCalls": 624,
+          "offers": 8,
+          "assignments": 8,
+          "rss": 1182580736,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 5311,
+            "time": "48",
+            "assignedPeople": 9,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1047
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 125,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1047
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 9,
+          "time": "54",
+          "elapsedMs": 69561.48829199997,
+          "modelCalls": 702,
+          "offers": 9,
+          "assignments": 9,
+          "rss": 1207517184,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 5954,
+            "time": "54",
+            "assignedPeople": 10,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1171
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 143,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1171
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 10,
+          "time": "60",
+          "elapsedMs": 77646.28016700002,
+          "modelCalls": 780,
+          "offers": 10,
+          "assignments": 10,
+          "rss": 1241202688,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 6597,
+            "time": "60",
+            "assignedPeople": 11,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1295
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 161,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1295
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 11,
+          "time": "66",
+          "elapsedMs": 85967.98275000002,
+          "modelCalls": 858,
+          "offers": 11,
+          "assignments": 11,
+          "rss": 1278623744,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 7240,
+            "time": "66",
+            "assignedPeople": 12,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1419
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 179,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1419
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 12,
+          "time": "72",
+          "elapsedMs": 95851.81404200004,
+          "modelCalls": 936,
+          "offers": 12,
+          "assignments": 12,
+          "rss": 1347321856,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 7883,
+            "time": "72",
+            "assignedPeople": 13,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1543
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 197,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1543
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 13,
+          "time": "78",
+          "elapsedMs": 104048.27195799991,
+          "modelCalls": 1014,
+          "offers": 13,
+          "assignments": 13,
+          "rss": 1369079808,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 8526,
+            "time": "78",
+            "assignedPeople": 14,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1667
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 215,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1667
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 14,
+          "time": "84",
+          "elapsedMs": 113608.31920899998,
+          "modelCalls": 1092,
+          "offers": 14,
+          "assignments": 14,
+          "rss": 1402535936,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 9169,
+            "time": "84",
+            "assignedPeople": 15,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1791
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 233,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1791
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 15,
+          "time": "90",
+          "elapsedMs": 122693.86591699999,
+          "modelCalls": 1170,
+          "offers": 15,
+          "assignments": 15,
+          "rss": 1483603968,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 9812,
+            "time": "90",
+            "assignedPeople": 16,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1915
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 251,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 1915
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 16,
+          "time": "96",
+          "elapsedMs": 133252.541875,
+          "modelCalls": 1248,
+          "offers": 16,
+          "assignments": 16,
+          "rss": 1523728384,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 10455,
+            "time": "96",
+            "assignedPeople": 17,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2039
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 269,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2039
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 17,
+          "time": "102",
+          "elapsedMs": 139895.70733399992,
+          "modelCalls": 1326,
+          "offers": 17,
+          "assignments": 17,
+          "rss": 1565097984,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 11098,
+            "time": "102",
+            "assignedPeople": 18,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2163
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 287,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2163
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 18,
+          "time": "108",
+          "elapsedMs": 151415.56166599994,
+          "modelCalls": 1404,
+          "offers": 18,
+          "assignments": 18,
+          "rss": 1594523648,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 11741,
+            "time": "108",
+            "assignedPeople": 19,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2287
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 305,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2287
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 19,
+          "time": "114",
+          "elapsedMs": 158469.12383399997,
+          "modelCalls": 1482,
+          "offers": 19,
+          "assignments": 19,
+          "rss": 1623539712,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 12384,
+            "time": "114",
+            "assignedPeople": 20,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2411
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 323,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2411
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 20,
+          "time": "120",
+          "elapsedMs": 170883.77616700018,
+          "modelCalls": 1560,
+          "offers": 20,
+          "assignments": 20,
+          "rss": 1694187520,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 13027,
+            "time": "120",
+            "assignedPeople": 21,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2535
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 341,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2535
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 21,
+          "time": "126",
+          "elapsedMs": 180679.1370000001,
+          "modelCalls": 1638,
+          "offers": 21,
+          "assignments": 21,
+          "rss": 1765801984,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 13670,
+            "time": "126",
+            "assignedPeople": 22,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2659
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 359,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2659
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 22,
+          "time": "132",
+          "elapsedMs": 190733.20904099988,
+          "modelCalls": 1716,
+          "offers": 22,
+          "assignments": 22,
+          "rss": 1836220416,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 14313,
+            "time": "132",
+            "assignedPeople": 23,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2783
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 377,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2783
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 23,
+          "time": "138",
+          "elapsedMs": 206218.98637499986,
+          "modelCalls": 1794,
+          "offers": 23,
+          "assignments": 23,
+          "rss": 1769111552,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 14956,
+            "time": "138",
+            "assignedPeople": 24,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2907
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 395,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 2907
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 24,
+          "time": "144",
+          "elapsedMs": 212940.22483399976,
+          "modelCalls": 1872,
+          "offers": 24,
+          "assignments": 24,
+          "rss": 1933656064,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 15599,
+            "time": "144",
+            "assignedPeople": 25,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3031
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 413,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3031
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 25,
+          "time": "150",
+          "elapsedMs": 224088.41862499993,
+          "modelCalls": 1950,
+          "offers": 25,
+          "assignments": 25,
+          "rss": 1957462016,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 16242,
+            "time": "150",
+            "assignedPeople": 26,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3155
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 431,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3155
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 26,
+          "time": "156",
+          "elapsedMs": 233956.37983299978,
+          "modelCalls": 2028,
+          "offers": 26,
+          "assignments": 26,
+          "rss": 1950236672,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 16885,
+            "time": "156",
+            "assignedPeople": 27,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3279
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 449,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3279
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 27,
+          "time": "162",
+          "elapsedMs": 243710.09479200002,
+          "modelCalls": 2106,
+          "offers": 27,
+          "assignments": 27,
+          "rss": 2051244032,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 17528,
+            "time": "162",
+            "assignedPeople": 28,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3403
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 467,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3403
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 28,
+          "time": "168",
+          "elapsedMs": 254521.39591700025,
+          "modelCalls": 2184,
+          "offers": 28,
+          "assignments": 28,
+          "rss": 1865039872,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 18171,
+            "time": "168",
+            "assignedPeople": 29,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3527
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 485,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3527
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 29,
+          "time": "174",
+          "elapsedMs": 261034.21795800002,
+          "modelCalls": 2262,
+          "offers": 29,
+          "assignments": 29,
+          "rss": 2002796544,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 18814,
+            "time": "174",
+            "assignedPeople": 30,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3651
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 503,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3651
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 30,
+          "time": "180",
+          "elapsedMs": 276266.77404200006,
+          "modelCalls": 2340,
+          "offers": 30,
+          "assignments": 30,
+          "rss": 2194522112,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 19457,
+            "time": "180",
+            "assignedPeople": 31,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3775
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 521,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3775
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 31,
+          "time": "186",
+          "elapsedMs": 283368.0125000002,
+          "modelCalls": 2418,
+          "offers": 31,
+          "assignments": 31,
+          "rss": 1952546816,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 20100,
+            "time": "186",
+            "assignedPeople": 32,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3899
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 539,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 3899
+            }
+          },
+          "activeActors": 34
+        },
+        {
+          "round": 32,
+          "time": "192",
+          "elapsedMs": 293479.4455000004,
+          "modelCalls": 2496,
+          "offers": 32,
+          "assignments": 32,
+          "rss": 2283601920,
+          "people": {
+            "scope": {
+              "kind": "run"
+            },
+            "runId": "company-longitudinal",
+            "cursor": 20743,
+            "time": "192",
+            "assignedPeople": 33,
+            "nonterminatedPeople": 34,
+            "residentActors": 3,
+            "unreleasedWriters": 3,
+            "residentLimit": 3,
+            "historicalParticipants": {
+              "kind": "known",
+              "value": 34,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 4023
+            },
+            "historicalActivations": {
+              "kind": "known",
+              "value": 557,
+              "teamId": "team-07fcbca3-c82e-43de-b73d-c4811a207047",
+              "cursor": 4023
+            }
+          },
+          "activeActors": 34
+        }
+      ],
+      "modelCalls": 2496,
+      "tokens": {
+        "input": 24960,
+        "output": 12480,
+        "costUnits": 0,
+        "basis": "scripted fixture usage"
+      },
+      "recoveredProcess": false,
+      "restored": true
+    }
+  },
+  {
+    "scene": "company",
+    "backend": "sqlite",
+    "recover": true,
+    "command": [
+      "node",
+      "--import",
+      "tsx/esm",
+      "examples/simulation-company/tests/world-longitudinal-company.ts",
+      "examples/simulation-company/tests/fixtures/world-longitudinal-company/cordis.yml"
+    ],
+    "exitCode": 0,
+    "elapsedMs": 40778.49579100075,
+    "result": {
+      "backend": "sqlite",
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "scenario": "company",
+      "rounds": 32,
+      "recoveredProcess": true,
+      "coldRestoreMs": 38109.719334,
+      "modelCalls": 0,
+      "restored": true
+    }
+  }
+]

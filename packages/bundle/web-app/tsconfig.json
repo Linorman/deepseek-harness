@@ -55,6 +55,15 @@
     },
     {
       "path": "../../team/team-channel-summary"
+    },
+    {
+      "path": "../../simulation/simulation"
+    },
+    {
+      "path": "../../simulation/simulation-scenario"
+    },
+    {
+      "path": "../../simulation/simulation-product"
     }
   ]
 }

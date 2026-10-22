@@ -1,0 +1,34 @@
+All commands ran in /Volumes/projects-mac/deepseek-harness. TMPDIR=.local/world-completion/tmp; Python bytecode uses PYTHONPYCACHEPREFIX=.local/world-completion/pycache; Node cache uses XDG_CACHE_HOME=.local/world-completion/cache; uv cache uses UV_CACHE_DIR=.local/world-completion/cache/uv and UV_LINK_MODE=copy. Paths below are relative to that working directory.
+
+Source Python:
+PYTHONPATH=python/sdk/src python/sdk/.venv/bin/python -m pytest -o cache_dir=.local/world-completion/pytest-cache python/sdk/tests/test_simulation_world_cases.py python/sdk/tests/test_simulation_scenario.py python/sdk/tests/test_simulation.py
+Exit 0; 135 passed. Output: c2-sdk-python.log.
+
+Source TypeScript:
+pnpm run test packages/sdk/protocol/tests/simulation-world-results.spec.ts packages/sdk/client/tests/simulation-world.spec.ts packages/sdk/server/tests/simulation-world.spec.ts packages/sdk/client/tests/simulation.spec.ts packages/sdk/server/tests/simulation.spec.ts
+Exit 0; 5 files / 185 tests passed. Output: c2-sdk-typescript.log.
+
+TypeScript declarations:
+pnpm exec tsc -b packages/sdk/protocol packages/sdk/client packages/sdk/server --pretty false
+Exit 0; no diagnostics. Output: c2-sdk-typecheck.log.
+
+Focused TypeScript lint:
+pnpm exec tsx scripts/run-oxlint.ts packages/sdk/protocol/src/simulation.ts packages/sdk/protocol/tests/simulation-world-results.spec.ts packages/sdk/client/tests/simulation-world.spec.ts packages/sdk/server/tests/simulation-world.spec.ts
+Exit 0; no diagnostics. Output: c2-sdk-lint.log.
+
+Installed Python wheel:
+uv build --python python/sdk/.venv/bin/python --wheel --out-dir .local/world-completion/sdk-wheels python/sdk
+uv pip install --python python/sdk/.venv/bin/python --no-deps --target .local/world-completion/sdk-wheel-installed .local/world-completion/sdk-wheels/clocky_sdk-0.0.0.dev0-py3-none-any.whl
+PYTHONPATH=.local/world-completion/sdk-wheel-installed python/sdk/.venv/bin/python -c 'from pathlib import Path; import clocky; import pytest; installed = Path(".local/world-completion/sdk-wheel-installed").resolve(); assert Path(clocky.__file__).resolve().is_relative_to(installed), clocky.__file__; print("Installed wheel imported:", Path(clocky.__file__).resolve()); raise SystemExit(pytest.main(["-o", "cache_dir=.local/world-completion/pytest-cache", "python/sdk/tests/test_simulation_world_cases.py", "python/sdk/tests/test_simulation_scenario.py", "python/sdk/tests/test_simulation.py"]))'
+All three exited 0; import location verified in installed target, 135 parser/client tests passed. Output: c2-sdk-wheel.log. This verifies installed parser/client consumption; it does not run the real-server autonomous snapshot.
+
+Bilingual documentation:
+pnpm run verify-translation-pairing --write python/sdk/README.md
+pnpm run verify-translation-pairing --write packages/sdk/protocol/README.md
+Both exited 0. Output: c2-sdk-doc-pairing.log.
+pnpm run verify-translation-pairing python/sdk/README.md packages/sdk/protocol/README.md
+Exit 0; 2 complete pairs checked in sync. Output: c2-sdk-doc-pairing.log.
+
+Whitespace:
+git diff --check -- packages/sdk python/sdk
+Exit 0; no diagnostics.

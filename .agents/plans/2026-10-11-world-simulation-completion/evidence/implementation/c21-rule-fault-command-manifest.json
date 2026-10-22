@@ -1,0 +1,64 @@
+{
+  "scope": "C21 rule-only new four-file fixture; consumes explicitly frozen current source + actual compiled runtime artifact inventory",
+  "fixtureHash": "980461aa67e7009c7af5b9c12e51ca2ca7003e166817c71262c3ada23a8e3b17",
+  "fixtureFiles": [
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-external-fault/cordis.yml",
+      "bytes": 107,
+      "sha256": "e7aeeac0192a0b31546e275d7b72a6b4e6d2f54db95058e1cdb00852d1439bd2"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-fault-model.ts",
+      "bytes": 4262,
+      "sha256": "e1452017c2cedd8f0872284e709abf1899612b39a9488b63b1b7a24278aca9ef"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-fault-scenario.ts",
+      "bytes": 17426,
+      "sha256": "a07ca7b961c63903f0595abeb0b41e03df521fd91b58ba2053456a106e7e1422"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-external-fault.snapshot.ts",
+      "bytes": 4908,
+      "sha256": "a4487b3b1bbbbd2685832866ad348242d501fdcb30ba86dbffd152a9ceeabd06"
+    }
+  ],
+  "sourceHash": "ef482c197b2c6b9f6b01caac6b7c44efb53f88e77333192aea9458eab87be5e2",
+  "compiledHash": "503691929390b28686c991b564d461a1c6e29e42ee40e6ecd5bbd2827fcf00f5",
+  "commands": [
+    {
+      "command": "fault_evidence_root=$(cat .local/world-completion/c21-external-faults/current-validation-directory.txt)\nTMPDIR=\"$fault_evidence_root\" WORLD_EXTERNAL_FAULT_EVIDENCE_ROOT=\"$fault_evidence_root\" CLOCKY_SNAPSHOT_MAX_CONCURRENCY=3 pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-external-fault.snapshot.ts > .local/world-completion/c21-external-faults/final-source-matrix.log 2>&1",
+      "exitCode": 0,
+      "passed": 48,
+      "durationSeconds": 218.63
+    },
+    {
+      "command": "fault_evidence_root=$(cat .local/world-completion/c21-external-faults/current-validation-directory.txt)\nTMPDIR=\"$fault_evidence_root\" WORLD_EXTERNAL_FAULT_EVIDENCE_ROOT=\"$fault_evidence_root\" CLOCKY_EXAMPLE_MODE=lib CLOCKY_SNAPSHOT_MAX_CONCURRENCY=3 pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-external-fault.snapshot.ts > .local/world-completion/c21-external-faults/final-lib-matrix.log 2>&1",
+      "exitCode": 0,
+      "passed": 48,
+      "durationSeconds": 59.69
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/c21-external-faults\" pnpm exec tsc -p .local/world-completion/c21-external-faults/tsconfig-fault-fixture.json > .local/world-completion/c21-external-faults/fixture-types-corrected.log 2>&1",
+      "exitCode": 0,
+      "scope": "Explicit three fixture TS files, inherited Host refs, no emit or builds."
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/c21-external-faults\" pnpm exec tsx scripts/run-oxlint.ts --type-aware examples/simulation-company/tests/world-external-fault-scenario.ts examples/simulation-company/tests/world-external-fault-model.ts examples/simulation-company/tests/world-external-fault.snapshot.ts > .local/world-completion/c21-external-faults/fixture-lint-corrected.log 2>&1",
+      "exitCode": 0
+    }
+  ],
+  "evidenceRoot": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/validation-20261012T100312Z-f74a988f",
+  "actualCounts": {
+    "cases": 96,
+    "SIGKILL": 96,
+    "coldProcesses": 192,
+    "OSProcesses": 288,
+    "rawJSON": 672
+  },
+  "exclusions": [
+    "Old same-root 288 process files and mixed pilot artifacts have unknown/partial provenance and are excluded from final counts; all retained.",
+    "Not a random-policy sample: installed rule is deterministic availability arithmetic over actual original resource inputs.",
+    "No representative preparation/retirement or cancellation-race completion claim; root C19/C20/C22 cover those independently."
+  ]
+}

@@ -54,3 +54,10 @@ it('keeps exact decision time and separates checkpoint saving from source verifi
   expect(view.getByText(en.latest)).toBeDefined()
   expect(view.getAllByText(en.unavailable)).toHaveLength(2)
 })
+
+it('leads decision and operation rows with readable identities and keeps the exact ones available', async () => {
+  const { readableId } = await import('../src/client/CollectionTable.tsx')
+  expect(readableId('world-person:3f2a9c10-1234-4abc-8def-0123456789ab')).toBe('world-person · 3f2a9c10')
+  expect(readableId('world/1/decision/0')).toBe('decision 0')
+  expect(readableId('buyer')).toBe('buyer')
+})

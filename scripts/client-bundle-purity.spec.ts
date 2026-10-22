@@ -2,9 +2,11 @@
  * Pins shared client-bundle preset rules: the module-edge purity gate and
  * the physical watch dependencies hidden behind virtual CSS Modules.
  */
+import { createRequire } from 'node:module'
+import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
-import { clientBundle, requestedExternals } from '../packages/client/tsdown.client.ts'
+import { browserFieldTarget, clientBundle, requestedExternals } from '../packages/client/tsdown.client.ts'
 
 type ResolveId = (source: string) => null | { id: string; external: boolean }
 
@@ -81,6 +83,27 @@ describe('client bundle purity gate', () => {
     expect(resolveId('@clocky/clocky-brand')).toBeNull()
     expect(resolveId('@clocky/clocky-team/schema')).toBeNull()
     expect(resolveId('@clocky/clocky-simulation-product/schema')).toBeNull()
+    expect(resolveId('@clocky/clocky-simulation-product/world-schema')).toBeNull()
+    expect(resolveId('@clocky/clocky-simulation-product/world-read-schema')).toBeNull()
+    expect(resolveId('@clocky/clocky-simulation-product/world-management-schema')).toBeNull()
+    expect(resolveId('@clocky/clocky-simulation/world-management')).toBeNull()
+    expect(() => resolveId('@clocky/clocky-simulation-product/world-management-schema/private')).toThrow(/purity/)
+    expect(() => resolveId('@clocky/clocky-simulation/world-management/private')).toThrow(/purity/)
+    expect(resolveId('@clocky/clocky-simulation/personnel-obligations')).toBeNull()
+    expect(() => resolveId('@clocky/clocky-simulation/personnel-obligations/private')).toThrow(/purity/)
+    expect(() => resolveId('@clocky/clocky-simulation-product/world-read-schema/private')).toThrow(/purity/)
+    expect(() => resolveId('@clocky/clocky-simulation-product/world-schema/private')).toThrow(/purity/)
+    expect(resolveId('@clocky/clocky-simulation-scenario')).toBeNull()
+    expect(resolveId('@clocky/clocky-simulation/world')).toBeNull()
+    for (const leaf of [
+      'tokens', 'world-domain', 'world-domain-types', 'world-domains', 'world-domain-registry', 'world-authoring', 'world-generation',
+      'run-control-observation',
+    ]) {
+      expect(resolveId(`@clocky/clocky-simulation/${leaf}`)).toBeNull()
+      expect(() => resolveId(`@clocky/clocky-simulation/${leaf}/private`)).toThrow(/purity/)
+    }
+    expect(() => resolveId('@clocky/clocky-simulation-scenario/invariant')).toThrow(/purity/)
+    expect(() => resolveId('@clocky/clocky-simulation/world/private')).toThrow(/purity/)
     expect(resolveId('@clocky/clocky-simulation/checkpoint-diagnostics-schema')).toBeNull()
     expect(() => resolveId('@clocky/clocky-simulation/checkpoint-diagnostics')).toThrow(/purity/)
     expect(() => resolveId('@clocky/clocky-simulation')).toThrow(/purity/)
@@ -214,5 +237,19 @@ describe('client bundle CSS Modules watch graph', () => {
     await plugin.load?.call({ addWatchFile }, virtualId)
 
     expect(addWatchFile).toHaveBeenCalledExactlyOnceWith(stylesheet)
+  })
+})
+
+describe('browser builds of inlined dependencies', () => {
+  const yaml = `${dirname(createRequire(new URL('../packages/simulation/simulation-scenario/package.json', import.meta.url))
+    .resolve('yaml/package.json'))}/`
+  it('maps a Node build file to the browser build its package declares', () => {
+    // yaml's Node build imports `process`, which the browser module table cannot answer.
+    expect(browserFieldTarget(`${yaml}dist/index.js`)).toBe(`${yaml}browser/index.js`)
+    expect(browserFieldTarget(`${yaml}dist/util.js`)).toBe(`${yaml}browser/dist/util.js`)
+  })
+  it('leaves files without a declared browser replacement unchanged', () => {
+    expect(browserFieldTarget(`${yaml}dist/log.js`)).toBeUndefined()
+    expect(browserFieldTarget(fileURLToPath(import.meta.url))).toBeUndefined()
   })
 })

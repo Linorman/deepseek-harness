@@ -1,5 +1,9 @@
 # @clocky/clocky-host-apiproxy
 
+`simulation.raw.archive` 提供单独授权的原始保留分页。仅有 run 登记读取或 case/Persona 正文权限不能授权该请求；每页文字携带原始版本与未验证状态，调用方不能覆盖来源路径、provider、版本或权限。
+
+`simulation.runs.run-control` 提供经鉴权的持久化停止目标更新/解除。Fetch 客户端保留显式 null，并校验 run、命令与原始目标身份。准入不等待当前模型轮完成，也不会隐式开始调度。
+
 [English](README.md) | 中文
 
 `simulation.requests.list` 读取一个所属运行的有界原始 receipt 元数据，不含保留的创建或审核输入。继续游标绑定当前主体、凭据代际、运行 revision 与页大小；历史变化或服务重启后须重新读取首页。`simulation.requests.retry` 只接受精确运行和原命令身份：终态结果不变，已受理命令按当前准入规则执行后端保留的原输入。未知或无关命令会被拒绝，不分配新命令。
@@ -119,6 +123,10 @@ Team management API 会保持 Team、participant、task 与 channel read 有界�
 
 `AbstractApiClient` 持有全部协议不变量：签发 rpcId、包装／解包信封、Zod 解析、SSE 帧解码、一元请求超时，以及按微任务批处理的信封观测（`subscribeEnvelopes`）；平台子类只提供 `doFetch` 传输环节。`InProcessApiClient` 以 `toFetchHandler(api)` 为基础，仍是同构接点：它运行完整的协议序列化与校验路径而不经过网络，供需要该路径的调用方和载体测试使用。产品的 `clocky --profile headless` 是直连 core 的入口，不挂载本包。
 
+## 私密备份导出
+
+`simulation.backup.export` 通过已认证产品 owner 读取已完成的私密归档字节。仅有运行所有权不能导出，仍需独立原始记录披露授权。HTTP 传输校验封闭 DTO 和原始 run/command 选择；导出不调用模型，也不获取运行中的 owner。 完整分支导出还要求祖先的当前披露授权，或针对该分支的显式 `includeProvenance: true` 授权；只有分支自身权限不能读取祖先字节。
+
 ## 模型体验
 
 无。该包定义客户端与宿主间的 wire 约定和载体，其中没有任何内容会进入模型请求。
@@ -137,3 +145,5 @@ Team management API 会保持 Team、participant、task 与 channel read 有界�
 - **搜索失败会包含提供方诊断信息**：网关是单用户本地服务。将其暴露给多名用户的载体必须用可安全公开的诊断信息替代内部搜索细节。
 - **Linux 原生选择器依赖桌面工具**：在 `native` 能力下，Zenity 和 KDialog 均未安装时，`host.pickDirectory` 会给出包含解决建议的错误提示；组合层面的回退是 browse 后端（见 [native 后端 README](../directory-picker-native/README.zh.md)）。
 - **冷列表提示只向“保持可见、排序偏旧”降级**：projection cache miss 或陈旧的 `lastPromptAt` 会回退到 `createdAt`，除非符合资格的小工件提供精确折叠，因此最近工作过的大 Session 可能在下一个 checkpoint 前排得偏低。大于 `coldBlankProbeMaxBytes` 的空白工件，或来自不提供 `locate()` 的后端的空白工件会保持可见。该阈值在 `readFrom()` 前检查，而非由 persistence 强制，因此工件并发增长可能增加一次探测的读取成本，但不会改变空白状态的安全方向。[有界空白验证决策](../../../.agents/notes/implemented/bug-fix/2026-08-13-bounded-cold-blank-verification.zh.md)规定了这个安全方向；权威且精确的最近时间索引仍属于[最后活动索引提案](../../../.agents/notes/proposed/architecture/2026-07-29-durable-last-activity-index.zh.md)的范围。
+
+`simulation.world.branch` 和 `simulation.world.branch.read` 保留原分支 UUID，返回关闭真实效果的 paused 仿真。`simulation.world.causal` 和 `simulation.world.compare` 要求独立授权的不可变 retention 来源。Fetch client 校验分支 command/source/记忆策略、因果来源及完整字节/节点预算，以及两侧比较观察。输入不接收 Host 工厂、私密归档字节或权限覆盖。

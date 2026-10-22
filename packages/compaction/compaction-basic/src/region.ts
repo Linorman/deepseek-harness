@@ -14,7 +14,7 @@ import {
   toolPairingBalancedAfter,
   toolPairingBalancedBefore,
 } from '@clocky/clocky-compaction'
-import type { CompactionResult } from '@clocky/clocky-compaction'
+import type { CompactionNoGain, CompactionResult } from '@clocky/clocky-compaction'
 import type { CommandId } from '@clocky/clocky-commands/brand'
 import { createUserMessage, errorChain } from '@clocky/clocky-llm'
 import type { Message, UserMessage } from '@clocky/clocky-llm'
@@ -59,6 +59,8 @@ interface CompactionTransactionOptions {
   readonly flush?: () => Promise<void>
   /** Manual command that initiated this transaction, when present. */
   readonly sourceCommandId?: CommandId
+  /** Replay identity for an automatically selected attempt. */
+  readonly noGainIdentity?: (prepared: PreparedCompaction) => Omit<CompactionNoGain, 'summaryTokens'>
 }
 
 interface CompactionEntryState {
@@ -73,6 +75,12 @@ interface CompactionEntryState {
  * caller can report the two causes differently.
  */
 class SurfaceChangedError extends Error {}
+
+/** A valid summary that cannot reduce the selected, consistently priced history. */
+export class CompactionNoGainError extends Error {
+  /** @param summaryTokens - framed replacement estimate. @param message - shrink diagnostic. */
+  constructor(readonly summaryTokens: number, message: string) { super(message) }
+}
 
 /** Whether the summary may still replace the span it was built from. */
 type StabilityCheck = (
@@ -158,7 +166,7 @@ export async function compactSurfaceRegion(
   options: CompactionTransactionOptions,
   signal?: AbortSignal,
 ): Promise<CompactionResult> {
-  if (options.owner === null) signal?.throwIfAborted()
+  signal?.throwIfAborted()
   const selection = validateSurfaceRegion(session, start, end)
   const entryState = inspectCompactionEntryState(session.events)
   assertCompactionInactive(
@@ -195,10 +203,12 @@ export async function compactSurfaceRegion(
   let result: CompactionResult | undefined
   let closed = false
   let closing = false
+  let noGainIdentity: Omit<CompactionNoGain, 'summaryTokens'> | undefined
   let stage: TransactionFailure['stage'] = 'summary'
 
   try {
     const prepared = prepareCompaction(dependencies, session, selection)
+    noGainIdentity = options.noGainIdentity?.(prepared)
     const summarized = await summarizeCompaction(
       dependencies,
       prepared,
@@ -207,7 +217,7 @@ export async function compactSurfaceRegion(
       options.sourceCommandId,
       signal,
     )
-    if (options.owner === null) signal?.throwIfAborted()
+    signal?.throwIfAborted()
     assertStable(dependencies, session, summarized)
     stage = 'commit'
     const pending = commitCompactionBody(session, startEvent, summarized)
@@ -220,7 +230,12 @@ export async function compactSurfaceRegion(
     if (!closing) {
       closing = true
       try {
-        session.append('compaction/end', { ...lifecycle, error: errorChain(error) })
+        session.append('compaction/end', {
+          ...lifecycle, error: errorChain(error),
+          ...error instanceof CompactionNoGainError && noGainIdentity !== undefined
+            ? { noGain: { ...noGainIdentity, summaryTokens: error.summaryTokens } }
+            : {},
+        })
         closed = true
       } catch (closeError: unknown) {
         failure = { error: closeError, stage: 'commit' }
@@ -236,7 +251,7 @@ export async function compactSurfaceRegion(
     }
   }
 
-  if (options.owner === null) signal?.throwIfAborted()
+  signal?.throwIfAborted()
   if (failure !== undefined) {
     if (options.owner === null) throwManualFailure(failure)
     throw failure.error
@@ -366,13 +381,15 @@ async function summarizeCompaction(
   signal?: AbortSignal,
 ): Promise<SummarizedCompaction> {
   const summaryResult = await dependencies.summarize(prepared.input, agent, signal)
+  signal?.throwIfAborted()
   const checkpointMessage = createUserMessage({
     content: frameSummary(summaryResult.summary),
     source: compactCheckpointSource(compactionId, sourceCommandId),
   })
   const framedSummaryTokenCount = dependencies.meter.estimateMessage(checkpointMessage)
   if (framedSummaryTokenCount >= prepared.shadowedTokenCount) {
-    throw new Error(
+    throw new CompactionNoGainError(
+      framedSummaryTokenCount,
       `summary is not smaller than the shadowed content (${framedSummaryTokenCount} estimated framed tokens >= ${prepared.shadowedTokenCount})`,
     )
   }
@@ -495,7 +512,7 @@ function completeCompaction(
  * @param shadowedSeqs - the surface-node seqs, in order, being compacted.
  * @returns the replayed conversation prefix to condense.
  */
-function buildSummarizationInput(
+export function buildSummarizationInput(
   session: Session,
   shadowedSeqs: readonly number[],
 ): SummarizationInput {

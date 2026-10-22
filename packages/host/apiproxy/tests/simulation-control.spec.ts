@@ -54,3 +54,20 @@ it('authenticates and correlates control, durable phase commands and original ou
     expect(h.requests).toEqual([])
   } finally { await h.close() }
 })
+
+it('authenticates stop updates and preserves explicit null clears over fetch', async () => {
+  const h = await ownerFixture('json')
+  try {
+    await h.ctx.plugin(UserQuestions)
+    const api = createApiProxy(h.ctx, { cwd: process.cwd(), defaultModelSelection: () => undefined })
+    const client = new InProcessApiClient(toFetchHandler(api, { authenticatedProductCall: call() }))
+    const runId = await h.create(), input = { runId, commandId: 'clear-fetch', target: null }
+    const result = await client.simulations.updateRunControl(input)
+    expect(result.result).toMatchObject({ ok: true, value: { receipt: { commandId: 'clear-fetch', targetId: null },
+      control: { phase: 'paused', stopTarget: { state: 'cleared', target: null } } } })
+    const wrong = new InProcessApiClient(toFetchHandler(api, { authenticatedProductCall: call(undefined, 'other') }))
+    expect((await wrong.simulations.updateRunControl(input)).result)
+      .toMatchObject({ ok: false, error: { code: 'simulation-product-forbidden' } })
+    expect(h.requests).toHaveLength(0)
+  } finally { await h.close() }
+})

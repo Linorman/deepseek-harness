@@ -1,0 +1,393 @@
+{
+  "scope": "Independent eight-case evaluation-before completion follow-up only; original complete96 corpus remains archived",
+  "sourceHash": "abcf6065f1a8fb8471d6e3665b5ddd9d338abb38d28eba32150e4a7aed125f8b",
+  "compiledHash": "503691929390b28686c991b564d461a1c6e29e42ee40e6ecd5bbd2827fcf00f5",
+  "sourceAndJSUnchanged": true,
+  "checks": [
+    {
+      "mode": "src",
+      "scene": "company",
+      "backend": "json",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802190055,
+      "priorUnappendedCandidateRecordedAt": 1791802183664,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "src",
+      "scene": "company",
+      "backend": "sqlite",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802189633,
+      "priorUnappendedCandidateRecordedAt": 1791802183319,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "src",
+      "scene": "laboratory",
+      "backend": "json",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802200167,
+      "priorUnappendedCandidateRecordedAt": 1791802193877,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "src",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802199816,
+      "priorUnappendedCandidateRecordedAt": 1791802193552,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "json",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802181102,
+      "priorUnappendedCandidateRecordedAt": 1791802180147,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802180721,
+      "priorUnappendedCandidateRecordedAt": 1791802179781,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802183132,
+      "priorUnappendedCandidateRecordedAt": 1791802182186,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "firstColdActualRecords": 0,
+      "secondColdActualRecords": 1,
+      "firstActualRecordedAt": 1791802182724,
+      "priorUnappendedCandidateRecordedAt": 1791802181831,
+      "zeroReductionOnRetry": true,
+      "zeroAppendOnRetry": true,
+      "modelCalls": 0
+    }
+  ],
+  "files": [
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-json-evaluation-append-before-barrier.json",
+      "bytes": 110538,
+      "sha256": "da7bd24fa2162478e7d7bc306c36330fff5f928df859dd9bc452c15a7355e3a5"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-json-evaluation-append-before-cold-1.json",
+      "bytes": 98996,
+      "sha256": "c9e448dd5bfc6b875845a399e73bd8b45d693f7cae9ff1916e83a147f6983537"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-json-evaluation-append-before-cold-2.json",
+      "bytes": 152919,
+      "sha256": "d2e8e238e63ffc1668c3794c328ee615a45e9180bd36bfd432fa282c38482c8c"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-json-evaluation-append-before-input.json",
+      "bytes": 9726,
+      "sha256": "2a3d929e1f5aacdc630e8b5825199c14b05341a071a133648cc9345500e7ec75"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-json-evaluation-append-before-process-0.json",
+      "bytes": 689,
+      "sha256": "e2e5f028f80114d8ecfc913917632a9aeb4c3c253b449ea92345c5bf53a78fae"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-json-evaluation-append-before-process-1.json",
+      "bytes": 888,
+      "sha256": "9cd6daff9729dabd8ceb427149ed8024ff8fd98b59ee8f48f9f618df0ee4acf5"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-json-evaluation-append-before-process-2.json",
+      "bytes": 887,
+      "sha256": "9f255b261f82fdd6209c392435b6255fe5e6ed72a737fb128b908efdcdd13b30"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-sqlite-evaluation-append-before-barrier.json",
+      "bytes": 110542,
+      "sha256": "e416b3fbda3bfb68b0e34aa58d1e39cd7e3c82fe942ba8ef53af8979914c5654"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-sqlite-evaluation-append-before-cold-1.json",
+      "bytes": 99000,
+      "sha256": "30ce2f1a0f8604370af4a52b6deb0214769d338bd90b6557da7c57daa8d1b1dc"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-sqlite-evaluation-append-before-cold-2.json",
+      "bytes": 152923,
+      "sha256": "45fdb340224c44fd8d4c8c9d46de1116602fa8e1a8d68482874428e1911e3aa6"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-sqlite-evaluation-append-before-input.json",
+      "bytes": 9726,
+      "sha256": "2a3d929e1f5aacdc630e8b5825199c14b05341a071a133648cc9345500e7ec75"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-sqlite-evaluation-append-before-process-0.json",
+      "bytes": 691,
+      "sha256": "e701cea511a633bf869f1a7bab9779882ded0b9a804bfe31616a860594894877"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-sqlite-evaluation-append-before-process-1.json",
+      "bytes": 890,
+      "sha256": "43d183eb98ef58f369fe39b0012365f02cf4b886ddea16bde025091891fd1801"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-company-sqlite-evaluation-append-before-process-2.json",
+      "bytes": 889,
+      "sha256": "3f69b260fa665300160724a16adc301cff17b8e15e1c456b77b55daac2276245"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-json-evaluation-append-before-barrier.json",
+      "bytes": 111116,
+      "sha256": "ca78306d9c29af15a638a17caa61f67a725e85acabc2c2e9b2a9bde7152981e0"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-json-evaluation-append-before-cold-1.json",
+      "bytes": 99502,
+      "sha256": "cb84626261be03a3383814bf77df414883c104eac17fc9c2a8e9ffbd7a02110f"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-json-evaluation-append-before-cold-2.json",
+      "bytes": 153622,
+      "sha256": "8af64b53609c4466680def0a1d5b5d67d680016e32bd6d8d5df49aef9128666f"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-json-evaluation-append-before-input.json",
+      "bytes": 9861,
+      "sha256": "efb046cf069228d5265c06c922cf7dae5376054264173acbcec376b425303db2"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-json-evaluation-append-before-process-0.json",
+      "bytes": 692,
+      "sha256": "1c7afe7a996dc11b98f744d1cf65956c844923a67285f03e5b3e69c0275225fb"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-json-evaluation-append-before-process-1.json",
+      "bytes": 894,
+      "sha256": "194fa12881582e6aae1486ff8b110721927b8714184b26822724f8dad1c907b3"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-json-evaluation-append-before-process-2.json",
+      "bytes": 893,
+      "sha256": "9f232038e735853b124df2726e1de711191ebc0c8cd4b04b231a8032a87d65d4"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-sqlite-evaluation-append-before-barrier.json",
+      "bytes": 111120,
+      "sha256": "9084b219ac52ca933463ac83901c935df57e5a5f148e83669e09ef5c3e684c1c"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-sqlite-evaluation-append-before-cold-1.json",
+      "bytes": 99506,
+      "sha256": "1b09091e90ff502f2b9f36189e297d59a538013b6f56cce69af1a71fb0e4e2c6"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-sqlite-evaluation-append-before-cold-2.json",
+      "bytes": 153626,
+      "sha256": "47327cea3e16f9e829ae6f52dba63a4db8110e91470b8b2bdc27eeb14b6203af"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-sqlite-evaluation-append-before-input.json",
+      "bytes": 9861,
+      "sha256": "efb046cf069228d5265c06c922cf7dae5376054264173acbcec376b425303db2"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-sqlite-evaluation-append-before-process-0.json",
+      "bytes": 694,
+      "sha256": "c9c2d97e56b6aa8b78e8eabe7dcfed62688c53c7047672f8ff34913d0412d07c"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-sqlite-evaluation-append-before-process-1.json",
+      "bytes": 896,
+      "sha256": "9735c3f83cba8adeb76782fc0c34808aed562387e3044ebaced66a264c514343"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/lib-laboratory-sqlite-evaluation-append-before-process-2.json",
+      "bytes": 895,
+      "sha256": "cd881ea1efec9144e1bafa8d3757b703af8b34a5a92f5bda690a0adeaaee5a5c"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-json-evaluation-append-before-barrier.json",
+      "bytes": 110538,
+      "sha256": "08f4354171500380c7b34c9050f078bcea6ab43d22b6b55078592ac1fbea229e"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-json-evaluation-append-before-cold-1.json",
+      "bytes": 98996,
+      "sha256": "e03758dedebc0ad2397004e366ca395cbeabcef719b0fefbe21a56ec2befd1df"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-json-evaluation-append-before-cold-2.json",
+      "bytes": 152919,
+      "sha256": "488575cd11552828c5143f4ef5e5ab0ceceaea151bc7afc67547532c0a12f33f"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-json-evaluation-append-before-input.json",
+      "bytes": 9726,
+      "sha256": "2a3d929e1f5aacdc630e8b5825199c14b05341a071a133648cc9345500e7ec75"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-json-evaluation-append-before-process-0.json",
+      "bytes": 821,
+      "sha256": "0b709045a151b692be9ffe276278203ecf2a385c5a711d648cdfab071782943f"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-json-evaluation-append-before-process-1.json",
+      "bytes": 1020,
+      "sha256": "a736bac426b33d154a454a5bc0e30d126878db48d10cd04d7bcf71e045d8f10d"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-json-evaluation-append-before-process-2.json",
+      "bytes": 1019,
+      "sha256": "11ae927055102a22efdd8ab5297c35471af03086c4eebd3c20273733c4a6b111"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-sqlite-evaluation-append-before-barrier.json",
+      "bytes": 110542,
+      "sha256": "24f70d280606babf7da59c96279b3cfe90cb8133a534735c4bb47eabd9521a79"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-sqlite-evaluation-append-before-cold-1.json",
+      "bytes": 99000,
+      "sha256": "9cb1085b540efaab3282d72ea625a0c409296b2b23cc97a577f920bb8c202a2c"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-sqlite-evaluation-append-before-cold-2.json",
+      "bytes": 152923,
+      "sha256": "834b057544eaab66989828f71681c5d2ca0d90eb847c1ffbc90cc02617b31037"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-sqlite-evaluation-append-before-input.json",
+      "bytes": 9726,
+      "sha256": "2a3d929e1f5aacdc630e8b5825199c14b05341a071a133648cc9345500e7ec75"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-sqlite-evaluation-append-before-process-0.json",
+      "bytes": 823,
+      "sha256": "4f33e276005de1007aa2cbfbbf17aa7e219d2716b088be3139fe6b83c388006a"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-sqlite-evaluation-append-before-process-1.json",
+      "bytes": 1022,
+      "sha256": "3ea0eca387811c51486e3c8490578f20514570525afb73a408352dfbf3debf35"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-company-sqlite-evaluation-append-before-process-2.json",
+      "bytes": 1021,
+      "sha256": "aa5ae4836173272b16826c5169c49ec4b0ceed940c83c1c0d236d9db123ef5af"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-json-evaluation-append-before-barrier.json",
+      "bytes": 111116,
+      "sha256": "f1b6cccc7937952e9673d00b077ebca5b4dd00a203e6d7d72bcbbb254d7d74a4"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-json-evaluation-append-before-cold-1.json",
+      "bytes": 99502,
+      "sha256": "5a7ebf5060ae6fdb423e379324174eac0e0a2d9d91bd8d539ef50a8c5a1532f4"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-json-evaluation-append-before-cold-2.json",
+      "bytes": 153622,
+      "sha256": "75715edf2a7cb0800b83dae71ed974049784e7784ada4c828e7e5c9d6d7ebaf6"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-json-evaluation-append-before-input.json",
+      "bytes": 9861,
+      "sha256": "efb046cf069228d5265c06c922cf7dae5376054264173acbcec376b425303db2"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-json-evaluation-append-before-process-0.json",
+      "bytes": 824,
+      "sha256": "b2d959525ddf8d36d3bbbdbcc6b01830c798db151031b29697f29def3f486d34"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-json-evaluation-append-before-process-1.json",
+      "bytes": 1026,
+      "sha256": "b0941b25bffa7b0c65443695e9986236491e9c88b88eaf29abf1ea9f9c642ab6"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-json-evaluation-append-before-process-2.json",
+      "bytes": 1025,
+      "sha256": "f8609f0c0ca85550b4cf3431ff78090651a56bb9f16decfea1d8950b9caaefe6"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-sqlite-evaluation-append-before-barrier.json",
+      "bytes": 111120,
+      "sha256": "89116d5f2e131aae25e1aa1f364dbd69b9a1f91e4aca090673a6fb3e182f0ffc"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-sqlite-evaluation-append-before-cold-1.json",
+      "bytes": 99506,
+      "sha256": "2d71792ee740309524e2e80a7caa2896dc0db1d03ca09d0298adf206e0f955c4"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-sqlite-evaluation-append-before-cold-2.json",
+      "bytes": 153626,
+      "sha256": "dccdce76aa9e1b5067a2b4998511639d6fa15777261ce2e268d025ac15cded42"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-sqlite-evaluation-append-before-input.json",
+      "bytes": 9861,
+      "sha256": "efb046cf069228d5265c06c922cf7dae5376054264173acbcec376b425303db2"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-sqlite-evaluation-append-before-process-0.json",
+      "bytes": 826,
+      "sha256": "c069233d0e3d3c5335de0ae70ed78816bda6218556d496d46a7f2a408e323df5"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-sqlite-evaluation-append-before-process-1.json",
+      "bytes": 1028,
+      "sha256": "50b383e414e3dc253f6a3931d221e8a2ad22343172f56159557f5ee572c1f6cf"
+    },
+    {
+      "path": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c21-external-faults/evaluation-before-completion/validation-20261012T104702Z-a5a0fbc2/src-laboratory-sqlite-evaluation-append-before-process-2.json",
+      "bytes": 1027,
+      "sha256": "f4226549d0127f84e5f555d2230b1b430f24271950ff77db124cc35ea9d1e45b"
+    }
+  ],
+  "counts": {
+    "cases": 8,
+    "actualSIGKILL": 8,
+    "coldProcesses": 16,
+    "OSProcesses": 24,
+    "rawJSON": 56
+  }
+}

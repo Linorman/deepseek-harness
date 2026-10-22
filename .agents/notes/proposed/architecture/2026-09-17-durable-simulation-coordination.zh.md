@@ -4,6 +4,12 @@ Status: proposed
 
 [English](2026-09-17-durable-simulation-coordination.md) | 中文
 
+
+[World driver revision 竞争](../../implemented/bug-fix/2026-10-13-world-driver-revision-collisions.zh.md)对 Native 乐观 cursor 拒绝分类，不旁路准入或隐藏无关 IO 失败；下述更广提案仍保持独立范围。
+
+
+[本地资源 hold 账本](../../implemented/architecture/2026-10-13-native-resource-reservation-ledger.zh.md)提供守恒可用量和模拟到期；财务招聘及未知跨 owner 清理仍属于独立要求。
+
 ## Problem
 
 长期社会、组织与资源模拟需要超越单次 Agent 激活的持久身份、责任、信念和模拟时间。聊天历史无法确定请求是否已接受、承诺是否已兑现、行动是否改变了世界。数千个实体不应要求数千个常驻模型循环。
@@ -11,6 +17,8 @@ Status: proposed
 Clocky 的 Team 已经拥有可靠协作能力。模拟需要保留其权限与 Session 重建规则，同时补充业务状态、延迟感知、确定的提交顺序和重启恢复。执行父节点不能等同于上级，投递回执不能等同于业务接受，模型的断言不能等同于世界事实。
 
 ## Proposal
+
+[世界调控者 MVP](../../implemented/feature/2026-10-08-world-director-mvp.zh.md)以独立本地范围交付世界领域、角色请求增员、生成 Persona 的持久化和运行期身份准备。它保留本说明的协同与恢复规则，其开发计划不代表本说明中的延后能力已经交付。
 
 在 Team 之上新增显式启用的 Simulation 组合。Entity、Interaction、World、Knowledge 与调度保持各自的逻辑归属，首个提供方对每个 run 使用一条 Simulation 日志和一个串行写入者。这让 Decision 接受与其 outbox 真正原子写入，无需跨日志事务。只有独立演进需要时才拆分存储或包。
 
@@ -27,6 +35,8 @@ Clocky 的 Team 已经拥有可靠协作能力。模拟需要保留其权限与 
 调度键和计数器是日志事实，不是现实时间定时器。wake/期限事件的创建与来源业务操作共用批次；消费原子转移责任为持久 wake 或期限结果。microstep 停滞保留待处理工作，直到显式取消并恢复，而不是静默越过它推进时钟。
 
 Outbox 尝试保留精确的已接受频道与 payload 指纹。传输 IO 不持有 run 串行队列；终态回执或不确定尝试通过该队列写回。重试预算限制自动技术重试，显式恢复记录允许继续幂等对账。发送者退役不能删除已接受操作；权限丢失后只允许对账目标已提交的既有结果。
+
+v1 基础将完整初始编写数据固定在 prior Native 初始化记录中。后续单个记录发布 world/ready、原事实和 belief、场景来源制度、资源、模拟身份与有限日历。精确重试保留 canonical 身份；同记录初始事实核对完整原 prior 来源。场景制度不虚构治理投票，后续真实提案采用冻结委员会策略。日历 occurrence 记录触发时接收者和一个有界后继。公开 v1 预检/创建/导出已通过实际领域 pin 可用性检查，保留完整原投影与元数据。两端 SDK parser 接受严格定义与预览；Python 的线格式序列化保留必需的 null 区间终点。完整作者 UI、SDK 分发流程及 director 事件执行仍待完成；不支持的事件执行返回字段诊断。这些基础能力不代表 MVP 完成。
 
 ## 现有实现与必要扩展
 

@@ -1,0 +1,332 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-booking.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-booking.snapshot.ts (4 tests | 4 failed) 12306ms
+     × books a room in company and restores the exact original mutation without inference 4272ms
+     × books a room in laboratory and restores the exact original mutation without inference 2640ms
+     × books a room in company and restores the exact original mutation without inference 2692ms
+     × books a room in laboratory and restores the exact original mutation without inference 2701ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-booking.snapshot.ts > json registered booking domain > books a room in company and restores the exact original mutation without inference
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800
+    throw new Error(`${binName}: ${stage}: ${detail}${stack}`, { cause })
+          ^
+
+Error: world-booking: plugin tree failed to load: failed to apply loader entry 0284091c (@clocky/clocky-simulation-product/administration): "undefined" is not valid JSON
+SyntaxError: "undefined" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at eval (eval at <anonymous> (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169)), <anonymous>:1:6)
+    at eval (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169), <anonymous>:5:12)
+    at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:14:12)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:36)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:81)
+    at Array.map (<anonymous>)
+    at mapValues (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:52)
+    at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:12)
+    at Fiber.Loader.ctx.on.global (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/index.ts:100:14)
+    at boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800:11)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:19:13) {
+  [cause]: Error: failed to apply loader entry 0284091c (@clocky/clocky-simulation-product/administration): "undefined" is not valid JSON
+      at updateError (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:26:10)
+      at Entry._await (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:273:13)
+      at async Promise.allSettled (index 29)
+      at async Proxy.await (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/tree.ts:53:24)
+      at async boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:782:5)
+      at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:19:13) {
+    [cause]: SyntaxError: "undefined" is not valid JSON
+        at JSON.parse (<anonymous>)
+        at eval (eval at <anonymous> (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169)), <anonymous>:1:6)
+        at eval (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169), <anonymous>:5:12)
+        at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:14:12)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:36)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:81)
+        at Array.map (<anonymous>)
+        at mapValues (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:52)
+        at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:12)
+        at Fiber.Loader.ctx.on.global (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/index.ts:100:14)
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ eval vendor/loader/src/config/utils.ts:1:169
+ ❯ interpolate vendor/loader/src/config/utils.ts:14:12
+ ❯ <anonymous> vendor/loader/src/config/utils.ts:20:36
+ ❯ <anonymous> vendor/cosmokit/src/misc.ts:45:81
+     43| /** Map object values while preserving the original key set. */
+     44| export function mapValues<U, T, K extends string>(object: Dict<T, K>, …
+     45|   return Object.fromEntries(Object.entries(object).map(([key, value]) …
+       |                                                                                 ^
+     46| }
+     47|
+ ❯ mapValues vendor/cosmokit/src/misc.ts:45:52
+ ❯ interpolate vendor/loader/src/config/utils.ts:20:12
+ ❯ Fiber.Loader.ctx.on.global vendor/loader/src/index.ts:100:14
+ ❯ boot packages/boot/app-boot/src/index.ts:800:11
+ ❯ updateError vendor/loader/src/config/entry.ts:26:10
+ ❯ Entry._await vendor/loader/src/config/entry.ts:273:13
+ ❯ Proxy.await vendor/loader/src/config/tree.ts:53:24
+ ❯ boot packages/boot/app-boot/src/index.ts:782:5
+ ❯ eval vendor/loader/src/config/utils.ts:1:169
+ ❯ interpolate vendor/loader/src/config/utils.ts:14:12
+ ❯ <anonymous> vendor/loader/src/config/utils.ts:20:36
+ ❯ <anonymous> vendor/cosmokit/src/misc.ts:45:81
+ ❯ mapValues vendor/cosmokit/src/misc.ts:45:52
+ ❯ interpolate vendor/loader/src/config/utils.ts:20:12
+ ❯ Fiber.Loader.ctx.on.global vendor/loader/src/index.ts:100:14
+ ❯ examples/simulation-company/tests/world-booking.snapshot.ts:29:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  examples/simulation-company/tests/world-booking.snapshot.ts > json registered booking domain > books a room in laboratory and restores the exact original mutation without inference
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800
+    throw new Error(`${binName}: ${stage}: ${detail}${stack}`, { cause })
+          ^
+
+Error: world-booking: plugin tree failed to load: failed to apply loader entry 2d40b4bd (@clocky/clocky-simulation-product/administration): "undefined" is not valid JSON
+SyntaxError: "undefined" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at eval (eval at <anonymous> (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169)), <anonymous>:1:6)
+    at eval (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169), <anonymous>:5:12)
+    at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:14:12)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:36)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:81)
+    at Array.map (<anonymous>)
+    at mapValues (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:52)
+    at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:12)
+    at Fiber.Loader.ctx.on.global (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/index.ts:100:14)
+    at boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800:11)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:19:13) {
+  [cause]: Error: failed to apply loader entry 2d40b4bd (@clocky/clocky-simulation-product/administration): "undefined" is not valid JSON
+      at updateError (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:26:10)
+      at Entry._await (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:273:13)
+      at async Promise.allSettled (index 29)
+      at async Proxy.await (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/tree.ts:53:24)
+      at async boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:782:5)
+      at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:19:13) {
+    [cause]: SyntaxError: "undefined" is not valid JSON
+        at JSON.parse (<anonymous>)
+        at eval (eval at <anonymous> (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169)), <anonymous>:1:6)
+        at eval (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169), <anonymous>:5:12)
+        at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:14:12)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:36)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:81)
+        at Array.map (<anonymous>)
+        at mapValues (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:52)
+        at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:12)
+        at Fiber.Loader.ctx.on.global (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/index.ts:100:14)
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ eval vendor/loader/src/config/utils.ts:1:169
+ ❯ interpolate vendor/loader/src/config/utils.ts:14:12
+ ❯ <anonymous> vendor/loader/src/config/utils.ts:20:36
+ ❯ <anonymous> vendor/cosmokit/src/misc.ts:45:81
+     43| /** Map object values while preserving the original key set. */
+     44| export function mapValues<U, T, K extends string>(object: Dict<T, K>, …
+     45|   return Object.fromEntries(Object.entries(object).map(([key, value]) …
+       |                                                                                 ^
+     46| }
+     47|
+ ❯ mapValues vendor/cosmokit/src/misc.ts:45:52
+ ❯ interpolate vendor/loader/src/config/utils.ts:20:12
+ ❯ Fiber.Loader.ctx.on.global vendor/loader/src/index.ts:100:14
+ ❯ boot packages/boot/app-boot/src/index.ts:800:11
+ ❯ updateError vendor/loader/src/config/entry.ts:26:10
+ ❯ Entry._await vendor/loader/src/config/entry.ts:273:13
+ ❯ Proxy.await vendor/loader/src/config/tree.ts:53:24
+ ❯ boot packages/boot/app-boot/src/index.ts:782:5
+ ❯ eval vendor/loader/src/config/utils.ts:1:169
+ ❯ interpolate vendor/loader/src/config/utils.ts:14:12
+ ❯ <anonymous> vendor/loader/src/config/utils.ts:20:36
+ ❯ <anonymous> vendor/cosmokit/src/misc.ts:45:81
+ ❯ mapValues vendor/cosmokit/src/misc.ts:45:52
+ ❯ interpolate vendor/loader/src/config/utils.ts:20:12
+ ❯ Fiber.Loader.ctx.on.global vendor/loader/src/index.ts:100:14
+ ❯ examples/simulation-company/tests/world-booking.snapshot.ts:29:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  examples/simulation-company/tests/world-booking.snapshot.ts > sqlite registered booking domain > books a room in company and restores the exact original mutation without inference
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800
+    throw new Error(`${binName}: ${stage}: ${detail}${stack}`, { cause })
+          ^
+
+Error: world-booking: plugin tree failed to load: failed to apply loader entry da4e4d63 (@clocky/clocky-simulation-product/administration): "undefined" is not valid JSON
+SyntaxError: "undefined" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at eval (eval at <anonymous> (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169)), <anonymous>:1:6)
+    at eval (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169), <anonymous>:5:12)
+    at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:14:12)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:36)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:81)
+    at Array.map (<anonymous>)
+    at mapValues (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:52)
+    at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:12)
+    at Fiber.Loader.ctx.on.global (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/index.ts:100:14)
+    at boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800:11)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:19:13) {
+  [cause]: Error: failed to apply loader entry da4e4d63 (@clocky/clocky-simulation-product/administration): "undefined" is not valid JSON
+      at updateError (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:26:10)
+      at Entry._await (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:273:13)
+      at async Promise.allSettled (index 29)
+      at async Proxy.await (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/tree.ts:53:24)
+      at async boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:782:5)
+      at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:19:13) {
+    [cause]: SyntaxError: "undefined" is not valid JSON
+        at JSON.parse (<anonymous>)
+        at eval (eval at <anonymous> (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169)), <anonymous>:1:6)
+        at eval (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169), <anonymous>:5:12)
+        at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:14:12)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:36)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:81)
+        at Array.map (<anonymous>)
+        at mapValues (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:52)
+        at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:12)
+        at Fiber.Loader.ctx.on.global (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/index.ts:100:14)
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ eval vendor/loader/src/config/utils.ts:1:169
+ ❯ interpolate vendor/loader/src/config/utils.ts:14:12
+ ❯ <anonymous> vendor/loader/src/config/utils.ts:20:36
+ ❯ <anonymous> vendor/cosmokit/src/misc.ts:45:81
+     43| /** Map object values while preserving the original key set. */
+     44| export function mapValues<U, T, K extends string>(object: Dict<T, K>, …
+     45|   return Object.fromEntries(Object.entries(object).map(([key, value]) …
+       |                                                                                 ^
+     46| }
+     47|
+ ❯ mapValues vendor/cosmokit/src/misc.ts:45:52
+ ❯ interpolate vendor/loader/src/config/utils.ts:20:12
+ ❯ Fiber.Loader.ctx.on.global vendor/loader/src/index.ts:100:14
+ ❯ boot packages/boot/app-boot/src/index.ts:800:11
+ ❯ updateError vendor/loader/src/config/entry.ts:26:10
+ ❯ Entry._await vendor/loader/src/config/entry.ts:273:13
+ ❯ Proxy.await vendor/loader/src/config/tree.ts:53:24
+ ❯ boot packages/boot/app-boot/src/index.ts:782:5
+ ❯ eval vendor/loader/src/config/utils.ts:1:169
+ ❯ interpolate vendor/loader/src/config/utils.ts:14:12
+ ❯ <anonymous> vendor/loader/src/config/utils.ts:20:36
+ ❯ <anonymous> vendor/cosmokit/src/misc.ts:45:81
+ ❯ mapValues vendor/cosmokit/src/misc.ts:45:52
+ ❯ interpolate vendor/loader/src/config/utils.ts:20:12
+ ❯ Fiber.Loader.ctx.on.global vendor/loader/src/index.ts:100:14
+ ❯ examples/simulation-company/tests/world-booking.snapshot.ts:29:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  examples/simulation-company/tests/world-booking.snapshot.ts > sqlite registered booking domain > books a room in laboratory and restores the exact original mutation without inference
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800
+    throw new Error(`${binName}: ${stage}: ${detail}${stack}`, { cause })
+          ^
+
+Error: world-booking: plugin tree failed to load: failed to apply loader entry 388db16a (@clocky/clocky-simulation-product/administration): "undefined" is not valid JSON
+SyntaxError: "undefined" is not valid JSON
+    at JSON.parse (<anonymous>)
+    at eval (eval at <anonymous> (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169)), <anonymous>:1:6)
+    at eval (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169), <anonymous>:5:12)
+    at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:14:12)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:36)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:81)
+    at Array.map (<anonymous>)
+    at mapValues (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:52)
+    at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:12)
+    at Fiber.Loader.ctx.on.global (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/index.ts:100:14)
+    at boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800:11)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:19:13) {
+  [cause]: Error: failed to apply loader entry 388db16a (@clocky/clocky-simulation-product/administration): "undefined" is not valid JSON
+      at updateError (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:26:10)
+      at Entry._await (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:273:13)
+      at async Promise.allSettled (index 29)
+      at async Proxy.await (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/tree.ts:53:24)
+      at async boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:782:5)
+      at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:19:13) {
+    [cause]: SyntaxError: "undefined" is not valid JSON
+        at JSON.parse (<anonymous>)
+        at eval (eval at <anonymous> (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169)), <anonymous>:1:6)
+        at eval (eval at <anonymous> (file:///Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:1:169), <anonymous>:5:12)
+        at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:14:12)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:36)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:81)
+        at Array.map (<anonymous>)
+        at mapValues (/Volumes/projects-mac/deepseek-harness/vendor/cosmokit/src/misc.ts:45:52)
+        at interpolate (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/utils.ts:20:12)
+        at Fiber.Loader.ctx.on.global (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/index.ts:100:14)
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ eval vendor/loader/src/config/utils.ts:1:169
+ ❯ interpolate vendor/loader/src/config/utils.ts:14:12
+ ❯ <anonymous> vendor/loader/src/config/utils.ts:20:36
+ ❯ <anonymous> vendor/cosmokit/src/misc.ts:45:81
+     43| /** Map object values while preserving the original key set. */
+     44| export function mapValues<U, T, K extends string>(object: Dict<T, K>, …
+     45|   return Object.fromEntries(Object.entries(object).map(([key, value]) …
+       |                                                                                 ^
+     46| }
+     47|
+ ❯ mapValues vendor/cosmokit/src/misc.ts:45:52
+ ❯ interpolate vendor/loader/src/config/utils.ts:20:12
+ ❯ Fiber.Loader.ctx.on.global vendor/loader/src/index.ts:100:14
+ ❯ boot packages/boot/app-boot/src/index.ts:800:11
+ ❯ updateError vendor/loader/src/config/entry.ts:26:10
+ ❯ Entry._await vendor/loader/src/config/entry.ts:273:13
+ ❯ Proxy.await vendor/loader/src/config/tree.ts:53:24
+ ❯ boot packages/boot/app-boot/src/index.ts:782:5
+ ❯ eval vendor/loader/src/config/utils.ts:1:169
+ ❯ interpolate vendor/loader/src/config/utils.ts:14:12
+ ❯ <anonymous> vendor/loader/src/config/utils.ts:20:36
+ ❯ <anonymous> vendor/cosmokit/src/misc.ts:45:81
+ ❯ mapValues vendor/cosmokit/src/misc.ts:45:52
+ ❯ interpolate vendor/loader/src/config/utils.ts:20:12
+ ❯ Fiber.Loader.ctx.on.global vendor/loader/src/index.ts:100:14
+ ❯ examples/simulation-company/tests/world-booking.snapshot.ts:29:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  01:40:12
+   Duration  12.70s (transform 187ms, setup 152ms, import 136ms, tests 12.31s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

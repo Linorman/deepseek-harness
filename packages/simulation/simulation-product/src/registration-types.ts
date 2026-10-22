@@ -6,6 +6,37 @@ import type { SimulationEntityId } from '@clocky/clocky-simulation/identities'
 import type { SimulationOperationId } from '@clocky/clocky-simulation/identities'
 import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
 import type { SimulationProductOperationRetryCapability } from './operation-retry-types.ts'
+import type { WorldRequestId } from '@clocky/clocky-simulation/world-types'
+import type { SimulationProductWorldCaseCancelCapability } from './case-types.ts'
+import type { SimulationSnapshot } from '@clocky/clocky-simulation'
+import type { ActionHint } from './world-read-types.ts'
+
+/** Read-only original-owner hints; these never grant Native authority or reserve work.
+ * @param runId - Exact authorized original World registration. @param state - Selected Native read prefix.
+ * @param personId - Actual person being displayed. @param call - Current authenticated reader.
+ * @returns bounded installed action hints; each preview and submit revalidates current sources separately. */
+export type SimulationProductWorldManagementReader = (runId: SimulationProductRunId, state: SimulationSnapshot,
+  personId: SimulationEntityId, call: AuthenticatedProductCall) => readonly ActionHint[]
+
+/** Separate private-case disclosure policy; neither registration nor Session grants imply either content domain. */
+export interface SimulationProductCaseReader {
+  /** Current registration owner; the grant never permits another principal's run. */
+  readonly principalId: ProductPrincipalId
+  /** Omission applies only to this principal's owned registrations. */
+  readonly runId?: SimulationProductRunId | undefined
+  /** Omission permits this principal's owned cases; an explicit selection is exact and run-local. */
+  readonly requestIds?: readonly WorldRequestId[] | undefined
+  /** Case description/rationale and finite generated Persona are independently selected. */
+  readonly content: readonly ('case' | 'persona')[]
+}
+/** Current original-product eligibility only; the callback cannot grant Native execution authority.
+ * @param runId - Authorized original registration. @param requestId - Exact Native request.
+ * @param native - Read-only native lifecycle hint. @param call - Current authenticated lifetime.
+ * @param snapshotRevision - Exact Native prefix used by the read producer.
+ * @returns current original-owner eligibility; cancellation rechecks it before its own durable acceptance. */
+export type SimulationProductWorldCaseControlReader = (runId: SimulationProductRunId, requestId: WorldRequestId,
+  native: SimulationProductWorldCaseCancelCapability, call: AuthenticatedProductCall, snapshotRevision: number) =>
+Promise<SimulationProductWorldCaseCancelCapability>
 
 /** Current administration metadata adds read-only admission to exact native fences; the callback owns no native effects. */
 export type SimulationProductOperationRetryReader = (runId: SimulationProductRunId, operationId: SimulationOperationId,
@@ -48,4 +79,6 @@ export interface SimulationProductRecordReader {
   readonly principalId: ProductPrincipalId
   /** Exact owned registration; omission permits this principal's owned registrations. */
   readonly runId?: SimulationProductRunId | undefined
+  /** Explicit whole retained ancestor closure disclosure; requires an exact runId and never transfers principal ownership. */
+  readonly includeProvenance?: boolean | undefined
 }

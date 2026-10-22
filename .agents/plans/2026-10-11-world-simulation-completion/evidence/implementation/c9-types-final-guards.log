@@ -1,0 +1,1 @@
+examples/simulation-company/tests/world-departure-scenario.ts(118,78): error TS2537: Type 'Readonly<Record<SimulationOperationId, SimulationOperation>>' has no matching index signature for type 'string'.

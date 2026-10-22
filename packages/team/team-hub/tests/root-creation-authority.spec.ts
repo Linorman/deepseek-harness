@@ -13,10 +13,11 @@ import type {
   TeamSystemPhaseProof,
   TeamSystemPhaseScope,
 } from '@clocky/clocky-team'
-import { teamDelegationIdSchema } from '@clocky/clocky-team'
+import { teamDelegationIdSchema, teamLimitsSchema, teamRootCreateInputSchema, teamSystemRootCreationScopeSchema,
+  teamIdSchema, type TeamLimits } from '@clocky/clocky-team'
 import TeamHub from '../src/index.ts'
 import type { Config as TeamHubConfig } from '../src/index.ts'
-import { createTestChildTeam } from '../../../core/team/tests/bootstrap-topology-authority.ts'
+import { createTestChildTeam, inviteBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
 import { createTestCoordinatorTask, provisionTestCoordinator } from './fixtures.ts'
 
 const roots: string[] = []
@@ -96,6 +97,101 @@ function rootInput(objective = 'Create a durable root Team.'): TeamRootCreateInp
 function rootScope(input: TeamRootCreateInput): TeamSystemRootCreationScope {
   return { kind: 'team-run-root-create', ...input }
 }
+
+async function deploymentLimits(ctx: Context): Promise<TeamLimits> {
+  const input = rootInput('Inspect explicit deployment limits')
+  const issued = rootCreationAuthority(ctx).issue(rootScope(input))
+  const state = await ctx.teams.createTeam({ ...input, actor: issued.proof })
+  return teamLimitsSchema.parse(state.rules['teamLimits'])
+}
+
+it('freezes reduced complete limits and enforces them through the actual membership owner', async () => {
+  const { ctx } = await setup()
+  try {
+    const defaults = await deploymentLimits(ctx)
+    const limits = { ...defaults, maxParticipants: 1, maxChannels: 2, maxEnvelopeBytes: 1024 }
+    const input = { ...rootInput('One member under frozen creation limits'), limits }
+    const issued = rootCreationAuthority(ctx, 'simulation-team').issue(teamSystemRootCreationScopeSchema.parse({
+      ...input, kind: 'simulation-root-create', runId: 'limited-run', lifecycleOwner: 'limited-owner',
+      teamId: teamIdSchema.parse('limited-root'), rules: { simulationRunId: 'limited-run', activationLifecycleOwner: 'limited-owner' },
+    }))
+    const creation = { ...input, rules: { simulationRunId: 'limited-run', activationLifecycleOwner: 'limited-owner' } }
+    const state = await ctx.teams.createTeam({ ...creation, actor: issued.proof })
+    expect(state.rules['teamLimits']).toEqual(limits)
+    await inviteBootstrapParticipant(ctx, { teamId: state.team.id, expectedCursor: state.team.cursor,
+      kind: 'local-agent', displayName: 'First', role: 'member', capabilities: [] })
+    const current = await ctx.teams.getTeam({ teamId: state.team.id })
+    await expect(inviteBootstrapParticipant(ctx, { teamId: state.team.id, expectedCursor: current.team.cursor,
+      kind: 'local-agent', displayName: 'Second', role: 'member', capabilities: [] })).rejects.toThrow(/maxParticipants|participant.*limit|capacity/)
+    const after = await ctx.teams.getTeam({ teamId: state.team.id })
+    expect(after.participants).toHaveLength(1)
+    expect(after.rules['teamLimits']).toEqual(limits)
+    limits.maxParticipants = defaults.maxParticipants
+    expect((await ctx.teams.getTeam({ teamId: state.team.id })).rules['teamLimits']).toEqual({ ...limits, maxParticipants: 1 })
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('rejects every limit above the Host ceiling before policy, creation append or Team publication', async () => {
+  const { ctx } = await setup()
+  try {
+    const defaults = await deploymentLimits(ctx)
+    const authority = rootCreationAuthority(ctx, 'simulation-team')
+    const policy = vi.fn<TeamPolicy['apply']>(async (_request, next) => await next())
+    ctx.teams.registerPolicy('register', { name: 'limited-root-policy', apply: policy })
+    const originalOpen = ctx.storageLog.open.bind(ctx.storageLog), writes = vi.fn()
+    const open = vi.spyOn(ctx.storageLog, 'open').mockImplementation(async (...args) => {
+      const stream = await originalOpen(...args), append = stream.append.bind(stream)
+      vi.spyOn(stream, 'append').mockImplementation(async (...values) => { writes(...values); return await append(...values) })
+      return stream
+    })
+    for (const key of Object.keys(defaults) as (keyof TeamLimits)[]) {
+      const input = { ...rootInput(), limits: { ...defaults, [key]: defaults[key] + 1 },
+        rules: { simulationRunId: 'bad-limits', activationLifecycleOwner: 'bad-owner' } }
+      const scope = teamSystemRootCreationScopeSchema.parse({ ...input, kind: 'simulation-root-create',
+        runId: 'bad-limits', lifecycleOwner: 'bad-owner', teamId: teamIdSchema.parse(`bad-${key}`) })
+      if (scope.kind !== 'simulation-root-create') throw new Error('Expected Simulation creation scope')
+      const issued = authority.issue(scope)
+      await expect(ctx.teams.createTeam({ ...input, actor: issued.proof })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+      await expect(ctx.teams.getTeam({ teamId: scope.teamId }))
+        .rejects.toMatchObject({ code: 'TEAM_NOT_FOUND' })
+    }
+    expect(policy).not.toHaveBeenCalled()
+    expect(writes).not.toHaveBeenCalled()
+    open.mockRestore()
+    for (const limits of [{}, { ...defaults, extra: 1 }, { ...defaults, maxTasks: 0 },
+      { ...defaults, maxParticipants: Number.MAX_SAFE_INTEGER + 1 }]) {
+      expect(teamRootCreateInputSchema.safeParse({ ...rootInput(), limits }).success).toBe(false)
+    }
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('reconciles only the original Simulation limit payload and preserves it after a lower Host ceiling on reopen', async () => {
+  const first = await setup(undefined, { maxParticipantsPerTeam: 4 })
+  let input: TeamRootCreateInput | undefined
+  let scope: TeamSystemRootCreationScope | undefined
+  try {
+    const limits = { ...await deploymentLimits(first.ctx), maxParticipants: 3 }
+    input = { ...rootInput('Frozen explicit limits survive Host changes'), limits,
+      rules: { simulationRunId: 'frozen', activationLifecycleOwner: 'frozen-owner' } }
+    scope = teamSystemRootCreationScopeSchema.parse({ ...input, kind: 'simulation-root-create', runId: 'frozen',
+      lifecycleOwner: 'frozen-owner', teamId: teamIdSchema.parse('frozen-root') })
+    const authority = rootCreationAuthority(first.ctx, 'simulation-team')
+    const proof = authority.issue(scope)
+    const state = await first.ctx.teams.createTeam({ ...input, actor: proof.proof })
+    expect(state.rules['teamLimits']).toEqual(limits)
+    const changed = { ...input, limits: { ...limits, maxParticipants: 2 } }
+    await expect(first.ctx.teams.createTeam({ ...changed, actor: proof.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const changedProof = authority.issue({ ...scope, ...changed })
+    await expect(first.ctx.teams.createTeam({ ...changed, actor: changedProof.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { await first.ctx.fiber.dispose() }
+  if (input === undefined || scope === undefined) throw new Error('Frozen creation fixture missing')
+  const second = await setup(first.root, { maxParticipantsPerTeam: 1 })
+  try {
+    const proof = rootCreationAuthority(second.ctx, 'simulation-team').issue(scope)
+    const original = await second.ctx.teams.createTeam({ ...input, actor: proof.proof })
+    expect(original.rules['teamLimits']).toEqual(input.limits)
+  } finally { await second.ctx.fiber.dispose() }
+})
 
 describe('root Team creation authority', () => {
   it('fails closed for raw roots, binds the full source payload before policy, and records its system origin', async () => {

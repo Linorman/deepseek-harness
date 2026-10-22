@@ -1,0 +1,304 @@
+{
+  "status": "ready",
+  "apiVersion": "clocky.world/v1",
+  "preview": {
+    "hash": "sha256:9e85feca5346f3f1f03a4826911658cbf48fbbd6fd5cf8a28b4a28f92028e85e",
+    "catalogGeneration": "deployment-1",
+    "organizationName": "Northstar Studio",
+    "actorCount": 3,
+    "positionCount": 1,
+    "initialRequestCount": 0,
+    "directorEntityId": "director",
+    "creationMode": "paused",
+    "source": "simulated-only",
+    "entityCount": 8
+  },
+  "policyVersion": "world-policy-1",
+  "organization": {
+    "id": "studio",
+    "name": "Northstar Studio",
+    "description": "Members collaborate through private channels."
+  },
+  "actors": [
+    {
+      "entityId": "director",
+      "role": "director",
+      "name": "Director",
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "model": {
+        "provider": "world-external-mediated-scripted",
+        "name": "scripted",
+        "version": "1"
+      }
+    },
+    {
+      "entityId": "requester",
+      "role": "member",
+      "name": "Recruiter",
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "model": {
+        "provider": "world-external-mediated-scripted",
+        "name": "scripted",
+        "version": "1"
+      }
+    },
+    {
+      "entityId": "observer",
+      "role": "member",
+      "name": "Observer",
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "model": {
+        "provider": "world-external-mediated-scripted",
+        "name": "scripted",
+        "version": "1"
+      }
+    }
+  ],
+  "positions": [
+    {
+      "entityId": "engineering",
+      "name": "Engineer",
+      "capacity": 2,
+      "occupied": 1
+    }
+  ],
+  "authorizations": [
+    {
+      "requesterEntityId": "requester",
+      "positionEntityId": "engineering"
+    }
+  ],
+  "limits": {
+    "native": {
+      "maxQueuedDecisions": 100,
+      "maxDispatchWaitRounds": 8,
+      "maxTokensPerInterval": 1000000,
+      "tokensPerModelRequest": 10000,
+      "maxDecisionsPerInterval": 100,
+      "maxMessagesPerInterval": 100,
+      "maxPendingEvents": 100,
+      "maxPendingInteractions": 100,
+      "maxKnowledgeBytes": 65536,
+      "maxKnowledgePerQuery": 32,
+      "maxEntities": 16,
+      "maxResidentActors": 2,
+      "maxIngressBytes": 65536,
+      "maxConflictRetries": 2,
+      "decisionTimeoutMs": 60000,
+      "maxDecisionsPerWindow": 2,
+      "outboxMaxAttempts": 3,
+      "outboxRetryDelayMs": 10,
+      "maxDriveSteps": 32,
+      "maxMicrostepsPerTime": 32,
+      "maxOperationsPerDecision": 16,
+      "maxResourceReservationHistory": 128
+    },
+    "team": {
+      "maxParticipants": 16,
+      "maxActivations": 100,
+      "maxTasks": 100,
+      "maxChannels": 100,
+      "maxEnvelopeBytes": 65536,
+      "maxChannelViewBytes": 65536,
+      "maxPendingDeliveriesPerChannel": 100,
+      "maxPendingDeliveriesPerParticipant": 100,
+      "maxPendingDeliveryPageSize": 100,
+      "maxPostIdempotencyEntriesPerChannel": 100,
+      "maxTaskAttemptsPerTask": 3,
+      "maxTaskLeaseDurationMs": 60000,
+      "maxTurnsPerTeam": 1000,
+      "maxModelTokensPerTeam": 1000000,
+      "maxWallTimeMsPerTeam": 100000,
+      "maxCostUnitsPerTeam": 1000,
+      "maxRetriesPerTeam": 100,
+      "maxInboxItemsPerParticipant": 100,
+      "maxRatePerParticipantPerMinute": 100
+    },
+    "world": {
+      "maxRequests": 10,
+      "maxBirthsPerInterval": 10,
+      "maxExternalExpansionsPerInterval": 10,
+      "maxPendingMutations": 1,
+      "maxRequestsPerActorPerInterval": 10,
+      "maxEvidenceAttemptsPerRequest": 3,
+      "maxPlansPerRequest": 3,
+      "maxBytesPerRequest": 4096,
+      "maxBytesPerPlan": 4096
+    }
+  },
+  "maxTime": "1000",
+  "budgetInterval": "100",
+  "tickUnit": "minute",
+  "scope": {
+    "source": "simulated-only",
+    "payroll": false,
+    "committeeApproval": false,
+    "domains": [
+      {
+        "domain": "organization",
+        "operation": "generate-and-hire",
+        "version": "1",
+        "schemaRef": "clocky.organization.generate-and-hire/schema/2",
+        "implementationRef": "clocky.organization.generate-and-hire/native/3",
+        "generation": 1
+      },
+      {
+        "domain": "governance",
+        "operation": "propose-norm",
+        "version": "1",
+        "schemaRef": "clocky.governance.propose-norm/schema/2",
+        "implementationRef": "clocky.governance.propose-norm/native/2",
+        "generation": 1
+      },
+      {
+        "domain": "governance",
+        "operation": "vote",
+        "version": "1",
+        "schemaRef": "clocky.governance.vote/schema/2",
+        "implementationRef": "clocky.governance.vote/native/2",
+        "generation": 1
+      },
+      {
+        "domain": "external",
+        "operation": "interact",
+        "version": "3",
+        "schemaRef": "clocky.external.interact.mediated/schema/1",
+        "implementationRef": "clocky.external.interact.mediated/native/1",
+        "generation": 1
+      }
+    ]
+  },
+  "units": [
+    {
+      "id": "managed-unit",
+      "name": "Managed unit",
+      "parentId": "studio"
+    }
+  ],
+  "committees": [
+    {
+      "id": "original-committee",
+      "name": "Committee",
+      "description": "The exact original electorate.",
+      "scopeId": "studio",
+      "members": [
+        {
+          "id": "original-membership",
+          "personId": "requester",
+          "validFrom": "0",
+          "validUntil": null
+        }
+      ],
+      "rule": {
+        "kind": "unanimity"
+      },
+      "quorum": 1
+    }
+  ],
+  "institutions": [
+    {
+      "id": "initial-hiring-policy",
+      "scopeId": "studio",
+      "effectiveFrom": "0",
+      "effectiveUntil": "10",
+      "availableAt": "0",
+      "audience": {
+        "kind": "public"
+      },
+      "enforcement": {
+        "kind": "validated",
+        "policyRef": "clocky.organization.hiring-approval/1",
+        "params": {
+          "committeeId": "original-committee",
+          "positionIds": [
+            "engineering"
+          ],
+          "maxHires": 1
+        }
+      }
+    }
+  ],
+  "permissions": [
+    {
+      "id": "hiring-authority",
+      "personId": "requester",
+      "domain": "organization",
+      "operation": "generate-and-hire",
+      "version": "1",
+      "scopeId": "studio",
+      "targetId": "engineering",
+      "relation": "can-hire",
+      "validFrom": "0",
+      "validUntil": null
+    },
+    {
+      "id": "permission-propose-norm",
+      "personId": "requester",
+      "domain": "governance",
+      "operation": "propose-norm",
+      "version": "1",
+      "scopeId": "studio",
+      "targetId": "original-committee",
+      "relation": "can-propose-norm",
+      "validFrom": "0",
+      "validUntil": null
+    },
+    {
+      "id": "permission-vote",
+      "personId": "requester",
+      "domain": "governance",
+      "operation": "vote",
+      "version": "1",
+      "scopeId": "studio",
+      "targetId": "original-committee",
+      "relation": "can-vote",
+      "validFrom": "0",
+      "validUntil": null
+    },
+    {
+      "id": "permission-interact",
+      "personId": "requester",
+      "domain": "external",
+      "operation": "interact",
+      "version": "3",
+      "scopeId": "studio",
+      "targetId": "outside-vendor",
+      "relation": "can-interact",
+      "validFrom": "0",
+      "validUntil": null
+    }
+  ],
+  "assignments": [
+    {
+      "id": "initial-assignment",
+      "personId": "requester",
+      "positionId": "engineering",
+      "validFrom": "0",
+      "validUntil": null
+    }
+  ],
+  "positionPermissions": [
+    {
+      "positionEntityId": "engineering",
+      "permissions": []
+    }
+  ],
+  "sources": {
+    "facts": 1,
+    "privateBeliefs": 1,
+    "resources": 1,
+    "externalIdentities": 1,
+    "initialGoals": 1,
+    "calendars": 1,
+    "directorEvents": 0
+  }
+}

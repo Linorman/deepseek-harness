@@ -1,0 +1,39 @@
+- id: simulation-world-persona
+  name: '@clocky/clocky-persona'
+  config:
+    text: >-
+      You are an independent participant in a simulated world. Use simulation_observe,
+      simulation_stage and simulation_submit to act on the current recorded decision context.
+      Your role, permitted operations, evidence and available knowledge come from that context.
+      A world director proposes plans; an ordinary participant requests changes or communicates
+      through its own channels. Submitted plans are not completed effects. Report only recorded
+      results, preserve unknown facts, and never claim another participant's approval or identity.
+      Finish the current decision before waiting for a world change.
+      Send a message only when it adds new information, asks a necessary unanswered question,
+      or changes a proposal. Do not acknowledge acknowledgements or repeat an agreed summary.
+      If no new action is needed, stage an empty proposal list and submit it.
+    complete: true
+    includeRuntimeContext: false
+- id: simulation-world-role
+  name: '@clocky/clocky-tool-simulation/role'
+- id: simulation-world-compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-basic
+      name: '@clocky/clocky-compaction-basic'
+      config:
+        thresholdTokens: 32768
+        retainTokens: 8192
+        maxTokens: 2048
+        compactionRetries: 1
+        maxOverflowRetries: 1
+    - id: tool-result-pruner
+      name: '@clocky/clocky-compaction-tool-result-pruner'
+      config:
+        thresholdChars: 8192
+        headChars: 4096
+        tailChars: 1024

@@ -14,7 +14,7 @@ async function setup(backend: 'json' | 'sqlite') {
   const provider = new LocalSimulationProvider({ name: 'local', root, backend, replayPageSize: 2 }, () => {})
   cleanups.push(async () => { await provider.close(); await rm(root, { recursive: true, force: true }) })
   const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 'create', spec: {
-    runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '99999999999999999999', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '1000000000000000000000000',
+    runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '99999999999999999999', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '1000000000000000000000000',
     relationRules: [
       { relation: 'reports-to', subjectKinds: ['person'], objectKinds: ['person'], scopeKinds: ['org'], acyclic: true },
       { relation: 'member-of', subjectKinds: ['person'], objectKinds: ['org'], acyclic: false },
@@ -23,7 +23,7 @@ async function setup(backend: 'json' | 'sqlite') {
   } })
   const run = await provider.open(selection)
   const change = (command: unknown) => run.change(simulationChangeSchema.parse(command), run.snapshot().revision)
-  const entity = (id: string, kind = 'person') => change({ kind: 'entity/create', id, entityKind: kind, cognition: 'none', profile: { name: id } })
+  const entity = (id: string, kind = 'person') => change({ kind: 'entity/create', readiness: 'ready', id, entityKind: kind, cognition: 'none', profile: { name: id } })
   const relation = (id: string, subject: string, object: string, validFrom = '0', validUntil: string | null = null) =>
     change({ kind: 'relation/create', id, subject, object, relation: 'reports-to', validFrom, validUntil })
   return { provider, selection, run, change, entity, relation }
@@ -141,7 +141,7 @@ describe.each(['json', 'sqlite'] as const)('%s entity and organization history',
     await change({ kind: 'entity/phase', id: 'alice', entityRevision: 4, phase: 'terminated' })
     expect(Object.values(run.snapshot().entities)).toEqual([{
       id: 'alice', kind: 'person', cognition: 'none', revision: 5, profileRevision: 2,
-      phase: 'terminated', profile: { name: 'Alice', attributes: { title: 'buyer' } },
+      phase: 'terminated', readiness: 'ready', profile: { name: 'Alice', attributes: { title: 'buyer' } },
     }])
     for (const command of [
       { kind: 'entity/phase', id: 'alice', entityRevision: 5, phase: 'active' },
@@ -214,7 +214,7 @@ it('uses own entity keys and stable id ordering even for object-prototype names'
 })
 
 it('rejects non-JSON metadata, extra Session fields, duplicate rules and noncanonical times at parsing', () => {
-  const entity = { kind: 'entity/create', id: 'test', entityKind: 'person', cognition: 'none', profile: {} }
+  const entity = { kind: 'entity/create', readiness: 'ready', id: 'test', entityKind: 'person', cognition: 'none', profile: {} }
   for (const profile of [{ x: undefined }, { x: 1n }, { x: NaN }, { x: new Date() }]) {
     expect(() => simulationChangeSchema.parse({ ...entity, profile })).toThrow()
   }
@@ -223,7 +223,7 @@ it('rejects non-JSON metadata, extra Session fields, duplicate rules and noncano
   expectTypeOf<SimulationEntityId>().not.toEqualTypeOf<SimulationRelationId>()
   const rule = { relation: 'manager', subjectKinds: ['person'], objectKinds: ['person'], acyclic: true }
   expect(() => simulationRunSelectionSchema.parse({ provider: 'local', mode: 'create', spec: {
-    runId: 'bad', tickUnit: 'minute', origin: '0', maxTime: '100', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '1000000000000000000000000', relationRules: [rule, rule],
+    runId: 'bad', tickUnit: 'minute', origin: '0', maxTime: '100', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '1000000000000000000000000', relationRules: [rule, rule],
   } })).toThrow(/distinct/)
   expect(() => simulationChangeSchema.parse({ kind: 'relation/create', id: 'bad', subject: 'a', object: 'b',
     relation: 'manager', validFrom: '01', validUntil: null })).toThrow()

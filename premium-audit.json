@@ -1,13 +1,23 @@
 {
-  "findings": [],
+  "findings": [
+    {
+      "category": "violation",
+      "file": "packages/client/ui-simulation/src/client/WorldFacts.tsx",
+      "line": 317,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    }
+  ],
   "mode": "strict",
   "projectRoot": "/Volumes/projects-mac/deepseek-harness",
   "schemaVersion": 1,
   "summary": {
-    "errors": 0,
-    "total": 0,
+    "errors": 1,
+    "total": 1,
     "unresolved": 0,
-    "violations": 0,
+    "violations": 1,
     "warnings": 0
   }
 }

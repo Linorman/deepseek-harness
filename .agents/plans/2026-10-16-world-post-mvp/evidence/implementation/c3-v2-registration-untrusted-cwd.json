@@ -1,0 +1,16 @@
+{
+  "registeredAt": "2026-10-20T06:54:16.477Z",
+  "suiteVersion": "supply-registered-evaluation/2",
+  "sources": {
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-v2-suite.json": "c42d48d3900c95e0a2b808b92012e32d40d43511f371c40605755ac392c7e563",
+    "scripts/world-environment-registered-evaluate.ts": "7ed8465eec9e11cdc400484194669793ccde4ebcaf27f65bcc37f2061b700865",
+    "packages/simulation/simulation/tests/environment-registered-evaluation.ts": "25e44a04836bf9b9312039c47d218888130cf3491caf27818b16df1e9df5cb2d",
+    "packages/simulation/simulation/tests/environment-registered-evaluate-command.ts": "c325806b2370cc4be21862bc7a1ed27234699271b48ce18f7573499729bcc0ef",
+    "packages/simulation/simulation/src/world-environment.ts": "289e500c5fbcbfe2860232b1d733fd817549456c125c260cc8fa68b4ac6b7ff6",
+    "packages/simulation/simulation-local/src/world-environment-domain.ts": "843b9c397403398b5671f0d34fcc00efe58caf03a58b347fd8651cb62b6e563e",
+    "packages/simulation/simulation-world/src/evolution.ts": "ebc31bc12b488d84746047d70e27f53799cb9f45066824303c68e9b869e9ca42"
+  },
+  "executionMode": "source/pure deterministic evaluator; backend integration verified separately",
+  "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp/c3-v2\" pnpm exec tsx scripts/world-environment-registered-evaluate.ts run",
+  "priorExposure": "Both implementations and earlier v1 fixed/holdout resource outcomes were already available. The fixed cycles reuse prior cases; these two stress cycles are newly registered and are held out from implementation tuning for this v2 execution. This is a prospective bounded engineering comparison, not a blinded model-training holdout or independent external benchmark. No algorithm or parameter is tuned for this run."
+}

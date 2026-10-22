@@ -17,7 +17,7 @@ const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 
   maxEntities: 16, maxResidentActors: 2, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100',
   maxDecisionsPerInterval: 100, maxMessagesPerInterval: 100, maxPendingEvents: 100, maxPendingInteractions: 100,
   maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 100, maxDispatchWaitRounds: 8,
-  maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [],
+  maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [],
 } })
 const run = await ctx.simulations.open({ ...selection, mode: process.env.COMPANY_PREP_RECOVER === 'true' ? 'open' : 'create' })
 const hold = async (stage: string): Promise<void> => {

@@ -1,0 +1,43 @@
+{
+  "nativeStream": 75,
+  "scope": "exact identity/registry/lease owners and their focused tests; not a transitive runtime inventory",
+  "digest": "b9af722a810ef4d18913a7070985b91c45478b5c762c6eb070b6075e5425c922",
+  "files": [
+    {
+      "path": "packages/simulation/simulation/src/world-domain-registry.ts",
+      "sha256": "76622bdd295ce23a83ff7739729908895e719413fe76182d7629900ef1e536a8"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain.ts",
+      "sha256": "6c4a207dd23aa96135baab7123063c8ad1a55ca99a6c9960835cd82876dbc378"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-runtime.ts",
+      "sha256": "e4af6064ac8bced068b088afb3c284585089e91606eaba52bf1dcdf7b0f35f62"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-external.ts",
+      "sha256": "12850bc46d2fe1d89e44bbda2540dc28d3d37e4d61c8dd87043a61dcd01b9794"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/execution.ts",
+      "sha256": "dd4e548bfead4f7ce6e1f653eb95279241707fefb59384b43d07192214dc3a10"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-external.spec.ts",
+      "sha256": "8455d7e01948f80db28e358b5bf1213cdc7d25c2b3cd8e97ba48e344dd7d0e7e"
+    },
+    {
+      "path": "packages/simulation/simulation/tests/world-domain.spec.ts",
+      "sha256": "1217944ee0c1c2440dd7616941c0ff1c969651b6ba25cf2e05f14785c285dee3"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-domain-disposal.spec.ts",
+      "sha256": "06c9fc8e6fd6e48a98056f83f2fa1a0e74ae5e3743f4031d4f2907ae98f98fc4"
+    },
+    {
+      "path": "packages/simulation/simulation-world/tests/execution.spec.ts",
+      "sha256": "19e9953b33b34ca46a1383059c02099bee5df6ac5deac071d864318cc2752cff"
+    }
+  ]
+}

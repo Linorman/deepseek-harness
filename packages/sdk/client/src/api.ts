@@ -1,3 +1,25 @@
+import { isCompactionAssessment, isCompactionNoGain } from '@clocky/clocky-compaction/no-gain'
+import type { SimulationRawArchiveParams, SimulationRawArchiveResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRunControlParams, SimulationRunControlResult } from '@clocky/clocky-sdk-protocol'
+import type {
+  SimulationWorldBranchParams,
+  SimulationWorldBranchReadParams,
+  SimulationWorldCausalParams,
+  SimulationWorldCompareParams,
+  SimulationWorldBranchResult,
+  SimulationWorldCausalResult,
+  SimulationWorldCompareResult,
+} from '@clocky/clocky-sdk-protocol'
+import type { SimulationBackupExportParams, SimulationBackupExportResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRetentionPreviewParams, SimulationRetentionExecuteParams, SimulationRetentionReadParams, SimulationRetentionRecordsParams, SimulationRetentionPlan, SimulationRetentionResult, SimulationRetentionRecordsResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationGenerationRequestParams, SimulationGenerationReadParams, SimulationGenerationExecuteParams, SimulationGenerationTransitionParams, SimulationGenerationPersonaDraftParams, SimulationGenerationResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRebuildIndexParams, SimulationRebuildIndexResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationDraftReadParams, SimulationDraftReadResult, SimulationDraftSaveParams, SimulationDraftSaveResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWorldManagementFieldsParams, SimulationWorldManagementFieldsResult, SimulationWorldManagementPreviewParams, SimulationWorldManagementPreviewResult, SimulationWorldManagementSubmitParams, SimulationWorldManagementSubmitResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWorldDomainParams, SimulationWorldDomainResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWorldCasesParams, SimulationWorldCasesResult, SimulationWorldCaseParams, SimulationWorldCaseResult, SimulationWorldCaseCancelParams, SimulationWorldCaseCancelResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWorldPreflightParams, SimulationWorldPreflightResult, SimulationWorldCreateParams, SimulationWorldCreateResult,
+  SimulationWorldPrepareParams, SimulationWorldPrepareResult, SimulationWorldExportParams, SimulationWorldExportResult } from '@clocky/clocky-sdk-protocol'
 import type { SimulationRequestsParams, SimulationRequestsResult, SimulationRetryRequestParams, SimulationRetryRequestResult } from '@clocky/clocky-sdk-protocol'
 import type { SimulationPreflightParams, SimulationPreflightResult } from '@clocky/clocky-sdk-protocol'
 import type { SimulationOperationRetryParams, SimulationOperationRetryResult } from '@clocky/clocky-sdk-protocol'
@@ -11,7 +33,8 @@ import type { SimulationControlParams, SimulationControlResult, SimulationManage
 import type { SimulationCatalogParams, SimulationCatalogResult, SimulationListParams, SimulationListResult, SimulationInspectParams, SimulationInspectResult, SimulationBrowseParams, SimulationBrowseResult, SimulationObjectParams, SimulationObjectResult, SimulationCreateParams, SimulationCreateResult, SimulationPrepareParams, SimulationPrepareResult, SimulationRequestParams, SimulationRequestResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamTaskUpdateLookupParams, TeamTaskUpdateLookupResult } from '@clocky/clocky-sdk-protocol'
 export type { TeamTaskUpdateLookupParams, TeamTaskUpdateLookupResult } from '@clocky/clocky-sdk-protocol'
-import { isSimulationContextViewEvent } from '@clocky/clocky-session/surface'
+import { isSimulationContextViewEvent, isSimulationGenerationEvent } from '@clocky/clocky-session/surface'
+import { KNOWN_SESSION_EVENT_TYPES } from '@clocky/clocky-session'
 import type { TeamMemberInspectParams, TeamMemberInspectResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamTaskInspectParams, TeamTaskInspectResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamBrowseParams, TeamBrowseResult } from '@clocky/clocky-sdk-protocol'
@@ -180,6 +203,16 @@ export class Clocky implements AsyncDisposable {
   }
 
   /**
+   * Persist an original stopping target or explicit clear without starting scheduling.
+   * @param params - Complete target and caller-retained command identity; clear explicitly carries null.
+   * @returns original durable receipt and current control observation.
+   */
+  async updateSimulationRunControl(params: SimulationRunControlParams): Promise<SimulationRunControlResult> {
+    await this.start()
+    return await this.client.updateSimulationRunControl(params)
+  }
+
+  /**
    * Submit an original scheduling intent; exact retries retain its result without undoing later intent.
    * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
    * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
@@ -197,6 +230,76 @@ export class Clocky implements AsyncDisposable {
   async getSimulationManagement(params: SimulationManagementParams): Promise<SimulationManagementResult> {
     await this.start()
     return await this.client.getSimulationManagement(params)
+  }
+
+  /**
+   * Inspect exact real personnel choices without reservation.
+   * @param params - Exact original selection or complete confirmed form.
+   * @returns strictly validated original quote or durable receipt; transport loss grants no replacement command.
+   */
+  async readSimulationWorldManagementFields(params: SimulationWorldManagementFieldsParams): Promise<SimulationWorldManagementFieldsResult> {
+    await this.start()
+    return await this.client.readSimulationWorldManagementFields(params)
+  }
+
+  /**
+   * Preview actual personnel impact without inference or reservation.
+   * @param params - Exact original selection or complete confirmed form.
+   * @returns strictly validated original quote or durable receipt; transport loss grants no replacement command.
+   */
+  async previewSimulationWorldManagement(params: SimulationWorldManagementPreviewParams): Promise<SimulationWorldManagementPreviewResult> {
+    await this.start()
+    return await this.client.previewSimulationWorldManagement(params)
+  }
+
+  /**
+   * Submit or precisely retry the original confirmed personnel command.
+   * @param params - Exact original selection or complete confirmed form.
+   * @returns strictly validated original quote or durable receipt; transport loss grants no replacement command.
+   */
+  async submitSimulationWorldManagement(params: SimulationWorldManagementSubmitParams): Promise<SimulationWorldManagementSubmitResult> {
+    await this.start()
+    return await this.client.submitSimulationWorldManagement(params)
+  }
+
+  /**
+   * Read one independently authorized World domain window.
+   * @param params - Exact bounded domain selector and continuation.
+   * @returns original selection with explicit coverage, without opening execution.
+   */
+  async readSimulationWorldDomain(params: SimulationWorldDomainParams): Promise<SimulationWorldDomainResult> {
+    await this.start()
+    return await this.client.readSimulationWorldDomain(params)
+  }
+
+  /**
+   * Use the exact original World case selection without starting scheduling.
+   * @param params - Exact owned World selection.
+   * @returns strict original result; any disclosed bodies retain their independent permissions.
+   */
+  async listSimulationWorldCases(params: SimulationWorldCasesParams): Promise<SimulationWorldCasesResult> {
+    await this.start()
+    return await this.client.listSimulationWorldCases(params)
+  }
+
+  /**
+   * Use the exact original World case selection without starting scheduling.
+   * @param params - Exact owned World selection.
+   * @returns strict original result; any disclosed bodies retain their independent permissions.
+   */
+  async inspectSimulationWorldCase(params: SimulationWorldCaseParams): Promise<SimulationWorldCaseResult> {
+    await this.start()
+    return await this.client.inspectSimulationWorldCase(params)
+  }
+
+  /**
+   * Use the exact original World case selection without starting scheduling.
+   * @param params - Exact owned World selection.
+   * @returns strict original result; any disclosed bodies retain their independent permissions.
+   */
+  async cancelSimulationWorldCase(params: SimulationWorldCaseCancelParams): Promise<SimulationWorldCaseCancelResult> {
+    await this.start()
+    return await this.client.cancelSimulationWorldCase(params)
   }
 
   /**
@@ -329,10 +432,155 @@ export class Clocky implements AsyncDisposable {
     return await this.client.inspectSimulation(params)
   }
 
+  /** Explicit original experiment operation; reads never infer or resume scheduling.
+   * @param params - Exact original command or source references; retain IDs across uncertain outcomes.
+   * @returns Strict public result correlated to its original selection.
+   */
+  async branchWorld(params: SimulationWorldBranchParams): Promise<SimulationWorldBranchResult> {
+    await this.start()
+    return await this.client.branchWorld(params)
+  }
+
+  /** Explicit original experiment operation; reads never infer or resume scheduling.
+   * @param params - Exact original command or source references; retain IDs across uncertain outcomes.
+   * @returns Strict public result correlated to its original selection.
+   */
+  async readWorldBranch(params: SimulationWorldBranchReadParams): Promise<SimulationWorldBranchResult> {
+    await this.start()
+    return await this.client.readWorldBranch(params)
+  }
+
+  /** Explicit original experiment operation; reads never infer or resume scheduling.
+   * @param params - Exact original command or source references; retain IDs across uncertain outcomes.
+   * @returns Strict public result correlated to its original selection.
+   */
+  async queryWorldCausal(params: SimulationWorldCausalParams): Promise<SimulationWorldCausalResult> {
+    await this.start()
+    return await this.client.queryWorldCausal(params)
+  }
+
+  /** Explicit original experiment operation; reads never infer or resume scheduling.
+   * @param params - Exact original command or source references; retain IDs across uncertain outcomes.
+   * @returns Strict public result correlated to its original selection.
+   */
+  async compareWorlds(params: SimulationWorldCompareParams): Promise<SimulationWorldCompareResult> {
+    await this.start()
+    return await this.client.compareWorlds(params)
+  }
+
+  /** Read the exact completed private backup; rejects changed authority or original selection.
+   * @param params - Original run and retention command identity.
+   * @returns bounded private bundle bytes without capture, restore or inference.
+   */
+  async backupExport(params: SimulationBackupExportParams): Promise<SimulationBackupExportResult> {
+    await this.start()
+    return await this.client.backupExport(params)
+  }
+
+  /**
+   * Explicit retention preview; preview and read do not pause or infer.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns source-bound conservative archive plan; a live or nonquiescent source refuses without pausing.
+   */
+  async retentionPreview(params: SimulationRetentionPreviewParams): Promise<SimulationRetentionPlan> {
+    await this.start()
+    return await this.client.retentionPreview(params)
+  }
+
+  /**
+   * Explicit retention execute; preview and read do not pause or infer.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async retentionExecute(params: SimulationRetentionExecuteParams): Promise<SimulationRetentionResult> {
+    await this.start()
+    return await this.client.retentionExecute(params)
+  }
+
+  /**
+   * Explicit retention read; preview and read do not pause or infer.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async retentionRead(params: SimulationRetentionReadParams): Promise<SimulationRetentionResult> {
+    await this.start()
+    return await this.client.retentionRead(params)
+  }
+
+  /**
+   * Explicit retention records; preview and read do not pause or infer.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns independently authorized original owner records in ascending sequence order.
+   */
+  async retentionRecords(params: SimulationRetentionRecordsParams): Promise<SimulationRetentionRecordsResult> {
+    await this.start()
+    return await this.client.retentionRecords(params)
+  }
+
+  /**
+   * Explicit generation request; reads never start inference.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async generationRequest(params: SimulationGenerationRequestParams): Promise<SimulationGenerationResult> {
+    await this.start()
+    return await this.client.generationRequest(params)
+  }
+
+  /**
+   * Explicit generation read; reads never start inference.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns the original private job or absent history without any model request.
+   */
+  async generationRead(params: SimulationGenerationReadParams): Promise<SimulationGenerationResult> {
+    await this.start()
+    return await this.client.generationRead(params)
+  }
+
+  /**
+   * Explicit generation execute; reads never start inference.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns retained output or explicit unresolved responsibility after the accepted model attempt.
+   */
+  async generationExecute(params: SimulationGenerationExecuteParams): Promise<SimulationGenerationResult> {
+    await this.start()
+    return await this.client.generationExecute(params)
+  }
+
+  /**
+   * Explicit generation transition; reads never start inference.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async generationTransition(params: SimulationGenerationTransitionParams): Promise<SimulationGenerationResult> {
+    await this.start()
+    return await this.client.generationTransition(params)
+  }
+
+  /**
+   * Explicit generation persona-draft; reads never start inference.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns original generation linked to its committed A2 draft revision and body hash.
+   */
+  async generationPersonaDraft(params: SimulationGenerationPersonaDraftParams): Promise<SimulationGenerationResult> {
+    await this.start()
+    return await this.client.generationPersonaDraft(params)
+  }
+
   /**
    * Read authorized Simulation metadata without executing models.
    * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
    * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async rebuildSimulationIndex(params: SimulationRebuildIndexParams): Promise<SimulationRebuildIndexResult> {
+    await this.start()
+    return await this.client.rebuildSimulationIndex(params)
+  }
+
+  /**
+   * Read authorized metadata without model calls.
+   * @param params - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
    */
   async browseSimulation(params: SimulationBrowseParams): Promise<SimulationBrowseResult> {
     await this.start()
@@ -347,6 +595,16 @@ export class Clocky implements AsyncDisposable {
   async inspectSimulationSource(params: SimulationSourceParams): Promise<SimulationSourceResult> {
     await this.start()
     return await this.client.inspectSimulationSource(params)
+  }
+
+  /**
+   * Preserve original registered-source bytes with an explicit whole-record body grant.
+   * @param params - Run and bounded continuation; no caller path, provider or version override.
+   * @returns raw-only archive parts; no inference, writable restoration or Native validation occurs.
+   */
+  async archiveRawSimulation(params: SimulationRawArchiveParams): Promise<SimulationRawArchiveResult> {
+    await this.start()
+    return await this.client.archiveRawSimulation(params)
   }
 
   /**
@@ -387,6 +645,63 @@ export class Clocky implements AsyncDisposable {
   async preflightSimulation(params: SimulationPreflightParams): Promise<SimulationPreflightResult> {
     await this.start()
     return await this.client.preflightSimulation(params)
+  }
+
+  /** Access private immutable authoring revisions without model execution.
+   * @param params - Original private authoring request.
+   * @returns saved revision or explicit conflict; mismatched original identities reject.
+   */
+  async readSimulationDraft(params: SimulationDraftReadParams): Promise<SimulationDraftReadResult> {
+    await this.start()
+    return await this.client.readSimulationDraft(params)
+  }
+  /** Access private immutable authoring revisions without model execution.
+   * @param params - Original private authoring request.
+   * @returns saved revision or explicit conflict; mismatched original identities reject.
+   */
+  async saveSimulationDraft(params: SimulationDraftSaveParams): Promise<SimulationDraftSaveResult> {
+    await this.start()
+    return await this.client.saveSimulationDraft(params)
+  }
+
+  /**
+   * Preflight a portable scenario without creating a run or starting its models.
+   * @param params - Strict World definition.
+   * @returns installed preview or bounded field diagnostics.
+   */
+  async preflightSimulationWorld(params: SimulationWorldPreflightParams): Promise<SimulationWorldPreflightResult> {
+    await this.start()
+    return await this.client.preflightSimulationWorld(params)
+  }
+
+  /**
+   * Submit the original portable World creation intent, retaining it across uncertain replies.
+   * @param params - Immutable command, definition and preflight identity.
+   * @returns durable original creation receipt; the run remains paused.
+   */
+  async createSimulationWorld(params: SimulationWorldCreateParams): Promise<SimulationWorldCreateResult> {
+    await this.start()
+    return await this.client.createSimulationWorld(params)
+  }
+
+  /**
+   * Prepare the original accepted World without scheduling inference.
+   * @param params - Run and original preparation command.
+   * @returns receipt correlated to the original command and run.
+   */
+  async prepareSimulationWorld(params: SimulationWorldPrepareParams): Promise<SimulationWorldPrepareResult> {
+    await this.start()
+    return await this.client.prepareSimulationWorld(params)
+  }
+
+  /**
+   * Export the authorized original portable definition, preserving private run history.
+   * @param params - Original World run selection.
+   * @returns matching creation definition; this is not a run backup.
+   */
+  async exportSimulationWorldDefinition(params: SimulationWorldExportParams): Promise<SimulationWorldExportResult> {
+    await this.start()
+    return await this.client.exportSimulationWorldDefinition(params)
   }
 
   /**
@@ -675,7 +990,8 @@ export class Clocky implements AsyncDisposable {
         notifications.push(notification)
         options.onNotification?.(notification)
         if (notification.method === 'session.event' && notification.params.sessionId === team.coordinatorSessionId) {
-          events.push(validatedSessionEvent(notification.params.event))
+          const event = validatedSessionEvent(notification.params.event)
+          if (event !== undefined) events.push(event)
         }
       }
       for (let queued = subscription.tryNext(); queued !== undefined; queued = subscription.tryNext()) collect(queued)
@@ -1176,13 +1492,22 @@ function belongsToCoordinator(notification: HarnessNotification, coordinatorSess
 }
 
 /** Validate the one event payload exposed as a typed coordinator transcript. */
-function validatedSessionEvent(value: unknown): SessionEvent {
+function validatedSessionEvent(value: unknown): SessionEvent | undefined {
   if (!isRecord(value) || typeof value.type !== 'string') {
     throw new SdkProtocolError(`session.event carried no event envelope: ${JSON.stringify(value)}`)
   }
+  if (Object.hasOwn(value, 'ignorable') && value.ignorable !== true) throw new SdkProtocolError('session.event carried an invalid ignorable marker')
+  if (!KNOWN_SESSION_EVENT_TYPES.has(value.type)) {
+    if (value.ignorable === true) return undefined
+    throw new SdkProtocolError('session.event carried an unknown required event')
+  }
+  if (value.type === 'compaction/assessment' || value.type === 'compaction/end' && isRecord(value.data)
+    && Object.hasOwn(value.data, 'noGain')) validateCompactionEvidenceEvent(value)
   if (value.type === 'simulation/context-view' && !isSimulationContextViewEvent(value)) {
     throw new SdkProtocolError('simulation/context-view event is malformed')
   }
+  if ((value.type === 'simulation/generation-input' || value.type === 'simulation/generation-output')
+    && !isSimulationGenerationEvent(value)) throw new SdkProtocolError('Simulation generation event is malformed')
   if (value.type === 'team/channel-view') validateTeamChannelViewEvent(value)
   if (value.type === 'assistant/message') {
     const message = isRecord(value.data) ? value.data.message : undefined
@@ -1276,4 +1601,22 @@ function requiredObjective(value: string, message = 'objective must be non-empty
   const objective = value.trim()
   if (objective.length === 0) throw new TypeError(message)
   return objective
+}
+
+/** Validate newly typed diagnostic evidence before exposing it in a coordinator transcript. */
+function validateCompactionEvidenceEvent(event: Record<string, unknown>): void {
+  const data = event.data
+  const validEnvelope = Number.isSafeInteger(event.seq) && (event.seq as number) >= 0
+    && Number.isSafeInteger(event.time) && (event.time as number) >= 0
+    && Object.keys(event).length === 4 && !Object.hasOwn(event, 'ignorable') && !Object.hasOwn(event, 'surfaceOp')
+  let validData = false
+  if (isRecord(data)) {
+    if (event.type === 'compaction/assessment') validData = isCompactionAssessment(data)
+    else validData = Object.keys(data).every(key => ['compactionId', 'sourceCommandId', 'turn', 'error', 'noGain'].includes(key))
+      && typeof data.compactionId === 'string' && data.compactionId.length > 0
+      && (!Object.hasOwn(data, 'sourceCommandId') || typeof data.sourceCommandId === 'string' && data.sourceCommandId.length > 0)
+      && (data.turn === null || Number.isSafeInteger(data.turn) && (data.turn as number) >= 0)
+      && typeof data.error === 'string' && isCompactionNoGain(data.noGain)
+  }
+  if (!validEnvelope || !validData) throw new SdkProtocolError('Compaction evidence event is malformed')
 }

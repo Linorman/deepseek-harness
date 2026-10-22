@@ -23,6 +23,7 @@ it.each([en, zh])('requires explicit current-task cancellation and retains the o
   let original: SimulationCommand | undefined
   const retained = vi.fn((command: SimulationCommand) => { original = command; return simulationCommandKey(command) })
   const sends: SimulationCommand[] = []
+  const query = vi.fn()
   function Harness() {
     const [drafts, update] = useState<Record<string, SimulationTaskCancelDraft>>({ [key]: draft })
     const [target, select] = useState<typeof draft | undefined>(draft)
@@ -33,13 +34,18 @@ it.each([en, zh])('requires explicit current-task cancellation and retains the o
       const record: SimulationCommandState = { command: original, pending: false, unknown: true, notFound: false, error: 'network' }
       records({ [simulationCommandKey(original)]: record }); return record
     }
+    query.mockImplementation(async () => {
+      if (original === undefined) throw new Error('Original cancellation is missing')
+      const record: SimulationCommandState = { command: original, pending: false, unknown: true, notFound: true }
+      records({ [simulationCommandKey(original)]: record }); return record
+    })
     return <TaskControls runId={page.runId} ready connected authorizationVersion={1} pageSize={1}
       value={{ value: page, loading: false, stale: false }} read={async () => {}} drafts={drafts} target={target}
       change={(key, value) => { update((current) => {
         const { [key]: _old, ...next } = current
         return value === undefined ? next : { ...next, [key]: value }
       }) }} select={(value) => { select(value === undefined ? undefined : { ...draft, ...value }) }} commands={commands}
-      retain={retained} submit={submit} query={async () => undefined} t={(key: Key) => locale[key]} />
+      retain={retained} submit={submit} query={query} t={(key: Key) => locale[key]} />
   }
   const view = render(<Harness />), dialog = within(view.getByRole('dialog', { name: locale['taskControl.open'] }))
   expect(retained).not.toHaveBeenCalled()
@@ -48,6 +54,13 @@ it.each([en, zh])('requires explicit current-task cancellation and retains the o
   expect(original).toMatchObject({ kind: 'cancel-task', input: { runId: page.runId, operationId: 'source',
     expectedRevision: 4, expectedAttemptId: 'attempt', reason: draft.reason } })
   fireEvent.change(dialog.getByLabelText(locale['taskControl.reason']), { target: { value: 'Later reason' } })
+  expect(dialog.queryByRole('button', { name: locale.retryOriginal })).toBeNull()
+  expect(sends).toHaveLength(1)
+  fireEvent.click(dialog.getByRole('button', { name: locale.queryOriginal }))
+  await dialog.findByText(locale.commandNotFound)
+  if (original === undefined) throw new Error('Original cancellation was not retained')
+  expect(query).toHaveBeenCalledWith(simulationCommandKey(original))
+  expect(sends).toHaveLength(1)
   fireEvent.click(dialog.getByRole('button', { name: locale.retryOriginal }))
   await waitFor(() => { expect(sends).toHaveLength(2) })
   expect(sends[1]).toBe(sends[0]); expect(retained).toHaveBeenCalledOnce()
@@ -253,16 +266,16 @@ it('retains the current draft when a textarea edit exceeds storage capacity', ()
   expect(dialog.getByLabelText<HTMLTextAreaElement>(en['taskControl.reason']).value).toBe(draft.reason)
 })
 
-it('shows loading, stale and empty task pages without exposing an active cancellation', () => {
+it('keeps the empty task page stable during background reads without exposing an active cancellation', () => {
   const empty = { ...page, total: 0, items: [] }
   const base = { runId: page.runId, ready: true, connected: true, authorizationVersion: 1, pageSize: 1,
     read: async () => {}, drafts: {}, target: undefined, change: vi.fn(), select: vi.fn(), commands: {},
     retain: vi.fn(() => 'new' as never), submit: async () => undefined,
     query: async () => undefined, t: (text: Key) => en[text] }
   const view = render(<TaskControls {...base} value={{ value: empty, loading: true, stale: true }} />)
-  expect(view.getByText(en.loading)).toBeDefined()
-  expect(view.getByText(en.stale)).toBeDefined()
-  expect(view.queryByText(en['taskControl.empty'])).toBeNull()
+  expect(view.queryByText(en.loading)).toBeNull()
+  expect(view.queryByText(en.stale)).toBeNull()
+  expect(view.getByText(en['taskControl.empty'])).toBeDefined()
   view.rerender(<TaskControls {...base} value={{ value: empty, loading: false, stale: false }} />)
   expect(view.getByText(en['taskControl.empty'])).toBeDefined()
   expect(view.getByRole('region', { name: en['taskControl.title'] }).getAttribute('data-empty')).toBe('true')
@@ -278,4 +291,11 @@ it('explains a blocked cancellation with current stale data and a terminal Host 
   expect(dialog.getByText(en['reviews.stale'])).toBeDefined()
   expect(dialog.getByText(en['taskControl.reason.terminal'])).toBeDefined()
   expect(dialog.getByRole<HTMLButtonElement>('button', { name: en['taskControl.confirm'] }).disabled).toBe(true)
+})
+
+it('announces the first task read while nothing has loaded yet', () => {
+  const view = render(<TaskControls runId={page.runId} ready connected authorizationVersion={1} pageSize={1}
+    value={{ loading: true, stale: false }} read={async () => {}} drafts={{}} change={vi.fn()} select={vi.fn()} commands={{}}
+    retain={vi.fn(() => 'key' as never)} submit={async () => undefined} query={async () => undefined} t={(key: Key) => en[key]} />)
+  expect(view.getByRole('status').textContent).toBe(en.loading)
 })

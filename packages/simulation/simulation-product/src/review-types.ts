@@ -1,5 +1,5 @@
 /** Scenario-scoped administrative review metadata; task bodies and general Team authority are withheld. */
-import type { TaskAttemptId, TeamId, TeamTaskId, TeamTaskPhase } from '@clocky/clocky-team'
+import type { TaskAttemptId, TeamId, TeamTaskId, TeamTaskPhase } from '@clocky/clocky-team/types'
 import type { SimulationEntityId, SimulationOperationId } from '@clocky/clocky-simulation/identities'
 import type { SimulationProductCommandId } from './administration-types.ts'
 import type { SimulationProductCursor, SimulationProductRunId } from './types.ts'

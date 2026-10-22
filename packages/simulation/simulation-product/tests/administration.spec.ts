@@ -16,8 +16,8 @@ import { companyFixture, companyConfig } from './company-driver-fixture.ts'
 import { call, registration } from './fixtures.ts'
 
 async function fixture(backend: 'json' | 'sqlite' = 'json', options: Partial<Config> = {},
-  imports: ReturnType<typeof registration>[] = []) {
-  const h = await companyFixture(backend, false)
+  imports: ReturnType<typeof registration>[] = [], contextLimits?: Parameters<typeof companyFixture>[4]) {
+  const h = await companyFixture(backend, false, {}, undefined, contextLimits)
   const { runId: _runId, ...spec } = h.selection.spec
   const template = simulationCompanyTemplateSchema.parse({ id: 'company', version: '1', name: 'Company procurement', provider: 'local', spec,
     preset: 'simulation', objective: 'Deliver one inventory unit', driver: companyConfig,
@@ -56,7 +56,7 @@ it('refuses administrative review when the installed scenario has no reviewer', 
   } finally { await h.close() }
 })
 
-it('refuses a task-driven template when its isolated composition has no canonical Team reader', async () => {
+it('keeps task administration inactive when its isolated composition has no canonical Team dependency', async () => {
   const h = await fixture()
   try {
     await h.fiber.dispose()
@@ -66,12 +66,15 @@ it('refuses a task-driven template when its isolated composition has no canonica
       scenario: { kind: 'task-workflow', version: '1', steps: [{ id: 'report', sourceEntityId: 'buyer', entityId: 'buyer',
         recipientEntityId: 'supplier', channelKey: 'purchase', subject: 'Report', description: 'One report', text: 'One result',
         cognition: 'deterministic', leaseDurationMs: 60000, maxAttempts: 2, retry: 'before-effects' }] } } })
-    let failure: unknown
-    try { await withoutTeams.plugin(Administration, { journalStream: 'product-commands', templates: [taskTemplate], recoveryPageSize: 1 }) }
-    catch (error: unknown) { failure = error }
-    if (failure === undefined) throw new Error('Task administration mounted without its canonical Team reader')
-    if (!(failure instanceof Error)) throw new Error('Task administration rejected with a non-Error value')
-    expect(failure.message).toContain('canonical Team reader')
+    const open = vi.spyOn(h.ctx.simulations, 'open')
+    const fiber = withoutTeams.plugin(Administration, { journalStream: 'product-commands', templates: [taskTemplate], recoveryPageSize: 1 })
+    try {
+      await fiber
+      expect(withoutTeams.get('simulationAdministration')).toBeUndefined()
+      expect(h.ctx.storageLog.get('product-commands')).toBeUndefined()
+      expect(open).not.toHaveBeenCalled()
+      expect(h.requests).toEqual([])
+    } finally { await fiber.dispose(); open.mockRestore() }
   } finally { await h.close() }
 })
 
@@ -738,5 +741,24 @@ it('reports unsupported explicit reasoning selection rather than silently losing
       .toEqual({ status: 'unavailable', reason: 'reasoning-unsupported' })
     await expect(h.ctx.simulationAdministration.create(h.input, call())).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_UNAVAILABLE' })
     expect(h.requests).toEqual([])
+  } finally { await h.close() }
+})
+
+
+it('refuses a measured initial Company context before durable allocation when the deployment byte budget cannot fit it', async () => {
+  const h = await fixture('json', {}, [], { maxContextBytes: 64 })
+  try {
+    const { commandId: _command, expectedModel: _model, ...preview } = h.input
+    const stream = h.ctx.storageLog.get('product-commands')!
+    const before = stream.tailSequence, native = h.run.snapshot()
+    const open = vi.spyOn(h.ctx.simulations, 'open'), team = vi.spyOn(h.ctx.simulationTeams, 'ensureTeam')
+    expect(await h.administration.preflight(preview, call())).toMatchObject({ status: 'invalid',
+      readiness: { status: 'ready' }, issues: [{ field: 'context', code: 'capacity-unavailable' }] })
+    await expect(h.administration.create(h.input, call())).rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_INVALID' })
+    expect(stream.tailSequence).toBe(before)
+    expect(h.run.snapshot()).toEqual(native)
+    expect(open).not.toHaveBeenCalled()
+    expect(team).not.toHaveBeenCalled()
+    expect(h.requests).toHaveLength(0)
   } finally { await h.close() }
 })

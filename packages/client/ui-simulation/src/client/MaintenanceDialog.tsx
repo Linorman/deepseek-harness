@@ -7,7 +7,9 @@ import { simulationCommandKey } from '@clocky/clocky-client-runtime/client'
 import type { SimulationMaintenanceTarget, SimulationInputDraft } from './store.ts'
 import { EMPTY_INPUT } from './store.ts'
 import { CommandRecord } from './CommandRecord.tsx'
+import { CopyId } from './WorldFacts.tsx'
 import type { Key } from './locales.ts'
+import { tickUnitLabel } from './RunStateChip.tsx'
 import css from './Workspace.module.css'
 
 /**
@@ -36,7 +38,7 @@ export function MaintenanceDialog({ target, name, control, recovery, readRecover
   retain: (command: SimulationCommand, version: number) => SimulationCommandKey
   submit: (key: SimulationCommandKey) => Promise<SimulationCommandState | undefined>
   query: (key: SimulationCommandKey) => Promise<SimulationCommandState | undefined>
-  t: (key: Key) => string
+  t: (key: Key, vars?: Record<string, unknown>) => string
   date: (time: number) => string
 }) {
   const draft = value ?? EMPTY_INPUT
@@ -125,6 +127,10 @@ export function MaintenanceDialog({ target, name, control, recovery, readRecover
   }
   /* v8 ignore next -- The bundled CSS module always has formBody; fallback satisfies optional typings. */
   const bodyClassName = css.formBody ?? ''
+  const unit = tickUnitLabel(control.value?.versions?.tickUnit.text ?? '', t)
+  // Completeness is stated only from Host evidence: a completed checkpoint inspection or a stop-target save outcome.
+  const completeness: 'complete' | 'partial' | 'checking' | 'unconfirmed' = control.value?.stopTarget?.checkpoint === 'external-state-required'
+    ? 'partial' : sources?.summary.status === 'completed' ? 'complete' : recovery.loading ? 'checking' : 'unconfirmed'
   const recoveryRevision = (): number | string => {
     /* v8 ignore next -- A published recovery anchor is carried only by a loaded control value. */
     return control.value?.revision ?? t('unavailable')
@@ -135,34 +141,66 @@ export function MaintenanceDialog({ target, name, control, recovery, readRecover
         {target.kind === 'ingress' && value !== undefined && <Button onClick={() => { setDiscard(true) }}>{t('discardDraft')}</Button>}
         <Button onClick={close}>{t('closeKeepDraft')}</Button>
         {received ? <Button onClick={acknowledgeInput}>{t('inputReceivedClose')}</Button>
-          : <Button form={`${id}-maintenance`} type="submit" disabled={!canSubmit}>{t(`maintenance.${target.kind}`)}</Button>}
+          : <Button variant="primary" form={`${id}-maintenance`} type="submit" disabled={!canSubmit}>{t(`maintenance.${target.kind}`)}</Button>}
       </>}>
-      <p>{name}</p>
-      <p>{t(`maintenanceNotice.${target.kind}`)}</p>
-      {hints !== undefined && !hints.actions[target.kind].allowed && <p role="status">{t(`maintenanceReason.${hints.actions[target.kind].reason}`)}</p>}
+      {/* Object, consequences, then sources: what this acts on, what will and will not happen, and what it verifies. */}
+      <section className={css.dialogObject} aria-label={t('maintenance.target')}>
+        <span className={css.dialogEyebrow}>{t('maintenance.target')}</span>
+        <p className={css.confirmName}>{name}</p>
+        {/* Restore leads with its effect in task language; coverage and technical identities follow on demand. */}
+        {target.kind === 'restore' && anchor !== undefined && <div className={css.restoreSummary} data-restore-layer="summary">
+          <p>{t('restore.summary.what', { time: `${anchor.time} ${unit}`, published: date(anchor.publishedAt) })}</p>
+          <p>{t('restore.summary.paused')}</p>
+          <p>{t('restore.summary.guarantee')}</p>
+          <p data-checkpoint-completeness={completeness}><strong>{t('restore.completeness')}</strong> {t(`restore.completeness.${completeness}`)}</p>
+        </div>}
+      </section>
+      {target.kind !== 'restore' && <Consequences will={t(`maintenanceWill.${target.kind}`)} wont={t(`maintenanceWont.${target.kind}`)} t={t} />}
+      {hints !== undefined && !hints.actions[target.kind].allowed && <p role="status" className={css.dialogBlocked}>{t(`maintenanceReason.${hints.actions[target.kind].reason}`)}</p>}
       {control.error !== undefined && <p role="alert">{t(control.error === 'forbidden' ? 'noControlAccess' : control.error)}</p>}
-      {target.kind === 'restore' && anchor !== undefined && <dl>
-        <dt>{t('checkpointId')}</dt><dd><code>{anchor.checkpointId}</code></dd>
-        <dt>{t('checkpointPublishedAt')}</dt><dd>{date(anchor.publishedAt)}</dd>
-        <dt>{t('time')}</dt><dd>{anchor.time}</dd><dt>{t('checkpointRevision')}</dt><dd>{anchor.revision}</dd>
-        <dt>{t('currentRevision')}</dt><dd>{recoveryRevision()}</dd>
-        <dt>{t('restoreSources')}</dt><dd>Run {anchor.references.runs} · Team {anchor.references.teams}
-          · Channel {anchor.references.channels} · Session {anchor.references.sessions}</dd>
-      </dl>}
-      {target.kind === 'restore' && anchor !== undefined && <section aria-label={t('restoreSources')}>
-        {recovery.loading && <p role="status">{t('loading')}</p>}
-        {recovery.error !== undefined && <p role="alert">{t(recovery.error)}</p>}
-        {recovery.stale && <p role="status" className={css.stalePill}>{t('stale')}</p>}
-        {sources?.references.items.map((reference, index) => <p key={index}>{reference.kind}: <code>
-          {'id' in reference ? reference.id : reference.cursor}</code></p>)}
-        <div className={css.actions}><Button disabled={!connected || recovery.loading}
-          onClick={() => { void readRecovery({ runId: target.runId, collection: 'checkpoints', id: anchor.checkpointId,
-            section: 'references', limit: pageSize }) }}>{t('first')}</Button>
-        <Button disabled={!connected || recovery.loading || recovery.stale || recovery.error !== undefined
-          || sources?.references.nextCursor === undefined}
-        onClick={() => { void readRecovery({ runId: target.runId, collection: 'checkpoints', id: anchor.checkpointId,
-          section: 'references', limit: pageSize, cursor: sources?.references.nextCursor }) }}>{t('next')}</Button></div>
-      </section>}
+      {target.kind === 'restore' && anchor !== undefined && <>
+        <details className={css.dialogSources} data-restore-layer="coverage">
+          <summary>{t('restore.coverage')}</summary>
+          <dl className={css.dialogFacts}>
+            <div><dt>{t('restore.coverage.references')}</dt><dd className={css.dialogSourceCounts}>{t('restore.coverage.counts', {
+              runs: anchor.references.runs, teams: anchor.references.teams, channels: anchor.references.channels,
+              sessions: anchor.references.sessions })}</dd></div>
+            <div><dt>{t('maintenance.revisions')}</dt><dd><span>{anchor.revision}</span> <span aria-hidden="true">→</span>
+              <span className={css.visuallyHidden}>{t('currentRevision')}</span> <span>{recoveryRevision()}</span></dd></div>
+            <div><dt>{t('restore.coverage.verification')}</dt><dd>{t('restore.coverage.verificationValue')}</dd></div>
+          </dl>
+          {recovery.loading && <p role="status">{t('loading')}</p>}
+          {recovery.error !== undefined && <p role="alert">{t(recovery.error)}</p>}
+          {recovery.stale && <p role="status" className={css.stalePill}>{t('stale')}</p>}
+        </details>
+        <details className={css.dialogIds} data-restore-layer="technical">
+          <summary>{t('restore.technical')}</summary>
+          <div className={css.dialogChips}><CopyId value={anchor.checkpointId} compact t={t} /></div>
+          <Consequences will={t('maintenanceWill.restore')} wont={t('maintenanceWont.restore')} t={t} />
+          <section aria-label={t('restoreSources')}>
+            <span className={css.dialogEyebrow}>{t('restoreSources')}</span>
+            <p className={css.dialogSourceCounts}>Run {anchor.references.runs} · Team {anchor.references.teams}
+              · Channel {anchor.references.channels} · Session {anchor.references.sessions}</p>
+            {sources !== undefined && sources.references.items.length > 0 && <>
+              <p>{t('maintenance.showIds', { count: sources.references.items.length })}</p>
+              <ul>{sources.references.items.map((reference, index) => <li key={index}><span>{reference.kind}</span>
+                <CopyId value={'id' in reference ? reference.id : String(reference.cursor)} compact t={t} /></li>)}</ul>
+            </>}
+            {/* Paging stays reachable without loaded identities, so a stale, failed or empty read can restart from page one. */}
+            <div className={css.actions}><Button size="sm" disabled={!connected || recovery.loading}
+              onClick={() => { void readRecovery({ runId: target.runId, collection: 'checkpoints', id: anchor.checkpointId,
+                section: 'references', limit: pageSize }) }}>{t('first')}</Button>
+            <Button size="sm" disabled={!connected || recovery.loading || recovery.stale || recovery.error !== undefined
+              || sources?.references.nextCursor === undefined}
+            onClick={() => {
+              /* v8 ignore next -- Next is disabled until a loaded page carries a continuation cursor. */
+              if (sources?.references.nextCursor === undefined) return
+              void readRecovery({ runId: target.runId, collection: 'checkpoints', id: anchor.checkpointId,
+                section: 'references', limit: pageSize, cursor: sources.references.nextCursor })
+            }}>{t('next')}</Button></div>
+          </section>
+        </details>
+      </>}
       <form ref={form} id={`${id}-maintenance`} className={css.form} noValidate
         onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
         onSubmit={(event) => { event.preventDefault(); void execute() }}>
@@ -201,6 +239,21 @@ export function MaintenanceDialog({ target, name, control, recovery, readRecover
           setDiscard(false); close()
         }}>{t('discardDraft')}</Button></>}><p>{t('discardDraftNotice')}</p></Modal>}
   </>
+}
+/**
+ * What the action will and will not do, as two short checked lists. Lines come from one localized string each.
+ * @param props.will - Newline-separated consequences.
+ * @param props.wont - Newline-separated non-consequences.
+ * @returns two-column list.
+ */
+function Consequences({ will, wont, t }: { will: string; wont: string; t: (key: Key) => string }) {
+  const lines = (text: string) => text.split('\n').filter(line => line.trim() !== '')
+  return <div className={css.consequences}>
+    <section aria-label={t('maintenance.will')}><span className={css.dialogEyebrow}>{t('maintenance.will')}</span>
+      <ul data-kind="will">{lines(will).map(line => <li key={line}>{line}</li>)}</ul></section>
+    <section aria-label={t('maintenance.wont')}><span className={css.dialogEyebrow}>{t('maintenance.wont')}</span>
+      <ul data-kind="wont">{lines(wont).map(line => <li key={line}>{line}</li>)}</ul></section>
+  </div>
 }
 /* v8 ignore next -- administrative UI selection is a closed typed union. */
 function assertNever(value: never): never { void value; throw new Error('Unknown Simulation maintenance selection') }

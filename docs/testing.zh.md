@@ -4,6 +4,8 @@
 
 本文定义测试层级及其各自负责的证据。命令见根目录 [AGENTS.md](../AGENTS.md)；Agent Note 承载设计动机。
 
+普通 Vitest 配置将文件 worker 限制为4个；CI／coverage 显式 `--maxWorkers` 覆盖此默认值。测试期限、断言和完整用例集合保持不变。异步 fixture 就绪应等待准确的持久完成事件，不附加无关的短轮询期限；在可能失败的准备步骤前注册清理（[依据](../.agents/notes/implemented/testing/2026-10-16-durable-test-scheduling.zh.md)）。
+
 ## 层级
 
 - **单元测试**（`pnpm run test`）：vitest 运行包/示例测试与仓库脚本测试。测试与被覆盖的代码放在一起；每个注册表测试 HMR 清理。优先覆盖边界、错误路径、顺序、竞态和永久约定回归（见 `packages/core/agent-loop/tests/contract-regressions.spec.ts`）。

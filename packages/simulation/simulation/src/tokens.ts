@@ -5,10 +5,22 @@ import type { SimulationDecisionId } from './business-types.ts'
 import type { SimulationEntityId } from './entity-types.ts'
 import type { SimulationWriterEpoch } from './writer-types.ts'
 import type { SimTime } from './types.ts'
-import type { SessionId } from '@clocky/clocky-session'
+import type { SessionId } from '@clocky/clocky-session/types'
+export { simulationRequestBudgetBlockSchema } from './model-admission.ts'
+export type { SimulationRequestBudgetBlock } from './model-admission.ts'
 
 /** Stable run-local identity of one model attempt. */
 export const simulationTokenReservationIdSchema = z.string().min(1).transform(value => value as Branded<'SimulationTokenReservationId'>)
+/** Explicit acknowledgement quote; it never changes a retained per-request allowance or starts scheduling. */
+export const simulationTokenRecoverySchema = z.strictObject({
+  reservationId: simulationTokenReservationIdSchema,
+  reserved: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  used: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  interval: z.string().regex(/^(0|[1-9][0-9]*)$/),
+  additionalTokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+}).refine(value => value.used > value.reserved, 'Recovery requires an actual reservation overrun')
+/** Original user-reviewed token recovery values. */
+export type SimulationTokenRecovery = z.infer<typeof simulationTokenRecoverySchema>
 /** Provider-reported uncached input, cache and output counts; reasoning is already included in output. */
 export const simulationTokenUsageSchema = z.strictObject({
   inputTokens: z.number().int().nonnegative(), outputTokens: z.number().int().nonnegative(),

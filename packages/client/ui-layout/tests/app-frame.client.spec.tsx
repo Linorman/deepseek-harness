@@ -11,7 +11,7 @@
  * resizes are driven through the ResizeObserver stub.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { useSyncExternalStore } from 'react'
 import { AppFrame, chordKeys } from '@clocky/clocky-client-ui-layout/src/client/AppFrame.tsx'
 import type { AppFrameProps } from '@clocky/clocky-client-ui-layout/src/client/AppFrame.tsx'
@@ -342,6 +342,31 @@ describe('AppFrame — narrow-viewport auto-collapse', () => {
     expect(frame.querySelectorAll('[class*="handle"]')).toHaveLength(1)
     act(() => { instance.actions.toggleSidebar() })
     expect(tracks(frame)).toEqual([SIDEBAR_COLLAPSED, 0])
+  })
+
+  it('opens a re-expanded sidebar as an overlay drawer below the drawer breakpoint and closes it on scrim or Escape', () => {
+    frameWidth = 390
+    const { frame, instance, slotCalls } = mountFrame()
+    act(() => { instance.actions.toggleSidebar() })
+    // The grid keeps the rail, so the center keeps its width; the sidebar floats above a scrim.
+    expect(tracks(frame)).toEqual([SIDEBAR_COLLAPSED, 0])
+    const column = frame.querySelector('[data-clocky-navigation]')!
+    expect(column.hasAttribute('data-drawer')).toBe(true)
+    expect(slotCalls.filter(c => c.key === 'sidebar').at(-1)!.props).toEqual({ workspace: 'team', collapsed: false, width: SIDEBAR_DEFAULT })
+    fireEvent.click(frame.querySelector('[data-sidebar-scrim]')!)
+    expect(column.hasAttribute('data-drawer')).toBe(false)
+    act(() => { instance.actions.toggleSidebar() })
+    act(() => { fireEvent.keyDown(window, { key: 'Escape' }) })
+    expect(frame.querySelector('[data-sidebar-scrim]')).toBeNull()
+    expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
+  })
+
+  it('keeps a re-expanded sidebar in the row above the drawer breakpoint', () => {
+    frameWidth = 700
+    const { frame, instance } = mountFrame()
+    act(() => { instance.actions.toggleSidebar() })
+    expect(frame.querySelector('[data-clocky-navigation]')!.hasAttribute('data-drawer')).toBe(false)
+    expect(frame.querySelector('[data-sidebar-scrim]')).toBeNull()
   })
 
   it('a wide-closed preference re-expands at the contract default while narrow', () => {

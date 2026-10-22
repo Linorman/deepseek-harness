@@ -1,0 +1,2 @@
+packages/simulation/simulation-local/src/world-norms.ts(352,21): error TS2304: Cannot find name 'worldOperationGrants'.
+packages/simulation/simulation-local/src/world-norms.ts(352,55): error TS7006: Parameter 'grant' implicitly has an 'any' type.

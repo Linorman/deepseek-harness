@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-12",
+  "inputHash": "a9db7cf7555055e8df44df1f1af9b9dcf07abbad9655d6b71dc55ad519cff772",
+  "inputManifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-personnel-input-manifest.json",
+  "checks": [
+    {
+      "command": "pnpm exec tsc -b --pretty false",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-types-current.log",
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm run lint:contracts-ready",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-lint-current.log",
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm run build",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-build-final.log",
+      "exitCode": 0,
+      "count": 197
+    },
+    {
+      "command": "pnpm run doc-sync",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-doc-sync-fixed.log",
+      "exitCode": 0,
+      "count": 29
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-local/tests/personnel-admission.spec.ts packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts packages/simulation/simulation-team/tests/personnel-terminal-evidence.spec.ts packages/simulation/simulation-team/tests/personnel-obligations.spec.ts packages/simulation/simulation-local/tests/maintenance.spec.ts packages/simulation/simulation-team/tests/world.spec.ts packages/simulation/simulation-local/tests/world-governance.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-regression-final.log",
+      "exitCode": 0,
+      "count": 248
+    },
+    {
+      "command": "pnpm exec vitest run packages/client/ui-simulation/tests/run-status.client.spec.tsx packages/simulation/simulation-product/tests/control-schema.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-control-tests.log",
+      "exitCode": 0,
+      "count": 114
+    },
+    {
+      "command": "python/sdk/.venv/bin/python -m pytest python/sdk/tests/test_simulation.py -o cache_dir=$PWD/.local/world-completion/tmp/pytest-cache",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-python-tests.log",
+      "exitCode": 0,
+      "count": 101
+    },
+    {
+      "command": "pnpm run verify-md-links",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-evidence-links.log",
+      "exitCode": 0
+    },
+    {
+      "command": "git diff --check",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-diff-check.log",
+      "exitCode": 0
+    }
+  ],
+  "scope": "O10/O11/O12/O13 complete; only normal8 cross-backend/company/lab/retire-mode source/lib, future and handoff actualLoader JSONcompany. No O14/15/16/17 whole-item claim.",
+  "fixtureManifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c9-departure-agent-manifest.json",
+  "allTempAndOutputsInsideRepository": true
+}

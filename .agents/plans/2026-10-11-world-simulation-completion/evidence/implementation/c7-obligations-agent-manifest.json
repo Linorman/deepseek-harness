@@ -1,0 +1,67 @@
+{
+  "part": "O09 bounded personnel obligation inventory",
+  "authoredFiles": [
+    {
+      "path": "packages/simulation/simulation/src/personnel-obligations.ts",
+      "bytes": 13603,
+      "sha256": "6346d20feed9ad722485ed9a4ba66fff2e2fc47fe5f0446c5b36a373602bed81"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/personnel-obligations.ts",
+      "bytes": 17416,
+      "sha256": "9f2e6e7fc23a0c02ec655b92680127543274fb320297149f78443fbb92cc7a22"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/personnel-obligations.spec.ts",
+      "bytes": 23230,
+      "sha256": "83514a281a0a107860c615f42a929f8f2df3551d7dde0fa6b4fcb6597ec3b9ad"
+    }
+  ],
+  "verifiedAt": "2026-10-11T21:00:10.789Z",
+  "checks": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation-local/tests/personnel-obligations.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c7-obligations-unit-final2.log",
+      "exitCode": 0,
+      "tests": 18
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -b tsconfig.host.json",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c7-obligations-types-final2.log",
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsx scripts/run-oxlint.ts packages/simulation/simulation/src/personnel-obligations.ts packages/simulation/simulation-local/src/personnel-obligations.ts packages/simulation/simulation-local/tests/personnel-obligations.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c7-obligations-lint-final2.log",
+      "exitCode": 0
+    }
+  ],
+  "interfaces": [
+    "personnelObligationQuerySchema",
+    "personnelObligationReferenceSchema",
+    "personnelObligationSchema",
+    "personnelObligationReportSchema",
+    "PersonnelObligationQuery",
+    "PersonnelObligationReference",
+    "PersonnelObligation",
+    "PersonnelObligationReport",
+    "PersonnelObligationError",
+    "boundPersonnelObligationReport(input,query)",
+    "inspectPersonnelObligations(state,input,runtime?)"
+  ],
+  "contracts": {
+    "selector": "exact person revision and optional original assignment subject/revision; selected assignment excluded from other structural obligations",
+    "catalog": "configured World requires original immutable manifest and NativeWorldDomain.personnelSubjects(intent); no guessed business payload",
+    "coverage": "Native-only complete=false; actual external Team source observed or partial coverage is owned by root",
+    "bounds": "full UTF8 JSON envelope and item count; overflow complete=false and nonzero discovered total; undersized minimum summary rejects",
+    "effects": "pure synchronous inventory; no fence, cancellation, read receipt, claim, acknowledgement or ownership transfer",
+    "unknown": "uncertain/inflight publication, missing task outcome, unreleased writer/activation and unresolved external observation remain responsibilities",
+    "private": "metadata references only; no task/message bodies or private person profiles"
+  },
+  "limitations": [
+    "No all-clear or personnel mutation is authorized by inventory completeness.",
+    "Root owns actual Team collector/projector, source/lib Loader and two-backend integration evidence.",
+    "Source/library runtime matrix was not run by this agent for O09."
+  ],
+  "checklistModified": false
+}

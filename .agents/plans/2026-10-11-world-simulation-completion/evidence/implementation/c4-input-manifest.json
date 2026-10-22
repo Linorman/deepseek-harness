@@ -1,0 +1,412 @@
+{
+  "date": "2026-10-12",
+  "scope": "C4 automatic governance cutoffs, strict append-only institutions, single-case committee hiring approval and exact Native mutation/disclosure/clock responsibilities",
+  "nativeStream": 65,
+  "checkpointManifest": 3,
+  "files": [
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-governance/cordis.yml",
+      "sha256": "3c8e2f9836d9f43f1195b3084663d607e96e401a02dffa99b34e805ad24c6512"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-norm/cordis.yml",
+      "sha256": "626a5fa3b9742b6d6a2a060843e9d62bd6205bf7945b424653965418826d74d4"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-booking-domain.ts",
+      "sha256": "48e3dc9adb31ee549d47da89b0dfa69f41f5524591149b0d38b06f001615891b"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-booking-scenario.ts",
+      "sha256": "4b35814054cab3abbed15c2e4401c5388137f5f9ab4e2cd34ef85824dc0b32b3"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-booking-version.snapshot.ts",
+      "sha256": "0918a8fa3288f1136a5fe599c8745d251e6ce363e44fefde31375d202e211630"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-booking.snapshot.ts",
+      "sha256": "fd2f7434739be4a4124130f819498ff18ebda143d02a1f5ba4eca40b40d74535"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-domain-input.ts",
+      "sha256": "53da9a363532b27404156f03e0a339de8dd2f59ca33e702b0f0b23e73a331411"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-driver-model.ts",
+      "sha256": "b54750a49c65a9c423c1de8a92dfca33a01f109365570b2ec2aea78e2688bb66"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-driver-scenario.ts",
+      "sha256": "4e3f57226fe3c9bda2452bb9caa13a48d38f436d0b841ab9881ae21f8861c97f"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-facts-model.ts",
+      "sha256": "91aab5c966d5ab447fe4403dcb971d20f9f5700581b227fa560f6c1180695f5a"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-facts-scenario.ts",
+      "sha256": "faf89ae5874208be3fb4e5daa8b97ca59b47e6cc9690e8704567ab8733a80650"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-facts.snapshot.ts",
+      "sha256": "858d84ca4cb2b82165096bec0014d22c6183eec4d942b9c8ad8aaa32851e25f6"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance-deadline-scenario.ts",
+      "sha256": "3bff71d32cce2d4e9e90c34670d6836971cddee0b813221e3df29244bef8b654"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance-deadline.snapshot.ts",
+      "sha256": "1a98cf432abd4b9be194cbb3de1549eed5d40e6a661496ad2194f6f3267c5bec"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance-model.ts",
+      "sha256": "6b0cefc857aa32f42e3a2894f473ea1b0ef2544edce7f14e718671b247be9bd3"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance-scenario.ts",
+      "sha256": "e87c90bd3ccb9d5322215f29050d67a92daa8c8070ba8ff3485efda13459e995"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-governance.snapshot.ts",
+      "sha256": "a3dd4d9ff6cd3f8ac5296aa13b05156ecdfe6661f914ca574e15e229dbb9f2a2"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-norm-model.ts",
+      "sha256": "92e8a3b299418a4d7ce8b01e979622c1151d9c6d234c8a1ebf1d3ed9570d60e0"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-norm-scenario.ts",
+      "sha256": "8b2084ee5afbfc786b620b8823fcbd82756ae9bdbae87fce0dcb5282f205df20"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-norm.snapshot.ts",
+      "sha256": "f9a08f6091988f95d8fe614d14a6ef68faa88c6d2a98704603b6c8a022e478c2"
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/locales.ts",
+      "sha256": "b37b73e6c18cdfb8428c1fa589da67310c0526b163043d8f8216718e1a56ec88"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/run-status.client.spec.tsx",
+      "sha256": "4695a33faf444ec66fffa1b0927a1bdd99b7b36f4fa5b163156af24f15f2e8ed"
+    },
+    {
+      "path": "packages/sdk/client/tests/simulation.spec.ts",
+      "sha256": "66260c07623d5b294852800cc4d0d240c8a59c07aef04a0d897c2ce37aa1e02e"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/business.ts",
+      "sha256": "f1748b54d8a013ccd971a2b19741b180a80af0d601ad428956733b4aa4ce558b"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/context.ts",
+      "sha256": "b524f7a8e5a6419e3d8f18c8125e96264dc2d6312c4a7bc23a2a78cbb87a5d6f"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/decisions.ts",
+      "sha256": "63fd8fc0a3dd0b7e605587a25b774358cd073fd4e4f9d6651a972e41616b71ee"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/index.ts",
+      "sha256": "5ec991b308ab8d4a1f5e4587c90d74022f3bf4b8209eca6c473c313cfea547db"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/journal.ts",
+      "sha256": "f1e6739b6d238845ac7561a09def9171687b7376c988d9202b94488d90cb64a4"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/run.ts",
+      "sha256": "4dfc7b19f58e83e84a728614fedb56fa2e0a2cfee670895d8ef73a05306997b1"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-facts.ts",
+      "sha256": "d6ed3f7c46b3c290469848986709d82c7e9914375cf5cbbd7704458375bf8b62"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-governance-deadline.ts",
+      "sha256": "7d689c4b4c74f06f5fa666dac415ceabe67f3577ed7f0b9e75b70f1c467c7079"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-governance.ts",
+      "sha256": "4903776021873b753af2a534712da9920de1206c3bd2bf97e5f1ff03f8048620"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-hire-approval.ts",
+      "sha256": "a034dd3a8aeec40ac60de0a4b9f35a2949f955fd82fb85bd18e2be50349f3001"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-hire.ts",
+      "sha256": "9718aa5cd5e29f6c011b2b25385dd1035b9530f41cb6c9397d69fd06787eba49"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-mutation.ts",
+      "sha256": "51c7eacb48d5e453fcd7fffdd424e0b1c1501350223e1caec0e6bc9b619196bc"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-norm-announcement.ts",
+      "sha256": "a03fbfe2eed2dc3c3cf58c09c4974caac7063e608e82a68bbc564877fccc1394"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-norms.ts",
+      "sha256": "c593db5e1b93aded14c651740ac3b6472504702582da28da150d6960271b17f6"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-organization.ts",
+      "sha256": "47cd074ac62c9ee7d722364bb829856be10945502eef8b51a8e50e1d55e0adff"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-runtime.ts",
+      "sha256": "e4af6064ac8bced068b088afb3c284585089e91606eaba52bf1dcdf7b0f35f62"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world.ts",
+      "sha256": "4091a975144c210db601c8c6a9508a805285e82cb6a84795b3f2a60fd2ff8c7a"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/checkpoints.spec.ts",
+      "sha256": "d490f2afa3818e3f2d6420d4c95a13c503049b2d5c4a3f910bc85c7082f402f5"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/run.spec.ts",
+      "sha256": "696657204f3818eb91c2b1fd508832d4feaab02b53e30fb681df9ccce26e2213"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-facts.spec.ts",
+      "sha256": "75a131ec52ed97c34091113ee68bbafb8441b367acdb6f5945302a1101741fde"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-governance.spec.ts",
+      "sha256": "5615f6c9c5398515dfb75d6af56fd54e2b0705f3cdda744cd021ce8b1b0142f2"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-hire-approval.spec.ts",
+      "sha256": "e6c7e6604a1c3aeebd6df1e8781d5c4953e69ce42aafad6544df167e0715044c"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-norms.spec.ts",
+      "sha256": "61feda6e832ca4a966e58bfd3166626809b21681de316807c5109ae4e14c82cf"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/case-schema.ts",
+      "sha256": "4e68d9d7de19d28001c163e1e385a360004b808e7e372cb78dbd8040b4500b86"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/case-types.ts",
+      "sha256": "df56333378ef1b4a2e59849f6d8f15682a824d20288d0849737ca5e3f4b6cc11"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/cases.ts",
+      "sha256": "dac8516c88d7779ec94ebbe7a4ffb3383fa45ba88356eb896777b58106f3b48f"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/control-schema.ts",
+      "sha256": "c1d1d68f71d1388fc39077269507248895cfd8f6ebe4abcd882b5944be9ee137"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/control-types.ts",
+      "sha256": "181da1a34b6bcb5baf9f31e4c1cdaa6b4460e9260eea4069a12f52deeffacadc"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-owner.ts",
+      "sha256": "42a407850ce39b55953083f3db992befdec4e8b109cd4714aa8373bfcffafffc"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-preparation.ts",
+      "sha256": "06ea27e79755b1e0784570a2732e5d36bea8e2d6d08e6ae5bdf94ea8eb541f7d"
+    },
+    {
+      "path": "packages/simulation/simulation-product/tests/collection-fixtures.ts",
+      "sha256": "d849606ad52352a98f9942623bd8b3dce9730f5c551507a040a46511f24a1dce"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/compiler.ts",
+      "sha256": "778bf88a5eb76898c74eaa4ce61e16279c82913b3fc6b1c5df2173665db3120d"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/src/types.ts",
+      "sha256": "f30d56742a27b0c246ff98b802b3bdc355092fffbba648bf92141b3abc26a685"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/checkpoint.ts",
+      "sha256": "ffe49684272e2b26566965a196c3d580272d3f9443e57cbde60d524f3380efdd"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/driver.ts",
+      "sha256": "2d68c5646608a7b495ec30224f1d7c4e0b829919fa47f23710f1db6a41946b95"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/execution.ts",
+      "sha256": "dd4e548bfead4f7ce6e1f653eb95279241707fefb59384b43d07192214dc3a10"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/governance.ts",
+      "sha256": "78f0a70b6bf39ef63456e7a27da82c47c4dededce6fb7f1822530f03e02d0ed8"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/index.ts",
+      "sha256": "7a5e10b862f6618257dfe8cb47780867e03e53fcba16943556ab85bf436f5a0f"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/norms.ts",
+      "sha256": "423436a575ada1e3e4c1f24772700341648093612d3d8815aacb3b9958dc86b8"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/organization.ts",
+      "sha256": "3660cefa6c65749dd554b931aede6e996e35ce753f74116b778347fbe94397f2"
+    },
+    {
+      "path": "packages/simulation/simulation-world/tests/execution.spec.ts",
+      "sha256": "55887bb61baaf1e4a62c01c19d3b5bb7149a093e40db07d0b099e0540f957adb"
+    },
+    {
+      "path": "packages/simulation/simulation/src/business-types.ts",
+      "sha256": "7c8dd68cb3e89ed1a1626d8e36c93a96a1650d482e79987f15a1a0fd97e4d592"
+    },
+    {
+      "path": "packages/simulation/simulation/src/business.ts",
+      "sha256": "b6e6791414293b5b981745eff9e53f9667569b035c7e658639ac493e414cad23"
+    },
+    {
+      "path": "packages/simulation/simulation/src/checkpoint.ts",
+      "sha256": "8cf2bf639b334e6a9855428295ccef5630d4ed742a46eb9a1cba9b1b3538c7b4"
+    },
+    {
+      "path": "packages/simulation/simulation/src/context-consumption.ts",
+      "sha256": "2beb15e1206ec8e14e60bd5db97e33ecf4c051914cc7bfd6541b26c3b993826f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/context.ts",
+      "sha256": "dcf3eb25831669e6ba12bc95c91cab949267be72fedee7ac80e6e3c184a593c2"
+    },
+    {
+      "path": "packages/simulation/simulation/src/deterministic.ts",
+      "sha256": "072e478dabade3fef044fd37fc7e27a025916e47e5b77b4fb3d062af2e0a51be"
+    },
+    {
+      "path": "packages/simulation/simulation/src/index.ts",
+      "sha256": "94e913e1943b14adf6e62e2beacb60332108348e286f9ca7fa5d50a89a24cf74"
+    },
+    {
+      "path": "packages/simulation/simulation/src/model-admission.ts",
+      "sha256": "e0de281b654d02c38e04c282c8035919f5344f8664a9bce134710d5287669163"
+    },
+    {
+      "path": "packages/simulation/simulation/src/task-execution.ts",
+      "sha256": "17bfd2a00fa1593fae88af1fd663f733e9d54e54e557d498e3e3f39accfbae62"
+    },
+    {
+      "path": "packages/simulation/simulation/src/task-outbox.ts",
+      "sha256": "fd947c67520538c0ab3a7763adcd6d83d33b9533a6a856b6b9640558c7cc0b3f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/tokens.ts",
+      "sha256": "65836774c3c8323be0dbf7e6b1d3c06f808124b5761816ce7a6134cf7382a430"
+    },
+    {
+      "path": "packages/simulation/simulation/src/types.ts",
+      "sha256": "005c3c0dbc9887d90fa0a0545a8c98e8767b3fb8a6f2bdffb2a7fcbf97f3c3ce"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain-types.ts",
+      "sha256": "bdc977026a95206eadaae517f4221f2b38a9f3dd09f47807a43d18d67bc5d71f"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domains.ts",
+      "sha256": "ca747896d5eacb1295fc1aa38bc89a3a8393a52adfa181900ab3d7948c63bae0"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-facts-types.ts",
+      "sha256": "1ce4ca641b8550472e152e241f1ced81c3aecacc83c0afae2b334d4bdbecac75"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-facts.ts",
+      "sha256": "69c2a09b658ac749998c930b5a51a06d073305f6e90a3d2d0a37e71687521272"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance-domains.ts",
+      "sha256": "e3bbea61893c228e2a90fb0855591e0acb6063c8ca5959c701b5711267637535"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance-types.ts",
+      "sha256": "3997999bd5a194aa49e15e89a5f23b87ab17d587ea0ffea32f3626605280cc8e"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-governance.ts",
+      "sha256": "64c5a3064e3dce01586442576323a21b97ac1deccf93bc588e2ef83802529bd5"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval-domains.ts",
+      "sha256": "6542a5ea5eefd12811ec93c498a8be3c46c6b071d228ecc28b62f560b53174b0"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval-types.ts",
+      "sha256": "9a2704923ee96f64523701d2d20fdfed730cbf71713462de6bcb01ced0dd02fe"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-approval.ts",
+      "sha256": "aad1f1284c5d072a1fc203afaca7132e663c546a420e8a19b44e26e54b49e2ae"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire-types.ts",
+      "sha256": "f81a17fd66f121246514ff0191c287ac9a61e35b45e4059cafbd68567487d334"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-hire.ts",
+      "sha256": "e3e87090618c703a43129003b9be31cbbba12be06095f1168267e56ecf48e2c0"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-native-types.ts",
+      "sha256": "23c1abbe1747bfc0e3c365b53c2a1588334c6e0921e05b1e5993af1c9d5e0aea"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-norm-domains.ts",
+      "sha256": "1a829fecea3215aafbda5f8fd628fff4f5c22ca83829dcbe8c08fc8d1de8bf27"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-norms-types.ts",
+      "sha256": "81ebc11e0aebe178e2d704988c5116ca669695938c19f0794f1af195681f282b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-norms.ts",
+      "sha256": "7bb7e549eb5265d6b58f0a1e978516e98c08d0da73debce31a0d03a826c2de2c"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-types.ts",
+      "sha256": "2b2aff798e15648626b1fe0629edc8179a2e8042c323604b27136f69bf669ac4"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world.ts",
+      "sha256": "0d318b2c6a8ddd462c977f3600ea2dd8c826db731c0072dddcc82df5ae04e92b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/writer-types.ts",
+      "sha256": "0ef71016341a68566c8847cee959f4427d5a97baea00275b828f3ad9678ba1cb"
+    },
+    {
+      "path": "packages/simulation/simulation/src/writer.ts",
+      "sha256": "1f16563e52b12b82f7d6ecc3e25ffac9ddc78569c2dcbb721b034d4068988b8b"
+    },
+    {
+      "path": "packages/simulation/simulation/tests/world-facts.spec.ts",
+      "sha256": "df06e8268b5e84c3c76ba75c3f9b36d5c7d59a970554f6da077d410bda95c75d"
+    },
+    {
+      "path": "packages/simulation/simulation/tests/world-norms.spec.ts",
+      "sha256": "0d26e85b7a65065076323a4e8c66c25089210d220a92bced5a918f11a0179bd8"
+    },
+    {
+      "path": "packages/simulation/tool-simulation/src/schema.ts",
+      "sha256": "672882a7b0c075bf35a9c81c63445777e4f59260f2dd558949234954259ba5b4"
+    },
+    {
+      "path": "python/sdk/src/clocky/simulation.py",
+      "sha256": "8a8893eda6ce1a1447295e8b68225803f6a81abae31e72113940b0e008fc11d1"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "sha256": "422c93be6cbb640ff67a08ebd8f46bd5bde429c01b9ba8f41ebe4449a78489e3"
+    }
+  ]
+}

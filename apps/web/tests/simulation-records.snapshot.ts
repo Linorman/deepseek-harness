@@ -31,7 +31,7 @@ it.each(['json', 'sqlite'] as const)('browses, filters and exports authorized or
   let run: SimulationRun | undefined, remove: (() => void) | undefined
   try {
     run = await scaffold.ctx.simulations.open(scaffold.ctx.simulations.resolve({ provider: 'local', spec, mode: 'create' }))
-    for (const id of ['one', 'two', 'three']) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id,
+    for (const id of ['one', 'two', 'three']) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id,
       entityKind: 'org', cognition: 'none', profile: { name: id, secret: '原始私有🙂记录' } }), run.snapshot().revision)
     const before = run.snapshot()
     await scaffold.authenticateBrowserPage(page)
@@ -39,8 +39,8 @@ it.each(['json', 'sqlite'] as const)('browses, filters and exports authorized or
     await page.getByRole('button', { name: '仿真', exact: true }).click()
     const workspace = page.locator('[data-simulation-workspace-page]')
     await workspace.getByRole('button').filter({ hasText: '物流仿真' }).click()
-    await workspace.getByRole('navigation', { name: '仿真模块' }).getByRole('button', { name: '记录', exact: true }).click()
-    const records = workspace.getByRole('region', { name: '记录', exact: true })
+    await workspace.getByRole('navigation', { name: '仿真模块' }).getByRole('button', { name: '历史', exact: true }).click()
+    const records = workspace.getByRole('region', { name: '历史', exact: true })
     await records.getByRole('table').getByRole('button', { name: /^查看原始记录:/ }).first().waitFor()
     expect(await records.getByRole('table').getByRole('row').count()).toBe(3)
     expect(await records.getByRole('button', { name: '导出筛选后的原文', exact: true }).isDisabled()).toBe(true)

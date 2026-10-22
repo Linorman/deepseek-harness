@@ -1,30 +1,52 @@
+import { SimulationContextIntegrityError } from './integrity.ts'
+import { activePlannerAncestors, generationRecordAt } from '@clocky/clocky-simulation'
+import { executeGeneration } from './generation.ts'
+import { PersonnelSettlementAuthority } from './personnel-settlement.ts'
+import { collectPersonnelTeamSources } from './personnel-sources.ts'
+import { projectPersonnelObligations } from './personnel-obligations.ts'
+import { flushContextConsumption } from './context-consumption.ts'
+import { cleanupWorldHire, cleanupExternalRepresentative, cleanupExternalContact } from './world-cleanup.ts'
+import { PERSONNEL_OBLIGATION_MAX_ITEMS, personnelObligationQuerySchema,
+  assertSimulationMaintenanceAdmission, simulationMaintenanceRequestSchema, activeSimulationMaintenance } from '@clocky/clocky-simulation'
 import { completeTask } from './task-completion.ts'
 import { SimulationTaskReviewAuthority } from './task-review.ts'
 import { executeTaskDecision } from './task-decision.ts'
-import { taskDecision } from '@clocky/clocky-simulation'
+import { taskDecision, assertPreparedWorldScopeAccess } from '@clocky/clocky-simulation'
 import { retireTaskExecutions } from './task-retirement.ts'
 import { assignSimulationTask } from './task-assignment.ts'
 import { projectTaskEvidence } from './task-evidence.ts'
 import { addAbortListener } from 'node:events'
 import { validateCheckpointOwners } from './restore.ts'
 import { simulationCheckpointRestoreRequestSchema } from '@clocky/clocky-simulation'
+import { retainWorldExecutionCatalog } from '@clocky/clocky-simulation'
+import type { SimulationWorldDomainRegistry, SimulationSnapshot } from '@clocky/clocky-simulation'
 import { simulationCheckpointRequestSchema, assertCanonicalTeam } from '@clocky/clocky-simulation'
 import { collectCheckpoint } from './checkpoint.ts'
 import { SimulationTaskAuthority } from './task-transport.ts'
 import { checkpointRule, checkpointSource } from './checkpoint-failure.ts'
-import { checkpointDiagnostic, SimulationCheckpointCleanupError } from '@clocky/clocky-simulation'
+import { checkpointDiagnostic, SimulationCheckpointCleanupError, SimulationCheckpointError } from '@clocky/clocky-simulation'
 import { compactionStream } from './compaction.ts'
 import { compactionRequestReference } from '@clocky/clocky-compaction'
 import { meteredStream } from './metered-stream.ts'
+import { requestBudgetPolicySchema, requestOutputCap, requestBudgetBlock, requestCapacity } from './request-budget.ts'
+import type { RequestCapacityInput, RequestCapacityResult } from './request-budget.ts'
+import type { RequestBudgetPolicy } from './request-budget.ts'
+import type {} from '@clocky/clocky-token-meter'
+import { SimulationRequestBudgetError, SimulationTokenOverrunError, simulationTokenCount } from '@clocky/clocky-simulation'
 import { summarizeKnowledge } from './summary.ts'
 import { modelKnowledge, policyKnowledge, assertReportReferences, missingReportReferences } from './knowledge.ts'
 import { executeDeterministic } from './deterministic.ts'
 import { simulationPolicyRefSchema } from '@clocky/clocky-simulation'
 import { SimulationBootstrapAuthority } from './bootstrap.ts'
 import { ensureResident } from './residency.ts'
-import { SimulationModelCapacity } from './model-capacity.ts'
+import { simulationResidencyPolicySchema } from './residency-policy.ts'
+export { simulationResidencyPolicySchema, selectResidencyCandidates } from './residency-policy.ts'
+export type { SimulationResidencyPolicy } from './residency-policy.ts'
+import { SimulationModelCapacity, SimulationModelCapacityExceeded } from './model-capacity.ts'
+import { activationHistoryLimitDetails } from '@clocky/clocky-team'
 import { SimulationDeadlines } from './deadline.ts'
 import { executeDecision } from './decision.ts'
+import { settleDecisionPause } from './pause.ts'
 import { SimulationChannelAuthority } from './channels.ts'
 import { SimulationParticipantAuthority } from './participants.ts'
 import { modelAccess, SIMULATION_MODEL_TOOLS } from './model.ts'
@@ -57,6 +79,17 @@ declare module '@clocky/cordis' {
 
 /** Context budget and bounded recipient discovery for Simulation cognition. */
 export interface Config {
+  /** Full-envelope admission and bounded compaction; omitted preserves explicitly composed legacy deployments. */
+  readonly requestPolicy?: RequestBudgetPolicy | null
+  /** Optional automatic eviction policy shared by attached drivers; explicit choices may select their retained policy. */
+  readonly residencyPolicy?: {
+    /** Exact idle-selection policy version. */
+    readonly version: '1'
+    /** Minimum inactivity in canonical simulated ticks. */
+    readonly idleFor: string
+    /** Maximum eligible candidates retired by one residency request. */
+    readonly maxCandidates: number
+  } | null
   /** Maximum simultaneously reserved or executing Simulation model streams across this service. */
   readonly maxConcurrentModels: number
   /** Maximum model requests waiting for a permit; zero rejects when all permits are held. */
@@ -73,16 +106,25 @@ export interface Config {
 export class SimulationTeams extends Service {
   static inject = ['simulations', 'teams', 'teamActivations', 'agentRuntimes', 'agents', 'sessions', 'sessionPersistence', 'llm', 'tools']
   static Config: z<Config> = z.object({ maxContextBytes: z.number().min(1).step(1).required(),
+    requestPolicy: z.union([z.const(null), z.object({
+      maxOutputTokens: z.number().min(1).step(1).required(), safetyMarginTokens: z.number().min(0).step(1).required(),
+      inputSafetyFactor: z.number().min(1).max(4).required(), compactionAttempts: z.number().min(0).max(2).step(1).required(),
+    })]).default(null),
+    residencyPolicy: z.union([z.const(null), z.object({ version: z.const('1').required(), idleFor: z.string().required(),
+      maxCandidates: z.number().min(1).step(1).required() })]).default(null),
     maxConcurrentModels: z.number().min(1).step(1).required(), maxQueuedModels: z.number().min(0).step(1).required(),
     deliveryPageSize: z.number().min(1).step(1).required(), maxCoordinationRounds: z.number().min(1).step(1).required() })
+  private personnelAuthority?: PersonnelSettlementAuthority
   private taskAuthority?: SimulationTaskAuthority
   private taskReviewAuthority?: SimulationTaskReviewAuthority
   private readonly taskCompletionPolicies = new Map<import('@clocky/clocky-simulation').SimulationPolicyId,
     import('@clocky/clocky-simulation').SimulationTaskCompletionPolicy>()
   private readonly summaryPolicies = new Map<import('@clocky/clocky-simulation').SimulationPolicyId, import('@clocky/clocky-simulation').SimulationSummaryPolicy>()
+  private readonly externalArchiveProviders = new Map<string, import('./external-archive.ts').WorldExternalArchiveProvider>()
   private readonly deterministicPolicies = new Map<import('@clocky/clocky-simulation').SimulationPolicyId, import('@clocky/clocky-simulation').SimulationDeterministicPolicy>()
   private readonly bootstrap: SimulationBootstrapAuthority
   private readonly modelCapacity: SimulationModelCapacity
+  private readonly residencyPolicy: import('./residency-policy.ts').SimulationResidencyPolicy | undefined
   private readonly participants: SimulationParticipantAuthority
   private readonly channels: SimulationChannelAuthority
   private readonly modelHandlers = new WeakMap<Agent, ReturnType<typeof modelAccess>>()
@@ -90,11 +132,16 @@ export class SimulationTeams extends Service {
   private readonly deliveryAuthority: SimulationDeliveryAuthority
   private readonly postAuthority: SimulationPostAuthority
   private readonly restorations = new Set<Promise<import('./types.ts').SimulationCheckpointRestoration>>()
+  private readonly personnelInspections = new Set<Promise<import('@clocky/clocky-simulation').SimulationPersonnelObligationObservation | undefined>>()
   private closing = false
+  private readonly requestPolicy: RequestBudgetPolicy | undefined
+  private worldExecutions: SimulationWorldDomainRegistry | undefined
   private readonly attached = new Map<SimulationRun, SimulationTeamConnection>()
 
   constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'simulationTeams')
+    this.requestPolicy = config.requestPolicy == null ? undefined : requestBudgetPolicySchema.parse(config.requestPolicy)
+    this.residencyPolicy = config.residencyPolicy == null ? undefined : simulationResidencyPolicySchema.parse(config.residencyPolicy)
     if (!Number.isSafeInteger(config.maxConcurrentModels) || config.maxConcurrentModels < 1
       || !Number.isSafeInteger(config.maxQueuedModels) || config.maxQueuedModels < 0) throw new Error('Simulation model capacity limits are invalid')
     this.modelCapacity = new SimulationModelCapacity(config.maxConcurrentModels, config.maxQueuedModels)
@@ -112,11 +159,62 @@ export class SimulationTeams extends Service {
       this.modelCapacity.close()
       const connections = Promise.allSettled([...this.attached.values()].map(connection => connection.close()))
       await this.bootstrap.drain()
-      await Promise.allSettled([...this.restorations])
+      await Promise.allSettled([...this.restorations, ...this.personnelInspections])
       const results = await connections
       const failures = results.filter(result => result.status === 'rejected').map((result): unknown => result.reason)
       if (failures.length > 0) throw new AggregateError(failures, 'Simulation Team service retains unconfirmed activations')
     })
+  }
+
+  /**
+   * Read cross-owner personnel duties without opening, attaching, restoring or claiming execution ownership.
+   * @param selection - Original existing Native provider/spec, resolved by the authenticated consumer.
+   * @param request - Exact person/assignment revisions plus complete bounded inventory limits.
+   * @param signal - Optional caller cancellation; admitted owner reads drain and late results cannot publish.
+   * @returns original paired Native prefix and canonical inventory, with explicit partial source coverage.
+   */
+  inspectPersonnelObligations(selection: import('@clocky/clocky-simulation').SimulationInspectionSelection,
+    request: import('@clocky/clocky-simulation').PersonnelObligationQuery, signal?: AbortSignal):
+  Promise<import('@clocky/clocky-simulation').SimulationPersonnelObligationObservation | undefined> {
+    this.assertOpen()
+    const query = personnelObligationQuerySchema.parse(request)
+    const admitted = () => { this.assertOpen(); signal?.throwIfAborted() }
+    const work = (async () => {
+      admitted()
+      const original = await this.ctx.simulations.inspectPersonnelObligations(selection, query)
+      admitted()
+      if (original === undefined) return undefined
+      const binding = original.snapshot.entities[query.selector.personId]?.binding
+      if (binding === undefined) return original
+      const sources = await collectPersonnelTeamSources(this.ctx, binding, {
+        maxChannels: PERSONNEL_OBLIGATION_MAX_ITEMS, maxPages: PERSONNEL_OBLIGATION_MAX_ITEMS,
+        pageSize: this.config.deliveryPageSize, maxBytes: query.maxBytes }, admitted)
+      admitted()
+      const current = await this.ctx.simulations.inspectPersonnelObligations(selection, query)
+      admitted()
+      if (current === undefined || !isDeepStrictEqual(binding, current.snapshot.entities[query.selector.personId]?.binding))
+        throw new Error('Personnel read lost its original Native person and canonical binding')
+      const moved = current.snapshot.revision !== original.snapshot.revision
+      const report = projectPersonnelObligations(current.snapshot, current.report,
+        moved ? { ...sources, complete: false, incomplete: 'source-moved' } : sources, query)
+      admitted()
+      return { snapshot: current.snapshot, report }
+    })()
+    this.personnelInspections.add(work)
+    void work.then(() => { this.personnelInspections.delete(work) }, () => { this.personnelInspections.delete(work) })
+    return work
+  }
+
+  /**
+   * Install the trusted execution-factory catalog used before World writable restore.
+   * @param catalog - Provider-owned strict parser and exact generation registry; Native catalogs remain separate.
+   * @returns synchronous admission-removal disposer; the installing Fiber owns its effect and registry drainage.
+   */
+  registerWorldExecutionCatalog(catalog: SimulationWorldDomainRegistry): () => void {
+    this.assertOpen()
+    if (this.worldExecutions !== undefined) throw new Error('World execution catalog is already installed')
+    this.worldExecutions = catalog
+    return () => { if (this.worldExecutions === catalog) this.worldExecutions = undefined }
   }
 
   /**
@@ -137,9 +235,21 @@ export class SimulationTeams extends Service {
     const check = (): void => { this.assertOpen(); signal?.throwIfAborted() }
     const work = (async () => {
       check()
-      const run = await checkpointSource('restore', { kind: 'run' }, () => this.ctx.simulations.open(selection))
+      const observed = await checkpointSource('restore', { kind: 'run' }, () => this.ctx.simulations.inspect(
+        this.ctx.simulations.resolveInspection({ provider: selection.provider, spec: selection.spec })))
+      const catalog = this.worldExecutions
+      const releases: Array<() => void> = []
+      const retain = (state: Pick<import('@clocky/clocky-simulation').SimulationSnapshot, 'world'>): void => {
+        releases.push(retainWorldExecutionCatalog(state, catalog,
+          state.world === undefined ? undefined : this.ctx.simulations.domains(selection.provider)))
+      }
+      if (observed !== undefined) retain(observed.snapshot)
+      let run: SimulationRun
+      try { run = await checkpointSource('restore', { kind: 'run' }, () => this.ctx.simulations.open(selection)) }
+      catch (error: unknown) { for (const release of releases) release(); throw error }
       try {
         check()
+        retain(run.snapshot())
         const operation = run.snapshot().checkpoints?.[accepted.id]
         if (operation?.status !== 'completed') throw checkpointRule('Checkpoint restoration requires a completed manifest',
           'restore', 'manifest-mismatch', { kind: 'checkpoint', checkpointId: accepted.id })
@@ -185,11 +295,20 @@ export class SimulationTeams extends Service {
           throw new SimulationCheckpointCleanupError([error, cleanup], diagnostic)
         }
         throw error
-      }
+      } finally { for (const release of releases) release() }
     })()
     this.restorations.add(work)
     void work.then(() => this.restorations.delete(work), () => this.restorations.delete(work))
     return work
+  }
+
+  /**
+   * Measure the known runtime-shared required context and refuse only a provable byte or admission-policy impossibility.
+   * @param request - Frozen request allowance, optional model capacity and known runtime-shared required sections.
+   * @returns exact known bytes and estimated input floor when supplied; complete envelope and future consumption remain unknown.
+   */
+  requestCapacity(request: RequestCapacityInput): RequestCapacityResult {
+    return requestCapacity(this.requestPolicy, request, this.config.maxContextBytes)
   }
 
   /**
@@ -213,6 +332,30 @@ export class SimulationTeams extends Service {
     if (this.attached.has(run)) return Promise.reject(new Error('Simulation bootstrap requires an unattached run'))
     return this.bootstrap.ensure(run, creation, ownerName)
   }
+
+  /**
+   * Register an exact provider-owned external archive contract for this deployment.
+   * @param provider - Trusted plugin's pure verifier and bounded capture/restore capabilities.
+   * @returns effect-scoped removal; disposal closes new capture/restore while prior packages remain read-only evidence.
+   */
+  registerWorldArchiveProvider(provider: import('./external-archive.ts').WorldExternalArchiveProvider): () => void {
+    if (provider.id.length === 0 || provider.id.length > 128 || provider.pins.length === 0)
+      throw new Error('External archive provider requires an identity and exact pins')
+    // oxlint-disable-next-line typescript/no-misused-promises -- Cordis owns the asynchronous effect disposer.
+    return this.ctx.effect(() => {
+      if (this.externalArchiveProviders.has(provider.id)) throw new Error('External archive provider is already installed')
+      for (const existing of this.externalArchiveProviders.values()) if (existing.pins.some(pin =>
+        provider.pins.some(value => isDeepStrictEqual(pin, value))))
+        throw new Error('External archive pin has more than one owner')
+      this.externalArchiveProviders.set(provider.id, provider)
+      return () => { this.externalArchiveProviders.delete(provider.id) }
+    })
+  }
+
+  /** Read the installed exact external archive contracts.
+   * @returns current trusted capabilities; this map grants no run or principal authority.
+   */
+  worldArchiveProviders(): import('./external-archive.ts').WorldExternalArchiveProviders { return new Map(this.externalArchiveProviders) }
 
   /**
    * Register one trusted bounded pure task completion rule; source disposal retires future evaluation.
@@ -320,6 +463,21 @@ export class SimulationTeams extends Service {
       if (provider === undefined || !isInProcessAgentRuntimeProvider(provider)) throw new Error('Simulation cognition requires the actual in-process runtime provider')
       return provider
     }
+    const maintenanceWork = new Map<import('@clocky/clocky-simulation').SimulationMaintenanceId, {
+      request: import('@clocky/clocky-simulation').SimulationMaintenanceRequest
+      maxDrainRounds: number
+      maxAttempts: number
+      work: Promise<import('@clocky/clocky-simulation').SimulationMaintenanceOperation>
+    }>()
+    const worldCleanupWork = new Map<import('@clocky/clocky-simulation').WorldIntentId,
+      Promise<import('@clocky/clocky-simulation').SimulationWorldIdentityCleanupEvidence>>()
+    const externalCleanupWork = new Map<import('@clocky/clocky-simulation').WorldIntentId,
+      Promise<import('@clocky/clocky-simulation').SimulationWorldIdentityCleanupEvidence>>()
+    const contactCleanupWork = new Map<import('@clocky/clocky-simulation').WorldIntentId,
+      Promise<import('@clocky/clocky-simulation').SimulationExternalContactCleanupEvidence>>()
+    let removeWorldCleanup: (() => void) | undefined
+    let removeExternalCleanup: (() => void) | undefined
+    let removeContactCleanup: (() => void) | undefined
     let admitted = true
     const checkpointRequests = new Map<import('@clocky/clocky-simulation').SimulationCheckpointId, {
       request: import('@clocky/clocky-simulation').SimulationCheckpointRequest
@@ -335,10 +493,13 @@ export class SimulationTeams extends Service {
     }
     const canPublish = (): boolean => admitted && checkpointing === undefined && !this.closing
     const admissionAbort = new AbortController()
+    const generationRequests = new WeakMap<import('@clocky/clocky-llm').GenerateOptions, () => void>()
+    const generations = new Map<string, Promise<import('@clocky/clocky-simulation').SimulationGenerationRecord>>()
     const modelCapacity = this.modelCapacity
     const sleeping = new Map<SimulationEntityId, { actor: Agent; activationId: import('@clocky/clocky-team').ActivationId; work?: Promise<void> }>()
     const assertActorAdmission = (id: SimulationEntityId): void => {
       this.assertOpen(); assertAdmitted()
+      if (requireEntity(run, id).readiness !== 'ready') throw new Error('Simulation activation requires a ready entity')
       if (sleeping.has(id)) throw new Error('Simulation actor is closing admission for hibernation')
     }
     const writers = new Map<SimulationEntityId, SimulationWriterLease>()
@@ -352,6 +513,7 @@ export class SimulationTeams extends Service {
     const owner: TeamActivationLifecycleOwner = {
       name: ownerName,
       reserve: async (request, reservation) => {
+        assertSimulationMaintenanceAdmission(run.snapshot())
         if (request.teamId !== teamId) throw new Error('Simulation lifecycle owner cannot start another Team')
         if (request.seed.kind === 'fork') throw new Error('Simulation cognition does not admit forked Session history')
         const entity = entityFor(request.participantId, request.sessionId)
@@ -384,6 +546,14 @@ export class SimulationTeams extends Service {
               || target.subject !== task.decision.request.task.subject || target.description !== task.decision.request.task.description) throw new Error('Simulation task decision no longer owns its live attempt')
           }
 
+        }, async (decision) => {
+          const current = (): void => {
+            assertActorAdmission(entity.id)
+            if (agent === undefined || this.ctx.agents.get(agent.id) !== agent) throw new Error('Simulation consumption has no current Agent')
+          }
+          current()
+          return await flushContextConsumption(ctx, agent as Agent, decision, current, () => run.snapshot(),
+            view => writer.validateContextPresentation(decision.id, view))
         })
         writers.set(entity.id, writer)
         const scoped = coordination(writer, provider, () => retireTaskExecutions(ctx, run, teamId, entity.id))
@@ -396,7 +566,8 @@ export class SimulationTeams extends Service {
             this.modelHandlers.set(actor, modelAccess(actor, run, writer, () => {
               assertAdmitted()
               if (ctx.agents.get(actor.id) !== actor) throw new Error('Simulation model Agent is no longer current')
-            }, (id) => { deadlines.finish(id) }))
+            }, (id) => { deadlines.finish(id) }, run.snapshot().world === undefined ? undefined
+              : { payloadSchema: (pin, kind) => run.worldPayloadSchema(pin, kind) }))
           },
           revoke: async () => {
             await scoped.revoke()
@@ -449,7 +620,18 @@ export class SimulationTeams extends Service {
     const allowedTools = new Set<string>(SIMULATION_MODEL_TOOLS)
     const removeToolGuard = this.ctx.tools.guard(exec => exec.agent?.session.header.teamId === teamId && !allowedTools.has(exec.name)
       ? 'Simulation actors may only observe, stage and submit through Simulation tools' : undefined)
-    const removePreStep = this.ctx.on('agent/pre-step', async ({ agent }, next) => {
+    const assertCurrentWorldScopeAccess = (id: SimulationDecisionId, state: SimulationSnapshot): void => {
+      const decision = state.decisions[id]
+      if (decision === undefined) throw new Error('Simulation context disclosure has no current decision')
+      assertPreparedWorldScopeAccess(state, decision)
+    }
+    const removeRequestCap = this.ctx.on('agent/request', async ({ agent }, next) => {
+      const proposed = await next()
+      if (agent.session.header.teamId !== teamId || this.requestPolicy === undefined) return proposed
+      assertAdmitted()
+      return { ...proposed, maxTokens: requestOutputCap(this.requestPolicy, run.snapshot().spec.tokensPerModelRequest, proposed.maxTokens) }
+    }, { prepend: true })
+    const removePreStep = this.ctx.on('agent/pre-step', async ({ agent, signal }, next) => {
       if (agent.session.header.teamId !== teamId) return await next()
       assertAdmitted()
       // Session validation requires participantId whenever teamId is present.
@@ -458,43 +640,121 @@ export class SimulationTeams extends Service {
       const id = Object.values(run.snapshot().decisions).find(decision => decision.entityId === entity.id && decision.status === 'open')?.id
       if (writer === undefined || id === undefined) throw new Error('Simulation model request has no current decision owner')
       if (run.snapshot().decisions[id]?.deterministic !== undefined || taskDecision(run.snapshot(), id)?.decision.request.policy !== undefined) throw new Error('Simulation deterministic decisions cannot request inference')
-      let prepared = await writer.readPreparedContext(id)
-      if (prepared.maxBytes !== this.config.maxContextBytes) throw new Error('Simulation context policy changed; cancel the decision before preparing another')
-      const decision = await next()
-      if (decision.kind === 'reject') return decision
-      const missing = missingReportReferences(run.snapshot(), prepared.referencedReports ?? [],
-        [...agent.session.deriveMessages(), ...decision.messages])
-      if (missing.length > 0) {
-        const rebased = await writer.materializeCompactedReports(id, missing)
-        if (rebased.status !== 'prepared') throw new Error('Simulation compacted report context exceeds its required byte budget')
-        prepared = rebased
+      try {
+        let prepared = await writer.readPreparedContext(id)
+        if (prepared.maxBytes !== this.config.maxContextBytes) throw new Error('Simulation context policy changed; cancel the decision before preparing another')
+        const decision = await next()
+        if (decision.kind === 'reject') return decision
+        const missing = missingReportReferences(run.snapshot(), prepared.referencedReports ?? [],
+          [...agent.session.deriveMessages(), ...decision.messages])
+        if (missing.length > 0) {
+          const rebased = await writer.materializeCompactedReports(id, missing)
+          if (rebased.status !== 'prepared') throw new Error('Simulation compacted report context exceeds its required byte budget')
+          prepared = rebased
+        }
+        const visible = agent.session.surface.nodes.map(seq => agent.session.events[seq])
+          .filter(event => event?.type === 'simulation/context-view')
+        if (visible.length > 1) throw new Error('Simulation Session has multiple active context views')
+        const current = visible[0]
+        if (current?.type === 'simulation/context-view' && current.data.inputId === prepared.view.inputId
+          && !isDeepStrictEqual(current.data, prepared.view)) await writer.validateContextPresentation(id, current.data)
+        if (current?.type !== 'simulation/context-view' || !isDeepStrictEqual(current.data, prepared.view)) {
+          assertCurrentWorldScopeAccess(id, run.snapshot())
+          agent.session.append('simulation/context-view', prepared.view, current === undefined ? { surfaceOp: 'append' } : {
+            surfaceOp: { op: 'replace', start: current.seq, end: current.seq }, sourceEventSeqs: [current.seq],
+          })
+        }
+        const policy = this.requestPolicy
+        if (policy !== undefined) {
+          const meter = this.ctx.get('tokenMeter')
+          if (meter === undefined) throw new Error('Simulation request policy requires the shared token meter')
+          const compactor = agent.ctx.get('compaction')
+          for (let attempt = 0; attempt < policy.compactionAttempts; attempt++) {
+            const header = agent.session.requestHeader()
+            if (header === undefined || compactor === undefined) break
+            const measured = meter.measure(agent.session).totalTokens * policy.inputSafetyFactor
+            const cap = requestOutputCap(policy, run.snapshot().spec.tokensPerModelRequest, header.config.maxTokens)
+            if (measured + cap + policy.safetyMarginTokens <= run.snapshot().spec.tokensPerModelRequest) break
+            const compacted = await compactor.compactIfNeeded(agent, 'context-overflow', signal)
+            assertCurrentWorldScopeAccess(id, run.snapshot())
+            const missing = missingReportReferences(run.snapshot(), prepared.referencedReports ?? [],
+              [...agent.session.deriveMessages(), ...decision.messages])
+            if (missing.length > 0) {
+              const rebased = await writer.materializeCompactedReports(id, missing)
+              if (rebased.status !== 'prepared') throw new Error('Simulation compacted report context exceeds its required byte budget')
+              prepared = rebased
+            }
+            const visible = agent.session.surface.nodes.map(seq => agent.session.events[seq])
+              .filter(event => event?.type === 'simulation/context-view')
+            if (visible.length > 1) throw new Error('Compaction retained multiple Simulation contexts')
+            const current = visible[0]
+            if (current?.type !== 'simulation/context-view' || !isDeepStrictEqual(current.data, prepared.view)) {
+              agent.session.append('simulation/context-view', prepared.view, current === undefined ? { surfaceOp: 'append' } : {
+                surfaceOp: { op: 'replace', start: current.seq, end: current.seq }, sourceEventSeqs: [current.seq],
+              })
+            }
+            if (!await this.ctx.sessions.flush(agent.session)) throw new Error('Simulation compaction requires durable canonical context')
+            if (compacted === null) break
+          }
+        }
+        if (!await this.ctx.sessions.flush(agent.session)) throw new Error('Simulation model context requires durable Session storage')
+        await writer.readPreparedContext(id)
+        return decision
+      } catch (error) {
+        if (error instanceof SimulationContextIntegrityError) {
+          try { await writer.failContextIntegrity(id) }
+          finally { deadlines.finish(id); agent.cancel({ kind: 'hook', reason: error.code }, { keepInbox: true }) }
+          throw error
+        }
+        if (!await settleDecisionPause(error, writer, id)) throw error
+        deadlines.finish(id)
+        return { kind: 'reject' }
       }
-      const visible = agent.session.surface.nodes.map(seq => agent.session.events[seq])
-        .filter(event => event?.type === 'simulation/context-view')
-      if (visible.length > 1) throw new Error('Simulation Session has multiple active context views')
-      const current = visible[0]
-      if (current?.type === 'simulation/context-view' && current.data.inputId === prepared.view.inputId
-        && !isDeepStrictEqual(current.data, prepared.view)) await writer.validateContextPresentation(id, current.data)
-      if (current?.type !== 'simulation/context-view' || !isDeepStrictEqual(current.data, prepared.view)) {
-        agent.session.append('simulation/context-view', prepared.view, current === undefined ? { surfaceOp: 'append' } : {
-          surfaceOp: { op: 'replace', start: current.seq, end: current.seq }, sourceEventSeqs: [current.seq],
-        })
-      }
-      if (!await this.ctx.sessions.flush(agent.session)) throw new Error('Simulation model context requires durable Session storage')
-      await writer.readPreparedContext(id)
-      return decision
     }, { prepend: true })
-    const ctx = this.ctx
+    const ctx = this.ctx, requestPolicy = this.requestPolicy
     const removeStream = ctx.on('llm/stream', (options, next): AsyncIterable<StreamChunk> => {
       const compaction = compactionRequestReference(options)
       const session = compaction?.session
         ?? (options.sessionId === undefined ? undefined : ctx.sessions.get(options.sessionId))
       if (session?.header.teamId !== teamId) return next()
+      const generationCheck = generationRequests.get(options)
+      if (generationCheck !== undefined) return (async function* () {
+        const release = await modelCapacity.acquire(options.signal)
+        try { assertAdmitted(); generationCheck(); options.signal?.throwIfAborted(); yield* next() }
+        finally { release() }
+      })()
+      if (Object.values(run.snapshot().generationJobs ?? {}).some(value => value.binding.sessionId === session.id))
+        throw new Error('Generation Session only admits its exact isolated input request')
       return (async function* (): AsyncIterable<StreamChunk> {
         assertAdmitted()
         const entity = entityFor(session.header.participantId as string, session.id)
         const writer = writers.get(entity.id)
         const id = Object.values(run.snapshot().decisions).find(decision => decision.entityId === entity.id && decision.status === 'open')?.id
+        const checkRequestBudget = async (): Promise<void> => {
+          const policy = requestPolicy
+          if (policy === undefined) return
+          const meter = ctx.get('tokenMeter')
+          if (meter === undefined) throw new Error('Simulation request policy requires the shared token meter')
+          const metadata = await ctx.llm.resolveModelInfo(options.provider, options.model, options.signal)
+          const block = requestBudgetBlock(options, session, meter, policy, run.snapshot().spec.tokensPerModelRequest,
+            metadata.context?.contextWindow)
+          if (block === undefined) return
+          if (writer !== undefined && id !== undefined) {
+            await writer.blockRequestBudget(id, block)
+            deadlines.finish(id)
+          }
+          throw new SimulationRequestBudgetError(block)
+        }
+        const onOverrun = async (reservation: import('@clocky/clocky-simulation').SimulationTokenReservation): Promise<void> => {
+          if (requestPolicy === undefined || reservation.overrunAcknowledged !== false) return
+          if (writer !== undefined && id !== undefined && run.snapshot().decisions[id]?.status === 'open') {
+            await writer.cancelDecision(id)
+            deadlines.finish(id)
+          }
+          const usage = reservation.usage ?? reservation.observedUsage
+          if (usage === undefined) throw new Error('Token overrun lost its reported usage')
+          throw new SimulationTokenOverrunError(reservation.id, reservation.reserved, simulationTokenCount(usage))
+        }
         if (options.purpose === 'compaction' || compaction !== undefined) {
           const actor = ctx.agents.get(session.id)
           if (writer === undefined || actor === undefined) throw new Error('Simulation compaction requires its current canonical actor')
@@ -507,76 +767,107 @@ export class SimulationTeams extends Service {
             yield* compactionStream(actor, writer, options, next, modelCapacity, signal, () => {
               assertActorAdmission(entity.id)
               if (ctx.agents.get(actor.id) !== actor || writers.get(entity.id) !== writer) throw new Error('Simulation compaction actor retired')
-            }, () => ctx.sessions.flush(session))
+            }, () => ctx.sessions.flush(session), checkRequestBudget, onOverrun)
           } finally { auxiliaryStreams.delete(owned); done.resolve() }
           return
         }
         if (writer === undefined || id === undefined || options.purpose !== undefined) {
           throw new Error('Simulation model dispatch requires its current conversation decision')
         }
-        const prepared = await writer.readPreparedContext(id)
-        const preparedInput = decisionInput(prepared.view)
-        const actor = ctx.agents.get(session.id)
-        if (actor === undefined || inputState(actor, preparedInput) !== 'consumed') {
-          throw new Error('Simulation model dispatch has not consumed its exact prepared input')
-        }
-        const assertRecordedRequest = (): void => {
-          const turn = session.events.findLast(event => event.type === 'turn/start' || event.type === 'turn/end')
-          if (actor.status !== 'running' || turn?.type !== 'turn/start'
-            || !session.events.slice(turn.seq + 1).some(event => event.type === 'user/message' && event.surfaceOp === 'append'
-              && event.data.id === preparedInput.id)) {
-            throw new Error('Simulation model dispatch requires its prepared input in the active Agent turn')
-          }
-          const header = session.requestHeader()
-          if (header === undefined || !callConfigEquals(options, header.config) || options.system !== header.system
-            || !isDeepStrictEqual(options.tools ?? [], header.tools ?? [])) {
-            throw new Error('Simulation model request differs from its recorded request header')
-          }
-          if (options.tools?.some(tool => !allowedTools.has(tool.name))) {
-            throw new Error('Simulation model request advertises tools outside its decision authority')
-          }
-          const task = taskDecision(run.snapshot(), id)
-          if (task !== undefined && (task.execution.retired !== undefined || task.execution.task?.phase !== 'running'
-            || run.snapshot().taskCancellations?.[task.execution.request.operationId] !== undefined
-            || task.execution.task.executor?.attemptId !== task.execution.request.attemptId
-            || task.decision.input?.id !== prepared.view.inputId)) {
-            throw new Error('Simulation model request requires its started task and recorded input')
-          }
-          assertReportReferences(run.snapshot(), prepared.referencedReports ?? [], options.messages)
-          const views = session.surface.nodes.map(seq => session.events[seq]).filter(event => event?.type === 'simulation/context-view')
-          const view = views[0]
-          if (views.length !== 1 || view?.type !== 'simulation/context-view' || !isDeepStrictEqual(view.data, prepared.view)
-          || !isDeepStrictEqual(options.messages, session.deriveMessages())) {
-            throw new Error('Simulation model request differs from its recorded decision context or conversation')
-          }
-        }
-        assertRecordedRequest()
-        if (!await ctx.sessions.flush(session)) throw new Error('Simulation model dispatch requires durable Session storage')
-        await writer.readPreparedContext(id)
-        options.signal?.throwIfAborted()
-        await deadlines.start(writer, id, actor, prepared.view.inputId)
-        const signal = options.signal === undefined ? admissionAbort.signal : AbortSignal.any([options.signal, admissionAbort.signal])
-        const release = await modelCapacity.acquire(signal)
         try {
-          signal.throwIfAborted()
-          assertAdmitted()
-          await writer.readPreparedContext(id)
+          const prepared = await writer.readPreparedContext(id)
+          const preparedInput = decisionInput(prepared.view)
+          const actor = ctx.agents.get(session.id)
+          if (actor === undefined || inputState(actor, preparedInput) !== 'consumed') {
+            throw new Error('Simulation model dispatch has not consumed its exact prepared input')
+          }
+          const assertRecordedRequest = (): void => {
+            // One synchronous check observes one detached revision; every check after an await takes a fresh snapshot.
+            const state = run.snapshot()
+            assertCurrentWorldScopeAccess(id, state)
+            const turn = session.events.findLast(event => event.type === 'turn/start' || event.type === 'turn/end')
+            if (actor.status !== 'running' || turn?.type !== 'turn/start'
+              || !session.events.slice(turn.seq + 1).some(event => event.type === 'user/message' && event.surfaceOp === 'append'
+                && event.data.id === preparedInput.id)) {
+              throw new Error('Simulation model dispatch requires its prepared input in the active Agent turn')
+            }
+            const header = session.requestHeader()
+            if (header === undefined || !callConfigEquals(options, header.config) || options.system !== header.system
+              || !isDeepStrictEqual(options.tools ?? [], header.tools ?? [])) {
+              throw new Error('Simulation model request differs from its recorded request header')
+            }
+            if (options.tools?.some(tool => !allowedTools.has(tool.name))) {
+              throw new Error('Simulation model request advertises tools outside its decision authority')
+            }
+            const task = taskDecision(state, id)
+            if (task !== undefined && (task.execution.retired !== undefined || task.execution.task?.phase !== 'running'
+              || state.taskCancellations?.[task.execution.request.operationId] !== undefined
+              || task.execution.task.executor?.attemptId !== task.execution.request.attemptId
+              || task.decision.input?.id !== prepared.view.inputId)) {
+              throw new Error('Simulation model request requires its started task and recorded input')
+            }
+            assertReportReferences(state, prepared.referencedReports ?? [], options.messages)
+            const views = session.surface.nodes.map(seq => session.events[seq]).filter(event => event?.type === 'simulation/context-view')
+            const view = views[0]
+            if (views.length !== 1 || view?.type !== 'simulation/context-view' || !isDeepStrictEqual(view.data, prepared.view)
+            || !isDeepStrictEqual(options.messages, session.deriveMessages())) {
+              throw new Error('Simulation model request differs from its recorded decision context or conversation')
+            }
+          }
           assertRecordedRequest()
+          if (!await ctx.sessions.flush(session)) throw new Error('Simulation model dispatch requires durable Session storage')
+          await writer.readPreparedContext(id)
+          options.signal?.throwIfAborted()
           await deadlines.start(writer, id, actor, prepared.view.inputId)
-          signal.throwIfAborted()
-          const reservation = await writer.reserveModelTokens(id, { sessionSequence: session.events.length - 1,
-            provider: options.provider, model: options.model })
-          yield* meteredStream(writer, reservation, next, async () => {
+          const signal = options.signal === undefined ? admissionAbort.signal : AbortSignal.any([options.signal, admissionAbort.signal])
+          let release: () => void
+          try { release = await modelCapacity.acquire(signal) }
+          catch (error) {
+            if (error instanceof SimulationModelCapacityExceeded && ['running', 'paused'].includes(run.snapshot().phase)) {
+              await writer.blockModelAdmission(id, { sessionSequence: session.events.length - 1, ...error.usage })
+            }
+            throw error
+          }
+          try {
             signal.throwIfAborted()
             assertAdmitted()
             await writer.readPreparedContext(id)
             assertRecordedRequest()
-          }, () => ctx.sessions.flush(session), signal)
-        } finally { release() }
+            await deadlines.start(writer, id, actor, prepared.view.inputId)
+            signal.throwIfAborted()
+            await checkRequestBudget()
+            const reservation = await writer.reserveModelTokens(id, { sessionSequence: session.events.length - 1,
+              provider: options.provider, model: options.model })
+            yield* meteredStream(writer, reservation, next, async () => {
+              signal.throwIfAborted()
+              assertAdmitted()
+              await writer.readPreparedContext(id)
+              assertRecordedRequest()
+            }, () => ctx.sessions.flush(session), signal, () => {
+              assertAdmitted()
+              assertRecordedRequest()
+            }, onOverrun)
+          } finally { release() }
+        } catch (error) {
+          if (error instanceof SimulationContextIntegrityError) {
+            try { await writer.failContextIntegrity(id) }
+            finally {
+              deadlines.finish(id)
+              ctx.agents.get(session.id)?.cancel({ kind: 'hook', reason: error.code }, { keepInbox: true })
+            }
+            throw error
+          }
+          if (!await settleDecisionPause(error, writer, id)) throw error
+          deadlines.finish(id)
+          yield { type: 'finish', reason: { kind: 'aborted', failure: {
+            message: 'Simulation scheduling paused before the next model dispatch', code: 'ABORTED',
+          } } }
+        }
       })()
     }, { prepend: true })
     const taskCompletions = new Map<import('@clocky/clocky-team').TaskAttemptId,
       { policy: import('@clocky/clocky-simulation').SimulationPolicyRef; work: Promise<import('./types.ts').SimulationTaskCompletionResult> }>()
+    const personnelReads = new Set<Promise<import('@clocky/clocky-simulation').PersonnelObligationReport>>()
     const taskDecisions = new Set<Promise<SimulationDecision>>()
     const taskAssignments = new Set<Promise<import('@clocky/clocky-simulation').SimulationTaskExecution>>()
     const taskReviews = new Set<Promise<import('@clocky/clocky-team').TeamTaskSnapshot>>()
@@ -674,14 +965,175 @@ export class SimulationTeams extends Service {
         })
       }
     }
+    this.personnelAuthority ??= new PersonnelSettlementAuthority(ctx)
+    const personnelAuthority = this.personnelAuthority
+    const removePersonnelAuthority = run.snapshot().teamReservation?.confirmed === true
+      ? personnelAuthority.attach(run, ownerName) : undefined
+    const personnelSettlements = new Set<Promise<import('@clocky/clocky-simulation').SimulationWorldResult>>()
     const connection: SimulationTeamConnection = {
+      generate: (jobId, authorize, signal) => {
+        assertAdmitted()
+        const job = generationRecordAt(run.snapshot(), jobId)
+        if (job === undefined) throw new Error('Generation job is not retained')
+        authorize(structuredClone(job.job))
+        const existing = generations.get(jobId)
+        if (existing !== undefined) return existing.then((result) => { authorize(structuredClone(result.job)); return result })
+        const session = ctx.sessions.get(job.binding.sessionId)
+        if (session === undefined) throw new Error('Generation canonical Session must be materialized before execution')
+        if (ctx.agents.get(session.id)?.status === 'running') throw new Error('Generation Session has an active conversation')
+        const cancellation = AbortSignal.any([admissionAbort.signal, AbortSignal.timeout(run.snapshot().spec.decisionTimeoutMs),
+          ...signal === undefined ? [] : [signal]])
+        const work = executeGeneration(run, jobId, session, authorize, () => ctx.sessions.flush(session), (options) => {
+          generationRequests.set(options, () => {
+            authorize(structuredClone(job.job))
+            const current = run.snapshot(), retained = generationRecordAt(current, jobId)
+            const input = session.events.find(event => event.seq === retained?.sessionSequence)
+            const entity = current.entities[job.job.assistantEntityId]
+            if (input?.type !== 'simulation/generation-input' || input.data.jobId !== jobId
+              || input.data.scope !== job.job.scope || !isDeepStrictEqual(input.data.audience, job.job.audience)
+              || input.data.modelVersion !== job.job.model.version || input.data.promptVersion !== job.job.promptVersion
+              || input.data.policyVersion !== job.job.policyVersion || options.provider !== input.data.provider
+              || options.model !== input.data.model || options.provider !== job.job.model.provider || options.model !== job.job.model.name
+              || options.sessionId !== session.id || options.maxTokens !== job.job.budget.maxTokens || options.signal !== cancellation
+              || options.messages.length !== 1 || JSON.stringify(options.messages[0]) !== input.data.message
+              || options.tools?.length !== 0 || Object.keys(options).some(key =>
+              !['provider', 'model', 'messages', 'sessionId', 'signal', 'tools', 'maxTokens'].includes(key))
+              || !Object.isFrozen(options) || !Object.isFrozen(options.messages) || !Object.isFrozen(options.tools)
+              || entity?.phase !== 'active' || !isDeepStrictEqual(entity.binding, job.binding))
+              throw new Error('Generation request differs from its original durable Session input')
+            if (job.job.planner !== undefined) activePlannerAncestors(current, job.job.planner)
+            if (current.phase !== 'running' || BigInt(current.time) >= BigInt(job.job.deadline))
+              throw new Error('Generation deadline or run admission closed before dispatch')
+            if (generationRecordAt(current, jobId)?.status !== 'generating'
+              || generationRecordAt(current, jobId)?.cancellation !== undefined)
+              throw new Error('Generation authorization was withdrawn before dispatch')
+          })
+          return ctx.llm.stream(options)
+        }, cancellation)
+        generations.set(jobId, work)
+        void work.then(() => generations.delete(jobId), () => generations.delete(jobId))
+        return work
+      },
+      commitPersonnel: (id) => {
+        assertAdmitted()
+        const work = personnelAuthority.commit(run, teamId, ownerName, id, assertAdmitted)
+        personnelSettlements.add(work)
+        void work.then(() => { personnelSettlements.delete(work) }, () => { personnelSettlements.delete(work) })
+        return work
+      },
+
+      inspectPersonnelObligations: (request) => {
+        assertAdmitted()
+        const query = personnelObligationQuerySchema.parse(request)
+        const work = (async () => {
+          const native = run.inspectPersonnelObligations(query), selected = run.snapshot().entities[query.selector.personId]
+          const binding = selected?.binding
+          if (binding === undefined) return native
+          const sources = await collectPersonnelTeamSources(ctx, binding, {
+            maxChannels: PERSONNEL_OBLIGATION_MAX_ITEMS, maxPages: PERSONNEL_OBLIGATION_MAX_ITEMS,
+            pageSize: this.config.deliveryPageSize, maxBytes: query.maxBytes }, assertAdmitted)
+          assertAdmitted()
+          const current = run.inspectPersonnelObligations(query), snapshot = run.snapshot()
+          if (!isDeepStrictEqual(current.items, native.items) || current.time !== native.time
+            || current.totalCount !== native.totalCount) {
+            return projectPersonnelObligations(snapshot, current, { ...sources, complete: false, incomplete: 'source-moved' }, query)
+          }
+          return projectPersonnelObligations(snapshot, current, sources, query)
+        })()
+        personnelReads.add(work)
+        void work.then(() => { personnelReads.delete(work) }, () => { personnelReads.delete(work) })
+        return work
+      },
+
+      cancelWorldCase: async (request) => {
+        this.assertOpen()
+        if (!admitted) throw new Error('Simulation Team connection is closed')
+        if (checkpointing !== undefined) {
+          const state = run.snapshot(), original = state.world?.requests[request.requestId]
+          const reservation = original === undefined ? undefined : state.world?.personnel.reservations[original.intentId]
+          const maintenance = activeSimulationMaintenance(state)
+          if (reservation === undefined || maintenance === undefined
+            || !isDeepStrictEqual(reservation.request.maintenance, maintenance.request))
+            throw new Error('Simulation checkpoint collection blocks new admission')
+          // Only this original maintenance-owned cancellation may queue; Native still rejects a sealed checkpoint cut.
+        }
+        const receipt = await run.cancelWorldCase(request)
+        if (receipt.status !== 'cancel-requested') return receipt
+        const original = run.snapshot().world?.requests[receipt.request.requestId]
+        if (original === undefined) throw new Error('World cancellation lost its original case')
+        const personnel = run.snapshot().world?.personnel.reservations[original.intentId]
+        if (personnel !== undefined) {
+          const maintenance = run.snapshot().maintenance?.[personnel.request.maintenance.id]
+          if (maintenance === undefined || maintenance.status === 'draining') return receipt
+          await run.settlePersonnelCancellation(original.intentId)
+          assertAdmitted()
+          return await run.cancelWorldCase(receipt.request)
+        }
+        assertAdmitted()
+        const state = run.snapshot(), representative = state.world?.external.representatives[original.intentId]
+        if (representative !== undefined) {
+          const maintenance = state.maintenance?.[representative.request.maintenance.id]
+          if (maintenance?.status !== 'quiescent') return receipt
+          await run.settleExternalRepresentativeCancellation(original.intentId)
+        } else {
+          const contact = state.world?.external.contacts[original.intentId]
+          if (contact !== undefined) {
+            const maintenance = contact.cancellation === undefined ? undefined : state.maintenance?.[contact.cancellation.maintenance.id]
+            if (maintenance?.status !== 'quiescent') return receipt
+            await run.settleExternalContactCancellation(original.intentId)
+          } else await run.settleWorldHireCancellation(original.intentId)
+        }
+        assertAdmitted()
+        return await run.cancelWorldCase(receipt.request)
+      },
+      quiesceForMaintenance: (request, maxDrainRounds, maxAttempts, signal) => {
+        this.assertOpen(); signal?.throwIfAborted()
+        const accepted = simulationMaintenanceRequestSchema.parse(request)
+        if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || !Number.isSafeInteger(maxDrainRounds) || maxDrainRounds < 1) {
+          return Promise.reject(new TypeError('Maintenance collection bounds must be positive safe integers'))
+        }
+        const existing = maintenanceWork.get(accepted.id)
+        if (existing !== undefined) {
+          if (!isDeepStrictEqual(existing.request, accepted) || existing.maxDrainRounds !== maxDrainRounds
+            || existing.maxAttempts !== maxAttempts) {
+            return Promise.reject(new Error('In-flight maintenance changed its original request or collection bounds'))
+          }
+          return existing.work
+        }
+        assertAdmitted()
+        const work = (async () => {
+          const operation = await run.beginMaintenance(accepted)
+          if (operation.status !== 'draining') return operation
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const before = run.snapshot()
+            let candidate: import('./types.ts').SimulationCheckpointCollection | undefined
+            try {
+              candidate = await connection.collectCheckpointCandidate(maxDrainRounds, 1, signal)
+              await candidate.validate()
+            } catch (error: unknown) {
+              const state = run.snapshot()
+              // Only a durable control change can replace this Native cut; missing or foreign owner evidence still fails.
+              if (!(error instanceof SimulationCheckpointError) || error.diagnostic.code !== 'source-moved'
+                || attempt + 1 === maxAttempts || error.diagnostic.subject.kind === 'run'
+                  && isDeepStrictEqual(before.management, state.management)
+                  && isDeepStrictEqual(before.world?.cancellations, state.world?.cancellations)) throw error
+              continue
+            } finally { candidate?.release() }
+            assertAdmitted(); signal?.throwIfAborted()
+            return await run.quiesceMaintenance(accepted)
+          }
+          throw new Error('Maintenance has no allowed collection attempt')
+        })().finally(() => { maintenanceWork.delete(accepted.id) })
+        maintenanceWork.set(accepted.id, { request: accepted, maxDrainRounds, maxAttempts, work })
+        return work
+      },
       ensureResident: (entityId, choice) => {
         assertActorAdmission(entityId)
         if (placements.has(entityId)) return Promise.reject(new Error('Simulation residency transition is already in progress'))
         const work = ensureResident(run, connection, entityId, choice.activation, choice.evict, (id) => {
           const binding = run.inspectEntity(id).entity?.binding
           return binding === undefined ? undefined : ctx.agents.get(binding.sessionId)
-        }, () => { this.assertOpen(); assertAdmitted() })
+        }, () => { this.assertOpen(); assertAdmitted() }, choice.policy ?? this.residencyPolicy)
         placements.set(entityId, work)
         void work.then(() => { placements.delete(entityId) }, () => { placements.delete(entityId) })
         return work
@@ -724,7 +1176,7 @@ export class SimulationTeams extends Service {
         void work.then(() => { checkpointRequests.delete(accepted.id) }, () => { checkpointRequests.delete(accepted.id) })
         return work
       },
-      collectCheckpointCandidate: (maxDrainRounds, maxAttempts, signal) => {
+      collectCheckpointCandidate: (maxDrainRounds, maxAttempts, signal, mode) => {
         this.assertOpen(); assertAdmitted(); signal?.throwIfAborted()
         if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || !Number.isSafeInteger(maxDrainRounds) || maxDrainRounds < 1) {
           return Promise.reject(new TypeError('Checkpoint collection bounds must be positive safe integers'))
@@ -753,6 +1205,23 @@ export class SimulationTeams extends Service {
         }
         const work = (async () => {
           try {
+            if (mode === 'quiescent') {
+              const state = run.snapshot()
+              if (generations.size > 0 || state.phase !== 'paused' || state.activeWindowId !== undefined || state.activeDecisionId !== undefined
+                || Object.values(state.entities).some(entity => entity.writer !== undefined && entity.writer.phase !== 'released'))
+                throw new Error('Read-only archive preview requires an already paused quiescent run')
+              const team = await ctx.teams.getTeam({ teamId })
+              if (team.activations.some(value => value.quiescedAt === undefined)
+                || team.participants.some(value => value.activationReservation !== undefined
+                  && value.activationReservation.releasedAt === undefined
+                  && !team.activations.some(activation => activation.reservationId === value.activationReservation?.id)))
+                throw new Error('Read-only archive preview requires previously retired Team writers')
+              check()
+              cut = await run.acquireCheckpointCut(maxDrainRounds, signal)
+              const collection = await collectCheckpoint(ctx, run, cut, teamId, ownerName, maxAttempts, check, release, signal)
+              checkpointRelease = release
+              return collection
+            }
             for (let attempt = 0; ; attempt += 1) {
               check()
               const revision = run.snapshot().revision
@@ -771,6 +1240,7 @@ export class SimulationTeams extends Service {
               ...[...taskCompletions.values()].map(value => value.work),
               ...taskDecisions, ...taskAssignments, ...taskReconciliations, ...taskReviews, ...taskCancellations,
               ...deliveryReconciliations, ...dispatches,
+              ...generations.values(),
               ...modelDecisions.keys(),
               ...[...deterministicRuns.values()].map(value => value.work),
               ...residentDrive === undefined ? [] : [residentDrive], ...driving === undefined ? [] : [driving.work]]))
@@ -943,6 +1413,7 @@ export class SimulationTeams extends Service {
             .filter(event => event?.type === 'simulation/context-view')
           const current = views[0]
           if (current?.type !== 'simulation/context-view' || !isDeepStrictEqual(current.data, prepared.view)) {
+            assertCurrentWorldScopeAccess(id, run.snapshot())
             actor.session.append('simulation/context-view', prepared.view, current === undefined ? { surfaceOp: 'append' } : {
               surfaceOp: { op: 'replace', start: current.seq, end: current.seq }, sourceEventSeqs: [current.seq],
             })
@@ -1087,7 +1558,12 @@ export class SimulationTeams extends Service {
         const work = executeDecision(run, connection, agent, entityId, id, context, () => ctx.sessions.flush(agent.session), () => {
           this.assertOpen(); assertAdmitted()
           if (ctx.agents.get(agent.id) !== agent) throw new Error('Simulation decision actor is no longer current')
-        }, wakeId)
+        }, wakeId, async (error) => {
+          const writer = writers.get(entityId)
+          if (writer === undefined || !await settleDecisionPause(error, writer, id)) return false
+          deadlines.finish(id)
+          return true
+        })
         modelDecisions.set(work, agent)
         void work.then(() => { modelDecisions.delete(work) }, () => { modelDecisions.delete(work) })
         return work
@@ -1216,13 +1692,34 @@ export class SimulationTeams extends Service {
       },
       activate: async (entityId, request) => {
         assertActorAdmission(entityId)
+        if (run.snapshot().activationAdmissionBlocks?.some(value => value.entityId === entityId)) {
+          throw new Error('Simulation Activation history requires original startup reconciliation and a new scenario')
+        }
         const binding = requireEntity(run, entityId).binding
         if (binding === undefined) throw new Error('Simulation entity has no cognition binding')
         runtime(request.provider)
         const work = (async () => {
           const latest = await this.ctx.teams.getTeam({ teamId })
           assertAdmitted()
-          return await this.ctx.teamActivations.activate({ ...request, ...binding, expectedCursor: latest.team.cursor })
+          try { return await this.ctx.teamActivations.activate({ ...request, ...binding, expectedCursor: latest.team.cursor }) }
+          catch (error) {
+            const details = activationHistoryLimitDetails(error)
+            if (details !== undefined && details.cleanup !== 'pending') {
+              const current = await this.ctx.teams.getTeam({ teamId })
+              const participant = current.participants.find(value => value.id === binding.participantId)
+              const reservation = participant?.activationReservation
+              if (details.teamId !== binding.teamId || details.participantId !== binding.participantId
+                || details.sessionId !== binding.sessionId || details.reservationId === undefined
+                || current.activations.length < details.used
+                || current.activations.some(value => value.activation.id === details.activationId)
+                || reservation?.id !== details.reservationId || reservation.sessionId !== binding.sessionId
+                || (details.cleanup === 'confirmed' ? reservation.releasedAt === undefined : reservation.releasedAt !== undefined)) {
+                throw new Error('Simulation Activation refusal lost its exact Team startup/cleanup evidence', { cause: error })
+              }
+              await run.recordActivationAdmissionBlock({ entityId, details })
+            }
+            throw error
+          }
         })()
         activations.add(work)
         void work.then(() => activations.delete(work), () => activations.delete(work))
@@ -1242,9 +1739,16 @@ export class SimulationTeams extends Service {
         for (const actor of modelDecisions.values()) actor.cancel({ kind: 'hook', reason: 'Simulation connection is closed' })
         closed ??= Promise.all([Promise.allSettled(checkpointWork === undefined ? [] : [checkpointWork]),
           Promise.allSettled([...checkpointRequests.values()].map(value => value.work)),
+          Promise.allSettled([...maintenanceWork.values()].map(value => value.work)),
+          Promise.allSettled([...worldCleanupWork.values()]),
+          Promise.allSettled([...externalCleanupWork.values()]),
+          Promise.allSettled([...contactCleanupWork.values()]),
           this.participants.drain(run), this.channels.drain(run),
           this.invitationAuthority.drain(run), deadlines.close(),
+          Promise.allSettled([...generations.values()]),
           Promise.allSettled([...summaries]),
+          Promise.allSettled([...personnelReads]),
+          Promise.allSettled([...personnelSettlements]),
           Promise.allSettled([...[...taskCompletions.values()].map(value => value.work),
             ...taskDecisions, ...taskAssignments, ...taskReconciliations, ...taskReviews, ...taskCancellations]),
           Promise.allSettled([...modelDecisions.keys()]),
@@ -1256,16 +1760,58 @@ export class SimulationTeams extends Service {
           Promise.allSettled([...placements.values(), ...activations, ...residentDrive === undefined ? [] : [residentDrive],
             ...driving === undefined ? [] : [driving.work]])])
           .then(() => unregister()).then(() => {
+            removePersonnelAuthority?.()
             removeRetirement?.()
-            removeToolGuard(); removePreStep()
+            removeWorldCleanup?.()
+            removeExternalCleanup?.()
+            removeContactCleanup?.()
+            removeToolGuard(); removePreStep(); removeRequestCap()
             removeStream()
             this.attached.delete(run)
           }).catch((error: unknown) => { closed = undefined; throw error })
         return closed
       },
     }
-    try { removeRetirement = run.onClose(() => connection.close()) }
-    catch (error) { removeToolGuard(); removePreStep(); removeStream(); await unregister(); throw error }
+    try {
+      if (run.snapshot().teamReservation?.confirmed === true) {
+        removeWorldCleanup = run.onWorldHireCleanup(ownerName, (reservation) => {
+          assertAdmitted()
+          const existing = worldCleanupWork.get(reservation.id)
+          if (existing !== undefined) return existing
+          const work = cleanupWorldHire(this.ctx, run, reservation, teamId, ownerName,
+            this.participants, this.channels, this.invitationAuthority, assertAdmitted)
+          worldCleanupWork.set(reservation.id, work)
+          void work.then(() => { worldCleanupWork.delete(reservation.id) }, () => { worldCleanupWork.delete(reservation.id) })
+          return work
+        })
+        removeExternalCleanup = run.onExternalRepresentativeCleanup(ownerName, (reservation) => {
+          assertAdmitted()
+          const existing = externalCleanupWork.get(reservation.id)
+          if (existing !== undefined) return existing
+          const work = cleanupExternalRepresentative(this.ctx, run, reservation, teamId, ownerName,
+            this.participants, this.channels, this.invitationAuthority, assertAdmitted)
+          externalCleanupWork.set(reservation.id, work)
+          void work.then(() => { externalCleanupWork.delete(reservation.id) }, () => { externalCleanupWork.delete(reservation.id) })
+          return work
+        })
+        removeContactCleanup = run.onExternalContactCleanup(ownerName, (contact) => {
+          assertAdmitted()
+          const existing = contactCleanupWork.get(contact.id)
+          if (existing !== undefined) return existing
+          const work = cleanupExternalContact(this.ctx, run, contact, teamId, ownerName,
+            this.channels, this.invitationAuthority, assertAdmitted)
+          contactCleanupWork.set(contact.id, work)
+          void work.then(() => { contactCleanupWork.delete(contact.id) }, () => { contactCleanupWork.delete(contact.id) })
+          return work
+        })
+      }
+      removeRetirement = run.onClose(() => connection.close())
+    } catch (error) {
+      removeWorldCleanup?.()
+      removeExternalCleanup?.()
+      removeContactCleanup?.()
+      removeToolGuard(); removePreStep(); removeRequestCap(); removeStream(); await unregister(); throw error
+    }
     this.attached.set(run, connection)
     this.ctx.effect(() => () => connection.close())
     return connection
@@ -1301,3 +1847,19 @@ function coordination(writer: SimulationWriterLease, provider?: AgentRuntimeProv
   }
 }
 export default SimulationTeams
+
+export { captureWorldArchive, verifyWorldArchive, publishWorldArchive, readWorldArchive, importArchiveLogs, importArchiveSessions, restoreWorldArchive, planWorldArchive } from './archive.ts'
+export type { WorldArchiveBody, WorldArchiveRestoreTarget } from './archive.ts'
+
+export { worldBackupManifestSchema, worldMigrationPlanSchema, createWorldBackup, verifyWorldBackup, publishWorldBackup, readWorldBackup, restoreWorldBackup, planWorldBackupMigration, migrateWorldBackup } from './backup.ts'
+export type { WorldBackupManifest, WorldBackupBundle, WorldMigrationPlan } from './backup.ts'
+
+export { worldExperimentBranchSchema, createWorldExperimentBranch, preflightWorldExperimentBranch, mergeWorldExperimentBranches } from './experiments.ts'
+export type { WorldExperimentBranch } from './experiments.ts'
+export { worldCausalQuerySchema, worldCausalIndexSchema, buildWorldCausalIndex, queryWorldCausalIndex, compareWorldExperiments } from './experiment-query.ts'
+export type { WorldCausalIndex, WorldExperimentComparison } from './experiment-query.ts'
+
+export type { WorldExternalArchiveSource, WorldExternalArchiveProvider, WorldExternalArchiveProviders } from './external-archive.ts'
+
+export { migrateWorldNative101, publishWorldNative101 } from './native-migration.ts'
+export type { WorldNativeMigrationValidators, WorldNativeMigrationResult } from './native-migration.ts'

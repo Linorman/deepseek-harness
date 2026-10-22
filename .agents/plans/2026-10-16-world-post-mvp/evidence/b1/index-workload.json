@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "date": "2026-10-19",
+  "scope": "Native bounded readonly inspection prefix projection; not full B01/B19 acceptance",
+  "backends": ["json", "sqlite"],
+  "entities": 512,
+  "profileUpdates": 1024,
+  "repetitions": 21,
+  "warmup": 3,
+  "mode": "source",
+  "modelPolicy": "no model calls",
+  "target": {"warmP50RatioMaximum": 0.9, "identicalSnapshots": true, "unchangedHistory": true},
+  "limitations": ["Entire journal bytes are still read and hashed under existing inspection limits", "Single in-memory prefix cache per provider", "No persistent on-disk index publication or cold recovery speedup claim"]
+}

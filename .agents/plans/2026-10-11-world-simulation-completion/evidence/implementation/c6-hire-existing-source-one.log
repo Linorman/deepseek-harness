@@ -1,0 +1,86 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ × examples/simulation-company/tests/world-hire-existing.snapshot.ts > json existing-person hiring > reuses original identity and remembered Session in company 4757ms
+   → /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:401
+  if (!assignments.length) throw new SimulationWorldError('SIM_WORLD_AUTHORITY', 'World goal requires current employment')
+                                 ^
+
+SimulationWorldError: World goal requires current employment
+    at goalWorldContext (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:401:34)
+    at worldContextSelection (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:336:25)
+    at worldContext (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:302:20)
+    at prepareContext (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/context.ts:45:59)
+    at foldBusinessRecord (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/decisions.ts:268:25)
+    at fold (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:235:51)
+    at foldEntries (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:114:13)
+    at LocalSimulationRun.commitValues (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1891:18)
+    at LocalSimulationRun.commitDomain (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1880:17)
+    at LocalSimulationRun.commitBusiness (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1866:17) {
+  code: 'SIM_WORLD_AUTHORITY',
+  failure: { code: 'SIM_WORLD_AUTHORITY' }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+ ↓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > json existing-person hiring > reuses original identity and remembered Session in laboratory
+ ↓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > sqlite existing-person hiring > reuses original identity and remembered Session in company
+ ↓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > sqlite existing-person hiring > reuses original identity and remembered Session in laboratory
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-hire-existing.snapshot.ts > json existing-person hiring > reuses original identity and remembered Session in company
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:401
+  if (!assignments.length) throw new SimulationWorldError('SIM_WORLD_AUTHORITY', 'World goal requires current employment')
+                                 ^
+
+SimulationWorldError: World goal requires current employment
+    at goalWorldContext (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:401:34)
+    at worldContextSelection (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:336:25)
+    at worldContext (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:302:20)
+    at prepareContext (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/context.ts:45:59)
+    at foldBusinessRecord (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/decisions.ts:268:25)
+    at fold (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:235:51)
+    at foldEntries (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:114:13)
+    at LocalSimulationRun.commitValues (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1891:18)
+    at LocalSimulationRun.commitDomain (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1880:17)
+    at LocalSimulationRun.commitBusiness (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1866:17) {
+  code: 'SIM_WORLD_AUTHORITY',
+  failure: { code: 'SIM_WORLD_AUTHORITY' }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ goalWorldContext packages/simulation/simulation-local/src/world.ts:401:34
+ ❯ worldContextSelection packages/simulation/simulation-local/src/world.ts:336:25
+ ❯ worldContext packages/simulation/simulation-local/src/world.ts:302:20
+ ❯ prepareContext packages/simulation/simulation-local/src/context.ts:45:59
+ ❯ foldBusinessRecord packages/simulation/simulation-local/src/decisions.ts:268:25
+ ❯ fold packages/simulation/simulation-local/src/journal.ts:235:51
+ ❯ foldEntries packages/simulation/simulation-local/src/journal.ts:114:13
+ ❯ LocalSimulationRun.commitValues packages/simulation/simulation-local/src/run.ts:1891:18
+ ❯ LocalSimulationRun.commitDomain packages/simulation/simulation-local/src/run.ts:1880:17
+ ❯ examples/simulation-company/tests/world-hire-existing.snapshot.ts:28:32
+     26|         try {
+     27|           const [code] = await exited as unknown[]
+     28|           expect(code, errors).toBe(0)
+       |                                ^
+     29|           const result = JSON.parse(output) as { modelCalls: number }
+     30|           expect(result).toMatchObject({ scenario, originalIdentity: t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 skipped (4)
+   Start at  05:11:08
+   Duration  5.04s (transform 141ms, setup 121ms, import 65ms, tests 4.76s, environment 0ms)
+

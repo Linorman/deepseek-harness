@@ -455,7 +455,7 @@
     }
   },
   {
-    "name": "time-\uff11",
+    "name": "time-１",
     "valid": false,
     "event": {
       "type": "simulation/context-view",
@@ -469,7 +469,7 @@
         "windowId": "window-1",
         "slot": "0",
         "epoch": "1",
-        "time": "\uff11",
+        "time": "１",
         "inputId": "input-1",
         "projections": {
           "run": 9,
@@ -2929,6 +2929,137 @@
           }
         ]
       }
+    }
+  },
+  {
+    "name": "non-goal-governance-access",
+    "valid": true,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "governance-company",
+        "entityId": "requester",
+        "windowId": "simulation-window:non-goal-vote-disclosure",
+        "slot": "4",
+        "epoch": "1",
+        "time": "0",
+        "inputId": "simulation-input:bac5339da28ce76b6840a9da1430608e367e96fd48d2bf94f8b548ac4326c4eb",
+        "projections": {
+          "run": 124,
+          "entity": 5,
+          "team": 24
+        },
+        "versions": {
+          "rules": "world-rules-1",
+          "policy": "sha256:2ae1880efb7ca37fb2dce57a1c4f491854257003917a3075abd8c47d9f9dec1e",
+          "persona": "persona-1",
+          "model": "model-1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "governance-company",
+            "sequence": 30
+          },
+          {
+            "kind": "run-event",
+            "runId": "governance-company",
+            "sequence": 52
+          },
+          {
+            "kind": "run-event",
+            "runId": "governance-company",
+            "sequence": 124
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "identity"
+              }
+            ]
+          },
+          {
+            "kind": "authority",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "authority"
+              }
+            ]
+          },
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "input"
+              },
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-context\",\"operation\":{\"domain\":\"governance\",\"operation\":\"propose-norm\",\"version\":\"1\",\"schemaRef\":\"clocky.governance.propose-norm/schema/2\",\"implementationRef\":\"clocky.governance.propose-norm/native/2\",\"generation\":1},\"authority\":{\"kind\":\"request\",\"pin\":{\"domain\":\"governance\",\"operation\":\"propose-norm\",\"version\":\"1\",\"schemaRef\":\"clocky.governance.propose-norm/schema/2\",\"implementationRef\":\"clocky.governance.propose-norm/native/2\",\"generation\":1},\"intentId\":\"world-intent:f3bc7a78de33ed3b09507cebdf3c74a0a7efca11f47547d6b84d884148bf7aa4\",\"reads\":[],\"baseRevision\":125,\"governance\":[{\"proposalId\":\"governance-proposal:49d1bf51e860dfa3363287c1a93e95e04e9d572d6bec14d222da32c8bf5d92a7\",\"proposalRevision\":1,\"bodyHash\":\"sha256:1817bb436fa7e11ecfe9bde9212bbca2469f20125efb8d822bd451ae4d26a5a5\"}],\"governanceAccess\":[{\"proposal\":{\"proposalId\":\"governance-proposal:49d1bf51e860dfa3363287c1a93e95e04e9d572d6bec14d222da32c8bf5d92a7\",\"proposalRevision\":1,\"bodyHash\":\"sha256:1817bb436fa7e11ecfe9bde9212bbca2469f20125efb8d822bd451ae4d26a5a5\"},\"pin\":{\"domain\":\"governance\",\"operation\":\"vote\",\"version\":\"1\",\"schemaRef\":\"clocky.governance.vote/schema/2\",\"implementationRef\":\"clocky.governance.vote/native/2\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"permission:can-vote:requester\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}]}]},\"receipt\":{\"requestId\":\"world-request:22e782096017cdeaeef8f527c6cc7d707b8a6087d49637ca8bba1da286515570\",\"status\":\"committed\",\"proposal\":{\"kind\":\"world/request\",\"domain\":\"governance\",\"operation\":\"propose-norm\",\"version\":\"1\",\"businessKey\":\"committee-hiring-policy\",\"expectedTime\":null,\"evidence\":[],\"payload\":{\"committeeId\":\"policy-committee\",\"scopeId\":\"studio\",\"body\":\"招聘需要委员会独立批准。\",\"target\":{\"kind\":\"norm\",\"norm\":{\"id\":\"committee-hiring\",\"version\":\"1\"}},\"policyRef\":\"clocky.governance/1\",\"rule\":{\"kind\":\"absolute-threshold\",\"yes\":2},\"quorum\":2,\"deadline\":\"100\"}}},\"worldFacts\":{\"viewer\":\"requester\",\"cursor\":124,\"time\":\"0\",\"items\":[],\"unknown\":[]},\"norms\":{\"viewer\":\"requester\",\"cursor\":124,\"time\":\"0\",\"items\":[],\"unknown\":[]},\"worldLimits\":{\"maxRequests\":10,\"maxRequestsPerActorPerInterval\":10,\"maxBirthsPerInterval\":10,\"maxExternalExpansionsPerInterval\":10,\"maxPendingMutations\":1,\"maxEvidenceAttemptsPerRequest\":3,\"maxPlansPerRequest\":3,\"maxBytesPerRequest\":4096,\"maxBytesPerPlan\":4096},\"requestBudget\":{\"actorId\":\"requester\",\"interval\":\"0\",\"period\":\"100\",\"used\":1,\"limit\":10},\"governance\":[{\"kind\":\"governance-proposal\",\"proposalId\":\"governance-proposal:49d1bf51e860dfa3363287c1a93e95e04e9d572d6bec14d222da32c8bf5d92a7\",\"proposalRevision\":1,\"bodyHash\":\"sha256:1817bb436fa7e11ecfe9bde9212bbca2469f20125efb8d822bd451ae4d26a5a5\",\"body\":\"招聘需要委员会独立批准。\",\"target\":{\"kind\":\"norm\",\"norm\":{\"id\":\"committee-hiring\",\"version\":\"1\"}},\"committeeId\":\"policy-committee\",\"scopeId\":\"studio\",\"policyRef\":\"clocky.governance/1\",\"rule\":{\"kind\":\"absolute-threshold\",\"yes\":2},\"quorum\":2,\"deadline\":\"100\",\"electorate\":[\"observer\",\"requester\"]}]}"
+              }
+            ]
+          },
+          {
+            "kind": "goals",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "goals"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "commitments"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "unknown-required-event",
+    "valid": false,
+    "event": {
+      "type": "future/world-effect",
+      "seq": 4,
+      "time": 100,
+      "data": {}
+    }
+  },
+  {
+    "name": "unknown-required-event-false",
+    "valid": false,
+    "event": {
+      "type": "future/world-effect",
+      "seq": 4,
+      "time": 100,
+      "data": {},
+      "ignorable": false
+    }
+  },
+  {
+    "name": "unknown-required-event-string",
+    "valid": false,
+    "event": {
+      "type": "future/world-effect",
+      "seq": 4,
+      "time": 100,
+      "data": {},
+      "ignorable": "true"
     }
   }
 ]

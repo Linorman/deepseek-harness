@@ -11,7 +11,7 @@ npm scope 为 `@clocky/clocky-*`；Cordis `Service` 子类和函数插件通过 
 | 组 | 职责 | 发布预期 |
 |---|---|---|
 | [`core/`](core/README.zh.md) | 产品 API 主干：会话、提示词、工具、agent（智能体）服务与具体循环 | 产品：稳定 API |
-| [`simulation/`](simulation/README.zh.md) | 持久模拟 run、认知协调与模型决策工具 | 显式启用；发布前 |
+| [`simulation/`](simulation/README.zh.md) | 持久模拟 run、场景编译、认知协调与模型决策工具 | 显式启用；发布前 |
 | [`team/`](team/README.zh.md) | 持久 Team 工作系统提供方以及本地 activation/delivery Consumer | 产品：稳定 API |
 | [`agent-runtime/`](agent-runtime/README.zh.md) | Participant activation placement 提供方 | 产品：稳定 API |
 | [`api/`](api/README.zh.md) | Remote BFF 装配与 Typert RPC 网关 | 产品：稳定 API |

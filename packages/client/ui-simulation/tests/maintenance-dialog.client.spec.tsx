@@ -2,7 +2,7 @@
 /** Maintenance and input commands use Host hints, exact anchors and independently retained originals. */
 import { useState } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react'
 import { MaintenanceDialog } from '../src/client/MaintenanceDialog.tsx'
 import { createSimulationStore, EMPTY_INPUT } from '../src/client/store.ts'
 import type { SimulationInputDraft } from '../src/client/store.ts'
@@ -13,6 +13,7 @@ import type { SimulationProductControl, SimulationCommand, SimulationCommandStat
 
 afterEach(cleanup)
 const t = (key: Key) => en[key]
+const interpolate = (key: Key, vars?: Record<string, unknown>) => en[key].replace(/\{(\w+)\}/g, (_m, name: string) => String(vars?.[name]))
 const control: SimulationProductControl = { runId: 'run' as never, owner: 'held', phase: 'paused', revision: 10,
   driver: 'idle', inFlight: false, observedAt: 1, actions: { start: { allowed: true, reason: 'ready' }, pause: { allowed: true, reason: 'ready' } },
   budget: { model: { provider: 'company', name: 'scripted' }, tokensPerRequest: 10000, tokensPerInterval: 1000000,
@@ -39,9 +40,25 @@ it('requires loaded exact recovery references and confirms publication/current r
   const view = render(<MaintenanceDialog {...props} target={target} />)
   await waitFor(() => { expect(props.readRecovery).toHaveBeenCalledWith({ runId: 'run', collection: 'checkpoints', id: 'full', section: 'references', limit: 2 }) })
   expect((view.getByRole('button', { name: 'Verify and recover run' }) as HTMLButtonElement).disabled).toBe(true)
-  expect(view.getByText(en['maintenanceNotice.restore'])).toBeDefined()
-  view.rerender(<MaintenanceDialog {...props} target={target} recovery={{ value: references, loading: false, stale: false }} />)
-  expect(view.getByText('100')).toBeDefined(); expect(view.getByText('10')).toBeDefined()
+  // Consequences are explicit lists: what will happen and, separately, what will not.
+  const wont = view.getByRole('region', { name: en['maintenance.wont'] })
+  expect(within(wont).getByText('Roll back history')).toBeDefined()
+  expect(within(wont).getByText('Replay completed model requests')).toBeDefined()
+  expect(within(view.getByRole('region', { name: en['maintenance.will'] })).getByText('Retire old writers and return a paused owner')).toBeDefined()
+  // The first layer states the effect in task language and withholds completeness until the Host confirms it.
+  const summary = () => document.querySelector('[data-restore-layer="summary"]')!
+  expect(summary().querySelector('[data-checkpoint-completeness]')?.getAttribute('data-checkpoint-completeness')).toBe('unconfirmed')
+  view.rerender(<MaintenanceDialog {...props} t={interpolate} target={target}
+    recovery={{ value: references, loading: false, stale: false }} />)
+  expect(summary().textContent).toContain(interpolate('restore.summary.what', { time: '5 ', published: '100' }))
+  expect(summary().textContent).toContain(en['restore.summary.paused'])
+  expect(summary().textContent).toContain(en['restore.summary.guarantee'])
+  expect(summary().querySelector('[data-checkpoint-completeness]')?.textContent).toContain(en['restore.completeness.complete'])
+  // Coverage and technical identities are second and third layers.
+  const coverage = document.querySelector('[data-restore-layer="coverage"]')!
+  expect(coverage.textContent).toContain(interpolate('restore.coverage.counts', { runs: 1, teams: 1, channels: 1, sessions: 2 }))
+  expect(within(coverage as HTMLElement).getByText('7')).toBeDefined(); expect(within(coverage as HTMLElement).getByText('10')).toBeDefined()
+  expect(document.querySelector('[data-restore-layer="technical"]')?.textContent).toContain('full')
   fireEvent.click(view.getByRole('button', { name: en.first }))
   expect(props.readRecovery).toHaveBeenLastCalledWith({ runId: 'run', collection: 'checkpoints', id: 'full', section: 'references', limit: 2 })
   fireEvent.click(view.getByRole('button', { name: 'Next page' }))
@@ -56,7 +73,7 @@ it('requires loaded exact recovery references and confirms publication/current r
 })
 
 it('validates entity and canonical exact tick, protects IME, and retains raw later edits with original retries', async () => {
-  const props = base()
+  const props = { ...base(), query: vi.fn(async (_key: string) => undefined) }
   let original: SimulationCommand | undefined
   const sent: SimulationCommand[] = []
   function Harness() {
@@ -68,6 +85,11 @@ it('validates entity and canonical exact tick, protects IME, and retains raw lat
         if (original === undefined) throw new Error('Original input missing')
         sent.push(original)
         const value = { command: original, unknown: true, pending: false, notFound: false, error: 'network' as const }
+        change({ [draft.commandKey ?? 'key']: value }); return value
+      }} query={async (key) => {
+        await props.query(key)
+        if (original === undefined) throw new Error('Original input missing')
+        const value: SimulationCommandState = { command: original, unknown: true, pending: false, notFound: true }
         change({ [draft.commandKey ?? 'key']: value }); return value
       }} />
   }
@@ -84,8 +106,12 @@ it('validates entity and canonical exact tick, protects IME, and retains raw lat
   fireEvent.click(view.getByRole('button', { name: 'Input event' }))
   await view.findByText(en['commandError.network'])
   if (original === undefined) throw new Error('Original input was not retained')
+  expect(view.queryByRole('button', { name: en.retryOriginal })).toBeNull()
+  expect(sent).toHaveLength(1)
   fireEvent.click(view.getByRole('button', { name: en.queryOriginal }))
+  await view.findByText(en.commandNotFound)
   expect(props.query).toHaveBeenCalledWith(simulationCommandKey(original))
+  expect(sent).toHaveLength(1)
   fireEvent.change(view.getByLabelText('Authorized input text'), { target: { value: 'Later private input' } })
   fireEvent.click(view.getByRole('button', { name: 'Retry original operation' }))
   await waitFor(() => { expect(sent).toHaveLength(2) })
@@ -199,7 +225,7 @@ it('shows loading, failed and stale recovery references while preserving the pub
     recovery={{ loading: false, stale: true, error: 'network', value: references }} />)
   expect(view.getByText(en.stale)).toBeTruthy()
   expect(view.getByRole('alert').textContent).toBe(en.network)
-  expect(view.getByText('run:')).toBeTruthy()
+  expect(view.getByText('run', { selector: 'li > span' })).toBeTruthy()
   expect(view.getByRole('button', { name: en.next }).hasAttribute('disabled')).toBe(true)
   if (references.value?.collection !== 'checkpoints' || references.value.section !== 'references') {
     throw new Error('Recovery fixture has no checkpoint references')
@@ -260,4 +286,12 @@ it('keeps or discards only the editable ingress draft through explicit confirmat
   fireEvent.click(view.getAllByRole('button', { name: en.discardDraft }).at(-1)!)
   expect(props.input).toHaveBeenCalledExactlyOnceWith(undefined)
   expect(props.close).toHaveBeenCalledOnce()
+})
+
+it('states a partial backup when the stop save could not cover external case state', () => {
+  const props = base()
+  const partial = { ...control, stopTarget: { checkpoint: 'external-state-required' } } as unknown as SimulationProductControl
+  render(<MaintenanceDialog {...props} control={{ value: partial, loading: false, stale: false }}
+    target={{ runId: control.runId, kind: 'restore' }} />)
+  expect(document.querySelector('[data-checkpoint-completeness]')?.getAttribute('data-checkpoint-completeness')).toBe('partial')
 })

@@ -6,7 +6,7 @@ import type { SimulationEntityId, SimulationCheckpointId } from './identities.ts
 import type { SimulationCheckpointDiagnostic } from './checkpoint-diagnostics-types.ts'
 
 /** Validate finite public categories and one exact canonical reference; additional payload refuses. */
-export const simulationCheckpointDiagnosticSchema = z.strictObject({
+export const simulationCheckpointDiagnosticSchema: z.ZodType<SimulationCheckpointDiagnostic> = z.strictObject({
   stage: z.enum(['collect', 'validate', 'restore', 'retire', 'publish']),
   code: z.enum(['source-unavailable', 'source-moved', 'history-incomplete', 'binding-mismatch', 'owner-conflict',
     'owner-not-quiescent', 'unsupported-ownership', 'manifest-mismatch', 'version-mismatch', 'cancelled', 'unavailable']),
@@ -24,4 +24,4 @@ export const simulationCheckpointDiagnosticSchema = z.strictObject({
     z.strictObject({ kind: z.literal('entity'), entityId: z.string().min(1).transform(value => value as SimulationEntityId) }),
   ]),
   cleanup: z.literal('unconfirmed').optional(),
-}) satisfies z.ZodType<SimulationCheckpointDiagnostic>
+})

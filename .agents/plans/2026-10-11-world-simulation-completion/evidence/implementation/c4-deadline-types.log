@@ -1,0 +1,23 @@
+packages/simulation/simulation/src/world-governance.ts(12,39): error TS2307: Cannot find module './world-norms-types.ts' or its corresponding type declarations.
+packages/simulation/simulation/src/world-hire-approval.ts(6,39): error TS2307: Cannot find module './world-norms-types.ts' or its corresponding type declarations.
+packages/simulation/simulation-local/src/scheduler.ts(386,43): error TS2379: Argument of type '{ kind: "event/queued"; id: Branded<"SimulationEventId">; key: { time: SimTime; microstep: Branded<"SimulationEventSlot">; phase: "deadline" | "delivery" | "decision"; slot: Branded<...>; }; action: { ...; } | ... 6 more ... | { ...; }; sourceOperationId?: Branded<...> | undefined; }' is not assignable to parameter of type 'Pick<SimulationScheduledEvent, "key" | "id" | "action" | "sourceOperationId">' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'sourceOperationId' are incompatible.
+    Type 'Branded<"SimulationOperationId"> | undefined' is not assignable to type 'SimulationOperationId'.
+      Type 'undefined' is not assignable to type 'SimulationOperationId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/src/world-hire-approval.ts(4,10): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'SimulationHireApprovalError'. Did you mean to use 'import SimulationHireApprovalError from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(4,39): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'simulationHireApprovalTargetSchema'. Did you mean to use 'import simulationHireApprovalTargetSchema from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(4,75): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'simulationHireApprovalProposalInputSchema'. Did you mean 'simulationGovernanceProposalInputSchema'?
+packages/simulation/simulation-local/src/world-hire-approval.ts(5,3): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'simulationHireApprovalBasisSchema'. Did you mean to use 'import simulationHireApprovalBasisSchema from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(5,38): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'hireApprovalBody'. Did you mean to use 'import hireApprovalBody from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(5,56): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'effectiveNorms'. Did you mean to use 'import effectiveNorms from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(5,72): error TS2724: '"@clocky/clocky-simulation"' has no exported member named 'WORLD_GOVERNANCE_HIRE_APPROVAL_DEFINITION'. Did you mean 'WORLD_GOVERNANCE_PROPOSE_DEFINITION'?
+packages/simulation/simulation-local/src/world-hire-approval.ts(6,3): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'WORLD_GOVERNANCE_HIRE_APPROVAL_PIN'. Did you mean to use 'import WORLD_GOVERNANCE_HIRE_APPROVAL_PIN from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(8,35): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'SimulationHireApprovalTarget'. Did you mean to use 'import SimulationHireApprovalTarget from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(8,65): error TS2614: Module '"@clocky/clocky-simulation"' has no exported member 'SimulationHireApprovalBasis'. Did you mean to use 'import SimulationHireApprovalBasis from "@clocky/clocky-simulation"' instead?
+packages/simulation/simulation-local/src/world-hire-approval.ts(45,82): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(58,54): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(59,81): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(84,13): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(85,12): error TS7006: Parameter 'a' implicitly has an 'any' type.
+packages/simulation/simulation-local/src/world-hire-approval.ts(85,15): error TS7006: Parameter 'b' implicitly has an 'any' type.

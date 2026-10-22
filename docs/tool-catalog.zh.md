@@ -48,12 +48,27 @@ This table connects model-visible tool names to the plugin package and service s
 
 ### `simulation_observe`
 
-Read the authorized observations prepared for your current simulation decision. This does not query newer or hidden world state.
+Confirm the authorized decision context already present in your input. Bounded World runs return its reference without duplicating it. Use sections to read only named chapters. Use detail: full only when all chapters are required; this never queries newer or hidden state.
 
 ```json
 {
   "type": "object",
-  "properties": {}
+  "properties": {
+    "sections": {
+      "type": "array",
+      "description": "Distinct current chapter kinds, e.g. input or authority; cannot be combined with detail.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "detail": {
+      "type": "string",
+      "description": "Return the complete frozen sections instead of a context receipt.",
+      "enum": [
+        "full"
+      ]
+    }
+  }
 }
 ```
 
@@ -61,7 +76,7 @@ Source: [`packages/simulation/tool-simulation/src/index.ts`](../packages/simulat
 
 ### `simulation_stage`
 
-Replace your complete staged proposal list. No world effects occur until a submitted proposal is executed. Send an empty list to stage no actions.
+Replace your complete staged proposal list. No world effects occur until a submitted proposal is executed. Send an empty list to stage no actions. After a staged result, call simulation_submit when the list is final. Restaging an unchanged list does not submit it. A rejected replacement preserves your previous staged list. Correct the reported paths using the exact protocol in this decision; staging does not grant permission to execute.
 
 ```json
 {
@@ -89,6 +104,531 @@ Replace your complete staged proposal list. No world effects occur until a submi
           },
           "action": {
             "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "world/request"
+                  },
+                  "domain": {
+                    "type": "string"
+                  },
+                  "operation": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "businessKey": {
+                    "type": "string"
+                  },
+                  "expectedTime": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "entity"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "revision"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "resource"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "revision"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "world-definition"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "revision"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "world-input"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            },
+                            "hash": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "revision",
+                            "hash"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "external"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "revision"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "relation"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            },
+                            "effectiveFrom": {
+                              "type": "string"
+                            },
+                            "effectiveUntil": {
+                              "oneOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "revision",
+                            "effectiveFrom",
+                            "effectiveUntil"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "relation-set"
+                            },
+                            "relation": {
+                              "type": "string"
+                            },
+                            "object": {
+                              "type": "string"
+                            },
+                            "scope": {
+                              "type": "string"
+                            },
+                            "hash": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "relation",
+                            "object",
+                            "scope",
+                            "hash"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "authority"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "generation": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "generation"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "norm"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "version"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "proposal"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "hash": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "hash"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "resolution"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "hash": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "hash"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "payload": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "kind",
+                  "domain",
+                  "operation",
+                  "version",
+                  "businessKey",
+                  "expectedTime",
+                  "evidence",
+                  "payload"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "world/resolve"
+                  },
+                  "requestId": {
+                    "type": "string"
+                  },
+                  "supersedes": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "resolution": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "awaiting-evidence"
+                          },
+                          "missingFields": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "deadline": {
+                            "type": "string"
+                          },
+                          "maxAttempts": {
+                            "type": "integer"
+                          },
+                          "rationale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "missingFields",
+                          "deadline",
+                          "maxAttempts",
+                          "rationale"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "apply"
+                          },
+                          "payload": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "rationale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "payload",
+                          "rationale"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "reject"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "insufficient-information",
+                              "unauthorized",
+                              "capacity-full",
+                              "unsupported",
+                              "policy"
+                            ]
+                          },
+                          "rationale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "reason",
+                          "rationale"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "requestId",
+                  "supersedes",
+                  "resolution"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "world/evidence"
+                  },
+                  "requestId": {
+                    "type": "string"
+                  },
+                  "challengeId": {
+                    "type": "string"
+                  },
+                  "expectedInputRevision": {
+                    "type": "integer"
+                  },
+                  "answers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "references": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "run-event"
+                                  },
+                                  "runId": {
+                                    "type": "string"
+                                  },
+                                  "sequence": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "runId",
+                                  "sequence"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "team-envelope"
+                                  },
+                                  "teamId": {
+                                    "type": "string"
+                                  },
+                                  "channelId": {
+                                    "type": "string"
+                                  },
+                                  "envelopeId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "teamId",
+                                  "channelId",
+                                  "envelopeId"
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "field",
+                        "text",
+                        "references"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "requestId",
+                  "challengeId",
+                  "expectedInputRevision",
+                  "answers"
+                ]
+              },
               {
                 "type": "object",
                 "additionalProperties": false,
@@ -218,7 +758,8 @@ Replace your complete staged proposal list. No world effects occur until a submi
                     "const": "communication/post"
                   },
                   "recipient": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Simulation Entity ID from the recorded reply target; never a Team Participant ID."
                   },
                   "channelId": {
                     "type": "string"
@@ -496,6 +1037,140 @@ Replace your complete staged proposal list. No world effects occur until a submi
                 "properties": {
                   "kind": {
                     "type": "string",
+                    "const": "resource/reserve"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "transaction": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "commitmentId": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reads": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "resourceId": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "resourceId",
+                            "revision"
+                          ]
+                        }
+                      },
+                      "transfers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "from": {
+                              "type": "string"
+                            },
+                            "to": {
+                              "type": "string"
+                            },
+                            "quantity": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to",
+                            "quantity"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "commitmentId",
+                      "reads",
+                      "transfers"
+                    ]
+                  },
+                  "grants": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "expiresAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "transaction",
+                  "grants",
+                  "expiresAt"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "resource/commit-reservation"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "resource/cancel-reservation"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
                     "const": "resource/transfer"
                   },
                   "transaction": {
@@ -707,12 +1382,25 @@ Source: [`packages/simulation/tool-simulation/src/index.ts`](../packages/simulat
 
 ### `simulation_submit`
 
-提交完整的暂存提案列表并结束本次决策。窗口提案在 submitted 状态等待有序接受；accepted 提案等待执行。结果在后续决策中返回。
+Submit the complete staged proposal list and end this decision. A submitted window proposal awaits ordered acceptance; accepted proposals await execution. Results arrive in a later decision. For a result decision, notification: {resultId} submits the exact frozen notification without staging or rewriting its text.
 
 ```json
 {
   "type": "object",
-  "properties": {}
+  "properties": {
+    "notification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resultId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "resultId"
+      ]
+    }
+  }
 }
 ```
 

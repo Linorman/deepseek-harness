@@ -1,5 +1,7 @@
+import { controlObservation as nativeControlObservation } from '../../simulation-local/src/control-observation.ts'
 /** Product scheduling owns background progression while original management receipts remain historical. */
 import type { MockInstance } from 'vitest'
+import { LlmError } from '@clocky/clocky-llm'
 import { afterEach, expect, it, vi } from 'vitest'
 import { simulationProductManageInputSchema, simulationProductManagementInputSchema } from '../src/control-schema.ts'
 import { simulationCompanyPreparationSchema } from '../src/company-preparation.ts'
@@ -306,7 +308,7 @@ it.each(['retry', 'resident-capacity', 'recipient-busy', 'coordination-limit'] a
     expect((await h.ctx.simulationAdministration.control({ runId }, call())).driver).toBe('scheduled')
     if (reason === 'retry') expect(Date.now()).toBeLessThan(nextAttemptAt)
     await vi.waitFor(() => { expect(advance).toHaveBeenCalledTimes(2) }, { timeout: 2000, interval: 5 })
-    expect((await h.ctx.simulationAdministration.control({ runId }, call())).driver).toBe('completed')
+    await vi.waitFor(async () => { expect((await h.ctx.simulationAdministration.control({ runId }, call())).driver).toBe('completed') })
   } finally { await h.close() }
 })
 
@@ -328,19 +330,28 @@ it.each(['scenario-blocked', 'outcome-unknown', 'recovery-required', 'residency-
   } finally { await h.close() }
 })
 
-it('retains native responsibility after driver failure, permits pause and does not automatically repeat inference', async () => {
+it.each([new Error('private provider path'), new LlmError('private token and payload', 'UNKNOWN', { status: 402 }),
+  new LlmError('private provider payload', 'RATE_LIMIT', { status: 429 })])('retains native responsibility after driver failure, permits pause and does not automatically repeat inference (%s)', async (failure) => {
   const h = await ownerFixture()
   try {
     const runId = await h.create()
-    const advance = vi.spyOn(SimulationCompanyDriver.prototype, 'advance').mockRejectedValue(new Error('private provider path'))
+    const state = h.owned().snapshot()
+    const advance = vi.spyOn(SimulationCompanyDriver.prototype, 'advance')
+      .mockResolvedValueOnce({ reason: 'work-limit', controlSteps: 1, time: state.time, revision: state.revision })
+      .mockRejectedValue(failure)
     await h.ctx.simulationAdministration.manage(management(runId, 'start'), call())
     await vi.waitFor(async () => { expect((await h.ctx.simulationAdministration.control({ runId }, call())).driver).toBe('failed') })
     const control = await h.ctx.simulationAdministration.control({ runId }, call())
     expect(control.actions.start).toEqual({ allowed: false, reason: 'driver-failed' })
     expect(JSON.stringify(control)).not.toContain('private')
+    expect(control.stop).toBeUndefined()
+    expect(control.failure).toMatchObject({ category: failure instanceof LlmError
+      ? failure.failure.status === 402 ? 'payment-required' : 'rate-limited' : 'unknown', revision: h.owned().snapshot().revision - 1 })
+    const originalFailure = control.failure
+    expect((await h.ctx.simulationAdministration.control({ runId }, call())).failure).toEqual(originalFailure)
     await h.ctx.simulationAdministration.manage(management(runId, 'pause', 'paused'), call())
     await expect(h.ctx.simulationAdministration.manage(management(runId, 'restart'), call())).rejects.toThrow('driver-failed')
-    expect(advance).toHaveBeenCalledTimes(1)
+    expect(advance).toHaveBeenCalledTimes(2)
   } finally { await h.close() }
 })
 
@@ -530,7 +541,7 @@ it.each(['missing', 'implementation', 'team', 'unknown-operation', 'stalled'] as
       const operation = { ...observedOperation('unknown'), entityId: 'buyer' as never, status: 'outcome-unknown' as const }
       changed = { ...state, operations: { [operation.id]: operation } }
     } else changed = { ...state, phase: 'stalled' }
-    const probe = vi.spyOn(h.owned(), 'snapshot').mockReturnValue(changed)
+    const probe = vi.spyOn(h.owned(), 'controlObservation').mockImplementation(id => nativeControlObservation(changed, id))
     const control = await h.ctx.simulationAdministration.control({ runId }, call())
     expect(control.actions.start.allowed).toBe(false)
     await expect(h.ctx.simulationAdministration.manage(management(runId, 'not-admitted'), call())).rejects.toThrow('cannot start')
@@ -616,5 +627,28 @@ it('does not schedule work for a native provider that reports a failed managemen
     expect(result.control).toMatchObject({ phase: 'paused', driver: 'idle' })
     expect(JSON.stringify(result)).not.toContain('private')
     expect(h.requests).toEqual([])
+  } finally { await h.close() }
+})
+
+it('keeps a failed save distinct from driver failure, remains paused and never starts inference', async () => {
+  const h = await ownerFixture()
+  try {
+    const runId = await h.create()
+    const calls = h.requests.length
+    const attach = h.ctx.simulationTeams.attach.bind(h.ctx.simulationTeams)
+    vi.spyOn(h.ctx.simulationTeams, 'attach').mockImplementationOnce(async (...args) => {
+      const connection = await attach(...args)
+      vi.spyOn(connection, 'checkpoint').mockRejectedValueOnce(new Error('/private/path token=secret save body'))
+      return connection
+    })
+    const commandId = 'failed-safe-save' as never
+    await h.ctx.simulationAdministration.checkpoint({ runId, commandId }, call())
+    const terminal = await h.finished(commandId)
+    expect(terminal).toMatchObject({ status: 'failed', failure: 'checkpoint-failed' })
+    const control = await h.ctx.simulationAdministration.control({ runId }, call())
+    expect(control).toMatchObject({ phase: 'paused', inFlight: false, driver: 'idle' })
+    expect(control.failure).toBeUndefined()
+    expect(JSON.stringify(terminal) + JSON.stringify(control)).not.toMatch(/private|secret|save body/)
+    expect(h.requests).toHaveLength(calls)
   } finally { await h.close() }
 })

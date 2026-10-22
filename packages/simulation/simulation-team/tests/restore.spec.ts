@@ -26,7 +26,7 @@ async function setup(backend: 'json' | 'sqlite', materialized = true) {
   const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 'create', spec: {
     runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1',
     outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32,
-    phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [],
+    phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [],
   } })
   const run = await ctx.simulations.open(selection)
   cleanups.push(() => run.close())
@@ -36,7 +36,7 @@ async function setup(backend: 'json' | 'sqlite', materialized = true) {
   const bindings = []
   const sessions = []
   for (const id of ids) {
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
     const binding = await connection.ensureParticipant(id, { displayName: id, role: id, capabilities: [], provider: 'in-process', preset: 'simulation', model: 'unused' })
     bindings.push(binding)
     if (materialized) {
@@ -49,7 +49,7 @@ async function setup(backend: 'json' | 'sqlite', materialized = true) {
   }
   const channel = await connection.ensureChannel(simulationChannelSpecSchema.parse({ key: 'peer',
     members: ids.map((entityId, index) => ({ entityId, role: String(index) })), limits: {} }))
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'warehouse', entityKind: 'org', cognition: 'none', profile: {} }), run.snapshot().revision)
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'warehouse', entityKind: 'org', cognition: 'none', profile: {} }), run.snapshot().revision)
   const command = simulationCheckpointRequestSchema.parse({ id: 'cut', implementationVersion: 'audit-1', maxDrainRounds: 4, maxAttempts: 3 })
   const checkpoint = await connection.checkpoint(command)
   if (checkpoint.status !== 'completed') throw new Error('Fixture checkpoint failed')
@@ -584,7 +584,7 @@ describe.each(['json', 'sqlite'] as const)('%s checkpoint owner audit', (backend
     cleanups.push(() => run.close())
     const connection = await h.ctx.simulationTeams.attach(run, h.manifest.team.owner.teamId, 'simulation/company')
     const third = simulationEntityIdSchema.parse('third')
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: third, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: third, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
     const binding = await connection.ensureParticipant(third, { displayName: 'Third', role: 'third', capabilities: [],
       provider: 'in-process', preset: 'simulation', model: 'unused' })
     const session = h.ctx.sessions.create(binding.sessionId, { meta: { teamId: binding.teamId, participantId: binding.participantId } })

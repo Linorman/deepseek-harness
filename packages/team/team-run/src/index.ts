@@ -935,7 +935,9 @@ interface FinalizationCleanupProofRecord {
 }
 
 /** Topology operations issued only by this TeamRun owner. */
-type TeamRunTopologyScope = Exclude<TeamSystemTopologyScope, { kind: 'simulation-participant-invite' | 'simulation-participant-phase' }>
+type TeamRunTopologyScope = Exclude<TeamSystemTopologyScope, {
+  kind: 'simulation-participant-invite' | 'simulation-participant-phase' | 'simulation-participant-retire'
+}>
 
 /** Private un-published bootstrap state that owns one in-flight topology proof. */
 interface BootstrapTopologyState {

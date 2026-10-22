@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-19T02:41:00.358229+08:00",
+  "checklist": [
+    "F02",
+    "F04"
+  ],
+  "complete": true,
+  "summarySha256": "3e07dd83e7ceabaab38b63064fedebd75a8cfd5571ffb69ce1ce52be4a7bb6df",
+  "command": [
+    "python3",
+    "scripts/world-post-mvp-acceptance.py",
+    "--laboratory",
+    ".local/world-post-mvp/f0-longitudinal/1792333087908875000",
+    "--association",
+    ".local/world-post-mvp/f0-longitudinal/1792337889212043000",
+    "--company",
+    ".local/world-post-mvp/f0-longitudinal/1792338832170825000",
+    "--output",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection"
+  ],
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "exitCode": 0,
+  "backendPairs": 6,
+  "warmRounds": 192,
+  "successfulProcesses": 12,
+  "coldModelCalls": 0,
+  "inputDrift": [],
+  "mode": "source; scripted keyless",
+  "rawCopies": "raw-copies.json",
+  "scope": "Three independently recorded scene batches, with exact source compatibility proofs; no single-run claim and no B-stage optimization claim."
+}

@@ -87,6 +87,7 @@ export class AppWebEntry {
 
   /** Mount through a dependency fiber so replacing uiRenderer remounts the application. */
   private async mountApp(ctx: Context): Promise<void> {
+    if (!ctx.uiRenderer.hasRootRegistration()) throw new Error('Web boot requires a root layout registration')
     const mounted = ctx.inject(['uiRenderer'], (scope) => {
       scope.effect(() => scope.uiRenderer.mount(this.container), 'web boot: application mount')
     })

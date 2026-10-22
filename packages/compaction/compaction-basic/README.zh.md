@@ -14,6 +14,8 @@
 - **路由策略**：主动压力从拥有最新持久提供方／模型路由的适配器解析容量，再将默认策略与可选的精确目标覆盖缩放为具体 token 预算。模型发现仍仅供参考，不参与此处的策略解析。
 - **不依赖模型的剪枝**：在压力或规范溢出符合条件后，可选的 [`ctx.toolResultPruner`](../compaction-tool-result-pruner/README.zh.md) 服务会在选择范围之前改写超大工具结果。Compact-basic 通过 `ctx.tokenMeter` 重新测量；如果压力已回到安全范围，就跳过摘要，否则对已剪枝的表层进行摘要。低于压力的步骤检查绝不剪枝。
 - **保留**：压缩最旧的完整表层单元，同时保留近期尾部，并通过 [`clocky-compaction` 边界 helper](../compaction/README.zh.md#tool-pairing-boundaries) 将切分点调整到工具调用／结果配对平衡的位置。轮次边界不会保护失控轮次内的旧步骤。尚未闭合且不可分的尾部会在闭合前拒绝压缩。当闭合的超大工具单元以文本型结果为可移除主体时，可选 pruner 可以修复它；不可分的非工具单元与不可剪枝的工具剩余部分不在范围内。
+- **压力诊断**：`compaction/assessment` 记录尝试、无收益跳过、固定上下文占满和无可选范围，以及固定系统/工具、可压缩历史、保留历史及显式输出预留的估计值；未提供输出上限时显示未知。固定内容加已知输出上限已占满窗口时，不再付费生成摘要；溢出恢复仍须持久化缩短 surface 后才重试。
+- **无收益抑制**：无法缩短历史的摘要在 `compaction/end` 上记录类型化 `noGain` 证据。普通压力和溢出恢复最多检查 `noGainHistoryLimit` 个近期已关闭尝试；有效输入相同的尝试在跨步骤及恢复后继续抑制。原前缀未变时，新增可压缩 token 达到 `noGainMinTokens` 或新增节点达到 `noGainCooldownNodes` 才重新评估。模型、策略、固定输入或替换代次变化可重新评估；`compactNow()` 和显式 `compactRegion()` 均允许调用方单次覆盖抑制。
 - **收敛**：最多按 `compactionRetries` 重试头部检查点压缩；拒绝不能缩小源内容的摘要，如果重试仍无法回到阈值以下，则抛出异常。
 - **摘要**：直接 `llm/stream` 调用使用已配置的提供方／模型对与上限，回退到最新已记录请求目标，然后再回退到 agent（智能体）目标，而不运行仅用于 agent loop 的 `agent/request` 扩展点。该调用会逐字回放会话自身的系统提示词、工具与已遮蔽区域消息（包括图片引用），并将压缩指令作为最后一条 user 消息追加，从而复用提供方的热前缀 cache，而非使它失效。所选适配器必须解析或明确拒绝这些图片。它将 `GenerateOptions.purpose` 设为 `compaction`，适配器可将其作为请求归因转发（适配器可以用它生成提供方归因），但不会触碰模型可见的请求体。只有返回的文本会进入检查点；推理（reasoning）和工具调用都会被排除，以免泄露私有推理或产生遗留调用；图片输出会以 `UNSUPPORTED_CONTENT` 失败，而不是消失。
 - **框定**：替换 user 消息使用 `<compacted-summary>` 标签标记已建立的检查点上下文。原始摘要保留在 `compaction/summary` 事件上，后续自动周期会合并之前的检查点。
@@ -29,6 +31,7 @@
 
 | Key | 必填 | 含义 |
 |---|---|---|
+| `thresholdTokens` | no | 可选绝对触发额度，与模型容量 × `thresholdRatio` 取较小值。 |
 | `thresholdRatio` | 否（默认 `0.8`） | 在 `floor(routedContextWindow × ratio)` 处压缩。 |
 | `retainRatio` | 否（默认 `0.16`） | 以已路由上下文窗口的一部分表示逐字保留的近期表层预算；与 `retainTokens` 互斥。 |
 | `retainTokens` | 否 | 逐字保留的近期表层绝对预算；与 `retainRatio` 互斥，并且必须低于已解析阈值。 |
@@ -38,9 +41,12 @@
 | `compactionRetries` | 否（默认 `1`） | 压力仍高于阈值时，在首次尝试后进行的额外尝试次数。 |
 | `maxOverflowRetries` | 否（默认 `1`） | 规范上下文窗口溢出后的最大重试次数；`0` 只禁用恢复。 |
 | `modelPolicies` | 否（默认 `[]`） | 精确的 `{ provider, model, ...partialPolicy }` 覆盖；匹配使用两个字段，不依赖 `listModels()`。 |
+| `noGainMinTokens` | 否（默认 `256`） | 无收益前缀重新评估所需新增可压缩 token；正整数。 |
+| `noGainCooldownNodes` | 否（默认 `8`） | token 增量不足时允许重新评估的新增节点数；正整数。 |
+| `noGainHistoryLimit` | 否（默认 `32`） | 每次检查的近期已关闭尝试数上限；正整数。 |
 | `auto` | 否（默认 `true`） | 注册步骤边界压力与溢出恢复 listener。设为 `false` 则仅手动执行。 |
 
-每个 `modelPolicies` 配置项都接受上述策略字段，但不接受 `auto` 和 `modelPolicies` 自身。如果配置项提供任意一个保留字段，就替换默认策略的保留选择；否则继承保留设置。摘要提供方／模型在每个配置项内仍然成对。
+每个 `modelPolicies` 配置项都接受上述策略字段，但不接受 `auto`、`modelPolicies` 自身及三个 `noGain*` 设置。如果配置项提供任意一个保留字段，就替换默认策略的保留选择；否则继承保留设置。摘要提供方／模型在每个配置项内仍然成对。
 
 适配器可能无法为有效动态路由返回容量，已解析容量也可能暴露无效的绝对保留预算。此时手动压力检查会抛出目标特定配置错误；自动 listener 会对该精确目标警告一次，并携带完整历史继续。不相关的操作性失败仍会独立可见。规范提供方溢出仍会尝试恢复，因为提供方已确立压缩的必要性。
 

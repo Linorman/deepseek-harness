@@ -8,6 +8,8 @@ import type { GenerateOptions, StreamChunk } from '@clocky/clocky-llm'
 import type { Agent } from '@clocky/clocky-agent'
 import type { SimulationWriterLease } from '@clocky/clocky-simulation'
 import type { SimulationModelCapacity } from './model-capacity.ts'
+import { SimulationModelCapacityExceeded } from './model-capacity.ts'
+import { compactionAdmissionRequestHash } from './model-admission-evidence.ts'
 import { meteredStream } from './metered-stream.ts'
 
 /**
@@ -20,11 +22,14 @@ import { meteredStream } from './metered-stream.ts'
  * @param signal - Combined caller and connection cancellation.
  * @param check - Live connection and actor validation.
  * @param flush - Canonical request/usage persistence barrier.
+ * @param checkBudget - Complete recorded auxiliary-envelope admission before a provider call.
+ * @param onOverrun - Original usage settlement cleanup; does not repeat inference.
  * @returns metered auxiliary chunks without creating a world decision.
  */
 export async function* compactionStream(actor: Agent, writer: SimulationWriterLease, options: GenerateOptions,
   next: () => AsyncIterable<StreamChunk>, capacity: SimulationModelCapacity, signal: AbortSignal,
-  check: () => void, flush: () => Promise<boolean>): AsyncIterable<StreamChunk> {
+  check: () => void, flush: () => Promise<boolean>, checkBudget?: () => Promise<void>,
+  onOverrun?: (reservation: import('@clocky/clocky-simulation').SimulationTokenReservation) => Promise<void>): AsyncIterable<StreamChunk> {
   const reference = compactionRequestReference(options)
   if (reference === undefined) throw new Error('Simulation auxiliary request has no active exact compaction ownership')
   const validate = (): void => {
@@ -46,11 +51,21 @@ export async function* compactionStream(actor: Agent, writer: SimulationWriterLe
   options.signal = signal
   Object.freeze(options)
   if (!await flush()) throw new Error('Simulation compaction request requires durable Session storage')
-  const release = await capacity.acquire(signal)
+  await checkBudget?.()
+  let release: () => void
+  try { release = await capacity.acquire(signal) }
+  catch (error) {
+    if (error instanceof SimulationModelCapacityExceeded) {
+      await writer.blockCompactionModelAdmission({ provider: options.provider, model: options.model,
+        sessionSequence: reference.event.seq, compactionId: reference.event.data.compactionId }, error.usage,
+      compactionAdmissionRequestHash(reference.event.data))
+    }
+    throw error
+  }
   try {
     validate()
     const reservation = await writer.reserveCompactionTokens({ provider: options.provider, model: options.model,
       sessionSequence: reference.event.seq, compactionId: reference.event.data.compactionId })
-    yield* meteredStream(writer, reservation, next, validate, flush, signal)
+    yield* meteredStream(writer, reservation, next, validate, flush, signal, undefined, onOverrun)
   } finally { release() }
 }

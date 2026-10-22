@@ -1,0 +1,15 @@
+{
+  "fixture": "compaction-basic.spec.ts/durable no-gain suppression",
+  "pressureChecks": 11,
+  "summaryCalls": 1,
+  "skippedEquivalentCalls": 10,
+  "estimatedAvoidedInputTokens": 10920,
+  "actualProviderReportedTokens": null,
+  "elapsedMs": 2.0720420000000104,
+  "quality": {
+    "noGainAccepted": false,
+    "originalSurfacePreserved": true,
+    "sourceNodes": 8
+  },
+  "limitations": "Keyless deterministic summarizer; avoided requests are against repeated equivalent checks, not an actual provider bill."
+}

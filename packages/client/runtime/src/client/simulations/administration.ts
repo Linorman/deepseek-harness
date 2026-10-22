@@ -1,3 +1,6 @@
+import type { SimulationProductWorldManagementSubmitInput,
+  SimulationProductWorldManagementOutcome } from '@clocky/clocky-simulation-product/world-management-types'
+import { simulationProductWorldManagementSubmitInputSchema } from '@clocky/clocky-simulation-product/world-management-schema'
 import type { SimulationProductTaskCancelInput } from '@clocky/clocky-simulation-product/types'
 /** Original Simulation commands outlive view changes; transport uncertainty never allocates another identity. */
 import { observeRequest } from './request-presentation.ts'
@@ -9,6 +12,8 @@ import type { SimulationProductCreateInput, SimulationProductPrepareInput, Simul
   SimulationProductRestoreInput, SimulationProductManageInput, SimulationProductIngressInput, SimulationProductRequestReceipt,
   SimulationProductManagementReceipt, SimulationProductIngressReceipt, SimulationProductTaskReviewResolveInput, SimulationProductOperationRetryInput } from '@clocky/clocky-simulation-product/types'
 import type { SimulationProductRetryRequestInput } from '@clocky/clocky-simulation-product/types'
+import type { SimulationProductWorldCreateInput, SimulationProductWorldCaseCancelInput } from '@clocky/clocky-simulation-product/types'
+import { simulationProductWorldCaseCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { createSnapshotStore } from '../contract/store.ts'
 import type { SimulationRuntime, SimulationReadError } from './service.ts'
 
@@ -17,6 +22,10 @@ export type SimulationCommandKey = Branded<'SimulationCommandKey'>
 
 /** Each input preserves its original domain identity independently of transport rpcId. */
 export type SimulationCommand = { readonly kind: 'create'; readonly input: SimulationProductCreateInput }
+  | { readonly kind: 'world-management'; readonly input: SimulationProductWorldManagementSubmitInput }
+  | { readonly kind: 'world-create'; readonly input: SimulationProductWorldCreateInput }
+  | { readonly kind: 'world-prepare'; readonly input: SimulationProductPrepareInput }
+  | { readonly kind: 'cancel-world-case'; readonly input: SimulationProductWorldCaseCancelInput }
   | { readonly kind: 'retry-request'; readonly input: SimulationProductRetryRequestInput }
   | { readonly kind: 'prepare'; readonly input: SimulationProductPrepareInput }
   | { readonly kind: 'checkpoint'; readonly input: SimulationProductCheckpointInput }
@@ -27,7 +36,11 @@ export type SimulationCommand = { readonly kind: 'create'; readonly input: Simul
   | { readonly kind: 'cancel-task'; readonly input: SimulationProductTaskCancelInput }
   | { readonly kind: 'ingress'; readonly input: SimulationProductIngressInput }
 /** Exact original result; input assignment does not imply consumption and scheduling receipt does not describe current phase. */
-export type SimulationCommandReceipt = { readonly kind: 'request'; readonly value: SimulationProductRequestReceipt }
+export type SimulationCommandReceipt = {
+  readonly kind: 'request'
+  readonly value: SimulationProductRequestReceipt
+  readonly worldManagementOutcome?: SimulationProductWorldManagementOutcome | undefined
+}
   | { readonly kind: 'management'; readonly value: SimulationProductManagementReceipt }
   | { readonly kind: 'ingress'; readonly value: SimulationProductIngressReceipt }
 /** Transport rejection and non-authoritative absence remain independent of any known durable result. */
@@ -36,7 +49,7 @@ export interface SimulationCommandState {
   readonly pending: boolean
   readonly unknown: boolean
   readonly notFound: boolean
-  /** Definitive Host refusal before acceptance; a mismatched creation model carries this proof. */
+  /** Definitive Host refusal before acceptance; a mismatched creation model or World preview carries this proof. */
   readonly notAccepted?: true | undefined
   readonly receipt?: SimulationCommandReceipt | undefined
   /** Separately observed request-journal metadata; it never overwrites the original receipt. */
@@ -67,6 +80,7 @@ export function simulationCommandKey(command: SimulationCommand): SimulationComm
     case 'manage': return JSON.stringify(['management', command.input.runId, command.input.managementId]) as SimulationCommandKey
     case 'ingress': return JSON.stringify(['ingress', command.input.runId, command.input.ingressId]) as SimulationCommandKey
     case 'create': case 'prepare': case 'checkpoint': case 'restore': case 'review': case 'retry-operation': case 'retry-request': case 'cancel-task':
+    case 'world-create': case 'world-prepare': case 'cancel-world-case': case 'world-management':
       return JSON.stringify(['request', command.input.commandId]) as SimulationCommandKey
     /* v8 ignore next -- SimulationCommand is a closed typed union; unknown wire tags reject in the carrier parser. */
     default: return assertNever(command)
@@ -152,7 +166,8 @@ export class SimulationAdministrationRuntime {
   }
 
   /**
-   * Submit or explicitly retry only the retained original; no changed input or new identity is inferred.
+   * Submit the retained original; an unknown response requires lookup before another send.
+   * A not-found lookup permits an exact retry without a new payload or identity.
    * @param key - Local original-selection identity returned by retain.
    * @returns current original record; undefined after authorization retirement or disposal.
    */
@@ -186,6 +201,7 @@ export class SimulationAdministrationRuntime {
     if (this.retired || this.transitioning || !this.state.getSnapshot().connected) return undefined
     const current = this.state.getSnapshot().commands[key]
     if (current === undefined || current.pending) return current
+    if (!query && (current.notAccepted || current.unknown && !current.notFound)) return current
     const observed = observeRequest(current, this.source.state.getSnapshot().persistentRequests)
     if (!query && (current.requestObservationUnavailable || observed !== undefined
       && observed.status !== 'accepted')) return current
@@ -204,7 +220,8 @@ export class SimulationAdministrationRuntime {
       if (!response.result.ok) {
         const code = response.result.error.code
         if (code === 'simulation-product-forbidden' && (current.command.kind === 'review'
-          || current.command.kind === 'retry-operation' || current.command.kind === 'retry-request' || current.command.kind === 'cancel-task')) {
+          || current.command.kind === 'retry-operation' || current.command.kind === 'retry-request' || current.command.kind === 'cancel-task'
+          || current.command.kind === 'world-management' || current.command.kind === 'cancel-world-case')) {
           this.publish(key, { ...waiting, pending: false, error: 'forbidden' })
           return this.state.getSnapshot().commands[key]
         }
@@ -214,12 +231,29 @@ export class SimulationAdministrationRuntime {
           this.synchronize(); return undefined
         }
         this.publish(key, { ...waiting, pending: false, error: category(response.result.error),
-          ...!query && current.command.kind === 'create' && current.receipt === undefined && observed === undefined
-            && code === 'simulation-product-model-changed' ? { unknown: false, notAccepted: true } : {} })
+          ...!query && (current.command.kind === 'create' || current.command.kind === 'world-create' || current.command.kind === 'world-management'
+            || current.command.kind === 'cancel-world-case')
+            && current.receipt === undefined && observed === undefined
+            && (code === 'simulation-product-model-changed'
+              || current.command.kind === 'world-create' && code === 'simulation-product-preflight-changed'
+              || (current.command.kind === 'world-management' || current.command.kind === 'cancel-world-case')
+                && code === 'simulation-product-management-preview-changed') ? { unknown: false, notAccepted: true } : {} })
       } else {
         const receipt = response.result.value
+        if (receipt?.kind === 'request' && (current.command.kind === 'world-create' || current.command.kind === 'world-prepare'
+          || current.command.kind === 'world-management' || current.command.kind === 'cancel-world-case')) {
+          if (receipt.value.commandId !== current.command.input.commandId || receipt.value.kind !== current.command.kind
+            || ('runId' in current.command.input && receipt.value.runId !== current.command.input.runId)
+            || current.receipt?.kind === 'request' && (current.receipt.value.runId !== receipt.value.runId
+              || current.receipt.value.acceptedAt !== receipt.value.acceptedAt
+              || current.receipt.value.status !== 'accepted' && (current.receipt.value.status !== receipt.value.status
+                || current.receipt.value.failure !== receipt.value.failure))) {
+            throw new Error('World receipt changed its original command identity or acceptance')
+          }
+        }
         const next: SimulationCommandState = { ...current, pending: false,
-          unknown: receipt === undefined && (current.unknown || current.receipt === undefined), notFound: receipt === undefined,
+          unknown: receipt === undefined && !current.notAccepted && (current.unknown || current.receipt === undefined),
+          notFound: receipt === undefined,
           ...receipt === undefined ? {} : { receipt, notAccepted: undefined }, error: undefined }
         const commands = { ...this.state.getSnapshot().commands, [key]: next }
         if (this.bytes(commands) > this.options.maxBytes) {
@@ -256,6 +290,10 @@ export class SimulationAdministrationRuntime {
     const api = this.api.simulations
     switch (command.kind) {
       case 'create': return map(await api.create(command.input, signal), value => ({ kind: 'request', value }))
+      case 'world-management': return map(await api.submitWorldManagement(command.input, signal), value => ({ kind: 'request', value }))
+      case 'world-create': return map(await api.createWorld(command.input, signal), value => ({ kind: 'request', value }))
+      case 'world-prepare': return map(await api.prepareWorld(command.input, signal), value => ({ kind: 'request', value }))
+      case 'cancel-world-case': return map(await api.cancelWorldCase(command.input, signal), value => ({ kind: 'request', value }))
       case 'retry-request': return map(await api.retryRequest(command.input, signal), (value) => {
         if (value.runId !== command.input.runId || value.commandId !== command.input.commandId) {
           throw new Error('Retried request names another original target')
@@ -282,7 +320,13 @@ export class SimulationAdministrationRuntime {
         if (value.request.runId !== command.input.runId || value.request.commandId !== command.input.commandId) {
           throw new Error('Original request lookup names another target')
         }
-        return { kind: 'request', value: value.request }
+        const outcome = value.worldManagementOutcome
+        if (outcome !== undefined && (value.request.kind !== 'world-management'
+          || outcome.runId !== command.input.runId || outcome.commandId !== command.input.commandId)) {
+          throw new Error('Discovered management outcome names another original request')
+        }
+        return { kind: 'request', value: value.request,
+          ...outcome === undefined ? {} : { worldManagementOutcome: outcome } }
       })
       case 'manage': return map(await api.managementRequest({ runId: command.input.runId, managementId: command.input.managementId }, signal),
         value => value.status === 'not-found' ? undefined : { kind: 'management', value: value.operation })
@@ -306,6 +350,30 @@ export class SimulationAdministrationRuntime {
         }
         return { kind: 'request', value: value.request }
       })
+      case 'world-management': return map(await api.request({ commandId: command.input.commandId }, signal), (value) => {
+        if (value.status === 'not-found') return undefined
+        const original = simulationProductWorldManagementSubmitInputSchema.safeParse(value.worldManagement)
+        if (value.request.kind !== 'world-management' || !original.success
+          || JSON.stringify(original.data) !== JSON.stringify(simulationProductWorldManagementSubmitInputSchema.parse(command.input))
+          || value.request.runId !== command.input.runId || value.request.commandId !== command.input.commandId) {
+          throw new Error('Original World management response names another command or confirmed form')
+        }
+        return { kind: 'request', value: value.request,
+          ...value.worldManagementOutcome === undefined ? {} : { worldManagementOutcome: value.worldManagementOutcome } }
+      })
+      case 'cancel-world-case': return map(await api.request({ commandId: command.input.commandId }, signal), (value) => {
+        if (value.status === 'not-found') return undefined
+        const original = value.worldCancellation === undefined ? undefined
+          : simulationProductWorldCaseCancelInputSchema.parse(value.worldCancellation)
+        if (value.request.kind !== 'cancel-world-case' || original === undefined
+          || original.runId !== command.input.runId || original.commandId !== command.input.commandId
+          || original.requestId !== command.input.requestId || value.request.runId !== command.input.runId
+          || original.previewHash !== command.input.previewHash || original.previewRevision !== command.input.previewRevision
+          || value.request.commandId !== command.input.commandId) {
+          throw new Error('Original World cancellation response names another case or command')
+        }
+        return { kind: 'request', value: value.request }
+      })
       case 'review': return map(await api.request({ commandId: command.input.commandId }, signal), (value) => {
         if (value.status === 'not-found') return undefined
         const original = value.review
@@ -315,7 +383,7 @@ export class SimulationAdministrationRuntime {
           || original.reason !== command.input.reason.trim()) throw new Error('Original review response names another target or payload')
         return { kind: 'request', value: value.request }
       })
-      case 'create': case 'prepare': case 'checkpoint': case 'restore':
+      case 'create': case 'prepare': case 'checkpoint': case 'restore': case 'world-create': case 'world-prepare':
         return map(await api.request({ commandId: command.input.commandId }, signal),
           value => value.status === 'not-found' ? undefined : { kind: 'request', value: value.request })
       /* v8 ignore next -- SimulationCommand is a closed typed union; unknown wire tags reject in the carrier parser. */
@@ -338,6 +406,8 @@ function terminal(value: SimulationCommandState): boolean {
 }
 function category(error: RpcError): SimulationReadError {
   if (error.code === 'simulation-product-model-changed') return 'model-changed'
+  if (error.code === 'simulation-product-management-preview-changed') return 'management-preview-changed'
+  if (error.code === 'simulation-product-preflight-changed') return 'preflight-changed'
   if (error.code === 'simulation-product-unavailable') return 'unavailable'
   if (error.code === 'simulation-product-stale') return 'stale'
   if (error.code === 'simulation-product-invalid' || error.code === 'bad-request') return 'invalid'

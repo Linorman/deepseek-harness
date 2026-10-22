@@ -1,0 +1,13 @@
+/Volumes/projects-mac/deepseek-harness/.local/world-post-mvp/b1-maintenance/1792380366315785000
+{"backend": "json", "repetition": 0, "recover": false, "exitCode": 0, "elapsedMs": 3853.219167001953}
+{"backend": "json", "repetition": 0, "recover": true, "exitCode": 0, "elapsedMs": 2116.6067909944104}
+{"backend": "json", "repetition": 1, "recover": false, "exitCode": 0, "elapsedMs": 2689.224000001559}
+{"backend": "json", "repetition": 1, "recover": true, "exitCode": 0, "elapsedMs": 2060.4692499982775}
+{"backend": "json", "repetition": 2, "recover": false, "exitCode": 0, "elapsedMs": 2759.540915998514}
+{"backend": "json", "repetition": 2, "recover": true, "exitCode": 0, "elapsedMs": 2233.4101669985102}
+{"backend": "sqlite", "repetition": 0, "recover": false, "exitCode": 0, "elapsedMs": 2463.7162499930128}
+{"backend": "sqlite", "repetition": 0, "recover": true, "exitCode": 0, "elapsedMs": 2190.1857500051847}
+{"backend": "sqlite", "repetition": 1, "recover": false, "exitCode": 0, "elapsedMs": 2688.2406670047203}
+{"backend": "sqlite", "repetition": 1, "recover": true, "exitCode": 0, "elapsedMs": 2999.343540999689}
+{"backend": "sqlite", "repetition": 2, "recover": false, "exitCode": 0, "elapsedMs": 2398.920209001517}
+{"backend": "sqlite", "repetition": 2, "recover": true, "exitCode": 0, "elapsedMs": 2175.855749999755}

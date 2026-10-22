@@ -24,3 +24,9 @@ export interface TeamPersistenceReference {
   readonly projectionVersion: number
   readonly fingerprint: TeamPersistenceFingerprint
 }
+
+/** Complete owner-issued journal prefix; consumers must preserve its original version and sequence numbers. */
+export interface TeamPersistenceArchive {
+  readonly reference: TeamPersistenceReference
+  readonly entries: readonly { readonly sequence: number; readonly value: unknown }[]
+}

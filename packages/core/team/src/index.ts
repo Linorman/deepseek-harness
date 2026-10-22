@@ -1,8 +1,13 @@
 export { sameActivationBinding } from './lifecycle.ts'
+export { activationHistoryLimitDetails } from './activation-history-limit.ts'
+export { envelopeByteLimitDetails, fingerprintTeamEnvelopeDraft } from './envelope-byte-limit.ts'
+export { teamEnvelopeByteLimitDetailsSchema } from './schema.ts'
+export { teamActivationHistoryLimitDetailsSchema } from './schema.ts'
 export { parseTeamParticipantHeader } from './header-reference.ts'
 export { taskCreateHumanProofInput, taskRevisionHumanProofInput, taskReviewHumanProofInput } from './human-actor.ts'
 export { emptyTeamMetricsSnapshot } from './metrics.ts'
 export { channelOpenHumanProofInput, channelCloseHumanProofInput } from './human-actor.ts'
+export { simulationPersonnelSettlementCutScopeSchema } from './schema.ts'
 export { teamTaskUpdateCommandIdSchema, teamTaskUpdateCommandReceiptSchema, teamTaskUpdateReceiptSchema,
   teamTaskDetailsUpdateResultSchema, teamTaskUpdateLookupInputSchema, teamTaskUpdateLookupSchema,
   teamTaskUpdateCommandRejectionSchema, teamTaskUpdateCommandSchema, teamTaskUpdateRejectionSchema,
@@ -273,6 +278,7 @@ export {
   teamAuditReadResultSchema,
   teamAuditStreamSchema,
   teamRootCreateInputSchema,
+  teamLimitsSchema,
   teamChildCreateInputSchema,
   teamCreateRequestSchema,
   teamCompleteInputSchema,

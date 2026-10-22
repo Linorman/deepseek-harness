@@ -1,0 +1,6 @@
+$ tsx scripts/verify-agent-note-format.ts
+verify-agent-note-format: violations found:
+  format: implemented/architecture/2026-10-19-world-generation-planners.md — the first section must be `## Problem` (got "## Decision")
+  format: implemented/architecture/2026-10-19-world-generation-planners.md — missing the required `## Consequences` section
+  format: implemented/architecture/2026-10-19-world-generation-planners.md — missing `## Alternatives considered` (a pre-format Agent Note whose alternatives are not reconstructible carries the grandfather comment instead — see .agents/notes/README.md § The file format)
+[ELIFECYCLE] Command failed with exit code 1.

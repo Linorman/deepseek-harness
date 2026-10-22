@@ -77,7 +77,7 @@ const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 
   outboxMaxAttempts: 1, outboxRetryDelayMs: 0, maxDriveSteps: options.sampleEvery, maxMicrostepsPerTime: options.operations + 1,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: options.timeoutMs, maxConflictRetries: 0,
   maxIngressBytes: 4096, maxEntities: options.entities, maxResidentActors: options.residents, maxDecisionsPerWindow: options.residents,
-  maxOperationsPerDecision: 1, maxResourceQuantity: '1', maxQueuedDecisions: options.entities,
+  maxOperationsPerDecision: 1, maxResourceReservationHistory: 128, maxResourceQuantity: '1', maxQueuedDecisions: options.entities,
   maxDispatchWaitRounds: Math.ceil(options.entities / options.residents), budgetInterval: '100',
   maxDecisionsPerInterval: options.operations, maxMessagesPerInterval: 0,
   maxTokensPerInterval: options.operations * 300, tokensPerModelRequest: 100,
@@ -94,7 +94,7 @@ try {
   const ids = Array.from({ length: options.entities }, (_, i) => simulationEntityIdSchema.parse(`entity-${i}`))
   for (let start = 0; start < ids.length; start += options.entityBatchSize) {
     await run.changeMany(ids.slice(start, start + options.entityBatchSize).map(id => simulationChangeSchema.parse({
-      kind: 'entity/create', id, entityKind: 'benchmark-actor', cognition: 'agent', profile: {},
+      kind: 'entity/create', readiness: 'ready', id, entityKind: 'benchmark-actor', cognition: 'agent', profile: {},
     })), run.snapshot().revision)
   }
   const entitySetupMs = performance.now() - entitiesStarted

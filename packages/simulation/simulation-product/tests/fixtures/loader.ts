@@ -14,11 +14,11 @@ try {
     const spec = simulationRunSpecSchema.parse(JSON.parse(process.env.SIMULATION_PRODUCT_SPEC!))
     const run = await ctx.simulations.open(ctx.simulations.resolve({ provider: 'local', spec, mode: 'create' }))
     await run.setPhase('running', 0)
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'private-entity', entityKind: 'org',
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'private-entity', entityKind: 'org',
       cognition: 'none', profile: { name: 'Private world profile', secret: 'not-public' } }), run.snapshot().revision)
     await run.drive({ until: simTimeSchema.parse('9007199254740993') })
     const entityId = simulationEntityIdSchema.parse('decision-maker')
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId, entityKind: 'person', cognition: 'agent',
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId, entityKind: 'person', cognition: 'agent',
       profile: { name: 'Decision maker', secret: 'not-public' } }), run.snapshot().revision)
     const reservation = simulationWriterReservationSchema.parse({ teamId: 'source-team', participantId: 'source-participant',
       sessionId: 'source-session', reservationId: 'source-reservation', provider: 'local' })

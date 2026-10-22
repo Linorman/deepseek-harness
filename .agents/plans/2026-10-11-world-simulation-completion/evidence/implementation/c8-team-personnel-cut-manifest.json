@@ -1,0 +1,88 @@
+{
+  "recordedAt": "2026-10-11T21:51:43.843662+00:00",
+  "owner": "/root/baseline",
+  "scope": "Team owner personnel settlement cut boundary; no Native acceptance or real Loader integration claim",
+  "files": [
+    {
+      "path": "packages/core/team/src/types.ts",
+      "bytes": 324541,
+      "sha256": "1348c6f7491ba9d44dc553bb5d854b5d731eba642dd32b4888ca5e2995e34bc1"
+    },
+    {
+      "path": "packages/core/team/src/schema.ts",
+      "bytes": 285613,
+      "sha256": "588a31cd66f3b14c938253f22b4356d146497a777b3fdb06f808d9df31121534"
+    },
+    {
+      "path": "packages/core/team/src/index.ts",
+      "bytes": 18270,
+      "sha256": "96d5dfdc8ea0527ffc2379d1d4d27ccb2caa10fba8d5ce5769e91a4ad79bdb43"
+    },
+    {
+      "path": "packages/core/team/src/runtime.ts",
+      "bytes": 204259,
+      "sha256": "2e77f97d57b7ccb07552e2158cb9c5f7e46623b8ee03f838db44545fad545a4c"
+    },
+    {
+      "path": "packages/team/team-hub/src/index.ts",
+      "bytes": 922465,
+      "sha256": "352a095ce0298c228d7ab7429ac74c9c3cbbf24cb6a48eb60a343daa3e9156ac"
+    },
+    {
+      "path": "packages/core/team/tests/personnel-settlement-cut.spec.ts",
+      "bytes": 1497,
+      "sha256": "dd2959b551e7c5daff8f5fb904d106e6af6fe8b8efb8426a663380ab518514fe"
+    },
+    {
+      "path": "packages/team/team-hub/tests/personnel-settlement-cut.spec.ts",
+      "bytes": 17507,
+      "sha256": "0590d876e7acd6c8874962a8533cef7eb247578ebdd31129d4c2962bf7d19991"
+    }
+  ],
+  "inputHash": "ce6ce5276bdf056d8f43c1dca19c93b1600e96c4276f4af1b45ba8679d96c30b",
+  "commands": [
+    {
+      "command": "TMPDIR=$PWD/.local/world-completion/tmp pnpm exec vitest run packages/core/team/tests/personnel-settlement-cut.spec.ts packages/team/team-hub/tests/personnel-settlement-cut.spec.ts packages/team/team-hub/tests/envelope-admission.spec.ts packages/core/team/tests/runtime.spec.ts > .local/world-completion/tmp/personnel-cut-tests-complete.log 2>&1",
+      "exitCode": 0,
+      "tests": 117,
+      "files": 4,
+      "newTests": 25,
+      "elapsedSeconds": 4.62,
+      "log": ".local/world-completion/tmp/personnel-cut-tests-complete.log"
+    },
+    {
+      "command": "TMPDIR=$PWD/.local/world-completion/tmp pnpm exec tsx scripts/run-oxlint.ts packages/core/team/src/types.ts packages/core/team/src/schema.ts packages/core/team/src/index.ts packages/core/team/src/runtime.ts packages/team/team-hub/src/index.ts packages/core/team/tests/personnel-settlement-cut.spec.ts packages/team/team-hub/tests/personnel-settlement-cut.spec.ts > .local/world-completion/tmp/personnel-cut-lint-complete.log 2>&1",
+      "exitCode": 0,
+      "log": ".local/world-completion/tmp/personnel-cut-lint-complete.log"
+    }
+  ],
+  "verified": [
+    "Strict closed maintenance parser and duplicate/extra-field rejection",
+    "Complete original Team/Channel set and exact projection/physical-tail cursor checks before callback",
+    "Real JSON and SQLite Hub task-create and canonical keyed Simulation post operations on both attached Channels blocked during callback then complete",
+    "Opaque maintenance proof unload/revoke/substitution and revoke while queued or during original WAL read reject callback",
+    "Original unkeyed pending Envelope sender derived from actual retained WAL slot, not idempotency cache",
+    "Missing or substituted original WAL slot rejects callback; successful retry after restoration; cut does not append or move cursors",
+    "Callback failure releases original Team/Channel serializers; default TeamRuntime rejects unsupported without callback"
+  ],
+  "limitations": [
+    "Simulation post source is a registered Core owner boundary fixture modeled on envelope-admission.spec.ts; it does not claim a Native ledger accepted the operation. Root owns real Loader/Native integration.",
+    "Unkeyed pending case is actual durable WAL replay provenance; no current Simulation permission to post unkeyed messages is fabricated.",
+    "No build or whole repository suite run by this subagent; root coordinates aggregate typecheck/build.",
+    "No Actor/Human proof fabrication, model calls, changed budgets, persistent format changes, or checklist edits."
+  ],
+  "correctedAttempts": [
+    {
+      "log": ".local/world-completion/tmp/personnel-cut-tests-fixed.log",
+      "classification": "Invalid fixture used an ordinary activation proof for Simulation post and unfixed wall clock; production admission correctly rejected. Replaced with canonical registered Simulation operation source and fixed declared clock 100, without budget change."
+    },
+    {
+      "log": ".local/world-completion/tmp/personnel-cut-tests-authority.log",
+      "classification": "Fixture edit accidentally used a constant delivery Envelope ID and numeric priority; fixed to actual Envelope ID and valid normal enum."
+    },
+    {
+      "log": ".local/world-completion/tmp/personnel-cut-lint-authority.log",
+      "classification": "ESLint has no root flat config; replaced mistaken command with repository run-oxlint owner command."
+    }
+  ]
+}

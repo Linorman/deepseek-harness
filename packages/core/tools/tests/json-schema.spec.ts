@@ -403,6 +403,22 @@ describe('validateJsonSchemaValue', () => {
       .toEqual(['"value" must match exactly one oneOf branch (matched 0)'])
   })
 
+  it('explains the uniquely tagged object branch without hiding exact-one rejection', () => {
+    const schema = asserted({ oneOf: [
+      { type: 'object', properties: { kind: { type: 'string', const: 'resolve' }, rationale: { type: 'string' } },
+        required: ['kind', 'rationale'], additionalProperties: false },
+      { type: 'object', properties: { kind: { type: 'string', const: 'request' }, target: { type: 'string' } },
+        required: ['kind', 'target'], additionalProperties: false },
+    ] })
+    const errors = validateJsonSchemaValue(schema, { kind: 'resolve' })
+    expect(errors[0]).toBe('"value" must match exactly one oneOf branch (matched 0)')
+    expect(errors.join('\n')).toContain('rationale')
+    expect(errors.join('\n')).not.toContain('target')
+    expect(validateJsonSchemaValue(schema, { kind: 'unknown' }))
+      .toEqual(['"value" must match exactly one oneOf branch (matched 0)'])
+    expect(validateJsonSchemaValue(schema, { kind: 'resolve', rationale: 'Use the original decision.' })).toEqual([])
+  })
+
   it('an unconstrained schema accepts only lossless JSON values', () => {
     const anyJson = asserted({})
     for (const value of [null, true, 1, 'x', [1], { x: null }]) {

@@ -1,0 +1,4 @@
+packages/simulation/simulation-local/src/world-governance.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-hire-existing.ts(152,11): error TS6133: 'owned' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-norms.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-organization.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.

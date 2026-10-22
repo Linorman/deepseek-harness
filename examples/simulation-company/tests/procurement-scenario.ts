@@ -23,6 +23,7 @@ const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ prov
   outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 32, maxMicrostepsPerTime: 64,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2,
   maxIngressBytes: 65536, maxEntities: 16, maxResidentActors: 2, maxDecisionsPerWindow: 2, maxOperationsPerDecision: 16,
+  maxResourceReservationHistory: 128,
   maxResourceQuantity: '10000', maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 32, maxDispatchWaitRounds: 8,
   budgetInterval: '100', maxDecisionsPerInterval: 100, maxMessagesPerInterval: 100,
   maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, maxPendingEvents: 100, maxPendingInteractions: 100,
@@ -36,14 +37,14 @@ try {
   const team = await ctx.simulationTeams.ensureTeam(run, { goal: { objective: 'Replenish stock with approved funds', budgets: {} }, budgets: {} }, 'simulation/procurement')
   const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/procurement')
   for (const entityId of roles) {
-    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId,
+    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId,
       entityKind: 'person', cognition: 'agent', profile: { role: entityId, privateHistory: `${entityId}-private-history` } }), run.snapshot().revision)
     await connection.ensureParticipant(entityId, { displayName: entityId, role: entityId, capabilities: [],
       provider: 'in-process', preset: 'simulation', model: 'procurement/scripted' })
   }
   const department = simulationEntityIdSchema.parse('purchasing-department')
   if (!recovering) {
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: department, entityKind: 'department', cognition: 'none', profile: {} }), run.snapshot().revision)
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: department, entityKind: 'department', cognition: 'none', profile: {} }), run.snapshot().revision)
     await run.change(simulationChangeSchema.parse({ kind: 'relation/create', id: 'purchasing-manager', relation: 'manager',
       subject: department, object: purchasing, validFrom: '0', validUntil: null }), run.snapshot().revision)
   }

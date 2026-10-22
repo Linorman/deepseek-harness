@@ -17,15 +17,17 @@ it.each(['json', 'sqlite'] as const)('observes the same history while owned loca
     const unregister = ctx.simulations.registerProvider(reader)
     const input = ctx.simulations.resolveInspection({ provider: 'local', spec: h.selection.spec })
     await h.run.setPhase('running', h.run.snapshot().revision)
-    await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'observer-visible', entityKind: 'org',
+    await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'observer-visible', entityKind: 'org',
       cognition: 'none', profile: { name: 'Observed' } }), h.run.snapshot().revision)
     const before = h.run.snapshot()
-    expect(await h.provider.inspect(input)).toEqual({ snapshot: before, owner: 'this-provider' })
+    const observed = await h.provider.inspect(input)
+    expect(observed).toMatchObject({ snapshot: before, owner: 'this-provider' })
+    expect(observed?.sourceHash).toMatch(/^[a-f0-9]{64}$/)
     const withRecords = await h.provider.inspect({ ...input, includeRecords: true })
     expect(withRecords?.snapshot).toEqual(before)
     expect(withRecords?.records?.[0]?.value).toMatchObject({ kind: 'run/created' })
     expect(withRecords?.records?.at(-1)?.sequence).toBe(before.revision)
-    expect(await ctx.simulations.inspect(input)).toEqual({ snapshot: before, owner: 'other-owner' })
+    expect(await ctx.simulations.inspect(input)).toMatchObject({ snapshot: before, owner: 'other-owner' })
     expect(h.run.snapshot()).toEqual(before)
     await expect(reader.open({ ...h.selection, mode: 'open' })).rejects.toThrow(/coordinator/)
     await h.run.close()
@@ -33,7 +35,7 @@ it.each(['json', 'sqlite'] as const)('observes the same history while owned loca
     const files = await readdir(path)
     const ownerFile = await readFile(join(path, 'owner.sqlite'))
     const journal = backend === 'sqlite' ? await readFile(join(path, 'journal.sqlite')) : undefined
-    expect(await ctx.simulations.inspect(input)).toEqual({ snapshot: before, owner: 'unowned' })
+    expect(await ctx.simulations.inspect(input)).toMatchObject({ snapshot: before, owner: 'unowned' })
     const observedFiles = await readdir(path)
     expect(observedFiles.filter(file => file !== 'journal.sqlite-wal' && file !== 'journal.sqlite-shm')).toEqual(files)
     expect(await readFile(join(path, 'owner.sqlite'))).toEqual(ownerFile)
@@ -54,7 +56,7 @@ it.each(['json', 'sqlite'] as const)('refuses bounded or malformed history inste
   try {
     await h.run.setPhase('running', h.run.snapshot().revision)
     const input = { provider: 'local', spec: h.selection.spec }
-    await expect(bounded.inspect(input)).rejects.toMatchObject({ code: 'invalid-value' })
+    await expect(bounded.inspect(input)).rejects.toMatchObject({ code: 'read-limit' })
     await expect(wrongMedium.inspect(input)).rejects.toThrow(/backend does not match/)
     await expect(h.provider.inspect({ ...input, provider: 'other' })).rejects.toThrow(/mismatch/)
     expect(h.run.snapshot().phase).toBe('running')

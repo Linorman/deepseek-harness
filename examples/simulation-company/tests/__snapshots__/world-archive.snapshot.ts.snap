@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json complete-owner archive snapshot 1`] = `
+{
+  "attachments": 0,
+  "backupFormat": "world-backup/1",
+  "backupReadback": true,
+  "destructive": false,
+  "materializedSessions": 2,
+  "migrationConverter": "archive-envelope/1",
+  "migrationRetainsOriginal": true,
+  "originalPendingPlans": 1,
+  "ownerStreams": 3,
+  "reclaimableBytes": 0,
+  "unmaterializedSessions": 1,
+  "verifiedReadback": true,
+  "version": 1,
+}
+`;
+
+exports[`sqlite complete-owner archive snapshot 1`] = `
+{
+  "attachments": 0,
+  "backupFormat": "world-backup/1",
+  "backupReadback": true,
+  "destructive": false,
+  "materializedSessions": 2,
+  "migrationConverter": "archive-envelope/1",
+  "migrationRetainsOriginal": true,
+  "originalPendingPlans": 1,
+  "ownerStreams": 3,
+  "reclaimableBytes": 0,
+  "unmaterializedSessions": 1,
+  "verifiedReadback": true,
+  "version": 1,
+}
+`;

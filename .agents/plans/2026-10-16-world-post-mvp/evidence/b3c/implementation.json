@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-19",
+  "workPackage": "B3c",
+  "journalVersion": 100,
+  "scope": "organization/rename-object/1 on independent non-cognitive plain objects; single Native queue, no distributed-owner claim",
+  "sourceSha256": {
+    "packages/simulation/simulation/src/world-local-object.ts": "0a2d1e42f177683131bd42991243b8070440ed58c498dc31426dac8c0e921777",
+    "packages/simulation/simulation/src/types.ts": "15f580199117efe31be319295f09ac7b2708b939e88ea9d6921d5f730ce4c619",
+    "packages/simulation/simulation-local/src/world-local-object.ts": "20b0212d4de8095cea818004bae4c5f30585ea3057024b886a044e2901e367ee",
+    "packages/simulation/simulation-local/src/world-mutation.ts": "05be9b1bec19a04bf574ed66bdfb5ede846cfd9296fdb048aac73ea9dbf7f7e4",
+    "packages/simulation/simulation-local/src/run.ts": "49a2bf0788fa32c28a5751fc01e9900ea6651f1cd997577346e91239c5d64c48",
+    "packages/simulation/simulation-world/src/local-object.ts": "fe306238f53c10cc53cd20162a1923604bd8a04656c103fd51741606d9591250",
+    "packages/simulation/simulation-world/src/providers.ts": "a31a137c1e6f35ef17004344dccc71df90474b6f4e826bff8df6b362c80c394c",
+    "packages/simulation/simulation-scenario/src/v1-schema.ts": "72af6a79ceafc96720edabe2fe0cec89db4ffb5cea384462e2466918e792cdcd",
+    "packages/simulation/simulation-local/tests/world-local-object.spec.ts": "68b4d0fc2eb31f1c4f0a8b5f2368022b3e1ff79e5e4cd054292b9196209f58f9",
+    "packages/simulation/simulation-local/tests/world-local-object-process.spec.ts": "9643faa7e4065079e5cf4816fd94713548232b5252b2100401b456a26a193c18",
+    "examples/simulation-company/tests/world-local-object-scenario.ts": "b23314f12d925a471fe5dacb1620d4abb66d53d3742d689ec998c61d24a6d604",
+    "examples/simulation-company/tests/world-local-object.snapshot.ts": "fb2c3e85c066ad13a03b5a8071f855c474a637b2ba3e4487f4506a82f4413808"
+  },
+  "commands": [
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" pnpm exec vitest run packages/simulation/simulation-local/tests/world-local-object.spec.ts",
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-local-object.snapshot.ts",
+    "python3 scripts/world-post-mvp-baseline.py",
+    "python3 scripts/world-post-mvp-report.py .local/world-post-mvp/f0-longitudinal/1792387319584824000",
+    "python3 .tmp/world-post-mvp/verify-b1-v2.py",
+    "python3 scripts/world-b1-maintenance.py",
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" CLOCKY_B1_BENCHMARK=1 pnpm exec vitest run packages/simulation/simulation-local/tests/inspection-index-benchmark.spec.ts",
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" CLOCKY_B3C_BENCHMARK=1 pnpm exec vitest run packages/simulation/simulation-local/tests/world-local-object-benchmark.spec.ts"
+  ],
+  "evidence": {
+    "frozenCore": ".tmp/world-post-mvp/b1-b3-core-frozen.log (235 passed across 11 files, including 26 local tests and 2 SIGKILL process tests)",
+    "retirement": ".tmp/world-post-mvp/b3-retirement-frozen.log (28 local tests, including 2 new canonical hibernate retirement races)",
+    "frozenLoader": ".tmp/world-post-mvp/b3-loader-frozen.log (2 backends passed)",
+    "priorLoaderFailure": "loader-final.log (old built generation helper unavailable; retained)",
+    "benchmark": ".agents/plans/2026-10-16-world-post-mvp/evidence/b3c/benchmark-1792387270639-7a881680-98ff-4d18-8047-34aa605277fa.json",
+    "finalLongitudinal": ".local/world-post-mvp/f0-longitudinal/1792387319584824000/summary.json"
+  },
+  "checklistAssessment": {
+    "B15": "Exact private footprint includes entity/revision, relations/resources/channels/authority and null epoch; unrelated retained context remains open and completes",
+    "B16": "Supported path has one Native owner queue, so no cross-owner locks; cancellation rechecked at append/resume, latest read-set and authority revalidated, unload drains owned append",
+    "B17": "Unknown/overlapping context reads, related targets and missing provider capability use canonical full-run maintenance with visible reason",
+    "B18": "Both backends cover old windows, canonical tasks, revocation, retirement, checkpoint cut, abort/unload and SIGKILL before/after append with exact retry",
+    "B19": "Original registered scoped index and independent local rename targets pass on both backends with unchanged history/limits; cold index overhead and generated-hire full maintenance costs remain explicit. No overall long-run speedup or arbitrary personnel mutation claim."
+  },
+  "limitations": [
+    "Only independent display name; no arbitrary personnel/profile or generation-field changes",
+    "No multiple-owner local transactions",
+    "Generic objects in authoring graph retain layout only, no personnel assignments"
+  ],
+  "finalPerformance": {
+    "evidence": "../b1/final-performance.json",
+    "sha256": "3f91d2cb3a7816e808cd628e1533f022a0a27e45a48d5b314ceb32d4348b3cb4",
+    "matrix": ".local/world-post-mvp/f0-longitudinal/1792387319584824000",
+    "integrity": "../b1/v2-integrity.json",
+    "complete": true
+  }
+}

@@ -1,0 +1,72 @@
+[
+  {
+    "label": "ascii1024",
+    "text": "a",
+    "repeat": 1024,
+    "allowed": true
+  },
+  {
+    "label": "ascii1025",
+    "text": "a",
+    "repeat": 1025,
+    "allowed": false
+  },
+  {
+    "label": "astral512",
+    "text": "\ud83d\ude00",
+    "repeat": 512,
+    "allowed": true
+  },
+  {
+    "label": "astral513",
+    "text": "\ud83d\ude00",
+    "repeat": 513,
+    "allowed": false
+  },
+  {
+    "label": "lone1",
+    "text": "\ud800",
+    "allowed": true
+  },
+  {
+    "label": "lone1024",
+    "text": "\udfff",
+    "repeat": 1024,
+    "allowed": true
+  },
+  {
+    "label": "lone1025",
+    "text": "\udfff",
+    "repeat": 1025,
+    "allowed": false
+  },
+  {
+    "label": "mixed1024",
+    "text": "a",
+    "repeat": 1022,
+    "suffix": "\ud83d\ude00",
+    "allowed": true
+  },
+  {
+    "label": "mixed1025",
+    "text": "a",
+    "repeat": 1023,
+    "suffix": "\ud83d\ude00",
+    "allowed": false
+  },
+  {
+    "label": "empty",
+    "text": "",
+    "allowed": false
+  },
+  {
+    "label": "preserved-whitespace",
+    "text": " \ufeff\t",
+    "allowed": true
+  },
+  {
+    "label": "preserved-decomposed",
+    "text": "e\u0301\ufeff",
+    "allowed": true
+  }
+]

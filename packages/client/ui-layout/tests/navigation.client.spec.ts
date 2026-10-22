@@ -48,6 +48,18 @@ it('pushes a same-document destination, restores product visibility and notifies
   } finally { window.removeEventListener(WORKSPACE_NAVIGATION_EVENT, notify) }
 })
 
+it('retains exact Envelope coordinates and restores the originating World lens without carrying drafts', () => {
+  const source = `${window.location.origin}/?workspace=simulation&simulation=run&simulationModule=governance&simulationLens=proposals&simulationObject=proposal&simulationWorldSection=votes&draft=private`
+  const href = teamInspectionUrl(source, { kind: 'channel', teamId: 'team' as never, channelId: 'channel' as never,
+    envelopeId: 'envelope&one', envelopeSequence: 7 })
+  const query = new URL(href).searchParams
+  expect(query.get('envelope')).toBe('envelope&one'); expect(query.get('envelopeSequence')).toBe('7')
+  for (const key of ['simulationLens', 'simulationObject', 'simulationWorldSection']) expect(query.has(key)).toBe(false)
+  const restored = readWorkspaceSource({ clockyWorkspaceSource: source, clockyWorkspaceTarget: 'team' }, href)
+  expect(restored).toContain('simulationWorldSection=votes')
+  expect(restored).not.toContain('draft=')
+})
+
 
 it('retains one exact source route and rejects external or private history fields', () => {
   const base = `${window.location.origin}/?team=target`

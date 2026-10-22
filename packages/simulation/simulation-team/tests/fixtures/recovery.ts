@@ -25,7 +25,7 @@ if (mode === 'open') {
   process.exit(0)
 }
 const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ provider: 'local', mode, spec: {
-  runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
+  runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
 } }))
 const entityId = simulationEntityIdSchema.parse('buyer')
 const stage = process.argv[4] ?? 'bound'
@@ -43,7 +43,7 @@ try {
       const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/company')
       for (const id of ['buyer', 'supplier']) {
         const member = simulationEntityIdSchema.parse(id)
-        await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: member, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+        await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: member, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
         await connection.ensureParticipant(member, { displayName: id, role: id, capabilities: [],
           provider: 'in-process', preset: 'simulation', model: 'mock/default' })
       }
@@ -79,7 +79,7 @@ try {
     }
     if (stage.startsWith('participant-')) {
       const team = await ctx.simulationTeams.ensureTeam(run, { goal: { objective: 'Company bootstrap', budgets: {} }, budgets: {} }, 'simulation/company')
-      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
       const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/company')
       const invite = ctx.teams.inviteParticipant.bind(ctx.teams)
       ctx.teams.inviteParticipant = async (request) => {
@@ -120,7 +120,7 @@ try {
       const state = await ctx.teams.getTeam({ teamId })
       await transitionBootstrapParticipant(ctx, { teamId, participantId: participant.id, expectedCursor: state.team.cursor, phase })
     }
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), 0)
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), 0)
     const connection = await ctx.simulationTeams.attach(run, teamId, 'simulation/company')
     await connection.bind(entityId, participant.id)
     if (process.env['SIMULATION_TEST_RESTORE_FIRST'] === 'true') {
@@ -248,7 +248,7 @@ try {
         await transitionBootstrapParticipant(ctx, { teamId, participantId: recipient.id, expectedCursor: current.team.cursor, phase })
       }
       const recipientId = simulationEntityIdSchema.parse('recipient')
-      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: recipientId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: recipientId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
       await connection.bind(recipientId, recipient.id)
       let targetChannel = 'fixture-channel'
       let recipientSession: string | undefined

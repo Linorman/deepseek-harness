@@ -1,4 +1,22 @@
 from __future__ import annotations
+from .simulation_experiments import (SimulationExperimentSource, SimulationWorldBranchInput, SimulationWorldBranchReadInput, SimulationWorldBranchResult, SimulationWorldCausalInput, SimulationWorldCausalResult, SimulationWorldCompareInput, SimulationWorldCompareResult)
+from .simulation_retention import SimulationBackupExportInput, SimulationBackupExportResult
+from .simulation_retention import (SimulationRetentionPreviewInput, SimulationRetentionExecuteInput, SimulationRetentionReadInput, SimulationRetentionRecordsInput, SimulationRetentionPlan, SimulationRetentionResult, SimulationRetentionRecordsResult)
+from .simulation_generation import (SimulationGenerationRequest, SimulationGenerationRead, SimulationGenerationTransition,
+    SimulationGenerationPersonaDraft, SimulationGenerationResult)
+from .simulation_index import SimulationRebuildIndexInput, SimulationRebuildIndexResult
+from .simulation_calendar import SimulationCalendarInput, SimulationCalendarPreview, SimulationCalendarSubmit, SimulationCalendarReceipt, SimulationCalendarCommandInput, SimulationCalendarCommandResult, SimulationCalendarCancel
+from .simulation_world_management import (SimulationWorldManagementFieldsInput, SimulationWorldManagementFields,
+    SimulationWorldManagementDraft, SimulationWorldManagementPreview, SimulationWorldManagementSubmitInput)
+from .simulation_world_domain import SimulationWorldDomainInput, SimulationWorldDomainResult
+from .simulation_world_cases import SimulationWorldCasesInput, SimulationWorldCasesPage, SimulationWorldCaseInput, SimulationWorldCaseInspection
+from .simulation_drafts import (ScenarioDraftRead, ScenarioDraftReadResult, ScenarioDraftSave,
+    ScenarioDraftSaveResult, ScenarioDraftSaveResponse)
+from .simulation_scenario import (SimulationWorldPreflightInput, SimulationWorldPreflightResult, WorldPreflightResponse,
+    SimulationWorldCreateInput, SimulationWorldPrepareInput, SimulationWorldExportInput, SimulationWorldExportResult)
+from .simulation_raw_archive import SimulationRawArchiveInput, SimulationRawArchivePage
+from .simulation import SimulationRunControlInput, SimulationRunControlResult
+from .simulation import SimulationWorldCaseCancelInput
 from .simulation import SimulationTasksInput, SimulationTasksPage, SimulationTaskCancelInput
 from .simulation import SimulationRequestsInput, SimulationRequestsPage, SimulationRetryRequestInput
 from .simulation import SimulationPreflightInput, SimulationPreflightResult
@@ -264,6 +282,14 @@ class HarnessClient:
             raise SdkProtocolError("simulation/runs-control response belongs to a different selection or command")
         return result
 
+    def update_simulation_run_control(self, request: SimulationRunControlInput) -> SimulationRunControlResult:
+        """Persist an original target or explicit null clear; resume is a separate command."""
+        result = self.request("simulation/runs-run-control", request.model_dump(), response_model=SimulationRunControlResult)
+        expected = request.target.targetId if request.target is not None else None
+        if result.runId != request.runId or result.receipt.commandId != request.commandId or result.receipt.targetId != expected:
+            raise SdkProtocolError("simulation/runs-run-control response belongs to a different selection or command")
+        return result
+
     def manage_simulation(self, request: SimulationManageInput) -> SimulationManageResult:
         """Submit an original scheduling intent; exact retries retain its result without undoing later intent."""
         result = self.request("simulation/runs-manage", request.model_dump(exclude_none=True), response_model=SimulationManageResult)
@@ -283,6 +309,106 @@ class HarnessClient:
         result = self.request("simulation/tasks-list", request.model_dump(exclude_none=True), response_model=SimulationTasksPage)
         if result.runId != request.runId or (request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision) or (request.limit is not None and len(result.items) > request.limit):
             raise SdkProtocolError("Simulation task page belongs to another selection")
+        return result
+
+    def read_simulation_world_management_fields(self, request: SimulationWorldManagementFieldsInput) -> SimulationWorldManagementFields:
+        """Read only the exact current run/person/action form; this allocates no business original."""
+        result = self.request("simulation/world-management-fields", request.model_dump(exclude_none=True), response_model=SimulationWorldManagementFields)
+        if result.runId != request.runId or result.targetId != request.targetId or result.action != request.action:
+            raise SdkProtocolError("World management fields belong to another original selection")
+        return result
+
+    def preview_simulation_world_calendar(self, request: SimulationCalendarInput) -> SimulationCalendarPreview:
+        """Inspect an exact finite replacement without appending or inferring."""
+        payload = request.model_dump(exclude_none=True)
+        payload["request"]["calendar"]["endsAt"] = request.request.calendar.endsAt
+        result = self.request("simulation/world-calendar-preview", payload, response_model=SimulationCalendarPreview)
+        if result.input != request:
+            raise SdkProtocolError("Calendar preview belongs to another command")
+        return result
+
+    def read_simulation_world_calendar_command(self, request: SimulationCalendarCommandInput) -> SimulationCalendarCommandResult:
+        """Recover the author's original quote without restoring execution."""
+        result = self.request("simulation/world-calendar-command", request.model_dump(exclude_none=True), response_model=SimulationCalendarCommandResult)
+        if result.command is not None and (result.command.preview.input.runId != request.runId or request.commandId is not None
+                and result.command.preview.input.request.commandId != request.commandId):
+            raise SdkProtocolError("Calendar recovery belongs to another original")
+        return result
+
+    def retain_simulation_world_calendar(self, request: SimulationCalendarSubmit) -> SimulationCalendarCommandResult:
+        """Retain the exact quote before any execution request can be sent."""
+        payload = request.model_dump(exclude_none=True)
+        payload["input"]["request"]["calendar"]["endsAt"] = request.input.request.calendar.endsAt
+        result = self.request("simulation/world-calendar-retain", payload, response_model=SimulationCalendarCommandResult)
+        if result.command is None or result.command.preview.input != request.input or result.command.preview.previewHash != request.previewHash:
+            raise SdkProtocolError("Calendar retention changed the original quote")
+        return result
+
+    def cancel_simulation_world_calendar(self, request: SimulationCalendarCancel) -> SimulationCalendarCommandResult:
+        """Withdraw only an unexecuted original; a raced application remains applied."""
+        result = self.request("simulation/world-calendar-cancel", request.model_dump(), response_model=SimulationCalendarCommandResult)
+        if result.command is not None and (result.command.preview.input.runId != request.runId
+                or result.command.preview.input.request.commandId != request.commandId):
+            raise SdkProtocolError("Calendar cancellation belongs to another original")
+        return result
+
+    def submit_simulation_world_calendar(self, request: SimulationCalendarSubmit) -> SimulationCalendarReceipt:
+        """Submit or retry the complete original quote without changing command identity."""
+        payload = request.model_dump(exclude_none=True)
+        payload["input"]["request"]["calendar"]["endsAt"] = request.input.request.calendar.endsAt
+        retained = self.retain_simulation_world_calendar(request)
+        if retained.command is not None and retained.command.status == "cancelled":
+            raise SdkProtocolError("Original calendar command was cancelled")
+        if retained.command is not None and retained.command.status == "applied" and retained.command.receipt is not None:
+            return retained.command.receipt
+        result = self.request("simulation/world-calendar-submit", payload, response_model=SimulationCalendarReceipt)
+        if result.runId != request.input.runId or result.commandId != request.input.request.commandId:
+            raise SdkProtocolError("Calendar receipt belongs to another command")
+        return result
+
+    def preview_simulation_world_management(self, request: SimulationWorldManagementDraft) -> SimulationWorldManagementPreview:
+        """Read actual effects and blockers without reserving or inferring; retain the complete original choices."""
+        result = self.request("simulation/world-management-preview", request.model_dump(exclude_none=True), response_model=SimulationWorldManagementPreview)
+        if result.input.model_dump(exclude_none=True) != request.model_dump(exclude_none=True):
+            raise SdkProtocolError("World management preview belongs to another original selection")
+        return result
+
+    def submit_simulation_world_management(self, request: SimulationWorldManagementSubmitInput) -> SimulationRequestReceipt:
+        """Submit the exact confirmed original; after uncertain transport query its original command before retrying."""
+        result = self.request("simulation/world-management-submit", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.runId != request.runId or result.commandId != request.commandId or result.kind != "world-management":
+            raise SdkProtocolError("World management receipt belongs to another original command")
+        return result
+
+    def read_simulation_world_domain(self, request: SimulationWorldDomainInput) -> SimulationWorldDomainResult:
+        """Read one exact bounded World domain selection with independent content permissions."""
+        result = self.request("simulation/world-domain-read", request.model_dump(exclude_none=True), response_model=SimulationWorldDomainResult)
+        if (result.selection.model_dump(exclude_none=True) != request.model_dump(exclude_none=True)
+            or result.runId != request.runId or result.kind != request.kind
+            or request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision
+            or request.readVersion is not None and result.readVersion != request.readVersion):
+            raise SdkProtocolError("World domain response belongs to another original selection")
+        return result
+
+    def list_simulation_world_cases(self, request: SimulationWorldCasesInput) -> SimulationWorldCasesPage:
+        """Read an exact World case selection without implicit scheduling or content authorization."""
+        result = self.request("simulation/world-cases-list", request.model_dump(exclude_none=True), response_model=SimulationWorldCasesPage)
+        if result.runId != request.runId or request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision or request.limit is not None and len(result.items) > request.limit or request.status is not None and any(item.status != request.status for item in result.items):
+            raise SdkProtocolError("World case response belongs to another original selection")
+        return result
+
+    def inspect_simulation_world_case(self, request: SimulationWorldCaseInput) -> SimulationWorldCaseInspection:
+        """Read an exact World case selection without implicit scheduling or content authorization."""
+        result = self.request("simulation/world-case-inspect", request.model_dump(exclude_none=True), response_model=SimulationWorldCaseInspection)
+        if result.runId != request.runId or request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision or result.requestId != request.requestId or result.section != request.section:
+            raise SdkProtocolError("World case response belongs to another original selection")
+        return result
+
+    def cancel_simulation_world_case(self, request: SimulationWorldCaseCancelInput) -> SimulationRequestReceipt:
+        """Submit the original World case intent; query its retained command after uncertain transport."""
+        result = self.request("simulation/world-case-cancel", request.model_dump(), response_model=SimulationRequestReceipt)
+        if result.runId != request.runId or result.commandId != request.commandId or result.kind != "cancel-world-case":
+            raise SdkProtocolError("World cancellation receipt belongs to another original command")
         return result
 
     def cancel_simulation_task(self, request: SimulationTaskCancelInput) -> SimulationRequestReceipt:
@@ -366,6 +492,132 @@ class HarnessClient:
             raise SdkProtocolError("simulation/runs-inspect response belongs to a different selection or command")
         return result
 
+    def branch_world(self, request: SimulationWorldBranchInput) -> SimulationWorldBranchResult:
+        """Create only the original paused branch; retries preserve source, UUID and inheritance."""
+        request = request.model_copy(deep=True)
+        result = self.request("simulation/world-branch", request.model_dump(), response_model=SimulationWorldBranchResult)
+        if (result.commandId != request.commandId or result.status == "not-found"
+                or result.source != request.source or result.memoryPolicy != request.memoryPolicy
+                or result.runId == request.source.runId):
+            raise SdkProtocolError("Branch response changed its original selection")
+        return result
+
+    def read_world_branch(self, request: SimulationWorldBranchReadInput) -> SimulationWorldBranchResult:
+        """Read an original command without starting or creating a branch."""
+        request = request.model_copy(deep=True)
+        result = self.request("simulation/world-branch-read", request.model_dump(), response_model=SimulationWorldBranchResult)
+        if result.commandId != request.commandId:
+            raise SdkProtocolError("Branch response changed its original command")
+        return result
+
+    def query_world_causal(self, request: SimulationWorldCausalInput) -> SimulationWorldCausalResult:
+        """Read bounded actual references under current private-record authority."""
+        request = request.model_copy(deep=True)
+        result = self.request("simulation/world-causal", request.model_dump(), response_model=SimulationWorldCausalResult)
+        if result.source != request.source or len(result.nodes) > request.maxNodes:
+            raise SdkProtocolError("Causal response changed its source or node bounds")
+        keys = {node.key for node in result.nodes}
+        if len(keys) != len(result.nodes) or any(edge.from_ not in keys or edge.to not in keys for edge in result.edges):
+            raise SdkProtocolError("Causal response contains duplicate or absent references")
+        try:
+            size = len(json.dumps(result.model_dump(by_alias=True), ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+        except UnicodeError:
+            raise SdkProtocolError("Causal response contains invalid UTF-8") from None
+        if size > request.maxBytes:
+            raise SdkProtocolError("Causal response exceeded complete byte bounds")
+        return result
+
+    def compare_worlds(self, request: SimulationWorldCompareInput) -> SimulationWorldCompareResult:
+        """Compare actual archived observations with explicit budget and stop differences."""
+        request = request.model_copy(deep=True)
+        result = self.request("simulation/world-compare", request.model_dump(), response_model=SimulationWorldCompareResult)
+        if result.observations != request:
+            raise SdkProtocolError("Comparison response changed its original observations")
+        return result
+
+    def backup_export(self, request: SimulationBackupExportInput) -> SimulationBackupExportResult:
+        """Read the exact completed private bundle; never capture, pause or infer."""
+        request = request.model_copy(deep=True)
+        result = self.request("simulation/backup-export", request.model_dump(), response_model=SimulationBackupExportResult)
+        if result.runId != request.runId or result.commandId != request.commandId:
+            raise SdkProtocolError("Backup response changed its original selection")
+        return result
+
+    def retention_preview(self, request: SimulationRetentionPreviewInput) -> SimulationRetentionPlan:
+        """Explicit original retention preview; preview and reads never infer or pause."""
+        result = self.request("simulation/retention-preview", request.model_dump(exclude_none=True), response_model=SimulationRetentionPlan)
+        if result.runId != request.runId:
+            raise SdkProtocolError("Retention response changed its original selection")
+        return result
+
+    def retention_execute(self, request: SimulationRetentionExecuteInput) -> SimulationRetentionResult:
+        """Explicit original retention execute; preview and reads never infer or pause."""
+        result = self.request("simulation/retention-execute", request.model_dump(exclude_none=True), response_model=SimulationRetentionResult)
+        if result.runId != request.runId or result.commandId != request.commandId or result.plan is None or result.plan.planHash != request.planHash or result.plan.snapshotRevision != request.expectedRevision:
+            raise SdkProtocolError("Retention response changed its original selection")
+        return result
+
+    def retention_read(self, request: SimulationRetentionReadInput) -> SimulationRetentionResult:
+        """Explicit original retention read; preview and reads never infer or pause."""
+        result = self.request("simulation/retention-read", request.model_dump(exclude_none=True), response_model=SimulationRetentionResult)
+        if result.runId != request.runId or result.commandId != request.commandId:
+            raise SdkProtocolError("Retention response changed its original selection")
+        return result
+
+    def retention_records(self, request: SimulationRetentionRecordsInput) -> SimulationRetentionRecordsResult:
+        """Explicit original retention records; preview and reads never infer or pause."""
+        result = self.request("simulation/retention-records", request.model_dump(exclude_none=True), response_model=SimulationRetentionRecordsResult)
+        if result.runId != request.runId or result.commandId != request.commandId or result.owner != request.owner or result.ownerId != request.ownerId or len(result.entries) > request.limit:
+            raise SdkProtocolError("Retention response changed its original selection")
+        previous = request.afterSequence
+        for entry in result.entries:
+            if entry.sequence <= previous:
+                raise SdkProtocolError("Retention response has invalid record order")
+            previous = entry.sequence
+        return result
+
+    def generation_request(self, request: SimulationGenerationRequest) -> SimulationGenerationResult:
+        """Explicit original generation request; only execute invokes a model."""
+        result = self.request("simulation/generation-request", request.model_dump(exclude_none=True), response_model=SimulationGenerationResult)
+        if result.runId != request.runId or (result.job is not None and result.job.job.id != request.job.id) or result.job is None:
+            raise SdkProtocolError("Generation response changed its original selection")
+        return result
+
+    def generation_read(self, request: SimulationGenerationRead) -> SimulationGenerationResult:
+        """Explicit original generation read; only execute invokes a model."""
+        result = self.request("simulation/generation-read", request.model_dump(exclude_none=True), response_model=SimulationGenerationResult)
+        if result.runId != request.runId or (result.job is not None and result.job.job.id != request.jobId):
+            raise SdkProtocolError("Generation response changed its original selection")
+        return result
+
+    def generation_execute(self, request: SimulationGenerationRead) -> SimulationGenerationResult:
+        """Explicit original generation execute; only execute invokes a model."""
+        result = self.request("simulation/generation-execute", request.model_dump(exclude_none=True), response_model=SimulationGenerationResult)
+        if result.runId != request.runId or (result.job is not None and result.job.job.id != request.jobId) or result.job is None:
+            raise SdkProtocolError("Generation response changed its original selection")
+        return result
+
+    def generation_transition(self, request: SimulationGenerationTransition) -> SimulationGenerationResult:
+        """Explicit original generation transition; only execute invokes a model."""
+        result = self.request("simulation/generation-transition", request.model_dump(exclude_none=True), response_model=SimulationGenerationResult)
+        if result.runId != request.runId or (result.job is not None and result.job.job.id != request.change.id) or result.job is None:
+            raise SdkProtocolError("Generation response changed its original selection")
+        return result
+
+    def generation_persona_draft(self, request: SimulationGenerationPersonaDraft) -> SimulationGenerationResult:
+        """Explicit original generation persona-draft; only execute invokes a model."""
+        result = self.request("simulation/generation-persona-draft", request.model_dump(exclude_none=True), response_model=SimulationGenerationResult)
+        if result.runId != request.runId or (result.job is not None and result.job.job.id != request.jobId) or result.job is None:
+            raise SdkProtocolError("Generation response changed its original selection")
+        return result
+
+    def rebuild_simulation_index(self, request: SimulationRebuildIndexInput) -> SimulationRebuildIndexResult:
+        """Rebuild exact derived references without model calls or world mutation."""
+        result = self.request("simulation/index-rebuild", request.model_dump(exclude_none=True), response_model=SimulationRebuildIndexResult)
+        if result.runId != request.runId or result.snapshotRevision != request.expectedRevision:
+            raise SdkProtocolError("simulation/index-rebuild response belongs to a different source")
+        return result
+
     def browse_simulation(self, request: SimulationBrowseInput) -> SimulationCollectionPage:
         """Read bounded authorized metadata without starting inference."""
         result = self.request("simulation/collections-list", request.model_dump(exclude_none=True), response_model=SimulationCollectionPage)
@@ -381,6 +633,13 @@ class HarnessClient:
             or request.envelopeSequence is not None and result.envelope is not None and result.envelope.sequence != request.envelopeSequence
             or request.limit is not None and len(result.items) > request.limit):
             raise SdkProtocolError("Simulation source response does not match its selection")
+        return result
+
+    def archive_raw_simulation(self, request: SimulationRawArchiveInput) -> SimulationRawArchivePage:
+        """Preserve original source bytes with an explicit whole-record grant; never restore or interpret Native state."""
+        result = self.request("simulation/raw-archive", request.model_dump(exclude_none=True), response_model=SimulationRawArchivePage)
+        if result.runId != request.runId:
+            raise SdkProtocolError("simulation/raw-archive response belongs to another registered source")
         return result
 
     def read_simulation_records(self, request: SimulationRecordsInput) -> SimulationRecordsPage:
@@ -411,6 +670,46 @@ class HarnessClient:
     def preflight_simulation(self, request: SimulationPreflightInput) -> SimulationPreflightResult:
         """Resolve an allowlisted creation draft without allocating or preparing a run."""
         return self.request("simulation/runs-preflight", request.model_dump(exclude_none=True), response_model=SimulationPreflightResult)
+
+    def read_simulation_draft(self, request: ScenarioDraftRead) -> ScenarioDraftReadResult:
+        """Read a private saved revision without opening a running world."""
+        result = self.request("simulation/draft-read", request.model_dump(exclude_none=True), response_model=ScenarioDraftReadResult)
+        if result.value is not None and (result.value.draftId != request.draftId or (request.revision is not None and result.value.revision != request.revision)):
+            raise SdkProtocolError("Draft read belongs to another selection")
+        return result
+
+    def save_simulation_draft(self, request: ScenarioDraftSave) -> ScenarioDraftSaveResult:
+        """Save with CAS; retry the same saveId/payload after an unknown outcome."""
+        result = self.request("simulation/draft-save", request.model_dump(exclude_none=True), response_model=ScenarioDraftSaveResponse).root
+        original = result.attempted if result.status == "conflict" else result.value
+        if any(getattr(original, key) != getattr(request, key) for key in ("draftId", "saveId", "parentRevision", "name", "definition", "layout", "templateManifest")):
+            raise SdkProtocolError("Draft save belongs to another original intent")
+        return result
+
+    def preflight_simulation_world(self, request: SimulationWorldPreflightInput) -> SimulationWorldPreflightResult:
+        """Resolve a portable World definition without allocating identities or starting inference."""
+        return self.request("simulation/world-preflight", request.model_dump(exclude_none=True), response_model=WorldPreflightResponse).root
+
+    def create_simulation_world(self, request: SimulationWorldCreateInput) -> SimulationRequestReceipt:
+        """Create a paused World with the original immutable command and preflight commitment."""
+        result = self.request("simulation/world-create", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.commandId != request.commandId or result.kind != "world-create":
+            raise SdkProtocolError("World creation receipt belongs to another command")
+        return result
+
+    def prepare_simulation_world(self, request: SimulationWorldPrepareInput) -> SimulationRequestReceipt:
+        """Prepare the accepted World without replacing its definition or resuming inference."""
+        result = self.request("simulation/world-prepare", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.commandId != request.commandId or result.runId != request.runId or result.kind != "world-prepare":
+            raise SdkProtocolError("World preparation receipt belongs to another command or run")
+        return result
+
+    def export_simulation_world_definition(self, request: SimulationWorldExportInput) -> SimulationWorldExportResult:
+        """Export the original portable definition, excluding private history; this is not a run backup."""
+        result = self.request("simulation/world-export", request.model_dump(exclude_none=True), response_model=SimulationWorldExportResult)
+        if result.runId != request.runId:
+            raise SdkProtocolError("World export belongs to another run")
+        return result
 
     def create_simulation(self, request: SimulationCreateInput) -> SimulationRequestReceipt:
         """Use the original durable command identity; absence does not establish failure."""

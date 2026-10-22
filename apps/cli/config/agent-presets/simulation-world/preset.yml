@@ -1,0 +1,3 @@
+name: 世界模拟角色 / World simulation actor
+description: 根据独立角色的已记录上下文提出世界请求与计划，仅使用仿真工具。
+order: 41

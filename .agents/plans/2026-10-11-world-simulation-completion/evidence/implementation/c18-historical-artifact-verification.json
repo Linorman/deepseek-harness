@@ -1,0 +1,27 @@
+{
+  "nativeStream": 72,
+  "verifiedInventory": {
+    "sources": 1963,
+    "built": 2572,
+    "fixtures": 4
+  },
+  "verifiedRawArtifacts": 834,
+  "historicalVersions": [
+    {
+      "path": "packages/simulation/simulation-team/src/index.ts",
+      "frozen": ".local/world-completion/c18-external-limits/frozen-production/packages/simulation/simulation-team/src/index.ts",
+      "sha256": "0fe6a42713679446e7401dbf0a87ad711bb77e455f95697fb798e7c221431b58"
+    },
+    {
+      "path": "packages/simulation/simulation-team/lib/index.js",
+      "frozen": ".local/world-completion/c18-external-limits/frozen-production/packages/simulation/simulation-team/lib/index.js",
+      "sha256": "5c9a7462383cd4c3595748c77ed6f293d71061ff30bfe9f87a15a23c165b0eee"
+    },
+    {
+      "path": "packages/simulation/simulation-team/lib/types/index.js",
+      "frozen": ".local/world-completion/c18-external-limits/frozen-production/packages/simulation/simulation-team/lib/types/index.js",
+      "sha256": "8adc0e4b06efdb7a0c021bbb90c4f6b99fb16969e5cf7e47eb849ca0d5c2443f"
+    }
+  ],
+  "reason": "Only canonical personnel authority registration for base connections changed after the full quota matrix; exact consumed pre-fix files remain preserved. Current follow-up World and base attachment matrices are separate evidence."
+}

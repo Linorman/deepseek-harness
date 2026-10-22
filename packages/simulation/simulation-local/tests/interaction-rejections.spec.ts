@@ -25,7 +25,7 @@ it.each(['assignee', 'noncognitive', 'reply-limit', 'completion-limit', 'deadlin
   const request = structuredClone(h.request)
   let code = 'SIM_FULFILLMENT_INVALID'
   if (variant === 'assignee' || variant === 'noncognitive') {
-    if (variant === 'noncognitive') await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'org',
+    if (variant === 'noncognitive') await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'org',
       entityKind: 'organization', cognition: 'none', profile: {} }), h.run.snapshot().revision)
     request.assignee = variant === 'assignee' ? 'toString' : 'org'; code = 'SIM_ASSIGNEE_UNAVAILABLE'
   }

@@ -1,0 +1,2 @@
+packages/simulation/simulation-team/src/personnel-obligations.ts(32,65): error TS2339: Property 'taskId' does not exist on type '{ kind: "decision"; id: Branded<"SimulationDecisionId">; epoch: SimulationWriterEpoch; slot: Branded<"SimulationDecisionSlot">; } | { ...; } | ... 20 more ... | { ...; }'.
+  Property 'taskId' does not exist on type '{ kind: "decision"; id: Branded<"SimulationDecisionId">; epoch: SimulationWriterEpoch; slot: Branded<"SimulationDecisionSlot">; }'.

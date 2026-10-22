@@ -1,0 +1,94 @@
+{
+  "apiVersion": "clocky.world/v0",
+  "metadata": {
+    "id": "company",
+    "name": "Northstar Studio",
+    "description": "One organization with a bounded request for one new colleague."
+  },
+  "organization": {
+    "id": "studio",
+    "name": "Northstar Studio",
+    "description": "Members collaborate through private channels."
+  },
+  "positions": [
+    {
+      "id": "engineering",
+      "name": "Engineer",
+      "capacity": 2
+    }
+  ],
+  "runtimeProfile": {
+    "id": "world-agent",
+    "version": "1"
+  },
+  "templates": [
+    {
+      "id": "company-person",
+      "version": "1"
+    }
+  ],
+  "actors": [
+    {
+      "id": "director",
+      "role": "director",
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Director"
+      }
+    },
+    {
+      "id": "requester",
+      "role": "member",
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Recruiter"
+      }
+    },
+    {
+      "id": "observer",
+      "role": "member",
+      "template": {
+        "id": "company-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Observer"
+      }
+    }
+  ],
+  "assignments": [
+    {
+      "id": "initial-assignment",
+      "personId": "requester",
+      "positionId": "engineering"
+    }
+  ],
+  "authorizations": [
+    {
+      "id": "hiring-authority",
+      "requesterId": "requester",
+      "positionId": "engineering"
+    }
+  ],
+  "initialEvents": [
+    {
+      "kind": "hire-request",
+      "applicationId": "first-colleague",
+      "requesterId": "requester",
+      "positionId": "engineering",
+      "at": "0",
+      "description": "We need one additional colleague for this position."
+    }
+  ],
+  "limits": {
+    "world": {
+      "maxPlansPerRequest": 3
+    }
+  }
+}

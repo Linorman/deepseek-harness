@@ -56,7 +56,8 @@ Design review starts from the dark theme and requires light-theme parity. The ca
 | Material | `--clocky-surface-glass`, `--clocky-blur-glass` | Floating panels and overlays |
 | Visualization | `--clocky-viz-{grid,edge,edge-active,edge-ghost,node-ring,halo}` | Graph grid, edges, ghost references |
 | Type | `--clocky-type-hero` (40/48/600), `--clocky-type-metric` (32/36 mono) | Banner numbers and gauges |
-| Motion | `--clocky-duration-{orbit,flow,celebrate}`, `--clocky-ease-emphasized`, `--clocky-stagger-step` | Ambient drift, message particles, moments, staggered entrances |
+| Motion | `--clocky-duration-{orbit,flow,celebrate,drift}`, `--clocky-ease-emphasized`, `--clocky-stagger-step` | Mode-tile orbit, message particles, moments, ambient field drift, staggered entrances |
+| Ambient | `--clocky-ambient-{terrain,pulse}-opacity` | Ambient field terrain layer and observation pulse peak |
 
 The Simulation identity ramp must stay distinguishable from the `waiting` status role. A token test measures contrast and hue distance in both themes.
 
@@ -64,7 +65,7 @@ The Simulation identity ramp must stay distinguishable from the `waiting` status
 
 | Tier | Examples | Timing | Cap | Reduced motion |
 |---|---|---|---|---|
-| L0 ambient | Backdrop drift, grid parallax | Period of 20s or more, opacity at most 0.35 | One per screen; paused while hidden or off-screen | Static |
+| L0 ambient | Ambient field: terrain drift, air-mass breathing, one observation pulse | Drift period of 60s or more, at most 24px translation; terrain opacity at most 0.10 dark and 0.05 light | One per screen; visible only in whitespace; paused while hidden, off-screen, behind a modal, after 60s without input or when the user turns it off | Static |
 | L1 live signal | Running-node halo, channel message particles, running-card sweep | Particle flight about 1.2s | 24 concurrent particles; the excess merges into one "+N" pulse | One opacity flash |
 | L2 state transition | Board card moving between columns, node phase change, odometer, progress ring | 200–400ms with `spring` | One choreography at a time; interruptible | Immediate change |
 | L3 moment | Assemble, converge, ignite, seal, stall | At most 1.2s, once | Only on a live observed transition; any input skips it | Fade only |
@@ -75,6 +76,7 @@ Constraints:
 - Edge draw-in needs SVG `stroke-dashoffset`. [web-styling.md](../../../../docs/web-styling.md) gains one narrow exception for SVG edges inside `ui-viz`, and `verify-client-style-tokens` allowlists only that package.
 - React renders on data changes only. Per-frame work goes through refs and WAAPI.
 - The redesign's rules stay in force: `needs-you` pulses once rather than looping, running indicators are static under reduced motion, and dialogs and menus keep their in-place fade.
+- L0 carries no state. Its only data-driven element is one pulse ring on a live observed simulated-time advance, seal or ignite; triggers within 1.2s merge and nothing replays, so the field never suggests time flowing between observations. Opaque working surfaces hide it, so it shows only in whitespace. A user setting (follow system, on, off) satisfies WCAG 2.2.2; higher-contrast preference and print remove the field.
 
 ### `ui-viz` package
 
@@ -83,7 +85,7 @@ Constraints:
 - **Layout functions** are pure and deterministic. `layoutLayered` uses longest-path layering with barycenter crossing reduction. `layoutRadialSwarm` uses a seeded `d3-force` simulation that stops when settled and places new nodes incrementally. `layoutLanes` takes an injected position function, so Simulation callers keep exact decimal time in `BigInt` space.
 - **Rendering** uses SVG up to about 500 marks and canvas above that, matching the threshold in the 2026-10-02 redesign. Hit-testing and focus stay identical across both.
 - **Interaction** provides spatial roving focus across nodes, an accessible description builder and a list-view contract that every visualization must satisfy.
-- **Primitives** are `Odometer`, `RadialProgress`, `Sparkline`, `PulseHalo`, `FlowParticles` and `AmbientBackdrop`.
+- **Primitives** are `Odometer`, `RadialProgress`, `Sparkline`, `PulseHalo`, `FlowParticles` and `AmbientField`, which supersedes the static `AmbientBackdrop`.
 - **Performance** work pauses while the document is hidden or the element is off-screen.
 
 `d3-force` is the only new runtime dependency, following [dependencies over hand-rolling](../../implemented/process/2026-07-26-dependencies-over-hand-rolling.md) and declared under [verify-client-packages](../../../../scripts/verify-client-packages.ts). Layered layout stays in-house because bounded windows keep graphs small.
@@ -119,6 +121,7 @@ Constraints:
 - **Seat map.** Resident slots become a grid with active, reserved, awaiting-release and free states.
 - **Entity constellation.** Before R1 provides run-level relations, the World view clusters loaded entities by kind and gives agent-cognition entities a glow. Decisions observed live at the current simulated time ripple their entity.
 - **Scale preview.** Creation previews the organization size from the installed template limits.
+- **Ambient field.** `AmbientField` replaces the static backdrop behind Simulation workspaces. Over the existing dot grid it adds a run-seeded contour terrain generated once as a deterministic SVG and the two mode glows, both drifting slowly, plus the observation pulse anchored on the overview clock. A paused or idle run mutes the tone that ignite warms. Directory and empty-authoring views use a fixed-seed star map. The [World UI refinement](../../../plans/2026-10-11-world-simulation-completion/ui-refinement.md) owns placement and masking.
 
 ### Shell
 
@@ -167,6 +170,7 @@ Each read follows the R-read rules of the 2026-10-02 redesign: authorization, `m
 - No visualization shows an unloaded item as absent. Loaded versus total counts are visible, and off-page references render as ghost nodes.
 - After load and reload, no L2 or L3 animation is running (e2e).
 - Under reduced motion, no non-opacity motion runs (e2e).
+- The ambient field shows only in whitespace, keeps terrain lines no stronger than the dot grid (`--clocky-viz-grid`) against the canvas in both themes, pulses only on live observations, and does no animation work while paused, idle, hidden, behind a modal or turned off.
 - A performance test with 150 nodes and 24 particles keeps the 95th-percentile frame time within 18 ms, and a hidden tab performs no animation work.
 - `verify-client-style-tokens` passes with only the documented `stroke-dashoffset` exception, and mode identity tokens never appear on state marks.
 - Mode identity tokens meet the contrast checks in both themes.
@@ -176,7 +180,7 @@ Each read follows the R-read rules of the 2026-10-02 redesign: authorization, `m
 ## Risks
 
 - **Visuals can overclaim.** A line, a filled node or a convergence animation can imply completeness or causality that the data does not assert. The mapping tests and loaded/total labels are the guard.
-- **Motion fatigue.** Long monitoring sessions magnify ambient and signal motion. The tier caps and the live-delta rule are the guard.
+- **Motion fatigue.** Long monitoring sessions magnify ambient and signal motion. The tier caps, the live-delta rule, the 60s idle freeze and the ambient off setting are the guard.
 - **Bundle size.** `d3-force` and the visualization code load on every overview unless the client module system defers them.
 - **Layout jitter.** Force layout can shuffle nodes when data changes. Seeded layout, settled positions and incremental placement are required.
 - **New reads widen the product surface.** T1–T4 and R1–R4 need Host tests and authorization review before any view depends on them.

@@ -1,5 +1,9 @@
 # @clocky/clocky-storage-json
 
+`readJsonRawLogArchive()` preserves exact atomic-document bytes and the original consumer version without selecting a consumer parser. The storage envelope and retained count remain checked. Its bounded JSON archive embeds the original document as base64; it does not migrate, repair or open a writer.
+
+Read-only snapshot allowance failures carry `StorageError.code = read-limit`; invalid observation configuration remains `invalid-value`. Version mismatch and corrupt-medium failures retain their own codes.
+
 English | [中文](README.zh.md)
 
 `readJsonLogSnapshot(root, descriptor, limits)` opens only an existing atomic log document with a read-only file descriptor. Missing roots/streams remain absent, no backend owner is acquired, and encoded-document/returned JSON bytes plus retained-row count are bounded. Parsed stream versions and sequence continuity remain mandatory; an in-place size change rejects rather than yielding mixed data.

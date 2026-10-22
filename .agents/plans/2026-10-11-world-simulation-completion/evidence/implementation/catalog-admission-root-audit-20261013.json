@@ -1,0 +1,45 @@
+{
+  "inputHash": "922fd3c74b41a25ac08d5bb0feb75c2bcefe5e8394f72bf7e949b099b7e74172",
+  "capturedFiles": 5419,
+  "rows": [
+    {
+      "face": "lib",
+      "backend": "json",
+      "pid": 92431,
+      "pins": 12,
+      "payloadRejections": 100,
+      "process": ".local/world-completion/thread-01a1336a-catalog/matrix/runs/lib-json-RdlSC8/process.json",
+      "sha256": "c9458c3a24d489ce91a2288e8643bbc41e457f536375ea0fa32eb69d373b7666"
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "pid": 92432,
+      "pins": 12,
+      "payloadRejections": 100,
+      "process": ".local/world-completion/thread-01a1336a-catalog/matrix/runs/lib-sqlite-7d9R78/process.json",
+      "sha256": "efd03b5c22051458761d2b5b001995e2b9f7f23b40f3c75124e63b7bb13e64c5"
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "pid": 92266,
+      "pins": 12,
+      "payloadRejections": 100,
+      "process": ".local/world-completion/thread-01a1336a-catalog/matrix/runs/src-json-fQf53Q/process.json",
+      "sha256": "08d29d83c00caa3e57f5ee5033cab6784c02efcce18ca91255019e9f327dacca"
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "pid": 92267,
+      "pins": 12,
+      "payloadRejections": 100,
+      "process": ".local/world-completion/thread-01a1336a-catalog/matrix/runs/src-sqlite-aMjvVG/process.json",
+      "sha256": "f9119fe1fe5c73b5e5d0c2a437a85ec8809032451b37c4689bd8e1e7cec82721"
+    }
+  ],
+  "actualEmptyStorage": true,
+  "sameCatalogAndRejections": true,
+  "scope": "Real Loader catalog parsing and disposal, no run allocation or effect execution; noncommitted result specimens only"
+}

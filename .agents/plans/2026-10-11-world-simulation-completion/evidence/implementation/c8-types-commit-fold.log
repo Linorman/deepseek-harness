@@ -1,0 +1,56 @@
+packages/simulation/simulation-local/src/index.ts(96,3): error TS2416: Property 'open' in type 'LocalSimulationProvider' is not assignable to the same property in base type 'SimulationProvider'.
+  Type '(selection: SimulationRunRequest) => Promise<LocalSimulationRun>' is not assignable to type '(selection: SimulationRunRequest) => Promise<SimulationRun>'.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-local/src/index.ts(259,57): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-local/src/run.ts(112,14): error TS2420: Class 'LocalSimulationRun' incorrectly implements interface 'SimulationRun'.
+  Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-local/src/world-governance.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-hire-existing.ts(152,11): error TS6133: 'owned' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-norms.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-organization.ts(1,1): error TS6133: 'worldOperationGrants' is declared but its value is never read.
+packages/simulation/simulation-local/tests/inspection.spec.ts(17,57): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/collections.spec.ts(13,38): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/context-and-relations.spec.ts(16,54): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/knowledge.spec.ts(12,54): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/product.spec.ts(43,38): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/product.spec.ts(66,38): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/records.spec.ts(12,54): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/sources.spec.ts(43,54): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/sources.spec.ts(49,83): error TS2345: Argument of type '{ root: string; run: LocalSimulationRun; provider: LocalSimulationProvider; selection: SimulationRunRequest; ... 5 more ...; close: () => Promise<...>; }' is not assignable to parameter of type '{ run: SimulationRun; leases: SimulationWriterLease[]; }'.
+  Types of property 'run' are incompatible.
+    Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/simulation/simulation-product/tests/watch.spec.ts(10,54): error TS2345: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider'.
+  The types returned by 'open(...)' are incompatible between these types.
+    Type 'Promise<LocalSimulationRun>' is not assignable to type 'Promise<SimulationRun>'.
+      Type 'LocalSimulationRun' is missing the following properties from type 'SimulationRun': onPersonnelCommitAuthority, commitPersonnel
+packages/team/team-hub/tests/personnel-settlement-cut.spec.ts(65,7): error TS2741: Property 'channelId' is missing in type '{ audience: ParticipantId[]; kind: string; payload: { text: string; }; delivery: "turn"; }' but required in type 'TeamEnvelopeDraft'.
+packages/team/team-hub/tests/personnel-settlement-cut.spec.ts(76,44): error TS7006: Parameter 'value' implicitly has an 'any' type.
+packages/team/team-hub/tests/personnel-settlement-cut.spec.ts(102,67): error TS2741: Property 'channelId' is missing in type '{ audience: ParticipantId[]; kind: string; payload: { text: string; }; delivery: "turn"; }' but required in type 'TeamEnvelopeDraft'.

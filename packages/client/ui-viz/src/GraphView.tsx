@@ -83,6 +83,8 @@ export interface GraphViewProps {
   readonly clusters?: readonly GraphClusterView[] | undefined
   readonly selectedId?: string | undefined
   readonly onSelect?: ((id: string) => void) | undefined
+  /** Optional draft-editor gesture. Dropping one node on another requests a connection; the consumer validates before publishing. */
+  readonly onConnect?: ((from: string, to: string) => void) | undefined
   readonly onActivate?: ((id: string) => void) | undefined
   readonly renderer?: 'auto' | 'svg' | 'canvas'
   readonly markThreshold?: number
@@ -242,6 +244,7 @@ export function GraphView(props: GraphViewProps) {
     }
   }, [props.changedIds, active])
 
+  const connecting = useRef<string | undefined>()
   const pan = useRef<{ x: number; y: number; start: ViewTransform; moved: boolean } | undefined>()
   const [panning, setPanning] = useState(false)
   const local = (event: { clientX: number; clientY: number }): Point => {
@@ -250,6 +253,7 @@ export function GraphView(props: GraphViewProps) {
   }
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 || (event.target as HTMLElement).closest('button') !== null) return
+    connecting.current = props.onConnect === undefined ? undefined : hitTest(marks, toLayout(transform, local(event)), 6 / transform.k)
     pan.current = { ...local(event), start: transform, moved: false }
     // jsdom lacks pointer capture; real browsers keep the drag on the frame.
     if ('setPointerCapture' in event.currentTarget) event.currentTarget.setPointerCapture(event.pointerId)
@@ -267,6 +271,9 @@ export function GraphView(props: GraphViewProps) {
     if (!state.moved && Math.hypot(dx, dy) < 4) return
     if (!state.moved) { setPanning(true); setGlide(false); setHoveredId(undefined) }
     state.moved = true
+    if (connecting.current !== undefined) {
+      setHoveredId(hitTest(marks, toLayout(transform, point), 6 / transform.k)); return
+    }
     userMoved.current = true
     setTransform({ ...state.start, x: state.start.x + dx, y: state.start.y + dy })
   }
@@ -274,6 +281,13 @@ export function GraphView(props: GraphViewProps) {
     const state = pan.current
     pan.current = undefined
     setPanning(false)
+    const from = connecting.current
+    connecting.current = undefined
+    if (state?.moved && from !== undefined) {
+      const to = hitTest(marks, toLayout(transform, local(event)), 6 / transform.k)
+      if (to !== undefined && to !== from) props.onConnect?.(from, to)
+      return
+    }
     if (state === undefined || state.moved) return
     const id = hitTest(marks, toLayout(transform, local(event)), 6 / transform.k)
     if (id === undefined) return
@@ -332,7 +346,7 @@ export function GraphView(props: GraphViewProps) {
     data-motion-tier={props.assemble === true ? 'L3' : undefined}
     style={{ '--graph-height': typeof props.height === 'number' ? `${String(props.height)}px` : props.height } as CSSProperties}
     onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
-    onPointerCancel={() => { pan.current = undefined; setPanning(false) }}
+    onPointerCancel={() => { connecting.current = undefined; pan.current = undefined; setPanning(false) }}
     onPointerLeave={() => { setHoveredId(undefined) }}
     data-spotlight={neighbours === undefined ? undefined : true}>
     {mode === 'svg'

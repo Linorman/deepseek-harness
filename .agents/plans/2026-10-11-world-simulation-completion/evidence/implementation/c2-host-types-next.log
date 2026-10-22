@@ -1,0 +1,9 @@
+examples/simulation-company/tests/world-replanning-scenario.ts(124,35): error TS2345: Argument of type 'SimulationWorldIntent | undefined' is not assignable to parameter of type 'SimulationWorldIntent'.
+  Type 'undefined' is not assignable to type 'SimulationWorldIntent'.
+packages/simulation/simulation-team/tests/world.spec.ts(200,29): error TS2345: Argument of type 'SimulationWorldIntent | undefined' is not assignable to parameter of type 'SimulationWorldIntent'.
+  Type 'undefined' is not assignable to type 'SimulationWorldIntent'.
+packages/simulation/simulation-team/tests/world.spec.ts(1025,29): error TS2345: Argument of type 'SimulationWorldIntent | undefined' is not assignable to parameter of type 'SimulationWorldIntent'.
+  Type 'undefined' is not assignable to type 'SimulationWorldIntent'.
+packages/simulation/simulation-world/tests/execution.spec.ts(27,199): error TS2339: Property 'requesterEntityId' does not exist on type 'never'.
+packages/simulation/simulation-world/tests/execution.spec.ts(27,411): error TS2339: Property 'positionEntityId' does not exist on type 'never'.
+packages/simulation/simulation-world/tests/execution.spec.ts(27,447): error TS2339: Property 'relationId' does not exist on type 'never'.

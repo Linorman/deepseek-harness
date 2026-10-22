@@ -8,11 +8,11 @@ import { apply, inject } from '../src/client/index.ts'
 import { apply as hostApply, inject as hostInject } from '../src/index.ts'
 import type { Injected } from '../src/client/Workspace.tsx'
 import { CommandRegistry } from '@clocky/clocky-client-ui-layout/src/client/commands.ts'
-import type { SimulationRuntimeState, SimulationRecordDownload } from '@clocky/clocky-client-runtime/client'
+import type { SimulationRuntimeState, SimulationRecordDownload, SimulationWorldDomainState } from '@clocky/clocky-client-runtime/client'
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers() })
 
-it('binds configured read limits, opens safe palette destinations and retires every contribution', async () => {
+it('binds configured reads and retires contributions without navigation or late cleanup against a successor', async () => {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
   const slots = ctx.get('slots') as SlotRegistry
@@ -29,12 +29,26 @@ it('binds configured read limits, opens safe palette destinations and retires ev
     retain: vi.fn(), submit: vi.fn(), query: vi.fn(), release: vi.fn() }
   const exporter = { state: createSnapshotStore({}), start: vi.fn(async (_input: Parameters<Injected['exportRecords']>[0],
     download: (file: SimulationRecordDownload) => void) => { download({ text: '[]', name: 'records.json' }) }), cancel: vi.fn() }
+  const idle = { loading: false, stale: false }
+  const domainReader = { state: createSnapshotStore<SimulationWorldDomainState>({ overview: idle, organization: idle,
+    person: idle, governance: idle, proposal: idle, norm: idle, external: idle, identity: idle, 'case-extensions': idle, 'hiring-market': idle }),
+  read: vi.fn(async () => {}), close: vi.fn() }
+  const managementReader = { state: createSnapshotStore({ fields: idle, preview: idle }),
+    fields: vi.fn(async () => {}), preview: vi.fn(async () => {}), close: vi.fn() }
   const runtime = {
+    worldCalendar: vi.fn(() => ({ state: createSnapshotStore({ status: 'idle' }), preview: vi.fn(), submit: vi.fn(), close: vi.fn(), recover: vi.fn(async () => {}), cancel: vi.fn(async () => {}) })),
+    runControl: vi.fn(() => ({ state: createSnapshotStore({ status: 'idle' }), update: vi.fn(async () => {}), retry: vi.fn(async () => {}), dismiss: vi.fn(() => true) })),
+    invalidateRun: vi.fn(),
+    saveScenarioDraft: vi.fn(), readScenarioDraft: vi.fn(),
+    worldDomainReader: vi.fn(() => domainReader),
+    worldManagementReader: vi.fn(() => managementReader),
     state, administration: vi.fn(() => administration), recordExporter: vi.fn(() => exporter),
     directory: vi.fn(async () => {}), pause: vi.fn(), watchSource: vi.fn(() => off), observe: vi.fn(() => off),
     inspect: vi.fn(async () => {}), unknownOperations: vi.fn(), runStatuses: vi.fn(), listTaskReviews: vi.fn(),
     listRequests: vi.fn(), listTasks: vi.fn(), inspectSource: vi.fn(), refreshSource: vi.fn(), readRecords: vi.fn(), closeRecords: vi.fn(),
     inspectRecovery: vi.fn(), closeRecovery: vi.fn(), catalog: vi.fn(), control: vi.fn(), preflight: vi.fn(), closePreflight: vi.fn(),
+    listWorldCases: vi.fn(), inspectWorldCase: vi.fn(), closeWorldCase: vi.fn(), exportWorldDefinition: vi.fn(),
+    preflightWorld: vi.fn(), closeWorldPreflight: vi.fn(),
     browse: vi.fn(), inspectObject: vi.fn(), closeObject: vi.fn(),
   }
   ctx.provide('simulationRuns', runtime as never)
@@ -42,11 +56,15 @@ it('binds configured read limits, opens safe palette destinations and retires ev
     'sidebar.workspaceNavigation': { kind: 'list', scope: 'root' }, 'simulation.workspace': { kind: 'single', scope: 'root' },
   } } as never, () => null)
   const fiber = ctx.plugin({ inject: [...inject], apply }, { pageSize: 2, sourceRefreshMs: 20, watchWaitMs: 30, watchRetryMs: 40 })
+  let latePause: (() => void) | undefined
   try {
     await fiber.await()
+    expect(runtime.worldDomainReader).toHaveBeenCalledWith(expect.anything())
+    expect(runtime.worldManagementReader).toHaveBeenCalledWith(expect.anything())
     expect(runtime.administration).toHaveBeenCalledWith(expect.anything(), { maxCommands: 64, maxBytes: 262144 })
     const entry = slots.entries('simulation.workspace')[0]!
     const injected = (entry.inject as unknown as () => Injected)()
+    latePause = injected.pause
     await injected.directory('filter')
     await injected.directory('filter', 'next' as never)
     expect(runtime.directory.mock.calls).toEqual([[{ search: 'filter', limit: 2 }], [{ search: 'filter', limit: 2, cursor: 'next' }]])
@@ -64,6 +82,7 @@ it('binds configured read limits, opens safe palette destinations and retires ev
     expect(runtime.closeRecovery).toHaveBeenCalledOnce()
     expect(runtime.closePreflight).toHaveBeenCalledOnce()
     expect(exporter.cancel).toHaveBeenCalledTimes(2)
+    expect(domainReader.close).toHaveBeenCalledOnce()
     vi.useFakeTimers()
     const create = vi.fn(() => 'blob:records'), revoke = vi.fn()
     vi.stubGlobal('URL', class extends URL {
@@ -87,11 +106,19 @@ it('binds configured read limits, opens safe palette destinations and retires ev
     state.set({ directory: { loading: false, stale: false } })
     expect(commands.sections()[0]?.items).toHaveLength(1)
   } finally {
+    const previousWorkspace = showWorkspace.mock.calls.slice(), previousNavigation = navigate.mock.calls.slice()
     await fiber.dispose()
     expect(slots.entries('simulation.workspace')).toEqual([])
     expect(slots.entries('sidebar.workspaceNavigation')).toEqual([])
     expect(commands.sections()).toEqual([])
-    expect(showWorkspace).toHaveBeenLastCalledWith('team')
+    // Retirement releases the old readers while the host keeps the user's selected run.
+    expect(showWorkspace.mock.calls).toEqual(previousWorkspace)
+    expect(navigate.mock.calls).toEqual(previousNavigation)
+    const pausedAtRetirement = runtime.pause.mock.calls.length
+    latePause?.()
+    expect(runtime.pause).toHaveBeenCalledTimes(pausedAtRetirement)
+    expect(showWorkspace.mock.calls).toEqual(previousWorkspace)
+    expect(navigate.mock.calls).toEqual(previousNavigation)
     declaration()
     await ctx.fiber.dispose()
   }

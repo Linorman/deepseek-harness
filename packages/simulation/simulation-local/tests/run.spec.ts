@@ -18,7 +18,7 @@ afterEach(async () => {
 })
 const spec = simulationRunSelectionSchema.parse({ provider: 'local', mode: 'create', spec: {
   runId: 'supply', tickUnit: 'minute', origin: '0', maxTime: '100000000000000000000',
-  rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
+  rulesVersion: '1', policyVersion: '1', outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32, phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '1000000000000000000000000', relationRules: [],
 } }).spec
 function selection(mode: 'create' | 'open' = 'create') {
   return simulationRunSelectionSchema.parse({ provider: 'local', mode, spec })
@@ -36,7 +36,7 @@ describe.each(['json', 'sqlite'] as const)('%s durable run', (backend) => {
   it('reopens exactly the committed projection and rejects duplicate owners', async () => {
     const { provider, directory, committed } = await setup(backend)
     const run = await provider.open(selection())
-    expect(run.snapshot()).toEqual({ spec, revision: 0, phase: 'paused', entities: {}, relations: {}, time: simTimeSchema.parse('0'), nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), decisions: {}, operations: {}, resources: {}, grants: {}, interactions: {}, commitments: {}, nextEventSlot: simulationEventSlotSchema.parse('0'), scheduledEvents: {}, wakes: {} })
+    expect(run.snapshot()).toEqual({ spec, revision: 0, phase: 'paused', entities: {}, relations: {}, time: simTimeSchema.parse('0'), nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), decisions: {}, operations: {}, resources: {}, resourceReservations: {}, grants: {}, interactions: {}, commitments: {}, nextEventSlot: simulationEventSlotSchema.parse('0'), scheduledEvents: {}, wakes: {} })
     await expect(provider.open(selection('open'))).rejects.toThrow(/coordinator/)
     const second = await setup(backend, directory)
     await expect(second.provider.open(selection('open'))).rejects.toThrow(/coordinator/)
@@ -55,7 +55,7 @@ describe.each(['json', 'sqlite'] as const)('%s durable run', (backend) => {
     await closing
     await run.close()
     const reopened = await second.provider.open(selection('open'))
-    expect(reopened.snapshot()).toEqual({ spec, revision: 2, phase: 'paused', entities: {}, relations: {}, time: simTimeSchema.parse('0'), nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), decisions: {}, operations: {}, resources: {}, grants: {}, interactions: {}, commitments: {}, nextEventSlot: simulationEventSlotSchema.parse('0'), scheduledEvents: {}, wakes: {} })
+    expect(reopened.snapshot()).toEqual({ spec, revision: 2, phase: 'paused', entities: {}, relations: {}, time: simTimeSchema.parse('0'), nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), decisions: {}, operations: {}, resources: {}, resourceReservations: {}, grants: {}, interactions: {}, commitments: {}, nextEventSlot: simulationEventSlotSchema.parse('0'), scheduledEvents: {}, wakes: {} })
     expect(committed.mock.calls.map((call): unknown => call[1])).toEqual([0, 1, 2])
   })
 
@@ -108,7 +108,7 @@ it('rejects missing prefix, wrong record kind, unknown fields and repeated phase
   expect(() => foldEntry(state, { sequence: 1, value: { kind: 'run/phase', runId: spec.runId, expectedRevision: 0, phase: 'paused' } }, parsed, 'json')).toThrow(/repeats/)
 })
 it('keeps failed writes invisible and permits cleanup retry without reopening admission', async () => {
-  const state = { spec: selection().spec, revision: 0, phase: 'paused' as const, entities: {}, relations: {}, time: simTimeSchema.parse('0'), nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), decisions: {}, operations: {}, resources: {}, grants: {}, interactions: {}, commitments: {}, nextEventSlot: simulationEventSlotSchema.parse('0'), scheduledEvents: {}, wakes: {} }
+  const state = { spec: selection().spec, revision: 0, phase: 'paused' as const, entities: {}, relations: {}, time: simTimeSchema.parse('0'), nextDecisionSlot: simulationDecisionSlotSchema.parse('0'), decisions: {}, operations: {}, resources: {}, resourceReservations: {}, grants: {}, interactions: {}, commitments: {}, nextEventSlot: simulationEventSlotSchema.parse('0'), scheduledEvents: {}, wakes: {} }
   const append = vi.fn().mockRejectedValueOnce(new Error('disk')).mockResolvedValue({ tailSequence: 1 })
   const release = vi.fn().mockRejectedValueOnce(new Error('close')).mockResolvedValue(undefined)
   const committed = vi.fn()
@@ -138,7 +138,8 @@ it.each(['json', 'sqlite'] as const)('rejects %s malformed and unsupported durab
   await stream.append(0, [{ kind: 'run/phase', runId: spec.runId, expectedRevision: 0, phase: 'invalid' }])
   await medium.close()
   await expect(provider.open(selection('open'))).rejects.toThrow()
-  for (const version of [0, 1, 2, 3, 4, 11, 12, 13, 14, 15, 16, 17, 34, 35, 99]) {
+  const unsupported = [...Array.from({ length: SIMULATION_JOURNAL_VERSION }, (_, version) => version), SIMULATION_JOURNAL_VERSION + 1]
+  for (const version of unsupported) {
     const missing = selection('open')
     Reflect.set(missing.spec, 'runId', `new-format-${version}`)
     const badRoot = join(directory, createHash('sha256').update(`new-format-${version}`).digest('hex'))
@@ -198,7 +199,7 @@ it('folds entity batches identically without mutating earlier projections on suc
   const parsed = selection().spec
   const initial = foldEntry(undefined, { sequence: 0, value: { kind: 'run/created', spec: parsed, backend: 'json' } }, parsed, 'json')
   const commands = [
-    { kind: 'entity/create', id: 'one', entityKind: 'person', cognition: 'none', profile: { value: 0 } },
+    { kind: 'entity/create', readiness: 'ready', id: 'one', entityKind: 'person', cognition: 'none', profile: { value: 0 } },
     { kind: 'entity/profile', id: 'one', entityRevision: 1, profile: { value: 1 } },
     { kind: 'entity/profile', id: 'one', entityRevision: 2, profile: { value: 2 } },
   ]

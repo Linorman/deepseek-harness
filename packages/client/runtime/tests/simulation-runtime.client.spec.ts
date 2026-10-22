@@ -201,7 +201,11 @@ it('retains a page after ordinary read failure or disconnection and clears it on
     expect(h.runtime.state.getSnapshot().directory.value).toEqual(page)
     vi.spyOn(h.api.simulations, 'list').mockRejectedValueOnce(new Error('private-network-diagnostic'))
     await h.runtime.directory({ search: '', limit: 1 })
-    expect(h.runtime.state.getSnapshot().directory).toMatchObject({ value: page, loading: false, error: 'network' })
+    expect(h.runtime.state.getSnapshot().directory).toMatchObject({ value: page, loading: false, stale: true, error: 'network' })
+    vi.spyOn(h.api.simulations, 'list').mockResolvedValueOnce(ok(page))
+    await h.runtime.directory({ search: '', limit: 1 })
+    expect(h.runtime.state.getSnapshot().directory).toMatchObject({ value: page, loading: false, stale: false })
+    expect(h.runtime.state.getSnapshot().directory.error).toBeUndefined()
     h.runtime.disconnected()
     expect(h.runtime.state.getSnapshot()).toMatchObject({ connected: false, directory: { value: page, stale: true } })
     h.runtime.connected('scope-one' as never)
@@ -209,6 +213,22 @@ it('retains a page after ordinary read failure or disconnection and clears it on
     h.runtime.connected('scope-two' as never)
     expect(h.runtime.state.getSnapshot().directory.value).toBeUndefined()
     expect(h.ctx.get('simulationRuns')).toBe(h.runtime)
+  } finally { await h.ctx.fiber.dispose() }
+})
+
+it('marks retained collection content stale after a failed refresh until a successful observation replaces it', async () => {
+  const h = await fixture()
+  try {
+    const data = { runId, collection: 'entities' as const, snapshotRevision: 1, observedAt: 1, total: 0, items: [] }
+    vi.spyOn(h.api.simulations, 'browse').mockResolvedValueOnce(ok(data))
+      .mockRejectedValueOnce(new Error('Connection reset while reading'))
+      .mockResolvedValueOnce(ok({ ...data, snapshotRevision: 2 }))
+    await h.runtime.browse({ runId, collection: 'entities', limit: 1 })
+    await h.runtime.browse({ runId, collection: 'entities', limit: 1 })
+    expect(h.runtime.state.getSnapshot().collection).toMatchObject({ value: data, loading: false, stale: true, error: 'network' })
+    await h.runtime.browse({ runId, collection: 'entities', limit: 1 })
+    expect(h.runtime.state.getSnapshot().collection).toMatchObject({ value: { snapshotRevision: 2 }, loading: false, stale: false })
+    expect(h.runtime.state.getSnapshot().collection.error).toBeUndefined()
   } finally { await h.ctx.fiber.dispose() }
 })
 
@@ -337,6 +357,39 @@ it('reads installed templates and scoped controls independently of metadata, and
   } finally { await h.ctx.fiber.dispose() }
 })
 
+it('shares slow control polls until settlement and retires them when the run or authority changes', async () => {
+  const h = await fixture()
+  try {
+    const first = Promise.withResolvers<Awaited<ReturnType<typeof h.api.simulations.control>>>()
+    const next = Promise.withResolvers<Awaited<ReturnType<typeof h.api.simulations.control>>>()
+    const read = vi.spyOn(h.api.simulations, 'control').mockReturnValueOnce(first.promise).mockReturnValueOnce(next.promise)
+      .mockResolvedValue(err({ code: 'simulation-product-unavailable', message: 'Not held', details: {} }))
+    const original = h.runtime.control(runId)
+    const polls = Array.from({ length: 8 }, () => h.runtime.control(runId))
+    expect(polls.every(promise => promise === original)).toBe(true)
+    expect(read).toHaveBeenCalledOnce()
+    expect(read.mock.calls[0]?.[1]?.aborted).toBe(false)
+    first.resolve(err({ code: 'simulation-product-unavailable', message: 'Not held', details: {} }))
+    await Promise.all([original, ...polls])
+    expect(h.runtime.state.getSnapshot().control).toMatchObject({ loading: false, error: 'unavailable' })
+    const old = h.runtime.control(runId)
+    await h.runtime.control('another-run' as never)
+    expect(read.mock.calls[1]?.[1]?.aborted).toBe(true)
+    next.resolve(err({ code: 'simulation-product-forbidden', message: 'Old reader', details: {} })); await old
+    expect(h.runtime.state.getSnapshot().control.error).toBe('unavailable')
+    expect(h.runtime.state.getSnapshot().control.scope).toBe(JSON.stringify(['control', 'another-run']))
+    const revoked = Promise.withResolvers<Awaited<ReturnType<typeof h.api.simulations.control>>>()
+    read.mockReturnValueOnce(revoked.promise)
+    const pending = h.runtime.control(runId)
+    h.runtime.connected('replacement-authority' as never)
+    expect(read.mock.calls[3]?.[1]?.aborted).toBe(true)
+    await h.runtime.control(runId)
+    revoked.resolve(err({ code: 'simulation-product-forbidden', message: 'Old authority', details: {} })); await pending
+    expect(read).toHaveBeenCalledTimes(5)
+    expect(h.runtime.state.getSnapshot().control.error).toBe('unavailable')
+  } finally { await h.ctx.fiber.dispose() }
+})
+
 it('retains exact object pages and classifies unavailable, invalid and internal responses without exposing messages', async () => {
   const h = await fixture()
   try {
@@ -458,5 +511,82 @@ it('keeps recovery references independent of the browsing inspector and retires 
     expect(h.runtime.state.getSnapshot().recovery.value).toEqual(value)
     h.runtime.connected('replacement' as never)
     expect(h.runtime.state.getSnapshot().recovery.value).toBeUndefined()
+  } finally { await h.ctx.fiber.dispose() }
+})
+
+it('exports only the original private backup and rejects late replies after authority replacement', async () => {
+  const h = await fixture()
+  const input = { runId, commandId: 'original' as never }
+  const value = { ...input, archiveHash: 'a'.repeat(64), bundleHash: 'b'.repeat(64),
+    kind: 'full-private-backup' as const, bundle: '{}' }
+  try {
+    const read = vi.spyOn(h.api.simulations, 'backupExport').mockResolvedValue(ok(value))
+    expect(await h.runtime.backupExport(input)).toEqual(value)
+    read.mockResolvedValueOnce(ok({ ...value, commandId: 'other' as never }))
+    await expect(h.runtime.backupExport(input)).rejects.toThrow(/original selection/)
+    const pending = Promise.withResolvers<ReturnType<typeof ok<typeof value>>>()
+    read.mockReturnValueOnce(pending.promise)
+    const oldRead = h.runtime.backupExport(input)
+    h.runtime.connected('replacement-authority' as never)
+    pending.resolve(ok(value))
+    await expect(oldRead).rejects.toThrow(/authorization changed/)
+    expect(read).toHaveBeenCalledTimes(3)
+  } finally { await h.ctx.fiber.dispose() }
+})
+
+it('binds experiment replies to original commands and refuses stale authority or changed source cuts', async () => {
+  const h = await fixture()
+  const source = { runId, archiveCommandId: 'original' as never }
+  const commandId = 'cf0a4f06-a9fe-4b91-9722-b128f803a508'
+  const request = { source, commandId, name: 'Branch', memoryPolicy: 'public-facts' as const }
+  const branch = { source, commandId, runId: 'branch' as never, sourceHash: 'a'.repeat(64),
+    memoryPolicy: 'public-facts' as const, status: 'completed' as const, phase: 'paused' as const, realEffects: false as const }
+  try {
+    const send = vi.spyOn(h.api.simulations, 'branchWorld').mockResolvedValue(ok(branch))
+    expect(await h.runtime.branchWorld(request)).toEqual(branch)
+    send.mockResolvedValueOnce(ok({ ...branch, source: { ...source, archiveCommandId: 'other' as never } }))
+    await expect(h.runtime.branchWorld(request)).rejects.toThrow(/original selection/)
+    const pending = Promise.withResolvers<ReturnType<typeof ok<typeof branch>>>()
+    send.mockReturnValueOnce(pending.promise)
+    const oldRead = h.runtime.branchWorld(request)
+    h.runtime.connected('new-authority' as never); pending.resolve(ok(branch))
+    await expect(oldRead).rejects.toThrow(/authorization changed/)
+    const read = vi.spyOn(h.api.simulations, 'readWorldBranch').mockResolvedValue(ok({ commandId, status: 'not-found' }))
+    expect(await h.runtime.readWorldBranch({ commandId })).toEqual({ commandId, status: 'not-found' })
+    read.mockResolvedValueOnce(ok({ commandId: '00000000-0000-0000-0000-000000000000', status: 'not-found' }))
+    await expect(h.runtime.readWorldBranch({ commandId })).rejects.toThrow(/original selection/)
+    const query = { source, root: 'decision:one', maxDepth: 2, maxNodes: 1, maxBytes: 4096 }
+    const graph = { source, sourceHash: 'a'.repeat(64), nodes: [{ key: 'decision:one', kind: 'decision' as const,
+      sequence: 1, recordHash: 'b'.repeat(64) }], edges: [], coverage: 'bounded' as const }
+    const causal = vi.spyOn(h.api.simulations, 'queryWorldCausal').mockResolvedValue(ok(graph))
+    expect(await h.runtime.queryWorldCausal(query)).toEqual(graph)
+    await expect(h.runtime.queryWorldCausal({ ...query, maxBytes: 1 })).rejects.toThrow(/bounds/)
+    causal.mockResolvedValueOnce(ok({ ...graph, nodes: [...graph.nodes, ...graph.nodes] }))
+    await expect(h.runtime.queryWorldCausal(query)).rejects.toThrow(/bounds/)
+  } finally { await h.ctx.fiber.dispose() }
+})
+
+it('keeps a run invalidated by a terminal receipt until a later status batch answers it, and rereads its selected control', async () => {
+  const h = await fixture()
+  try {
+    vi.spyOn(h.api.simulations, 'list').mockResolvedValueOnce(ok(page))
+    const status = { items: [{ run: page.items[0]!, status: 'missing' as const }] }
+    const pending = Promise.withResolvers<Awaited<ReturnType<typeof h.api.simulations.runStatuses>>>()
+    vi.spyOn(h.api.simulations, 'runStatuses').mockResolvedValueOnce(ok(status))
+      .mockImplementationOnce(() => pending.promise).mockResolvedValueOnce(ok(status))
+    await h.runtime.directory({})
+    h.runtime.invalidateRun(runId)
+    expect(Object.keys(h.runtime.state.getSnapshot().invalidatedRuns)).toEqual([runId])
+    // A batch requested before a newer invalidation does not answer that newer receipt.
+    const read = h.runtime.runStatuses({ runIds: [runId] })
+    h.runtime.invalidateRun(runId)
+    pending.resolve(ok(status)); await read
+    expect(Object.keys(h.runtime.state.getSnapshot().invalidatedRuns)).toEqual([runId])
+    await h.runtime.runStatuses({ runIds: [runId] })
+    expect(h.runtime.state.getSnapshot().invalidatedRuns).toEqual({})
+    const control = vi.spyOn(h.api.simulations, 'control').mockResolvedValue(ok({ runId } as never))
+    await h.runtime.control(runId)
+    h.runtime.invalidateRun(runId)
+    await vi.waitFor(() => { expect(control).toHaveBeenCalledTimes(2) })
   } finally { await h.ctx.fiber.dispose() }
 })

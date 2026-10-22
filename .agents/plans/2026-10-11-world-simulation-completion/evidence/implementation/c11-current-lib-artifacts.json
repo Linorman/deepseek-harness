@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-12",
+  "scope": "Final compiled narrow cancellation admission plus actual handler cancellation races; original52 sample paths restored unchanged",
+  "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13.log",
+  "buildPrerequisite": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-build-final.log",
+  "artifacts": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-company-before-native-commit-cold.json",
+      "bytes": 158174,
+      "sha256": "93daee3ffbe75c1beb19127d3b7b48e51596e52df80884c8b1d76849fc526ad3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-company-before-native-commit-created.json",
+      "bytes": 158176,
+      "sha256": "12f788b898ff7d17aab44918585f485c51918cc4c160a5e385b587fd7a411529"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-company-before-reserve-cold.json",
+      "bytes": 151228,
+      "sha256": "c25971d320fc937f9990b65cb674eca57af3582a12ba39c63e732d85937d743b"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-company-before-reserve-created.json",
+      "bytes": 151230,
+      "sha256": "aab9587ee44152343bd2924daebaa8787e57a5a7c8c5cdea7fa5a6c330d99bc3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-company-commit-wins-cold.json",
+      "bytes": 175775,
+      "sha256": "e2f2f08feac3cb67d1da92cc8fe968ca6b34303b6eed97e956417217de2aa775"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-company-commit-wins-created.json",
+      "bytes": 175777,
+      "sha256": "b7fb9ad16e86b9bddfc065d0cc3ba2afd9e70a8cce8b64117c86266e52f0e3ea"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-company-during-maintenance-cold.json",
+      "bytes": 158259,
+      "sha256": "fa7e145061eff56cad48641ffd5c93b8c4accea595e4a2d15df4e6a33e3223bd"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-company-during-maintenance-created.json",
+      "bytes": 158261,
+      "sha256": "6717587164d280ef657bb998cc448ad39a5cb7ec7063b12a3e9b2951ebff48aa"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-laboratory-before-reserve-cold.json",
+      "bytes": 151394,
+      "sha256": "f46d5fa8c9911e76ca3e1c5c57bec99f6976b6290029fe84bdca236c97964418"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-laboratory-before-reserve-created.json",
+      "bytes": 151396,
+      "sha256": "c1655ca8eb5ab87a3fa472458005b85cf3fc22b6ddcef7beb76bba846bbc8f16"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-laboratory-commit-wins-cold.json",
+      "bytes": 176019,
+      "sha256": "79d83c1b4d202782b15efa6efc9c6b82bb96ba33ce5efbe26f5eccef5623dfb9"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-laboratory-commit-wins-created.json",
+      "bytes": 176021,
+      "sha256": "7d88ab3f53f85b4ccaef10ada360262d22b8fa2039badccc0590ad96c8c8a482"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-laboratory-during-maintenance-cold.json",
+      "bytes": 158443,
+      "sha256": "0e565d586a1925d83b59ed1291562f13cbf84519295c92ec3f9c8bdebebee465"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/json-laboratory-during-maintenance-created.json",
+      "bytes": 158445,
+      "sha256": "9c21674165e05596db5b92a2167f0c081a5061f91dadf6a65ece5139829ceaf3"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-company-before-reserve-cold.json",
+      "bytes": 151230,
+      "sha256": "599ea208d7277b28b968efe1044e3c6d331bd16d3fdbc07c5249fc8f55c88d8b"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-company-before-reserve-created.json",
+      "bytes": 151232,
+      "sha256": "381fa13bdc2859cd88d27c12cc9a6eb04fb36e16f89ebfc168ea78e12bec7233"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-company-commit-wins-cold.json",
+      "bytes": 175777,
+      "sha256": "836b0d1a3ace239d15b970cf4f1dae690b57158c28c066617e377c87a44da64f"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-company-commit-wins-created.json",
+      "bytes": 175779,
+      "sha256": "842d8c93a9d80a370b2d5567ac0ebde10660a90ed2e98b6f6b0e946ab2c96f01"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-company-during-maintenance-cold.json",
+      "bytes": 158261,
+      "sha256": "0e94da3e5ff0fbca271e20297807dc2f485844fb03c20dbd21dab0a057cb9bb8"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-company-during-maintenance-created.json",
+      "bytes": 158263,
+      "sha256": "847f1ee0f81508edc11b01687a3a0823ac6407bf31c62649158a637598db43d0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-laboratory-before-reserve-cold.json",
+      "bytes": 151396,
+      "sha256": "d40afd3a943f71729d178abc1cb9b133863003e63b21c8d6b75a6dd842f06c63"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-laboratory-before-reserve-created.json",
+      "bytes": 151398,
+      "sha256": "6325b2d8fdef5fb79fea2d529c33eff5a7a34adc2336984dc7db408e92da0196"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-laboratory-commit-wins-cold.json",
+      "bytes": 176021,
+      "sha256": "5d467cae072c760435bfad35b1f508a58fb61799bca698e54f9ceb19ccc20b99"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-laboratory-commit-wins-created.json",
+      "bytes": 176023,
+      "sha256": "04cd9f9a06d36409f113c934d3506def265ad1622d1863c0cb6a0fb4d04bf603"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-laboratory-during-maintenance-cold.json",
+      "bytes": 158445,
+      "sha256": "630b12639c4cd911f47d8f3caab57631677ed41b36d27b71f810ec9c70c48dbc"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c11-personnel-cancellation-lib-current13-raw/sqlite-laboratory-during-maintenance-created.json",
+      "bytes": 158447,
+      "sha256": "17811406f2c5aadc0aec705dbb54e0ea6584cd659ac99cf5724c05024c418342"
+    }
+  ]
+}

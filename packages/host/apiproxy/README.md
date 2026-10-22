@@ -1,5 +1,9 @@
 # @clocky/clocky-host-apiproxy
 
+`simulation.raw.archive` serves separately authorized raw-preservation pages. Run registration or case/Persona prose access alone cannot authorize the request. Original-version and non-validation metadata accompany every text page; the caller cannot override source paths, providers, versions or permissions.
+
+`simulation.runs.run-control` exposes authenticated durable stop-target update/clear. Fetch clients preserve explicit null and correlate run, command and original target identities. Admission does not wait for the current model turn and never implicitly starts scheduling.
+
 English | [中文](README.zh.md)
 
 `simulation.requests.list` reads bounded original receipt metadata for one owned run, without stored creation or review inputs. Continuations bind the current principal, credential generation, run revision and page size; changed history or service restart requires a fresh page. `simulation.requests.retry` accepts only the exact run and original command identity: terminal results remain unchanged, while accepted commands dispatch their retained backend input under current admission. Unknown or unrelated commands refuse without allocation.
@@ -119,6 +123,10 @@ The Team management API keeps Team, participant, task, and channel reads bounded
 
 `AbstractApiClient` holds every protocol invariant — rpcId minting, envelope wrap/unwrap, zod parsing, SSE frame decoding, unary timeout, microtask-batched envelope observation (`subscribeEnvelopes`) — while platform subclasses supply only the `doFetch` transport aspect. `InProcessApiClient` over `toFetchHandler(api)` remains the isomorphic point for callers and carrier tests that need the full wire serialization/validation path without a network. Product `clocky --profile headless` is a direct core entry point and does not mount this package.
 
+## Private backup export
+
+`simulation.backup.export` reads completed private retention bytes through the authenticated product owner. Run ownership alone does not permit export: the separate record disclosure grant is required. The HTTP carrier validates the closed DTO and original run/command selection; export performs no model call or live-owner acquisition. Full branch exports additionally require current ancestor disclosure grants or an explicit exact-branch `includeProvenance: true` grant; branch-only permission does not disclose ancestor bytes.
+
 ## Model Experience
 
 None, as the package defines the client↔host wire contract and carriers; nothing here reaches a model request.
@@ -137,3 +145,5 @@ None; this package neither assembles nor sends a provider request.
 - **Search failures include provider diagnostics** — the gateway is a single-user local service. A carrier that exposes it to multiple users must replace internal search details with a public-safe diagnostic.
 - **Linux native picker requires desktop tooling** — under the `native` capability, `host.pickDirectory` reports an actionable error when neither Zenity nor KDialog is installed; the browse backend is the composition-level fallback (see the [native backend README](../directory-picker-native/README.md)).
 - **Cold-list hints degrade only toward visibility and older ordering** — a projection-cache miss or stale `lastPromptAt` falls back to `createdAt` unless an eligible small artifact supplies an exact fold, so a recently worked large Session may sort too low until the next checkpoint. A blank artifact larger than `coldBlankProbeMaxBytes`, or one from a backend without `locate()`, remains visible. The threshold is checked before `readFrom()` rather than enforced by persistence, so concurrent artifact growth may increase one probe's read cost without changing blankness safety. The [bounded blank-verification decision](../../../.agents/notes/implemented/bug-fix/2026-08-13-bounded-cold-blank-verification.md) owns this safety direction; an authoritative exact recency index remains scoped in the [last-activity-index proposal](../../../.agents/notes/proposed/architecture/2026-07-29-durable-last-activity-index.md).
+
+`simulation.world.branch` and `simulation.world.branch.read` retain the original branch UUID and return a paused simulation with real effects disabled. `simulation.world.causal` and `simulation.world.compare` require independently authorized immutable retention sources. The fetch client checks branch command/source/memory policy, causal source plus complete byte/node limits, and both comparison observations. Input accepts no Host factory, private archive bytes or authority overrides.

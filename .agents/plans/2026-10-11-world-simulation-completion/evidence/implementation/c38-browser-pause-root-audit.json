@@ -1,0 +1,404 @@
+{
+  "passed": true,
+  "inputHash": "7b7856d2ab28db0a9655446bf8aed9e1ece34f5401ce17a63b8711728c337382",
+  "inputFiles": 5522,
+  "inputBytes": 71913052,
+  "cases": [
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/c36-director-events-sdk/normal/json/browser-q301jy",
+      "mode": "normal",
+      "backend": "json",
+      "revision": 108,
+      "modelCalls": 9,
+      "pausedCreationModels": 0,
+      "advances": 15,
+      "actualDriver": "idle",
+      "stop": "paused"
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io",
+      "mode": "normal",
+      "backend": "sqlite",
+      "revision": 116,
+      "modelCalls": 10,
+      "pausedCreationModels": 0,
+      "advances": 15,
+      "actualDriver": "waiting",
+      "stop": "work-limit"
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/c36-director-events-sdk/pause-race/json/browser-sm86l7",
+      "mode": "pause-race",
+      "backend": "json",
+      "revision": 110,
+      "modelCalls": 9,
+      "pausedCreationModels": 0,
+      "advances": 15,
+      "actualDriver": "idle",
+      "stop": "paused"
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F",
+      "mode": "pause-race",
+      "backend": "sqlite",
+      "revision": 110,
+      "modelCalls": 9,
+      "pausedCreationModels": 0,
+      "advances": 15,
+      "actualDriver": "idle",
+      "stop": "paused"
+    }
+  ],
+  "raw": [
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/overlay.json",
+      "bytes": 9974,
+      "sha256": "62b4e6a2e0de8cc565de9e02933fb94bd408c42a2e31a7e54b2bebe0e6336597"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/00-independent-budget-preview.png",
+      "bytes": 255652,
+      "sha256": "04f690b6db22f92d9e8703b6515cbacaab787897d939a754ad1830fb999f6ea5"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/root-readonly-native.json",
+      "bytes": 203801,
+      "sha256": "1fb10e744efa62ffc7e1c651d6330ca4fb6847605da302b0fab070a91a231402"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/01-native-scenario-no-channel.png",
+      "bytes": 264509,
+      "sha256": "ecdede49609c924535122b6d8254d0f38550d1092a43dd9c1361a6126a8c37f3"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/proof.json",
+      "bytes": 317801,
+      "sha256": "8ff0fafd2c6887e8ff46b01238450642d27e87ce8d76798341c9e87dc3bd9109"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/driver-errors.json",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/workspace/.clocky-team-storage.sqlite",
+      "bytes": 180224,
+      "sha256": "c2d7f59957766bf882dd72cc692e69523551be5723f6e4abf72513dea0cadffe"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/sessions/_no-cwd/398b3330-f69d-4de1-8c99-2159c7c90525/session.jsonl.zstd",
+      "bytes": 19753,
+      "sha256": "77407cc6954e98b1e9193ad749d65f2140c8f2b6830b78265ffcfe05035fbc90"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/sessions/_no-cwd/e30c19e6-0dbd-41ad-964d-949cba6cc495/session.jsonl.zstd",
+      "bytes": 9761,
+      "sha256": "e513960b5f71447a2aaa86d9eea9d827b10d2bba3b8c412ac003a96152387809"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/world/2bc050d031bdbc13999fe0f11a96446502c31e03ba7720d9854176f3591d5976/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/world/2bc050d031bdbc13999fe0f11a96446502c31e03ba7720d9854176f3591d5976/owner.sqlite-journal",
+      "bytes": 512,
+      "sha256": "ef716a6f4004a288dc847aba78739ee8cd5c5e5dbf6e22d6286e0b40ee749403"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/world/2bc050d031bdbc13999fe0f11a96446502c31e03ba7720d9854176f3591d5976/journal/logs/.clocky-log-owner.lock",
+      "bytes": 90,
+      "sha256": "69b6201654daa641a1b6ee39e5998b3b9621b46b8f7f4cc62a836bfa5e53bfa1"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/world/2bc050d031bdbc13999fe0f11a96446502c31e03ba7720d9854176f3591d5976/journal/logs/c2ltdWxhdGlvbg.json",
+      "bytes": 89677,
+      "sha256": "ba0309169181ee934f51fdceeea4e13f3de94c094c93ed7e77eeca2f77045606"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/workspace/.clocky-storages/workspace.json",
+      "bytes": 199,
+      "sha256": "ae581504107075e10161487a6bcf32a8b6f291ac2ca8dd70ead37f149d6bdfe4"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/workspace/.clocky-storages/session_projcache.json",
+      "bytes": 4798,
+      "sha256": "c2ff17dcde4f319477aa44e5a1ceb90fd646918f62ea2d30adefbc6f338c45e9"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/workspace/.clocky-auth/product-principal.json",
+      "bytes": 165,
+      "sha256": "de8d1a3cfe5551a8566f3318120558280878427f6f71bf56650c1e584c9d8349"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/json/browser-q301jy/workspace/.clocky-home/profiles/scaffold/cordis.yml",
+      "bytes": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/overlay.json",
+      "bytes": 9978,
+      "sha256": "89fbb80c6d4447c7e96e4f5226d5b7ba79fb6bb42fca2057ec97cb3198c88151"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/00-independent-budget-preview.png",
+      "bytes": 255647,
+      "sha256": "6273791c48ed2d8c53c547ad35e613eb175a5764f1acf670a2a3c0294e8ec97a"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/root-readonly-native.json",
+      "bytes": 225206,
+      "sha256": "434f0b1b92c23eddc9cc63306f110595a0681d7a850bf078be3378f70159d99c"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/01-native-scenario-no-channel.png",
+      "bytes": 265375,
+      "sha256": "474255cac1184597d93918d647c2f77562b0e2ece83c918af3546b9725047b44"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/proof.json",
+      "bytes": 361226,
+      "sha256": "a7f6f1238df46c538641552fd59b97e84f55f1fde6b461f951cbf53ee92c0674"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/driver-errors.json",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/workspace/.clocky-team-storage.sqlite",
+      "bytes": 184320,
+      "sha256": "93cbd6382a9f29e09777a20c1ce8cbe0da88a7fff62ec4c996e8b026eda7d7d3"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/sessions/_no-cwd/fc15593f-ba6b-4822-9c11-6505d69ebe67/session.jsonl.zstd",
+      "bytes": 9756,
+      "sha256": "8e383597f0887a9d0f43d15fe5997820072b4e33c31aaaf2848fefba8859d835"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/sessions/_no-cwd/a82ee218-114b-4c74-b65d-101b130f98b9/session.jsonl.zstd",
+      "bytes": 23694,
+      "sha256": "31426b55f5597070d8024a8a7669271683001cea4b96f6d22e8dd4903ba2e828"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/world/074541339f9caad69673114c8ec7c314d4dcaeeee2364f6c08353ee68cdd8e56/journal.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "645d4312f48271df7618f001410bb29eb1ffad744b96aab7f97d00a7bb6f2ad7"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/world/074541339f9caad69673114c8ec7c314d4dcaeeee2364f6c08353ee68cdd8e56/journal.sqlite-wal",
+      "bytes": 1503832,
+      "sha256": "8ac58e3fe6d56102edf2bd8b4e03bd20538f8709ac81ac1e10c354a7b03b89f6"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/world/074541339f9caad69673114c8ec7c314d4dcaeeee2364f6c08353ee68cdd8e56/journal.sqlite",
+      "bytes": 4096,
+      "sha256": "97e8d54f8a7255106f66cf1b213c4a4d7b558d21310b1c2bfedc3d0d526dddda"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/world/074541339f9caad69673114c8ec7c314d4dcaeeee2364f6c08353ee68cdd8e56/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/world/074541339f9caad69673114c8ec7c314d4dcaeeee2364f6c08353ee68cdd8e56/owner.sqlite-journal",
+      "bytes": 512,
+      "sha256": "31be90316079c6518b228a3ed6fd09a3b48210e6fe0bfdb69848f31d9b7cdee7"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/workspace/.clocky-storages/workspace.json",
+      "bytes": 199,
+      "sha256": "ae581504107075e10161487a6bcf32a8b6f291ac2ca8dd70ead37f149d6bdfe4"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/workspace/.clocky-storages/session_projcache.json",
+      "bytes": 4796,
+      "sha256": "c1cc9c26a47d430b2b5c707e5147c112c1b47c3f14198834c49cb7c5ed038cc0"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/workspace/.clocky-auth/product-principal.json",
+      "bytes": 165,
+      "sha256": "4a685ecc3d5ee90f10cbf0f14fb3a29fbbcfbf595e2b692d593d033676cc0744"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io/workspace/.clocky-home/profiles/scaffold/cordis.yml",
+      "bytes": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/overlay.json",
+      "bytes": 9978,
+      "sha256": "9ef94ffadd45dc6a914fbe798ffd2d084b6f7a12557924b45919c89d1e276448"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/00-independent-budget-preview.png",
+      "bytes": 255652,
+      "sha256": "04f690b6db22f92d9e8703b6515cbacaab787897d939a754ad1830fb999f6ea5"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/root-readonly-native.json",
+      "bytes": 205441,
+      "sha256": "6d69623f2bcff597155879e25c33e9fd5fa5e6f2d35003740cee3e05c884f7b4"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/01-native-scenario-no-channel.png",
+      "bytes": 264502,
+      "sha256": "2cbf869f3a29dfe1d3fe373fb76cb57dc2db43fe0c3de1e7c11c8545cced0b98"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/proof.json",
+      "bytes": 442181,
+      "sha256": "1d89bdcf956e54eba27e5ac95be6c128b620d04058088d3ef57076bdecfa6012"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/driver-errors.json",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/workspace/.clocky-team-storage.sqlite",
+      "bytes": 180224,
+      "sha256": "e53d4076b38d79f02f64a9a6aa50537b9405ef182c8b1b0ce6931df1916d187b"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/sessions/_no-cwd/a9603e79-4d8f-4f83-ac6f-5545a14a002c/session.jsonl.zstd",
+      "bytes": 9761,
+      "sha256": "4319d0dc549c804eea73efeae4c38473b9f2bc840cb03fe2913b76df403eebf1"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/sessions/_no-cwd/3ac8896a-37cd-4a9b-bcac-edd6a0e6aaaa/session.jsonl.zstd",
+      "bytes": 19734,
+      "sha256": "67d5ab9b052a8b9761930a6c042b3206f6e2b540e9cbc5c4f6990109c72c7324"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/world/99ec91536ff76981c3f1421e41dc2a4190dadaed3c428d50b478385cd08f81ab/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/world/99ec91536ff76981c3f1421e41dc2a4190dadaed3c428d50b478385cd08f81ab/owner.sqlite-journal",
+      "bytes": 512,
+      "sha256": "4bfe5d484eaf6bea105bf21ae7dcc35f39e7766bebb0dae88a2833391ea5eea0"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/world/99ec91536ff76981c3f1421e41dc2a4190dadaed3c428d50b478385cd08f81ab/journal/logs/.clocky-log-owner.lock",
+      "bytes": 90,
+      "sha256": "9701d4fcb549ebb1c708912381243b11f76eca401b197411e35884e0159a7e8c"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/world/99ec91536ff76981c3f1421e41dc2a4190dadaed3c428d50b478385cd08f81ab/journal/logs/c2ltdWxhdGlvbg.json",
+      "bytes": 90616,
+      "sha256": "326c2adc2c41ded17a22d5332eff01dba25d2ca58bba57a3341bcb6aeaad2044"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/workspace/.clocky-storages/workspace.json",
+      "bytes": 199,
+      "sha256": "ae581504107075e10161487a6bcf32a8b6f291ac2ca8dd70ead37f149d6bdfe4"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/workspace/.clocky-storages/session_projcache.json",
+      "bytes": 4799,
+      "sha256": "2c02125c839929e1c48e6df68b624a4cec2d38f9bd01a81c17256d00d9542ab4"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/workspace/.clocky-auth/product-principal.json",
+      "bytes": 165,
+      "sha256": "059ed5267d94c9877be6bb8432aa44988c6714298789469681e9805a569eac39"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/json/browser-sm86l7/workspace/.clocky-home/profiles/scaffold/cordis.yml",
+      "bytes": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/overlay.json",
+      "bytes": 9982,
+      "sha256": "7b0b5e3accc66b1b6f9fbc08157b6233e655fbe9e872ba4fd0bcc94aac6e9239"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/00-independent-budget-preview.png",
+      "bytes": 255647,
+      "sha256": "6273791c48ed2d8c53c547ad35e613eb175a5764f1acf670a2a3c0294e8ec97a"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/root-readonly-native.json",
+      "bytes": 205447,
+      "sha256": "c1abb31c5db39538f90364bc7f5e67d79c57950d4983c13b7f3741401a912a16"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/01-native-scenario-no-channel.png",
+      "bytes": 264104,
+      "sha256": "2dcff5b820536d59b4194cb216d22227ed7cec90a38754f26cad81cac8c69bfb"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/proof.json",
+      "bytes": 442189,
+      "sha256": "e16963f7d74beecd4d85218e84b883dcb9775e3200f571755e6c9742dd98fc51"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/driver-errors.json",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/workspace/.clocky-team-storage.sqlite",
+      "bytes": 180224,
+      "sha256": "8676d35395b7fda5c1ec7966cbdb1c3374a21f864b7f4e0153ae3cd5f9ab85dd"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/sessions/_no-cwd/38973c71-ac0a-44b8-9dcb-3e7d1e4f305b/session.jsonl.zstd",
+      "bytes": 19734,
+      "sha256": "0bda233d56e3d5819f24b9014c01a0df95850ab65b58f65fe0322f9dc5cc77c1"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/sessions/_no-cwd/7081ac01-9a7f-44cd-8c5a-64cc3e523678/session.jsonl.zstd",
+      "bytes": 9741,
+      "sha256": "8c7f0a59a22186c32a0e62367824a45478536bfffd682fa93cda35d9bac9dad8"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/world/13bd7aa405fe630ff9b723cb5754aa81d7bb9c12ca08906d9907dffdbdabc43f/journal.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "8e57ffcaee8eb1da0a551b75555f77ad58d5972b2b3d136f48257fd43a3cc775"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/world/13bd7aa405fe630ff9b723cb5754aa81d7bb9c12ca08906d9907dffdbdabc43f/journal.sqlite-wal",
+      "bytes": 1433792,
+      "sha256": "54f109de19006c923ef1461e3e427e1f71c87028830360a6eaa3946edd8a81d9"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/world/13bd7aa405fe630ff9b723cb5754aa81d7bb9c12ca08906d9907dffdbdabc43f/journal.sqlite",
+      "bytes": 4096,
+      "sha256": "97e8d54f8a7255106f66cf1b213c4a4d7b558d21310b1c2bfedc3d0d526dddda"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/world/13bd7aa405fe630ff9b723cb5754aa81d7bb9c12ca08906d9907dffdbdabc43f/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/world/13bd7aa405fe630ff9b723cb5754aa81d7bb9c12ca08906d9907dffdbdabc43f/owner.sqlite-journal",
+      "bytes": 512,
+      "sha256": "a9f758ee04a5dc696d1a3f4880bf33cbf5334d9780ab5d69e9f38ed3d7cd2409"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/workspace/.clocky-storages/workspace.json",
+      "bytes": 199,
+      "sha256": "ae581504107075e10161487a6bcf32a8b6f291ac2ca8dd70ead37f149d6bdfe4"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/workspace/.clocky-storages/session_projcache.json",
+      "bytes": 4796,
+      "sha256": "61cc881b718cc7f8b640186bb9f55c7d80e81e812cc7c6088f600fbed3ff8864"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/workspace/.clocky-auth/product-principal.json",
+      "bytes": 165,
+      "sha256": "e40d3ee4f0bfcb81734c58810fd708104d9d5dade06cf0b9ac219491b9928496"
+    },
+    {
+      "path": ".local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F/workspace/.clocky-home/profiles/scaffold/cordis.yml",
+      "bytes": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    }
+  ]
+}

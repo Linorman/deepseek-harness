@@ -253,18 +253,25 @@
         - id: web-simulation-team
           name: '@clocky/clocky-simulation-team'
           config:
+            requestPolicy:
+              maxOutputTokens: 4096
+              safetyMarginTokens: 2048
+              inputSafetyFactor: 1.5
+              compactionAttempts: 1
             maxConcurrentModels: 1
             maxQueuedModels: 16
             maxContextBytes: 65536
             deliveryPageSize: 32
             maxCoordinationRounds: 32
+        - id: web-simulation-world-executions
+          name: '@clocky/clocky-simulation-world/providers'
         - id: web-simulation-product
           name: '@clocky/clocky-simulation-product'
           config:
             directoryStream: web-simulation-directory-v1
             imports: []
         - id: web-simulation-administration
-          name: '@clocky/clocky-simulation-product/administration'
+          name: '@clocky/clocky-web-app/simulation-administration'
           config:
             journalStream: web-simulation-commands-v1
             maxHeldRuns: 8
@@ -311,6 +318,7 @@
                   decisionTimeoutMs: 60000
                   maxDecisionsPerWindow: 2
                   maxOperationsPerDecision: 16
+                  maxResourceReservationHistory: 128
                   maxResourceQuantity: '1000000'
                   outboxMaxAttempts: 3
                   outboxRetryDelayMs: 1000

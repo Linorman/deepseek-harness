@@ -20,6 +20,8 @@ export interface SimulationEntity {
   readonly revision: number
   readonly profileRevision: number
   readonly phase: 'active' | 'inactive' | 'terminated'
+  /** Explicit trusted bootstrap or preparation outcome; abandoned cannot become ready. */
+  readonly readiness: 'preparing' | 'ready' | 'abandoned'
   readonly profile: SimulationProfile
   readonly binding?: SimulationEntityBinding
   readonly writer?: SimulationWriter

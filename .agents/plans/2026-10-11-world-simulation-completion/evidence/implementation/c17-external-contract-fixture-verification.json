@@ -1,0 +1,143 @@
+{
+  "matrix": [
+    {
+      "mode": "source",
+      "scene": "company",
+      "backend": "json",
+      "modelCalls": [
+        54,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2,
+      "originalSupplierCustodianContracts": 1,
+      "contractHistoryPreserved": true
+    },
+    {
+      "mode": "source",
+      "scene": "company",
+      "backend": "sqlite",
+      "modelCalls": [
+        54,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2,
+      "originalSupplierCustodianContracts": 1,
+      "contractHistoryPreserved": true
+    },
+    {
+      "mode": "source",
+      "scene": "laboratory",
+      "backend": "json",
+      "modelCalls": [
+        54,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2,
+      "originalSupplierCustodianContracts": 1,
+      "contractHistoryPreserved": true
+    },
+    {
+      "mode": "source",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "modelCalls": [
+        54,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2,
+      "originalSupplierCustodianContracts": 1,
+      "contractHistoryPreserved": true
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "json",
+      "modelCalls": [
+        54,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2,
+      "originalSupplierCustodianContracts": 1,
+      "contractHistoryPreserved": true
+    },
+    {
+      "mode": "lib",
+      "scene": "company",
+      "backend": "sqlite",
+      "modelCalls": [
+        54,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2,
+      "originalSupplierCustodianContracts": 1,
+      "contractHistoryPreserved": true
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "json",
+      "modelCalls": [
+        54,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2,
+      "originalSupplierCustodianContracts": 1,
+      "contractHistoryPreserved": true
+    },
+    {
+      "mode": "lib",
+      "scene": "laboratory",
+      "backend": "sqlite",
+      "modelCalls": [
+        54,
+        0,
+        0
+      ],
+      "contacts": 3,
+      "privateBuyerChannels": 2,
+      "canonicalSenders": 9,
+      "concurrentModelAdmissions": 2,
+      "originalSupplierCustodianContracts": 1,
+      "contractHistoryPreserved": true
+    }
+  ],
+  "processes": 24,
+  "coldProcesses": 16,
+  "coldModelCalls": 0,
+  "assertedArtifacts": 89,
+  "limits": [
+    "No SIGKILL recovery proof",
+    "No cancellation cleanup proof",
+    "No actual provider quality claim",
+    "No v1 authoring or UI/SDK completeness claim",
+    "Organization cognition:none is not a cognitive contract debtor; original authorized stock custodian is the debtor"
+  ]
+}

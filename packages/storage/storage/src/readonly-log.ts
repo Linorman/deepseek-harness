@@ -1,6 +1,6 @@
 /** Detached, bounded log observations do not acquire backend or stream writer ownership. */
 import type { LogCheckpoint, LogEntry, LogStreamDescriptor } from './log.ts'
-import { StorageError } from './error.ts'
+import { StorageError, StorageReadLimitError } from './error.ts'
 
 /** Explicit IO allowances supplied by the observation owner. */
 export interface LogReadLimits {
@@ -48,8 +48,25 @@ export function boundedLogReadSnapshot(snapshot: LogReadSnapshot, limits: LogRea
       || checkpoint.sequence > tailSequence || checkpoint.sequence >= 0 && checkpoint.sequence < firstSequence)) {
     throw new StorageError('malformed-medium', 'Read-only log observation has inconsistent sequence metadata')
   }
-  if (entries.length > limits.maxEntries || Buffer.byteLength(JSON.stringify(snapshot)) > limits.maxBytes) {
-    throw new StorageError('invalid-value', 'Read-only log observation exceeds its row or complete-byte allowance')
-  }
+  if (entries.length > limits.maxEntries) throw new StorageReadLimitError('entries', entries.length, limits.maxEntries)
+  // Preserve exact JSON byte accounting without allocating a second complete journal string.
+  // Each row still includes its sequence and wrapper; replacing [] adds only row bytes and commas.
+  let bytes = Buffer.byteLength(JSON.stringify({ ...snapshot, entries: [] }))
+  for (const entry of entries) bytes += Buffer.byteLength(JSON.stringify(entry))
+  bytes += Math.max(0, entries.length - 1)
+  if (bytes > limits.maxBytes) throw new StorageReadLimitError('bytes', bytes, limits.maxBytes)
   return snapshot
+}
+
+/** One transaction-bound page; all pages share the original stream tail and never observe later appends. */
+export interface LogReadPage extends LogStreamDescriptor {
+  readonly firstSequence: number
+  readonly tailSequence: number
+  readonly entries: readonly LogEntry[]
+  readonly bytes: number
+}
+/** Aggregate retained-prefix bounds and explicit per-page allocation limits. */
+export interface LogReadPageLimits extends LogReadLimits {
+  readonly pageEntries: number
+  readonly pageBytes: number
 }

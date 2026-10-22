@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-12",
+  "nativeStream": 69,
+  "checklistCompleted": 38,
+  "overallComplete": false,
+  "checks": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run build",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-build.log",
+      "exitCode": 0,
+      "artifacts": 197
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run lint",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-lint.log",
+      "exitCode": 0,
+      "includes": "Host/Client typechecks and repository oxlint"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run doc-sync",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-doc-sync.log",
+      "exitCode": 0,
+      "gates": 29
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run verify-md-links",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-md-links.log",
+      "exitCode": 0
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run verify-md-links",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-md-links-final.log",
+      "result": "2296 files checked; all relative links/fragments resolve",
+      "exitCode": 0
+    }
+  ],
+  "O14": {
+    "complete": true,
+    "inputManifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-retirement-input-manifest.json",
+    "ownerManifest": ".local/world-completion/tmp/personnel-retirement-c12-manifest.json",
+    "rootManifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-retirement-root-manifest.json"
+  },
+  "O17": {
+    "complete": true,
+    "source": "original16 passed plus corrected focused notification2 passed; original18 had two retained assertion failures",
+    "lib": "18 passed current artifacts",
+    "coldProcesses": 72,
+    "rawArtifacts": 108,
+    "manifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-agent-manifest.json",
+    "independentVerification": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-personnel-crash-root-artifacts.json"
+  },
+  "inputHash": "a3d87ee16d06a1906f7d8ca3419b6ae08ad45a0b5741525e003d0b7ba4d1c711",
+  "verifiedAgentHashEntries": 122
+}

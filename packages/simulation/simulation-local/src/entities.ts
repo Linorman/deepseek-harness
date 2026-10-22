@@ -1,5 +1,8 @@
+import { worldActorPreparations } from '@clocky/clocky-simulation'
+import { SimulationWorldError } from '@clocky/clocky-simulation'
+import { isDeepStrictEqual } from 'node:util'
 /** Entity lifecycle and temporally constrained organization folds. @module @clocky/clocky-simulation-local/entities */
-import { parseSimTime } from '@clocky/clocky-simulation'
+import { parseSimTime, activePersonnelFences } from '@clocky/clocky-simulation'
 import type {
   SimTime, SimulationChange, SimulationEntity, SimulationEntityId, SimulationRelation, SimulationSnapshot,
 } from '@clocky/clocky-simulation'
@@ -9,26 +12,74 @@ import type {
  * @param state - Projection at the preceding journal entry.
  * @param command - Validated administrative entity/organization mutation.
  * @param update - Optional batch-owned entity publication; must preserve the caller-owned input projection.
+ * @param evolutionMutation - Native-only proof that this change belongs to the pinned evolution domain.
+ * @param representationMutation - Native-only selection of the original representation switch implementation.
  * @returns the updated projection without advancing its journal revision.
  */
 export function foldEntityChange(state: SimulationSnapshot, command: SimulationChange,
   update: (state: SimulationSnapshot, entity: SimulationEntity) => SimulationSnapshot = (previous, entity) =>
-    ({ ...previous, entities: { ...previous.entities, [entity.id]: entity } })): SimulationSnapshot {
+    ({ ...previous, entities: { ...previous.entities, [entity.id]: entity } }),
+  evolutionMutation = false, representationMutation = false): SimulationSnapshot {
   switch (command.kind) {
     case 'entity/create': {
+      if (command.profile.externalRepresentations !== undefined) throw new Error('Representation history cannot be supplied at entity creation')
       if (Object.hasOwn(state.entities, command.id)) throw new Error('Simulation entity already exists')
-      if (Object.values(state.entities).filter(entity => entity.phase !== 'terminated').length >= state.spec.maxEntities) {
+      if (worldActorPreparations(state).some(reservation => reservation.identities.entityId === command.id
+        && reservation.status !== 'preparing')) {
+        throw new Error('World reserved identities can only enter preparing through their maintenance owner')
+      }
+      const reserved = worldActorPreparations(state).filter(reservation => reservation.status === 'reserved'
+        && reservation.identities.entityId !== command.id && !Object.hasOwn(state.entities, reservation.identities.entityId)).length
+      if (Object.values(state.entities).filter(entity => entity.phase !== 'terminated').length + reserved >= state.spec.maxEntities) {
         throw new Error('Simulation entity capacity exceeded')
       }
       const entity: SimulationEntity = {
         id: command.id, kind: command.entityKind, cognition: command.cognition,
-        revision: 1, profileRevision: 1, phase: 'active', profile: command.profile,
+        revision: 1, profileRevision: 1, phase: 'active', readiness: command.readiness, profile: command.profile,
       }
       return update(state, entity)
+    }
+    case 'entity/readiness': {
+      const entity = requireEntity(state, command.id)
+      if (entity.revision !== command.entityRevision) throw new Error('Simulation entity revision conflict')
+      if (entity.phase !== 'active' || entity.readiness !== 'preparing') {
+        throw new Error('Simulation readiness requires an active preparing entity')
+      }
+      if (state.phase !== 'paused' || state.activeWindowId !== undefined || state.activeDecisionId !== undefined
+        || entity.writer !== undefined && entity.writer.phase !== 'released') {
+        throw new Error('Simulation readiness requires paused quiescence and a proven-stopped writer')
+      }
+      if (command.readiness === 'ready' && entity.cognition === 'agent' && entity.binding === undefined) {
+        throw new Error('Simulation readiness requires a canonical cognition binding')
+      }
+      if (worldActorPreparations(state).some(reservation => reservation.identities.entityId === entity.id
+        && !(command.readiness === 'ready' && reservation.status === 'candidate' && 'candidate' in reservation
+          && reservation.candidate !== undefined)
+        && reservation.status !== (command.readiness === 'ready' ? 'committed' : 'abandoned'))) {
+        throw new Error('World hire readiness requires its atomic assignment or proven cleanup settlement')
+      }
+      return update(state, { ...entity, readiness: command.readiness, revision: entity.revision + 1 })
     }
     case 'entity/profile':
     case 'entity/phase': {
       const entity = requireEntity(state, command.id)
+      if (command.kind === 'entity/profile' && !representationMutation
+        && !isDeepStrictEqual(command.profile.externalRepresentations, entity.profile.externalRepresentations))
+        throw new Error('Representation history may only change through its original domain')
+      if (command.kind === 'entity/profile' && !evolutionMutation
+        && (entity.kind === 'environment' && entity.profile.environment !== undefined
+          || entity.kind === 'person-state' && entity.profile.evolution !== undefined))
+        throw new Error('Evolution state is immutable outside its original domain; use a new experiment for model replacement')
+      if (command.kind === 'entity/phase' && activePersonnelFences(state, entity.id).length !== 0)
+        throw new Error('Original personnel duties retain an active Person until their assignment fence settles')
+      if (worldActorPreparations(state).some(reservation => reservation.identities.entityId === entity.id
+        && reservation.status !== 'committed' && reservation.status !== 'abandoned')) {
+        throw new Error('World preparing profile and lifecycle retain their unresolved preparation responsibility')
+      }
+      if (command.kind === 'entity/profile' && !isDeepStrictEqual(command.profile, entity.profile)
+        && worldActorPreparations(state).some(reservation => reservation.identities.entityId === entity.id && reservation.status === 'committed')) {
+        throw new SimulationWorldError('SIM_WORLD_INTEGRITY', 'Committed World identity retains its original accepted Persona')
+      }
       if (entity.revision !== command.entityRevision) throw new Error('Simulation entity revision conflict')
       if (entity.phase === 'terminated') throw new Error('Terminated simulation entities cannot change')
       if (command.kind === 'entity/phase' && entity.writer !== undefined && entity.writer.phase !== 'released') {
@@ -41,6 +92,10 @@ export function foldEntityChange(state: SimulationSnapshot, command: SimulationC
     }
     case 'relation/create':
     case 'relation/update': {
+      if (worldActorPreparations(state).some(reservation => reservation.identities.relationId === command.id
+        && reservation.status !== 'committed')) {
+        throw new Error('World assignment identities require their original atomic hire commit')
+      }
       const previous = Object.hasOwn(state.relations, command.id) ? state.relations[command.id] : undefined
       if (command.kind === 'relation/create' && previous !== undefined) throw new Error('Simulation relation already exists')
       if (command.kind === 'relation/update' && previous?.revision !== command.relationRevision) {

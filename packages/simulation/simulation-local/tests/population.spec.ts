@@ -8,8 +8,8 @@ describe.each(['json', 'sqlite'] as const)('%s population limits', (backend) => 
     const h = await createBusinessHarness(backend, { maxEntities: 1 })
     try {
       const id = simulationEntityIdSchema.parse('a')
-      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'none', profile: {} }), h.run.snapshot().revision)
-      const create = () => h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'b', entityKind: 'person', cognition: 'none', profile: {} }), h.run.snapshot().revision)
+      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'none', profile: {} }), h.run.snapshot().revision)
+      const create = () => h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'b', entityKind: 'person', cognition: 'none', profile: {} }), h.run.snapshot().revision)
       await expect(create()).rejects.toThrow(/entity capacity/)
       await h.run.change(simulationChangeSchema.parse({ kind: 'entity/phase', id, entityRevision: h.run.snapshot().entities[id]!.revision, phase: 'inactive' }), h.run.snapshot().revision)
       await expect(create()).rejects.toThrow(/entity capacity/)

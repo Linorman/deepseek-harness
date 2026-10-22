@@ -1,0 +1,22 @@
+{
+  "reason": "Final git diff --check EOF cleanup after successful frozen matrix; no executable bytes changed",
+  "measurementIntegrity": "evidence/b1/v2-integrity.json retains the original frozen input hashes and zero measurement-time drift",
+  "files": [
+    {
+      "path": "packages/sdk/protocol/src/schema.ts",
+      "beforeSha256": "33bfc2c73abb2db59244373d3ae30c2de376bb70830b2ab027c3ed0e4ca52899",
+      "afterSha256": "11608442393beb213952489b39d006f886dc1485ad7d21e5cade6c4f28397715",
+      "removedTrailingLfBytes": 2,
+      "onlyTrailingLfRemoved": true,
+      "originalCopy": ".tmp/world-post-mvp-bc/pre-eof-cleanup/schema.ts"
+    },
+    {
+      "path": "packages/sdk/protocol/src/types.ts",
+      "beforeSha256": "6d432899972ab04a6200c3b4fedbe9499e95fdd3716b7d6bdcf1dbfd99fc8e3c",
+      "afterSha256": "4cf4186cb2cbbab47f229d4547ea4ea3676c2f04487cfc3ef111f6b5ad7aff91",
+      "removedTrailingLfBytes": 3,
+      "onlyTrailingLfRemoved": true,
+      "originalCopy": ".tmp/world-post-mvp-bc/pre-eof-cleanup/types.ts"
+    }
+  ]
+}

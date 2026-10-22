@@ -1,5 +1,6 @@
 /** Actor-free product creation and preparation receipts; no deployment paths or executable configuration. */
 import type { SimulationCheckpointId } from '@clocky/clocky-simulation/identities'
+import type { WorldScenarioV1 } from '@clocky/clocky-simulation-scenario'
 import type { Branded } from '@clocky/clocky-brand'
 import type { SimulationCheckpointDiagnostic } from '@clocky/clocky-simulation/checkpoint-diagnostics-types'
 import type { SimulationProductRunId, SimulationProductText, SimulationProductCursor } from './types.ts'
@@ -107,12 +108,12 @@ export interface SimulationProductRetryRequestInput {
 export interface SimulationProductRequestReceipt {
   readonly commandId: SimulationProductCommandId
   readonly runId: SimulationProductRunId
-  readonly kind: 'create' | 'prepare' | 'checkpoint' | 'restore' | 'review' | 'retry-operation' | 'cancel-task'
+  readonly kind: 'create' | 'prepare' | 'world-create' | 'world-prepare' | 'checkpoint' | 'restore' | 'review' | 'retry-operation' | 'cancel-task' | 'cancel-world-case' | 'world-management'
   readonly acceptedAt: number
   readonly status: 'accepted' | 'completed' | 'failed'
   readonly checkpointId?: SimulationCheckpointId | undefined
   readonly failure?: 'preparation-required' | 'recovery-required' | 'unavailable' | 'checkpoint-failed' | 'restore-failed'
-    | 'review-failed' | 'retry-operation-failed' | 'cancel-task-failed' | undefined
+    | 'review-failed' | 'retry-operation-failed' | 'cancel-task-failed' | 'cancel-world-case-failed' | 'world-management-failed' | undefined
   /** Explicit public failure facts; no provider prose, credentials or storage paths. */
   readonly diagnostic?: SimulationCheckpointDiagnostic | undefined
 }
@@ -121,6 +122,9 @@ export type SimulationProductRequestResult = { readonly status: 'not-found'; rea
   | { readonly status: 'found'
     readonly request: SimulationProductRequestReceipt
     readonly review?: import('./review-types.ts').SimulationProductTaskReviewResolveInput | undefined
+    readonly worldManagement?: import('./world-management-types.ts').SimulationProductWorldManagementSubmitInput | undefined
+    readonly worldManagementOutcome?: import('./world-management-types.ts').SimulationProductWorldManagementOutcome | undefined
+    readonly worldCancellation?: import('./case-cancel-types.ts').SimulationProductWorldCaseCancelInput | undefined
     readonly cancellation?: import('./task-control-types.ts').SimulationProductTaskCancelInput | undefined
     readonly retryOperation?: import('./operation-retry-types.ts').SimulationProductOperationRetryInput | undefined }
 /** Bounded catalog entry; driver implementation and strict parameter schema are installed by the Host. */
@@ -138,7 +142,16 @@ export interface SimulationProductTemplateSummary {
   readonly maxStock: string
   readonly configuration?: (SimulationProductConfiguration & { readonly editable: readonly (keyof SimulationProductLimits)[] }) | undefined
 }
-/** Complete bounded authorized template catalog. */
+/** Explicitly published editable scene template; it contains authored input, never private run history. */
+export interface SimulationProductWorldAuthoringTemplate {
+  readonly id: string
+  readonly version: string
+  readonly name: string
+  readonly definition: WorldScenarioV1
+}
+/** Complete bounded installed company metadata and explicitly public World authoring templates. */
 export interface SimulationProductCatalog {
   readonly items: readonly SimulationProductTemplateSummary[]
+  /** Only definitions explicitly configured for public authoring discovery; no original user-created run is listed. */
+  readonly worldTemplates?: readonly SimulationProductWorldAuthoringTemplate[] | undefined
 }

@@ -1,0 +1,691 @@
+{
+  "nativeStream": 74,
+  "sourceInventoryFiles": 653,
+  "compiledInventoryFiles": 821,
+  "scope": "Conservative current runtime package source/artifact inventory plus four new real Loader fixtures; excludes UI and unrelated package groups, not an exact runtime import trace",
+  "consumedCopies": ".local/world-completion/c21-external-faults/consumed-inputs-native74",
+  "rawFileHashesVerified": 672,
+  "counts": {
+    "sourceCases": 48,
+    "libCases": 48,
+    "actualSIGKILL": 96,
+    "independentColdProcesses": 192,
+    "allProcesses": 288,
+    "rawJSON": 672
+  },
+  "rootCaseChecks": [
+    {
+      "prefix": "src-company-json-request-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-request-append-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-evaluation-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-evaluation-append-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-request-post-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-request-post-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-result-post-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-result-post-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-request-recipient-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-request-recipient-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-result-recipient-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-json-result-recipient-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-request-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-request-append-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-evaluation-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-evaluation-append-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-request-post-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-request-post-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-result-post-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-result-post-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-request-recipient-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-request-recipient-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-result-recipient-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-company-sqlite-result-recipient-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-request-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-request-append-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-evaluation-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-evaluation-append-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-request-post-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-request-post-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-result-post-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-result-post-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-request-recipient-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-request-recipient-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-result-recipient-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-json-result-recipient-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-request-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-request-append-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-evaluation-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-evaluation-append-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-request-post-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-request-post-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-result-post-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-result-post-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-request-recipient-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-request-recipient-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-result-recipient-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "src-laboratory-sqlite-result-recipient-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-request-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-request-append-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-evaluation-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-evaluation-append-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-request-post-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-request-post-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-result-post-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-result-post-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-request-recipient-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-request-recipient-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-result-recipient-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-json-result-recipient-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-request-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-request-append-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-evaluation-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-evaluation-append-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-request-post-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-request-post-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-result-post-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-result-post-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-request-recipient-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-request-recipient-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-result-recipient-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-company-sqlite-result-recipient-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-request-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-request-append-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-evaluation-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-evaluation-append-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-request-post-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-request-post-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-result-post-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-result-post-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-request-recipient-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-request-recipient-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-result-recipient-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-json-result-recipient-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-request-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-request-append-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-evaluation-append-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-evaluation-append-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-request-post-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-request-post-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-result-post-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-result-post-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-request-recipient-receipt-before",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-request-recipient-receipt-after",
+      "actualEvaluationCount": 0,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-result-recipient-receipt-before",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-result-recipient-receipt-after",
+      "actualEvaluationCount": 1,
+      "coldResourcesAndWorldExact": true,
+      "coldModelsAndInference": 0,
+      "journalPrefixExact": true
+    }
+  ],
+  "checkedX12": false
+}

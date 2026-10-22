@@ -1,0 +1,3 @@
+[ERR_PNPM_NO_SCRIPT] Missing script: verify-markdown-links
+
+Command "verify-markdown-links" not found. Did you mean "pnpm run verify-md-links"?

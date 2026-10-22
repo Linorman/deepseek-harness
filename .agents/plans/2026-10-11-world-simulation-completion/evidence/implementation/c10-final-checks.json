@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-12",
+  "inputHash": "5462b2224f69d5411d8dc4b0c85914747bc9c7bbc68636e2e3979983e8474319",
+  "checks": [
+    {
+      "command": "pnpm exec tsc -b --pretty false",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c10-types-final.log",
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm run lint",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c10-lint-final.log",
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm run build",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c10-build-final.log",
+      "exitCode": 0,
+      "count": 197
+    },
+    {
+      "command": "pnpm run doc-sync",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c10-doc-sync-fixed.log",
+      "exitCode": 0,
+      "count": 29
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-team/tests/world.spec.ts -t 'wrong-sender|stale predecessors'",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c10-world-timeout-recheck.log",
+      "exitCode": 0,
+      "count": 4
+    }
+  ],
+  "fixtureManifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c10-personnel-time-agent-manifest.json",
+  "broaderRegression": {
+    "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c10-regression-final.log",
+    "exitCode": 1,
+    "passed": 231,
+    "failed": 3,
+    "reason": "unchanged5000ms test/disposal timeouts; precise4cases rerun passed without raising quota or timeouts"
+  },
+  "scope": "Only O08 marked complete; Native clock owner unit scope distinct from actual source/lib fixtures"
+}

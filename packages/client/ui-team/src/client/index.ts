@@ -388,7 +388,20 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
           if (ctx.teamTasks.list.getSnapshot().current !== route.teamId) return
           actions.update(route.teamId, { view: route.view, taskForm: route.taskForm, ...(route.view === 'overview' ? { overviewViz: route.viz ?? 'topology' } : {}), actionId: route.actionId, ...(route.view === 'workflows' ? { workflowPlanId: route.planId } : {}), ...(route.view === 'tasks' ? { taskId: route.taskId, taskSearch: route.search, taskPhase: route.phase } : {}) })
           if (route.sessionId === undefined) ctx.sessions.clear()
-          if (route.view === 'channels' && route.channelId !== undefined && ctx.teamTasks.list.getSnapshot().channel?.channelId !== route.channelId) await readChannel(route.channelId, -1, signal)
+          if (route.view === 'channels' && route.channelId !== undefined) {
+            if (route.envelopeId !== undefined && route.envelopeSequence !== undefined) {
+              const page = await readChannel(route.channelId, route.envelopeSequence - 1, signal)
+              signal.throwIfAborted()
+              if (!page.records.some(record => record.type === 'channel/envelope' && record.envelope.id === route.envelopeId
+                && record.envelope.sequence === route.envelopeSequence && record.envelope.teamId === route.teamId
+                && record.envelope.channelId === route.channelId)) {
+                throw new WorkspaceNavigationError('missing', 'This Envelope is not available at its original Channel position')
+              }
+            } else if (ctx.teamTasks.list.getSnapshot().channel?.channelId !== route.channelId) {
+              await readChannel(route.channelId, -1, signal)
+            }
+          }
+          actions.update(route.teamId, { channelEnvelope: route.envelopeId, channelEnvelopeSequence: route.envelopeSequence })
           signal.throwIfAborted()
           const sessionId = route.sessionId
           if (sessionId !== undefined &&

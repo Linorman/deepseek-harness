@@ -60,6 +60,10 @@ export function budgetUsage(state: SimulationSnapshot, interval = budgetInterval
     .reduce((sum, value) => sum + BigInt(value.status === 'not-dispatched' ? 0 : value.usage === undefined
       ? Math.max(value.reserved, value.observedUsage === undefined ? 0 : simulationTokenCount(value.observedUsage))
       : simulationTokenCount(value.usage)), 0n)
+    + Object.values(state.generationJobs ?? {}).filter(value => value.interval === interval)
+      .reduce((sum, value) => sum + BigInt(value.status === 'cancelled' && value.sessionSequence === undefined ? 0 : value.usage === undefined
+        ? Math.max(value.job.budget.maxTokens, value.observedUsage === undefined ? 0 : simulationTokenCount(value.observedUsage))
+        : simulationTokenCount(value.usage)), 0n)
   if (total > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Simulation charged tokens exceed safe integer capacity')
   return { interval, tokens: { used: Number(total), limit: limit('tokens', state.spec.maxTokensPerInterval) },
     decisions: { used: decisions.length, limit: limit('decisions', state.spec.maxDecisionsPerInterval) },

@@ -1,3 +1,5 @@
+export type * from './generation-types.ts'
+export type { ScenarioDraftId, ScenarioDraftSaveId } from './draft-schema.ts'
 /** Product directory records and public read DTOs; world state remains provider-owned. */
 import type { Branded } from '@clocky/clocky-brand'
 import type { SimTime } from '@clocky/clocky-simulation/time-types'
@@ -9,6 +11,7 @@ export type * from './maintenance-types.ts'
 export type * from './task-control-types.ts'
 export type * from './watch-types.ts'
 export type * from './knowledge-types.ts'
+export type * from './people-types.ts'
 
 /** Stable directory identity independent of storage paths and provider-local run IDs. */
 export type SimulationProductRunId = Branded<'SimulationProductRunId'>
@@ -54,6 +57,8 @@ export interface SimulationProductRunInspection {
   /** Independent scheduling metadata; basic native reads explicitly lack the administrative owner. */
   readonly operational?: import('./control-types.ts').SimulationProductOperationalStatus | undefined
   readonly world?: {
+    /** This observed Native prefix contains World state; absent on older peers means unknown, not false. */
+    readonly worldInitialized?: boolean | undefined
     readonly revision: number
     readonly phase: 'paused' | 'running' | 'stalled'
     readonly time: SimTime
@@ -62,6 +67,8 @@ export interface SimulationProductRunInspection {
     readonly rulesVersion?: SimulationProductText | undefined
     readonly policyVersion?: SimulationProductText | undefined
     readonly metrics?: SimulationRuntimeMetrics | undefined
+    /** Current readers publish whole-run personnel counts; absent peer metadata remains unavailable. */
+    readonly people?: import('./people-types.ts').SimulationProductPeopleCounts | undefined
     /** Fixed native stop category and recovery action; private stall references and bodies are withheld. */
     readonly schedulerStop?: { readonly code: string; readonly recovery: string } | undefined
     readonly owner: 'this-provider' | 'unowned' | 'other-owner' | 'unavailable'
@@ -82,6 +89,8 @@ export type SimulationProductRunStatus = SimulationProductRunInspection | {
   readonly run: SimulationProductRunSummary
   readonly status: 'unavailable'
   readonly errorSummary: SimulationProductText
+  readonly reason?: import('./control-types.ts').SimulationProductReadFailure | undefined
+  readonly readLimit?: import('./control-types.ts').SimulationProductReadLimit | undefined
   readonly operational?: import('./control-types.ts').SimulationProductOperationalStatus | undefined
 }
 
@@ -94,3 +103,20 @@ export type * from './records-types.ts'
 export type * from './sources-types.ts'
 export type * from './review-types.ts'
 export type * from './operation-retry-types.ts'
+export type * from './case-types.ts'
+export type * from './case-cancel-types.ts'
+export type { SimulationProductWorldCreateInput, SimulationProductWorldPreflightInput,
+  SimulationProductWorldPreflightResult, SimulationProductWorldExportResult } from './world-types.ts'
+
+export type { SimulationProductWorldDomainInput, SimulationProductWorldDomainResult } from './world-read-types.ts'
+export type * from './world-management-types.ts'
+
+export type { ScenarioDraftSave, ScenarioDraftRead, ScenarioDraftRevision, ScenarioDraftSaveResult, ScenarioDraftReadResult } from './draft-schema.ts'
+
+export type * from './calendar-types.ts'
+
+export type { SimulationProductRebuildIndexInput, SimulationProductRebuildIndexResult } from './index-maintenance-schema.ts'
+export type * from './retention-types.ts'
+
+export type * from './experiment-types.ts'
+export type * from './raw-archive-types.ts'

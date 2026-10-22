@@ -1,0 +1,57 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-departure.snapshot.ts (10 tests | 1 failed | 9 skipped) 4149ms
+   × waits for explicit original task cancellation and creates independent new pending work in JSON company 4149ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-departure.snapshot.ts > waits for explicit original task cancellation and creates independent new pending work in JSON company
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-departure-scenario.ts:120
+      const request = simulationWakeRequestSchema.parse({ id: wakeId, entityId,
+                                                  ^
+
+ZodError: [
+  {
+    "origin": "string",
+    "code": "too_small",
+    "minimum": 1,
+    "inclusive": true,
+    "path": [
+      "reason"
+    ],
+    "message": "Too small: expected string to have >=1 characters"
+  }
+]
+    at createTask (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-departure-scenario.ts:120:51)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-departure-scenario.ts:138:29)
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ createTask examples/simulation-company/tests/world-departure-scenario.ts:120:51
+ ❯ <anonymous> examples/simulation-company/tests/world-departure-scenario.ts:138:29
+ ❯ runCase examples/simulation-company/tests/world-departure.snapshot.ts:32:30
+     30|       try {
+     31|         const [code] = await exited as unknown[]
+     32|         expect(code, errors).toBe(0)
+       |                              ^
+     33|         const result = JSON.parse(output) as { modelCalls: number }
+     34|           expect(result).toMatchObject({ scenario, retire, future, han…
+ ❯ examples/simulation-company/tests/world-departure.snapshot.ts:58:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 skipped (10)
+   Start at  07:38:57
+   Duration  5.12s (transform 563ms, setup 473ms, import 345ms, tests 4.15s, environment 0ms)
+

@@ -1,5 +1,11 @@
 # @clocky/clocky-storage-sqlite
 
+`readSqliteRawLogArchive()` 在单个读事务中捕获原始流版本、sequence 与所存正文的精确字节；以 base64 逻辑记录保留 entries、checkpoint 和可选 summary，并记录物理 schema 标记。它是有界逻辑归档，不是精确数据库/WAL 物理复制，也不验证消费者状态；不需要打开当前版本 backend。
+
+`readSqliteLogPages()` 在首次产出前开启一个读事务并捕获流尾，再逐页产出连续记录。`maxEntries`、`maxBytes` 约束整体观察；`pageEntries` 和包含完整外层结构的 `pageBytes` 约束每页。正文解码前检查大小；不可再分的超大记录以 `read-limit` 返回 `entry-bytes`、实际量与上限。之后追加的记录不进入固定前缀；消费者须读完或关闭异步迭代器以释放连接。
+
+只读快照额度超限使用 `StorageError.code = read-limit`；无效观察配置仍为 `invalid-value`。版本不匹配和介质损坏保留各自错误码。
+
 [English](README.md) | 中文
 
 `readSqliteLogSnapshot(path, descriptor, limits)` 使用现有只读连接和单个读取事务，不初始化或迁移 schema、不取得 backend ownership，也不修改 journal。解码前核对 physical／stream version 以及编码 row／checkpoint 大小，再验证完整响应额度。SQLite 的只读连接仍可能创建或复用 WAL／SHM 辅助文件，这是 [SQLite WAL 语义](https://www.sqlite.org/walformat.html)，不代表应用写入已受理。并发可变 journal 不适合 immutable mode。

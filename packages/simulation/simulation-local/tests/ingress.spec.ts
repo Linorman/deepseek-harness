@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { simulationDecisionIdSchema, simulationIngressRequestSchema, simulationWindowRequestSchema, simTimeSchema } from '@clocky/clocky-simulation'
+import { simulationChangeSchema, simulationEntityIdSchema, simulationDecisionIdSchema, simulationIngressRequestSchema, simulationWindowRequestSchema, simTimeSchema } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from './business-harness.ts'
 import { contextRequest } from './context-fixture.ts'
 
 describe.each(['json', 'sqlite'] as const)('%s ordered ingress', (backend) => {
+  it('refuses ordinary ingress to a generation helper while accepting the normal actor', async () => {
+    const h = await createBusinessHarness(backend)
+    try {
+      const actor = await h.actor('ordinary')
+      const helper = simulationEntityIdSchema.parse('helper')
+      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: helper, entityKind: 'generation-assistant',
+        cognition: 'agent', readiness: 'ready', profile: {} }), h.run.snapshot().revision)
+      const request = simulationIngressRequestSchema.parse({ id: 'input', entityId: helper,
+        source: 'operator', text: 'normal input', availableAt: '0' })
+      await expect(h.run.ingest(request)).rejects.toThrow('ingress identity, actor')
+      expect(h.run.snapshot().ingresses).toBeUndefined()
+      expect((await h.run.ingest({ ...request, entityId: actor.id })).request.entityId).toBe(actor.id)
+    } finally { await h.close() }
+  })
+
   it('retains required ingress across context overflow and explicit retry', async () => {
     const h = await createBusinessHarness(backend)
     try {

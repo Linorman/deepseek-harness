@@ -443,6 +443,30 @@ interface ValueFrame {
   violations: string[]
   tailViolations: string[]
   matches: number
+  diagnosticBranch?: number | undefined
+}
+
+/** Select a uniquely tagged object branch for diagnostics only; every branch still participates in exact-one validation. */
+function discriminatedBranch(node: JsonSchemaNode, value: unknown): number | undefined {
+  const branches = node.oneOf
+  if (branches === undefined || value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const first = branches[0]
+  if (first?.type !== 'object') return undefined
+  for (const key of first.required ?? []) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    if (descriptor === undefined || !Object.hasOwn(descriptor, 'value')) continue
+    const literals: JsonSchemaScalar[] = []
+    for (const branch of branches) {
+      const field = branch.properties?.[key]
+      if (branch.type !== 'object' || !branch.required?.includes(key) || field === undefined
+        || !Object.hasOwn(field, 'const')) break
+      literals.push(field.const as JsonSchemaScalar)
+    }
+    if (literals.length !== branches.length || new Set(literals).size !== literals.length) continue
+    const selected = literals.indexOf(descriptor.value as JsonSchemaScalar)
+    if (selected >= 0) return selected
+  }
+  return undefined
 }
 
 /** The generic exception-containment diagnostic owned by one valid schema node. */
@@ -496,6 +520,7 @@ function checkValue(schema: JsonSchemaNode, value: unknown, path: string): strin
     }
     if (parent.kind === 'oneOf') {
       if (result.length === 0) parent.matches++
+      else if (parent.childIndex - 1 === parent.diagnosticBranch) appendViolations(parent.violations, result)
     } else {
       appendViolations(parent.violations, result)
     }
@@ -520,7 +545,10 @@ function checkValue(schema: JsonSchemaNode, value: unknown, path: string): strin
           continue
         }
         if (frame.kind === 'oneOf') {
-          finish(frame.matches === 1 ? [] : [`"${diagnosticPath(frame.path)}" must match exactly one oneOf branch (matched ${frame.matches})`])
+          finish(frame.matches === 1 ? [] : [
+            `"${diagnosticPath(frame.path)}" must match exactly one oneOf branch (matched ${frame.matches})`,
+            ...frame.matches === 0 ? frame.violations : [],
+          ])
           continue
         }
         appendViolations(frame.violations, frame.tailViolations)
@@ -539,6 +567,7 @@ function checkValue(schema: JsonSchemaNode, value: unknown, path: string): strin
       const oneOf = Object.hasOwn(frame.node, 'oneOf') ? frame.node.oneOf : undefined
       if (oneOf !== undefined) {
         frame.kind = 'oneOf'
+        frame.diagnosticBranch = discriminatedBranch(frame.node, frame.value)
         frame.children = Array.from(oneOf, branch => ({ node: branch, value: frame.value, path: frame.path }))
         frame.childIndex = 0
         frame.matches = 0

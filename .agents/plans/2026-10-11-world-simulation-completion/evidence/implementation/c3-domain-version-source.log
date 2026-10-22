@@ -1,0 +1,90 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-booking-version.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-booking-version.snapshot.ts (4 tests | 4 failed) 21977ms
+     × refuses unavailable artifacts when restoring company 6163ms
+     × refuses unavailable artifacts when restoring laboratory 5615ms
+     × refuses unavailable artifacts when restoring company 5072ms
+     × refuses unavailable artifacts when restoring laboratory 5126ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-booking-version.snapshot.ts > json original booking manifest > refuses unavailable artifacts when restoring company
+ FAIL  examples/simulation-company/tests/world-booking-version.snapshot.ts > json original booking manifest > refuses unavailable artifacts when restoring laboratory
+ FAIL  examples/simulation-company/tests/world-booking-version.snapshot.ts > sqlite original booking manifest > refuses unavailable artifacts when restoring company
+ FAIL  examples/simulation-company/tests/world-booking-version.snapshot.ts > sqlite original booking manifest > refuses unavailable artifacts when restoring laboratory
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+
+Caught error:
+
+SimulationCheckpointError: The domain is not installed
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-scenario.ts:60:3) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: SimulationCheckpointError: The domain is not installed
+      at checkpointSource (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-team/src/checkpoint-failure.ts:21:11)
+      at async <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-team/src/index.ts:145:19) {
+    diagnostic: {
+      stage: 'restore',
+      subject: { kind: 'run' },
+      code: 'source-unavailable'
+    },
+    [cause]: SimulationWorldDomainError: The domain is not installed
+        at SimulationWorldDomainRegistry.admission (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:189:13)
+        at SimulationWorldDomainRegistry.original (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:203:10)
+        at SimulationWorldDomainRegistry.acquire (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:120:31)
+        at NativeWorldRuntime.original (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-runtime.ts:31:33)
+        at NativeWorldRuntime.manifest (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-runtime.ts:19:51)
+        at foldWorld (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:180:34)
+        at fold (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:220:48)
+        at foldEntries (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:109:13)
+        at LocalSimulationProvider.openOwned (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts:188:19) {
+      code: 'SIM_WORLD_DOMAIN_UNKNOWN'
+    }
+  },
+  expected: [Function (anonymous)],
+  operator: 'rejects',
+  diff: 'simple'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ checkpointSource packages/simulation/simulation-team/src/checkpoint-failure.ts:21:11
+ ❯ SimulationWorldDomainRegistry.admission packages/simulation/simulation/src/world-domain-registry.ts:189:13
+ ❯ SimulationWorldDomainRegistry.original packages/simulation/simulation/src/world-domain-registry.ts:203:10
+ ❯ SimulationWorldDomainRegistry.acquire packages/simulation/simulation/src/world-domain-registry.ts:120:31
+ ❯ NativeWorldRuntime.original packages/simulation/simulation-local/src/world-runtime.ts:31:33
+ ❯ NativeWorldRuntime.manifest packages/simulation/simulation-local/src/world-runtime.ts:19:51
+ ❯ foldWorld packages/simulation/simulation-local/src/world.ts:180:34
+ ❯ fold packages/simulation/simulation-local/src/journal.ts:220:48
+ ❯ foldEntries packages/simulation/simulation-local/src/journal.ts:109:13
+ ❯ examples/simulation-company/tests/world-booking-version.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           if (installation === 'original') expect(JSON.parse(output)).…
+     31|           else expect(JSON.parse(output)).toEqual({ scenario, unavaila…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  02:43:45
+   Duration  22.25s (transform 138ms, setup 117ms, import 64ms, tests 21.98s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

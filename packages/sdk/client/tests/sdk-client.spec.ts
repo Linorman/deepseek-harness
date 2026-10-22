@@ -1086,7 +1086,7 @@ describe('HarnessTeam forwarding', () => {
   })
 })
 
-const viewWireCases = (await Promise.all(['team-channel-view-cases', 'simulation-context-cases'].map(async (name) => {
+const viewWireCases = (await Promise.all(['team-channel-view-cases', 'simulation-context-cases', 'simulation-director-context-cases', 'simulation-generation-cases'].map(async (name) => {
   const corpus = JSON.parse(await readFile(new URL(`../../protocol/tests/fixtures/${name}.json`, import.meta.url), 'utf8')) as {
     readonly name: string
     readonly valid: boolean

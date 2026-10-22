@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /** Scheduling controls follow Host allowability, retain exact original manage intents, and isolate in-flight work. */
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react'
 import { Controls } from '../src/client/Controls.tsx'
+import { runState } from '../src/client/run-state.ts'
 import { en } from '../src/client/locales.ts'
 import type { Key } from '../src/client/locales.ts'
 import type { SimulationProductControl, SimulationCommand, SimulationCommandState, SimulationReadState } from '@clocky/clocky-client-runtime/client'
@@ -78,6 +79,16 @@ it('pauses directly when allowed and shows the start not-allowed reason', () => 
   fireEvent.click(h.view.getByRole('button', { name: en.pauseScheduling }))
   expect(h.retain.mock.calls[0]?.[0]).toMatchObject({ kind: 'manage', input: { phase: 'paused' } })
   expect(h.view.getByText(en['controlReason.recovery-required'])).toBeDefined()
+})
+
+it('explains that evidence and timeout attempts consume the planning limit and that restarting cannot reset it', () => {
+  const control = { ...makeControl({ startAllowed: false, startReason: 'scenario-blocked', phase: 'running', driver: 'waiting' }),
+    stop: 'plan-budget' as const }
+  const h = setup({ loading: false, stale: false, value: control }, { compact: true })
+  expect(h.view.getByRole('status').textContent).toBe(en['controlReason.plan-budget'])
+  expect(h.view.queryByText(en['controlReason.scenario-blocked'])).toBeNull()
+  expect((h.view.getByRole('button', { name: en.start }) as HTMLButtonElement).disabled).toBe(true)
+  expect(h.retain).not.toHaveBeenCalled()
 })
 
 it('shows resume label when prepare reason is scenario-progressed and preserves compact in-flight display', () => {
@@ -291,4 +302,92 @@ it('contains a late manage rejection after its controls have unmounted', async (
   await expect(pending.promise).rejects.toThrow('Host rejected after navigation')
   await Promise.resolve()
   expect(h.refresh).not.toHaveBeenCalled()
+})
+
+it('reviews an exact overrun quote and retains only a paused acknowledgement, without a start', async () => {
+  const quote = { reservationId: 'tokens/10' as never, reserved: 16384, used: 26990, interval: '0', additionalTokens: 0 }
+  const control = { ...makeControl({ startAllowed: false, startReason: 'scenario-blocked' }),
+    tokenRecovery: { request: quote, allowed: true, reason: 'ready' as const } }
+  const h = setup({ loading: false, stale: false, value: control })
+  fireEvent.click(h.view.getByRole('button', { name: en['tokenRecovery.action'] }))
+  expect(h.retain).not.toHaveBeenCalled()
+  const dialog = within(h.view.getByRole('dialog', { name: en['tokenRecovery.action'] }))
+  expect(dialog.getByText('26,990')).toBeDefined()
+  fireEvent.click(dialog.getByRole('button', { name: en['tokenRecovery.confirm'] }))
+  await waitFor(() => { expect(h.submit).toHaveBeenCalledOnce() })
+  expect(h.retain.mock.calls[0]?.[0]).toMatchObject({ kind: 'manage', input: { phase: 'paused', tokenRecovery: quote } })
+})
+
+it.each(['pause-required', 'in-flight', 'unknown-usage', 'ownership-unavailable'] as const)('explains %s without enabling acknowledgement', (reason) => {
+  const control = { ...makeControl(), tokenRecovery: { request: {
+    reservationId: 'tokens/10' as never, reserved: 16384, used: 26990, interval: '0', additionalTokens: 0 }, allowed: false, reason } }
+  const h = setup({ loading: false, stale: false, value: control })
+  expect(h.view.getByRole('button', { name: en['tokenRecovery.action'] }).hasAttribute('disabled')).toBe(true)
+  expect(h.view.getByText(en[`tokenRecovery.${reason}`])).toBeDefined()
+})
+
+describe('primary action from the synthesized run state', () => {
+  const stateFor = (control: SimulationProductControl, extra: Partial<Parameters<typeof runState>[0]> = {}) => runState({
+    control, nativeFailed: false, connected: true, now: control.observedAt, refreshMs: 2000, staleAfterMs: 30000, ...extra })
+  const names = (view: ReturnType<typeof render>) => within(view.container).queryAllByRole('button').map(button => button.textContent)
+
+  it('offers only Continue while safely paused and only Pause while running', () => {
+    const paused = makeControl()
+    const h = setup({ loading: false, stale: false, value: paused }, { state: stateFor(paused) })
+    expect(h.view.getByRole('button', { name: en.start })).toBeDefined()
+    expect(h.view.queryByRole('button', { name: en.pauseScheduling })).toBeNull()
+    h.view.unmount()
+    const running = makeControl({ phase: 'running', driver: 'advancing', startAllowed: false, pauseAllowed: true })
+    const r = setup({ loading: false, stale: false, value: running }, { state: stateFor(running) })
+    expect(r.view.getByRole('button', { name: en.pauseScheduling }).className).toContain('primary')
+    expect(r.view.queryByRole('button', { name: en.start })).toBeNull()
+    expect(names(r.view)).not.toContain(en.start)
+  })
+
+  it('offers no primary scheduling action while accepted work is still stopping', () => {
+    const stopping = makeControl({ inFlight: true, startAllowed: false })
+    const h = setup({ loading: false, stale: false, value: stopping }, { state: stateFor(stopping) })
+    const start = h.view.getByRole('button', { name: en.start })
+    expect(start.hasAttribute('disabled')).toBe(true)
+    expect(start.className).toContain('secondary')
+    expect(h.view.queryByRole('button', { name: en.pauseScheduling })).toBeNull()
+  })
+
+  it('makes recovery primary when the scheduler failed and opens the allowed restore', () => {
+    const failed = makeControl({ phase: 'running', driver: 'failed', startAllowed: false, pauseAllowed: true })
+    const h = setup({ loading: false, stale: false, value: failed }, { state: stateFor(failed) })
+    const recover = h.view.getByRole('button', { name: en['state.action.recover'] })
+    expect(recover.className).toContain('primary')
+    fireEvent.click(recover)
+    expect(h.openMaintenance).toHaveBeenCalledWith('restore')
+    expect(h.view.getByRole('button', { name: en.pauseScheduling }).className).toContain('secondary')
+  })
+
+  it('explains a failed state with no allowed remedy instead of offering a dead primary', () => {
+    const failed = makeControl({ phase: 'running', driver: 'failed', startAllowed: false, adminOverrides: { restore: { allowed: false, reason: 'checkpoint-required' } } })
+    const h = setup({ loading: false, stale: false, value: failed }, { state: stateFor(failed) })
+    expect(h.view.getByRole('button', { name: en['state.action.recover'] }).hasAttribute('disabled')).toBe(true)
+    expect(h.view.getByText(en['state.recoverUnavailable'])).toBeDefined()
+  })
+
+  it('replaces scheduling with Refresh and disables maintenance while the observation is stale', () => {
+    const paused = makeControl()
+    const refreshState = vi.fn()
+    const state = stateFor(paused, { connected: true, now: paused.observedAt + 60000 })
+    const h = setup({ loading: false, stale: false, value: paused }, { state, refreshState })
+    expect(h.view.getByRole('button', { name: en.start }).hasAttribute('disabled')).toBe(true)
+    fireEvent.click(h.view.getByRole('button', { name: en['state.action.refresh'] }))
+    expect(refreshState).toHaveBeenCalledOnce()
+    expect(h.view.getByText(en['state.refreshFirst'])).toBeDefined()
+    openMaintenanceSection(h.view)
+    expect(h.view.getByRole('button', { name: en['maintenance.checkpoint'] }).hasAttribute('disabled')).toBe(true)
+  })
+
+  it('opens the resolving surface for an attention state', () => {
+    const review = vi.fn()
+    const attention = { ...makeControl({ phase: 'running', startAllowed: false, pauseAllowed: true }), stop: 'review-required' as const }
+    const h = setup({ loading: false, stale: false, value: attention }, { state: stateFor(attention), review })
+    fireEvent.click(h.view.getByRole('button', { name: en['state.action.review'] }))
+    expect(review).toHaveBeenCalledOnce()
+  })
 })

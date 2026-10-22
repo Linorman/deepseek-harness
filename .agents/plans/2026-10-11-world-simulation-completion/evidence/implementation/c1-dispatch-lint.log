@@ -1,0 +1,6 @@
+packages/simulation/simulation-world/tests/execution.spec.ts:32:1: error @stylistic(indent): Expected indentation of 2 spaces but found 4.
+packages/simulation/simulation-world/tests/execution.spec.ts:33:1: error @stylistic(indent): Expected indentation of 2 spaces but found 4.
+packages/simulation/simulation/src/world-domains.ts:31:1: error @stylistic(max-len): This line has a length of 152. Maximum allowed is 140.
+packages/simulation/simulation/src/world-domains.ts:40:1: error @stylistic(indent): Expected indentation of 4 spaces but found 2.
+packages/simulation/simulation-world/tests/execution.spec.ts:70:3: warning: Unused oxlint-disable directive (no problems were reported).
+packages/simulation/simulation-world/src/driver.ts:40:5: warning: Unused oxlint-disable directive (no problems were reported).

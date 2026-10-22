@@ -4,6 +4,8 @@ English | [中文](testing.zh.md)
 
 This policy defines test tiers and the evidence each tier owns. Commands are in root [AGENTS.md](../AGENTS.md); Agent Notes carry rationale.
 
+The ordinary Vitest configuration bounds file workers to four; explicit CI/coverage `--maxWorkers` settings override that default. Tests retain their deadlines, assertions and full inventory. Asynchronous fixture readiness follows the exact durable completion event rather than an unrelated short polling deadline; cleanup is registered before fallible preparation ([rationale](../.agents/notes/implemented/testing/2026-10-16-durable-test-scheduling.md)).
+
 ## Tiers
 
 - **Unit** (`pnpm run test`): vitest runs package/example specs and repository script specs. Tests stay with the code they exercise; every registry tests HMR cleanup. Prefer edge cases, error paths, ordering, races, and permanent contract-regression tests (see `packages/core/agent-loop/tests/contract-regressions.spec.ts`).

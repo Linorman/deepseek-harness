@@ -1,0 +1,2985 @@
+{
+  "scenario": "laboratory",
+  "backend": "json",
+  "restored": false,
+  "modelCalls": 24,
+  "originalIdentity": {
+    "personId": "requester",
+    "binding": {
+      "teamId": "team-9e209480-1765-455d-a981-0765244297bc",
+      "participantId": "participant-599caf7b-3662-4419-8820-f2885a53322c",
+      "sessionId": "def245d3-6dcb-45f8-92e2-3fd650dabbad"
+    },
+    "profile": {
+      "name": "Research Lead",
+      "description": "A colleague at Horizon Laboratory.",
+      "persona": {
+        "name": "Research Lead",
+        "skills": [
+          "analysis"
+        ],
+        "traits": [
+          "careful"
+        ],
+        "goals": [
+          "research"
+        ]
+      }
+    },
+    "profileRevision": 1,
+    "assignment": {
+      "id": "initial-assignment",
+      "subject": "requester",
+      "relation": "assignment",
+      "object": "research",
+      "scope": "laboratory",
+      "validFrom": "0",
+      "validUntil": null,
+      "revision": 1
+    },
+    "channelId": "channel-6b302fcf-9ff0-4454-9471-ce0fb58e0e97",
+    "entityIds": [
+      "director",
+      "laboratory",
+      "new-responsibility",
+      "observer",
+      "personnel-admin",
+      "requester",
+      "research"
+    ]
+  },
+  "originalRequest": {
+    "id": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+    "intentId": "world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+    "operationId": "simulation-operation:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+    "notificationOperationId": "simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7",
+    "requesterEntityId": "observer",
+    "proposal": {
+      "kind": "world/request",
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1",
+      "businessKey": "original-person-transfer",
+      "expectedTime": null,
+      "evidence": [],
+      "payload": {
+        "organizationEntityId": "laboratory",
+        "personId": "requester",
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1,
+        "requestedEffectiveAt": null,
+        "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+        "targetPositionId": "new-responsibility"
+      }
+    },
+    "pin": {
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1",
+      "schemaRef": "clocky.organization.transfer/schema/1",
+      "implementationRef": "clocky.organization.transfer/native/1",
+      "generation": 1
+    },
+    "source": {
+      "kind": "decision",
+      "decisionId": "world/1/decision/1",
+      "epoch": "1",
+      "binding": {
+        "teamId": "team-9e209480-1765-455d-a981-0765244297bc",
+        "participantId": "participant-73cb5987-024f-4149-a34f-657a3e995817",
+        "sessionId": "6f51fc5f-ddbf-4608-b5a0-34efb8757f8a"
+      }
+    },
+    "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+    "payloadHash": "sha256:14f158f01c5c8c8088136b1db273915859cf3cbb5503c3f038b403785a37e7a9",
+    "sequence": 69,
+    "plans": [
+      "world-plan:simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be"
+    ],
+    "status": "committed"
+  },
+  "originalIntent": {
+    "id": "world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+    "pin": {
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1",
+      "schemaRef": "clocky.organization.transfer/schema/1",
+      "implementationRef": "clocky.organization.transfer/native/1",
+      "generation": 1
+    },
+    "businessKey": "original-person-transfer",
+    "requesterEntityId": "observer",
+    "scopeEntityId": "laboratory",
+    "expectedTime": null,
+    "evidence": [],
+    "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+    "payload": {
+      "organizationEntityId": "laboratory",
+      "personId": "requester",
+      "assignmentId": "initial-assignment",
+      "assignmentRevision": 1,
+      "requestedEffectiveAt": null,
+      "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+      "targetPositionId": "new-responsibility"
+    },
+    "sequence": 69,
+    "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db"
+  },
+  "originalPlan": {
+    "id": "world-plan:simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+    "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+    "operationId": "simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+    "proposal": {
+      "kind": "world/resolve",
+      "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+      "supersedes": null,
+      "resolution": {
+        "kind": "apply",
+        "payload": {
+          "organizationEntityId": "laboratory",
+          "personId": "requester",
+          "assignmentId": "initial-assignment",
+          "assignmentRevision": 1,
+          "requestedEffectiveAt": null,
+          "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+          "targetPositionId": "new-responsibility"
+        },
+        "rationale": "DIRECTOR-PRIVATE-PERSONNEL-CANARY"
+      }
+    },
+    "pin": {
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1",
+      "schemaRef": "clocky.organization.transfer/schema/1",
+      "implementationRef": "clocky.organization.transfer/native/1",
+      "generation": 1
+    },
+    "reads": [
+      {
+        "kind": "world-definition",
+        "id": "world-definition:personnel-laboratory",
+        "revision": 29
+      },
+      {
+        "kind": "relation",
+        "id": "personnel-permission:can-transfer",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation",
+        "id": "personnel-admin-assignment",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "entity-profile",
+        "id": "requester",
+        "revision": 1,
+        "hash": "sha256:c5a31147474e160407b7f806dd71e6745142a0d23f58e497658e541c983ae071"
+      },
+      {
+        "kind": "entity-binding",
+        "id": "requester",
+        "hash": "sha256:14f2e95af48ded7a3eef337b3a30485442b02fc3002766a39419e9aecf2fe3fc"
+      },
+      {
+        "kind": "entity",
+        "id": "research",
+        "revision": 1
+      },
+      {
+        "kind": "relation",
+        "id": "hiring-authority",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation",
+        "id": "initial-assignment",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation",
+        "id": "personnel-permission:can-transfer",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation",
+        "id": "personnel-permission:can-transfer-target",
+        "revision": 1,
+        "effectiveFrom": "0",
+        "effectiveUntil": null
+      },
+      {
+        "kind": "relation-subject-set",
+        "relation": "assignment",
+        "subject": "requester",
+        "hash": "sha256:ff236053842bbc841ff468ee1171eb08c728fe4fb2ce3c8003f9b56ef5e31fa6"
+      },
+      {
+        "kind": "entity",
+        "id": "new-responsibility",
+        "revision": 1
+      },
+      {
+        "kind": "relation-set",
+        "relation": "assignment",
+        "object": "new-responsibility",
+        "scope": "laboratory",
+        "hash": "sha256:72bcba2ccc70fc368346c54c46108a21ce3bfb7af980f7724d6b16014ad43c93"
+      }
+    ],
+    "baseRevision": 86,
+    "sequence": 99,
+    "hash": "sha256:a38612b7a96e3eac0a2032b61eb6bb45759c764280969c1c58792c4c14c7f7d8",
+    "status": "accepted"
+  },
+  "originalReservation": {
+    "id": "world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+    "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+    "request": {
+      "planId": "world-plan:simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+      "maintenance": {
+        "id": "world/1/personnel/world-plan:simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+        "owner": "world-personnel/laboratory/resolved-2d1cf69e0d3847b75d450032efc42bb93b3b66e23a690aa8cf30898a5a5b6c56"
+      }
+    },
+    "personId": "requester",
+    "binding": {
+      "teamId": "team-9e209480-1765-455d-a981-0765244297bc",
+      "participantId": "participant-599caf7b-3662-4419-8820-f2885a53322c",
+      "sessionId": "def245d3-6dcb-45f8-92e2-3fd650dabbad"
+    },
+    "assignmentId": "initial-assignment",
+    "assignmentRevision": 1,
+    "targetPositionId": "new-responsibility",
+    "authorityGeneration": 0,
+    "closedAuthorityRelationIds": [
+      "hiring-authority"
+    ],
+    "revokedAuthorityRelationIds": [
+      "hiring-authority"
+    ],
+    "status": "committed",
+    "sequence": 101,
+    "updatedSequence": 111,
+    "evidence": {
+      "runId": "personnel-laboratory",
+      "cursor": 109,
+      "time": "2",
+      "selector": {
+        "kind": "assignment",
+        "personId": "requester",
+        "personRevision": 7,
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1
+      },
+      "status": "covered",
+      "complete": true,
+      "coverage": {
+        "native": "complete",
+        "team": {
+          "kind": "observed",
+          "teamId": "team-9e209480-1765-455d-a981-0765244297bc",
+          "participantId": "participant-599caf7b-3662-4419-8820-f2885a53322c",
+          "cursor": 30,
+          "channels": [
+            {
+              "channelId": "channel-6b302fcf-9ff0-4454-9471-ce0fb58e0e97",
+              "cursor": 6
+            },
+            {
+              "channelId": "channel-6b44a88e-c680-44e9-91cb-fa26583cdde9",
+              "cursor": 8
+            }
+          ],
+          "hash": "sha256:e310b5ebeb20a15c74bbfa1b221831740e48f3aeff51528cb7eef0de5de509db"
+        }
+      },
+      "items": [
+        {
+          "ref": {
+            "kind": "relation",
+            "id": "hiring-authority",
+            "revision": 1,
+            "relation": "can-hire",
+            "subject": "requester",
+            "object": "research",
+            "scope": "laboratory",
+            "validFrom": "0",
+            "validUntil": null
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "personnel-laboratory",
+            "subsystem": "relation"
+          },
+          "category": "authority-relation",
+          "state": "current",
+          "certainty": "recorded",
+          "dispositions": [
+            "update-supported"
+          ]
+        },
+        {
+          "ref": {
+            "kind": "world-case",
+            "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+            "intentId": "world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+            "sequence": 69
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "personnel-laboratory",
+            "subsystem": "world"
+          },
+          "category": "world-case",
+          "state": "open",
+          "certainty": "recorded",
+          "dispositions": [
+            "wait",
+            "cancel-supported"
+          ]
+        },
+        {
+          "ref": {
+            "kind": "world-reservation",
+            "intentId": "world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+            "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+            "planId": "world-plan:simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+            "updatedSequence": 102
+          },
+          "owner": {
+            "kind": "native",
+            "runId": "personnel-laboratory",
+            "subsystem": "world"
+          },
+          "category": "world-reservation",
+          "state": "fenced",
+          "certainty": "recorded",
+          "dispositions": [
+            "wait",
+            "cancel-supported"
+          ]
+        }
+      ],
+      "totalCount": 3,
+      "overflow": null
+    },
+    "actualEffectiveAt": "2",
+    "terminalTasks": []
+  },
+  "originalCutCoverage": {
+    "native": "complete",
+    "team": {
+      "kind": "observed",
+      "teamId": "team-9e209480-1765-455d-a981-0765244297bc",
+      "participantId": "participant-599caf7b-3662-4419-8820-f2885a53322c",
+      "cursor": 30,
+      "channels": [
+        {
+          "channelId": "channel-6b302fcf-9ff0-4454-9471-ce0fb58e0e97",
+          "cursor": 6
+        },
+        {
+          "channelId": "channel-6b44a88e-c680-44e9-91cb-fa26583cdde9",
+          "cursor": 8
+        }
+      ],
+      "hash": "sha256:e310b5ebeb20a15c74bbfa1b221831740e48f3aeff51528cb7eef0de5de509db"
+    }
+  },
+  "originalMutation": {
+    "kind": "world/mutation",
+    "id": "world-mutation:world-plan:simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+    "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+    "planId": "world-plan:simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+    "pin": {
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1",
+      "schemaRef": "clocky.organization.transfer/schema/1",
+      "implementationRef": "clocky.organization.transfer/native/1",
+      "generation": 1
+    },
+    "time": "2",
+    "sequence": 111,
+    "recordedAt": 1791758604133,
+    "payload": {
+      "organizationEntityId": "laboratory",
+      "personId": "requester",
+      "assignmentId": "initial-assignment",
+      "assignmentRevision": 1,
+      "requestedEffectiveAt": null,
+      "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+      "targetPositionId": "new-responsibility"
+    }
+  },
+  "originalResult": {
+    "id": "world-result:world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+    "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+    "intentId": "world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+    "source": {
+      "kind": "plan",
+      "planId": "world-plan:simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be"
+    },
+    "outcome": {
+      "kind": "committed"
+    },
+    "payload": {
+      "entityId": "requester",
+      "organizationEntityId": "laboratory",
+      "closedAssignmentId": "initial-assignment",
+      "previousPositionId": "research",
+      "requestedEffectiveAt": null,
+      "actualEffectiveAt": "2",
+      "closedAuthorityRelationIds": [
+        "hiring-authority"
+      ],
+      "revokedAuthorityRelationIds": [
+        "hiring-authority"
+      ],
+      "newAssignmentId": "world-transfer-assignment:world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+      "targetPositionId": "new-responsibility"
+    },
+    "time": "2",
+    "sequence": 111
+  },
+  "originalSourceOperation": {
+    "id": "simulation-operation:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+    "decisionId": "world/1/decision/1",
+    "index": 0,
+    "entityId": "observer",
+    "action": {
+      "kind": "world/request",
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1",
+      "businessKey": "original-person-transfer",
+      "expectedTime": null,
+      "evidence": [],
+      "payload": {
+        "organizationEntityId": "laboratory",
+        "personId": "requester",
+        "assignmentId": "initial-assignment",
+        "assignmentRevision": 1,
+        "requestedEffectiveAt": null,
+        "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+        "targetPositionId": "new-responsibility"
+      }
+    },
+    "dependencies": [],
+    "fingerprint": "sha256:14f158f01c5c8c8088136b1db273915859cf3cbb5503c3f038b403785a37e7a9",
+    "status": "applied",
+    "worldPin": {
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1",
+      "schemaRef": "clocky.organization.transfer/schema/1",
+      "implementationRef": "clocky.organization.transfer/native/1",
+      "generation": 1
+    },
+    "result": {
+      "operationId": "simulation-operation:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+      "status": "applied",
+      "code": "SIM_APPLIED",
+      "sequence": 73,
+      "time": "2"
+    }
+  },
+  "originalPlanOperation": {
+    "id": "simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+    "decisionId": "world/1/decision/2",
+    "index": 0,
+    "entityId": "director",
+    "action": {
+      "kind": "world/resolve",
+      "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+      "supersedes": null,
+      "resolution": {
+        "kind": "apply",
+        "payload": {
+          "organizationEntityId": "laboratory",
+          "personId": "requester",
+          "assignmentId": "initial-assignment",
+          "assignmentRevision": 1,
+          "requestedEffectiveAt": null,
+          "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+          "targetPositionId": "new-responsibility"
+        },
+        "rationale": "DIRECTOR-PRIVATE-PERSONNEL-CANARY"
+      }
+    },
+    "dependencies": [],
+    "fingerprint": "sha256:a38612b7a96e3eac0a2032b61eb6bb45759c764280969c1c58792c4c14c7f7d8",
+    "status": "applied",
+    "worldPin": {
+      "domain": "organization",
+      "operation": "transfer",
+      "version": "1",
+      "schemaRef": "clocky.organization.transfer/schema/1",
+      "implementationRef": "clocky.organization.transfer/native/1",
+      "generation": 1
+    },
+    "result": {
+      "operationId": "simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be",
+      "status": "applied",
+      "code": "SIM_APPLIED",
+      "sequence": 116,
+      "time": "2"
+    }
+  },
+  "originalSourceDecision": {
+    "id": "world/1/decision/1",
+    "entityId": "observer",
+    "epoch": "1",
+    "slot": "1",
+    "snapshotRevision": 56,
+    "entityRevision": 5,
+    "employmentGeneration": 0,
+    "time": "2",
+    "status": "accepted",
+    "operationIds": [
+      "simulation-operation:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+      "simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7"
+    ],
+    "wakeId": "actual-person-transfer",
+    "windowId": "world/1/window/1",
+    "context": {
+      "status": "prepared",
+      "world": {
+        "kind": "goal",
+        "baseRevision": 56,
+        "operations": [
+          {
+            "pin": {
+              "domain": "organization",
+              "operation": "transfer",
+              "version": "1",
+              "schemaRef": "clocky.organization.transfer/schema/1",
+              "implementationRef": "clocky.organization.transfer/native/1",
+              "generation": 1
+            },
+            "grants": [
+              {
+                "kind": "relation",
+                "id": "personnel-permission:can-transfer",
+                "revision": 1,
+                "effectiveFrom": "0",
+                "effectiveUntil": null
+              },
+              {
+                "kind": "relation",
+                "id": "personnel-permission:can-transfer-target",
+                "revision": 1,
+                "effectiveFrom": "0",
+                "effectiveUntil": null
+              }
+            ]
+          },
+          {
+            "pin": {
+              "domain": "organization",
+              "operation": "depart",
+              "version": "1",
+              "schemaRef": "clocky.organization.depart/schema/1",
+              "implementationRef": "clocky.organization.depart/native/1",
+              "generation": 1
+            },
+            "grants": [
+              {
+                "kind": "relation",
+                "id": "personnel-permission:can-depart",
+                "revision": 1,
+                "effectiveFrom": "0",
+                "effectiveUntil": null
+              }
+            ]
+          }
+        ],
+        "assignments": [
+          {
+            "id": "personnel-admin-assignment",
+            "revision": 1
+          }
+        ]
+      },
+      "requiredSections": [
+        "identity",
+        "authority",
+        "input",
+        "goals",
+        "commitments"
+      ],
+      "fingerprint": "sha256:a44717c3329a8689d7373c6277f68c999acfecd3501324f7cc4f82da239885dd",
+      "teamCursor": 18,
+      "view": {
+        "version": 1,
+        "runId": "personnel-laboratory",
+        "entityId": "observer",
+        "windowId": "world/1/window/1",
+        "slot": "1",
+        "epoch": "1",
+        "time": "2",
+        "inputId": "simulation-input:d98df0e87e0837ef4b65f779dd19fdf91d2efaa07adc5c9be8679d3e0a721c58",
+        "projections": {
+          "run": 56,
+          "entity": 5,
+          "team": 18
+        },
+        "versions": {
+          "rules": "world-rules-1",
+          "policy": "sha256:2ae1880efb7ca37fb2dce57a1c4f491854257003917a3075abd8c47d9f9dec1e",
+          "persona": "world/1",
+          "model": "1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "personnel-laboratory",
+            "sequence": 29
+          },
+          {
+            "kind": "run-event",
+            "runId": "personnel-laboratory",
+            "sequence": 56
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"entityId\":\"observer\",\"persona\":{\"name\":\"Observer\",\"description\":\"A colleague at Horizon Laboratory.\",\"persona\":{\"name\":\"Observer\",\"skills\":[\"analysis\"],\"traits\":[\"careful\"],\"goals\":[\"research\"]}},\"organization\":{\"name\":\"Horizon Laboratory\",\"description\":\"Members collaborate through private channels.\"}}"
+              }
+            ]
+          },
+          {
+            "kind": "authority",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"assignments\":[{\"positionId\":\"personnel-admin\",\"position\":{\"name\":\"Personnel administrator\",\"description\":\"Personnel administrator\"}}]}"
+              }
+            ]
+          },
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"wakeId\":\"actual-person-transfer\",\"reason\":\"{\\\"kind\\\":\\\"world-goal\\\",\\\"version\\\":1,\\\"goal\\\":\\\"transfer-original-person\\\"}\"}"
+              },
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-context\",\"authority\":{\"kind\":\"goal\",\"baseRevision\":56,\"operations\":[{\"pin\":{\"domain\":\"organization\",\"operation\":\"transfer\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.transfer/schema/1\",\"implementationRef\":\"clocky.organization.transfer/native/1\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"personnel-permission:can-transfer\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null},{\"kind\":\"relation\",\"id\":\"personnel-permission:can-transfer-target\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}]},{\"pin\":{\"domain\":\"organization\",\"operation\":\"depart\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.depart/schema/1\",\"implementationRef\":\"clocky.organization.depart/native/1\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"personnel-permission:can-depart\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}]}],\"assignments\":[{\"id\":\"personnel-admin-assignment\",\"revision\":1}]},\"operations\":[{\"pin\":{\"domain\":\"organization\",\"operation\":\"transfer\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.transfer/schema/1\",\"implementationRef\":\"clocky.organization.transfer/native/1\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"personnel-permission:can-transfer\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null},{\"kind\":\"relation\",\"id\":\"personnel-permission:can-transfer-target\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}],\"targets\":[{\"targetEntityId\":\"research\",\"scopeEntityId\":\"laboratory\"},{\"targetEntityId\":\"new-responsibility\",\"scopeEntityId\":\"laboratory\"}],\"material\":{\"kind\":\"transfer-opportunities\",\"opportunities\":[{\"organizationEntityId\":\"laboratory\",\"personId\":\"requester\",\"assignmentId\":\"initial-assignment\",\"assignmentRevision\":1,\"previousPositionId\":\"research\",\"assignmentValidFrom\":\"0\",\"currentTime\":\"2\",\"targetPositionId\":\"new-responsibility\"}]},\"requestSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"organizationEntityId\":{\"type\":\"string\",\"minLength\":1},\"personId\":{\"type\":\"string\",\"minLength\":1},\"assignmentId\":{\"type\":\"string\",\"minLength\":1},\"assignmentRevision\":{\"type\":\"integer\",\"exclusiveMinimum\":0,\"maximum\":9007199254740991},\"requestedEffectiveAt\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^(0|[1-9][0-9]*)$\"},{\"type\":\"null\"}]},\"description\":{\"type\":\"string\",\"minLength\":1},\"targetPositionId\":{\"type\":\"string\",\"minLength\":1}},\"required\":[\"organizationEntityId\",\"personId\",\"assignmentId\",\"assignmentRevision\",\"requestedEffectiveAt\",\"description\",\"targetPositionId\"],\"additionalProperties\":false}},{\"pin\":{\"domain\":\"organization\",\"operation\":\"depart\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.depart/schema/1\",\"implementationRef\":\"clocky.organization.depart/native/1\",\"generation\":1},\"grants\":[{\"kind\":\"relation\",\"id\":\"personnel-permission:can-depart\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null}],\"targets\":[{\"targetEntityId\":\"new-responsibility\",\"scopeEntityId\":\"laboratory\"}],\"material\":{\"kind\":\"departure-opportunities\",\"opportunities\":[]},\"requestSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"organizationEntityId\":{\"type\":\"string\",\"minLength\":1},\"personId\":{\"type\":\"string\",\"minLength\":1},\"assignmentId\":{\"type\":\"string\",\"minLength\":1},\"assignmentRevision\":{\"type\":\"integer\",\"exclusiveMinimum\":0,\"maximum\":9007199254740991},\"requestedEffectiveAt\":{\"anyOf\":[{\"type\":\"string\",\"pattern\":\"^(0|[1-9][0-9]*)$\"},{\"type\":\"null\"}]},\"description\":{\"type\":\"string\",\"minLength\":1},\"retire\":{\"type\":\"boolean\"}},\"required\":[\"organizationEntityId\",\"personId\",\"assignmentId\",\"assignmentRevision\",\"requestedEffectiveAt\",\"description\",\"retire\"],\"additionalProperties\":false}}],\"organizationEntityId\":\"laboratory\",\"positions\":[{\"entityId\":\"research\",\"capacity\":2},{\"entityId\":\"personnel-admin\",\"capacity\":1},{\"entityId\":\"new-responsibility\",\"capacity\":1}],\"instruction\":\"Propose only an installed operation with a stable business key. A goal grants no new authority.\",\"worldFacts\":{\"viewer\":\"observer\",\"cursor\":56,\"time\":\"2\",\"items\":[],\"unknown\":[]},\"norms\":{\"viewer\":\"observer\",\"cursor\":56,\"time\":\"2\",\"items\":[],\"unknown\":[]}}"
+              }
+            ]
+          },
+          {
+            "kind": "goals",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-driver\",\"entityId\":\"observer\",\"contextKey\":\"actual-person-transfer\",\"purpose\":\"goal\",\"instruction\":\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\"}"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"instruction\":\"Accepted effects remain pending until Native execution. A submitted plan is not employment; notify only recorded results.\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "maxBytes": 65536,
+      "retainedBytes": 5912,
+      "omitted": []
+    },
+    "inference": {
+      "startedAt": 1791758603640,
+      "deadline": 1791758663640,
+      "finishedAt": 1791758603709
+    },
+    "consumption": {
+      "contextHash": "36e7e77c0a87ee1f610777fabadf172d74518bf0face69a58f004877d3eecb75",
+      "sessionId": "6f51fc5f-ddbf-4608-b5a0-34efb8757f8a",
+      "inputId": "simulation-input:d98df0e87e0837ef4b65f779dd19fdf91d2efaa07adc5c9be8679d3e0a721c58",
+      "viewSequence": 3,
+      "consumedSequence": 5
+    },
+    "submission": [
+      {
+        "after": [],
+        "action": {
+          "kind": "world/request",
+          "domain": "organization",
+          "operation": "transfer",
+          "version": "1",
+          "businessKey": "original-person-transfer",
+          "expectedTime": null,
+          "evidence": [],
+          "payload": {
+            "organizationEntityId": "laboratory",
+            "personId": "requester",
+            "assignmentId": "initial-assignment",
+            "assignmentRevision": 1,
+            "requestedEffectiveAt": null,
+            "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+            "targetPositionId": "new-responsibility"
+          }
+        }
+      }
+    ],
+    "fingerprint": "sha256:dea5837193748557ed3640668dd77fede05a142f8a47703ca01a3ef761c10abb",
+    "worldExpansion": {
+      "logicalIndex": 0,
+      "operationIds": [
+        "simulation-operation:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+        "simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7"
+      ]
+    },
+    "closedAt": 68
+  },
+  "originalPlanDecision": {
+    "id": "world/1/decision/2",
+    "entityId": "director",
+    "epoch": "1",
+    "slot": "2",
+    "snapshotRevision": 86,
+    "entityRevision": 5,
+    "employmentGeneration": 0,
+    "time": "2",
+    "status": "accepted",
+    "operationIds": [
+      "simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be"
+    ],
+    "wakeId": "simulation-delivery:simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7",
+    "windowId": "world/1/window/2",
+    "context": {
+      "status": "prepared",
+      "world": {
+        "kind": "resolve",
+        "pin": {
+          "domain": "organization",
+          "operation": "transfer",
+          "version": "1",
+          "schemaRef": "clocky.organization.transfer/schema/1",
+          "implementationRef": "clocky.organization.transfer/native/1",
+          "generation": 1
+        },
+        "intentId": "world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+        "reads": [
+          {
+            "kind": "world-definition",
+            "id": "world-definition:personnel-laboratory",
+            "revision": 29
+          },
+          {
+            "kind": "relation",
+            "id": "personnel-permission:can-transfer",
+            "revision": 1,
+            "effectiveFrom": "0",
+            "effectiveUntil": null
+          },
+          {
+            "kind": "relation",
+            "id": "personnel-admin-assignment",
+            "revision": 1,
+            "effectiveFrom": "0",
+            "effectiveUntil": null
+          },
+          {
+            "kind": "entity-profile",
+            "id": "requester",
+            "revision": 1,
+            "hash": "sha256:c5a31147474e160407b7f806dd71e6745142a0d23f58e497658e541c983ae071"
+          },
+          {
+            "kind": "entity-binding",
+            "id": "requester",
+            "hash": "sha256:14f2e95af48ded7a3eef337b3a30485442b02fc3002766a39419e9aecf2fe3fc"
+          },
+          {
+            "kind": "entity",
+            "id": "research",
+            "revision": 1
+          },
+          {
+            "kind": "relation",
+            "id": "hiring-authority",
+            "revision": 1,
+            "effectiveFrom": "0",
+            "effectiveUntil": null
+          },
+          {
+            "kind": "relation",
+            "id": "initial-assignment",
+            "revision": 1,
+            "effectiveFrom": "0",
+            "effectiveUntil": null
+          },
+          {
+            "kind": "relation",
+            "id": "personnel-permission:can-transfer",
+            "revision": 1,
+            "effectiveFrom": "0",
+            "effectiveUntil": null
+          },
+          {
+            "kind": "relation",
+            "id": "personnel-permission:can-transfer-target",
+            "revision": 1,
+            "effectiveFrom": "0",
+            "effectiveUntil": null
+          },
+          {
+            "kind": "relation-subject-set",
+            "relation": "assignment",
+            "subject": "requester",
+            "hash": "sha256:ff236053842bbc841ff468ee1171eb08c728fe4fb2ce3c8003f9b56ef5e31fa6"
+          },
+          {
+            "kind": "entity",
+            "id": "new-responsibility",
+            "revision": 1
+          },
+          {
+            "kind": "relation-set",
+            "relation": "assignment",
+            "object": "new-responsibility",
+            "scope": "laboratory",
+            "hash": "sha256:72bcba2ccc70fc368346c54c46108a21ce3bfb7af980f7724d6b16014ad43c93"
+          }
+        ],
+        "baseRevision": 86,
+        "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+        "notificationOperationId": "simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7"
+      },
+      "requiredSections": [
+        "identity",
+        "authority",
+        "input",
+        "goals",
+        "commitments"
+      ],
+      "fingerprint": "sha256:7a52565215d2b301763cc3ee3148db71f9b5acf0fd63eaec53d59480a5c550e0",
+      "teamCursor": 24,
+      "view": {
+        "version": 1,
+        "runId": "personnel-laboratory",
+        "entityId": "director",
+        "windowId": "world/1/window/2",
+        "slot": "2",
+        "epoch": "1",
+        "time": "2",
+        "inputId": "simulation-input:698dfb1b0ae2a2a08049fd2949de0f5700e7c2c4ad4c1cbf281c740096881e62",
+        "projections": {
+          "run": 86,
+          "entity": 5,
+          "team": 24
+        },
+        "versions": {
+          "rules": "world-rules-1",
+          "policy": "sha256:2ae1880efb7ca37fb2dce57a1c4f491854257003917a3075abd8c47d9f9dec1e",
+          "persona": "world/1",
+          "model": "1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "personnel-laboratory",
+            "sequence": 29
+          },
+          {
+            "kind": "run-event",
+            "runId": "personnel-laboratory",
+            "sequence": 69
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-9e209480-1765-455d-a981-0765244297bc",
+            "channelId": "channel-6b44a88e-c680-44e9-91cb-fa26583cdde9",
+            "envelopeId": "envelope-b28bf433-9dad-49cb-bc97-61302e777739"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"entityId\":\"director\",\"persona\":{\"name\":\"Coordinator\",\"description\":\"A colleague at Horizon Laboratory.\",\"persona\":{\"name\":\"Coordinator\",\"skills\":[\"analysis\"],\"traits\":[\"careful\"],\"goals\":[\"research\"]}},\"organization\":{\"name\":\"Horizon Laboratory\",\"description\":\"Members collaborate through private channels.\"}}"
+              }
+            ]
+          },
+          {
+            "kind": "authority",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"assignments\":[]}"
+              }
+            ]
+          },
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"wakeId\":\"simulation-delivery:simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7\",\"reason\":\"Team message envelope-b28bf433-9dad-49cb-bc97-61302e777739\"}"
+              },
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-context\",\"operation\":\"transfer\",\"authority\":{\"kind\":\"resolve\",\"pin\":{\"domain\":\"organization\",\"operation\":\"transfer\",\"version\":\"1\",\"schemaRef\":\"clocky.organization.transfer/schema/1\",\"implementationRef\":\"clocky.organization.transfer/native/1\",\"generation\":1},\"intentId\":\"world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41\",\"reads\":[{\"kind\":\"world-definition\",\"id\":\"world-definition:personnel-laboratory\",\"revision\":29},{\"kind\":\"relation\",\"id\":\"personnel-permission:can-transfer\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null},{\"kind\":\"relation\",\"id\":\"personnel-admin-assignment\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null},{\"kind\":\"entity-profile\",\"id\":\"requester\",\"revision\":1,\"hash\":\"sha256:c5a31147474e160407b7f806dd71e6745142a0d23f58e497658e541c983ae071\"},{\"kind\":\"entity-binding\",\"id\":\"requester\",\"hash\":\"sha256:14f2e95af48ded7a3eef337b3a30485442b02fc3002766a39419e9aecf2fe3fc\"},{\"kind\":\"entity\",\"id\":\"research\",\"revision\":1},{\"kind\":\"relation\",\"id\":\"hiring-authority\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null},{\"kind\":\"relation\",\"id\":\"initial-assignment\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null},{\"kind\":\"relation\",\"id\":\"personnel-permission:can-transfer\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null},{\"kind\":\"relation\",\"id\":\"personnel-permission:can-transfer-target\",\"revision\":1,\"effectiveFrom\":\"0\",\"effectiveUntil\":null},{\"kind\":\"relation-subject-set\",\"relation\":\"assignment\",\"subject\":\"requester\",\"hash\":\"sha256:ff236053842bbc841ff468ee1171eb08c728fe4fb2ce3c8003f9b56ef5e31fa6\"},{\"kind\":\"entity\",\"id\":\"new-responsibility\",\"revision\":1},{\"kind\":\"relation-set\",\"relation\":\"assignment\",\"object\":\"new-responsibility\",\"scope\":\"laboratory\",\"hash\":\"sha256:72bcba2ccc70fc368346c54c46108a21ce3bfb7af980f7724d6b16014ad43c93\"}],\"baseRevision\":86,\"requestId\":\"world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db\",\"notificationOperationId\":\"simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7\"},\"personnel\":{\"organizationEntityId\":\"laboratory\",\"personId\":\"requester\",\"assignmentId\":\"initial-assignment\",\"assignmentRevision\":1,\"requestedEffectiveAt\":null,\"description\":\"Transfer the original colleague at the next proven safe boundary, preserving identity and memory.\",\"targetPositionId\":\"new-responsibility\"},\"currentTime\":\"2\",\"person\":{\"entityId\":\"requester\",\"revision\":7,\"profileRevision\":1},\"assignment\":{\"id\":\"initial-assignment\",\"revision\":1,\"positionId\":\"research\",\"validFrom\":\"0\",\"validUntil\":null},\"target\":{\"entityId\":\"new-responsibility\",\"capacity\":1,\"occupied\":0,\"peakOccupied\":0,\"reserved\":0},\"request\":{\"id\":\"world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db\",\"description\":\"Transfer the original colleague at the next proven safe boundary, preserving identity and memory.\",\"priorPlan\":null},\"worldFacts\":{\"viewer\":\"director\",\"cursor\":86,\"time\":\"2\",\"items\":[],\"unknown\":[]},\"norms\":{\"viewer\":\"director\",\"cursor\":86,\"time\":\"2\",\"items\":[],\"unknown\":[]}}"
+              }
+            ]
+          },
+          {
+            "kind": "goals",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-driver\",\"entityId\":\"director\",\"contextKey\":\"simulation-delivery:simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7\",\"purpose\":\"resolve\",\"instruction\":\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\"}"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"instruction\":\"Accepted effects remain pending until Native execution. A submitted plan is not employment; notify only recorded results.\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "maxBytes": 65536,
+      "retainedBytes": 4677,
+      "omitted": []
+    },
+    "inference": {
+      "startedAt": 1791758603904,
+      "deadline": 1791758663904,
+      "finishedAt": 1791758603983
+    },
+    "consumption": {
+      "notification": {
+        "operationId": "simulation-operation:f030ae8fd45ba1ad743019fc36ba2b4722e499eefb8a8a23b4232275148475e7",
+        "consumedSequence": 7
+      },
+      "contextHash": "751b674ca3fc673c8a83c635f447a1547389a84fc7cbd4329a1cd0139f98154a",
+      "sessionId": "d1c868a8-9373-4667-a8c3-186a17036263",
+      "inputId": "simulation-input:698dfb1b0ae2a2a08049fd2949de0f5700e7c2c4ad4c1cbf281c740096881e62",
+      "viewSequence": 5,
+      "consumedSequence": 8
+    },
+    "submission": [
+      {
+        "after": [],
+        "action": {
+          "kind": "world/resolve",
+          "requestId": "world-request:2bc5ba3260f9fce5a1a3d9e8dad0954d0d281d8631845eaf7235a33f1791c0db",
+          "supersedes": null,
+          "resolution": {
+            "kind": "apply",
+            "payload": {
+              "organizationEntityId": "laboratory",
+              "personId": "requester",
+              "assignmentId": "initial-assignment",
+              "assignmentRevision": 1,
+              "requestedEffectiveAt": null,
+              "description": "Transfer the original colleague at the next proven safe boundary, preserving identity and memory.",
+              "targetPositionId": "new-responsibility"
+            },
+            "rationale": "DIRECTOR-PRIVATE-PERSONNEL-CANARY"
+          }
+        }
+      }
+    ],
+    "fingerprint": "sha256:d867a2bbf32056100d5b347b232020c092f4aba72c3716421cc3cf154ea69f8b",
+    "worldExpansion": {
+      "logicalIndex": 0,
+      "operationIds": [
+        "simulation-operation:bdedcd60dd9cf077d92ab52ff1f144728bdd30811b10aecb4f2c1ce09fbfc4be"
+      ]
+    },
+    "closedAt": 98
+  },
+  "oldAssignment": {
+    "id": "initial-assignment",
+    "subject": "requester",
+    "relation": "assignment",
+    "object": "research",
+    "scope": "laboratory",
+    "validFrom": "0",
+    "validUntil": "2",
+    "revision": 2
+  },
+  "newAssignment": {
+    "id": "world-transfer-assignment:world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41",
+    "subject": "requester",
+    "relation": "assignment",
+    "object": "new-responsibility",
+    "scope": "laboratory",
+    "validFrom": "2",
+    "validUntil": null,
+    "revision": 1
+  },
+  "originalFirstAction": {
+    "id": "simulation-operation:1ba63d7eba6dacd7f47ef5bd69afcd137567204b35e17c95629f77307b737568",
+    "decisionId": "world/1/decision/3",
+    "index": 0,
+    "entityId": "requester",
+    "action": {
+      "kind": "communication/post",
+      "recipient": "director",
+      "channelId": "channel-6b302fcf-9ff0-4454-9471-ce0fb58e0e97",
+      "text": "The original colleague acknowledges the recorded new assignment and its declared responsibilities.",
+      "deliverAt": "2"
+    },
+    "dependencies": [],
+    "fingerprint": "sha256:b9c7c71b4458024c78a38664578cffef99a48378490e2cb65ad2e5f1048228f4",
+    "status": "applied",
+    "outbox": {
+      "ready": true,
+      "attempts": [
+        {
+          "number": 1,
+          "startedAt": 1791758604552,
+          "outcome": "applied",
+          "finishedAt": 1791758604583
+        }
+      ],
+      "budgetStart": 0,
+      "receipt": {
+        "runId": "personnel-laboratory",
+        "teamId": "team-9e209480-1765-455d-a981-0765244297bc",
+        "recipientId": "participant-e7ce9f43-ed55-4a6d-b334-c7be2ddebb12",
+        "sequence": 7,
+        "operationId": "simulation-operation:1ba63d7eba6dacd7f47ef5bd69afcd137567204b35e17c95629f77307b737568",
+        "fingerprint": "sha256:b9c7c71b4458024c78a38664578cffef99a48378490e2cb65ad2e5f1048228f4",
+        "channelId": "channel-6b302fcf-9ff0-4454-9471-ce0fb58e0e97",
+        "envelopeId": "envelope-e6c98a49-62fc-4ad3-be45-1c0337708a69"
+      }
+    },
+    "result": {
+      "operationId": "simulation-operation:1ba63d7eba6dacd7f47ef5bd69afcd137567204b35e17c95629f77307b737568",
+      "status": "applied",
+      "sequence": 159,
+      "time": "2",
+      "code": "SIM_POSTED"
+    },
+    "delivery": {
+      "wakeId": "simulation-delivery:simulation-operation:1ba63d7eba6dacd7f47ef5bd69afcd137567204b35e17c95629f77307b737568",
+      "sessionId": "d1c868a8-9373-4667-a8c3-186a17036263",
+      "sequence": 164,
+      "time": "2",
+      "receipt": {
+        "type": "channel/receipt",
+        "sequence": 8,
+        "createdAt": 1791758604653,
+        "participantId": "participant-e7ce9f43-ed55-4a6d-b334-c7be2ddebb12",
+        "envelopeId": "envelope-e6c98a49-62fc-4ad3-be45-1c0337708a69",
+        "cursor": 7
+      }
+    }
+  },
+  "derivedPermissions": [
+    {
+      "requesterEntityId": "requester",
+      "domain": "organization",
+      "operation": "generate-and-hire",
+      "version": "1",
+      "targetEntityId": "research",
+      "scopeEntityId": "laboratory",
+      "relation": "can-hire",
+      "relationId": "world-role-authority:world-intent:d0eaf9c6bc0dee2fef9917c6c84c91f5e6ded876a28d6e9c3a2533e52fd22d41:0"
+    }
+  ],
+  "originalSessionPrefix": [
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 0,
+      "time": 1791758603345,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "inserted": [
+          {
+            "id": "simulation-input:9eae8643c5736d9a4b2c6d84cd6325b9d56902ceb8734f8cea2bd6bf7114ab78",
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Process the prepared simulation decision."
+              }
+            ],
+            "source": {
+              "kind": "plugin",
+              "plugin": "simulation-team"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 1,
+      "time": 1791758603351,
+      "data": {
+        "turn": 1
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 2,
+      "time": 1791758603354,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "simulation/context-view",
+      "seq": 3,
+      "time": 1791758603364,
+      "data": {
+        "version": 1,
+        "runId": "personnel-laboratory",
+        "entityId": "requester",
+        "windowId": "world/1/window/0",
+        "slot": "0",
+        "epoch": "1",
+        "time": "1",
+        "inputId": "simulation-input:9eae8643c5736d9a4b2c6d84cd6325b9d56902ceb8734f8cea2bd6bf7114ab78",
+        "projections": {
+          "run": 38,
+          "entity": 5,
+          "team": 14
+        },
+        "versions": {
+          "rules": "world-rules-1",
+          "policy": "sha256:2ae1880efb7ca37fb2dce57a1c4f491854257003917a3075abd8c47d9f9dec1e",
+          "persona": "world/1",
+          "model": "1"
+        },
+        "sources": [],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"entityId\":\"requester\",\"persona\":{\"name\":\"Research Lead\",\"description\":\"A colleague at Horizon Laboratory.\",\"persona\":{\"name\":\"Research Lead\",\"skills\":[\"analysis\"],\"traits\":[\"careful\"],\"goals\":[\"research\"]}},\"organization\":{\"name\":\"Horizon Laboratory\",\"description\":\"Members collaborate through private channels.\"}}"
+              }
+            ]
+          },
+          {
+            "kind": "authority",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"assignments\":[{\"positionId\":\"research\",\"position\":{\"name\":\"Research assistant\",\"description\":\"Research assistant\"}}]}"
+              }
+            ]
+          },
+          {
+            "kind": "input",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"wakeId\":\"original-person-memory\",\"reason\":\"{\\\"kind\\\":\\\"private-person-memory\\\",\\\"text\\\":\\\"ORIGINAL-PERSONNEL-PRIVATE-MEMORY-CANARY\\\"}\"}"
+              },
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-background\",\"worldFacts\":{\"viewer\":\"requester\",\"cursor\":38,\"time\":\"1\",\"items\":[],\"unknown\":[]},\"norms\":{\"viewer\":\"requester\",\"cursor\":38,\"time\":\"1\",\"items\":[],\"unknown\":[]}}"
+              }
+            ]
+          },
+          {
+            "kind": "goals",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"kind\":\"world-driver\",\"entityId\":\"requester\",\"contextKey\":\"original-person-memory\",\"purpose\":\"message\",\"instruction\":\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\"}"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "{\"instruction\":\"Accepted effects remain pending until Native execution. A submitted plan is not employment; notify only recorded results.\"}"
+              }
+            ]
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/start",
+      "seq": 4,
+      "time": 1791758603416,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "user/message",
+      "seq": 5,
+      "time": 1791758603416,
+      "data": {
+        "id": "simulation-input:9eae8643c5736d9a4b2c6d84cd6325b9d56902ceb8734f8cea2bd6bf7114ab78",
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Process the prepared simulation decision."
+          }
+        ],
+        "source": {
+          "kind": "plugin",
+          "plugin": "simulation-team"
+        }
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "request/header",
+      "seq": 6,
+      "time": 1791758603419,
+      "data": {
+        "header": {
+          "config": {
+            "provider": "world-personnel-scripted",
+            "model": "scripted"
+          },
+          "system": "You are a simulation participant. Use the recorded simulation context and the Simulation observe, stage and submit tools. Propose only actions allowed by that context; messages do not grant additional authority.",
+          "tools": [
+            {
+              "name": "simulation_observe",
+              "description": "Read the authorized observations prepared for your current simulation decision. This does not query newer or hidden world state.",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "simulation_stage",
+              "description": "Replace your complete staged proposal list. No world effects occur until a submitted proposal is executed. Send an empty list to stage no actions.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "proposals": {
+                    "type": "array",
+                    "description": "The complete replacement proposal list. Times and quantities are non-negative decimal strings. Dependencies name earlier indices or accepted operation ids.",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "after": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "action": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "world/request"
+                                },
+                                "domain": {
+                                  "type": "string"
+                                },
+                                "operation": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string"
+                                },
+                                "businessKey": {
+                                  "type": "string"
+                                },
+                                "expectedTime": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "evidence": {
+                                  "type": "array",
+                                  "items": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "entity"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "resource"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "world-definition"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "external"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "relation"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          },
+                                          "effectiveFrom": {
+                                            "type": "string"
+                                          },
+                                          "effectiveUntil": {
+                                            "oneOf": [
+                                              {
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "revision",
+                                          "effectiveFrom",
+                                          "effectiveUntil"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "relation-set"
+                                          },
+                                          "relation": {
+                                            "type": "string"
+                                          },
+                                          "object": {
+                                            "type": "string"
+                                          },
+                                          "scope": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "relation",
+                                          "object",
+                                          "scope",
+                                          "hash"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "authority"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "generation": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "generation"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "norm"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "version": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "version"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "proposal"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "hash"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "resolution"
+                                          },
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "hash": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "hash"
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "payload": {
+                                  "type": "object",
+                                  "additionalProperties": true
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "domain",
+                                "operation",
+                                "version",
+                                "businessKey",
+                                "expectedTime",
+                                "evidence",
+                                "payload"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "world/resolve"
+                                },
+                                "requestId": {
+                                  "type": "string"
+                                },
+                                "supersedes": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "resolution": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "apply"
+                                        },
+                                        "payload": {
+                                          "type": "object",
+                                          "additionalProperties": true
+                                        },
+                                        "rationale": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "payload",
+                                        "rationale"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "reject"
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "enum": [
+                                            "insufficient-information",
+                                            "unauthorized",
+                                            "capacity-full",
+                                            "unsupported",
+                                            "policy"
+                                          ]
+                                        },
+                                        "rationale": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "reason",
+                                        "rationale"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "requestId",
+                                "supersedes",
+                                "resolution"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "task/create"
+                                },
+                                "task": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "subject": {
+                                      "type": "string"
+                                    },
+                                    "description": {
+                                      "type": "string"
+                                    },
+                                    "blockedBy": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "requiredCapabilities": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "priority": {
+                                      "type": "integer"
+                                    },
+                                    "readScopes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "writeScopes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "workspaceMode": {
+                                      "type": "string",
+                                      "enum": [
+                                        "shared",
+                                        "worktree",
+                                        "sandbox",
+                                        "remote"
+                                      ]
+                                    },
+                                    "reviewPolicy": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "none"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "participant"
+                                            },
+                                            "reviewerId": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "reviewerId"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "budget": {
+                                      "type": "object",
+                                      "additionalProperties": true
+                                    },
+                                    "maxAttempts": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "subject",
+                                    "description",
+                                    "blockedBy",
+                                    "requiredCapabilities",
+                                    "priority",
+                                    "readScopes",
+                                    "writeScopes",
+                                    "workspaceMode",
+                                    "reviewPolicy",
+                                    "budget",
+                                    "maxAttempts"
+                                  ]
+                                },
+                                "deliverAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "task",
+                                "deliverAt"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "communication/post"
+                                },
+                                "recipient": {
+                                  "type": "string"
+                                },
+                                "channelId": {
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "type": "string"
+                                },
+                                "deliverAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "recipient",
+                                "channelId",
+                                "text",
+                                "deliverAt"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/request"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "assignee": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "replyBy": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "completeBy": {
+                                  "oneOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "fulfillment": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "explicit"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "task-completed"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "transfer"
+                                        },
+                                        "from": {
+                                          "type": "string"
+                                        },
+                                        "to": {
+                                          "type": "string"
+                                        },
+                                        "quantity": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "from",
+                                        "to",
+                                        "quantity"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "assignee",
+                                "description",
+                                "replyBy",
+                                "completeBy",
+                                "fulfillment"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/accept"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/reject"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/defer"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "until": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "until",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/cancel"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "reason": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/confirm"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "interaction/result"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                },
+                                "evidence": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision",
+                                "evidence"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/transfer"
+                                },
+                                "transaction": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "commitmentId": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reads": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "resourceId": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "resourceId",
+                                          "revision"
+                                        ]
+                                      }
+                                    },
+                                    "transfers": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "string"
+                                          },
+                                          "to": {
+                                            "type": "string"
+                                          },
+                                          "quantity": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "quantity"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "commitmentId",
+                                    "reads",
+                                    "transfers"
+                                  ]
+                                },
+                                "grants": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "transaction",
+                                "grants"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/grant"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "grantee": {
+                                  "type": "string"
+                                },
+                                "resources": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "transaction": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "commitmentId": {
+                                      "oneOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "reads": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "resourceId": {
+                                            "type": "string"
+                                          },
+                                          "revision": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "resourceId",
+                                          "revision"
+                                        ]
+                                      }
+                                    },
+                                    "transfers": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "type": "string"
+                                          },
+                                          "to": {
+                                            "type": "string"
+                                          },
+                                          "quantity": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "quantity"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "commitmentId",
+                                    "reads",
+                                    "transfers"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "grantee",
+                                "resources",
+                                "transaction"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "resource/revoke-grant"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "expectedRevision": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "expectedRevision"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "after",
+                        "action"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "proposals"
+                ]
+              }
+            },
+            {
+              "name": "simulation_submit",
+              "description": "Submit the complete staged proposal list and end this decision. A submitted window proposal awaits ordered acceptance; accepted proposals await execution. Results arrive in a later decision.",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          ]
+        },
+        "reason": "initial"
+      }
+    },
+    {
+      "type": "request/context",
+      "seq": 7,
+      "time": 1791758603421,
+      "data": {
+        "provider": "world-personnel-scripted",
+        "model": "scripted"
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 8,
+      "time": 1791758603480,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 9,
+      "time": 1791758603481,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-person-memory:0",
+          "name": "simulation_observe",
+          "argumentsDelta": "{}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 10,
+      "time": 1791758603481,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-person-memory:0",
+            "name": "simulation_observe",
+            "arguments": "{}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 11,
+      "time": 1791758603481,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 12,
+      "time": 1791758603481,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 13,
+      "time": 1791758603485,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-person-memory:0",
+              "name": "simulation_observe",
+              "arguments": "{}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-personnel-scripted",
+            "model": "scripted"
+          },
+          "id": "ddb45792-bdba-4993-9cf3-33cfb5c03db7"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 14,
+      "time": 1791758603486,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "requester/original-person-memory:0",
+        "name": "simulation_observe",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 15,
+      "time": 1791758603489,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-person-memory:0"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-person-memory:0",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"observed\",\"time\":\"1\",\"sections\":[{\"kind\":\"identity\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"entityId\\\":\\\"requester\\\",\\\"persona\\\":{\\\"name\\\":\\\"Research Lead\\\",\\\"description\\\":\\\"A colleague at Horizon Laboratory.\\\",\\\"persona\\\":{\\\"name\\\":\\\"Research Lead\\\",\\\"skills\\\":[\\\"analysis\\\"],\\\"traits\\\":[\\\"careful\\\"],\\\"goals\\\":[\\\"research\\\"]}},\\\"organization\\\":{\\\"name\\\":\\\"Horizon Laboratory\\\",\\\"description\\\":\\\"Members collaborate through private channels.\\\"}}\"}]},{\"kind\":\"authority\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"assignments\\\":[{\\\"positionId\\\":\\\"research\\\",\\\"position\\\":{\\\"name\\\":\\\"Research assistant\\\",\\\"description\\\":\\\"Research assistant\\\"}}]}\"}]},{\"kind\":\"input\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"wakeId\\\":\\\"original-person-memory\\\",\\\"reason\\\":\\\"{\\\\\\\"kind\\\\\\\":\\\\\\\"private-person-memory\\\\\\\",\\\\\\\"text\\\\\\\":\\\\\\\"ORIGINAL-PERSONNEL-PRIVATE-MEMORY-CANARY\\\\\\\"}\\\"}\"},{\"type\":\"text\",\"text\":\"{\\\"kind\\\":\\\"world-background\\\",\\\"worldFacts\\\":{\\\"viewer\\\":\\\"requester\\\",\\\"cursor\\\":38,\\\"time\\\":\\\"1\\\",\\\"items\\\":[],\\\"unknown\\\":[]},\\\"norms\\\":{\\\"viewer\\\":\\\"requester\\\",\\\"cursor\\\":38,\\\"time\\\":\\\"1\\\",\\\"items\\\":[],\\\"unknown\\\":[]}}\"}]},{\"kind\":\"goals\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"kind\\\":\\\"world-driver\\\",\\\"entityId\\\":\\\"requester\\\",\\\"contextKey\\\":\\\"original-person-memory\\\",\\\"purpose\\\":\\\"message\\\",\\\"instruction\\\":\\\"Use simulation_observe, simulation_stage and simulation_submit. Submit only actions allowed by the recorded context. An ordinary message may conclude with no further effects.\\\"}\"}]},{\"kind\":\"commitments\",\"blocks\":[{\"type\":\"text\",\"text\":\"{\\\"instruction\\\":\\\"Accepted effects remain pending until Native execution. A submitted plan is not employment; notify only recorded results.\\\"}\"}]}]}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "920188fd-1d3f-441d-bd2b-1f9d4b05e2a6"
+        }
+      },
+      "sourceEventSeqs": [
+        14
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 16,
+      "time": 1791758603489,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 17,
+      "time": 1791758603495,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 18,
+      "time": 1791758603516,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 19,
+      "time": 1791758603516,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-person-memory:1",
+          "name": "simulation_stage",
+          "argumentsDelta": "{\"proposals\":[]}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 20,
+      "time": 1791758603516,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-person-memory:1",
+            "name": "simulation_stage",
+            "arguments": "{\"proposals\":[]}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 21,
+      "time": 1791758603516,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 22,
+      "time": 1791758603516,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 23,
+      "time": 1791758603520,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-person-memory:1",
+              "name": "simulation_stage",
+              "arguments": "{\"proposals\":[]}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-personnel-scripted",
+            "model": "scripted"
+          },
+          "id": "3c1abf35-7805-419c-848b-2349f02b4374"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 24,
+      "time": 1791758603521,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "requester/original-person-memory:1",
+        "name": "simulation_stage",
+        "arguments": "{\"proposals\":[]}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 25,
+      "time": 1791758603522,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-person-memory:1"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-person-memory:1",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"staged\",\"count\":0,\"effects\":\"none\"}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "028eee57-5b80-4cf5-8afc-532015af0ab8"
+        }
+      },
+      "sourceEventSeqs": [
+        24
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 26,
+      "time": 1791758603522,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 27,
+      "time": 1791758603525,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 28,
+      "time": 1791758603535,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "block-start",
+          "index": 0,
+          "blockType": "tool-call"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 29,
+      "time": 1791758603535,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "tool-call-delta",
+          "index": 0,
+          "id": "requester/original-person-memory:2",
+          "name": "simulation_submit",
+          "argumentsDelta": "{}"
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 30,
+      "time": 1791758603535,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "block-end",
+          "index": 0,
+          "block": {
+            "type": "tool-call",
+            "id": "requester/original-person-memory:2",
+            "name": "simulation_submit",
+            "arguments": "{}"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 31,
+      "time": 1791758603535,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "usage",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 5
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/chunk",
+      "seq": 32,
+      "time": 1791758603535,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "chunk": {
+          "type": "finish",
+          "reason": {
+            "kind": "tool-calls"
+          }
+        }
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 33,
+      "time": 1791758603539,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "requester/original-person-memory:2",
+              "name": "simulation_submit",
+              "arguments": "{}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "world-personnel-scripted",
+            "model": "scripted"
+          },
+          "id": "caab9946-83db-4a35-ba25-12f757b8036d"
+        },
+        "usage": {
+          "inputTokens": 10,
+          "outputTokens": 5
+        }
+      },
+      "sourceEventSeqs": [
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 34,
+      "time": 1791758603539,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "callId": "requester/original-person-memory:2",
+        "name": "simulation_submit",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 35,
+      "time": 1791758603546,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "source": {
+            "kind": "tool",
+            "callId": "requester/original-person-memory:2"
+          },
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "requester/original-person-memory:2",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"status\":\"submitted\",\"operationIds\":[],\"effects\":\"pending\"}"
+                }
+              ],
+              "isError": false
+            }
+          ],
+          "role": "user",
+          "id": "11ed5deb-de05-48f9-94b3-26de1fc6febd"
+        }
+      },
+      "sourceEventSeqs": [
+        34
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 36,
+      "time": 1791758603546,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 37,
+      "time": 1791758603546,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ],
+  "sessionPrefixHash": "sha256:76429f793d8e16132ca08d7fb019b11817943ebcba8e9fab6adf3c0193ef41f6",
+  "retainedPrefixHash": "sha256:76429f793d8e16132ca08d7fb019b11817943ebcba8e9fab6adf3c0193ef41f6",
+  "fullSessionHash": "sha256:d85cd05909f645f7188b05ce6afc2746117067daa4f7ac273cbb119802afc1ad",
+  "fullSessionEventCount": 114,
+  "unchangedBudgets": {
+    "native": {
+      "tickUnit": "minute",
+      "origin": "0",
+      "maxTime": "1000",
+      "rulesVersion": "world-rules-1",
+      "budgetInterval": "100",
+      "maxResourceQuantity": "10000",
+      "phaseOrder": [
+        "delivery",
+        "decision",
+        "deadline"
+      ],
+      "maxQueuedDecisions": 100,
+      "maxDispatchWaitRounds": 8,
+      "maxTokensPerInterval": 1000000,
+      "tokensPerModelRequest": 10000,
+      "maxDecisionsPerInterval": 100,
+      "maxMessagesPerInterval": 100,
+      "maxPendingEvents": 100,
+      "maxPendingInteractions": 100,
+      "maxKnowledgeBytes": 65536,
+      "maxKnowledgePerQuery": 32,
+      "maxEntities": 16,
+      "maxResidentActors": 2,
+      "maxIngressBytes": 65536,
+      "maxConflictRetries": 2,
+      "decisionTimeoutMs": 60000,
+      "maxDecisionsPerWindow": 2,
+      "outboxMaxAttempts": 3,
+      "outboxRetryDelayMs": 10,
+      "maxDriveSteps": 32,
+      "maxMicrostepsPerTime": 32,
+      "maxOperationsPerDecision": 16,
+      "policyVersion": "world-policy-1",
+      "relationRules": [
+        {
+          "relation": "assignment",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "scopeKinds": [
+            "organization"
+          ],
+          "acyclic": true
+        },
+        {
+          "relation": "can-hire",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "scopeKinds": [
+            "organization"
+          ],
+          "acyclic": true
+        },
+        {
+          "relation": "can-transfer",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "scopeKinds": [
+            "organization"
+          ],
+          "acyclic": false
+        },
+        {
+          "relation": "can-transfer-target",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "scopeKinds": [
+            "organization"
+          ],
+          "acyclic": false
+        },
+        {
+          "relation": "can-depart",
+          "subjectKinds": [
+            "person"
+          ],
+          "objectKinds": [
+            "position"
+          ],
+          "scopeKinds": [
+            "organization"
+          ],
+          "acyclic": false
+        }
+      ]
+    },
+    "world": {
+      "maxRequests": 10,
+      "maxPlansPerRequest": 3,
+      "maxBytesPerRequest": 4096,
+      "maxBytesPerPlan": 4096
+    }
+  },
+  "checkpointId": "personnel-complete"
+}

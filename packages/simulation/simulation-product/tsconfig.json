@@ -30,6 +30,9 @@
       "path": "../simulation"
     },
     {
+      "path": "../simulation-scenario"
+    },
+    {
       "path": "../../storage/storage"
     },
     {
@@ -58,6 +61,9 @@
     },
     {
       "path": "../../core/agent-default-model"
+    },
+    {
+      "path": "../simulation-world"
     }
   ]
 }

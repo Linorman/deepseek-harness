@@ -1,0 +1,3 @@
+packages/simulation/simulation-product/tests/people.spec.ts:73:1: error @stylistic(indent): Expected indentation of 6 spaces but found 8.
+apps/web/tests/world-people-counts.snapshot.ts:102:95: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+apps/web/tests/world-people-counts.snapshot.ts:103:44: error typescript(no-unsafe-call): Unsafe call of a(n) `error` type typed value.

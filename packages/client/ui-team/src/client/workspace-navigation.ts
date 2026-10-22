@@ -14,6 +14,8 @@ export interface WorkspaceRoute {
   readonly taskForm?: TeamTaskDialogTarget | undefined
   readonly taskId?: TeamTaskId | undefined
   readonly channelId?: ChannelId | undefined
+  readonly envelopeId?: string | undefined
+  readonly envelopeSequence?: number | undefined
   readonly sessionId?: SessionId | undefined
   readonly participantId?: ParticipantId | undefined
   readonly search: string
@@ -42,6 +44,10 @@ export function readWorkspaceRoute(href: string): WorkspaceRoute | undefined {
   const viz = query.get('viz')
   if (viz !== null && !vizModes.includes(viz)) throw new WorkspaceNavigationError('invalid', 'This visualization is not available')
   const form = query.get('form')
+  const envelope = query.get('envelope'), sequence = query.get('envelopeSequence')
+  if ((envelope === null) !== (sequence === null) || envelope !== null && (envelope.length === 0
+    || !query.get('channel') || view !== 'channels' || sequence === null || !/^(0|[1-9][0-9]*)$/.test(sequence)
+    || !Number.isSafeInteger(Number(sequence)))) throw new WorkspaceNavigationError('invalid', 'An Envelope requires its exact channel and sequence')
   const formTask = query.get('formTask')
   let taskForm: TeamTaskDialogTarget | undefined
   switch (form) {
@@ -61,6 +67,7 @@ export function readWorkspaceRoute(href: string): WorkspaceRoute | undefined {
     planId: (query.get('plan') || undefined) as WorkspaceRoute['planId'],
     taskId: (query.get('task') || undefined) as TeamTaskId | undefined,
     channelId: (query.get('channel') || undefined) as ChannelId | undefined,
+    envelopeId: envelope ?? undefined, envelopeSequence: sequence === null ? undefined : Number(sequence),
     sessionId: (query.get('session') || undefined) as SessionId | undefined,
     participantId: (query.get('participant') || undefined) as ParticipantId | undefined,
     search: query.get('q') ?? '',
@@ -89,6 +96,10 @@ export function workspaceRouteUrl(href: string, route: WorkspaceRoute | undefine
     if (route.planId !== undefined) url.searchParams.set('plan', route.planId)
     if (route.taskId !== undefined) url.searchParams.set('task', route.taskId)
     if (route.channelId !== undefined) url.searchParams.set('channel', route.channelId)
+    if (route.envelopeId !== undefined && route.envelopeSequence !== undefined) {
+      url.searchParams.set('envelope', route.envelopeId)
+      url.searchParams.set('envelopeSequence', String(route.envelopeSequence))
+    }
     if (route.sessionId !== undefined) url.searchParams.set('session', route.sessionId)
     if (route.participantId !== undefined) url.searchParams.set('participant', route.participantId)
     if (route.search !== '') url.searchParams.set('q', route.search)
@@ -103,5 +114,6 @@ export function workspaceRouteUrl(href: string, route: WorkspaceRoute | undefine
  * @returns the fields that create a browser Back entry rather than replacing the current entry.
  */
 export function workspaceRouteIdentity(route: WorkspaceRoute | undefined): string {
-  return route === undefined ? '' : JSON.stringify([route.teamId, route.view, route.taskForm, route.actionId, route.planId, route.taskId, route.channelId, route.sessionId, route.participantId])
+  return route === undefined ? '' : JSON.stringify([route.teamId, route.view, route.taskForm, route.actionId, route.planId, route.taskId, route.channelId,
+    route.envelopeId, route.envelopeSequence, route.sessionId, route.participantId])
 }

@@ -15,6 +15,8 @@ export type { CompactionId }
 
 declare module '@clocky/clocky-session/types' {
   interface SessionEventMap {
+    /** Diagnostic estimate; carries no model-visible input or surface mutation. */
+    'compaction/assessment': CompactionAssessment
     /**
      * Marks the start of a compaction; the lock lasts until compaction/end.
      * A numbered owner is enclosed by its turn; null denotes standalone maintenance.
@@ -69,7 +71,7 @@ declare module '@clocky/clocky-session/types' {
      * Marks the end of a compaction — log-only, releases the lock. Its owner
      * matches `compaction/start`; `error` records an unsuccessful attempt.
      */
-    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string }
+    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; noGain?: CompactionNoGain }
     /**
      * Shadow price of one model-free prune replacement — log-only, no
      * surfaceOp. The shared shadow-price protocol: a surface `replace` event
@@ -88,6 +90,43 @@ declare module '@clocky/clocky-session/types' {
       shadowedTokenCount: number
     }
   }
+}
+
+/** One automatic compaction selection, including attempts avoided before dispatch. */
+export interface CompactionAssessment {
+  /** Automatic caller requesting the assessment. */
+  trigger: 'pressure' | 'context-overflow'
+  /** A paid summary is considered only for attempt. */
+  reason: 'attempt' | 'no-gain' | 'fixed-context' | 'no-range'
+  /** Current durable replacement generation. */
+  generation: number
+  /** Meter-estimated pressure including its provider baseline. */
+  pressureTokens: number
+  /** Heuristic system and tool-schema input price. */
+  fixedTokens: number
+  /** Heuristic selected history and verbatim remainder prices. */
+  selectedTokens: number
+  retainedTokens: number
+  /** Explicit conversation output cap; null when unknown. */
+  outputReserveTokens: number | null
+}
+
+/** Replayable no-gain evidence; hashes retain no additional private message content. */
+export interface CompactionNoGain {
+  /** Versioned hash of effective summary inputs, target policy and estimator. */
+  fingerprint: string
+  /** Hash of fixed inputs and resolved policy, excluding selected messages. */
+  contextFingerprint: string
+  /** Hash of selected node identities and their projected content. */
+  prefixFingerprint: string
+  /** Surface replacement generation at selection. */
+  generation: number
+  /** Number of selected surface nodes. */
+  selectedNodes: number
+  /** Estimated tokens selected for replacement. */
+  selectedTokens: number
+  /** Estimated framed replacement tokens, which did not reduce the selection. */
+  summaryTokens: number
 }
 
 /** Result of a successful compaction operation. */

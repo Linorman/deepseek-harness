@@ -51,7 +51,13 @@
     "@clocky/clocky-loader-smoke": "workspace:^",
     "@clocky/clocky-app-boot": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
-    "@clocky/clocky-session": "workspace:^"
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-team-channel-direct": "workspace:^",
+    "@clocky/clocky-tool-simulation": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/cordis-plugin-loader": "workspace:^",
+    "@clocky/cordis-plugin-include": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^"
   },
   "dependencies": {
     "@clocky/schemastery": "workspace:^",

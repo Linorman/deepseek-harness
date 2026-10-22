@@ -1,29 +1,14 @@
 """Strict Simulation product DTOs; identities and simulated time remain opaque strings."""
 from __future__ import annotations
+from .simulation_run_control import SimulationStopState, SimulationRunControlInput, SimulationRunControlReceipt
 
 from typing import Annotated, Literal
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import Field, JsonValue, TypeAdapter, field_validator, model_validator
 
-Identity = Annotated[str, Field(min_length=1)]
-Decimal = Annotated[str, Field(pattern=r"^(0|[1-9][0-9]*)$")]
-PositiveDecimal = Annotated[str, Field(pattern=r"^[1-9][0-9]*$")]
-Nonnegative = Annotated[int, Field(ge=0)]
-ObservationCount = Annotated[int, Field(ge=0, le=9_007_199_254_740_991)]
-EntityPhase = Literal["active", "inactive", "terminated"]
-DecisionStatus = Literal["open", "submitted", "accepted", "cancelled"]
-OperationStatus = Literal["pending", "applied", "rejected", "blocked-authority", "blocked-dependency", "outcome-unknown"]
-CheckpointStatus = Literal["in-progress", "failed", "completed"]
-Collection = Literal["entities", "decisions", "operations", "checkpoints"]
+from .simulation_base import (SimulationModel, SimulationText, Identity, Decimal, PositiveDecimal, Nonnegative,
+    ObservationCount, ManagementCommandId, CommandSelectorId, EntityPhase, DecisionStatus, OperationStatus, CheckpointStatus, Collection)
 
-class SimulationModel(BaseModel):
-    """Closed JSON fields prevent native configuration or private bodies from entering public DTOs."""
-    model_config = ConfigDict(extra="forbid", strict=True)
-
-class SimulationText(SimulationModel):
-    """Bounded display text with explicit truncation."""
-
-    text: str
-    truncated: bool
+from .simulation_world_management import SimulationWorldManagementSubmitInput, SimulationWorldManagementOutcome
 
 
 class SimulationModelRoute(SimulationModel):
@@ -115,10 +100,25 @@ class SimulationTemplate(SimulationModel):
     configuration: SimulationTemplateConfiguration | None = None
 
 
+class SimulationWorldAuthoringTemplate(SimulationModel):
+    """Explicitly published authored definition; validation delegates its complete grammar to the v1 owner."""
+    id: Identity
+    version: Identity
+    name: Identity
+    definition: dict[str, JsonValue]
+
+    @model_validator(mode="after")
+    def _definition(self):
+        from .simulation_scenario import WorldScenarioV1
+        WorldScenarioV1.model_validate(self.definition)
+        return self
+
+
 class SimulationCatalog(SimulationModel):
     """Complete bounded authorized template catalog."""
 
     items: list[SimulationTemplate]
+    worldTemplates: list[SimulationWorldAuthoringTemplate] | None = None
 
 
 class SimulationCompanyParameters(SimulationModel):
@@ -187,7 +187,7 @@ class SimulationPrepareInput(SimulationModel):
 class SimulationRequestInput(SimulationModel):
     """Original command query; absence does not establish failure."""
 
-    commandId: Identity
+    commandId: CommandSelectorId
 
 
 class SimulationTasksInput(SimulationModel):
@@ -276,17 +276,42 @@ class SimulationTasksPage(SimulationModel):
         return self
 
 
+class SimulationWorldCaseCancelInput(SimulationModel):
+    """Original owned World case and fixed confirmed Native prefix; exact retries retain the same quote."""
+
+    runId: Identity
+    commandId: Identity
+    requestId: Identity
+    previewRevision: ObservationCount
+    previewHash: Annotated[str, Field(pattern=r"^sha256:[a-f0-9]{64}$")]
+
+    @field_validator("commandId")
+    @classmethod
+    def _command_identity(cls, value: str) -> str:
+        if value != value.strip():
+            raise ValueError("World cancellation command must be trimmed")
+        return value
+
+
 class SimulationRequestReceipt(SimulationModel):
     """Immutable accepted or terminal creation/preparation receipt."""
 
+    kind: Literal["create", "prepare", "checkpoint", "restore", "review", "retry-operation", "cancel-task", "world-create", "world-prepare", "cancel-world-case", "world-management"]
     commandId: Identity
     runId: Identity
-    kind: Literal["create", "prepare", "checkpoint", "restore", "review", "retry-operation", "cancel-task"]
     acceptedAt: Nonnegative
     status: Literal["accepted", "completed", "failed"]
     checkpointId: Identity | None = None
     diagnostic: SimulationCheckpointDiagnostic | None = None
-    failure: Literal["preparation-required", "recovery-required", "unavailable", "checkpoint-failed", "restore-failed", "review-failed", "retry-operation-failed", "cancel-task-failed"] | None = None
+    failure: Literal["preparation-required", "recovery-required", "unavailable", "checkpoint-failed", "restore-failed", "review-failed", "retry-operation-failed", "cancel-task-failed", "cancel-world-case-failed", "world-management-failed"] | None = None
+
+    @field_validator("commandId", mode="wrap")
+    @classmethod
+    def _command_identity(cls, value, handler, info):
+        # Only management uses its JS-unit scalar; every other receipt retains the original Identity parser.
+        if info.data.get("kind") == "world-management":
+            return TypeAdapter(ManagementCommandId).validate_python(value)
+        return handler(value)
 
     @model_validator(mode="after")
     def _validate(self) -> SimulationRequestReceipt:
@@ -295,7 +320,7 @@ class SimulationRequestReceipt(SimulationModel):
         if (self.kind in {"checkpoint", "restore"}) != (self.checkpointId is not None):
             raise ValueError("maintenance receipts require their exact checkpoint identity")
         if self.status == "failed" and self.failure not in {"recovery-required", "unavailable"}:
-            expected = {"checkpoint": "checkpoint-failed", "restore": "restore-failed", "review": "review-failed", "retry-operation": "retry-operation-failed", "cancel-task": "cancel-task-failed"}.get(self.kind, "preparation-required")
+            expected = {"checkpoint": "checkpoint-failed", "restore": "restore-failed", "review": "review-failed", "retry-operation": "retry-operation-failed", "cancel-task": "cancel-task-failed", "cancel-world-case": "cancel-world-case-failed", "world-management": "world-management-failed"}.get(self.kind, "preparation-required")
             if self.failure != expected:
                 raise ValueError("failure category does not belong to the original operation kind")
         if self.diagnostic is not None and (self.status != "failed" or self.kind not in {"checkpoint", "restore"}):
@@ -307,11 +332,27 @@ class SimulationRequestResult(SimulationModel):
     """Exact original operation fact or non-authoritative absence."""
 
     status: Literal["found", "not-found"]
-    commandId: Identity | None = None
+    commandId: CommandSelectorId | None = None
     request: SimulationRequestReceipt | None = None
     review: SimulationTaskReviewResolveInput | None = None
     retryOperation: SimulationOperationRetryInput | None = None
     cancellation: SimulationTaskCancelInput | None = None
+    worldCancellation: SimulationWorldCaseCancelInput | None = None
+    worldManagement: SimulationWorldManagementSubmitInput | None = None
+    worldManagementOutcome: SimulationWorldManagementOutcome | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _optional_originals(cls, value):
+        if isinstance(value, dict):
+            if value.get("status") == "found" and "commandId" in value:
+                raise ValueError("Found requests forbid the absence-only command selector")
+            if value.get("status") == "not-found" and set(value) - {"status", "commandId"}:
+                raise ValueError("Absent requests carry only their original command selector")
+        if isinstance(value, dict) and any(key in value and value[key] is None for key in [
+                "review", "retryOperation", "cancellation", "worldCancellation", "worldManagement", "worldManagementOutcome"]):
+            raise ValueError("Optional original command payloads must be absent rather than null")
+        return value
 
     @model_validator(mode="after")
     def _validate(self) -> SimulationRequestResult:
@@ -326,11 +367,24 @@ class SimulationRequestResult(SimulationModel):
                 raise ValueError("Only operation retry results carry their exact original intent")
             if self.retryOperation is not None and (self.retryOperation.runId != self.request.runId or self.retryOperation.commandId != self.request.commandId):
                 raise ValueError("Operation retry input belongs to another original command")
+            if (self.request.kind == "cancel-world-case") != (self.worldCancellation is not None):
+                raise ValueError("Only World cancellation results carry their exact original selector")
+            if self.worldCancellation is not None and (self.worldCancellation.runId != self.request.runId or self.worldCancellation.commandId != self.request.commandId):
+                raise ValueError("World cancellation input belongs to another original command")
+            if (self.request.kind == "world-management") != (self.worldManagement is not None):
+                raise ValueError("Only management requests carry their original confirmed form")
+            if self.worldManagement is not None and (self.worldManagement.runId != self.request.runId
+                    or self.worldManagement.commandId != self.request.commandId):
+                raise ValueError("Management form belongs to another original command")
+            if self.worldManagementOutcome is not None and (self.request.kind != "world-management"
+                    or self.worldManagementOutcome.commandId != self.request.commandId
+                    or self.worldManagementOutcome.runId != self.request.runId):
+                raise ValueError("Management outcome belongs to another original command")
             if (self.request.kind == "cancel-task") != (self.cancellation is not None):
                 raise ValueError("Only task cancellation results carry their exact original intent")
             if self.cancellation is not None and (self.cancellation.runId != self.request.runId or self.cancellation.commandId != self.request.commandId):
                 raise ValueError("Task cancellation input belongs to another original command")
-        elif self.commandId is None or self.request is not None or self.review is not None or self.retryOperation is not None or self.cancellation is not None:
+        elif self.commandId is None or self.request is not None or self.review is not None or self.retryOperation is not None or self.cancellation is not None or self.worldCancellation is not None or self.worldManagement is not None or self.worldManagementOutcome is not None:
             raise ValueError("absence carries only the original command identity")
         return self
 
@@ -365,8 +419,51 @@ class SimulationInspectInput(SimulationModel):
     runId: Identity
 
 
+class SimulationPeopleHistoryObserved(SimulationModel):
+    """All canonical Team identities and epochs, including retired history, at one exact cursor."""
+
+    status: Literal["observed"]
+    teamCursor: ObservationCount
+    participants: ObservationCount
+    activations: ObservationCount
+
+
+class SimulationPeopleHistoryUnavailable(SimulationModel):
+    """Incomplete or unavailable history never implies zero identities."""
+
+    status: Literal["unavailable"]
+    reason: Literal["unavailable", "unsupported", "partial", "source-moved"]
+
+
+SimulationPeopleHistory = Annotated[
+    SimulationPeopleHistoryObserved | SimulationPeopleHistoryUnavailable, Field(discriminator="status")
+]
+
+
+class SimulationPeopleCounts(SimulationModel):
+    """Whole-run assignment, Person, admitted writer, retained capacity and canonical Team history counts."""
+
+    scope: Literal["run"]
+    snapshotRevision: ObservationCount
+    time: Decimal
+    employed: ObservationCount
+    nonTerminalPersons: ObservationCount
+    resident: ObservationCount
+    residentLimit: Annotated[int, Field(ge=1, le=9_007_199_254_740_991)]
+    unreleasedWriters: ObservationCount
+    history: SimulationPeopleHistory
+
+    @model_validator(mode="after")
+    def _validate(self) -> SimulationPeopleCounts:
+        if self.employed > self.nonTerminalPersons or self.resident > self.unreleasedWriters or self.unreleasedWriters > self.residentLimit:
+            raise ValueError("Personnel counts violate run-wide subset or capacity relationships")
+        return self
+
+
 class SimulationWorld(SimulationModel):
     """Administrative observation without world bodies or storage paths."""
+
+    worldInitialized: bool | None = None
 
     revision: Nonnegative
     phase: Literal["paused", "running", "stalled"]
@@ -380,7 +477,21 @@ class SimulationWorld(SimulationModel):
     rulesVersion: SimulationText | None = None
     policyVersion: SimulationText | None = None
     metrics: SimulationRunMetrics | None = None
+    people: SimulationPeopleCounts | None = None
     schedulerStop: SimulationSchedulerStop | None = None
+
+    @field_validator("worldInitialized", mode="before")
+    @classmethod
+    def _known_world_presence(cls, value):
+        if value is None:
+            raise ValueError("Supplied World initialization metadata must be a strict boolean")
+        return value
+
+    @model_validator(mode="after")
+    def _validate(self) -> SimulationWorld:
+        if self.people is not None and (self.people.snapshotRevision != self.revision or self.people.time != self.time):
+            raise ValueError("Personnel metadata must belong to the observed Native revision and time")
+        return self
 
 
 class SimulationInspection(SimulationModel):
@@ -653,7 +764,7 @@ class SimulationDecisionDetail(SimulationModel):
     context: SimulationContextAbsent | SimulationContextOverflow | SimulationContextPrepared
     inference: SimulationInference | None = None
     closedAt: Nonnegative | None = None
-    cancellation: Literal["requested", "writer-revoked", "scheduled-wake-cancelled", "timeout"] | None = None
+    cancellation: Literal["requested", "writer-revoked", "scheduled-wake-cancelled", "timeout", "paused"] | None = None
 
 
 class SimulationContextText(SimulationModel):
@@ -1031,11 +1142,67 @@ class SimulationControlInput(SimulationModel):
     runId: Identity
 
 
+class SimulationTokenRecoveryRequest(SimulationModel):
+    """Exact complete overrun quote; acknowledgement preserves the per-request allowance."""
+
+    reservationId: Identity
+    reserved: Annotated[int, Field(gt=0, le=9_007_199_254_740_991)]
+    used: ObservationCount
+    interval: Decimal
+    additionalTokens: ObservationCount
+
+    @model_validator(mode="after")
+    def _validate(self) -> SimulationTokenRecoveryRequest:
+        if self.used <= self.reserved:
+            raise ValueError("Recovery requires an actual reservation overrun")
+        return self
+
+
+class SimulationTokenRecovery(SimulationModel):
+    """Observed explicit acknowledgement action; it never starts scheduling."""
+
+    request: SimulationTokenRecoveryRequest
+    allowed: bool
+    reason: Literal["ready", "pause-required", "in-flight", "unknown-usage", "ownership-unavailable"]
+
+    @model_validator(mode="after")
+    def _validate(self) -> SimulationTokenRecovery:
+        if self.allowed != (self.reason == "ready"):
+            raise ValueError("Recovery allowability must match its reason")
+        return self
+
+
+class SimulationRequestBudgetBlock(SimulationModel):
+    """Complete request refused before provider dispatch, anchored to its recorded prefix."""
+
+    decisionId: Identity
+    sessionSequence: ObservationCount
+    requestHash: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    estimatedInputTokens: ObservationCount
+    maxOutputTokens: Annotated[int, Field(gt=0, le=9_007_199_254_740_991)]
+    safetyMarginTokens: ObservationCount
+    limit: Annotated[int, Field(gt=0, le=9_007_199_254_740_991)]
+
+    @model_validator(mode="after")
+    def _validate(self) -> SimulationRequestBudgetBlock:
+        if self.estimatedInputTokens + self.maxOutputTokens + self.safetyMarginTokens <= self.limit:
+            raise ValueError("Request budget block requires an exceeded limit")
+        return self
+
+
 class SimulationManageInput(SimulationControlInput):
     """Original durable scheduling intent; no caller-selected owner or revision."""
 
     managementId: Identity
     phase: Literal["paused", "running"]
+    tokenRecovery: SimulationTokenRecoveryRequest | None = None
+
+    @model_validator(mode="after")
+    def _validate(self) -> SimulationManageInput:
+        if "tokenRecovery" in self.model_fields_set and (self.tokenRecovery is None or self.phase != "paused"):
+            raise ValueError("Token recovery requires a non-null quote and paused phase")
+        return self
+
 
 
 class SimulationManagementInput(SimulationControlInput):
@@ -1049,7 +1216,7 @@ class SimulationControlAction(SimulationModel):
 
     allowed: bool
     reason: Literal["ready", "recovery-required", "checkpoint-in-progress", "preparation-in-progress",
-                    "management-in-progress", "stalled", "driver-failed", "execution-unavailable",
+                    "management-in-progress", "stop-target-pending", "stop-target-reached", "stalled", "driver-failed", "execution-unavailable",
                     "review-required", "scenario-completed", "scenario-blocked", "outcome-unknown", "retiring"]
 
     @model_validator(mode="after")
@@ -1097,12 +1264,28 @@ class SimulationIngressTarget(SimulationModel):
     name: SimulationText
 
 
+class SimulationIngressCoverage(SimulationModel):
+    """A bounded target window does not claim every eligible target was returned."""
+    complete: bool
+    returned: Nonnegative
+    total: Nonnegative
+
+
 class SimulationIngressPolicy(SimulationModel):
     """Scenario horizon, native byte allowance and at most 32 current authorized targets."""
 
     maxTime: Decimal
     maxBytes: Annotated[int, Field(gt=0)]
     targets: Annotated[list[SimulationIngressTarget], Field(max_length=32)]
+    coverage: SimulationIngressCoverage | None = None
+
+    @model_validator(mode="after")
+    def _coverage(self):
+        if self.coverage is not None and (self.coverage.returned != len(self.targets)
+                or self.coverage.returned > self.coverage.total
+                or self.coverage.complete != (self.coverage.returned == self.coverage.total)):
+            raise ValueError("Ingress target coverage must match its returned window")
+        return self
 
 
 class SimulationRecoveryReferences(SimulationModel):
@@ -1169,10 +1352,50 @@ class SimulationModelPoolObserved(SimulationModel):
         return self
 
 
+class SimulationDriverSource(SimulationModel):
+    """Driver observation provenance is independent of the latest Native phase."""
+
+    status: Literal["live", "owner-unavailable"]
+    revision: ObservationCount | None = None
+    observedAt: ObservationCount
+
+
+class SimulationFailure(SimulationModel):
+    """Safe typed failure advice; observing it never authorizes an automatic retry."""
+
+    failureId: Annotated[str, Field(pattern=r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$")]
+    ownerId: Annotated[str, Field(pattern=r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$")]
+    batchId: Annotated[str, Field(pattern=r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$")]
+    occurredAt: ObservationCount
+    revision: ObservationCount
+    category: Literal["payment-required", "insufficient-balance", "rate-limited", "network", "provider-unavailable",
+                      "context-limit", "request-budget", "token-overrun", "protocol-unavailable", "history-limit", "storage", "integrity", "unknown"]
+    retryDisposition: Literal["explicit-resume", "account-action", "repair-required", "unknown"]
+    actionCode: Literal["resume-explicitly", "check-account", "review-context", "review-budget", "repair-protocol", "raise-read-limit",
+                        "repair-storage", "inspect-integrity", "inspect-failure"]
+    providerRetryAfterMs: Annotated[float, Field(gt=0, le=86400000, allow_inf_nan=False)] | None = None
+
+
+class SimulationReadLimit(SimulationModel):
+    """Safe measured refusal without paths or source bodies."""
+    dimension: Literal["entries", "bytes", "entry-bytes"]
+    actual: ObservationCount
+    limit: Annotated[int, Field(gt=0, le=9_007_199_254_740_991)]
+
+
+class SimulationHistoryRead(SimulationModel):
+    """Unavailable history cannot be mistaken for current authoritative phase."""
+    status: Literal["unavailable"]
+    reason: Literal["history-limit", "unsupported-version", "corrupt-history", "owner-unavailable", "unavailable"]
+    limit: SimulationReadLimit | None = None
+
+
 class SimulationControl(SimulationModel):
     """Separate scheduling intent, ownership and in-flight work."""
 
     runId: Identity
+    tokenRecovery: SimulationTokenRecovery | None = None
+    requestBudget: SimulationRequestBudgetBlock | None = None
     administration: SimulationAdministrationControl
     budget: SimulationControlBudget
     modelPool: Annotated[SimulationModelPoolObserved | SimulationModelPoolUnavailable, Field(discriminator="status")] | None = None
@@ -1180,14 +1403,29 @@ class SimulationControl(SimulationModel):
     owner: Literal["held", "not-held"]
     phase: Literal["paused", "running", "stalled"] | None = None
     revision: Nonnegative | None = None
+    historyRead: SimulationHistoryRead | None = None
+    stopTarget: SimulationStopState | None = None
+    driverSource: SimulationDriverSource | None = None
+    failure: SimulationFailure | None = None
     driver: Literal["idle", "scheduled", "advancing", "checkpointing", "waiting", "completed", "failed", "retiring"]
     inFlight: bool
     observedAt: Nonnegative
-    stop: Literal["paused", "stalled", "until", "work-limit", "decision-required", "retry", "outcome-unknown",
+    stop: Literal["message-rejected", "context-integrity", "decision-timeout", "token-overrun", "request-budget", "paused", "stalled", "until", "work-limit", "decision-required", "retry", "outcome-unknown",
                   "recipient-required", "recipient-busy", "coordination-limit", "resident-capacity",
-                  "residency-recovery-required", "review-required", "completed", "scenario-blocked", "recovery-required"] | None = None
+                  "residency-recovery-required", "review-required", "completed", "scenario-blocked", "recovery-required",
+                  "idle", "maintenance-blocked", "position-capacity", "authority-missing", "approval-required", "existing-obligations", "plan-stale", "plan-budget", "stale-time", "waiting-effective-time", "handoff-required", "retirement-unknown",
+                  "resource-capacity", "resource-history-limit", "resource-reservation-expired",
+                  "entity-capacity", "identity-capacity", "channel-capacity", "world-byte-limit", "world-request-limit",
+                  "world-command-limit", "world-birth-limit", "world-expansion-limit", "world-mutation-limit", "budget-limit", "context-limit", "microstep-limit", "model-pool-capacity", "activation-history-limit", "message-byte-limit"] | None = None
     nextAttemptAt: Nonnegative | None = None
     actions: SimulationControlActions
+
+    @model_validator(mode="after")
+    def _validate_budget(self) -> SimulationControl:
+        for field in ("tokenRecovery", "requestBudget"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} must be omitted rather than null")
+        return self
 
 
 class SimulationManagementReceipt(SimulationModel):
@@ -1573,7 +1811,7 @@ class SimulationScenarioUnavailable(SimulationModel):
 
 
 class SimulationScenarioObserved(SimulationModel):
-    """Scenario identity comes from the retained trusted template resolution."""
+    """Scenario identity comes from the retained trusted definition or template."""
 
     status: Literal["observed"]
     templateId: SimulationText
@@ -1606,11 +1844,18 @@ class SimulationOperationalObserved(SimulationModel):
     observedAt: Nonnegative
     scenario: Annotated[SimulationScenarioObserved | SimulationScenarioUnavailable, Field(discriminator="status")]
     owner: Literal["held", "not-held"]
+    stopTarget: SimulationStopState | None = None
+    driverSource: SimulationDriverSource | None = None
+    failure: SimulationFailure | None = None
     driver: Literal["idle", "scheduled", "advancing", "checkpointing", "waiting", "completed", "failed", "retiring"]
     inFlight: bool
-    stop: Literal["paused", "stalled", "until", "work-limit", "decision-required", "retry", "outcome-unknown",
+    stop: Literal["message-rejected", "context-integrity", "decision-timeout", "token-overrun", "request-budget", "paused", "stalled", "until", "work-limit", "decision-required", "retry", "outcome-unknown",
                   "recipient-required", "recipient-busy", "coordination-limit", "resident-capacity",
-                  "residency-recovery-required", "review-required", "completed", "scenario-blocked", "recovery-required"] | None = None
+                  "residency-recovery-required", "review-required", "completed", "scenario-blocked", "recovery-required",
+                  "idle", "maintenance-blocked", "position-capacity", "authority-missing", "approval-required", "existing-obligations", "plan-stale", "plan-budget", "stale-time", "waiting-effective-time", "handoff-required", "retirement-unknown",
+                  "resource-capacity", "resource-history-limit", "resource-reservation-expired",
+                  "entity-capacity", "identity-capacity", "channel-capacity", "world-byte-limit", "world-request-limit",
+                  "world-command-limit", "world-birth-limit", "world-expansion-limit", "world-mutation-limit", "budget-limit", "context-limit", "microstep-limit", "model-pool-capacity", "activation-history-limit", "message-byte-limit"] | None = None
     nextAttemptAt: Nonnegative | None = None
 
 
@@ -1632,6 +1877,8 @@ class SimulationRunStatusUnavailable(SimulationModel):
     run: SimulationSummary
     status: Literal["unavailable"]
     errorSummary: SimulationText
+    readLimit: SimulationReadLimit | None = None
+    reason: Literal["history-limit", "unsupported-version", "corrupt-history", "owner-unavailable", "unavailable"] | None = None
     operational: Annotated[SimulationOperationalObserved | SimulationOperationalUnavailable, Field(discriminator="status")] | None = None
 
 
@@ -1679,9 +1926,59 @@ class SimulationResidentSlots(SimulationBudgetUsage):
         return self
 
 
+class SimulationAttributedUsage(SimulationModel):
+    """Disjoint provider token buckets; reasoning is already included in output."""
+
+    inputTokens: ObservationCount
+    outputTokens: ObservationCount
+    cacheReadTokens: ObservationCount
+    cacheWriteTokens: ObservationCount
+
+
+class SimulationAttributionBucket(SimulationModel):
+    """Complete settlements and incomplete observed usage are independently counted."""
+
+    attempts: ObservationCount
+    statuses: dict[Literal["reserved", "unknown", "settled", "not-dispatched"], ObservationCount]
+    outstandingReservedTokens: ObservationCount
+    settled: SimulationAttributedUsage
+    unknownReported: SimulationAttributedUsage
+
+    @model_validator(mode="after")
+    def _statuses(self) -> SimulationAttributionBucket:
+        if set(self.statuses) != {"reserved", "unknown", "settled", "not-dispatched"}:
+            raise ValueError("Token attribution requires every settlement status")
+        if sum(self.statuses.values()) != self.attempts:
+            raise ValueError("Token attribution statuses must reconcile with attempts")
+        return self
+
+
+class SimulationTokenAttribution(SimulationModel):
+    """One purpose per request; category sums reconcile with the total."""
+
+    categories: dict[Literal["business-choice", "adjudication", "result-closeout", "communication", "compaction", "unknown"], SimulationAttributionBucket]
+    total: SimulationAttributionBucket
+
+    @model_validator(mode="after")
+    def _categories(self) -> SimulationTokenAttribution:
+        expected = {"business-choice", "adjudication", "result-closeout", "communication", "compaction", "unknown"}
+        if set(self.categories) != expected:
+            raise ValueError("Token attribution requires every category")
+        total = self.total.model_dump()
+        for key, value in total.items():
+            if isinstance(value, dict):
+                for bucket, amount in value.items():
+                    if sum(item.model_dump()[key][bucket] for item in self.categories.values()) != amount:
+                        raise ValueError("Token attribution categories must reconcile with total")
+            elif sum(item.model_dump()[key] for item in self.categories.values()) != value:
+                raise ValueError("Token attribution categories must reconcile with total")
+        return self
+
+
 class SimulationRunMetrics(SimulationModel):
     """Authoritative native budget, residency and pending-work observations, without bodies."""
 
+    tokenAttribution: SimulationTokenAttribution
     budgets: SimulationIntervalBudgets
     residentSlots: SimulationResidentSlots
     pendingDecisionCount: ObservationCount
@@ -1844,4 +2141,17 @@ class SimulationRetryRequestInput(SimulationModel):
     """Exact original command selected for replay from backend-retained input."""
 
     runId: Identity
-    commandId: Identity
+    commandId: CommandSelectorId
+
+
+class SimulationRunControlResult(SimulationModel):
+    """Original stop receipt and separate current observation may refer to different revisions."""
+    runId: Identity
+    receipt: SimulationRunControlReceipt
+    control: SimulationControl
+
+    @model_validator(mode="after")
+    def _same_run(self):
+        if self.runId != self.control.runId:
+            raise ValueError("Stop control result belongs to another run")
+        return self

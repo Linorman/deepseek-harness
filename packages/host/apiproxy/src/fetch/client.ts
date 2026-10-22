@@ -1,5 +1,23 @@
+import { simulationProductRawArchivePageSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRunControlResultSchema } from '@clocky/clocky-simulation-product/schema'
+import {
+  simulationProductWorldBranchResultSchema,
+  simulationProductWorldCausalResultSchema,
+  simulationProductWorldCompareResultSchema,
+} from '@clocky/clocky-simulation-product/schema'
+import { simulationProductBackupExportResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRetentionPlanSchema, simulationProductRetentionResultSchema, simulationProductRetentionRecordsResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductGenerationResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRebuildIndexResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCalendarCommandResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCalendarPreviewSchema, simulationProductCalendarReceiptSchema } from '@clocky/clocky-simulation-product/schema'
+import { scenarioDraftReadResultSchema, scenarioDraftSaveResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldManagementFieldsSchema, simulationProductWorldManagementPreviewSchema, matchesWorldManagementPreview } from '@clocky/clocky-simulation-product/world-management-schema'
+import { simulationProductWorldDomainResultSchema, matchesWorldDomainSelection } from '@clocky/clocky-simulation-product/world-read-schema'
+import { simulationProductWorldCasesPageSchema, simulationProductWorldCaseInspectionSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductRequestsPageSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductPreflightResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldPreflightResultSchema, simulationProductWorldExportResultSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductRunStatusesPageSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductTasksPageSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductTaskReviewPageSchema } from '@clocky/clocky-simulation-product/schema'
@@ -148,22 +166,42 @@ export interface IApiClient {
     /** Read one original journal page under its independent historical-content policy. */
     /** Inspect an exact frozen source under independent Simulation and Team permission. */
     inspectSource(payload: RequestPayload<'simulation.sources.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.sources.inspect'>>>
+    archiveRaw(payload: RequestPayload<'simulation.raw.archive'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.raw.archive'>>>
     records(payload: RequestPayload<'simulation.records.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.records.list'>>>
     watch(payload: RequestPayload<'simulation.changes.watch'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.changes.watch'>>>
     checkpoint(payload: RequestPayload<'simulation.checkpoints.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.checkpoints.create'>>>
     restore(payload: RequestPayload<'simulation.runs.restore'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.restore'>>>
     listTasks(payload: RequestPayload<'simulation.tasks.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.tasks.list'>>>
+    worldManagementFields(payload: RequestPayload<'simulation.world.management.fields'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.management.fields'>>>
+    retainWorldCalendar(payload: RequestPayload<'simulation.world.calendar.retain'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.calendar.retain'>>>
+    readWorldCalendarCommand(payload: RequestPayload<'simulation.world.calendar.command'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.calendar.command'>>>
+    cancelWorldCalendar(payload: RequestPayload<'simulation.world.calendar.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.calendar.cancel'>>>
+    previewWorldCalendar(payload: RequestPayload<'simulation.world.calendar.preview'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.calendar.preview'>>>
+    submitWorldCalendar(payload: RequestPayload<'simulation.world.calendar.submit'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.calendar.submit'>>>
+    previewWorldManagement(payload: RequestPayload<'simulation.world.management.preview'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.management.preview'>>>
+    submitWorldManagement(payload: RequestPayload<'simulation.world.management.submit'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.management.submit'>>>
+    readScenarioDraft(payload: RequestPayload<'simulation.world.drafts.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.drafts.read'>>>
+    saveScenarioDraft(payload: RequestPayload<'simulation.world.drafts.save'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.drafts.save'>>>
+    readWorldDomain(payload: RequestPayload<'simulation.world.domain.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.domain.read'>>>
+    listWorldCases(payload: RequestPayload<'simulation.world.cases.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.cases.list'>>>
+    inspectWorldCase(payload: RequestPayload<'simulation.world.cases.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.cases.inspect'>>>
+    cancelWorldCase(payload: RequestPayload<'simulation.world.cases.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.cases.cancel'>>>
     cancelTask(payload: RequestPayload<'simulation.tasks.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.tasks.cancel'>>>
     listTaskReviews(payload: RequestPayload<'simulation.tasks.review.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.tasks.review.list'>>>
     resolveTaskReview(payload: RequestPayload<'simulation.tasks.review.resolve'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.tasks.review.resolve'>>>
     ingress(payload: RequestPayload<'simulation.ingress.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.ingress.create'>>>
     ingressRequest(payload: RequestPayload<'simulation.ingress.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.ingress.get'>>>
     control(payload: RequestPayload<'simulation.runs.control'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.control'>>>
+    updateRunControl(payload: RequestPayload<'simulation.runs.run-control'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.run-control'>>>
     manage(payload: RequestPayload<'simulation.runs.manage'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.manage'>>>
     managementRequest(payload: RequestPayload<'simulation.management.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.management.get'>>>
     catalog(payload: RequestPayload<'simulation.catalog'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.catalog'>>>
     /** Resolve a creation draft without allocating or preparing a run. */
     preflight(payload: RequestPayload<'simulation.runs.preflight'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.preflight'>>>
+    preflightWorld(payload: RequestPayload<'simulation.world.preflight'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.preflight'>>>
+    createWorld(payload: RequestPayload<'simulation.world.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.create'>>>
+    prepareWorld(payload: RequestPayload<'simulation.world.prepare'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.prepare'>>>
+    exportWorldDefinition(payload: RequestPayload<'simulation.world.export'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.world.export'>>>
     create(payload: RequestPayload<'simulation.runs.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.create'>>>
     prepare(payload: RequestPayload<'simulation.runs.prepare'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.prepare'>>>
     /** Discover original receipt metadata without retaining private command bodies. */
@@ -175,6 +213,56 @@ export interface IApiClient {
     runStatuses(payload: RequestPayload<'simulation.runs.statuses'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.statuses'>>>
     list(payload: RequestPayload<'simulation.runs.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.list'>>>
     inspect(payload: RequestPayload<'simulation.runs.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.inspect'>>>
+    /** Rebuild only the exact retained source prefix. */
+    /** Original experiment command or bounded read; source selection is echoed and checked.
+     * @param payload - Exact original command or archived observation references.
+     * @param signal - Optional transport waiter cancellation; durable originals remain retained.
+     * @returns Source-bound strict response envelope without starting a paused run.
+     */
+    branchWorld(payload: RequestPayload<'simulation.world.branch'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.world.branch'>>>
+    /** Original experiment command or bounded read; source selection is echoed and checked.
+     * @param payload - Exact original command or archived observation references.
+     * @param signal - Optional transport waiter cancellation; durable originals remain retained.
+     * @returns Source-bound strict response envelope without starting a paused run.
+     */
+    readWorldBranch(payload: RequestPayload<'simulation.world.branch.read'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.world.branch.read'>>>
+    /** Original experiment command or bounded read; source selection is echoed and checked.
+     * @param payload - Exact original command or archived observation references.
+     * @param signal - Optional transport waiter cancellation; durable originals remain retained.
+     * @returns Source-bound strict response envelope without starting a paused run.
+     */
+    queryWorldCausal(payload: RequestPayload<'simulation.world.causal'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.world.causal'>>>
+    /** Original experiment command or bounded read; source selection is echoed and checked.
+     * @param payload - Exact original command or archived observation references.
+     * @param signal - Optional transport waiter cancellation; durable originals remain retained.
+     * @returns Source-bound strict response envelope without starting a paused run.
+     */
+    compareWorlds(payload: RequestPayload<'simulation.world.compare'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.world.compare'>>>
+    backupExport(payload: RequestPayload<'simulation.backup.export'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.backup.export'>>>
+    retentionPreview(payload: RequestPayload<'simulation.retention.preview'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.retention.preview'>>>
+    retentionExecute(payload: RequestPayload<'simulation.retention.execute'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.retention.execute'>>>
+    retentionRead(payload: RequestPayload<'simulation.retention.read'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.retention.read'>>>
+    retentionRecords(payload: RequestPayload<'simulation.retention.records'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.retention.records'>>>
+    generationRequest(payload: RequestPayload<'simulation.generation.request'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.generation.request'>>>
+    generationRead(payload: RequestPayload<'simulation.generation.read'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.generation.read'>>>
+    generationExecute(payload: RequestPayload<'simulation.generation.execute'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.generation.execute'>>>
+    generationTransition(payload: RequestPayload<'simulation.generation.transition'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.generation.transition'>>>
+    generationPersonaDraft(payload: RequestPayload<'simulation.generation.persona-draft'>, signal?: AbortSignal):
+    Promise<RpcResponse<ResponseValue<'simulation.generation.persona-draft'>>>
+    rebuildIndex(payload: RequestPayload<'simulation.index.rebuild'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.index.rebuild'>>>
     browse(payload: RequestPayload<'simulation.collections.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.collections.list'>>>
     inspectObject(payload: RequestPayload<'simulation.objects.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.objects.inspect'>>>
   }
@@ -324,19 +412,38 @@ export interface IApiClient {
  * mirror of the handler's request table; key coverage compiler-enforced against RpcMethodMap).
  */
 const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseValue<K>>> } = {
+  'simulation.world.drafts.read': scenarioDraftReadResultSchema,
+  'simulation.world.drafts.save': scenarioDraftSaveResultSchema,
   'simulation.checkpoints.create': simulationProductRequestReceiptSchema,
   'simulation.runs.restore': simulationProductRequestReceiptSchema,
   'simulation.tasks.list': simulationProductTasksPageSchema,
   'simulation.tasks.cancel': simulationProductRequestReceiptSchema,
+  'simulation.world.management.fields': simulationProductWorldManagementFieldsSchema,
+  'simulation.world.calendar.retain': simulationProductCalendarCommandResultSchema,
+  'simulation.world.calendar.command': simulationProductCalendarCommandResultSchema,
+  'simulation.world.calendar.cancel': simulationProductCalendarCommandResultSchema,
+  'simulation.world.calendar.preview': simulationProductCalendarPreviewSchema,
+  'simulation.world.calendar.submit': simulationProductCalendarReceiptSchema,
+  'simulation.world.management.preview': simulationProductWorldManagementPreviewSchema,
+  'simulation.world.management.submit': simulationProductRequestReceiptSchema,
+  'simulation.world.domain.read': simulationProductWorldDomainResultSchema,
+  'simulation.world.cases.list': simulationProductWorldCasesPageSchema,
+  'simulation.world.cases.inspect': simulationProductWorldCaseInspectionSchema,
+  'simulation.world.cases.cancel': simulationProductRequestReceiptSchema,
   'simulation.tasks.review.list': simulationProductTaskReviewPageSchema,
   'simulation.tasks.review.resolve': simulationProductRequestReceiptSchema,
   'simulation.ingress.create': simulationProductIngressReceiptSchema,
   'simulation.ingress.get': simulationProductIngressResultSchema,
   'simulation.runs.control': simulationProductControlSchema,
+  'simulation.runs.run-control': simulationProductRunControlResultSchema,
   'simulation.runs.manage': simulationProductManageResultSchema,
   'simulation.management.get': simulationProductManagementResultSchema,
   'simulation.catalog': simulationProductCatalogSchema,
   'simulation.runs.preflight': simulationProductPreflightResultSchema,
+  'simulation.world.preflight': simulationProductWorldPreflightResultSchema,
+  'simulation.world.create': simulationProductRequestReceiptSchema,
+  'simulation.world.prepare': simulationProductRequestReceiptSchema,
+  'simulation.world.export': simulationProductWorldExportResultSchema,
   'simulation.runs.create': simulationProductRequestReceiptSchema,
   'simulation.runs.prepare': simulationProductRequestReceiptSchema,
   'simulation.requests.list': simulationProductRequestsPageSchema,
@@ -346,9 +453,25 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'simulation.runs.statuses': simulationProductRunStatusesPageSchema,
   'simulation.runs.list': simulationProductRunPageSchema,
   'simulation.runs.inspect': simulationProductRunInspectionSchema,
+  'simulation.world.branch': simulationProductWorldBranchResultSchema,
+  'simulation.world.branch.read': simulationProductWorldBranchResultSchema,
+  'simulation.world.causal': simulationProductWorldCausalResultSchema,
+  'simulation.world.compare': simulationProductWorldCompareResultSchema,
+  'simulation.backup.export': simulationProductBackupExportResultSchema,
+  'simulation.retention.preview': simulationProductRetentionPlanSchema,
+  'simulation.retention.execute': simulationProductRetentionResultSchema,
+  'simulation.retention.read': simulationProductRetentionResultSchema,
+  'simulation.retention.records': simulationProductRetentionRecordsResultSchema,
+  'simulation.generation.request': simulationProductGenerationResultSchema,
+  'simulation.generation.read': simulationProductGenerationResultSchema,
+  'simulation.generation.execute': simulationProductGenerationResultSchema,
+  'simulation.generation.transition': simulationProductGenerationResultSchema,
+  'simulation.generation.persona-draft': simulationProductGenerationResultSchema,
+  'simulation.index.rebuild': simulationProductRebuildIndexResultSchema,
   'simulation.collections.list': simulationProductCollectionPageSchema,
   'simulation.objects.inspect': simulationProductObjectInspectionSchema,
   'simulation.sources.inspect': simulationProductSourceInspectionSchema,
+  'simulation.raw.archive': simulationProductRawArchivePageSchema,
   'simulation.records.list': simulationProductRecordsPageSchema,
   'simulation.changes.watch': simulationProductWatchResultSchema,
   'session.list': sessionListValueSchema,
@@ -485,6 +608,12 @@ export abstract class AbstractApiClient implements IApiClient {
       }
       return response
     },
+    archiveRaw: async (payload, signal) => {
+      const response = await this.callUnary('simulation.raw.archive', payload, signal)
+      if (response.result.ok && response.result.value.runId !== payload.runId)
+        throw new Error('Raw archive response belongs to another original selection')
+      return response
+    },
     records: async (payload, signal) => {
       const response = await this.callUnary('simulation.records.list', payload, signal)
       if (response.result.ok) {
@@ -531,6 +660,69 @@ export abstract class AbstractApiClient implements IApiClient {
         || payload.expectedRevision !== undefined && response.result.value.snapshotRevision !== payload.expectedRevision
         || payload.limit !== undefined && response.result.value.items.length > payload.limit)) {
         throw new Error('Simulation task page does not match its original selection')
+      }
+      return response
+    },
+    worldManagementFields: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.management.fields', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId || response.result.value.targetId !== payload.targetId
+        || response.result.value.action !== payload.action)) {
+        throw new Error('World management response does not match its original selection')
+      }
+      return response
+    },
+    retainWorldCalendar: async (payload, signal) => this.callUnary('simulation.world.calendar.retain', payload, signal),
+    readWorldCalendarCommand: async (payload, signal) => this.callUnary('simulation.world.calendar.command', payload, signal),
+    cancelWorldCalendar: async (payload, signal) => this.callUnary('simulation.world.calendar.cancel', payload, signal),
+    previewWorldCalendar: async (payload, signal) => this.callUnary('simulation.world.calendar.preview', payload, signal),
+    submitWorldCalendar: async (payload, signal) => this.callUnary('simulation.world.calendar.submit', payload, signal),
+    previewWorldManagement: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.management.preview', payload, signal)
+      if (response.result.ok && (!matchesWorldManagementPreview(payload, response.result.value))) {
+        throw new Error('World management response does not match its original selection')
+      }
+      return response
+    },
+    submitWorldManagement: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.management.submit', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId || response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'world-management')) {
+        throw new Error('World management response does not match its original selection')
+      }
+      return response
+    },
+    readScenarioDraft: (payload, signal) => this.callUnary('simulation.world.drafts.read', payload, signal),
+    saveScenarioDraft: (payload, signal) => this.callUnary('simulation.world.drafts.save', payload, signal),
+    readWorldDomain: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.domain.read', payload, signal)
+      if (response.result.ok && !matchesWorldDomainSelection(payload, response.result.value)) {
+        throw new Error('World domain response does not match its original selection')
+      }
+      return response
+    },
+    listWorldCases: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.cases.list', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || payload.expectedRevision !== undefined && response.result.value.snapshotRevision !== payload.expectedRevision
+        || payload.limit !== undefined && response.result.value.items.length > payload.limit
+        || payload.status !== undefined && response.result.value.items.some(item => item.status !== payload.status))) {
+        throw new Error('World case page does not match its original selection')
+      }
+      return response
+    },
+    inspectWorldCase: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.cases.inspect', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || payload.expectedRevision !== undefined && response.result.value.snapshotRevision !== payload.expectedRevision
+        || response.result.value.requestId !== payload.requestId || response.result.value.section !== payload.section)) {
+        throw new Error('World case detail does not match its original selection')
+      }
+      return response
+    },
+    cancelWorldCase: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.cases.cancel', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'cancel-world-case')) {
+        throw new Error('World cancellation receipt does not match its original selection')
       }
       return response
     },
@@ -590,6 +782,14 @@ export abstract class AbstractApiClient implements IApiClient {
       }
       return response
     },
+    updateRunControl: async (payload, signal) => {
+      const response = await this.callUnary('simulation.runs.run-control', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.receipt.commandId !== payload.commandId
+        || response.result.value.receipt.targetId !== (payload.target?.targetId ?? null)))
+        throw new Error('Simulation stop response does not match its original selection')
+      return response
+    },
     manage: async (payload, signal) => {
       const response = await this.callUnary('simulation.runs.manage', payload, signal)
       if (response.result.ok) {
@@ -613,6 +813,29 @@ export abstract class AbstractApiClient implements IApiClient {
     },
     catalog: (payload, signal) => this.callUnary('simulation.catalog', payload, signal),
     preflight: (payload, signal) => this.callUnary('simulation.runs.preflight', payload, signal),
+    preflightWorld: (payload, signal) => this.callUnary('simulation.world.preflight', payload, signal),
+    createWorld: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.create', payload, signal)
+      if (response.result.ok && (response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'world-create')) {
+        throw new Error('World creation response does not match its original command')
+      }
+      return response
+    },
+    prepareWorld: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.prepare', payload, signal)
+      if (response.result.ok && (response.result.value.commandId !== payload.commandId
+        || response.result.value.runId !== payload.runId || response.result.value.kind !== 'world-prepare')) {
+        throw new Error('World preparation response does not match its original command')
+      }
+      return response
+    },
+    exportWorldDefinition: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.export', payload, signal)
+      if (response.result.ok && response.result.value.runId !== payload.runId) {
+        throw new Error('World export response does not match its selected run')
+      }
+      return response
+    },
     create: async (payload, signal) => {
       const response = await this.callUnary('simulation.runs.create', payload, signal)
       if (response.result.ok && (response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'create')) {
@@ -677,6 +900,130 @@ export abstract class AbstractApiClient implements IApiClient {
       if (response.result.ok && response.result.value.run.id !== payload.runId) {
         throw new Error('Simulation inspection response does not match its registered run')
       }
+      return response
+    },
+    branchWorld: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.branch', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.commandId !== payload.commandId || value.status === 'not-found'
+        || value.memoryPolicy !== payload.memoryPolicy || value.source.runId !== payload.source.runId
+        || value.source.archiveCommandId !== payload.source.archiveCommandId)
+          throw new Error('World experiment response changed its original selection or bounds')
+      }
+      return response
+    },
+    readWorldBranch: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.branch.read', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.commandId !== payload.commandId)
+          throw new Error('World experiment response changed its original selection or bounds')
+      }
+      return response
+    },
+    queryWorldCausal: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.causal', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.source.runId !== payload.source.runId || value.source.archiveCommandId !== payload.source.archiveCommandId
+        || value.nodes.length > payload.maxNodes || new TextEncoder().encode(JSON.stringify(value)).length > payload.maxBytes)
+          throw new Error('World experiment response changed its original selection or bounds')
+      }
+      return response
+    },
+    compareWorlds: async (payload, signal) => {
+      const response = await this.callUnary('simulation.world.compare', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.observations.left.runId !== payload.left.runId
+          || value.observations.left.archiveCommandId !== payload.left.archiveCommandId
+        || value.observations.right.runId !== payload.right.runId
+        || value.observations.right.archiveCommandId !== payload.right.archiveCommandId)
+          throw new Error('World experiment response changed its original selection or bounds')
+      }
+      return response
+    },
+    backupExport: async (payload, signal) => {
+      const response = await this.callUnary('simulation.backup.export', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId || response.result.value.commandId !== payload.commandId))
+        throw new Error('Backup response changed its original selection')
+      return response
+    },
+    retentionPreview: async (payload, signal) => {
+      const response = await this.callUnary('simulation.retention.preview', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId) throw new Error('Retention response changed its original selection')
+      }
+      return response
+    },
+    retentionExecute: async (payload, signal) => {
+      const response = await this.callUnary('simulation.retention.execute', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.commandId !== payload.commandId
+        || value.status === 'not-found' || value.plan.planHash !== payload.planHash || value.plan.snapshotRevision !== payload.expectedRevision) throw new Error('Retention response changed its original selection')
+      }
+      return response
+    },
+    retentionRead: async (payload, signal) => {
+      const response = await this.callUnary('simulation.retention.read', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.commandId !== payload.commandId) throw new Error('Retention response changed its original selection')
+      }
+      return response
+    },
+    retentionRecords: async (payload, signal) => {
+      const response = await this.callUnary('simulation.retention.records', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.commandId !== payload.commandId
+        || value.owner !== payload.owner || value.ownerId !== payload.ownerId
+        || value.entries.length > payload.limit || value.entries.some((entry, index, entries) =>
+          entry.sequence <= (entries[index - 1]?.sequence ?? payload.afterSequence))) throw new Error('Retention response changed its original selection')
+      }
+      return response
+    },
+    generationRequest: async (payload, signal) => {
+      const response = await this.callUnary('simulation.generation.request', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.job !== null && response.result.value.job.job.id !== payload.job.id
+        || response.result.value.job === null)) throw new Error('Generation response changed its original selection')
+      return response
+    },
+    generationRead: async (payload, signal) => {
+      const response = await this.callUnary('simulation.generation.read', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.job !== null && response.result.value.job.job.id !== payload.jobId)) throw new Error('Generation response changed its original selection')
+      return response
+    },
+    generationExecute: async (payload, signal) => {
+      const response = await this.callUnary('simulation.generation.execute', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.job !== null && response.result.value.job.job.id !== payload.jobId
+        || response.result.value.job === null)) throw new Error('Generation response changed its original selection')
+      return response
+    },
+    generationTransition: async (payload, signal) => {
+      const response = await this.callUnary('simulation.generation.transition', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.job !== null && response.result.value.job.job.id !== payload.change.id
+        || response.result.value.job === null)) throw new Error('Generation response changed its original selection')
+      return response
+    },
+    generationPersonaDraft: async (payload, signal) => {
+      const response = await this.callUnary('simulation.generation.persona-draft', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.job !== null && response.result.value.job.job.id !== payload.jobId
+        || response.result.value.job === null)) throw new Error('Generation response changed its original selection')
+      return response
+    },
+    rebuildIndex: async (payload, signal) => {
+      const response = await this.callUnary('simulation.index.rebuild', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.snapshotRevision !== payload.expectedRevision)) throw new Error('Simulation index response does not match its source')
       return response
     },
     browse: async (payload, signal) => {

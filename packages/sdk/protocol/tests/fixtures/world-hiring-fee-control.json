@@ -1,0 +1,212 @@
+[
+  {
+    "reason": "resource-capacity",
+    "control": {
+      "runId": "run",
+      "administration": {
+        "actions": {
+          "checkpoint": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "restore": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "prepare": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "ingress": {
+            "allowed": true,
+            "reason": "ready"
+          }
+        },
+        "ingress": {
+          "maxTime": "1000",
+          "maxBytes": 65536,
+          "targets": []
+        }
+      },
+      "budget": {
+        "model": {
+          "provider": "scripted",
+          "name": "fixture"
+        },
+        "tokensPerRequest": 10000,
+        "tokensPerInterval": 1000000,
+        "interval": "100",
+        "residentActors": 2,
+        "sharedModelLimit": 1
+      },
+      "owner": "held",
+      "phase": "paused",
+      "revision": 1,
+      "driver": "waiting",
+      "inFlight": false,
+      "observedAt": 1,
+      "actions": {
+        "start": {
+          "allowed": false,
+          "reason": "scenario-blocked"
+        },
+        "pause": {
+          "allowed": true,
+          "reason": "ready"
+        }
+      },
+      "stop": "resource-capacity"
+    },
+    "operational": {
+      "status": "observed",
+      "observedAt": 1,
+      "scenario": {
+        "status": "unavailable"
+      },
+      "owner": "held",
+      "driver": "waiting",
+      "inFlight": false,
+      "stop": "resource-capacity"
+    }
+  },
+  {
+    "reason": "resource-history-limit",
+    "control": {
+      "runId": "run",
+      "administration": {
+        "actions": {
+          "checkpoint": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "restore": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "prepare": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "ingress": {
+            "allowed": true,
+            "reason": "ready"
+          }
+        },
+        "ingress": {
+          "maxTime": "1000",
+          "maxBytes": 65536,
+          "targets": []
+        }
+      },
+      "budget": {
+        "model": {
+          "provider": "scripted",
+          "name": "fixture"
+        },
+        "tokensPerRequest": 10000,
+        "tokensPerInterval": 1000000,
+        "interval": "100",
+        "residentActors": 2,
+        "sharedModelLimit": 1
+      },
+      "owner": "held",
+      "phase": "paused",
+      "revision": 1,
+      "driver": "waiting",
+      "inFlight": false,
+      "observedAt": 1,
+      "actions": {
+        "start": {
+          "allowed": false,
+          "reason": "scenario-blocked"
+        },
+        "pause": {
+          "allowed": true,
+          "reason": "ready"
+        }
+      },
+      "stop": "resource-history-limit"
+    },
+    "operational": {
+      "status": "observed",
+      "observedAt": 1,
+      "scenario": {
+        "status": "unavailable"
+      },
+      "owner": "held",
+      "driver": "waiting",
+      "inFlight": false,
+      "stop": "resource-history-limit"
+    }
+  },
+  {
+    "reason": "resource-reservation-expired",
+    "control": {
+      "runId": "run",
+      "administration": {
+        "actions": {
+          "checkpoint": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "restore": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "prepare": {
+            "allowed": true,
+            "reason": "ready"
+          },
+          "ingress": {
+            "allowed": true,
+            "reason": "ready"
+          }
+        },
+        "ingress": {
+          "maxTime": "1000",
+          "maxBytes": 65536,
+          "targets": []
+        }
+      },
+      "budget": {
+        "model": {
+          "provider": "scripted",
+          "name": "fixture"
+        },
+        "tokensPerRequest": 10000,
+        "tokensPerInterval": 1000000,
+        "interval": "100",
+        "residentActors": 2,
+        "sharedModelLimit": 1
+      },
+      "owner": "held",
+      "phase": "paused",
+      "revision": 1,
+      "driver": "waiting",
+      "inFlight": false,
+      "observedAt": 1,
+      "actions": {
+        "start": {
+          "allowed": false,
+          "reason": "scenario-blocked"
+        },
+        "pause": {
+          "allowed": true,
+          "reason": "ready"
+        }
+      },
+      "stop": "resource-reservation-expired"
+    },
+    "operational": {
+      "status": "observed",
+      "observedAt": 1,
+      "scenario": {
+        "status": "unavailable"
+      },
+      "owner": "held",
+      "driver": "waiting",
+      "inFlight": false,
+      "stop": "resource-reservation-expired"
+    }
+  }
+]

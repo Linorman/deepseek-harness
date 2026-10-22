@@ -41,7 +41,7 @@ describe.each(['json', 'sqlite'] as const)('%s knowledge admission', (backend) =
     const h = await createBusinessHarness(backend)
     try {
       await h.actor('a'); await h.actor('b')
-      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'inactive', entityKind: 'person', cognition: 'none', profile: {} }), h.run.snapshot().revision)
+      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'inactive', entityKind: 'person', cognition: 'none', profile: {} }), h.run.snapshot().revision)
       await h.run.change(simulationChangeSchema.parse({ kind: 'entity/phase', id: 'inactive', entityRevision: 1, phase: 'inactive' }), h.run.snapshot().revision)
       const first = await h.run.recordKnowledge(request())
       const before = h.run.snapshot()

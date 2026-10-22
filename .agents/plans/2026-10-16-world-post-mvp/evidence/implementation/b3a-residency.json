@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-19",
+  "items": [
+    "B12"
+  ],
+  "mode": "source, JSON + SQLite, real Loader",
+  "files": {
+    "packages/simulation/simulation-team/src/residency-policy.ts": "e8d0d3a3da27e723986c5b54e4ab27a9e12a727325c304650ebe0a7f7839a7dd",
+    "packages/simulation/simulation-team/src/residency.ts": "85439dd4e57c201054f011a08ddc9f4d0a50b2071d98f45685aa0395bc58afdc",
+    "packages/simulation/simulation-team/tests/residency-policy.spec.ts": "de6e296c80a607b131f205803b5b42db58e477befc8ecf0d147c1422d6e1ffbd",
+    "examples/simulation-company/tests/product-driver-scenario.ts": "ae2124af7bc9c19c5b4d429703eaf90e9582c7ce1e0ba6a4ad1bbac4f7133204",
+    "examples/simulation-company/tests/product-driver.snapshot.ts": "1ed3b8ee32da9dcb0352a8523dfa68961aa5cdf9319cc9ba7aa3a873637a3c76"
+  },
+  "commands": [
+    {
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc\" pnpm exec vitest run packages/simulation/simulation-team/tests/residency-policy.spec.ts",
+      "result": "6 passed",
+      "log": ".tmp/world-post-mvp-bc/final-residency.log"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc\" CLOCKY_SNAPSHOT=replay pnpm exec vitest run examples/simulation-company/tests/product-driver.snapshot.ts --config vitest.snapshot.config.ts -t automatic-residency",
+      "result": "2 passed; 10 unrelated skipped; existing goldens unchanged",
+      "log": ".tmp/world-post-mvp-bc/final-residency-snapshot.log"
+    }
+  ],
+  "limits": [
+    "Demand-triggered bounded idle eviction; representation switching and local mutation are verified separately.",
+    "Final unified build, Host typecheck and repository lint passed; final broader hygiene is reported by the integrating task."
+  ]
+}

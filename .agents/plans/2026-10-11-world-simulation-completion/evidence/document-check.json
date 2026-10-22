@@ -1,0 +1,18 @@
+{
+  "markdownFiles": 4,
+  "localLinksChecked": 84,
+  "matrixRows": 33,
+  "statusCounts": {
+    "已实现": 13,
+    "部分实现": 6,
+    "缺失": 14
+  },
+  "score": 16.0,
+  "maximum": 33,
+  "capabilityCoveragePercent": 48.5,
+  "checklistItems": 112,
+  "allProductItemsUnchecked": true,
+  "sourceAttachmentUnchanged": true,
+  "reviewedSourceFilesChangedSinceCapture": [],
+  "errors": []
+}

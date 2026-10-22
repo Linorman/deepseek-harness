@@ -35,7 +35,7 @@ export async function seedSource(ctx: Context, native: { run: SimulationRun; lea
   }
   if (original === undefined) throw new Error('Fixture has no source')
   const id = 'source-reader' as never
-  await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }), native.run.snapshot().revision)
+  await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }), native.run.snapshot().revision)
   const binding = (await ctx.teams.getTeam({ teamId })).activations.find(value => value.activation.participantId === members[2]!.id)!
   await native.run.bindEntity(id, { teamId, participantId: members[2]!.id, sessionId: binding.sessionId }, native.run.snapshot().revision)
   const lease = await native.run.reserveWriter(id, 'local', 'source-lease' as never, native.run.snapshot().revision)

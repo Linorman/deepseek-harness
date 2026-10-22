@@ -82,9 +82,10 @@ function resolveClientExport(packagePath: string, pkg: ClientPackageManifest): s
 }
 
 /** Derive the assembled browser graph from the same bundle patches and package declarations as `clocky web`. */
-function loadAssembledPlugins(): readonly AssembledPlugin[] {
+function loadAssembledPlugins(additional: readonly string[] = []): readonly AssembledPlugin[] {
   const entries = appBoot.composeEntries(BUNDLE_LAYERS.map(layer =>
     appBoot.loadOverlayPatches('assembled boot', layer.patch)))
+  entries.push(...additional.map(name => ({ name })))
   const plugins = new Map<string, AssembledPlugin>()
   for (const entry of entries) {
     if (entry.disabled === true || typeof entry.name !== 'string') continue
@@ -187,28 +188,31 @@ export function installAssembledBootEnv(): void {
  * Mount the assembled application on the fixture transport; the teardown
  * registered by installAssembledBootEnv disposes it.
  * @param search - fixture query string used to select deterministic host behavior.
+ * @param additional - Client entries from optional Host groups that this fixture explicitly installs.
  */
-export function mountAssembledApp(search = '?fixture'): void {
+export function mountAssembledApp(search = '?fixture', additional: readonly string[] = []): void {
+  const plugins = additional.length === 0 ? PLUGINS : loadAssembledPlugins(additional)
+  const loadedBundles = additional.length === 0 ? bundles : new Map(plugins.map(plugin => [plugin.url, readFileSync(plugin.bundlePath, 'utf8')]))
   history.replaceState(null, '', `/${search}`)
   const root = document.createElement('div')
   root.id = 'root'
   document.body.appendChild(root)
-  win.__CLOCKY_BOOT__ = { rev: 'fx', entries: PLUGINS.map(({ bundlePath: _bundlePath, ...plugin }) => plugin) }
+  win.__CLOCKY_BOOT__ = { rev: 'fx', entries: plugins.map(({ bundlePath: _bundlePath, ...plugin }) => plugin) }
   const [facadeRow] = bootInjections(win.__CLOCKY_BOOT__)
   if (facadeRow?.kind !== 'script') throw new Error('missing injected ModuleLoader facade row')
   ;(0, eval)(facadeRow.text)
   // Mirror the blocking Host-injected scripts before the Vite entry calls create().
   for (const id of ['@clocky/clocky-client-modules', '@clocky/clocky-client-runtime']) {
-    const plugin = PLUGINS.find(candidate => candidate.id === id)
+    const plugin = plugins.find(candidate => candidate.id === id)
     if (plugin === undefined) throw new Error(`missing parser-preloaded fixture row ${id}`)
-    const code = bundles.get(plugin.url)
+    const code = loadedBundles.get(plugin.url)
     if (code === undefined) throw new Error(`missing built bundle ${plugin.url}`)
     ;(0, eval)(code)
   }
   act(() => {
     const entry = new AppWebEntry(root, {
       loadBundle: async (url) => {
-        const code = bundles.get(url)
+        const code = loadedBundles.get(url)
         if (code === undefined) throw new Error(`missing built bundle ${url}`)
         ;(0, eval)(code)
       },

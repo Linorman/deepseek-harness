@@ -1,0 +1,31 @@
+{
+  "source": "runtime-shared initial World identity/authority/commitment subset",
+  "byteLimit": 65536,
+  "tokensPerRequest": 10000,
+  "measurements": [
+    {
+      "coverage": "required-subset",
+      "requiredContextBytes": 585,
+      "estimatedInputTokens": 132,
+      "completeEnvelope": "unknown",
+      "futureConsumption": "unknown"
+    },
+    {
+      "coverage": "required-subset",
+      "requiredContextBytes": 686,
+      "estimatedInputTokens": 153,
+      "completeEnvelope": "unknown",
+      "futureConsumption": "unknown"
+    },
+    {
+      "coverage": "required-subset",
+      "requiredContextBytes": 585,
+      "estimatedInputTokens": 132,
+      "completeEnvelope": "unknown",
+      "futureConsumption": "unknown"
+    }
+  ],
+  "modelCalls": 0,
+  "completeEnvelope": "unknown",
+  "futureConsumption": "unknown"
+}

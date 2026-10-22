@@ -1,3 +1,4 @@
+import { productAuthCookieName } from '@clocky/clocky-client-connection/src/product-auth-contract.ts'
 /** Published clocky web + pnpm dev:web → browser HMR, with no page reload. */
 
 import { existsSync, globSync, statSync } from 'node:fs'
@@ -16,7 +17,6 @@ import { readClientBuildRecord } from '../../../scripts/client-build-environment
 import { REPO_ROOT } from './support.ts'
 
 const PRODUCT_AUTH_CREDENTIAL = 'clocky-web-hmr-product-credential'
-const PRODUCT_AUTH_COOKIE_NAME = 'clocky_product_auth'
 const PRODUCT_AUTH_DIGEST = createHash('sha256').update(PRODUCT_AUTH_CREDENTIAL, 'utf8').digest('hex')
 
 function spawnSpec(argv: readonly string[], cwd: string, env?: Record<string, string>): SubprocessSpawnSpec {
@@ -143,12 +143,12 @@ it('hot-reloads a real client-plugin source edit without refreshing the page', a
     const cookie = bootstrap.headers.get('set-cookie')?.split(';', 1)[0]
     const separator = cookie?.indexOf('=') ?? -1
     const token = cookie === undefined || separator < 1 ? '' : cookie.slice(separator + 1)
-    if (cookie === undefined || cookie.slice(0, separator) !== PRODUCT_AUTH_COOKIE_NAME || token.length === 0) {
+    if (cookie === undefined || cookie.slice(0, separator) !== productAuthCookieName(Number(new URL(baseUrl).port || '80')) || token.length === 0) {
       throw new Error('HMR product authentication bootstrap returned an invalid cookie')
     }
     browser = await chromium.launch()
     const page = await browser.newPage()
-    await page.context().addCookies([{ name: PRODUCT_AUTH_COOKIE_NAME, value: token, url: baseUrl }])
+    await page.context().addCookies([{ name: productAuthCookieName(Number(new URL(baseUrl).port || '80')), value: token, url: baseUrl }])
     const pageErrors: string[] = []
     page.on('pageerror', error => pageErrors.push(String(error)))
     await page.goto(baseUrl, { waitUntil: 'load' })

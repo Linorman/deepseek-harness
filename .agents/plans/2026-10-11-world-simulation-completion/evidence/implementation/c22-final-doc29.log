@@ -1,0 +1,62 @@
+$ tsx scripts/run-gates.ts doc-sync
+run-gates: doc-sync running 29 gate(s) with 4 worker(s) from 12 available CPU(s), doc-sync cap 4.
+run-gates: start doc-typecheck
+run-gates: start documentation build
+run-gates: start doc graphs
+run-gates: start markdown links
+run-gates: PASS markdown links (8.87s)
+run-gates: start type equivalence
+run-gates: PASS type equivalence (8.00s)
+run-gates: start cordis catalog
+run-gates: PASS doc-typecheck (20.20s)
+run-gates: start verify-mermaid
+run-gates: PASS documentation build (26.30s)
+run-gates: start scoped events
+run-gates: PASS verify-mermaid (8.86s)
+run-gates: start translation pairing
+run-gates: PASS doc graphs (39.38s)
+run-gates: start markdown wrap
+run-gates: PASS translation pairing (13.53s)
+run-gates: start client catalog
+run-gates: PASS client catalog (2.38s)
+run-gates: start export jsdoc
+run-gates: PASS markdown wrap (5.85s)
+run-gates: start tool catalog
+run-gates: PASS scoped events (19.64s)
+run-gates: start config catalog
+run-gates: PASS config catalog (1.21s)
+run-gates: start persistence catalog
+run-gates: PASS cordis catalog (30.90s)
+run-gates: start module graph
+run-gates: PASS export jsdoc (3.04s)
+run-gates: start public repository links
+run-gates: PASS module graph (0.51s)
+run-gates: start doc refs
+run-gates: PASS persistence catalog (1.14s)
+run-gates: start package paths
+run-gates: PASS tool catalog (3.29s)
+run-gates: start config source ownership
+run-gates: PASS doc refs (0.93s)
+run-gates: start package README model experience
+run-gates: PASS package paths (1.00s)
+run-gates: start agent note classification
+run-gates: PASS config source ownership (0.87s)
+run-gates: start agent note format
+run-gates: PASS agent note classification (0.50s)
+run-gates: start archived agent notes
+run-gates: PASS agent note format (0.52s)
+run-gates: start skill invocation metadata
+run-gates: PASS public repository links (2.29s)
+run-gates: start translation prompt
+run-gates: PASS archived agent notes (0.53s)
+run-gates: start doc budgets
+run-gates: PASS skill invocation metadata (0.46s)
+run-gates: start documentation site checks
+run-gates: PASS translation prompt (0.46s)
+run-gates: start package README limitations
+run-gates: PASS doc budgets (0.45s)
+run-gates: PASS package README model experience (2.34s)
+run-gates: PASS package README limitations (2.27s)
+run-gates: PASS documentation site checks (3.80s)
+
+run-gates: 29 passed, 0 failed, 0 skipped in 54.17s.

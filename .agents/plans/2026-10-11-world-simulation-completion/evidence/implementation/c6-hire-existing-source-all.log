@@ -1,0 +1,14 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ✓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > json existing-person hiring > reuses original identity and remembered Session in company 30916ms
+ ✓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > json existing-person hiring > reuses original identity and remembered Session in laboratory 26591ms
+ ✓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > sqlite existing-person hiring > reuses original identity and remembered Session in company 17365ms
+ ✓ examples/simulation-company/tests/world-hire-existing.snapshot.ts > sqlite existing-person hiring > reuses original identity and remembered Session in laboratory 21742ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  05:22:39
+   Duration  97.14s (transform 272ms, setup 234ms, import 124ms, tests 96.61s, environment 0ms)
+

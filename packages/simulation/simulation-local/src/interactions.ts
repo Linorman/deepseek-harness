@@ -1,6 +1,6 @@
 /** Independent request replies and evidence-backed commitments. @module @clocky/clocky-simulation-local/interactions */
 import { assertCapacity } from './capacity.ts'
-import { simulationCommitmentIdSchema } from '@clocky/clocky-simulation'
+import { simulationCommitmentIdSchema, simulationResourceTransaction } from '@clocky/clocky-simulation'
 import type {
   SimTime, SimulationCommitment, SimulationInteraction, SimulationInteractionId, SimulationOperation,
   SimulationOperationAction, SimulationSnapshot,
@@ -109,8 +109,9 @@ function isReply(
  * @returns updated commitment and interaction facts.
  */
 export function recordTransferEvidence(state: SimulationSnapshot, operation: SimulationOperation): SimulationSnapshot {
-  if (operation.action.kind !== 'resource/transfer') throw new Error('Transfer evidence requires a resource transfer')
-  const id = operation.action.transaction.commitmentId
+  const transaction = simulationResourceTransaction(state, operation)
+  if (transaction === undefined) throw new Error('Transfer evidence requires its actual conserved transaction')
+  const id = transaction.commitmentId
   if (id === null) return state
   const obligation = Object.hasOwn(state.commitments, id) ? state.commitments[id] : undefined
   if (obligation === undefined) reject('SIM_COMMITMENT_NOT_FOUND')
@@ -121,9 +122,10 @@ export function recordTransferEvidence(state: SimulationSnapshot, operation: Sim
   let total = 0n
   for (const evidenceId of evidence) {
     const effect = evidenceId === operation.id ? operation : state.operations[evidenceId]
-    if (effect?.action.kind !== 'resource/transfer') throw new Error('Commitment evidence is not an authoritative transfer')
+    const actual = effect === undefined ? undefined : simulationResourceTransaction(state, effect)
+    if (actual === undefined) throw new Error('Commitment evidence is not an authoritative transfer')
     let contribution = 0n
-    for (const transfer of effect.action.transaction.transfers) {
+    for (const transfer of actual.transfers) {
       if (transfer.from === policy.from && transfer.to === policy.to) contribution += BigInt(transfer.quantity)
     }
     if (contribution === 0n) reject('SIM_FULFILLMENT_INVALID')

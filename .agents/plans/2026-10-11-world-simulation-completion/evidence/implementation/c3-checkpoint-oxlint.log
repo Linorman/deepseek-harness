@@ -1,0 +1,14 @@
+examples/simulation-company/tests/world-booking-version.snapshot.ts:9:67: error @stylistic(arrow-parens): Expected parentheses around arrow function argument having a body with curly braces.
+examples/simulation-company/tests/world-booking-version.snapshot.ts:10:95: error @stylistic(arrow-parens): Expected parentheses around arrow function argument having a body with curly braces.
+packages/simulation/simulation/src/checkpoint.ts:46:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation/src/checkpoint.ts:48:1: error @stylistic(max-len): This line has a length of 144. Maximum allowed is 140.
+packages/simulation/simulation/src/checkpoint.ts:118:16: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/checkpoint.ts:118:40: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation/src/checkpoint.ts:118:58: error @stylistic(member-delimiter-style): Unexpected separator (;).
+examples/simulation-company/tests/world-booking-scenario.ts:62:1: error @stylistic(indent): Expected indentation of 4 spaces but found 6.
+examples/simulation-company/tests/world-booking-scenario.ts:63:1: error @stylistic(indent): Expected indentation of 4 spaces but found 6.
+examples/simulation-company/tests/world-booking-scenario.ts:64:1: error @stylistic(indent): Expected indentation of 4 spaces but found 6.
+examples/simulation-company/tests/world-booking-scenario.ts:66:1: error @stylistic(indent): Expected indentation of 2 spaces but found 4.
+packages/simulation/simulation-local/tests/checkpoints.spec.ts:427:129: error @stylistic(arrow-parens): Expected parentheses around arrow function argument having a body with curly braces.
+packages/simulation/simulation/src/checkpoint.ts:125:47: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation/src/checkpoint.ts:125:63: error typescript(no-unsafe-member-access): Unsafe member access .sequence on an `any` value.

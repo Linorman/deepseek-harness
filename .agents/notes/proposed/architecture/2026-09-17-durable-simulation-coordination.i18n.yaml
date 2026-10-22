@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-09-17-durable-simulation-coordination.md
-2026-09-17-durable-simulation-coordination.md: 297ec05c9c1538b9da13e6edfa7a76334afa6b35
-2026-09-17-durable-simulation-coordination.zh.md: 983532c367641f361ab4f7901aab41623c3b8a14
+2026-09-17-durable-simulation-coordination.md: 163eae9746cc74899889f65b8685789e07765266
+2026-09-17-durable-simulation-coordination.zh.md: f4a782de132496734cbd4ab53e429862ad0c8967

@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-29-simulation-readonly-history.md
-2026-09-29-simulation-readonly-history.md: 2e9ff31ee17db1ccdc6030a3461e1080d6efb4fe
-2026-09-29-simulation-readonly-history.zh.md: 948ed6fadf9e5cf2762a5e85529b21210d2b1f83
+2026-09-29-simulation-readonly-history.md: 5ab4d2b4a1e181439d9e4f4effd2054de4420aec
+2026-09-29-simulation-readonly-history.zh.md: 9e2c5c73b55ec3e443091d46c309cfdb547dc8f3

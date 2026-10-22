@@ -54,7 +54,7 @@ export function foldTokens(state: SimulationSnapshot, record: TokenRecord): Simu
       if (record.id !== nextTokenId(state) || state.phase !== 'running' || decision?.status !== 'open'
         || task !== undefined && state.taskCancellations?.[task.execution.request.operationId] !== undefined
         || decision.context?.status !== 'prepared' || decision.inference === undefined || entity?.binding === undefined
-        || entity.writer?.phase !== 'active' || entity.writer.epoch !== decision.epoch
+        || entity.readiness !== 'ready' || entity.writer?.phase !== 'active' || entity.writer.epoch !== decision.epoch
         || (decision.windowId === undefined ? state.activeDecisionId !== decision.id : state.activeWindowId !== decision.windowId)) {
         throw new Error('Simulation token reservation requires its current prepared inference owner')
       }
@@ -70,7 +70,7 @@ export function foldTokens(state: SimulationSnapshot, record: TokenRecord): Simu
       const cancelledTask = Object.values(state.taskExecutions ?? {}).some(execution => execution.retired === undefined
         && execution.request.entityId === record.entityId && execution.request.epoch === record.epoch
         && state.taskCancellations?.[execution.request.operationId] !== undefined)
-      if (record.id !== nextTokenId(state) || state.phase === 'stalled' || entity?.phase !== 'active'
+      if (record.id !== nextTokenId(state) || state.phase === 'stalled' || entity?.readiness !== 'ready' || entity.phase !== 'active'
         || cancelledTask
         || entity.binding === undefined || entity.writer?.phase !== 'active' || entity.writer.epoch !== record.epoch) {
         throw new Error('Simulation compaction tokens require their current canonical writer')

@@ -1,3 +1,4 @@
+import { assertSimulationMaintenanceAdmission } from '@clocky/clocky-simulation'
 import { simulationPolicyRefSchema, simulationTaskResultRequestSchema, taskInteractionExecutable,
   taskContinuationEvidence, taskReportContinuationEvidence, simulationTaskCancellationSchema } from '@clocky/clocky-simulation'
 import { taskAttemptIdSchema } from '@clocky/clocky-team'
@@ -50,6 +51,7 @@ export function foldTaskExecution(state: SimulationSnapshot, record: TaskExecuti
       [request.operationId]: { request, sequence } } }
   }
   if (record.kind === 'task/execution-reserved') {
+    assertSimulationMaintenanceAdmission(state)
     const request = record.request
     if (Object.hasOwn(executions, request.attemptId)) throw new Error('Simulation task attempt is already reserved')
     const operation = Object.hasOwn(state.operations, request.operationId) ? state.operations[request.operationId] : undefined
@@ -61,7 +63,7 @@ export function foldTaskExecution(state: SimulationSnapshot, record: TaskExecuti
       || operation?.action.kind !== 'task/create' || operation.result?.status !== 'applied'
       || receipt?.taskId !== request.taskId || receipt.teamId !== request.teamId
       || request.ordinal > operation.action.task.maxAttempts
-      || entity?.phase !== 'active' || writer?.phase !== 'active' || writer.epoch !== request.epoch
+      || entity?.readiness !== 'ready' || entity.phase !== 'active' || writer?.phase !== 'active' || writer.epoch !== request.epoch
       || writer.activationId !== request.activationId || writer.reservationId !== request.reservationId
       || entity.binding?.teamId !== request.teamId || entity.binding.participantId !== request.participantId
       || entity.binding.sessionId !== request.sessionId) {

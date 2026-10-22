@@ -136,8 +136,12 @@ export interface RpcErrorDetailsMap {
   'simulation-product-stale': {}
   /** Creation was not accepted because its confirmed model changed; preview and confirm again. */
   'simulation-product-model-changed': {}
+  /** World creation was not accepted because its preview changed or became invalid; preview and confirm again. */
+  'simulation-product-preflight-changed': {}
+  /** Personnel management was not accepted because the confirmed original quote changed before durable acceptance. */
+  'simulation-product-management-preview-changed': {}
   /** The provider durably refused this original update; the command cannot execute later. */
-  'team-task-update-rejected': { rejection: import('@clocky/clocky-team').TeamTaskUpdateRejection }
+  'team-task-update-rejected': { rejection: import('@clocky/clocky-team/types').TeamTaskUpdateRejection }
   'team-task-stale-revision': { teamId?: TeamId; taskId?: TeamTaskId }
   /** The selected Team has no task with this identity. */
   /** A requested member does not belong to the selected Team. */

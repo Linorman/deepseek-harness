@@ -2,6 +2,10 @@
 
 [English](README.md) | 中文
 
+`maxEnvelopeBytes` 限制 Hub 加入元数据后的完整 UTF-8 Envelope。准入先查询 sender 绑定的已提交幂等记录：原 draft 返回原 Envelope，改变 draft 则冲突。只有新的超限 post 才收到带严格 `envelope-byte-limit` details 的 `TEAM_INVALID_ARGUMENT`，证据匹配其 Team／Channel cursor、sender、重试 key、trace／correlation 和规范 draft fingerprint。该拒绝发生在 adapter admission 和 WAL append 前，不创建 Envelope 或幂等记录。使用 `envelopeByteLimitDetails()` 将此证据与其他 invalid argument 区分。
+
+`bindActivation()` 按 Team 冻结的 `maxActivations` 计算全部历史 epoch，包含已停稳的 epoch。历史满额时不追加尝试中的 binding，而以 `TEAM_CHANNEL_BACKPRESSURE` 和严格的 `activation-history-limit` details 拒绝：保留原 Team／cursor、used／limit、Participant／Activation／Session 及已有启动预留。Hub 报告 `cleanup: pending`，不证明 provider 已终止或领域责任已释放。消费者使用 `clocky-team` 的 `activationHistoryLimitDetails()`，不解析诊断文本。
+
 带有 `rules.simulationRunId` 的 Team 拒绝普通 `scheduler-stall` 阶段 proof；其调度和休眠审核实体的可用性由 Simulation 管理。Simulation 行政任务审核保留不可变的 Participant review policy。Hub 在 task-mutate 策略 IO 前后核对精确的原生 task/create 来源、原完成结果、当前有效的配置 reviewer、任务 revision、最新 attempt、lease 与取消状态。受理决定保留 `simulationCommand` 来源；运行内相同 command 复用其他载荷会拒绝。相同载荷且权限仍有效的重试即使已有后续 attempt，也仅保留历史决定，不重复策略或修改。Team journal 与 projection checkpoint format 40 拒绝旧格式。参见[审核权限决策](../../../.agents/notes/implemented/architecture/2026-10-01-simulation-task-review-authority.zh.md)。
 
 `cancelRuntimeTask()` 在目标查找前、Team 队列内和 policy IO 后重新解析可撤销的 `simulation-task-cancel` proof。规范创建、creator、run／operation、生命周期所有者、幂等身份及精确可为空的 attempt fence 必须匹配。现有取消所有者保留最初原因／目标、live lease 和物理清理责任；pending／review 取消及相同重试复用同一机制。普通 human 与 TeamRun task-control proof 不能使用该入口。
@@ -35,13 +39,15 @@ Scheduler review 频道选择 `recent-window` v1，将任务说明和报告结�
 
 带有不可变 `rules.simulationRunId` 的 Team 仅允许 `simulation-team` 来源及其精确 `simulation-operation` scope 准入普通 Envelope。该 scope 将完整 draft 与重试身份绑定到已接受的 run 操作。发送权限终止后可以对账精确匹配的已提交结果；新增发布仍要求当前成员权限、频道准入与发送策略。claim 与 receipt 还要求绑定同一当前 activation 的专用 delivery-owner proof；单独的通用 activation 权限不能消费这些 Envelope。
 
-同一不可变的仿真规则使通用认证人工任务、目标、成员、频道、恢复、归档与事项回答命令在 Team 串行器内以 `TEAM_POLICY_DENIED` 拒绝。Simulation 专用 system scope 保留既有准入检查。授权选择与目录读取仅暴露有界的 `executionManagement: "simulation-managed"` 标记；人工成员与规范父团队仍可检查，但不会启动执行。
+同一不可变的仿真规则使通用认证人工任务、目标、成员、频道、恢复、归档与事项回答命令在 Team 串行器内以 `TEAM_POLICY_DENIED` 拒绝。Simulation 专用 system scope 保留既有准入检查。授权选择与目录读取仅暴露有界的 `executionManagement: "simulation-managed"` 标记；人工成员与规范父团队仍可检查，但不会启动执行。Simulation membership 退出和私有通道关闭要求具名 simulation-team 来源及准确的不可变 run/owner。退出会拒绝未结算 activation 或 task lease；关闭取消待处理邀请并保留 WAL。策略 IO 后重新验证权限。
 
 Task 的 `createdAt` 与首条 task journal record 的时间一致，后续 revision 不可改写。检查点中的时间必须位于所属 Team 的持久生命周期内。参见[创建时间决策](../../../.agents/notes/implemented/architecture/2026-09-29-team-task-creation-time.zh.md)。
 
 待处理摘要在 Team queue 内读取完整任务／人工事项 map。`attention-read` 绑定完整解析输入；父团队检查返回等待提示，不授予修改权限。其他 Team、已变化的 revision 或当前集合中不存在的位置均不能续页。摘要不复制人工事项正文或任务结果。
 
 ## 持久 Team 状态
+
+创建接受可选的完整 `TeamRootCreateInput.limits`，逐字段对照 Host 上限校验，并将已接受值冻结在 `rules.teamLimits`。任意 rules 不能覆盖限额。预留 Simulation root 的重试将显式限额与原 genesis 核对；后续 Host 上限变化不替换或否定已经接受的解析结果。新 Team 的限额在创建 policy 与 append 前校验。
 
 普通 post 接收 JSON-only cursor/retry/draft 字段和运行时 actor。activation proof 派生当前 sender；`team-human-actor` source 派生 authenticated product human sender；`team-run` source 只能派生 scoped human input，`team-scheduler-dag` source 只能派生当前 task-assignment 或 review request。task-assignment channel 与 consult review request 会拒绝 activation proof post。在线 reviewer 通过 activation proof 解决 task，不携带 caller-selected Team 或 Participant field；scheduler 则可在 Hub 验证完整 response provenance 后，通过独立 source-scoped task-review proof 修复一条准确的 closed consult response。adapter-owned final command 接收运行时 `TeamActorProof`以及仅包含 channel、retry-key 和 text 的字段。receipt 只接受 channel、Envelope、cursor 和一个运行时 actor，绝不接受 caller-selected recipient、activation 或 Session：activation proof 派生其当前 recipient，已注册的 `team-run` system proof 则只能确认其 scoped 的、active 的双人 direct-v3 coordinator final，且该 final 仅指向其 human。delivery claim 接收 activation proof 以及仅包含 channel 和 Envelope 的 identity；task-attempt start claim 接收它以及仅包含 task、attempt、assignment-revision、channel 和 Envelope 的 identity。task-attempt heartbeat 或 settlement 接收同一 proof 以及仅包含 task、attempt 和 revision 的字段；settlement 还携带 outcome。Hub 会在持有相应 Team/channel queue 时再次解析每个 proof。它会在 dispatch policy、pending-delivery lookup、cursor comparison、重复 receipt replay 或 WAL append 前校验 receipt actor、`team-run` source scope、当前 topology 与非空 coordinator final Envelope。它会在 adapter、policy、idempotency 或 WAL admission 前为 final admission 派生 sender、为 receipt 派生 recipient、为 delivery claim 派生 recipient 与 delivery intent、为 task-start、heartbeat 和 settlement admission 派生 Team、Participant、activation 和 Session。伪造、已撤销、已替换、offline 或 cross-scope 的 proof 会以 `TEAM_ACTOR_PROOF_INVALID` 拒绝；另一个 activation 的有效 proof 无法执行 owner command。
 

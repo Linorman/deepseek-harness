@@ -72,7 +72,7 @@ function validate(run: SimulationRun, settings: SimulationCompanyPreparation): v
   for (const entity of Object.values(state.entities)) {
     const name = entities.get(entity.id)
     if (name === undefined || entity.kind !== 'person' || entity.cognition !== 'agent' || entity.phase !== 'active'
-      || entity.profileRevision !== 1 || !isDeepStrictEqual(entity.profile, { name }) || entity.writer !== undefined) {
+      || entity.readiness === 'abandoned' || entity.profileRevision !== 1 || !isDeepStrictEqual(entity.profile, { name }) || entity.writer !== undefined) {
       throw new Error('Company retained entity differs from immutable preparation')
     }
   }
@@ -107,7 +107,7 @@ async function prepare(teams: Pick<SimulationTeams, 'ensureTeam' | 'attach'>, ru
     const topology = resolveScenarioTopology(settings)
     for (const { id, name } of topology.actors) {
       if (run.snapshot().entities[id] === undefined) {
-        await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent',
+        await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'preparing', id, entityKind: 'person', cognition: 'agent',
           profile: { name } }), run.snapshot().revision)
       }
     }
@@ -123,6 +123,14 @@ async function prepare(teams: Pick<SimulationTeams, 'ensureTeam' | 'attach'>, ru
     }
     for (const spec of resourceSpecs(settings)) {
       if (run.snapshot().resources[spec.id] === undefined) await run.createResource(spec, run.snapshot().revision)
+    }
+    for (const { id } of topology.actors) {
+      const entity = run.snapshot().entities[id]
+      if (entity === undefined) throw new Error('Prepared topology lost its actor')
+      if (entity.readiness === 'preparing') {
+        await run.change(simulationChangeSchema.parse({ kind: 'entity/readiness', id,
+          entityRevision: entity.revision, readiness: 'ready' }), run.snapshot().revision)
+      }
     }
     const checkpoint = await connection.checkpoint({ ...settings.checkpoint, implementationVersion: 'company/1' })
     if (checkpoint.status !== 'completed') throw new Error('Company initial checkpoint is incomplete')

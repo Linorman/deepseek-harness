@@ -265,3 +265,5 @@ export function apply(ctx: Context, config: Config) {
   })
   ctx.provide(storageBackendServiceKey('json'), backend)
 }
+
+export { readJsonRawLogArchive } from './raw-log.ts'

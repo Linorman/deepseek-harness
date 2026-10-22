@@ -1,0 +1,25 @@
+- name: cordis:include
+  config:
+    path: ../world-driver/cordis.yml
+- name: '@clocky/clocky-product-principal'
+- name: ../sdk-product/principal.ts
+- name: '@clocky/clocky-sdk-jsonrpc-server'
+- name: '@clocky/clocky-agent-default-model'
+  config:
+    model: world-driver-scripted/scripted
+- name: '@clocky/clocky-team-channel-admission'
+- name: '@clocky/clocky-team-run'
+- name: '@clocky/clocky-team-human-actor'
+- name: '@clocky/clocky-simulation-product'
+  config:
+    directoryStream: sdk-world-directory
+    imports: []
+- name: '@clocky/clocky-simulation-product/administration'
+  config:
+    journalStream: sdk-world-commands
+    templates: []
+    world: !!js JSON.parse(process.env.SDK_WORLD_PRODUCT_CONFIGURATION)
+    recoveryPageSize: 1
+    driverIntervalMs: 1
+    driverRetryMs: 10
+- name: ./observer.ts

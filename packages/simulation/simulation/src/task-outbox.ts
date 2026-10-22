@@ -1,7 +1,7 @@
 import { teamTaskCreateFields } from '@clocky/clocky-team/schema'
 /** Accepted participant-task creation and its durable target receipt. @module @clocky/clocky-simulation/task-outbox */
 import { z } from 'zod'
-import { teamIdSchema, teamTaskIdSchema } from '@clocky/clocky-team'
+import { teamIdSchema, teamTaskIdSchema } from '@clocky/clocky-team/schema'
 import type { Branded } from '@clocky/clocky-brand'
 import type { SimulationEntityBinding } from './writer-types.ts'
 import type { SimulationEntityId } from './entity-types.ts'

@@ -46,7 +46,11 @@
     "@clocky/clocky-team-agent-client": "workspace:^",
     "@clocky/clocky-tools": "workspace:^",
     "@clocky/clocky-compaction": "workspace:^",
-    "@clocky/clocky-session-persistence": "workspace:^"
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-storage": "workspace:^",
+    "@clocky/clocky-attachment": "workspace:^",
+    "@clocky/clocky-storage-log": "workspace:^",
+    "@clocky/clocky-token-meter": "workspace:^"
   },
   "devDependencies": {
     "@clocky/cordis": "workspace:^",
@@ -78,7 +82,10 @@
     "@clocky/clocky-compaction-basic": "workspace:^",
     "@clocky/clocky-token-meter": "workspace:^",
     "@clocky/clocky-compaction": "workspace:^",
-    "@clocky/clocky-session-persistence": "workspace:^"
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-simulation-world": "workspace:^",
+    "@clocky/clocky-attachment": "workspace:^",
+    "@clocky/clocky-attachment-local": "workspace:^"
   },
   "dependencies": {
     "zod": "^4.4.3"

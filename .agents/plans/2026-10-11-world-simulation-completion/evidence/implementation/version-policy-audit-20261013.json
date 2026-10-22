@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-13 Asia/Tokyo",
+  "nativeVersion": 91,
+  "v1CompilerVersion": "9",
+  "cases": [
+    {
+      "face": "src",
+      "backend": "json",
+      "pid": 95332,
+      "root": ".local/world-completion/b05-version-policy/src-json-m4E7Id",
+      "refusals": 186,
+      "compilerRefusals": 11,
+      "authorRefusals": 3,
+      "modelCalls": 0
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "pid": 95424,
+      "root": ".local/world-completion/b05-version-policy/src-sqlite-FRv45F",
+      "refusals": 186,
+      "compilerRefusals": 11,
+      "authorRefusals": 3,
+      "modelCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "pid": 95333,
+      "root": ".local/world-completion/b05-version-policy/lib-json-vaXXgX",
+      "refusals": 186,
+      "compilerRefusals": 11,
+      "authorRefusals": 3,
+      "modelCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "pid": 95399,
+      "root": ".local/world-completion/b05-version-policy/lib-sqlite-k7GGJ4",
+      "refusals": 186,
+      "compilerRefusals": 11,
+      "authorRefusals": 3,
+      "modelCalls": 0
+    }
+  ],
+  "processes": 4,
+  "obsoleteStreamRefusals": 744,
+  "unknownRequiredRefusals": 8,
+  "modelCalls": 0,
+  "artifacts": [
+    {
+      "path": ".local/world-completion/b05-version-policy/src-json-m4E7Id/version-policy-proof.json",
+      "bytes": 45374,
+      "sha256": "0347c62a865cd9dffc60276d6cadc733930697931e45b258e89125f5b805f35e"
+    },
+    {
+      "path": ".local/world-completion/b05-version-policy/src-json-m4E7Id/process.json",
+      "bytes": 773,
+      "sha256": "e6a50df0e014cff7f5787a2a0c04ae94cd978d9c06e83a0cd7f0b5a871a26be1"
+    },
+    {
+      "path": ".local/world-completion/b05-version-policy/src-sqlite-FRv45F/version-policy-proof.json",
+      "bytes": 45202,
+      "sha256": "97311bf85e4aa65c84c95e0b59302f64c8da017912dc4dba2761e968183a7215"
+    },
+    {
+      "path": ".local/world-completion/b05-version-policy/src-sqlite-FRv45F/process.json",
+      "bytes": 777,
+      "sha256": "351ff7efbc6d82935e808c7915864daadb1b1455e5640f81eb7234a7217d5ff3"
+    },
+    {
+      "path": ".local/world-completion/b05-version-policy/lib-json-vaXXgX/version-policy-proof.json",
+      "bytes": 45374,
+      "sha256": "77c3db239d9486f9e028364ae0b055a3b941d36f7faa096e8b6371b9d138bfcd"
+    },
+    {
+      "path": ".local/world-completion/b05-version-policy/lib-json-vaXXgX/process.json",
+      "bytes": 641,
+      "sha256": "bf04204542bc8185dafec8d9a224ddae9bc54c1c7afb54e6fbefff646d8c73e5"
+    },
+    {
+      "path": ".local/world-completion/b05-version-policy/lib-sqlite-k7GGJ4/version-policy-proof.json",
+      "bytes": 45202,
+      "sha256": "6f05ffe8455c85a1c3b1be84f4c6132214c798b57264840c0a5cfaefec88e2af"
+    },
+    {
+      "path": ".local/world-completion/b05-version-policy/lib-sqlite-k7GGJ4/process.json",
+      "bytes": 645,
+      "sha256": "551c503221cc5fdb57b4c55c5105040e44462674fbb95282c9ca6d652395bb56"
+    }
+  ],
+  "inputHash": "eb67c95b7482551551f6456ebc31278c5578c528079dd2c433d3d3e5917d10c8",
+  "inputs": 2594,
+  "inputBytes": 26010755,
+  "scope": "B05 format policy, not SDK distribution or the full writable checkpoint provider matrix."
+}

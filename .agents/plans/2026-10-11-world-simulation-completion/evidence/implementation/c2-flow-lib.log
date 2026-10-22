@@ -1,0 +1,67 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-booking.snapshot.ts examples/simulation-company/tests/world-driver.snapshot.ts examples/simulation-company/tests/world-execution-retirement.snapshot.ts examples/simulation-company/tests/world-autonomous.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-booking.snapshot.ts (4 tests | 4 failed) 658ms
+     × books a room in company and restores the exact original mutation without inference 175ms
+     × books a room in laboratory and restores the exact original mutation without inference 160ms
+     × books a room in company and restores the exact original mutation without inference 163ms
+     × books a room in laboratory and restores the exact original mutation without inference 159ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-booking.snapshot.ts > json registered booking domain > books a room in company and restores the exact original mutation without inference
+ FAIL  examples/simulation-company/tests/world-booking.snapshot.ts > json registered booking domain > books a room in laboratory and restores the exact original mutation without inference
+ FAIL  examples/simulation-company/tests/world-booking.snapshot.ts > sqlite registered booking domain > books a room in company and restores the exact original mutation without inference
+ FAIL  examples/simulation-company/tests/world-booking.snapshot.ts > sqlite registered booking domain > books a room in laboratory and restores the exact original mutation without inference
+AssertionError: node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+file:///Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-booking-domain.ts:84
+  readonly generation = BOOKING_PIN.generation
+  constructor(private readonly run: SimulationRun) {}
+                               ^^^^^^^^^^^^^^^^^^
+  reconciliationPlans(): readonly SimulationWorldPlan['id'][] { return [] }
+
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not supported in strip-only mode
+    at parseTypeScript (node:internal/modules/typescript:68:40)
+    at processTypeScriptCode (node:internal/modules/typescript:146:42)
+    at stripTypeScriptModuleTypes (node:internal/modules/typescript:209:22)
+    at ModuleLoader.<anonymous> (node:internal/modules/esm/translators:642:29)
+    at #translate (node:internal/modules/esm/loader:451:20)
+    at afterLoad (node:internal/modules/esm/loader:507:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:512:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:555:36)
+    at afterResolve (node:internal/modules/esm/loader:603:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:609:12) {
+  code: 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX'
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/simulation-company/tests/world-booking.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, booking: true…
+     31|             actualChannel: true, mutations: 1, restored: recover, mode…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  4 failed | 16 passed (20)
+   Start at  02:12:14
+   Duration  16.42s (transform 635ms, setup 1000ms, import 479ms, tests 35.73s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

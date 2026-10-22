@@ -1,0 +1,220 @@
+[
+  {
+    "label": "ascii65536",
+    "text": "a",
+    "repeat": 65536,
+    "allowed": true
+  },
+  {
+    "label": "ascii65537",
+    "text": "a",
+    "repeat": 65537,
+    "allowed": false
+  },
+  {
+    "label": "astral32768",
+    "text": "\ud83d\ude00",
+    "repeat": 32768,
+    "allowed": true
+  },
+  {
+    "label": "astral32769",
+    "text": "\ud83d\ude00",
+    "repeat": 32769,
+    "allowed": false
+  },
+  {
+    "label": "mixed65536",
+    "text": "a",
+    "repeat": 65534,
+    "suffix": "\ud83d\ude00",
+    "allowed": true
+  },
+  {
+    "label": "mixed65537",
+    "text": "a",
+    "repeat": 65535,
+    "suffix": "\ud83d\ude00",
+    "allowed": false
+  },
+  {
+    "label": "empty",
+    "text": "",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+0009",
+    "text": "\t",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+000A",
+    "text": "\n",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+000B",
+    "text": "\u000b",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+000C",
+    "text": "\f",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+000D",
+    "text": "\r",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+0020",
+    "text": " ",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+00A0",
+    "text": "\u00a0",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+1680",
+    "text": "\u1680",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2000",
+    "text": "\u2000",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2001",
+    "text": "\u2001",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2002",
+    "text": "\u2002",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2003",
+    "text": "\u2003",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2004",
+    "text": "\u2004",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2005",
+    "text": "\u2005",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2006",
+    "text": "\u2006",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2007",
+    "text": "\u2007",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2008",
+    "text": "\u2008",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2009",
+    "text": "\u2009",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+200A",
+    "text": "\u200a",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2028",
+    "text": "\u2028",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+2029",
+    "text": "\u2029",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+202F",
+    "text": "\u202f",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+205F",
+    "text": "\u205f",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+3000",
+    "text": "\u3000",
+    "allowed": false
+  },
+  {
+    "label": "blank-U+FEFF",
+    "text": "\ufeff",
+    "allowed": false
+  },
+  {
+    "label": "nonblank-U+001C",
+    "text": "\u001c",
+    "allowed": true
+  },
+  {
+    "label": "nonblank-U+001D",
+    "text": "\u001d",
+    "allowed": true
+  },
+  {
+    "label": "nonblank-U+001E",
+    "text": "\u001e",
+    "allowed": true
+  },
+  {
+    "label": "nonblank-U+001F",
+    "text": "\u001f",
+    "allowed": true
+  },
+  {
+    "label": "nonblank-U+0085",
+    "text": "\u0085",
+    "allowed": true
+  },
+  {
+    "label": "nonblank-U+200B",
+    "text": "\u200b",
+    "allowed": true
+  },
+  {
+    "label": "all-js-whitespace",
+    "text": "\t\n\u000b\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff",
+    "allowed": false
+  },
+  {
+    "label": "preserved-whitespace-around-text",
+    "text": "\ufeff\u2000x\u2029\t",
+    "allowed": true
+  },
+  {
+    "label": "preserved-extra-strip-control",
+    "text": "\ufeff\u001c\u2000",
+    "allowed": true
+  },
+  {
+    "label": "preserved-lone-surrogate",
+    "text": "\ud800",
+    "allowed": true
+  }
+]

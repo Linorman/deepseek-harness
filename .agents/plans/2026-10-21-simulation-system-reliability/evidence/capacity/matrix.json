@@ -1,0 +1,267 @@
+{
+  "format": "clocky.simulation.capacity-matrix/2",
+  "capturedAt": "2026-10-21T10:38:52.063283+00:00",
+  "dataset": "16 organization entity-create records per nominal MiB, each with a 64 KiB ASCII profile body; 100 bounded owner-control reads; full detail replay in an isolated process per cold/warm/two-reader mode.",
+  "budgets": {
+    "controlP95Ms": 250,
+    "controlRssGrowthBytes": 8388608,
+    "detailMs": 30000,
+    "runtimeBaselineBytes": 268435456,
+    "readerPeakGrowthFormula": "8 * nominalMiB + 64 MiB",
+    "inspectionMaxBytes": 268435456,
+    "inspectionMaxEntries": 10000
+  },
+  "methodology": [
+    "Budgets fixed before each measurement; no increase after failures.",
+    "Each mode runs in a separate fresh process; warm includes a prior detail read, without forced GC.",
+    "Read peak is sampled before assertion hashing; post-verification peak is retained separately.",
+    "Read-only source journal files including SQLite WAL are hashed before/after all modes.",
+    "Source fixture directories are removed by the producer after verification; regenerate with the command below."
+  ],
+  "limitations": [
+    "Synthetic large-profile history does not establish every workload shape or whole-year behavior.",
+    "Cold provider/process does not evict the OS file cache.",
+    "Application page/output bytes are not physical IO bytes.",
+    "JSON remains an explicitly bounded complete document, not a streaming format.",
+    "Current measurement source hashes identify the capture point; unrelated concurrent development may require final integration regression."
+  ],
+  "command": "TMPDIR=\"$PWD/.tmp/simulation-system-development/tmp\" TMP=\"$PWD/.tmp/simulation-system-development/tmp\" TEMP=\"$PWD/.tmp/simulation-system-development/tmp\" NODE_COMPILE_CACHE=\"$PWD/.tmp/simulation-system-development/node-cache\" TSX_TSCONFIG_PATH=\"$PWD/tsconfig.base.json\" node --import tsx/esm packages/simulation/simulation-local/tests/long-history-capacity.ts <json|sqlite> <1|10|100|200>",
+  "sourceHashes": [
+    {
+      "path": "packages/simulation/simulation-local/tests/long-history-capacity.ts",
+      "sha256": "77a1e584528481d70191e5a9b51a4e0246a5cac0c89a48f2c6c525af3bf90875"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/index.ts",
+      "sha256": "eae19518e703e0e0de77f8673adddc51bc2484881d7ea93602cb3eeabddcc193"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/control-observation.ts",
+      "sha256": "963d51452bccb728bb40be9e7013be08594ddc275af8f48deaacb2f05a16a778"
+    },
+    {
+      "path": "packages/storage/storage/src/readonly-log.ts",
+      "sha256": "010a7051d9d939cb0a33836b5a3b47f741bb35fc425df8d8882b5c5f841065ad"
+    },
+    {
+      "path": "packages/storage/storage-json/src/readonly-log.ts",
+      "sha256": "aeba35ce65b67daead215a4940552ff8e6cfb2353881bc7d2ddd6bdec1229472"
+    },
+    {
+      "path": "packages/storage/storage-sqlite/src/readonly-log.ts",
+      "sha256": "b1348deb4b52240f878bbe9352aa9fa473a03e3ad21fc795672e06775b777397"
+    }
+  ],
+  "cases": [
+    {
+      "backend": "json",
+      "sizeMiB": 1,
+      "physicalBytes": 1057407,
+      "controlP95Ms": 0.00808299999994233,
+      "largestPageBytes": 1053578,
+      "samples": [
+        {
+          "mode": "cold-provider",
+          "elapsedMs": 20.288249999999834,
+          "peakGrowthBytes": 19300352
+        },
+        {
+          "mode": "warm-provider",
+          "elapsedMs": 1.7898749999999382,
+          "peakGrowthBytes": 19693568
+        },
+        {
+          "mode": "concurrent-two",
+          "elapsedMs": 23.142041999999947,
+          "peakGrowthBytes": 22298624
+        }
+      ],
+      "passed": true,
+      "artifact": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-1-report.json"
+    },
+    {
+      "backend": "json",
+      "sizeMiB": 10,
+      "physicalBytes": 10557477,
+      "controlP95Ms": 0.011999999999943611,
+      "largestPageBytes": 10525856,
+      "samples": [
+        {
+          "mode": "cold-provider",
+          "elapsedMs": 30.63404199999991,
+          "peakGrowthBytes": 64045056
+        },
+        {
+          "mode": "warm-provider",
+          "elapsedMs": 13.790750000000116,
+          "peakGrowthBytes": 95059968
+        },
+        {
+          "mode": "concurrent-two",
+          "elapsedMs": 63.89416600000004,
+          "peakGrowthBytes": 104628224
+        }
+      ],
+      "passed": true,
+      "artifact": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-10-report.json"
+    },
+    {
+      "backend": "json",
+      "sizeMiB": 100,
+      "physicalBytes": 105563883,
+      "controlP95Ms": 0.0860000000002401,
+      "largestPageBytes": 105254342,
+      "samples": [
+        {
+          "mode": "cold-provider",
+          "elapsedMs": 408.76649999999995,
+          "peakGrowthBytes": 421625856
+        },
+        {
+          "mode": "warm-provider",
+          "elapsedMs": 282.00587500000006,
+          "peakGrowthBytes": 608419840
+        },
+        {
+          "mode": "concurrent-two",
+          "elapsedMs": 670.6105419999999,
+          "peakGrowthBytes": 736493568
+        }
+      ],
+      "passed": true,
+      "artifact": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-100-report.json"
+    },
+    {
+      "backend": "json",
+      "sizeMiB": 200,
+      "physicalBytes": 211130283,
+      "controlP95Ms": 0.19183299999986048,
+      "largestPageBytes": 210511942,
+      "samples": [
+        {
+          "mode": "cold-provider",
+          "elapsedMs": 1240.45175,
+          "peakGrowthBytes": 736378880
+        },
+        {
+          "mode": "warm-provider",
+          "elapsedMs": 837.3337499999998,
+          "peakGrowthBytes": 969457664
+        },
+        {
+          "mode": "concurrent-two",
+          "elapsedMs": 2281.426834,
+          "peakGrowthBytes": 1392967680
+        }
+      ],
+      "passed": true,
+      "artifact": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/json-200-report.json"
+    },
+    {
+      "backend": "sqlite",
+      "sizeMiB": 1,
+      "physicalBytes": 1194808,
+      "controlP95Ms": 0.00841599999967002,
+      "largestPageBytes": 526309,
+      "samples": [
+        {
+          "mode": "cold-provider",
+          "elapsedMs": 9.104458000000022,
+          "peakGrowthBytes": 9109504
+        },
+        {
+          "mode": "warm-provider",
+          "elapsedMs": 2.5653749999999036,
+          "peakGrowthBytes": 7225344
+        },
+        {
+          "mode": "concurrent-two",
+          "elapsedMs": 9.680041000000074,
+          "peakGrowthBytes": 5783552
+        }
+      ],
+      "passed": true,
+      "artifact": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/sqlite-1-report.json"
+    },
+    {
+      "backend": "sqlite",
+      "sizeMiB": 10,
+      "physicalBytes": 21361824,
+      "controlP95Ms": 0.01033400000005713,
+      "largestPageBytes": 526355,
+      "samples": [
+        {
+          "mode": "cold-provider",
+          "elapsedMs": 27.788917000000083,
+          "peakGrowthBytes": 45105152
+        },
+        {
+          "mode": "warm-provider",
+          "elapsedMs": 18.54774999999995,
+          "peakGrowthBytes": 74104832
+        },
+        {
+          "mode": "concurrent-two",
+          "elapsedMs": 45.25608299999999,
+          "peakGrowthBytes": 96632832
+        }
+      ],
+      "passed": true,
+      "artifact": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/sqlite-10-report.json"
+    },
+    {
+      "backend": "sqlite",
+      "sizeMiB": 100,
+      "physicalBytes": 212211288,
+      "controlP95Ms": 0.08800000000019281,
+      "largestPageBytes": 526388,
+      "samples": [
+        {
+          "mode": "cold-provider",
+          "elapsedMs": 387.0595840000001,
+          "peakGrowthBytes": 207585280
+        },
+        {
+          "mode": "warm-provider",
+          "elapsedMs": 369.2219590000002,
+          "peakGrowthBytes": 322060288
+        },
+        {
+          "mode": "concurrent-two",
+          "elapsedMs": 766.334208,
+          "peakGrowthBytes": 322256896
+        }
+      ],
+      "passed": true,
+      "artifact": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/sqlite-100-report.json"
+    },
+    {
+      "backend": "sqlite",
+      "sizeMiB": 200,
+      "physicalBytes": 424266248,
+      "controlP95Ms": 0.16795799999999872,
+      "largestPageBytes": 526388,
+      "samples": [
+        {
+          "mode": "cold-provider",
+          "elapsedMs": 1620.1145000000001,
+          "peakGrowthBytes": 272777216
+        },
+        {
+          "mode": "warm-provider",
+          "elapsedMs": 1505.702042,
+          "peakGrowthBytes": 459735040
+        },
+        {
+          "mode": "concurrent-two",
+          "elapsedMs": 3220.2761250000003,
+          "peakGrowthBytes": 607911936
+        }
+      ],
+      "passed": true,
+      "artifact": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/sqlite-200-report.json"
+    }
+  ],
+  "modelCalls": 0,
+  "passed": true
+}

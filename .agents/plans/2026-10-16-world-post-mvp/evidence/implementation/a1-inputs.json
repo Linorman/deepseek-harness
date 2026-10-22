@@ -1,0 +1,9 @@
+{
+  "packages/simulation/simulation-product/src/draft-store.ts": "87f39965ae3e647b062d2d5a3bfad40d121ab7d150e8063a018607f7786afb1d",
+  "packages/simulation/simulation-product/src/draft-schema.ts": "3255866d7f4486fe24fe329ba2cb001e43cbfd66b301038e53cc81b9c9630e5e",
+  "packages/simulation/simulation-scenario/src/draft-commands.ts": "45949c2bad8cbeea117ef94d093ca5896553cec078b536b7f9fe7f5e1e449442",
+  "packages/client/ui-simulation/src/client/WorldAuthorWorkbench.tsx": "a4501677029a52c938913011b8a91e53d0ba3c5bf4c16a061da26543bc8e3f3e",
+  "packages/client/ui-simulation/src/client/WorldDraftGraph.tsx": "c73c253b4487d17810f07a164d56cb0b79ea19d684c049a2cc1f8e3816dd6891",
+  "packages/client/ui-viz/src/GraphView.tsx": "863d544dfc745e8984cc03d31f156c1be97596ec70de28511a51b52fab7a105a",
+  "apps/web/tests/world-post-mvp-author.snapshot.ts": "fea24e463d978239cad8d924fbe47782d6e9d707380bed346984d8b70c50eaf4"
+}

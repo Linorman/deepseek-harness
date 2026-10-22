@@ -1,0 +1,12 @@
+packages/client/ui-simulation/src/client/WorldOverview.tsx:112:41: error typescript(no-unsafe-member-access): Unsafe member access .employed on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:112:82: error typescript(no-unsafe-member-access): Unsafe member access .nonTerminalPersons on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:113:90: error typescript(no-unsafe-member-access): Unsafe member access .resident on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:113:123: error typescript(no-unsafe-member-access): Unsafe member access .residentLimit on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:114:39: error typescript(no-unsafe-member-access): Unsafe member access .unreleasedWriters on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:115:39: error typescript(no-unsafe-member-access): Unsafe member access .history on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:115:84: error typescript(no-unsafe-member-access): Unsafe member access .history on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:116:43: error typescript(no-unsafe-member-access): Unsafe member access .history on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:116:88: error typescript(no-unsafe-member-access): Unsafe member access .history on an `error` typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:119:108: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.
+packages/client/ui-simulation/src/client/WorldOverview.tsx:121:24: error typescript(no-unsafe-member-access): Unsafe member access .history on an `error` typed value.
+packages/client/ui-simulation/src/client/Workspace.tsx:605:42: error typescript(no-unsafe-assignment): Unsafe assignment of an error typed value.

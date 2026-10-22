@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-12",
+  "Native": 74,
+  "checklistCompleted": 48,
+  "overallComplete": false,
+  "X12": true,
+  "inputHash": "8c3536c68abb9beec3130a3ee79ee4c0778d6f1083450990631fb73e9575163b",
+  "cases": 292,
+  "processes": 876,
+  "actualSIGKILL": 204,
+  "cold0Models": 584,
+  "checks": {
+    "build": "197 artifacts exit0 c21-build.log",
+    "lint": "exit0 c21-lint-final.log",
+    "docs": "29/29 exit0 c21-doc-sync-current.log",
+    "ownerTests": "200 passed c21-recovery-owner-tests.log",
+    "diffWhitespace": "exit0"
+  },
+  "historicalFullWeb": "terminal exit1 36failed/315passed/14skipped; R11/U14/U15 remain unchecked"
+}

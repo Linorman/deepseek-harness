@@ -55,28 +55,29 @@ export function PersistentRequests({ runId, ready, value, connected, authorizati
       }
     } catch { if (current.current) setError(t('commandCapacity')) }
   }
-  return <section className={css.review} aria-label={t('requests.title')}>
-    <h2>{t('requests.title')}{page === undefined ? '' : ` · ${page.total}`}</h2>
-    <p>{t('requests.notice')}</p>
-    <Button disabled={!connected || value.loading} onClick={() => { void refresh() }}>{t('requests.refresh')}</Button>
-    {value.loading && <p role="status">{t('loading')}</p>}
-    {value.stale && <p role="status" className={css.stalePill}>{t('stale')}</p>}
+  return <section className={`${css.review} ${css.requestsPage}`} aria-label={t('requests.title')}>
+    <header className={css.requestsHead}><h2>{t('requests.title')}{page === undefined ? '' : ` · ${page.total}`}</h2>
+      <Button size="sm" variant="secondary" disabled={!connected || value.loading} onClick={() => { void refresh() }}>{t('requests.refresh')}</Button></header>
+    <p className={css.muted}>{t('requests.notice')}</p>
+    {value.loading && page === undefined && <p role="status">{t('loading')}</p>}
     {value.error !== undefined && <p role="alert">{t(value.error)}</p>}
     {error !== undefined && <p role="alert">{error}</p>}
-    {page?.items.length === 0 && !value.loading && <p>{t('requests.empty')}</p>}
+    {page?.items.length === 0 && <p>{t('requests.empty')}</p>}
     <ul className={css.requestList}>{page?.items.map((receipt) => {
       const key = simulationCommandKey({ kind: 'retry-request', input: { runId, commandId: receipt.commandId } })
       const record = commands[key]
       return <li key={receipt.commandId} data-simulation-request={receipt.commandId}>
-        <time className={css.muted} dateTime={new Date(receipt.acceptedAt).toISOString()}>{date(receipt.acceptedAt)}</time>
-        {record === undefined && <><p>{t(`command.${receipt.kind}`)} · {t(`receipt.${receipt.status}`)} </p>
-          <code>{receipt.commandId}</code>
-          {receipt.checkpointId !== undefined && <p>{t('checkpointId')}: <code>{receipt.checkpointId}</code></p>}
-          <div className={css.actions}>
-            <Button disabled={!connected} onClick={() => { void settle(receipt, false) }}>{t('requests.query')}</Button>
-            {receipt.status === 'accepted' && <Button variant="secondary" disabled={!connected || value.loading || value.stale
+        {record === undefined && <><div className={css.requestHead}><strong>{t(`command.${receipt.kind}`)}</strong>
+          <span className={css.pill} data-tone={receipt.status === 'completed' ? 'done' : receipt.status === 'failed' ? 'failed' : 'running'}>
+            {t(`receipt.${receipt.status}`)}</span>
+          <time className={css.muted} dateTime={new Date(receipt.acceptedAt).toISOString()}>{date(receipt.acceptedAt)}</time></div>
+        <code className={css.requestId}>{receipt.commandId}</code>
+        {receipt.checkpointId !== undefined && <p>{t('checkpointId')}: <code>{receipt.checkpointId}</code></p>}
+        <div className={css.actions}>
+          <Button size="sm" variant="secondary" disabled={!connected} onClick={() => { void settle(receipt, false) }}>{t('requests.query')}</Button>
+          {receipt.status === 'accepted' && <Button variant="secondary" disabled={!connected || value.loading || value.stale
             || value.error !== undefined} onClick={() => { void settle(receipt, true) }}>{t('requests.retry')}</Button>}
-          </div>
+        </div>
         </>}
         {record !== undefined && renderOriginal(record, true)}
       </li>

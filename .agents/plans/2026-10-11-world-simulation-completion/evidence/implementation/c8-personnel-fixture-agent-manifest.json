@@ -1,0 +1,300 @@
+{
+  "part": "O07 actual scoped transfer only",
+  "verifiedAt": "2026-10-11T22:05:34.900Z",
+  "files": [
+    {
+      "path": "examples/simulation-company/tests/world-personnel-scenario.ts",
+      "bytes": 17966,
+      "sha256": "e197118359fb4d46fc67aeff24c8683c507cc0d3b83e7def76813f9c3610e1a2"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel.snapshot.ts",
+      "bytes": 2895,
+      "sha256": "4b36a6d4f7b489dd27aa98eaaeeb85e009f1676f301ea1a207ee0c672c7c7f3c"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-personnel-model.ts",
+      "bytes": 6337,
+      "sha256": "07813d21575ac7e2768ed3d9c719098ea5f73c0970d0ac9e7813915589e46a21"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-personnel/cordis.yml",
+      "bytes": 102,
+      "sha256": "0e5651c5cab4535192e08efdaded6ef97822f4e7c5fdfd21721b7e98900395f2"
+    }
+  ],
+  "rawArtifacts": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-raw/json-company-cold.json",
+      "bytes": 117426,
+      "sha256": "5920cc938dbba74e3bdffbfefabe3ddc8272f02935d3e6ec83d13eb12f347278",
+      "mode": "source",
+      "backend": "json",
+      "scenario": "company",
+      "restored": true,
+      "modelCalls": 0,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-raw/json-company-created.json",
+      "bytes": 117428,
+      "sha256": "0a81a6fc3e72fa16cccc791f8e6afb4b0c3dd4dfa8d0aa2774cb402464c2bf0d",
+      "mode": "source",
+      "backend": "json",
+      "scenario": "company",
+      "restored": false,
+      "modelCalls": 24,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-raw/json-laboratory-cold.json",
+      "bytes": 117620,
+      "sha256": "ae3f814790d5af9c620f683c76ec3c774cd568e744ecb93135fd1acb26e80f0a",
+      "mode": "source",
+      "backend": "json",
+      "scenario": "laboratory",
+      "restored": true,
+      "modelCalls": 0,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-raw/json-laboratory-created.json",
+      "bytes": 117622,
+      "sha256": "8d03a05eed0f97d576c9d41e4aae6449767836203508b4d5c2c9a7a8d714fe21",
+      "mode": "source",
+      "backend": "json",
+      "scenario": "laboratory",
+      "restored": false,
+      "modelCalls": 24,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-raw/sqlite-company-cold.json",
+      "bytes": 117428,
+      "sha256": "1c18a01cb5b4063d30109673e7e5853c77f95754e481c550069cc7add09ff9d8",
+      "mode": "source",
+      "backend": "sqlite",
+      "scenario": "company",
+      "restored": true,
+      "modelCalls": 0,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-raw/sqlite-company-created.json",
+      "bytes": 117430,
+      "sha256": "ebeec4d14aae767e8af677fc2a201f952f800c87fce5cc84513786a6052d4778",
+      "mode": "source",
+      "backend": "sqlite",
+      "scenario": "company",
+      "restored": false,
+      "modelCalls": 24,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-raw/sqlite-laboratory-cold.json",
+      "bytes": 117622,
+      "sha256": "f11e79c5363a438c9f928ec9993cad8613581cc13ed229df4b0ec82ff1070fdf",
+      "mode": "source",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "restored": true,
+      "modelCalls": 0,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-raw/sqlite-laboratory-created.json",
+      "bytes": 117624,
+      "sha256": "9861d2e93f8e43b95f475a17c7394b8be456a259e27a24807dac47e1d616ecc7",
+      "mode": "source",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "restored": false,
+      "modelCalls": 24,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-raw/json-company-cold.json",
+      "bytes": 117426,
+      "sha256": "9cd3408791a81cf9be7344916d7197ed97eb5fef19c3b57a57f1f340589674f6",
+      "mode": "lib",
+      "backend": "json",
+      "scenario": "company",
+      "restored": true,
+      "modelCalls": 0,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-raw/json-company-created.json",
+      "bytes": 117428,
+      "sha256": "945616d1cf676df7efaf70bb1f8409a1c26c54755dde32a82e920e039806dde9",
+      "mode": "lib",
+      "backend": "json",
+      "scenario": "company",
+      "restored": false,
+      "modelCalls": 24,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-raw/json-laboratory-cold.json",
+      "bytes": 117620,
+      "sha256": "e413a6716fdbf7c4ffb713881309490009a85af5c17f8a97ea7ec3f06a82bd3d",
+      "mode": "lib",
+      "backend": "json",
+      "scenario": "laboratory",
+      "restored": true,
+      "modelCalls": 0,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-raw/json-laboratory-created.json",
+      "bytes": 117622,
+      "sha256": "b9e07d62298e6c5f29589714bb8d071d3c9a8ada24fdab09fbae38887c65eb2d",
+      "mode": "lib",
+      "backend": "json",
+      "scenario": "laboratory",
+      "restored": false,
+      "modelCalls": 24,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-raw/sqlite-company-cold.json",
+      "bytes": 117428,
+      "sha256": "8368db11ea580eaf6aa8bf19a67168e72eff898ff095dca04df71e185fe575ff",
+      "mode": "lib",
+      "backend": "sqlite",
+      "scenario": "company",
+      "restored": true,
+      "modelCalls": 0,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-raw/sqlite-company-created.json",
+      "bytes": 117430,
+      "sha256": "e0b357da07558ab73df421e65dbbd3675afbe6a564a95028912df646f1f8ae2b",
+      "mode": "lib",
+      "backend": "sqlite",
+      "scenario": "company",
+      "restored": false,
+      "modelCalls": 24,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-raw/sqlite-laboratory-cold.json",
+      "bytes": 117622,
+      "sha256": "ed06d9ab34440168ae329aa16eea81b4c13f74fc70629e6e41f66de73b3b3c68",
+      "mode": "lib",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "restored": true,
+      "modelCalls": 0,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-raw/sqlite-laboratory-created.json",
+      "bytes": 117624,
+      "sha256": "5ce5183dfd18130703d1e1a441c39d3b74e0e965215f001b1f6b58dc5616e053",
+      "mode": "lib",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "restored": false,
+      "modelCalls": 24,
+      "committed": true,
+      "actualCut": "observed",
+      "prefixPreserved": true
+    }
+  ],
+  "checks": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel.snapshot.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source-final.log",
+      "exitCode": 0,
+      "cases": 4,
+      "coldProcesses": 4
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_EXAMPLE_MODE=lib pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-personnel.snapshot.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-lib-final.log",
+      "exitCode": 0,
+      "cases": 4,
+      "coldProcesses": 4,
+      "buildPrerequisite": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-build.log"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -b tsconfig.host.json",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-fixture-types-final.log",
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsx scripts/run-oxlint.ts examples/simulation-company/tests/world-personnel-scenario.ts examples/simulation-company/tests/world-personnel-model.ts examples/simulation-company/tests/world-personnel.snapshot.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-fixture-lint-final2.log",
+      "exitCode": 0
+    }
+  ],
+  "contracts": {
+    "composition": "Real Cordis Loader, original three independent canonical actors and original private Channels; model sees only actual recorded context and uses observe/stage/submit",
+    "request": "Actual authorized administrator requests the original colleague from Native-selected source and target opportunity material; independent actual director produces exact apply plan",
+    "authorization": "Both frozen source can-transfer and target can-transfer-target relations enter exact plan reads; new role permissions derive only from declared positionRolePermissions",
+    "settlement": "Actual Native reservation/fence, original controller quiescence, held complete canonical Team/channel cut, atomic commit and original result",
+    "identity": "Original Person/Participant/Session/profile/Channel and private Session prefix stay intact; old assignment closes and one deterministic new assignment starts at actual simulated time",
+    "context": "Actual new-role goal material reflects declared derived permissions; first action runs in original independent Person Session through original Channel",
+    "retry": "Identical committed connection.commitPersonnel retry appends nothing and invokes no model",
+    "restore": "Every independent cold process calls model zero times and validates exact retained original proof",
+    "limits": "Original catalog quotas are unchanged: resident2, microsteps32, maxBytesPerPlan4096; new tests declare required role/permission facts before run creation",
+    "privacy": "Original private memory stays in the original person Session; other actual model inputs do not contain the private memory canary"
+  },
+  "priorFailures": [
+    {
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source1.log",
+      "reason": "Native execution used fresh admission and counted its own original reservation as extra occupancy; root fixed original-intent execution context"
+    },
+    {
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source2.log",
+      "reason": "Complete atomic personnel records exceeded original 4096-byte plan allowance before append"
+    },
+    {
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source3-probe.log",
+      "reason": "Real identical original connection.commitPersonnel retry captured actual byte-limit exception; this was an actual commit retry, not a read-only action, and original Native revision109 retained fenced responsibility with no partial append"
+    },
+    {
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c8-personnel-source4.log",
+      "reason": "Root compacted ready evidence to actual observed source coverage while reconstructing Native obligations from original journal prefix; quotas unchanged; all4 passed before final strengthened guard build"
+    }
+  ],
+  "limitations": [
+    "Only O07 transfer is proven by this real scenario.",
+    "No actual departure/retirement or strict scheduled-time scenario was added in this scope.",
+    "Composition is a trusted v0 test definition, not v1 portable schema or product UI acceptance.",
+    "Root owns production changes, final build, documentation and checklist updates."
+  ],
+  "checklistModified": false
+}

@@ -9,7 +9,7 @@ import type {
 } from '@clocky/clocky-product-principal'
 import {
   PRODUCT_AUTH_BOOTSTRAP_PATH,
-  PRODUCT_AUTH_COOKIE_NAME,
+  productAuthCookieName,
 } from './product-auth-contract.ts'
 
 const COOKIE_TOKEN = /^[A-Za-z0-9_-]{43}$/
@@ -31,13 +31,13 @@ function mintCookieToken(): string {
 }
 
 /** Extract exactly one syntactically valid cookie value without decoding it. */
-function cookieToken(header: string | undefined): string | undefined {
+function cookieToken(header: string | undefined, name: string): string | undefined {
   if (header === undefined) return undefined
   let token: string | undefined
   for (const part of header.split(';')) {
     const separator = part.indexOf('=')
     if (separator < 1) continue
-    if (part.slice(0, separator).trim() !== PRODUCT_AUTH_COOKIE_NAME) continue
+    if (part.slice(0, separator).trim() !== name) continue
     const candidate = part.slice(separator + 1).trim()
     if (!COOKIE_TOKEN.test(candidate) || token !== undefined) return undefined
     token = candidate
@@ -86,13 +86,13 @@ function isProductAuthenticationError(error: unknown): boolean {
 }
 
 /** Private session cookie attributes. Cookies are session-only and never persist a credential. */
-function sessionCookie(token: string): string {
-  return `${PRODUCT_AUTH_COOKIE_NAME}=${token}; Path=/api; HttpOnly; SameSite=Strict`
+function sessionCookie(token: string, name: string): string {
+  return `${name}=${token}; Path=/api; HttpOnly; SameSite=Strict`
 }
 
 /** Expire a rejected cookie without reflecting its value. */
-function expiredSessionCookie(): string {
-  return `${PRODUCT_AUTH_COOKIE_NAME}=; Path=/api; HttpOnly; SameSite=Strict; Max-Age=0`
+function expiredSessionCookie(name: string): string {
+  return `${name}=; Path=/api; HttpOnly; SameSite=Strict; Max-Age=0`
 }
 
 /** Authenticate browser bootstrap credentials and retain only revocable server-memory leases. */
@@ -101,15 +101,21 @@ export class ProductAuthSessions {
   private readonly consumedBootstrapGenerations = new Set<number>()
   private bootstrapChain = Promise.resolve()
   private closed = false
+  private resolvedCookieName: string | undefined
+
+  /** Resolve once, after the listening port is available; keep the namespace fixed for this manager lifetime. */
+  private cookieName(): string { return this.resolvedCookieName ??= productAuthCookieName(this.listenerPort()) }
 
   /**
    * @param registry - product-principal registry selected by the Web composition.
    * @param provider - named provider that owns this transport's bootstrap credential.
+   * @param listenerPort - Trusted actual listener port, read lazily after the Web server starts.
    * @param onFormBootstrapAccepted - schedules owner-only handoff artifact cleanup after successful form authentication.
    */
   constructor(
     private readonly registry: Pick<ProductPrincipalRegistry, 'authenticate'>,
     private readonly provider: string,
+    private readonly listenerPort: () => number,
     private readonly onFormBootstrapAccepted?: (handoffId: string) => void,
   ) {}
 
@@ -147,6 +153,7 @@ export class ProductAuthSessions {
   private async exchangeBootstrap(request: Request): Promise<Response> {
     if (this.closed) return this.invalidBootstrap(401)
     if (request.method !== 'POST') return new Response('not found', { status: 404 })
+    const name = this.cookieName()
     const type = mediaType(request.headers.get('content-type'))
     let credential: string | undefined
     let formHandoffId: string | undefined
@@ -194,7 +201,7 @@ export class ProductAuthSessions {
       return this.invalidBootstrap(401)
     }
     this.consumedBootstrapGenerations.add(generation)
-    const previousToken = cookieToken(request.headers.get('cookie') ?? undefined)
+    const previousToken = cookieToken(request.headers.get('cookie') ?? undefined, name)
     const previous = previousToken === undefined ? undefined : this.sessions.get(previousToken)
     if (previousToken !== undefined && previous !== undefined) {
       try { await this.drop(previousToken, previous) }
@@ -216,7 +223,7 @@ export class ProductAuthSessions {
       status: type === FORM_MEDIA_TYPE ? 303 : 204,
       headers: {
         'cache-control': 'no-store',
-        'set-cookie': sessionCookie(token),
+        'set-cookie': sessionCookie(token, name),
         ...type === FORM_MEDIA_TYPE ? { location: '/' } : {},
       },
     })
@@ -232,7 +239,7 @@ export class ProductAuthSessions {
     req: Pick<IncomingMessage, 'headers'>,
     operation: (call: AuthenticatedProductCall) => Promise<T>,
   ): Promise<ProductAuthAdmission<T>> {
-    const token = cookieToken(req.headers.cookie)
+    const token = cookieToken(req.headers.cookie, this.cookieName())
     if (token === undefined) return { kind: 'required' }
     const session = this.sessions.get(token)
     if (session === undefined || session.controller.signal.aborted) return { kind: 'invalid' }
@@ -258,7 +265,7 @@ export class ProductAuthSessions {
         status: 401,
         headers: {
           'cache-control': 'no-store',
-          ...kind === 'invalid' ? { 'set-cookie': expiredSessionCookie() } : {},
+          ...kind === 'invalid' ? { 'set-cookie': expiredSessionCookie(this.cookieName()) } : {},
         },
       },
     )

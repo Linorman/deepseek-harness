@@ -16,7 +16,7 @@ const en = {
   'reviews.title': 'Simulation task reviews', 'reviews.empty': 'No task reviews in this window.',
   'reviews.refresh': 'Refresh review targets', 'reviews.open': 'Review Simulation task', 'reviews.reason': 'Review reason',
   'reviews.approve': 'Approve task result', closeKeepDraft: 'Close and keep input', next: 'Next page',
-  queryOriginal: 'Query original result', commandUnknown: 'The result is unknown. Query or retry the original operation; no new identity has been allocated.',
+  queryOriginal: 'Query original result', commandUnknown: 'The result is unknown. Query the original operation first; no new identity has been allocated.',
   'controlReason.scenario-completed': 'This scenario has completed.',
 }
 const zh: Record<keyof typeof en, string> = {
@@ -24,7 +24,7 @@ const zh: Record<keyof typeof en, string> = {
   initialStock: '初始库存', openCreatedRun: '打开已登记运行', start: '开始调度', 'reviews.title': '仿真任务审核',
   'reviews.empty': '本页暂无任务审核。', 'reviews.refresh': '刷新审核目标', 'reviews.open': '审核仿真任务',
   'reviews.reason': '审核原因', 'reviews.approve': '通过任务结果', closeKeepDraft: '关闭并保留输入', next: '下一页',
-  queryOriginal: '查询原结果', commandUnknown: '结果尚不确定，请查询或重试原操作；未分配新身份。',
+  queryOriginal: '查询原结果', commandUnknown: '结果尚不确定，请先查询原操作；未分配新身份。',
   'controlReason.scenario-completed': '此场景已完成。',
 }
 
@@ -145,14 +145,19 @@ it.each(['json', 'sqlite'] as const)('keeps genuine three-actor task reviews usa
       return await region.getByRole('button', { name: zh.next, exact: true }).count()
     }).toBe(1)
     const firstRows = await region.locator('li').innerText()
-    const firstTaskId = await region.locator('li code').first().innerText()
     await region.getByRole('button', { name: zh.next, exact: true }).click()
     await region.getByRole('alert').waitFor(); expect(await region.locator('li').innerText()).toBe(firstRows)
     await teamEvidence(page, region, output, 'pagination-failure', { locale: 'zh', theme: 'light', data: 'retained first review page',
       assertion: 'failed continuation is visible and keeps original rows; no execution or repeated approval' })
     await region.getByRole('button', { name: zh['reviews.refresh'], exact: true }).click()
-    await region.getByRole('button', { name: zh.next, exact: true }).click()
-    await expect.poll(() => region.locator('li code').first().innerText()).not.toBe(firstTaskId)
+    await expect.poll(async () => {
+      // A commit between the first page and its continuation expires the cursor; the reviewer refreshes and continues.
+      if (await region.getByRole('alert').count() > 0) await region.getByRole('button', { name: zh['reviews.refresh'], exact: true }).click()
+      const next = region.getByRole('button', { name: zh.next, exact: true })
+      if (await next.count() > 0 && await next.isEnabled()) await next.click()
+      // The second of two single-row pages is the last: it has one row, no continuation and no failure notice.
+      return await next.count() === 0 && await region.locator('li').count() === 1 && await region.getByRole('alert').count() === 0
+    }, { timeout: 15000 }).toBe(true)
     await region.getByRole('button', { name: zh['reviews.open'], exact: true }).first().click()
     review = page.getByRole('dialog', { name: zh['reviews.open'], exact: true })
     await review.getByLabel(zh['reviews.reason'], { exact: true }).fill('Approve supplier response')
@@ -278,18 +283,19 @@ it.each(['json', 'sqlite'] as const)('retains exact public cancellation after ge
     await reason.fill('Later unsubmitted cancellation draft')
     await dialog.getByRole('button', { name: zh.queryOriginal, exact: true }).click()
     await expect.poll(() => loseQuery).toBe(false)
-    await expect.poll(() => dialog.getByRole('button', { name: '重试原操作', exact: true }).isEnabled()).toBe(true)
-    await dialog.getByRole('button', { name: '重试原操作', exact: true }).click()
+    // Lookup first: a lost query proves nothing, so retry stays withheld and the original is queried again.
+    const retry = dialog.getByRole('button', { name: '重试原操作', exact: true })
+    expect(await retry.count() === 0 || await retry.isDisabled()).toBe(true)
     await expect.poll(async () => {
       const query = dialog.getByRole('button', { name: zh.queryOriginal, exact: true })
       if (await query.count() > 0 && await query.isEnabled()) await query.click()
       return await dialog.getByText('原结果: 请求已完成', { exact: true }).count()
     }, { timeout: 10000 }).toBe(1)
-    expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0])
+    expect(writes).toHaveLength(1)
     expect(writes[0]?.expectedRevision).toBe(updated?.taskRevision); expect(writes[0]?.expectedAttemptId).toBe(null)
     expect(await reason.inputValue()).toBe('Later unsubmitted cancellation draft')
     await teamEvidence(page, dialog, output, 'cancel-original-completed', { locale: 'zh', theme: 'light',
-      data: 'original exact cancellation terminal; separate later draft', assertion: 'query loss and retry preserve command identity and revision fence' })
+      data: 'original exact cancellation terminal; separate later draft', assertion: 'query loss withholds retry; a repeated query reads the original under its revision fence' })
     await dialog.getByRole('button', { name: zh.closeKeepDraft, exact: true }).click()
     const current = await scaffold.authenticatedRpc<SimulationProductTasksPage>('simulation.tasks.list', { runId })
     expect(current.result.ok && current.result.value.items[0]?.phase).toBe('cancelled')
@@ -307,14 +313,14 @@ it.each(['json', 'sqlite'] as const)('retains exact public cancellation after ge
     await expect.poll(async () => await page.getByLabel('取消原因', { exact: true }).count() === 0
       || await page.getByLabel('取消原因', { exact: true }).inputValue() !== 'Later unsubmitted cancellation draft').toBe(true)
     expect(await controlRegion().getByRole('button', { name: /打开任务取消输入/ }).count()).toBe(0)
-    expect(writes).toHaveLength(2)
+    expect(writes).toHaveLength(1)
     await scaffold.authenticateBrowserPage(page)
     await page.reload({ waitUntil: 'load' })
     await controlRegion().getByRole('button', { name: '核对当前任务', exact: true }).click()
     await expect.poll(() => controlRegion().getByRole('alert').count()).toBe(0)
     const currentDialog = await openCancel()
     expect(await currentDialog.getByLabel('取消原因', { exact: true }).inputValue()).toBe('')
-    expect(writes).toHaveLength(2)
+    expect(writes).toHaveLength(1)
     await teamEvidence(page, currentDialog, output, 'cancel-current-auth-restored', { locale: 'zh', theme: 'light',
       data: 'new authenticated read of original cancelled task; retired private draft cleared',
       assertion: 'retired cookie rejects and clears private input; current authentication restores reads without replaying cancellation' })

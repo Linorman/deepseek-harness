@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-20T18:48:26.729015+08:00",
+  "status": "passed-for-authorized-local-delivery-with-six-explicit-deferrals",
+  "checklist": {
+    "itemsUnchanged": true,
+    "itemTextAndOrderUnchanged": true,
+    "total": 98,
+    "completed": 92,
+    "newlyCompleted": [
+      "H01",
+      "H02",
+      "H03",
+      "H04",
+      "H05",
+      "H06",
+      "H07"
+    ],
+    "remaining": [
+      "C15",
+      "C16",
+      "E01",
+      "E07",
+      "E08",
+      "E15"
+    ]
+  },
+  "humanEvaluation": "User explicitly confirmed continued deferral in this chat on 2026-10-20; C15/C16 remain unchecked.",
+  "optionalProductionQualification": "E01/E07/E08/E15 remain unchecked; no real provider, business authorization or cross-host production qualification claimed.",
+  "currentIntegrity": {
+    "mergedDeSources": 1613,
+    "ui": {
+      "sourceHashes": 247,
+      "artifactHashes": 34,
+      "rawEvidenceHashes": 43
+    },
+    "pairedOwnerDocuments": 54,
+    "originalPerformanceFiles": 37,
+    "drift": []
+  },
+  "newVerification": {
+    "browser": 4,
+    "uiComponentTests": 47,
+    "registeredResourceTrials": 24,
+    "registeredResourceSamples": 5376,
+    "checks": {
+      "hostTestTypes": {
+        "command": "TMPDIR=\"$PWD/.tmp\" pnpm exec tsc -p tsconfig.host.json --noEmit --tsBuildInfoFile .tmp/world-h/host.tsbuildinfo",
+        "log": ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/typecheck.log",
+        "status": "passed",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "sourceOutputs": {
+        "command": "TMPDIR=\"$PWD/.tmp\" pnpm run verify-source-outputs",
+        "log": ".tmp/world-h/source-outputs.log",
+        "status": "passed",
+        "logSha256": "1cd11b30e63f13a6354107d2f8980a33b0a9458a4e50b3fa00036af6fad7e93a"
+      },
+      "documentation": {
+        "command": "TMPDIR=\"$PWD/.tmp\" pnpm run doc-sync",
+        "log": ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/doc-sync.log",
+        "status": "passed",
+        "logSha256": "e363720e49ec2b4c565d3f24e70c766afe35cd9d66a2118705f94b277ea74e8d"
+      },
+      "finalMarkdownLinks": {
+        "command": "TMPDIR=\"$PWD/.tmp\" pnpm run verify-md-links",
+        "log": ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/links.log",
+        "status": "passed",
+        "logSha256": "c613aa854ecbc84cfd19c5d15783c1bdd73b29cb0b3fe5a287610f45fbf1ac6c"
+      },
+      "finalMarkdownWrap": {
+        "command": "TMPDIR=\"$PWD/.tmp\" pnpm run verify-md-wrap",
+        "log": ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/wrap.log",
+        "status": "passed",
+        "logSha256": "c004cc6f25327152d89a1f18e881a376ebc4112550726086eb48e2b13d68d660"
+      },
+      "diff": {
+        "command": "git diff --check",
+        "log": ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/diff.log",
+        "status": "passed",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "reusedEvidence": "Unchanged source hashes bind the original contracts/Python, build, runnable and recovery results; historical failures/skips remain recorded in their source manifests.",
+  "receipts": {
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/contracts.md": "f2acb16aa84be79ee38ec6c36c25729d295e31bf287d218c7dd9ea889f162fac",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/contracts.json": "027526ac428237fd7c3659af413fabdd1c3aaddfab953e17748fc04959ecf60b",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/delivery.md": "f7d0ae649c3abbdaef71fe703411199d9693a49c1d6a487a7e48a555e8a7a270",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/delivery.json": "b5611413444855c22b8ecd7c034b7bd010b94ea9344437f892cc176416729ace",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/ui.md": "512ff4738b716cf1213ab19015687c68a2aa7a10f43ce2fe6887efd0a0a59b0d",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/ui.json": "389a830edaf725e17461fe93209dd25d4f3610d566a03f3d5b9c40d51d18e418",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/report.md": "5df9bcd9440104c367ee791b3a24b6df2f6fc78c7727615f8f1b12216b0e66eb",
+    ".agents/plans/2026-10-16-world-post-mvp/checklist.md": "648cd33d805b87fc09fbde21b0c5b3800570cb894b6210e3063c53143967c9a2",
+    ".agents/plans/2026-10-16-world-post-mvp/development-plan.md": "51fd60f963422580ec9eb75ebe5e583b453bb2a6730b238b821a68a09dfe1477"
+  },
+  "artifacts": "All task-generated outputs are retained inside this repository. No commit, push or remote publication."
+}

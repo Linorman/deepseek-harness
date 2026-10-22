@@ -41,7 +41,7 @@ try {
     outboxMaxAttempts: 1, outboxRetryDelayMs: 0, maxDriveSteps: 1, maxMicrostepsPerTime: 2,
     phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 5000, maxConflictRetries: 0,
     maxIngressBytes: 4096, maxEntities: 1, maxResidentActors: 1, maxDecisionsPerWindow: 1,
-    maxOperationsPerDecision: 1, maxResourceQuantity: '1', maxQueuedDecisions: 1, maxDispatchWaitRounds: 1,
+    maxOperationsPerDecision: 1, maxResourceReservationHistory: 128, maxResourceQuantity: '1', maxQueuedDecisions: 1, maxDispatchWaitRounds: 1,
     budgetInterval: '100', maxDecisionsPerInterval: 1, maxMessagesPerInterval: 0, maxTokensPerInterval: 100, tokensPerModelRequest: 10,
     maxPendingEvents: 2, maxPendingInteractions: 0, maxKnowledgeBytes: 4096, maxKnowledgePerQuery: 1, relationRules: [],
   } }))
@@ -56,7 +56,7 @@ try {
   const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/auxiliary-retirement')
   ctx.teamActivations.registerLifecycleOwner = register
   const entity = simulationEntityIdSchema.parse('observer')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entity, entityKind: 'person', cognition: 'agent', profile: {} }),
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entity, entityKind: 'person', cognition: 'agent', profile: {} }),
     run.snapshot().revision)
   await connection.ensureParticipant(entity, { displayName: 'Observer', role: 'observer', capabilities: [],
     provider: 'in-process', preset: 'simulation', model: 'unused' })

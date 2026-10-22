@@ -1,0 +1,35 @@
+Command: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/tests -p 'test_world_post_mvp*.py' -v
+Exit code: 0
+Original output retained from the completed command; tests were not repeated to create this log.
+
+test_cli_writes_incomplete_summary_and_preserves_original_batches (test_world_post_mvp_acceptance.AcceptanceTests.test_cli_writes_incomplete_summary_and_preserves_original_batches) ... ok
+test_exact_historical_reconstruction_and_independent_complete_collection (test_world_post_mvp_acceptance.AcceptanceTests.test_exact_historical_reconstruction_and_independent_complete_collection) ... ok
+test_failed_duplicate_and_invalid_round_records_are_rejected (test_world_post_mvp_acceptance.AcceptanceTests.test_failed_duplicate_and_invalid_round_records_are_rejected) ... ok
+test_failed_other_scene_records_remain_explicitly_excluded (test_world_post_mvp_acceptance.AcceptanceTests.test_failed_other_scene_records_remain_explicitly_excluded) ... ok
+test_metadata_policy_and_drift_mismatch_are_rejected (test_world_post_mvp_acceptance.AcceptanceTests.test_metadata_policy_and_drift_mismatch_are_rejected) ... ok
+test_missing_processes_and_streams_never_complete (test_world_post_mvp_acceptance.AcceptanceTests.test_missing_processes_and_streams_never_complete) ... ok
+test_original_stdout_must_match_result_and_files_cannot_escape_source (test_world_post_mvp_acceptance.AcceptanceTests.test_original_stdout_must_match_result_and_files_cannot_escape_source) ... ok
+test_unreviewed_current_change_cannot_broaden_legacy_exception (test_world_post_mvp_acceptance.AcceptanceTests.test_unreviewed_current_change_cannot_broaden_legacy_exception) ... ok
+test_wrong_hash_inventory_addition_and_wrong_scene_exception_are_rejected (test_world_post_mvp_acceptance.AcceptanceTests.test_wrong_hash_inventory_addition_and_wrong_scene_exception_are_rejected) ... ok
+test_actual_dependency_inventory_and_generated_exclusions (test_world_post_mvp_baseline.ProcessTests.test_actual_dependency_inventory_and_generated_exclusions) ... ok
+test_hardware_uses_real_probe_values_or_explicit_unknown (test_world_post_mvp_baseline.ProcessTests.test_hardware_uses_real_probe_values_or_explicit_unknown) ... ok
+test_invalid_json_empty_output_and_nonzero_exit (test_world_post_mvp_baseline.ProcessTests.test_invalid_json_empty_output_and_nonzero_exit) ... ok
+test_main_records_timeout_and_parse_failure_before_exit (test_world_post_mvp_baseline.ProcessTests.test_main_records_timeout_and_parse_failure_before_exit) ... {"complete": false, "rows": 4, "output": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/acceptance-tests/tmppof2md1t/collection/summary.json"}
+/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/script-tests/tmpcfubqk52/.local/world-post-mvp/f0-longitudinal/1792340571244580000
+{"scene": "company", "backend": "json", "recover": false, "exitCode": null, "elapsedMs": 1, "failure": {"kind": "timeout"}}
+/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/script-tests/tmpfoqsk0yy/.local/world-post-mvp/f0-longitudinal/1792340571246369000
+{"scene": "company", "backend": "json", "recover": false, "exitCode": 0, "elapsedMs": 1, "failure": {"kind": "invalid-result"}}
+ok
+test_new_and_deleted_source_are_detected (test_world_post_mvp_baseline.ProcessTests.test_new_and_deleted_source_are_detected) ... ok
+test_timeout_is_a_structured_outcome (test_world_post_mvp_baseline.ProcessTests.test_timeout_is_a_structured_outcome) ... ok
+test_duplicate_and_missing_warm_or_cold_never_complete (test_world_post_mvp_baseline.ReportTests.test_duplicate_and_missing_warm_or_cold_never_complete) ... ok
+test_exact_original_rounds_and_required_metrics (test_world_post_mvp_baseline.ReportTests.test_exact_original_rounds_and_required_metrics) ... ok
+test_incomplete_files_and_legacy_sample_write_explicit_failed_summary (test_world_post_mvp_baseline.ReportTests.test_incomplete_files_and_legacy_sample_write_explicit_failed_summary) ... ok
+test_payload_identity_cold_failure_and_drift (test_world_post_mvp_baseline.ReportTests.test_payload_identity_cold_failure_and_drift) ... ok
+test_valid_pair_and_measurements (test_world_post_mvp_baseline.ReportTests.test_valid_pair_and_measurements) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.435s
+
+OK
+{"complete": false, "rows": 0, "output": "/Volumes/projects-mac/deepseek-harness/.tmp/world-post-mvp/script-tests/tmpg6ef7a3i/summary.json"}

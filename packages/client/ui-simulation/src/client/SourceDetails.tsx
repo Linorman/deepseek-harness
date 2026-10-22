@@ -54,7 +54,7 @@ export function SourceDetails({ view, data, pageSize, watch, read, refresh, navi
     }}>{t('sourceBack')}</Button>
     <h2 ref={heading} tabIndex={-1}>{t('sourceTitle')}</h2><p className={css.notice}>{t('sourceNotice')}</p>
     <div aria-live="polite">{state?.error !== undefined ? <p role="alert">{t(state.error)}</p>
-      : state?.stale ? <p>{t('stale')}</p> : state?.loading && value === undefined ? <p>{t('loading')}</p> : null}</div>
+      : state?.loading && value === undefined ? <p>{t('loading')}</p> : null}</div>
     <Button disabled={blocked} onClick={() => { void refresh() }}>{t('refreshDetail')}</Button>
     {value?.source !== undefined && <dl>
       <div><dt>{t('teamReference')}</dt><dd><TeamReference target={{ kind: 'team', teamId: value.source.teamId }}

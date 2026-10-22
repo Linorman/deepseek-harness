@@ -57,6 +57,7 @@
                   "deadline"
                 ],
                 "maxOperationsPerDecision": 8,
+                "maxResourceReservationHistory": 128,
                 "maxResourceQuantity": "1000000",
                 "relationRules": []
               }
@@ -100,6 +101,7 @@
                   "deadline"
                 ],
                 "maxOperationsPerDecision": 8,
+                "maxResourceReservationHistory": 128,
                 "maxResourceQuantity": "1000000",
                 "relationRules": []
               }
@@ -143,6 +145,7 @@
                   "deadline"
                 ],
                 "maxOperationsPerDecision": 8,
+                "maxResourceReservationHistory": 128,
                 "maxResourceQuantity": "1000000",
                 "relationRules": []
               }

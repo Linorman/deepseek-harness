@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-14 Asia/Tokyo",
+  "cases": [
+    {
+      "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-company-context-privacy/world-TKI9Zh/proof.json",
+      "sha256": "bfac2865250fc41476ff8fd503a96f54954dccd10b326c9fecfbb919f8a6aeca",
+      "modelCalls": 36,
+      "lastDecision": "world/1/decision/11",
+      "allDecisionsAccepted": true,
+      "errors": {
+        "warnings": [],
+        "pageErrors": []
+      }
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-laboratory-context-privacy/world-UgKO3p/proof.json",
+      "sha256": "d60065ffdb791052f2f6733287795def2420894be264ce708ae33e74743b740a",
+      "modelCalls": 36,
+      "lastDecision": "world/1/decision/11",
+      "allDecisionsAccepted": true,
+      "errors": {
+        "warnings": [],
+        "pageErrors": []
+      }
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/sqlite-company-context-privacy/world-LLxoY8/proof.json",
+      "sha256": "7fba8676ee2d07ecb5bed5e33bc05392b3d2639f973da15952dbbb034869898b",
+      "modelCalls": 36,
+      "lastDecision": "world/1/decision/11",
+      "allDecisionsAccepted": true,
+      "errors": {
+        "warnings": [],
+        "pageErrors": []
+      }
+    },
+    {
+      "path": ".local/world-completion/thread-01a1336a-norm-user-projection/browser/json-laboratory-context-privacy/world-AsjgyQ/proof.json",
+      "sha256": "4db09e69c5cee7aab6e9aea7b3bce42d46c0879f66774ab5a0a18c45559915f5",
+      "modelCalls": 36,
+      "lastDecision": "world/1/decision/11",
+      "allDecisionsAccepted": true,
+      "errors": {
+        "warnings": [],
+        "pageErrors": []
+      }
+    }
+  ],
+  "businessModelCalls": 144,
+  "readModelCalls": 0,
+  "scope": "Existing authenticated body-read regression after builds settle; not the full v1 GUI matrix"
+}

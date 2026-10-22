@@ -1,0 +1,10 @@
+{
+  "backend": "sqlite",
+  "origin": "http://127.0.0.1:51741",
+  "browser": "Playwright; Browser plugin unavailable",
+  "transport": "actual authenticated HTTP",
+  "modelCalls": 0,
+  "claim": "Authoring never runs a model",
+  "draftId": "3ec66e83-089c-4252-b1b2-16a0bc0ced6b",
+  "frames": "/Volumes/projects-mac/deepseek-harness/.playwright-mcp/gif-frames-post-mvp-sqlite"
+}

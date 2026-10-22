@@ -1,0 +1,85 @@
+{
+  "version": 2,
+  "backend": "sqlite",
+  "sizeMiB": 200,
+  "physicalBytes": 424266248,
+  "budgets": {
+    "controlP95Ms": 250,
+    "controlRssGrowthBytes": 8388608,
+    "detailMs": 30000,
+    "runtimeBaselineBytes": 268435456,
+    "readerPeakGrowthBytes": 1744830464,
+    "inspectionMaxBytes": 268435456
+  },
+  "host": {
+    "node": "v25.9.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro"
+  },
+  "control": {
+    "calls": 100,
+    "p95Ms": 0.16795799999999872,
+    "rssGrowthBytes": 2031616
+  },
+  "reads": {
+    "baselineRssBytes": 208879616,
+    "samples": [
+      {
+        "mode": "cold-provider",
+        "elapsedMs": 1620.1145000000001,
+        "rssBefore": 191332352,
+        "rssAfterRead": 308199424,
+        "rssAfterVerification": 1400176640,
+        "maxRSSKiB": 1367360,
+        "readPeakRSSKiB": 453232,
+        "identical": true,
+        "readers": 1,
+        "baselineRssBytes": 191332352
+      },
+      {
+        "mode": "warm-provider",
+        "elapsedMs": 1505.702042,
+        "rssBefore": 536690688,
+        "rssAfterRead": 650870784,
+        "rssAfterVerification": 1545551872,
+        "maxRSSKiB": 1509328,
+        "readPeakRSSKiB": 652944,
+        "identical": true,
+        "readers": 1,
+        "baselineRssBytes": 208879616
+      },
+      {
+        "mode": "concurrent-two",
+        "elapsedMs": 3220.2761250000003,
+        "rssBefore": 188284928,
+        "rssAfterRead": 778452992,
+        "rssAfterVerification": 1681784832,
+        "maxRSSKiB": 1642368,
+        "readPeakRSSKiB": 777536,
+        "identical": true,
+        "readers": 2,
+        "baselineRssBytes": 188284928
+      }
+    ],
+    "emittedPageBytes": 210551959,
+    "largestPageBytes": 526388,
+    "pages": 401,
+    "payloadBytes": 210426488,
+    "limitations": "Each mode uses a fresh process; warm includes one prior read. Cold is not OS cache eviction. Read peak excludes later assertion hashing; verification peak is separate. Bytes describe application output, not physical IO."
+  },
+  "passed": true,
+  "unchangedSource": true,
+  "sourceFiles": [
+    {
+      "name": "/Volumes/projects-mac/deepseek-harness/.tmp/simulation-business-hZT9YC/11d40417959631d3d2420e8cd8709893c11cd7a4db737af63e8d56cfa7866f85/journal.sqlite",
+      "sha256": "56f51c1c3efb9851177719be71ca367d87d6979cf369d9240ede41e547e7f881"
+    },
+    {
+      "name": "/Volumes/projects-mac/deepseek-harness/.tmp/simulation-business-hZT9YC/11d40417959631d3d2420e8cd8709893c11cd7a4db737af63e8d56cfa7866f85/journal.sqlite-wal",
+      "sha256": "d25af238ddfba0f2c2b5c9a4001db35a4bf946b4057c30f84c6261cc9eef4ae1"
+    }
+  ],
+  "modelCalls": 0,
+  "expectedHash": "4312b0c95ffce3fe124dad4582030605267d474ce53e1c3009f56e6a07e39dfb"
+}

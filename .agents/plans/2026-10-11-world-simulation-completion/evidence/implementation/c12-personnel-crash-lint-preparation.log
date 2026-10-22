@@ -1,0 +1,21 @@
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:182:1: error @stylistic(max-len): This line has a length of 144. Maximum allowed is 140.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:269:1: error @stylistic(indent): Expected indentation of 8 spaces but found 10.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:270:1: error @stylistic(indent): Expected indentation of 8 spaces but found 10.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:271:1: error @stylistic(indent): Expected indentation of 8 spaces but found 10.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:272:1: error @stylistic(indent): Expected indentation of 10 spaces but found 12.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:273:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:274:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:275:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:276:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:277:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:278:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:279:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:280:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:281:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:282:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:283:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:284:1: error @stylistic(indent): Expected indentation of 12 spaces but found 14.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:285:1: error @stylistic(indent): Expected indentation of 14 spaces but found 16.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:286:1: error @stylistic(indent): Expected indentation of 10 spaces but found 12.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:287:1: error @stylistic(indent): Expected indentation of 10 spaces but found 12.
+examples/simulation-company/tests/world-personnel-crash-scenario.ts:288:1: error @stylistic(indent): Expected indentation of 8 spaces but found 10.

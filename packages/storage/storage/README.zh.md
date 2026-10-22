@@ -1,5 +1,7 @@
 # @clocky/clocky-storage
 
+只读快照额度超限使用 `StorageError.code = read-limit`；无效观察配置仍为 `invalid-value`。版本不匹配和介质损坏保留各自错误码。
+
 [English](README.md) | 中文
 
 `LogReadLimits` 和 `LogReadSnapshot` 为不能取得 writer handle 的读取方定义有界、分离的历史。JSON 和 SQLite 提供方导出各自的读取函数；descriptor／配置在 IO 前校验，完整返回 JSON 和保留行数超额会拒绝。这些观察不授予应用读取权限或 compaction 权限。
@@ -31,3 +33,5 @@
 ## 已知限制与暂缓事项
 
 - **数据形式按需解析**：在其插件挂载前读取 `ctx.storage.domain` 或 `ctx.storage.log` 会抛出 `form-not-mounted`；组装会按相应顺序排列插件（错误配置会明确报错，而不是静默推迟处理）。
+
+`captureLogArchive(stream, cursor, limits)` 在领域所有者串行队列内导出完整原始前缀，要求首序号为零、尾游标精确、记录连续且总条数/字节/分页限制有限；它不自行获取所有权，也不压缩历史。归档保留原流名称、格式版本和序号，由原所有者校验恢复。

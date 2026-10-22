@@ -81,7 +81,8 @@
     "@clocky/clocky-tool-simulation": "workspace:^",
     "@clocky/clocky-client-ui-simulation": "workspace:^",
     "@clocky/clocky-agent-runtime-acp": "workspace:^",
-    "@clocky/clocky-host-product-principal-digest": "workspace:^"
+    "@clocky/clocky-host-product-principal-digest": "workspace:^",
+    "@clocky/clocky-simulation-world": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-agent": "workspace:^",

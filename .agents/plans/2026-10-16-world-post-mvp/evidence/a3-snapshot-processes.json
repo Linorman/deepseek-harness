@@ -1,0 +1,114 @@
+[
+  {
+    "path": ".tmp/world-post-mvp/snapshot/sqlite-route-kDWSIQ/warm-process.json",
+    "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+    "args": [
+      "--import",
+      "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-post-mvp-scenario.ts",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-post-mvp/cordis.yml"
+    ],
+    "code": 0,
+    "signal": null,
+    "stdout": "{\"backend\":\"sqlite\",\"kind\":\"route\",\"route\":{\"mode\":\"ordered\",\"steps\":2,\"membershipPolicy\":\"frozen\"},\"independentVotes\":3,\"enacted\":\"Same approved text\",\"impactRecorded\":true,\"modelCalls\":0,\"restored\":true,\"recoveredProcess\":false}\n",
+    "stderr": ""
+  },
+  {
+    "path": ".tmp/world-post-mvp/snapshot/sqlite-route-kDWSIQ/cold-process.json",
+    "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+    "args": [
+      "--import",
+      "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-post-mvp-scenario.ts",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-post-mvp/cordis.yml"
+    ],
+    "code": 0,
+    "signal": null,
+    "stdout": "{\"backend\":\"sqlite\",\"kind\":\"route\",\"route\":{\"mode\":\"ordered\",\"steps\":2,\"membershipPolicy\":\"frozen\"},\"independentVotes\":3,\"enacted\":\"Same approved text\",\"impactRecorded\":true,\"modelCalls\":0,\"restored\":true,\"recoveredProcess\":true}\n",
+    "stderr": ""
+  },
+  {
+    "path": ".tmp/world-post-mvp/snapshot/sqlite-proxy-2Wxshc/warm-process.json",
+    "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+    "args": [
+      "--import",
+      "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-post-mvp-scenario.ts",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-post-mvp/cordis.yml"
+    ],
+    "code": 0,
+    "signal": null,
+    "stdout": "{\"backend\":\"sqlite\",\"kind\":\"proxy\",\"modelCalls\":0,\"grants\":[{\"revoked\":false,\"principal\":\"buyer\",\"delegate\":\"fee-candidate\"},{\"revoked\":true,\"principal\":\"buyer\",\"delegate\":\"fee-candidate\"}],\"ballots\":[{\"voter\":\"buyer\",\"choice\":\"yes\",\"proxy\":true}],\"restored\":true,\"recoveredProcess\":false}\n",
+    "stderr": ""
+  },
+  {
+    "path": ".tmp/world-post-mvp/snapshot/sqlite-proxy-2Wxshc/cold-process.json",
+    "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+    "args": [
+      "--import",
+      "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-post-mvp-scenario.ts",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-post-mvp/cordis.yml"
+    ],
+    "code": 0,
+    "signal": null,
+    "stdout": "{\"backend\":\"sqlite\",\"kind\":\"proxy\",\"modelCalls\":0,\"grants\":[{\"revoked\":false,\"principal\":\"buyer\",\"delegate\":\"fee-candidate\"},{\"revoked\":true,\"principal\":\"buyer\",\"delegate\":\"fee-candidate\"}],\"ballots\":[{\"voter\":\"buyer\",\"choice\":\"yes\",\"proxy\":true}],\"restored\":true,\"recoveredProcess\":true}\n",
+    "stderr": ""
+  },
+  {
+    "path": ".tmp/world-post-mvp/snapshot/json-route-oJga6P/warm-process.json",
+    "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+    "args": [
+      "--import",
+      "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-post-mvp-scenario.ts",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-post-mvp/cordis.yml"
+    ],
+    "code": 0,
+    "signal": null,
+    "stdout": "{\"backend\":\"json\",\"kind\":\"route\",\"route\":{\"mode\":\"ordered\",\"steps\":2,\"membershipPolicy\":\"frozen\"},\"independentVotes\":3,\"enacted\":\"Same approved text\",\"impactRecorded\":true,\"modelCalls\":0,\"restored\":true,\"recoveredProcess\":false}\n",
+    "stderr": ""
+  },
+  {
+    "path": ".tmp/world-post-mvp/snapshot/json-route-oJga6P/cold-process.json",
+    "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+    "args": [
+      "--import",
+      "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-post-mvp-scenario.ts",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-post-mvp/cordis.yml"
+    ],
+    "code": 0,
+    "signal": null,
+    "stdout": "{\"backend\":\"json\",\"kind\":\"route\",\"route\":{\"mode\":\"ordered\",\"steps\":2,\"membershipPolicy\":\"frozen\"},\"independentVotes\":3,\"enacted\":\"Same approved text\",\"impactRecorded\":true,\"modelCalls\":0,\"restored\":true,\"recoveredProcess\":true}\n",
+    "stderr": ""
+  },
+  {
+    "path": ".tmp/world-post-mvp/snapshot/json-proxy-sCdB5E/warm-process.json",
+    "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+    "args": [
+      "--import",
+      "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-post-mvp-scenario.ts",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-post-mvp/cordis.yml"
+    ],
+    "code": 0,
+    "signal": null,
+    "stdout": "{\"backend\":\"json\",\"kind\":\"proxy\",\"modelCalls\":0,\"grants\":[{\"revoked\":false,\"principal\":\"buyer\",\"delegate\":\"fee-candidate\"},{\"revoked\":true,\"principal\":\"buyer\",\"delegate\":\"fee-candidate\"}],\"ballots\":[{\"voter\":\"buyer\",\"choice\":\"yes\",\"proxy\":true}],\"restored\":true,\"recoveredProcess\":false}\n",
+    "stderr": ""
+  },
+  {
+    "path": ".tmp/world-post-mvp/snapshot/json-proxy-sCdB5E/cold-process.json",
+    "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+    "args": [
+      "--import",
+      "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-post-mvp-scenario.ts",
+      "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-post-mvp/cordis.yml"
+    ],
+    "code": 0,
+    "signal": null,
+    "stdout": "{\"backend\":\"json\",\"kind\":\"proxy\",\"modelCalls\":0,\"grants\":[{\"revoked\":false,\"principal\":\"buyer\",\"delegate\":\"fee-candidate\"},{\"revoked\":true,\"principal\":\"buyer\",\"delegate\":\"fee-candidate\"}],\"ballots\":[{\"voter\":\"buyer\",\"choice\":\"yes\",\"proxy\":true}],\"restored\":true,\"recoveredProcess\":true}\n",
+    "stderr": ""
+  }
+]

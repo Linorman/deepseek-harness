@@ -1,0 +1,2 @@
+packages/simulation/simulation-team/src/personnel-obligations.ts(37,43): error TS2339: Property 'operationId' does not exist on type '{ kind: "decision"; id: Branded<"SimulationDecisionId">; epoch: SimulationWriterEpoch; slot: Branded<"SimulationDecisionSlot">; } | { ...; } | ... 20 more ... | { ...; }'.
+  Property 'operationId' does not exist on type '{ kind: "decision"; id: Branded<"SimulationDecisionId">; epoch: SimulationWriterEpoch; slot: Branded<"SimulationDecisionSlot">; }'.

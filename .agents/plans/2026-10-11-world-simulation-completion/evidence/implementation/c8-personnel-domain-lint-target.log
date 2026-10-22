@@ -1,0 +1,2 @@
+packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts:25:1: error @stylistic(indent): Expected indentation of 8 spaces but found 6.
+packages/simulation/simulation-local/src/world-personnel-domain.ts:178:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.

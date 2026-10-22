@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-11T20:07:42.192539+00:00",
+  "rootPid": 92130,
+  "stoppedPids": [
+    37560,
+    92130
+  ],
+  "result": "failed-and-interrupted",
+  "reason": "Original full Web run already has cold-recovery, sources, states and task-matrix failures. Source fixtures and built artifacts have since changed. Preserve failed log; do not claim full-suite completion or final-input evidence. Focused strong original-command cold recovery separately passed 4 combinations.",
+  "log": "c4-web.log"
+}

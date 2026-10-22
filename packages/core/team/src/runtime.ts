@@ -1,4 +1,5 @@
 import { deepFreeze } from '@clocky/clocky-llm'
+import type { TeamLimits } from './types.ts'
 import type { TeamIdentityResolveRequest, TeamIdentityResolvePage } from './types.ts'
 import { ExecutionProfiles } from './execution-profiles.ts'
 import type { TeamExecutionProfileRegistration, TeamExecutionProfilesRequest, TeamExecutionProfilesPage } from './types.ts'
@@ -2525,7 +2526,7 @@ export abstract class TeamRuntime extends Service {
 
   /**
    * Register one system owner that privately resolves opaque proofs for exact
-   * destructive Team-maintenance operations. Registration is effect-scoped:
+   * closed Team-maintenance operations. Registration is effect-scoped:
    * disposing the contributing fiber immediately makes all of its proofs invalid.
    * @param source - named resolver that owns proof construction and lifetime.
    * @returns an HMR-safe disposer that removes exactly this source.
@@ -2564,7 +2565,7 @@ export abstract class TeamRuntime extends Service {
   /**
    * Resolve one current system-owned Team-maintenance proof. A source owns the
    * opaque token in its private WeakMap; this runtime validates and freezes
-   * the derived scope before a provider removes a journal prefix.
+   * the derived scope before a provider acquires a settlement cut or removes a journal prefix.
    * @param proof - runtime-only proof supplied by a registered system source.
    * @returns immutable source attribution and the exact maintenance scope.
    * @throws {@link TeamError} with `TEAM_ACTOR_PROOF_INVALID` when no live source owns the proof or its scope is invalid.
@@ -2675,6 +2676,12 @@ export abstract class TeamRuntime extends Service {
   }
 
   /**
+   * Read current complete deployment ceilings before preview or root creation.
+   * @returns detached creation limits without Team allocation, storage writes or inference; these do not authorize creation.
+   */
+  abstract getCreationLimits(): TeamLimits
+
+  /**
    * Create one Team, mint its identity, and commit its initial durable state.
    * A nested request names both its parent Team and the parent task; a provider
    * resolves its separate runtime proof and persists the resulting depth under
@@ -2701,6 +2708,31 @@ export abstract class TeamRuntime extends Service {
   Promise<import('./persistence-reference.ts').TeamPersistenceReference> {
     void request
     return Promise.reject(new TeamError('Team provider does not expose checkpoint references', 'TEAM_INVALID_ARGUMENT'))
+  }
+
+  /**
+   * Export complete original records while the owning queue validates its observed cursor.
+   * @param request - Exact original Team or Channel and current cursor; prefix selection is unsupported.
+   * @param limits - Finite entry, serialized-byte and page bounds.
+   * @returns full original records and their owner reference; unsupported providers reject.
+   */
+  exportPersistenceArchive(request: import('./persistence-reference.ts').TeamPersistenceReferenceRequest,
+    limits: { readonly maxEntries: number; readonly maxBytes: number; readonly pageSize: number }):
+  Promise<import('./persistence-reference.ts').TeamPersistenceArchive> {
+    void request; void limits
+    return Promise.reject(new TeamError('Team provider does not expose complete archives', 'TEAM_INVALID_ARGUMENT'))
+  }
+
+  /**
+   * Hold the complete original Team/Channel source vector while its owning Simulation commits one Native settlement.
+   * @param request - Exact observed cursors and a live source-owned personnel-intent proof.
+   * @param commit - Original Native ledger submission only; must not call Team/Channel methods or models while their serializers are held.
+   * @returns the callback's original commit result after all held serializers are released; unsupported providers reject before callback.
+   */
+  withPersonnelSettlementCut<T>(request: import('./types.ts').TeamPersonnelSettlementCutRequest,
+    commit: (sources: import('./types.ts').TeamPersonnelSettlementCutSources) => Promise<T>): Promise<T> {
+    void request; void commit
+    return Promise.reject(new TeamError('Team provider does not support personnel settlement cuts', 'TEAM_INVALID_ARGUMENT'))
   }
 
 

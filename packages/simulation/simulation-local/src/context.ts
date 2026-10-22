@@ -1,3 +1,9 @@
+import { businessContext, businessMaterial, assertBusinessContextProjection } from './business-context.ts'
+import type { NativeWorldRuntime } from './world-runtime.ts'
+import { worldContext } from './world.ts'
+import { normContextMaterial } from './world-norms.ts'
+import { projectWorldFacts, assertPreparedWorldScopeAccess } from '@clocky/clocky-simulation'
+import { simulationContextBytes } from '@clocky/clocky-simulation/context-size'
 import { taskDecision, taskDecisionBlock } from '@clocky/clocky-simulation'
 /** Deterministic, journal-owned context selection before any Session delivery. @module @clocky/clocky-simulation-local/context */
 import { selectKnowledge, knowledgeVisible } from '@clocky/clocky-simulation'
@@ -6,7 +12,25 @@ import { isDeepStrictEqual } from 'node:util'
 import { isSimulationContextView } from '@clocky/clocky-session/surface'
 import type { SimulationContextSection } from '@clocky/clocky-session'
 import type { SimulationContextPreparation, SimulationContextRequest, SimulationDecision, SimulationSnapshot } from '@clocky/clocky-simulation'
+import { z } from 'zod'
+import { simulationStopTargetSchema } from '@clocky/clocky-simulation'
 import { businessFingerprint } from './business.ts'
+
+const stoppingContextSchema = z.strictObject({ kind: z.literal('simulation-stopping'), version: z.literal(1),
+  controlRevision: z.number().int().positive(), target: simulationStopTargetSchema.nullable(), instruction: z.string() })
+function stoppingBlock(revision: number, target: z.infer<typeof simulationStopTargetSchema> | null) {
+  return { type: 'text' as const, text: JSON.stringify({ kind: 'simulation-stopping', version: 1, controlRevision: revision, target,
+    instruction: target === null ? 'The operator cleared the previous stop target. Current decision permissions still apply.'
+      : 'Respect this operator stop target. Stage only actions that stay within its boundary; do not invent actions to reach it. '
+        + 'Stopping does not complete the scene or remove unfinished responsibilities. Resuming requires an explicit operator change.' }) }
+}
+function stoppingMaterial(block: unknown): unknown {
+  if (typeof block !== 'object' || block === null || !('text' in block) || typeof block.text !== 'string') return undefined
+  let value: unknown
+  try { value = JSON.parse(block.text) }
+  catch { return undefined /* Ordinary text is not a structured Native stopping fact. */ }
+  return typeof value === 'object' && value !== null && 'kind' in value && value.kind === 'simulation-stopping' ? value : undefined
+}
 
 const REQUIRED = ['identity', 'authority', 'input', 'goals', 'commitments'] as const
 /**
@@ -14,11 +38,15 @@ const REQUIRED = ['identity', 'authority', 'input', 'goals', 'commitments'] as c
  * @param state - State owned by the decision queue.
  * @param decision - Current actor's fixed decision slot.
  * @param request - Validated source material and deployment policy.
+ * @param runtime - Original explicit World parser/reducer catalog; absent only for base simulation operations.
  * @returns a reproducible preparation or an explicit required-content overflow.
  */
 export function prepareContext(
-  state: SimulationSnapshot, decision: SimulationDecision, request: SimulationContextRequest,
+  state: SimulationSnapshot, decision: SimulationDecision, request: SimulationContextRequest, runtime?: NativeWorldRuntime,
 ): SimulationContextPreparation {
+  if (request.sections.some(section => section.blocks.some(block =>
+    businessMaterial(block) !== undefined || stoppingMaterial(block) !== undefined)))
+    throw new Error('Business context material is reserved to the original Native actor projection')
   for (const kind of REQUIRED) {
     if (!request.sections.some(section => section.kind === kind && section.required)) {
       throw new Error(`Simulation context requires the complete ${kind} section`)
@@ -37,6 +65,40 @@ export function prepareContext(
     && source.runId === state.spec.runId && source.sequence === ingress.sequence) ? request.sources : [
       ...request.sources, { kind: 'run-event' as const, runId: state.spec.runId, sequence: ingress.sequence },
     ])]
+  const control = state.runControl?.current
+  if (control !== undefined) {
+    sections = sections.map(section => section.kind !== 'authority' ? section : { ...section,
+      blocks: [...section.blocks, stoppingBlock(control.revision, control.target)] })
+    const source = { kind: 'run-event' as const, runId: state.spec.runId, sequence: control.revision }
+    if (!sources.some(value => isDeepStrictEqual(value, source))) sources.push(source)
+  }
+  const responsibilities = businessContext(state, decision)
+  if (responsibilities !== undefined) {
+    sections = sections.map(section => section.kind !== 'commitments' ? section : { ...section,
+      blocks: [...section.blocks, { type: 'text' as const, text: JSON.stringify(responsibilities) }] })
+    if (!sources.some(value => isDeepStrictEqual(value, responsibilities.source))) sources.push(responsibilities.source)
+  }
+  let worldScopeAccess: readonly import('@clocky/clocky-simulation').SimulationEntityId[] | undefined
+  const world = request.world === undefined ? undefined : worldContext(state, decision, request.world, runtime)
+  if (world !== undefined) {
+    worldScopeAccess = world.worldScopeAccess
+    sections = sections.map(section => section.kind === 'input' ? { ...section, blocks: [...section.blocks,
+      { type: 'text' as const, text: world.text }] } : section)
+    for (const source of world.sources) if (!sources.some(value => isDeepStrictEqual(value, source))) sources.push(source)
+  } else if (state.world !== undefined) {
+    const worldFacts = projectWorldFacts(state, { viewer: decision.entityId, cursor: decision.snapshotRevision,
+      time: decision.time, limit: state.spec.maxKnowledgePerQuery })
+    const norms = normContextMaterial(state, decision.entityId, decision.time, decision.snapshotRevision)
+    worldScopeAccess = [...new Set([
+      ...worldFacts.items.filter(value => value.fact.audience.kind === 'scope-members').map(value => value.fact.scope),
+      ...norms.material.items.filter(value => value.norm.audience.kind === 'scope-members').map(value => value.norm.scope),
+    ])]
+    sections = sections.map(section => section.kind !== 'input' ? section : { ...section, blocks: [...section.blocks,
+      { type: 'text' as const, text: JSON.stringify({ kind: 'world-background', worldFacts, norms: norms.material }) }] })
+    for (const source of [...norms.sources, ...worldFacts.items.flatMap(({ fact }) => [
+      { kind: 'run-event' as const, runId: state.spec.runId, sequence: fact.sequence }, ...fact.source.references,
+    ])]) if (!sources.some(value => isDeepStrictEqual(value, source))) sources.push(source)
+  }
   if (taskInput !== undefined && task !== undefined) {
     sections = sections.map(section => section.kind === 'input' ? { ...section, blocks: [...section.blocks, taskInput] } : section)
     const reservation = { kind: 'run-event' as const, runId: state.spec.runId, sequence: task.execution.reservedSequence }
@@ -82,7 +144,8 @@ export function prepareContext(
     ...request.knowledge?.visibleReports === undefined ? {} : { visibleReports: request.knowledge.visibleReports } }
   const content = budget.content
   const selected = new Set(content.map(section => section.kind))
-  return { status: 'prepared', requiredSections: budget.requiredSections,
+  return { status: 'prepared', ...world === undefined ? {} : { world: world.authority },
+    ...worldScopeAccess === undefined ? {} : { worldScopeAccess }, requiredSections: budget.requiredSections,
     ...request.knowledge?.visibleReports === undefined ? {} : { visibleReports: request.knowledge.visibleReports },
     ...request.knowledge === undefined || !selected.has('knowledge') ? {} : { knowledge: knowledge.map(({ id, revision }) => ({ id, revision })),
       ...request.knowledge.visibleReports === undefined ? {} : { referencedReports: request.knowledge.visibleReports } },
@@ -152,18 +215,19 @@ function knowledgeBlock(item: import('@clocky/clocky-simulation').SimulationKnow
   return { type: 'text', text: JSON.stringify(content) }
 }
 /**
- * Recheck selected knowledge before another context retrieval or model request without erasing Session history.
+ * Recheck selected knowledge and World scope access before retrieval or inference without erasing Session history.
  * @param state - Current permissions and immutable knowledge versions.
  * @param decision - Current prepared decision.
  */
 export function assertKnowledgeAccess(state: SimulationSnapshot, decision: SimulationDecision): void {
   if (decision.context?.status !== 'prepared') return
+  assertPreparedWorldScopeAccess(state, decision)
   if (!decision.context.knowledge?.every(ref => knowledgeVisible(state, ref, {
     viewer: decision.entityId, cursor: decision.snapshotRevision, time: decision.time, limit: state.spec.maxKnowledgePerQuery,
   })) && decision.context.knowledge !== undefined) throw new Error('Simulation prepared knowledge is no longer authorized')
 }
 function size(sections: readonly SimulationContextSection[]): number {
-  return Buffer.byteLength(JSON.stringify(sections.flatMap(section => section.blocks)), 'utf8')
+  return simulationContextBytes(sections)
 }
 function ingressBlock(ingress: import('@clocky/clocky-simulation').SimulationIngress): { type: 'text'; text: string } {
   return { type: 'text', text: `External input ${JSON.stringify(ingress.request.id)} from ${JSON.stringify(ingress.request.source)}:\n${ingress.request.text}` }
@@ -183,7 +247,20 @@ export function assertContextProjection(state: SimulationSnapshot, decision: Sim
     }
     return
   }
+  assertBusinessContextProjection(state, decision)
   const view = context.view
+  const stopping = view.content.flatMap(section => section.blocks.flatMap((block) => {
+    const material = stoppingMaterial(block)
+    return material === undefined ? [] : [{ kind: section.kind, block, material: stoppingContextSchema.parse(material) }]
+  }))
+  if (stopping.length > 1) throw new Error('Prepared context duplicates its Native stopping fact')
+  for (const { kind, block, material } of stopping) {
+    const owner = Object.values(state.runControl?.commands ?? {}).find(value => value.receipt.revision === material.controlRevision)
+    if (kind !== 'authority' || owner === undefined || !isDeepStrictEqual(owner.command.target, material.target)
+      || !isDeepStrictEqual(block, stoppingBlock(material.controlRevision, material.target))
+      || !view.sources.some(source => source.kind === 'run-event' && source.runId === state.spec.runId
+        && source.sequence === material.controlRevision)) throw new Error('Prepared stopping fact lost its original Native command')
+  }
   if (context.requiredSections.some(kind => !view.content.some(section => section.kind === kind))) {
     throw new Error('Simulation context lost a required section')
   }

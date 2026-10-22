@@ -1,0 +1,125 @@
+{
+  "date": "2026-10-12",
+  "timezone": "Asia/Tokyo",
+  "writtenAtUtc": "2026-10-11T20:28:28.038772+00:00",
+  "scope": "Only four owned existing-person actual Loader/Agent keyless fixture files; no production file or checklist edits by this fixture worker. Root owns Native schema/registry/approval/execution/canonical channel helper/cleanup/build.",
+  "files": [
+    {
+      "path": "examples/simulation-company/tests/world-hire-existing-model.ts",
+      "bytes": 8926,
+      "sha256": "130f0c0adb5de40a636338fceb48e1d5b14bb7e679b1801f9e63bd7bc2439c64"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-hire-existing-scenario.ts",
+      "bytes": 20352,
+      "sha256": "fd89fb6af04bd08dbb343c5541e87f2739f0f074b6d14bcc9c87851733d412ca"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-hire-existing.snapshot.ts",
+      "bytes": 2589,
+      "sha256": "c6d9840c0aed58d0498bc3f0a7c2b4d89fff57111c598f6afb854201b1c4aca5"
+    },
+    {
+      "path": "examples/simulation-company/tests/fixtures/world-hire-existing/cordis.yml",
+      "bytes": 106,
+      "sha256": "51d411882488e0d8735435b2ef06eefa8f9b10d6ada1fbb42ea31667f530c31e"
+    }
+  ],
+  "inputHash": "8a7b77c65914f6b108a60bbdfd10f2cee407f6fcdad7931004bf7da94a16c8b7",
+  "commands": [
+    {
+      "mode": "source",
+      "actualCommand": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_SNAPSHOT=replay CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-hire-existing.snapshot.ts --maxWorkers=1 --reporter=verbose > .local/world-completion/tmp/hire-existing-source-all.log 2>&1",
+      "originalLog": ".local/world-completion/tmp/hire-existing-source-all.log",
+      "archivedLog": "c6-hire-existing-source-all.log",
+      "logSha256": "67719fa11a4b71f6081c8560cb1a50512e55aed9d9bdb757c692329bb52a46e0",
+      "exitCode": 0,
+      "passed": 4,
+      "durationSeconds": 97.14,
+      "matrix": [
+        "json/company",
+        "json/laboratory",
+        "sqlite/company",
+        "sqlite/laboratory"
+      ],
+      "launch": "tsx source with TSX_TSCONFIG_PATH"
+    },
+    {
+      "mode": "lib",
+      "actualCommand": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_SNAPSHOT=replay CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 CLOCKY_EXAMPLE_MODE=lib pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-hire-existing.snapshot.ts --maxWorkers=1 --reporter=verbose > .local/world-completion/tmp/hire-existing-lib-all.log 2>&1",
+      "originalLog": ".local/world-completion/tmp/hire-existing-lib-all.log",
+      "archivedLog": "c6-hire-existing-lib-all.log",
+      "logSha256": "36074452bca6d065436efd436c3f53f358d1e47fed27b4d0ec32c586c683fa79",
+      "exitCode": 0,
+      "passed": 4,
+      "durationSeconds": 71.47,
+      "matrix": [
+        "json/company",
+        "json/laboratory",
+        "sqlite/company",
+        "sqlite/laboratory"
+      ],
+      "launch": "plain Node built package exports, no tsx or TSX_TSCONFIG_PATH; fixture entry uses supported erasable TypeScript"
+    }
+  ],
+  "focused": {
+    "actualCommand": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_SNAPSHOT=replay CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-hire-existing.snapshot.ts -t 'json.*company' --maxWorkers=1 --reporter=verbose > .local/world-completion/tmp/hire-existing-source-one-channel-fixed.log 2>&1",
+    "exitCode": 0,
+    "passed": 1,
+    "skipped": 3,
+    "durationSeconds": 32.11,
+    "purpose": "Complete corrected legal topology and original-reservation path before the frozen full matrices."
+  },
+  "lint": {
+    "actualCommand": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec oxlint examples/simulation-company/tests/world-hire-existing-model.ts examples/simulation-company/tests/world-hire-existing-scenario.ts examples/simulation-company/tests/world-hire-existing.snapshot.ts > .local/world-completion/tmp/hire-existing-fixture-lint-final2.log 2>&1",
+    "exitCode": 0,
+    "scope": "Three owned TypeScript fixture files; not a full-repository gate."
+  },
+  "failureInputs": [
+    {
+      "log": ".local/world-completion/tmp/hire-existing-source-one.log",
+      "exitCode": 1,
+      "classification": "invalid initial fixture topology",
+      "cause": "Free candidate was asked to use World goal for committee votes; current employment guard correctly refused. Replaced electorate with actual HR + independently employed witness, leaving candidate free. No Native authority or budget relaxation."
+    },
+    {
+      "log": ".local/world-completion/tmp/hire-existing-source-one-witness.log",
+      "exitCode": 1,
+      "classification": "fixture projection assumption and exposed Native onboarding coupling",
+      "cause": "Requester-only world.channels lacks an ungranted free candidate. Fixture now reads the actual original unique confirmed reservation. Root changed existing-hire to resolve that real canonical topology, with mismatch/ambiguity rejection tests; no new Channel/identity/grant."
+    },
+    {
+      "log": ".local/world-completion/tmp/hire-existing-source-one-channel.log",
+      "exitCode": 1,
+      "classification": "fixture author syntax error before bootstrap/inference",
+      "cause": "Unescaped English apostrophe in test error string. Fixed after observed exit; no run/model work was admitted."
+    },
+    {
+      "log": ".local/world-completion/tmp/hire-existing-fixture-lint.log",
+      "exitCode": 1,
+      "classification": "fixture formatting",
+      "cause": "One 142-character line and an indentation mismatch; reformatted without behavioral change."
+    },
+    {
+      "log": ".local/world-completion/tmp/hire-existing-fixture-lint-final.log",
+      "exitCode": 1,
+      "classification": "same test string syntax error",
+      "cause": "No product parser/core/threshold change; fixed source quote."
+    }
+  ],
+  "verifiedContract": {
+    "authorTopology": "Original company/laboratory director, HR and free second member candidate, plus one explicit preexisting employed committee witness at a separate capacity-1 position. All actual compiler/bootstrap identities and private Channels; no cloned Session or temporary candidate employment.",
+    "predeclaredWorkload": "Resident cap 3 fixed before execution; HR position capacity 2 retained; token/decision/message limits not raised after failures. Witness and HR are the two actual independent committee voters.",
+    "governance": "One real proposal, two Agent/Session votes, close, validated Norm enactment; one HR existing-person request, original plan blocked without exact approval, then one existing-person approval proposal with two separate original Session votes and passed resolution.",
+    "rejection": "Actual missing-approval commit throws SIM_HIRE_APPROVAL_REQUIRED with unchanged revision, no assignment and no generated reservation.",
+    "hire": "Exact original input equals apply/mutation. Sole candidate assignment and causal first-action wake through production ExistingHireWorldExecution; original Entity IDs, Participant/Session binding, Persona/profileRevision, actual confirmed private Channel IDs retained; no generated Person or reservation.",
+    "privacyAndMemory": "Candidate ordinary prefill wake is recorded in original actual Session. Its durable prefix and private memory survive hiring/cold restore; actual first-action model input retains memory. Candidate Session/model inputs exclude director private rationale; other actors exclude candidate memory. Actual private post uses original candidate-to-director Channel and durable delivery receipt.",
+    "idempotency": "After commit and in the cold process, exact original commit retry returns same result with zero revision append and zero model calls.",
+    "cold": "Each of four fresh workflows is followed by a separately spawned cold process. Actual Team checkpoint/restore preserves original domain/intents/plans/mutations/results/norms/votes/assignment/private Channel/session prefix, stays paused and records requests.length === 0. Source 4 and lib 4 both passed.",
+    "limitations": "Keyless scripted external LlmAdapter through real Agent/three-tool/Channel/Native paths, not real-provider quality evidence. No SDK/UI/full MVP claim. Snapshot runtime roots were project-local and cleaned by owning tests after assertions; archived logs plus frozen fixture hashes provide reproducible evidence."
+  },
+  "notes": [
+    "No new checklist items and no checklist edits.",
+    "Root canonical command summary omitted CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1, --reporter=verbose and redirection; actual commands above are exact."
+  ]
+}

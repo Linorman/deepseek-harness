@@ -1,3 +1,22 @@
+import { simulationProductRawArchiveInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRunControlInputSchema } from '@clocky/clocky-simulation-product/schema'
+import {
+  simulationProductWorldBranchInputSchema,
+  simulationProductWorldBranchReadInputSchema,
+  simulationProductWorldCausalInputSchema,
+  simulationProductWorldCompareInputSchema,
+} from '@clocky/clocky-simulation-product/experiment-schema'
+import { simulationProductBackupExportInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRetentionPreviewInputSchema, simulationProductRetentionExecuteInputSchema, simulationProductRetentionReadInputSchema, simulationProductRetentionRecordsInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductGenerationRequestSchema, simulationProductGenerationReadSchema, simulationProductGenerationTransitionSchema, simulationProductGenerationPersonaDraftSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRebuildIndexInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCalendarCommandInputSchema, simulationProductCalendarCancelSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCalendarInputSchema, simulationProductCalendarSubmitSchema } from '@clocky/clocky-simulation-product/schema'
+import { scenarioDraftReadSchema, scenarioDraftSaveSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldManagementFieldsInputSchema, simulationProductWorldManagementDraftSchema, simulationProductWorldManagementSubmitInputSchema } from '@clocky/clocky-simulation-product/world-management-schema'
+import { simulationProductWorldDomainInputSchema } from '@clocky/clocky-simulation-product/world-read-schema'
+import { simulationProductWorldCasesInputSchema, simulationProductWorldCaseInputSchema, simulationProductWorldCaseCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldPreflightInputSchema, simulationProductWorldCreateInputSchema } from '@clocky/clocky-simulation-product/schema'
 // Explicit protocol imports and public re-exports repeat contract names, not executable behavior.
 /* jscpd:ignore-start */
 import { simulationProductTasksInputSchema, simulationProductTaskCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
@@ -42,6 +61,57 @@ export async function dispatchSimulation(ctx: Context, method: string, params: u
   }
   try {
     switch (method) {
+      case 'simulation/draft-read': return await products().readScenarioDraft(parse(method, scenarioDraftReadSchema, params), call)
+      case 'simulation/draft-save': return await products().saveScenarioDraft(parse(method, scenarioDraftSaveSchema, params), call)
+      case 'simulation/world-preflight': {
+        const input = parse(method, simulationProductWorldPreflightInputSchema, params)
+        return await administration().preflightWorld(input, call)
+      }
+      case 'simulation/world-create': {
+        const input = parse(method, simulationProductWorldCreateInputSchema, params)
+        return await administration().createWorld(input, call)
+      }
+      case 'simulation/world-prepare': {
+        const input = parse(method, simulationProductPrepareInputSchema, params)
+        return await administration().prepareWorld(input, call)
+      }
+      case 'simulation/world-export': {
+        const input = parse(method, simulationProductControlInputSchema, params)
+        return await administration().exportWorldDefinition(input, call)
+      }
+      case 'simulation/world-calendar-retain': return await administration().retainWorldCalendar(parse(method, simulationProductCalendarSubmitSchema, params), call)
+      case 'simulation/world-calendar-command': return await administration().readWorldCalendarCommand(parse(method, simulationProductCalendarCommandInputSchema, params), call)
+      case 'simulation/world-calendar-cancel': return await administration().cancelWorldCalendar(parse(method, simulationProductCalendarCancelSchema, params), call)
+      case 'simulation/world-calendar-preview': return await administration().previewWorldCalendar(parse(method, simulationProductCalendarInputSchema, params), call)
+      case 'simulation/world-calendar-submit': return await administration().submitWorldCalendar(parse(method, simulationProductCalendarSubmitSchema, params), call)
+      case 'simulation/world-management-fields': {
+        const input = parse(method, simulationProductWorldManagementFieldsInputSchema, params)
+        return await administration().worldManagementFields(input, call)
+      }
+      case 'simulation/world-management-preview': {
+        const input = parse(method, simulationProductWorldManagementDraftSchema, params)
+        return await administration().previewWorldManagement(input, call)
+      }
+      case 'simulation/world-management-submit': {
+        const input = parse(method, simulationProductWorldManagementSubmitInputSchema, params)
+        return await administration().submitWorldManagement(input, call)
+      }
+      case 'simulation/world-domain-read': {
+        const input = parse(method, simulationProductWorldDomainInputSchema, params)
+        return await products().readWorldDomain(input, call)
+      }
+      case 'simulation/world-case-cancel': {
+        const input = parse(method, simulationProductWorldCaseCancelInputSchema, params)
+        return await administration().cancelWorldCase(input, call)
+      }
+      case 'simulation/world-case-inspect': {
+        const input = parse(method, simulationProductWorldCaseInputSchema, params)
+        return await products().inspectWorldCase(input, call)
+      }
+      case 'simulation/world-cases-list': {
+        const input = parse(method, simulationProductWorldCasesInputSchema, params)
+        return await products().listWorldCases(input, call)
+      }
       case 'simulation/tasks-list': {
         const input = parse(method, simulationProductTasksInputSchema, params)
         return await administration().listTasks(input, call)
@@ -71,11 +141,72 @@ export async function dispatchSimulation(ctx: Context, method: string, params: u
         const input = parse(method, simulationProductInspectInputSchema, params)
         return await products().inspect(input, call)
       }
+      case 'simulation/world-branch': {
+        const input = parse(method, simulationProductWorldBranchInputSchema, params)
+        return await administration().branchWorld(input, call)
+      }
+      case 'simulation/world-branch-read': {
+        const input = parse(method, simulationProductWorldBranchReadInputSchema, params)
+        return await administration().readWorldBranch(input, call)
+      }
+      case 'simulation/world-causal': {
+        const input = parse(method, simulationProductWorldCausalInputSchema, params)
+        return await administration().queryWorldCausal(input, call)
+      }
+      case 'simulation/world-compare': {
+        const input = parse(method, simulationProductWorldCompareInputSchema, params)
+        return await administration().compareWorlds(input, call)
+      }
+      case 'simulation/backup-export': {
+        const input = parse(method, simulationProductBackupExportInputSchema, params)
+        return await administration().backupExport(input, call)
+      }
+      case 'simulation/retention-preview': {
+        const input = parse(method, simulationProductRetentionPreviewInputSchema, params)
+        return await administration().retentionPreview(input, call)
+      }
+      case 'simulation/retention-execute': {
+        const input = parse(method, simulationProductRetentionExecuteInputSchema, params)
+        return await administration().retentionExecute(input, call)
+      }
+      case 'simulation/retention-read': {
+        const input = parse(method, simulationProductRetentionReadInputSchema, params)
+        return await administration().retentionRead(input, call)
+      }
+      case 'simulation/retention-records': {
+        const input = parse(method, simulationProductRetentionRecordsInputSchema, params)
+        return await administration().retentionRecords(input, call)
+      }
+      case 'simulation/generation-request': {
+        const input = parse(method, simulationProductGenerationRequestSchema, params)
+        return await administration().generationRequest(input, call)
+      }
+      case 'simulation/generation-read': {
+        const input = parse(method, simulationProductGenerationReadSchema, params)
+        return await administration().generationRead(input, call)
+      }
+      case 'simulation/generation-execute': {
+        const input = parse(method, simulationProductGenerationReadSchema, params)
+        return await administration().generationExecute(input, call)
+      }
+      case 'simulation/generation-transition': {
+        const input = parse(method, simulationProductGenerationTransitionSchema, params)
+        return await administration().generationTransition(input, call)
+      }
+      case 'simulation/generation-persona-draft': {
+        const input = parse(method, simulationProductGenerationPersonaDraftSchema, params)
+        return await administration().generationPersonaDraft(input, call)
+      }
+      case 'simulation/index-rebuild': {
+        const input = parse(method, simulationProductRebuildIndexInputSchema, params)
+        return await products().rebuildIndex(input, call)
+      }
       case 'simulation/collections-list': {
         const input = parse(method, simulationProductBrowseInputSchema, params)
         return await products().browse(input, call)
       }
       case 'simulation/sources-inspect': return await products().inspectSource(parse(method, simulationProductSourceInputSchema, params), call)
+      case 'simulation/raw-archive': return await products().archiveRaw(parse(method, simulationProductRawArchiveInputSchema, params), call)
       case 'simulation/records-list': return await products().readRecords(parse(method, simulationProductRecordsInputSchema, params), call)
       case 'simulation/changes-watch': {
         return await products().watch(parse(method, simulationProductWatchInputSchema, params), call)
@@ -111,6 +242,10 @@ export async function dispatchSimulation(ctx: Context, method: string, params: u
       case 'simulation/runs-control': {
         const input = parse(method, simulationProductControlInputSchema, params)
         return await administration().control(input, call)
+      }
+      case 'simulation/runs-run-control': {
+        const input = parse(method, simulationProductRunControlInputSchema, params)
+        return await administration().updateRunControl(input, call)
       }
       case 'simulation/runs-manage': {
         const input = parse(method, simulationProductManageInputSchema, params)

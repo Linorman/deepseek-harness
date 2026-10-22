@@ -1,6 +1,6 @@
 /** Verify accepted target references against retained Team and channel records at an owner cut. @module */
 import { projectTaskEvidence } from './task-evidence.ts'
-import { isDeepStrictEqual } from 'node:util'
+import { assertAcceptedSimulationEnvelope } from './accepted-envelope.ts'
 import type { Context } from '@clocky/cordis'
 import type { ChannelId, TeamPersistenceReference, TeamTaskSnapshot, ActivationBindingSnapshot } from '@clocky/clocky-team'
 import type { SimulationSnapshot } from '@clocky/clocky-simulation'
@@ -47,14 +47,7 @@ export async function validateAcceptedTargets(ctx: Context, state: SimulationSna
     if (record?.type !== 'channel/envelope' || record.envelope.sequence !== receipt.sequence) {
       throw new Error('Simulation publication has no retained Envelope at its recorded position')
     }
-    const envelope = record.envelope
-    if (envelope.id !== receipt.envelopeId || envelope.teamId !== receipt.teamId
-      || envelope.channelId !== receipt.channelId || envelope.senderId !== state.entities[operation.entityId]?.binding?.participantId
-      || envelope.kind !== 'message' || envelope.delivery !== 'context'
-      || !isDeepStrictEqual(envelope.audience, [receipt.recipientId])
-      || !isDeepStrictEqual(envelope.payload, { content: [{ type: 'text', text: operation.action.text }] })) {
-      throw new Error('Simulation publication reference differs from its retained Envelope')
-    }
+    assertAcceptedSimulationEnvelope(state, operation, record.envelope)
   }
   for (const execution of Object.values(state.taskExecutions ?? {})) {
     check()

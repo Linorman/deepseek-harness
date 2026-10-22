@@ -282,6 +282,10 @@ exports[`json simulation company > runs model procurement with crash=resident-on
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":43},"decisionSnapshotRevision":43,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -334,6 +338,10 @@ exports[`json simulation company > runs model procurement with crash=resident-on
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":58},"decisionSnapshotRevision":58,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -442,6 +450,10 @@ exports[`json simulation company > runs model procurement with crash=resident-on
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":98},"decisionSnapshotRevision":98,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -906,6 +918,10 @@ exports[`json simulation company > runs model procurement with crash=task-accept
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -958,6 +974,10 @@ exports[`json simulation company > runs model procurement with crash=task-accept
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -1066,6 +1086,10 @@ exports[`json simulation company > runs model procurement with crash=task-accept
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":96},"decisionSnapshotRevision":96,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -1354,6 +1378,10 @@ exports[`json simulation company > runs model procurement with crash=task-before
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -1406,6 +1434,10 @@ exports[`json simulation company > runs model procurement with crash=task-before
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -1514,6 +1546,10 @@ exports[`json simulation company > runs model procurement with crash=task-before
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":96},"decisionSnapshotRevision":96,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -1828,6 +1864,10 @@ exports[`json simulation company > runs model procurement with crash=task-create
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -1880,6 +1920,10 @@ exports[`json simulation company > runs model procurement with crash=task-create
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -1988,6 +2032,10 @@ exports[`json simulation company > runs model procurement with crash=task-create
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":96},"decisionSnapshotRevision":96,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -2271,6 +2319,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-ac
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -2323,6 +2375,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-ac
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -2431,6 +2487,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-ac
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":104},"decisionSnapshotRevision":104,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -2805,6 +2865,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-ap
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -2857,6 +2921,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-ap
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -2965,6 +3033,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-ap
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":104},"decisionSnapshotRevision":104,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -3344,6 +3416,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-be
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -3396,6 +3472,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-be
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":77},"decisionSnapshotRevision":77,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -3504,6 +3584,10 @@ exports[`json simulation company > runs model procurement with crash=transfer-be
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:fd33849fb8e722949ad342c1c68e86ea9ac00614c75d71d426464df91a789b2f"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":113},"decisionSnapshotRevision":113,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:fd33849fb8e722949ad342c1c68e86ea9ac00614c75d71d426464df91a789b2f"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -3908,6 +3992,10 @@ exports[`json simulation company > runs model procurement with crash=undefined 1
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -3960,6 +4048,10 @@ exports[`json simulation company > runs model procurement with crash=undefined 1
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -4068,6 +4160,10 @@ exports[`json simulation company > runs model procurement with crash=undefined 1
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":96},"decisionSnapshotRevision":96,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -4663,6 +4759,10 @@ exports[`sqlite simulation company > runs model procurement with crash=resident-
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":43},"decisionSnapshotRevision":43,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -4715,6 +4815,10 @@ exports[`sqlite simulation company > runs model procurement with crash=resident-
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":58},"decisionSnapshotRevision":58,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -4823,6 +4927,10 @@ exports[`sqlite simulation company > runs model procurement with crash=resident-
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":98},"decisionSnapshotRevision":98,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -5287,6 +5395,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-acce
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -5339,6 +5451,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-acce
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -5447,6 +5563,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-acce
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":96},"decisionSnapshotRevision":96,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -5735,6 +5855,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-befo
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -5787,6 +5911,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-befo
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -5895,6 +6023,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-befo
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":96},"decisionSnapshotRevision":96,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -6209,6 +6341,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-crea
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -6261,6 +6397,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-crea
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -6369,6 +6509,10 @@ exports[`sqlite simulation company > runs model procurement with crash=task-crea
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":96},"decisionSnapshotRevision":96,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -6652,6 +6796,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -6704,6 +6852,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -6812,6 +6964,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":104},"decisionSnapshotRevision":104,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -7186,6 +7342,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -7238,6 +7398,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -7346,6 +7510,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":104},"decisionSnapshotRevision":104,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -7725,6 +7893,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -7777,6 +7949,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":77},"decisionSnapshotRevision":77,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -7885,6 +8061,10 @@ exports[`sqlite simulation company > runs model procurement with crash=transfer-
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:fd33849fb8e722949ad342c1c68e86ea9ac00614c75d71d426464df91a789b2f"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":113},"decisionSnapshotRevision":113,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:fd33849fb8e722949ad342c1c68e86ea9ac00614c75d71d426464df91a789b2f"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -8289,6 +8469,10 @@ exports[`sqlite simulation company > runs model procurement with crash=undefined
                 "text": "[]",
                 "type": "text",
               },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":45},"decisionSnapshotRevision":45,"interactions":[{"id":"purchase","revision":1,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"pending","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56"}],"commitments":[],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
+                "type": "text",
+              },
             ],
             "kind": "commitments",
           },
@@ -8341,6 +8525,10 @@ exports[`sqlite simulation company > runs model procurement with crash=undefined
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":1,"phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"supplier","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":60},"decisionSnapshotRevision":60,"interactions":[{"id":"purchase","revision":2,"selection":"active","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"pending","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":1,"selection":"active","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"open","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":[]}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],
@@ -8449,6 +8637,10 @@ exports[`sqlite simulation company > runs model procurement with crash=undefined
             "blocks": [
               {
                 "text": "[{"id":"commitment:[\\"company\\",\\"purchase\\"]","interactionId":"purchase","debtor":"supplier","creditor":"buyer","revision":2,"phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}]",
+                "type": "text",
+              },
+              {
+                "text": "{"kind":"simulation-business-context","version":1,"actorId":"buyer","coverage":"active-and-current-wake-only","source":{"kind":"run-event","runId":"company","sequence":96},"decisionSnapshotRevision":96,"currentWakeId":"simulation-delivery:simulation-operation:609c8f31b269cc3bc61edbad18e78170503051f960c6a4362dcd7daa799d9f15","interactions":[{"id":"purchase","revision":4,"selection":"current-wake","requester":"buyer","assignee":"supplier","description":"Deliver one inventory unit","replyBy":"20","completeBy":"30","fulfillment":{"kind":"transfer","from":"stock","to":"received","quantity":"1"},"reply":"accepted","execution":"completed","createdBy":"simulation-operation:f54a6f8ce0d5bef6d409593566b2114c5989f04a1ac2a3c74e768c1ccb31fb56","commitmentId":"commitment:[\\"company\\",\\"purchase\\"]","resultOperationId":"simulation-operation:f236c4b6edaadc188f9974c972652c070d46f6ba6c5e9fd11c004cf17e1d00fe"}],"commitments":[{"id":"commitment:[\\"company\\",\\"purchase\\"]","revision":2,"selection":"current-wake","interactionId":"purchase","debtor":"supplier","creditor":"buyer","phase":"fulfilled","createdBy":"simulation-operation:fca0022afdff49dff1ab85dd20187b7578ebe199367b49f71c089f8b75b17b17","evidence":["simulation-operation:42ddbb900e85a3b5322e1b292edf641bdf3de57b316f3efa5a09de9f9a01bf2b"],"fulfilledAt":"5"}],"routes":[{"channelId":"<purchase-channel>","key":"purchase","confirmation":"native-confirmed-membership","members":["buyer","supplier"]}]}",
                 "type": "text",
               },
             ],

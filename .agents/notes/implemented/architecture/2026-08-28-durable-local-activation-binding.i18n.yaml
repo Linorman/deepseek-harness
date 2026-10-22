@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-28-durable-local-activation-binding.md
-2026-08-28-durable-local-activation-binding.md: b19fda06a1ff71fb02af7fb11fc8c7d8371ceb84
-2026-08-28-durable-local-activation-binding.zh.md: 228921fff997caaedb84b965851abb3dc3e708d3
+2026-08-28-durable-local-activation-binding.md: f90ce355375a9330869bf17ed4182461aa0052a0
+2026-08-28-durable-local-activation-binding.zh.md: fc8862d1c297e5dbc725776ec70c5b7fd73dbb76

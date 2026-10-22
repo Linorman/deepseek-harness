@@ -1,0 +1,31 @@
+Working directory: /Volumes/projects-mac/deepseek-harness.
+TMPDIR=$PWD/.local/world-completion/tmp; XDG_CACHE_HOME=$PWD/.local/world-completion/cache.
+All Native test stores and runnable Loader roots are allocated under .local/world-completion/tmp.
+
+Current-source Native stream version: 64 (root's subsequent governance increment; facts first introduced the strict record at 63). SESSION_FORMAT_VERSION is unchanged.
+
+Current focused parser and real Native backend checks:
+pnpm run test packages/simulation/simulation/tests/world-facts.spec.ts packages/simulation/simulation-local/tests/world-facts.spec.ts
+Exit 0; 15 tests passed, including 4 actual JSON/SQLite append, total-history capacity, inspect/reopen, exact retry and rejection-before-append tests.
+Output: c3-facts-native-current.log.
+
+Current real Loader/public-tool source check:
+CLOCKY_EXAMPLE_MODE=src pnpm run test:snapshot examples/simulation-company/tests/world-facts.snapshot.ts
+Exit 0; 2 tests passed. Each backend executes 14 actual external scripted model requests, then a fresh independent process restores with zero inference. Actual requester/director Session context-view body/source equality, audience/availability, immutable historical views, version corrections, real private-Channel report provenance, rejected model fact publication, exact checkpoint fact references and private-canary omission are asserted.
+Output: c3-facts-source-current.log.
+
+Focused lint:
+pnpm exec tsx scripts/run-oxlint.ts packages/simulation/simulation/src/world-facts.ts packages/simulation/simulation/src/world-facts-types.ts packages/simulation/simulation-local/src/world-facts.ts packages/simulation/simulation/tests/world-facts.spec.ts packages/simulation/simulation-local/tests/world-facts.spec.ts examples/simulation-company/tests/world-facts-model.ts examples/simulation-company/tests/world-facts-scenario.ts examples/simulation-company/tests/world-facts.snapshot.ts
+Exit 0; no diagnostics. Output: c3-facts-lint.log.
+
+Initial integration typecheck, before root's governance extension:
+pnpm exec tsc -b packages/simulation/simulation-local --pretty false
+Exit 0; no diagnostics. Output: c3-facts-typecheck.log. Current complete Host/Client builds are root-owned checks and are not claimed from this earlier command.
+
+Input manifest used by the runnable scenario:
+examples/simulation-company/tests/fixtures/world-facts/input-manifest.json
+The scenario strictly parses these five complete Native publication requests and supplies its actual original World-definition run-event references before publishing. No inference or user-selected recording metadata is part of the input.
+
+Scope: authoritative text facts only; belief/report/summary remain in the sole attributed knowledge owner. Fact history has its own total UTF8 cap under frozen maxKnowledgeBytes; KB-only budget semantics are unchanged. Queries have maxKnowledgePerQuery and explicit completeness/unknown behavior. Norm enforcement is not implemented by this fact layer. F07 external/user/ordinary non-world projections and F08 broader trusted low-permission result projection are not claimed.
+
+Root completed the shared build and compiled Loader checks after integration. Inspected c3-build-final.log includes 197 recorded client artifacts; c3-booking-facts-lib.log reports 10 passed tests across 3 files, including the 2 compiled fact cases with their independent-process restore assertions. c3-client-purity.log reports 17 passed tests. These root-owned outputs supplement the source evidence above; no compiled fact result is inferred from a source import.

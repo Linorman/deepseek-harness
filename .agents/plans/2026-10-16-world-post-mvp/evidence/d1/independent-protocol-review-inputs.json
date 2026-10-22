@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-20",
+  "mode": "read-only source review; isolated local deterministic owner probes",
+  "productionProviderCalls": 0,
+  "sourceHashes": {
+    "packages/simulation/simulation-product/src/external-effect-owner.ts": "de7ffa132b3c572a9777c7cf561772f546ab3e8cdfe64ffb618cfe17506e8e5d",
+    "packages/simulation/simulation-product/src/external-effect-schema.ts": "5344f82f6cc9f6ca62a8def9c393d62aae6b1fe95c4e7dbc41695860607ed13b",
+    "packages/simulation/simulation-product/src/external-effect-sandbox.ts": "bd6cdfba58f5361bd78331ce105405d95205d00b9501daa246b0826efe7ef0ef",
+    "packages/simulation/simulation-product/src/federation-mailbox.ts": "10ab73978dd793393bbccacde2856317832cccea7672bffb48d0cd43c6c49258",
+    "packages/simulation/simulation-local/src/federation-time.ts": "fae3fec4f0c2e34d130fce674a2aaee6b583a8ed466d51ed8b6094732637bcf7",
+    "packages/simulation/simulation-local/src/run.ts": "e658ecdd257c2f44fd7c545de8e669876d6d7260b6aaee9ae79fe59429dbcda5",
+    "packages/simulation/simulation-local/src/scheduler.ts": "6614d30145992f6095bd0875a63fa1b186f51db06d44a17e249574d94df54cf4",
+    "packages/simulation/simulation-product/src/federation-checkpoint.ts": "a6bfd8a07970d247c49bbbd9fcc821b61046baf72af01bdf11c244bc769d92eb"
+  }
+}

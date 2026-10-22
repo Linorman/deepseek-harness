@@ -1,6 +1,28 @@
 # @clocky/clocky-sdk-client
 
+Coordinator transcripts strictly validate `compaction/assessment` estimates and `compaction/end.noGain` hashes, counters and non-shrinking evidence; malformed or successful no-gain endings refuse before entering typed events.
+
+`archiveRawSimulation()` reads one explicitly authorized preservation page and validates its registered run identity. Text parts can be concatenated into the original-byte archive. The client does not follow continuations, rewrite source versions or restore inference automatically.
+
+`updateSimulationRunControl()` persists an original stop target or explicit null clear through `simulation/runs-run-control`. Inputs accept no caller role, principal or revision. Results bind run, command and target identities, while current control may reflect a later command. Clear preserves its null field and does not resume scheduling.
+
+Retention preview requires an already paused, quiescent source and does not retire actors. Execute keeps one original command, revision and plan hash; read reconciles its retained outcome. The first archive copies and verifies complete owner history without deleting originals or reclaiming historical capacity. Archive record pages require independent whole-record read authority; owning the run or its archive command does not grant access to Session or Channel bodies.
+
+Generation request, read, execute, transition and Persona-draft methods retain the original job identity. Only explicit execution invokes a model. Product inputs must be user-authored; the Host stamps actual principal provenance and restricts runtime, scope and audience. Persona incorporation uses the existing A2 preview and submission path and retains the resulting draft revision/hash. Reads and retries never create replacement jobs; unknown output remains an original reconciliation responsibility. Results are private and rechecked against current authority.
+
+`simulation/generation-input` and `simulation/generation-output` are required helper events. Transcript reads validate the exact input message identity, scope/audience, model/policy versions, raw output and optional token counters. Extra fields, malformed request bytes and ignorable markers reject; missing usage remains unknown.
+
 English | [中文](README.zh.md)
+
+`readSimulationWorldManagementFields`, `previewSimulationWorldManagement` and `submitSimulationWorldManagement` preserve the complete original transfer, departure or existing-person hiring form. Fields and previews perform no inference or writable restore. Submit requires the fixed Native revision/hash and one retained command ID; after transport loss, query that command before an exact retry. User cases have explicit authenticated-user provenance, a null requester and no fabricated Operation. Cancellation similarly requires the revision/hash and actual impact from an allowed case cancellation preview.
+
+`preflightSimulationWorld`, `createSimulationWorld`, `prepareSimulationWorld` and `exportSimulationWorldDefinition` on both public APIs validate strict Host-owned World DTOs. Creation/preparation retain the exact command, definition and preview; uncertain replies must be reconciled through original request lookup. Returned creation/preparation/export identities must match the selected command/run. Creating, preparing, reading and exporting do not start models; explicit management and cold restore remain separate. Unknown required Session events refuse typed transcript reconstruction. Unknown `ignorable: true` events remain in raw notifications and are omitted from `RunResult.events`, rather than cast as known events.
+
+v1 `organization.hiringFees` carries only explicitly authored one-time hiring terms: a fixed policy, hiring operation, position, distinct existing debit/credit accounts, unit, positive decimal quantity, distinct grant references and a positive simulated reservation period. Omission remains undeclared; no fee or payment default is inserted. Missing/malformed fields and unknown properties reject. Control and operational DTOs preserve the closed `resource-capacity`, `resource-history-limit` and `resource-reservation-expired` stops. The Host/Native owns account resolution, authorization, debit and recovery; the SDK introduces no payment mutation API or private compilerVersion field.
+
+World Native allowances include `maxResourceReservationHistory`: resolved limits require a positive safe integer, while scenario inputs may request a bounded positive override. It caps all retained resource reservation history; cancellation or simulated expiry does not return history capacity. Reservation, commit and cancellation remain observable through existing operation metadata and authorized original journal text. The SDK exposes no Native transaction mutation API; missing required fields, unknown structural fields and unauthorized bodies still reject.
+
+`listSimulationWorldCases`, `inspectSimulationWorldCase` and `cancelSimulationWorldCase` on both clients preserve original World case selections. List/detail responses bind run, revision, filter or section; strict parsers reject hidden Native fields and text attached to withheld bodies. Case and Persona disclosure remain independent of run access. Cancellation uses the retained command and request identity; original request lookup/retry reconciles an uncertain response without replacement semantics or automatic resume. Summaries use `clocky.world-case/v4` with exact domain/operation/version and `targetEntityId`. Missing tags, former position aliases and mismatched domain-specific Persona/reservation data reject. Explicit null request notifications remain distinct from Channel posts. Required lifecycle tracks separate request, plan, callback/business and notification; execution and notification details must agree with their same-prefix summary. Final plan pages match the current plan, while intermediate pages make no completeness claim. Former v1 responses reject.
 
 `listSimulationRequests()` discovers bounded original receipt metadata after reconnecting; `retrySimulationRequest()` retries only the backend-retained original identified by run and command. Both public clients validate the returned run, original command, requested revision and page size. They never traverse pages or retry automatically, accept no replacement command payload and preserve immutable terminal receipts. A stale continuation requires an explicit first-page read.
 
@@ -42,6 +64,10 @@ Team-list continuations are opaque strings, with `-1` selecting a fresh scan. `s
 
 Simulation catalog/preflight results require a discriminated `readiness`; `ready.model` is the exact route to pass as creation `expectedModel`. Preflight omits that confirmation and the command ID. Missing/unknown readiness fields or routes reject before application use. A model-change refusal requires a fresh review; uncertain responses retain the original command identity.
 
+`readSimulationWorldDomain` (`read_simulation_world_domain` in Python) uses the shared `simulation/world-domain-read` method. Its strict `clocky.world-read/v1` result binds the complete original selector and independently bounded coverage; unknown fields and substituted identities, versions, sections or coverage reject. Continue with the returned cursor and original revision/readVersion. Unknown residency and nullable obligation counts remain unknown, while simulated times and norm/proposal versions remain canonical decimal strings. Reads do not restore, attach or infer; body grants never imply Session authority.
+
+`readSimulationDraft` and `saveSimulationDraft` access private immutable authoring documents. Saves use an original save ID and parent revision CAS; conflicts return both definitions, and exact retries return the original saved revision. Both APIs reject responses for a different draft, revision or save intent. They never create a running world or invoke a model.
+
 ## Clocky
 
 ```ts
@@ -80,6 +106,10 @@ The protocol client under the owned-run API: explicit `start()`/`initialize()`/`
 
 `HarnessClientOptions.env` replaces the child environment entirely when given (`undefined` inherits the parent's); callers own credential policy — `scrubbedParentEnv` from `clocky-subprocess` is the shared scrub base for isolation-minded launches.
 
+## Private backup export
+
+`backupExport({ runId, commandId })` reads the original completed private bundle through `simulation/backup-export`. The client rejects changed run/command identities and a SHA-256 mismatch in the exact UTF-8 bundle bytes. Export requires the separate record disclosure grant and does not start or restore a run. Full branch exports additionally require current ancestor disclosure grants or an explicit exact-branch `includeProvenance: true` grant; branch-only permission does not disclose ancestor bytes.
+
 ## Model Experience
 
 None, as this is a client-process library; the model runs in the spawned runtime, whose experience is owned by the plugins its `cordis.yml` composes.
@@ -100,3 +130,7 @@ None; this package neither assembles nor sends a provider request.
 ### Single-task cancellation
 
 `cancelTeamTask()` and `HarnessTeam.cancelTask()` accept an optional reason and return durable cancellation progress. Assigned or running results still retain live work; observe task state until cancelled. This operation leaves the Team available for other tasks. [Cancellation ownership](../../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md).
+
+`previewSimulationWorldCalendar` quotes a paused schedule edit. `submitSimulationWorldCalendar` first durably retains the unchanged quote; `readSimulationWorldCalendarCommand` recovers its author-scoped original after response loss or client restart, and `cancelSimulationWorldCalendar` withdraws only an unexecuted command. Civil schedules freeze the timezone database version and DST choice; the Host performs conversion. `readSimulationWorldDomain` with `kind: "proposal", section: "impact"` previews policy semantics without publication; independent case/operational permissions may withhold the complete report. Proposal views include original review-route contracts, frozen electors, deadlines and actual resolutions.
+
+`branchWorld`, `readWorldBranch`, `queryWorldCausal` and `compareWorlds` preserve original experiment commands and archived observations. Clients reject a substituted branch UUID, source or memory policy; causal reads enforce the echoed source and complete byte/node bounds, and comparisons verify both observations. Retain UUIDs across uncertain outcomes. Returned branches remain paused with real effects disabled until separately authorized scheduling; these APIs never merge histories or automatically traverse causal pages.

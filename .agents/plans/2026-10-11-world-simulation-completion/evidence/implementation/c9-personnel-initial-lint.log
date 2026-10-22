@@ -1,0 +1,2 @@
+packages/simulation/simulation-local/src/world-personnel.ts:253:83: error typescript(no-non-null-assertion): Forbidden non-null assertion. help: Consider using the optional chain operator `?.` instead. `x!.y` is equivalent to `x.y` at runtime and will throw if `x` is `null` or `undefined`, but `x?.y` will return `undefined`.
+packages/simulation/simulation-local/src/world-personnel.ts:134:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.

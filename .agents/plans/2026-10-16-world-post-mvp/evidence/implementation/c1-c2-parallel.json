@@ -1,0 +1,26 @@
+{
+  "workload": "two isolated 40ms scripted-provider generations, same shared pool and Native budget",
+  "providerCalls": "keyless scripted adapter; no real provider",
+  "samples": [
+    {
+      "backend": "sqlite",
+      "fixture": "40ms external provider only",
+      "parallelMs": 44.572417000000314,
+      "serialMs": 91.86279100000002,
+      "parallelPeak": 2,
+      "serialPeak": 1,
+      "callsPerMode": 2,
+      "realProvider": false
+    },
+    {
+      "backend": "json",
+      "fixture": "40ms external provider only",
+      "parallelMs": 55.301041999999825,
+      "serialMs": 119.18508299999985,
+      "parallelPeak": 2,
+      "serialPeak": 1,
+      "callsPerMode": 2,
+      "realProvider": false
+    }
+  ]
+}

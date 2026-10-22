@@ -1,0 +1,127 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-local-object.snapshot.ts (2 tests | 1 failed) 7462ms
+   × sqlite executes local name mutation through the real Loader 3340ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-local-object.snapshot.ts > sqlite executes local name mutation through the real Loader
+AssertionError: /Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800
+    throw new Error(`${binName}: ${stage}: ${detail}${stack}`, { cause })
+          ^
+
+Error: world-local-object: plugin tree failed to load: failed to apply loader entry include (cordis:include): failed to apply loader entry 139098b9 (cordis:include): failed to import loader entry 528e5c7f (@clocky/clocky-simulation-local): The requested module '@clocky/clocky-simulation' does not provide an export named 'plannerReservedTokens'
+/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-generation.ts:5
+import { simulationTokenCount, activePlannerAncestors, plannerReservedTokens, simulationGeneratedPlanSchema, validateGenerationOutput, budgetInterval, hiringMarket } from '@clocky/clocky-simulation'
+                                                       ^
+SyntaxError: The requested module '@clocky/clocky-simulation' does not provide an export named 'plannerReservedTokens'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/tree.ts:157:16)
+    at async Entry._init (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:280:42)
+    at async Entry.init (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:261:7)
+    at async Entry.update (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:172:41)
+    at async EntryGroup.create (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/group.ts:30:7)
+    at async Promise.allSettled (index 16)
+    at async EntryGroup.update (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/group.ts:71:24)
+    at boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:800:11)
+    at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-local-object-scenario.ts:12:13) {
+  [cause]: Error: failed to apply loader entry include (cordis:include): failed to apply loader entry 139098b9 (cordis:include): failed to import loader entry 528e5c7f (@clocky/clocky-simulation-local): The requested module '@clocky/clocky-simulation' does not provide an export named 'plannerReservedTokens'
+      at updateError (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:26:10)
+      ... 3 lines matching cause stack trace ...
+      at async EntryGroup.create (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/group.ts:30:7)
+      at async Proxy.create (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/tree.ts:101:16)
+      at async mountRootInclude (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:523:21)
+      at async boot (/Volumes/projects-mac/deepseek-harness/packages/boot/app-boot/src/index.ts:774:5)
+      at async <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-local-object-scenario.ts:12:13) {
+    [cause]: Error: failed to apply loader entry 139098b9 (cordis:include): failed to import loader entry 528e5c7f (@clocky/clocky-simulation-local): The requested module '@clocky/clocky-simulation' does not provide an export named 'plannerReservedTokens'
+        at updateError (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:26:10)
+        at Entry._init (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:287:13)
+        at async Entry.init (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:261:7)
+        at async Entry.update (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:172:41)
+        at async EntryGroup.create (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/group.ts:30:7)
+        at async Promise.allSettled (index 0)
+        at async EntryGroup.update (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/group.ts:71:24)
+        at async Include._apply (/Volumes/projects-mac/deepseek-harness/vendor/include/src/index.ts:317:5) {
+      [cause]: Error: failed to import loader entry 528e5c7f (@clocky/clocky-simulation-local): The requested module '@clocky/clocky-simulation' does not provide an export named 'plannerReservedTokens'
+          at updateError (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:26:10)
+          at Entry._init (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:282:13)
+          at async Entry.init (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:261:7)
+          ... 3 lines matching cause stack trace ...
+          at async EntryGroup.update (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/group.ts:71:24)
+          at async Include._apply (/Volumes/projects-mac/deepseek-harness/vendor/include/src/index.ts:317:5) {
+        [cause]: /Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-generation.ts:5
+        import { simulationTokenCount, activePlannerAncestors, plannerReservedTokens, simulationGeneratedPlanSchema, validateGenerationOutput, budgetInterval, hiringMarket } from '@clocky/clocky-simulation'
+                                                               ^
+        SyntaxError: The requested module '@clocky/clocky-simulation' does not provide an export named 'plannerReservedTokens'
+            at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+            at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+            at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+            at async <anonymous> (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/tree.ts:157:16)
+            at async Entry._init (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:280:42)
+            at async Entry.init (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:261:7)
+            at async Entry.update (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/entry.ts:172:41)
+            at async EntryGroup.create (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/group.ts:30:7)
+            at async Promise.allSettled (index 16)
+            at async EntryGroup.update (/Volumes/projects-mac/deepseek-harness/vendor/loader/src/config/group.ts:71:24)
+      }
+    }
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ <anonymous> vendor/loader/src/config/tree.ts:157:16
+ ❯ Entry._init vendor/loader/src/config/entry.ts:280:42
+ ❯ Entry.init vendor/loader/src/config/entry.ts:261:7
+ ❯ Entry.update vendor/loader/src/config/entry.ts:172:41
+ ❯ EntryGroup.create vendor/loader/src/config/group.ts:30:7
+ ❯ EntryGroup.update vendor/loader/src/config/group.ts:71:24
+ ❯ boot packages/boot/app-boot/src/index.ts:800:11
+ ❯ updateError vendor/loader/src/config/entry.ts:26:10
+ ❯ EntryGroup.create vendor/loader/src/config/group.ts:30:7
+ ❯ Proxy.create vendor/loader/src/config/tree.ts:101:16
+ ❯ mountRootInclude packages/boot/app-boot/src/index.ts:523:21
+ ❯ boot packages/boot/app-boot/src/index.ts:774:5
+ ❯ updateError vendor/loader/src/config/entry.ts:26:10
+ ❯ Entry._init vendor/loader/src/config/entry.ts:287:13
+ ❯ Entry.init vendor/loader/src/config/entry.ts:261:7
+ ❯ Entry.update vendor/loader/src/config/entry.ts:172:41
+ ❯ EntryGroup.create vendor/loader/src/config/group.ts:30:7
+ ❯ EntryGroup.update vendor/loader/src/config/group.ts:71:24
+ ❯ updateError vendor/loader/src/config/entry.ts:26:10
+ ❯ Entry._init vendor/loader/src/config/entry.ts:282:13
+ ❯ Entry.init vendor/loader/src/config/entry.ts:261:7
+ ❯ EntryGroup.update vendor/loader/src/config/group.ts:71:24
+ ❯ <anonymous> vendor/loader/src/config/tree.ts:157:16
+ ❯ Entry._init vendor/loader/src/config/entry.ts:280:42
+ ❯ Entry.init vendor/loader/src/config/entry.ts:261:7
+ ❯ Entry.update vendor/loader/src/config/entry.ts:172:41
+ ❯ EntryGroup.create vendor/loader/src/config/group.ts:30:7
+ ❯ EntryGroup.update vendor/loader/src/config/group.ts:71:24
+ ❯ examples/simulation-company/tests/world-local-object.snapshot.ts:23:26
+     21|     const [code, signal] = await exited as unknown[]
+     22|     await writeFile(resolve(root, 'process.json'), JSON.stringify({ co…
+     23|     expect(code, stderr).toBe(0)
+       |                          ^
+     24|     const value: unknown = JSON.parse(stdout)
+     25|     expect(value).toMatchObject({ backend, modelCalls: 0, name: 'Renam…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  12:06:18
+   Duration  7.82s (transform 154ms, setup 130ms, import 122ms, tests 7.46s, environment 0ms)
+

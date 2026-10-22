@@ -1,0 +1,2 @@
+$ tsx scripts/gen-tool-catalog.ts
+gen-tool-catalog: wrote docs/tool-catalog.md.

@@ -1,0 +1,7 @@
+packages/simulation/simulation-team/src/personnel-settlement.ts:83:1: error @stylistic(max-len): This line has a length of 144. Maximum allowed is 140.
+packages/simulation/simulation-team/src/personnel-settlement.ts:68:91: error @stylistic(arrow-parens): Expected parentheses around arrow function argument having a body with curly braces.
+packages/simulation/simulation-local/src/world-personnel.ts:113:1: error @stylistic(max-len): This line has a length of 152. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:126:1: error @stylistic(max-len): This line has a length of 162. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:173:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:195:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world-personnel.ts:210:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.

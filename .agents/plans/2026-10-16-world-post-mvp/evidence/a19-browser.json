@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-18",
+  "checklist": "A19",
+  "mode": "source seeded Native/Team/Agent/Session; real authenticated HTTP; built Client; Playwright Chromium",
+  "sourceHashes": {
+    "apps/web/tests/world-post-mvp-governance.snapshot.ts": "87190c5541834fce83a43cd787c5c23c6f2a41b6209ca2d3179e1de8400a8483",
+    "examples/simulation-company/tests/world-post-mvp-governance-browser-seed.ts": "3b3fad24aab2bcbc46cc19725c2d8a58f32dc8a66ab943a15956cfa2c424acba",
+    "packages/client/ui-simulation/src/client/selection.ts": "eefd55d838d4af81b7be5dad3309e4c4a59cbc3d6e6c4fb7da95124a8e61d608",
+    "packages/client/ui-simulation/tests/selection.client.spec.ts": "5644bfdb6a8e68cd52894b67e0340099d26defb7283691ff2e3d781c7eede1cf",
+    "packages/simulation/simulation-local/tests/world-post-mvp-flow.ts": "202132c112b30e6ddaa37f35dd9b02423c834b530172458abfdec5327839c50e",
+    "packages/simulation/simulation-local/tests/hiring-resource-harness.ts": "3e4f87af017930784766a9257dea64ef278cd80097db70dfa7788164c56ed87d",
+    "packages/simulation/simulation-product/src/world-read-projection.ts": "8b8ef768139de81b2f89a1d3a891f34ad5121cd69059c73373190c26ca81366d",
+    "packages/client/ui-simulation/src/client/WorldNormImpact.tsx": "1f0dea50d9bedf1a8f980c55d698629219a4f0d99861f9547a46ab77415ece01",
+    "packages/client/ui-simulation/src/client/WorldGovernance.tsx": "9517d93317628e4333e78bd258865fc9097ffeb75d5d3da6e8a5d5d77cf2ee04"
+  },
+  "verification": [
+    {
+      "command": "TMPDIR=$PWD/.tmp/world-post-mvp pnpm exec vitest run --config vitest.web.config.ts apps/web/tests/world-post-mvp-governance.snapshot.ts",
+      "passed": 2,
+      "log": "a19-browser.log"
+    },
+    {
+      "command": "pnpm exec vitest run packages/client/ui-simulation/tests/selection.client.spec.ts",
+      "passed": 5,
+      "log": "a19-route.log"
+    },
+    {
+      "command": "node --import tsx/esm scripts/run-oxlint.ts apps/web/tests/world-post-mvp-governance.snapshot.ts examples/simulation-company/tests/world-post-mvp-governance-browser-seed.ts packages/client/ui-simulation/src/client/selection.ts packages/client/ui-simulation/tests/selection.client.spec.ts",
+      "result": "passed",
+      "log": "a19-browser-lint.log"
+    }
+  ],
+  "runs": [
+    {
+      "backend": "json",
+      "source": ".local/world-post-mvp/a19-browser/json-v3eOVE",
+      "artifacts": [
+        "a19-json-proof.json",
+        "a19-json-00-withheld.png",
+        "a19-json-01-case-withheld.png",
+        "a19-json-02-authorized-impact.png",
+        "a19-json-03-original-decision.png"
+      ],
+      "revision": 221,
+      "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+      "routeId": "two-committees",
+      "unfinishedRequestId": "world-request:b4e93eb6e13e43bb408e7bc86769dd08f095e14edc74a85406c72e953e44f5c7",
+      "writableOpens": 0,
+      "modelCalls": 0,
+      "consoleErrors": []
+    },
+    {
+      "backend": "sqlite",
+      "source": ".local/world-post-mvp/a19-browser/sqlite-3m7FkA",
+      "artifacts": [
+        "a19-sqlite-proof.json",
+        "a19-sqlite-00-withheld.png",
+        "a19-sqlite-01-case-withheld.png",
+        "a19-sqlite-02-authorized-impact.png",
+        "a19-sqlite-03-original-decision.png"
+      ],
+      "revision": 221,
+      "proposalId": "governance-proposal:9ddbdb4f95244fa04ecccbe17e4ebac3bec34efdaa6f2bfa4eb9a6d72a86c5fb",
+      "routeId": "two-committees",
+      "unfinishedRequestId": "world-request:b4e93eb6e13e43bb408e7bc86769dd08f095e14edc74a85406c72e953e44f5c7",
+      "writableOpens": 0,
+      "modelCalls": 0,
+      "consoleErrors": []
+    }
+  ],
+  "coverage": [
+    "Real dual committee ordered route with three canonical votes; frozen before actual enact commit, never hand-filled world snapshot",
+    "Impact button retains supported impact route",
+    "No content grant withholds input/report",
+    "Proposer context and scope knowledge grants alone still withhold outstanding world-case report",
+    "Separate case grant reveals actual unfinished request; revocation removes it",
+    "Source link navigates to original recorded decision",
+    "All read navigation leaves Native revision unchanged, opens no writable run and invokes no model"
+  ],
+  "integration": "Complements A3 Native impact/conflict/audit owner evidence in a3-core.json; global build/lint/doc acceptance owned by main agent."
+}

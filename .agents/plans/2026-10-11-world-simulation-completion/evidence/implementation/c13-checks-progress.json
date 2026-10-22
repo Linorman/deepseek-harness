@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-12",
+  "inputHash": "9f8dcbc2c042af8ee0279261789ca5aff2d84308e6b12aa78a5d7f78f48ad872",
+  "checklistCompleted": 39,
+  "overallComplete": false,
+  "checks": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run build",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-build-catalog-final.log",
+      "exitCode": 0,
+      "artifacts": 197
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run lint",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-lint-frozen-final.log",
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run doc-sync",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-doc-sync-final.log",
+      "exitCode": 0,
+      "gates": 29
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm run verify-md-links",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-md-links-final.log",
+      "exitCode": 0,
+      "files": 2296
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "rehireManifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-agent-manifest.json",
+  "pureCountsManifest": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-personnel-counts-agent-manifest.json",
+  "fullGui": "5413 passed, 1 failed, 1 skipped; scrollbar failure corrected and owner focused regression passed",
+  "fullWebReplay": {
+    "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" CLOCKY_SNAPSHOT=replay pnpm run test:web:built",
+    "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-web-replay-all.log",
+    "status": "failed",
+    "liveRootSessionId": null,
+    "lastVerifiedLiveSessionId": null,
+    "exitCode": 1,
+    "testFiles": {
+      "failed": 8,
+      "passed": 105,
+      "skipped": 1
+    },
+    "tests": {
+      "failed": 36,
+      "passed": 315,
+      "skipped": 14
+    },
+    "durationSeconds": 2367.05
+  },
+  "staticUiAudit": "4 existing authoring findings pending; full premium/UI compliance not claimed",
+  "currentInputRecheck": {
+    "files": 343,
+    "changed": []
+  }
+}

@@ -70,7 +70,7 @@ it.each([false, true])('boots the default Simulation template with no enabling o
   } finally { await browser.close(); await scaffold.close() }
 }, 90_000)
 
-it('reports a missing template catalog as deployment configuration instead of an empty run directory', async () => {
+it('keeps the shipped World templates available when procurement templates are disabled', async () => {
   const root = join(REPO_ROOT, '.tmp/web-runtime-20261007')
   const overlay = join(root, 'empty-template-overlay.json')
   await writeFile(overlay, JSON.stringify([{ id: 'web-simulation-administration',
@@ -83,8 +83,14 @@ it('reports a missing template catalog as deployment configuration instead of an
     await scaffold.authenticateBrowserPage(page)
     await page.goto(`${scaffold.baseUrl}/?workspace=simulation`)
     const workspace = page.locator('[data-simulation-workspace-page]')
-    await workspace.getByRole('alert').getByText('此主机未安装仿真模板，请检查部署配置。', { exact: true }).waitFor()
-    expect(await workspace.getByText('还没有仿真运行。新建一个暂停的运行即可开始。', { exact: true }).count()).toBe(0)
+    await workspace.locator('header').getByRole('button', { name: '新建世界', exact: true }).click()
+    const chooser = page.getByRole('dialog', { name: '新建世界', exact: true })
+    for (const name of [/软件工作室/, /研究实验室/, /读书协会/]) {
+      await chooser.getByRole('button', { name }).waitFor()
+    }
+    const catalog = await scaffold.authenticatedRpc<SimulationProductCatalog>('simulation.catalog', {})
+    expect(catalog.result.ok && catalog.result.value.items).toEqual([])
+    expect(catalog.result.ok && catalog.result.value.worldTemplates).toHaveLength(3)
     expect(errors.pageErrors).toEqual([])
     await page.screenshot({ path: join(root, 'default-simulation-missing-templates.png') })
   } finally { await browser.close(); await scaffold.close() }

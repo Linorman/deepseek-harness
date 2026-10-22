@@ -1,0 +1,4 @@
+verify-translation-pairing: recorded .agents/notes/proposed/feature/2026-10-08-world-director-mvp.i18n.yaml
+verify-translation-pairing: recorded docs/subsystems/simulation.i18n.yaml
+verify-translation-pairing: recorded packages/simulation/simulation-local/README.i18n.yaml
+verify-translation-pairing: 3 record(s) written; run the check to validate the pairs.

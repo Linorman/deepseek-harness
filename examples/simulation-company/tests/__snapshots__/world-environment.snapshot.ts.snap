@@ -1,0 +1,63 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json environment and experience snapshot 1`] = `
+{
+  "cancelledDomains": [
+    "environment",
+    "person-state",
+  ],
+  "model": "supply-fixed/1",
+  "originalContextUnchanged": true,
+  "originalPersonUnchanged": true,
+  "restored": true,
+  "sample": {
+    "consumed": 5,
+    "demand": 8,
+    "implementation": "supply-fixed/1",
+    "inventory": 8,
+    "previousInventory": 10,
+    "production": 3,
+    "scopeEntityId": "fee-org",
+    "simulated": true,
+    "targetEntityId": "supply",
+    "time": "0",
+  },
+  "skill": {
+    "field": "skill",
+    "key": "supply",
+    "next": 3,
+    "previous": 0,
+  },
+}
+`;
+
+exports[`sqlite environment and experience snapshot 1`] = `
+{
+  "cancelledDomains": [
+    "environment",
+    "person-state",
+  ],
+  "model": "supply-fixed/1",
+  "originalContextUnchanged": true,
+  "originalPersonUnchanged": true,
+  "restored": true,
+  "sample": {
+    "consumed": 5,
+    "demand": 8,
+    "implementation": "supply-fixed/1",
+    "inventory": 8,
+    "previousInventory": 10,
+    "production": 3,
+    "scopeEntityId": "fee-org",
+    "simulated": true,
+    "targetEntityId": "supply",
+    "time": "0",
+  },
+  "skill": {
+    "field": "skill",
+    "key": "supply",
+    "next": 3,
+    "previous": 0,
+  },
+}
+`;

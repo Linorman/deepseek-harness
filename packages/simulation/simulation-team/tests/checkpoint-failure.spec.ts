@@ -1,10 +1,17 @@
 /** Structured checkpoint failures keep the owner and retry classification without parsing private text. */
 import { expect, it } from 'vitest'
-import { SimulationCheckpointError } from '@clocky/clocky-simulation'
+import { SimulationCheckpointError, SimulationRevisionConflictError } from '@clocky/clocky-simulation'
 import { TeamError } from '@clocky/clocky-team'
 import { checkpointOwnerMoved, checkpointRule, checkpointSource } from '../src/checkpoint-failure.ts'
 
 const subject = { kind: 'run' as const }
+
+it('attributes a changed Native cut as source movement while retaining its original revision conflict', async () => {
+  const failure = new SimulationRevisionConflictError(12, 14)
+  await expect(checkpointSource('validate', subject, async () => { throw failure })).rejects.toMatchObject({
+    diagnostic: { stage: 'validate', code: 'source-moved', subject }, cause: failure,
+  })
+})
 
 it('preserves an already attributed checkpoint failure', async () => {
   const failure = checkpointRule('Original trusted failure', 'collect', 'history-incomplete', subject)

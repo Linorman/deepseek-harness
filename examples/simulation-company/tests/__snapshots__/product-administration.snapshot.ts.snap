@@ -70,6 +70,20 @@ exports[`json company product creation > reconciles crash=native before inferenc
 }
 `;
 
+exports[`json company product creation > reconciles crash=ready before inference 1`] = `
+{
+  "commandEntries": 2,
+  "completeInitialCheckpoints": 1,
+  "completedRetryWrites": 0,
+  "decisions": 0,
+  "directoryEntries": 1,
+  "entities": 2,
+  "modelCalls": 0,
+  "originalIdentityRetained": true,
+  "phase": "paused",
+}
+`;
+
 exports[`json company product creation > reconciles crash=terminal before inference 1`] = `
 {
   "commandEntries": 2,
@@ -155,6 +169,20 @@ exports[`sqlite company product creation > reconciles crash=entity before infere
 `;
 
 exports[`sqlite company product creation > reconciles crash=native before inference 1`] = `
+{
+  "commandEntries": 2,
+  "completeInitialCheckpoints": 1,
+  "completedRetryWrites": 0,
+  "decisions": 0,
+  "directoryEntries": 1,
+  "entities": 2,
+  "modelCalls": 0,
+  "originalIdentityRetained": true,
+  "phase": "paused",
+}
+`;
+
+exports[`sqlite company product creation > reconciles crash=ready before inference 1`] = `
 {
   "commandEntries": 2,
   "completeInitialCheckpoints": 1,

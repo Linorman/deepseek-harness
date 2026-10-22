@@ -12,6 +12,7 @@ export type StorageErrorCode =
   | 'version-mismatch'
   | 'malformed-medium'
   | 'invalid-value'
+  | 'read-limit'
   | 'sequence-conflict'
   | 'checkpoint-conflict'
   | 'compacted'
@@ -39,5 +40,13 @@ export class StorageError extends Error {
   ) {
     super(message, options)
     this.code = code
+  }
+}
+
+/** Safe numerical read refusal. Physical paths and source bodies remain in server-side diagnostics only. */
+export class StorageReadLimitError extends StorageError {
+  /** @param dimension - Observed quota dimension. @param actual - Complete measured demand. @param limit - Configured bound. */
+  constructor(readonly dimension: 'entries' | 'bytes' | 'entry-bytes', readonly actual: number, readonly limit: number) {
+    super('read-limit', 'Read-only log observation exceeds its configured allowance')
   }
 }

@@ -1,0 +1,4 @@
+- name: cordis:include
+  config:
+    path: ../../../cordis.yml
+- name: ../../world-personnel-cancellation-model.ts

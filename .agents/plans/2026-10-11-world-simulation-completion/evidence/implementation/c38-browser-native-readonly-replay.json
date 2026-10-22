@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "reports": [
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/c36-director-events-sdk/normal/json/browser-q301jy",
+      "backend": "json",
+      "mode": "normal",
+      "observedRevision": 110,
+      "frozenObservationRevision": 108,
+      "owner": "unowned",
+      "actualNativeReplay": true,
+      "originalBootstrapCalendarDecisionRequestPlanResultMatched": true,
+      "recordCount": 111,
+      "runtime": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/c36-director-events-sdk/normal/sqlite/browser-oCy2Io",
+      "backend": "sqlite",
+      "mode": "normal",
+      "observedRevision": 118,
+      "frozenObservationRevision": 116,
+      "owner": "unowned",
+      "actualNativeReplay": true,
+      "originalBootstrapCalendarDecisionRequestPlanResultMatched": true,
+      "recordCount": 119,
+      "runtime": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/c36-director-events-sdk/pause-race/json/browser-sm86l7",
+      "backend": "json",
+      "mode": "pause-race",
+      "observedRevision": 112,
+      "frozenObservationRevision": 110,
+      "owner": "unowned",
+      "actualNativeReplay": true,
+      "originalBootstrapCalendarDecisionRequestPlanResultMatched": true,
+      "recordCount": 113,
+      "runtime": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/c36-director-events-sdk/pause-race/sqlite/browser-MBAq8F",
+      "backend": "sqlite",
+      "mode": "pause-race",
+      "observedRevision": 112,
+      "frozenObservationRevision": 110,
+      "owner": "unowned",
+      "actualNativeReplay": true,
+      "originalBootstrapCalendarDecisionRequestPlanResultMatched": true,
+      "recordCount": 113,
+      "runtime": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+      "execArgv": []
+    }
+  ]
+}

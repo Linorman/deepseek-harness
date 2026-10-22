@@ -1,0 +1,4 @@
+packages/simulation/simulation-local/src/world.ts:353:64: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/src/world.ts:353:78: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-product/src/world-preparation.ts:169:1: error @stylistic(max-len): This line has a length of 190. Maximum allowed is 140.
+packages/simulation/simulation-local/src/world.ts:616:9: error typescript(no-unnecessary-condition): This condition will always return the same value since the types have no overlap.

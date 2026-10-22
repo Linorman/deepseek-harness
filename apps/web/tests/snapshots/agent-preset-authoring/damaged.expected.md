@@ -71,6 +71,16 @@
       - 'button "复制: 仿真采购角色 / Simulation procurement actor"':
         - img
         - text: 复制
+    - listitem:
+      - 'button "设为默认: 世界模拟角色 / World simulation actor"':
+        - text: 世界模拟角色 / World simulation actor 内置 根据独立角色的已记录上下文提出世界请求与计划，仅使用仿真工具。
+        - code: simulation-world
+      - 'button "查看: 世界模拟角色 / World simulation actor"':
+        - img
+        - text: 查看
+      - 'button "复制: 世界模拟角色 / World simulation actor"':
+        - img
+        - text: 复制
   - heading "自定义" [level=3]
   - list:
     - listitem:

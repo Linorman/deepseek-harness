@@ -1,0 +1,2 @@
+packages/simulation/simulation-local/src/world-hire-approval.ts:68:1: error @stylistic(max-len): This line has a length of 143. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:859:1: error @stylistic(indent): Expected indentation of 8 spaces but found 10.

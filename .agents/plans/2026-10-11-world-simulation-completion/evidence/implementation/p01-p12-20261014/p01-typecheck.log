@@ -1,0 +1,2 @@
+examples/simulation-company/tests/complete-world-scenario.ts(217,79): error TS2322: Type 'string' is not assignable to type 'ProductPrincipalId'.
+  Type 'string' is not assignable to type '{ readonly [BRAND]: "ProductPrincipalId"; }'.

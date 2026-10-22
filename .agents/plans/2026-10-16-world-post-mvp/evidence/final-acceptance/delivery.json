@@ -1,0 +1,749 @@
+{
+  "date": "2026-10-20",
+  "inspectedAt": "2026-10-20T18:40:21.357895+08:00",
+  "scope": "H06/H07 delivery audit; report creation only, no source or checklist mutation.",
+  "skills": [
+    "dsh-doc-standards",
+    "dsh-prose-standard",
+    "dsh-pre-push-checks"
+  ],
+  "sourceAuditDelegatedTo": "Final contracts acceptance manifest owns the merged current-source/build verification.",
+  "historicalEvidence": [
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/final-inputs.json",
+      "manifestSha256": "9f86121925c38b3ce1847586f81d03fc74f7615bd20ffd67f20240a40771a731",
+      "field": "sources",
+      "matched": 845,
+      "changed": [
+        "apps/web/tests/world-post-mvp-author.snapshot.ts",
+        "examples/simulation-company/tests/product-driver-scenario.ts",
+        "examples/simulation-company/tests/world-external-actor-faults-scenario.ts",
+        "examples/simulation-company/tests/world-external-cancel-scenario.ts",
+        "examples/simulation-company/tests/world-external-contact-scenario.ts",
+        "examples/simulation-company/tests/world-external-contract-scenario.ts",
+        "examples/simulation-company/tests/world-external-limits-scenario.ts",
+        "examples/simulation-company/tests/world-external-shared-scenario.ts",
+        "examples/simulation-company/tests/world-governance-composition.ts",
+        "examples/simulation-company/tests/world-hire-scenario.ts",
+        "packages/client/runtime/src/client/simulations/service.ts",
+        "packages/client/runtime/tests/fake-api.client.ts",
+        "packages/client/runtime/tests/simulation-runtime.client.spec.ts",
+        "packages/client/ui-simulation/package.json",
+        "packages/client/ui-simulation/src/client/WorldDraftGraph.tsx",
+        "packages/client/ui-simulation/src/client/WorldTemplateExport.tsx",
+        "packages/client/ui-simulation/src/client/world-locales.ts",
+        "packages/client/ui-simulation/tests/world-draft-graph.client.spec.tsx",
+        "packages/host/apiproxy/src/api/rpc-map.ts",
+        "packages/host/apiproxy/src/api/simulations.ts",
+        "packages/host/apiproxy/src/fetch/client.ts",
+        "packages/host/apiproxy/src/fetch/handler.ts",
+        "packages/host/apiproxy/src/simulation-product-api.ts",
+        "packages/sdk/client/src/api.ts",
+        "packages/sdk/client/src/client.ts",
+        "packages/sdk/client/src/index.ts",
+        "packages/sdk/client/tests/sdk-client.spec.ts",
+        "packages/sdk/client/tests/simulation.spec.ts",
+        "packages/sdk/protocol/src/index.ts",
+        "packages/sdk/protocol/src/schema.ts",
+        "packages/sdk/protocol/src/simulation.ts",
+        "packages/sdk/protocol/src/types.ts",
+        "packages/sdk/server/src/simulation.ts",
+        "packages/sdk/server/tests/simulation-world.spec.ts",
+        "packages/sdk/server/tests/simulation.spec.ts",
+        "packages/simulation/simulation-local/src/entities.ts",
+        "packages/simulation/simulation-local/src/index.ts",
+        "packages/simulation/simulation-local/src/journal.ts",
+        "packages/simulation/simulation-local/src/run.ts",
+        "packages/simulation/simulation-local/src/scheduler.ts",
+        "packages/simulation/simulation-local/src/world-external-actor.ts",
+        "packages/simulation/simulation-local/src/world-external-mediated.ts",
+        "packages/simulation/simulation-local/src/world-external.ts",
+        "packages/simulation/simulation-local/src/world-hiring-market.ts",
+        "packages/simulation/simulation-local/src/world-mutation.ts",
+        "packages/simulation/simulation-local/src/world.ts",
+        "packages/simulation/simulation-local/tests/fixtures/world-catalog-admission.ts",
+        "packages/simulation/simulation-local/tests/hiring-resource-harness.ts",
+        "packages/simulation/simulation-local/tests/run.spec.ts",
+        "packages/simulation/simulation-local/tests/world-catalog-admission.spec.ts",
+        "packages/simulation/simulation-local/tests/world-domain-disposal.spec.ts",
+        "packages/simulation/simulation-product/package.json",
+        "packages/simulation/simulation-product/src/administration.ts",
+        "packages/simulation/simulation-product/src/creation-store.ts",
+        "packages/simulation/simulation-product/src/creation-types.ts",
+        "packages/simulation/simulation-product/src/index.ts",
+        "packages/simulation/simulation-product/src/maintenance-control.ts",
+        "packages/simulation/simulation-product/src/registration-types.ts",
+        "packages/simulation/simulation-product/src/schema.ts",
+        "packages/simulation/simulation-product/src/types.ts",
+        "packages/simulation/simulation-product/src/world-owner.ts",
+        "packages/simulation/simulation-product/tests/world-administration.spec.ts",
+        "packages/simulation/simulation-product/tests/world-management.spec.ts",
+        "packages/simulation/simulation-scenario/src/v1-compiler.ts",
+        "packages/simulation/simulation-scenario/src/v1-resolved.ts",
+        "packages/simulation/simulation-scenario/src/v1-schema.ts",
+        "packages/simulation/simulation-scenario/src/v1-validation.ts",
+        "packages/simulation/simulation-team/package.json",
+        "packages/simulation/simulation-team/src/checkpoint.ts",
+        "packages/simulation/simulation-team/src/index.ts",
+        "packages/simulation/simulation-team/src/residency.ts",
+        "packages/simulation/simulation-team/src/restore.ts",
+        "packages/simulation/simulation-team/src/types.ts",
+        "packages/simulation/simulation-world/package.json",
+        "packages/simulation/simulation-world/src/driver.ts",
+        "packages/simulation/simulation-world/src/index.ts",
+        "packages/simulation/simulation-world/src/providers.ts",
+        "packages/simulation/simulation-world/tsdown.config.ts",
+        "packages/simulation/simulation/package.json",
+        "packages/simulation/simulation/src/index.ts",
+        "packages/simulation/simulation/src/inspection.ts",
+        "packages/simulation/simulation/src/types.ts",
+        "packages/simulation/simulation/src/world-authoring.ts",
+        "packages/simulation/simulation/src/world-hiring-market.ts",
+        "packages/simulation/simulation/src/world.ts",
+        "python/sdk/src/clocky/__init__.py",
+        "python/sdk/src/clocky/api.py",
+        "python/sdk/src/clocky/client.py",
+        "python/sdk/src/clocky/session_events.py",
+        "python/sdk/src/clocky/simulation_scenario.py",
+        "python/sdk/src/clocky/simulation_world_domain.py",
+        "python/sdk/tests/test_channel_view.py",
+        "python/sdk/tests/test_simulation_hiring_market.py",
+        "scripts/gen-cordis-catalog.ts",
+        "scripts/tests/test_world_post_mvp_baseline.py",
+        "scripts/world-post-mvp-baseline.py",
+        "scripts/world-post-mvp-report.py"
+      ],
+      "missing": []
+    },
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/final-inputs.json",
+      "manifestSha256": "9f86121925c38b3ce1847586f81d03fc74f7615bd20ffd67f20240a40771a731",
+      "field": "artifacts",
+      "matched": 1,
+      "changed": [
+        ".playwright-mcp/gif-frames-post-mvp-sqlite/00-saved.png",
+        ".playwright-mcp/gif-frames-post-mvp-sqlite/01-graph.png",
+        ".playwright-mcp/gif-frames-post-mvp-sqlite/02-conflict.png",
+        ".playwright-mcp/gif-frames-post-mvp-sqlite/03-resolved.png",
+        ".playwright-mcp/gif-frames-post-mvp-sqlite/04-calendar.png",
+        ".playwright-mcp/gif-frames-post-mvp-sqlite/05-persona.png"
+      ],
+      "missing": []
+    },
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/bc-continuation-2026-10-20.json",
+      "manifestSha256": "c641ae6835d1b77e521fb8f2a458c8af664fc2c61892b64da1bc3070030dc06e",
+      "field": "currentSourceSha256",
+      "matched": 8,
+      "changed": [
+        "packages/simulation/simulation/tests/environment-registered-evaluate-command.ts",
+        "packages/simulation/simulation/tests/environment-registered-evaluate-command.spec.ts",
+        "packages/simulation/simulation/README.md",
+        "packages/simulation/simulation/README.zh.md"
+      ],
+      "missing": []
+    }
+  ],
+  "deFinalPriorAudit": {
+    "sourceCount": 1605,
+    "matched": 1597,
+    "changed": [
+      "docs/subsystems/simulation.md",
+      "docs/subsystems/simulation.zh.md",
+      "packages/simulation/simulation-product/src/federation-mailbox.ts",
+      "packages/simulation/simulation-product/src/federation-ownership.ts",
+      "packages/simulation/simulation-product/tests/federation-mailbox.spec.ts",
+      "packages/simulation/simulation-product/tests/federation-ownership.spec.ts",
+      "packages/simulation/simulation-team/src/experiments.ts",
+      "packages/simulation/simulation-team/tests/experiments.spec.ts"
+    ],
+    "artifactCount": 12,
+    "matchedArtifacts": 11,
+    "changedArtifacts": [
+      "packages/simulation/simulation-team/lib/index.js"
+    ],
+    "logsMatched": 20,
+    "scope": "Prior broad regression remains valid for unchanged inputs. Changed D/E paths are covered by de-review; current merged build hash belongs to final contracts acceptance."
+  },
+  "deReview": {
+    "sources": {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/hashes.json",
+      "manifestSha256": "56ccc519c035f23b9911e02c970bc15f10726dfa34e2856273ef73ee4fbb97c6",
+      "field": "sourceSha256",
+      "matched": 26,
+      "changed": [],
+      "missing": []
+    },
+    "logs": {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/de-review/hashes.json",
+      "manifestSha256": "56ccc519c035f23b9911e02c970bc15f10726dfa34e2856273ef73ee4fbb97c6",
+      "field": "logSha256",
+      "matched": 14,
+      "changed": [],
+      "missing": []
+    },
+    "passedTests": {
+      "dFocused": 23,
+      "eFinal": 35,
+      "product": 16,
+      "builtSnapshots": 6,
+      "catalog": 15
+    },
+    "docGates": 29
+  },
+  "bcReview": {
+    "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/review-2026-10-20/validation.json",
+    "manifestSha256": "8905ba379bf034d75c90cc0c41df25b2ece2132511534e388770ee09202b18a9",
+    "field": "files",
+    "matched": 4,
+    "changed": [
+      "packages/simulation/simulation-team/src/archive.ts",
+      "packages/simulation/simulation-team/tests/archive.spec.ts"
+    ],
+    "missing": []
+  },
+  "olderBcInputs": [
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/b1/implementation.json",
+      "manifestSha256": "cc775cb74136e8c79df3168aa2c79d4db3dc1c7b45d13821851a4337403850c6",
+      "field": "sourceSha256",
+      "matched": 5,
+      "changed": [
+        "packages/simulation/simulation-local/src/index.ts",
+        "packages/simulation/simulation/src/types.ts",
+        "packages/simulation/simulation/src/index.ts",
+        "packages/simulation/simulation-product/src/index.ts",
+        "packages/host/apiproxy/src/simulation-product-api.ts",
+        "packages/host/apiproxy/src/fetch/client.ts",
+        "packages/host/apiproxy/src/fetch/handler.ts",
+        "packages/sdk/client/src/client.ts",
+        "packages/sdk/client/src/api.ts",
+        "packages/sdk/server/src/simulation.ts",
+        "packages/sdk/protocol/src/simulation.ts",
+        "python/sdk/src/clocky/client.py",
+        "packages/client/runtime/src/client/simulations/service.ts"
+      ],
+      "missing": []
+    },
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/b2/implementation.json",
+      "manifestSha256": "6ce61a3eead1aa5fe4747ea5381dbb47515483823d8279d56771277195cd4dcd",
+      "field": "hashes",
+      "matched": 11,
+      "changed": [
+        "packages/simulation/simulation-local/src/run.ts",
+        "packages/simulation/simulation-team/src/archive.ts",
+        "packages/simulation/simulation-product/src/retention.ts",
+        "packages/simulation/simulation-product/src/retention-schema.ts",
+        "packages/simulation/simulation-product/src/retention-types.ts",
+        "packages/simulation/simulation-product/src/administration.ts",
+        "packages/simulation/simulation-product/src/world-owner.ts",
+        "packages/simulation/simulation-team/tests/archive.spec.ts",
+        "packages/simulation/simulation-product/tests/world-administration.spec.ts",
+        "examples/simulation-company/tests/world-archive-scenario.ts",
+        "examples/simulation-company/tests/__snapshots__/world-archive.snapshot.ts.snap"
+      ],
+      "missing": []
+    },
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/b3c/implementation.json",
+      "manifestSha256": "d5ae7f8d2b4a4da494d27403d8acaf2d063a4cd8b53eecb35c3eb128c89b840f",
+      "field": "sourceSha256",
+      "matched": 10,
+      "changed": [
+        "packages/simulation/simulation/src/types.ts",
+        "packages/simulation/simulation-local/src/run.ts"
+      ],
+      "missing": []
+    },
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/b3a-residency.json",
+      "manifestSha256": "8936d1d2d9a07e2e6b883e9ee7a78f7449e70e9bb5966989f56f01bfa60c8184",
+      "field": "files",
+      "matched": 5,
+      "changed": [],
+      "missing": []
+    },
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/b3b-representation.json",
+      "manifestSha256": "f3e859575e0fe3213651d2b5103ae443123b349081abf5a5b336c00d53c2c465",
+      "field": "files",
+      "matched": 15,
+      "changed": [],
+      "missing": []
+    },
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c1-c2-source-manifest.json",
+      "manifestSha256": "d51c34e3932e0ef47807929935a52246869621cc05d10ccb1e15c557a566b9d4",
+      "field": "files",
+      "matched": 27,
+      "changed": [
+        "packages/simulation/simulation/src/world-generation.ts",
+        "packages/simulation/simulation/src/types.ts",
+        "packages/simulation/simulation/src/index.ts",
+        "packages/simulation/simulation-local/src/run.ts",
+        "packages/simulation/simulation-local/src/journal.ts",
+        "packages/simulation/simulation-team/src/index.ts",
+        "packages/simulation/simulation-world/src/driver.ts",
+        "packages/simulation/simulation-product/src/administration.ts",
+        "packages/simulation/simulation-product/src/world-owner.ts",
+        "packages/simulation/simulation-product/src/index.ts",
+        "packages/simulation/simulation-product/package.json",
+        "packages/simulation/simulation-product/src/maintenance-control.ts",
+        "packages/simulation/simulation-local/src/scheduler.ts"
+      ],
+      "missing": []
+    },
+    {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/c3-hashes.json",
+      "manifestSha256": "1d3a11b2fd91d7a4ce4d406b508f4f2ca91f78dccd388d39d2e112dfa7049559",
+      "field": null,
+      "matched": 22,
+      "changed": [],
+      "missing": []
+    }
+  ],
+  "performance": {
+    "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/b1/final-performance.json",
+    "manifestSha256": "3f91d2cb3a7816e808cd628e1533f022a0a27e45a48d5b314ceb32d4348b3cb4",
+    "rawFileCount": 37,
+    "matched": 37,
+    "rawFiles": [
+      {
+        "path": ".local/world-post-mvp/f0-longitudinal/1792387319584824000/manifest.json",
+        "sha256": "46ef28b587615c9adf66fce2fbd8b726e47fa64450fdb545e8a03f957e767c7f",
+        "bytes": 375570,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/f0-longitudinal/1792387319584824000/results.json",
+        "sha256": "c34eca30f1d1ba51bb7bc461519d3d5f6478c4397422d7c5f716bbd87d9687c5",
+        "bytes": 566135,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/f0-longitudinal/1792387319584824000/input-drift.json",
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/f0-longitudinal/1792387319584824000/summary.json",
+        "sha256": "28ce264f813ffe23b9d8bd3b1dd0eeea67d46b8b5a0300b9de42ff84a35df2be",
+        "bytes": 14835,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/manifest.json",
+        "sha256": "c9244350b2dfea9cea9395ac725c6ebac2cef549acdbcdc61c45225ef4518f9d",
+        "bytes": 375351,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/results.json",
+        "sha256": "c141bb677718fc104d71252dd17017d9f2dfcd1ed14946f43ff3c275c59c2165",
+        "bytes": 26871,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/input-drift.json",
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "bytes": 3,
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/b1/index-benchmark-1792387237598-74e024f5-30ee-4758-9a24-a755d4b306b4.json",
+        "sha256": "e90a33fd3092364e7652de0e5fe00dfd6eba0bb2288abcea9dbd6e7ad230e635",
+        "bytes": 9495,
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/b3c/benchmark-1792387270639-7a881680-98ff-4d18-8047-34aa605277fa.json",
+        "sha256": "d255eba05823d82657dcc9aeac8232f10fffd5a4ca90c34509608df46306b159",
+        "bytes": 43657,
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/b1/index-workload.json",
+        "sha256": "0b4be22d5a0ae4244dd61a8d7207737b65d355903c0935579e966137daa8fab3",
+        "bytes": 627,
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/b3c/workload.json",
+        "sha256": "082f1ad5bc7c73055bcda0f7d0a3a2c2a34336f363ad339a43e2035871648724",
+        "bytes": 808,
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/b1/environment-observations.jsonl",
+        "sha256": "4785e8253fc8e7cd4356a91d7751966db61f0c91d1adcbf938671d43a6491563",
+        "bytes": 1440,
+        "matches": true
+      },
+      {
+        "path": ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/post-measurement-formatting.json",
+        "sha256": "555be19ca1903cbcd221b8a16a7c6a83e7115e94b406c0e82cda05dbca4ce35e",
+        "bytes": 1040,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-0/cold.stdout",
+        "sha256": "944d2fb405957ca5cc91638ecd0d4dedc6b66720b40fd206b29a130b7c5e332f",
+        "bytes": 1036,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-0/warm.stdout",
+        "sha256": "5193caded616b9e8406fd2fa05e47e5f70fb75d7396dbe7165261ff1af107cba",
+        "bytes": 1170,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-1/cold.stdout",
+        "sha256": "5797d60f40a8345a0d88993454665489f992b0f008e2e22fe6f870bbf7a093c5",
+        "bytes": 1036,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-1/warm.stdout",
+        "sha256": "ecb1db9a3bbe082a6bc852551fe0cce7673d7c65bde692337fc0cc3aa00940bc",
+        "bytes": 1175,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-2/cold.stdout",
+        "sha256": "66dbdccf5320561d960624fa034d9b39a29ec6c8375afae1baf0d281741cb176",
+        "bytes": 1035,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-2/warm.stdout",
+        "sha256": "62b69d8a32963a9e4cb82c32f30b34a2b66eaeaa068b64c97eef5b004dd7a26b",
+        "bytes": 1177,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-0/cold.stdout",
+        "sha256": "39ddf37144daabc223ee994ad1f6d0f64139ba7ae00a7e63f8aef6412d77c509",
+        "bytes": 1035,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-0/warm.stdout",
+        "sha256": "6d69c73a432af5d0384922060d8bf23db4ea70e0a8379cbb9cdb9a6b94caf794",
+        "bytes": 1170,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-1/cold.stdout",
+        "sha256": "b8223b4445c8f8ebf9bf7dadc6242d0279b3a2c60a00f1f438ab64de932738c1",
+        "bytes": 1036,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-1/warm.stdout",
+        "sha256": "1e2a9440c996111002a08076a917674e218220da556a98478508bd0063835bec",
+        "bytes": 1180,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-2/cold.stdout",
+        "sha256": "be8e48b7172134481c5dcec98e53ed38dba94f13be4f2f1dafb3f4ad6ed6e68a",
+        "bytes": 1036,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-2/warm.stdout",
+        "sha256": "61f499fdfd29657530eabb9129ea4e451d4343680a23a05806947826f8efe9ed",
+        "bytes": 1178,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-0/cold.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-0/warm.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-1/cold.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-1/warm.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-2/cold.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/json-2/warm.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-0/cold.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-0/warm.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-1/cold.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-1/warm.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-2/cold.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      },
+      {
+        "path": ".local/world-post-mvp/b1-maintenance/1792387277795586000/sqlite-2/warm.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "matches": true
+      }
+    ],
+    "scope": "Frozen historical batch: three scenarios x JSON/SQLite, 192 rounds, 12 processes, six zero-inference cold recoveries. Current source drift does not rewrite its baseline or demonstrate new full-workload performance."
+  },
+  "c3": {
+    "registration": ".agents/plans/2026-10-16-world-post-mvp/evidence/review-2026-10-20/c3-v2-registration.json",
+    "registrationSha256": "27494704fcf1377e6e685186bd08230158b59c8edd1ec0daaaba79dff96f7da6",
+    "results": ".agents/plans/2026-10-16-world-post-mvp/evidence/review-2026-10-20/c3-v2-results.json",
+    "resultsSha256": "bb779fbfc3a3032791244b126f8683cbce677137f5dc20818a341ac23fa8e969",
+    "registeredSources": {
+      "manifest": ".agents/plans/2026-10-16-world-post-mvp/evidence/review-2026-10-20/c3-v2-registration.json",
+      "manifestSha256": "27494704fcf1377e6e685186bd08230158b59c8edd1ec0daaaba79dff96f7da6",
+      "field": "sources",
+      "matched": 7,
+      "changed": [],
+      "missing": []
+    },
+    "resultBindsRegistration": true,
+    "trials": 24,
+    "samples": 5376,
+    "automaticFailures": [],
+    "verifyCommand": "TMPDIR=\"$PWD/.tmp/delivery-audit\" pnpm exec tsx scripts/world-environment-registered-evaluate.ts verify .agents/plans/2026-10-16-world-post-mvp/evidence/review-2026-10-20",
+    "verifyExitCode": 0,
+    "verifyLog": ".agents/plans/2026-10-16-world-post-mvp/evidence/final-acceptance/delivery-c3-verify.log",
+    "verifyLogSha256": "18e801f4ac028a26b7335b31c3cecffa8fb7bcce8f30389af4328f0b0d359ab2",
+    "scope": "Deterministic resource evaluation only; human ratings deferred and model judge unexecuted; C15/C16 remain unchecked."
+  },
+  "pairs": [
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-19-world-environment-evolution.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-19-world-environment-evolution.md": "64ceb366fd824e69f46369fb2006739e4da9e3d2f3af10e8d651a5cc684031f0",
+        ".agents/notes/implemented/architecture/2026-10-19-world-environment-evolution.zh.md": "53b66bf62f9c36c219978075db47aafccd99713ff1a4a1eb4cc4848a16d2bbc8",
+        ".agents/notes/implemented/architecture/2026-10-19-world-environment-evolution.i18n.yaml": "e4b6358d1db44143d197832edd5fad002e95226994b3c384e309d34bd26a3b74"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-20-world-experiments.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-20-world-experiments.md": "a81b36b5aeeace890da58747ec43346a9e5a37f28d0c54fbd9a030a1a348c70b",
+        ".agents/notes/implemented/architecture/2026-10-20-world-experiments.zh.md": "4e2e59a1ded67354990931ecb84843a9e889d065ff2ab6bbf48a9d8f15d4ce97",
+        ".agents/notes/implemented/architecture/2026-10-20-world-experiments.i18n.yaml": "16270fb2457862fb90be3c48ecff693b693252001317161d01cc2b35804417b8"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-19-memoryless-representation-switch.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-19-memoryless-representation-switch.md": "a56414bd496408c25e985582573add08cbf3eb18f791b8586339fb44d9b949b4",
+        ".agents/notes/implemented/architecture/2026-10-19-memoryless-representation-switch.zh.md": "cc60edc30158240831a45df64e9042e1526508c01b7ab10d567f7b25a52bb2d8",
+        ".agents/notes/implemented/architecture/2026-10-19-memoryless-representation-switch.i18n.yaml": "017678ac160cd99193cbc60ce4a26210ce1141737e017d20f735aa3b882f4d86"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-19-world-reference-archive.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-19-world-reference-archive.md": "5c3cc3bc2f72e6fa31a98a9f0dc8558927b1004f54f676379edec846c03c51e0",
+        ".agents/notes/implemented/architecture/2026-10-19-world-reference-archive.zh.md": "1c4e6da992eb8717a96699ee5988e474c01bac4f51d08e35a36e17ff5b2c3296",
+        ".agents/notes/implemented/architecture/2026-10-19-world-reference-archive.i18n.yaml": "16527c015efc70178a37fad00c62385d39b3eb101ed024d2f9c2a5ce44469a1b"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-20-world-effect-sandbox-mailbox.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-20-world-effect-sandbox-mailbox.md": "770a475edbf909760f8a03dd45d27560a0d193bfdd632bc7798aea6462b1f08c",
+        ".agents/notes/implemented/architecture/2026-10-20-world-effect-sandbox-mailbox.zh.md": "3afbc42077e82db15e4a8a71bb71779b6be13f6876b0b819acf95767b03ccc00",
+        ".agents/notes/implemented/architecture/2026-10-20-world-effect-sandbox-mailbox.i18n.yaml": "de8ea1bd4fe3cb620e9957b4d4b73aa1282988fb737fb130d4d2a621da9eaa60"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-19-simulation-idle-residency.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-19-simulation-idle-residency.md": "bfacf971198fb099ff382e645f3557962565cd470e1e0c0e44df9f8bb31cf4f7",
+        ".agents/notes/implemented/architecture/2026-10-19-simulation-idle-residency.zh.md": "b82572546848ceed15f50c1cbd69e16624abd80f89ba8b3116665e096d03b072",
+        ".agents/notes/implemented/architecture/2026-10-19-simulation-idle-residency.i18n.yaml": "878f4bb2574ef38e734cd3599f065ad1f6c93274ae5f051e783c5f65fff756f6"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-19-world-generation-planners.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-19-world-generation-planners.md": "67a706ad1a75b61ca7046cb2a1cbe85887bff22d485a7f8a4a9f6e24193cd8fa",
+        ".agents/notes/implemented/architecture/2026-10-19-world-generation-planners.zh.md": "a201a69cc072f5c3660fa3737e952b9b62f338af3e9ea8c38dd4447b02b849a9",
+        ".agents/notes/implemented/architecture/2026-10-19-world-generation-planners.i18n.yaml": "217920014f9973d4ad0a7087a623115433e7ce970ce94acc4d051213b67e730c"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-19-local-object-mutation.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-19-local-object-mutation.md": "a6aaf5bc7202ae4874c2be76be113eed8f990a1f2d2ea3e38d05ef07a10334d9",
+        ".agents/notes/implemented/architecture/2026-10-19-local-object-mutation.zh.md": "779334fe14f74c8d853ca7cbbea1dc278da9afb758325dd2f5425178ddf02d62",
+        ".agents/notes/implemented/architecture/2026-10-19-local-object-mutation.i18n.yaml": "46d1bcede3a336c9b988b3b252077ca6606d02873b18b54e0f9790a2443e911d"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/architecture/2026-10-20-world-federation-ownership.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/architecture/2026-10-20-world-federation-ownership.md": "4c27cbdedb0c6ad2b9b6f95e5667c6976cff9946b104c4089cd105a1b4a1a24d",
+        ".agents/notes/implemented/architecture/2026-10-20-world-federation-ownership.zh.md": "86bf7caa3508e1b582d0fd338589c2aab1eef12a7081aaa33c446790ede0c5dc",
+        ".agents/notes/implemented/architecture/2026-10-20-world-federation-ownership.i18n.yaml": "8b1c19cc3488c38a368b92f9fb459e5c098abb8793b6964d2d98da28b34126fd"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/feature/2026-10-17-world-author-revisions-and-offers.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/feature/2026-10-17-world-author-revisions-and-offers.md": "674fed634429763a7b790217a6c950573a56407e8e942d3f147dd54a0cac10d5",
+        ".agents/notes/implemented/feature/2026-10-17-world-author-revisions-and-offers.zh.md": "47db9302e203459043efd6bcc0c164ff83e5c953c9afef425e4e919fc4f9779b",
+        ".agents/notes/implemented/feature/2026-10-17-world-author-revisions-and-offers.i18n.yaml": "a3ec84e018f907a32075c7fdadfc6cbf9c220d0aa5696fb167beee29567bdb3b"
+      }
+    },
+    {
+      "owner": ".agents/notes/implemented/feature/2026-10-16-world-calendar-review-routes.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        ".agents/notes/implemented/feature/2026-10-16-world-calendar-review-routes.md": "929e06c173cfa020c51942819a9490e856603df112720f8a2a5203f450fadaa1",
+        ".agents/notes/implemented/feature/2026-10-16-world-calendar-review-routes.zh.md": "1218c4c0b241df8c240d4992c857891cdd21ccb72972c541c10d7aaaff4b9750",
+        ".agents/notes/implemented/feature/2026-10-16-world-calendar-review-routes.i18n.yaml": "eea6bfe5907f5c4d8efa6ef39417a6fc60aa7bbc91a5a6482b14c3d026d9c11b"
+      }
+    },
+    {
+      "owner": "packages/simulation/simulation/README.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        "packages/simulation/simulation/README.md": "7d69a19c5c5baee75dadabd8dbfa7cfa256acd8a88d3d6d882257917069ce31a",
+        "packages/simulation/simulation/README.zh.md": "b9e3b2bf210769b37d1c282c399218e8d51712b077031efdcf25235284e9bfb3",
+        "packages/simulation/simulation/README.i18n.yaml": "4039cc2571a4b64e56aa3cf6bbf9d8c5935c9e5f6608ddea3c4759d59899d68c"
+      }
+    },
+    {
+      "owner": "packages/simulation/simulation-local/README.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        "packages/simulation/simulation-local/README.md": "d7d020233aeec2d1b3848fbbcd478097db4bf279b21ba4cf84487ddccf9fcfa3",
+        "packages/simulation/simulation-local/README.zh.md": "401925ea4554fb589f142146796bf5af8a83c93d7da35719c7f16d768c2f97e4",
+        "packages/simulation/simulation-local/README.i18n.yaml": "50ae2378c1b0ef5b0dd80baaf470b9da0b05c4ed7bc275cc95fab23f6fec001a"
+      }
+    },
+    {
+      "owner": "packages/simulation/simulation-team/README.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        "packages/simulation/simulation-team/README.md": "a5c3f897f3f0b9e00a866e363fb99e37483e23bfb0ac7bd584b931ce471dab0e",
+        "packages/simulation/simulation-team/README.zh.md": "c2f920a24c4eca1aa9f0526e7f5ad09a7d8046ccf28f2e5d8733d3fec2617c26",
+        "packages/simulation/simulation-team/README.i18n.yaml": "34aad046bb4e0b45d80c02c28d5e373c6ec53a4d345d6dc2b143682fab7508b7"
+      }
+    },
+    {
+      "owner": "packages/simulation/simulation-product/README.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        "packages/simulation/simulation-product/README.md": "3b691b32a761ab1233848b6bc53c694b4f92d43c0724bb8046b6755b30bf33e3",
+        "packages/simulation/simulation-product/README.zh.md": "ee56ff48804829a03cce78df1ef356d28260d86878ca120518bed6f304edf872",
+        "packages/simulation/simulation-product/README.i18n.yaml": "8279a7df984680e9843ab80e2944b3fd314786c26ab325e8b5bffe2666aec7e1"
+      }
+    },
+    {
+      "owner": "packages/simulation/simulation-scenario/README.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        "packages/simulation/simulation-scenario/README.md": "2dec9da5afe6cd9cbb4bac3349157bd5a2f368084d1e0bcc1138fbb7f4e2ca31",
+        "packages/simulation/simulation-scenario/README.zh.md": "d2b098e9a95e44006b84678bd7419d5432eb12b225d9b61aabc96d4960aca314",
+        "packages/simulation/simulation-scenario/README.i18n.yaml": "9de4c7c18916489bc90fa839bbcaf0fc151d7d0beb4118fd00a6b9f741963361"
+      }
+    },
+    {
+      "owner": "packages/simulation/simulation-world/README.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        "packages/simulation/simulation-world/README.md": "83c9a3207e2129364a63fe69137d837bec4f0343b68176f5706b80ab3f3b26a6",
+        "packages/simulation/simulation-world/README.zh.md": "e006d154dee79900c31ebadb8e57206fa2bce3ba30b97ba7e0a3c9624c2c01c2",
+        "packages/simulation/simulation-world/README.i18n.yaml": "f0dc654da671d69e817b393b7b90e9e7f25be80303ca68d040f074046bfbf72f"
+      }
+    },
+    {
+      "owner": "docs/subsystems/simulation.md",
+      "currentPairHashesMatch": true,
+      "sha256": {
+        "docs/subsystems/simulation.md": "91173d7845b7a1a85cb3ff0b7bb2b8424aa7c630effb19176f76a6da0d6e7ada",
+        "docs/subsystems/simulation.zh.md": "fe8dfe836ff5d989863f4ac6801aed2306a2f3a2e305f7d25d224ed45cee5e78",
+        "docs/subsystems/simulation.i18n.yaml": "5712ccf79f8d11496e008b3090f3f10d3fa15fa7aa4f7230ab0f76b7d16f271d"
+      }
+    }
+  ],
+  "checklistBoundary": {
+    "H06": "May check only after current archive repair and UI acceptance evidence are attached, current owner pairs remain consistent, and final doc-sync/changed-input checks pass. Existing package/note/snapshot coverage is present.",
+    "H07": "May check when final acceptance names original checklist IDs, records evidence revisions and unresolved C15/C16/E01/E07/E08/E15, and declares each stage scope without changing original items or denominator.",
+    "deferred": [
+      "C15",
+      "C16",
+      "E01",
+      "E07",
+      "E08",
+      "E15"
+    ],
+    "P3": "Not fully accepted while C15/C16 remain unchecked.",
+    "P5": "Local protocol implementation only; no real provider, deployment necessity, or production review qualification."
+  },
+  "minimumRevalidation": [
+    "Merged current contract source/build integrity is recorded in contracts.json.",
+    "Later de-review D-focused and built snapshot evidence covers archive revision changes; no new archive test run is required.",
+    "Current UI browser/GIF verification in ui.json supersedes earlier UI evidence.",
+    "Root agent records final documentation and whitespace gates in validation.json."
+  ],
+  "integrationClarification": {
+    "archive": "No current-turn archive mutation. Later de-review archive source and D-focused run, plus de-final archive tests, supersede historical B/C archive hashes. See contracts.json.",
+    "humanEvaluation": "User explicitly confirmed continued deferral in this chat on 2026-10-20.",
+    "documentation": "Final doc-sync and final checklist integrity are recorded in validation.json."
+  }
+}

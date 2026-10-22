@@ -12,7 +12,7 @@ it.each(['json', 'sqlite'] as const)('reads real held world entities and expires
   h.unregister()
   h.ctx.simulations.registerProvider(native.provider)
   try {
-    for (const id of ['b', 'a']) await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id,
+    for (const id of ['b', 'a']) await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id,
       entityKind: 'org', cognition: 'none', profile: { name: id, secret: 'private-profile-body' } }), native.run.snapshot().revision)
     const { products } = await h.mount()
     const before = native.run.snapshot()
@@ -23,7 +23,7 @@ it.each(['json', 'sqlite'] as const)('reads real held world entities and expires
     expect(second.items.map(row => row.id)).toEqual(['b'])
     expect(second.snapshotRevision).toBe(first.snapshotRevision)
     expect(native.run.snapshot()).toEqual(before)
-    await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'c', entityKind: 'org',
+    await native.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'c', entityKind: 'org',
       cognition: 'none', profile: {} }), native.run.snapshot().revision)
     await expect(products.browse({ ...browseInput('entities'), collection: 'entities', limit: 1, cursor: first.nextCursor }, call()))
       .rejects.toMatchObject({ code: 'SIMULATION_PRODUCT_STALE' })

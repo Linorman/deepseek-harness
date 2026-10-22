@@ -1,6 +1,12 @@
 # @clocky/clocky-sdk-jsonrpc-server
 
+`simulation/raw-archive` delegates to the Product read owner with the current authenticated call. The Product requires whole-record body permission before IO and again before publication; raw preservation does not request execution or restoration.
+
+`simulation/runs-run-control` delegates strict authenticated stop updates to Product administration; it never derives user permissions from the input or starts inference. Explicit null clears survive transport.
+
 English | [中文](README.zh.md)
+
+World preflight/create/prepare/export dispatch shares the original product administration owner and current authenticated call lifetime. Each method parses the complete strict input before resolving an optional service. Reads and preflight do not allocate a writer; creation/preparation remain paused, original command retries preserve accepted definitions, and cold restore requires an explicit request. Public World responses exclude private compiled execution configuration and Native snapshots.
 
 `simulation/requests-list` and `simulation/requests-retry` parse exact actor-free selectors before resolving current administration. Metadata discovery exposes original receipts without stored inputs or native ownership. Explicit retry dispatches only accepted backend-retained semantics, keeps terminal outcomes unchanged and rechecks the original operation admission. Cold accepted review or outbox-grant retry still requires explicit owner restoration.
 
@@ -59,6 +65,10 @@ The plugin answers `shutdown`, flushes the response, disposes the root context s
 
 `team/resume`, `team/member-*`, `team/channel-open`, `team/channel-post`, `team/channel-close`, goal update/transition, task create/update/cancel/delete/review, and archive accept no actor, principal, proof, or reviewer field after initialization. The server derives the connection principal only while the retained credential lease is active, and requires a composed `teamHumanActors` binder; an absent binder fails with `SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE`. It binds each complete parsed payload plus its cursor or revision before Hub admission; resume binds `{ teamId, expectedCursor }` to `activate`, goals bind their full input to `goal-mutate`, task review derives its reviewer from proof, and archive binds the same cursor fence to `close`. The active human must hold the immutable grant for the requested operation. SDK deployments must provide that binder and a credential provider whose bootstrap reaches the SDK client; this package does not create a credential carrier.
 
+## Private backup export
+
+`simulation/backup-export` delegates to the authenticated product administration owner. The owner independently checks private-record disclosure and exports only a completed immutable original; transport identity never supplies execution authority or provider credentials. Full branch exports additionally require current ancestor disclosure grants or an explicit exact-branch `includeProvenance: true` grant; branch-only permission does not disclose ancestor bytes.
+
 ## Model Experience
 
 ### Team human input
@@ -87,3 +97,5 @@ Append-only; newly visible content follows the reusable request prefix and does 
 ### Single-task cancellation
 
 The task-cancel route binds optional `reason` to the authenticated human proof’s complete payload. It returns the Hub Task snapshot, including pending cancellation and its exact attempt target, without closing the Team. [Cancellation ownership](../../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md).
+
+Experiment dispatch routes `simulation/world-branch`, `world-branch-read`, `world-causal` and `world-compare` to the same authenticated Product administration owner after strict parameter parsing. Sources identify immutable retention originals; the server accepts no archive body, Host factory or caller-selected execution identity. Branch creation and lookup remain separate commands, and inspection never starts inference.

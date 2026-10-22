@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { SimulationModelCapacity } from '../src/model-capacity.ts'
+import { SimulationModelCapacity, SimulationModelCapacityExceeded } from '../src/model-capacity.ts'
 
 it('keeps granted capacity until release and admits queued requests in FIFO order', async () => {
   const capacity = new SimulationModelCapacity(1, 2)
@@ -12,6 +12,7 @@ it('keeps granted capacity until release and admits queued requests in FIFO orde
   expect(capacity.snapshot()).toEqual({ active: 1, queued: 2, limit: 1, queueLimit: 2 })
   expect(secondGranted).toBe(false)
   await expect(capacity.acquire()).rejects.toThrow(/queue capacity/)
+  await expect(capacity.acquire()).rejects.toMatchObject({ usage: { active: 1, queued: 2, limit: 1, queueLimit: 2 } })
   first()
   first()
   const releaseSecond = await second
@@ -20,6 +21,16 @@ it('keeps granted capacity until release and admits queued requests in FIFO orde
   const releaseThird = await third
   releaseThird()
   expect(capacity.snapshot()).toMatchObject({ active: 0, queued: 0 })
+})
+
+it('preserves a typed zero-queue refusal only while its real permit remains occupied', async () => {
+  const capacity = new SimulationModelCapacity(1, 0)
+  const release = await capacity.acquire()
+  await expect(capacity.acquire()).rejects.toBeInstanceOf(SimulationModelCapacityExceeded)
+  await expect(capacity.acquire()).rejects.toMatchObject({ usage: { active: 1, queued: 0, limit: 1, queueLimit: 0 } })
+  release()
+  const resumed = await capacity.acquire()
+  resumed()
 })
 
 it('removes an aborted waiter without consuming a permit', async () => {

@@ -1,0 +1,69 @@
+{
+  "scope": "O15 pure run-wide projection only; root owns integration and checklist",
+  "sourceFrozen": true,
+  "files": [
+    {
+      "path": "packages/simulation/simulation/src/personnel-counts.ts",
+      "bytes": 8671,
+      "sha256": "47c322a514d8b5fa6fffcdcc7b915482e1634f8a26870a73653411103c1c2755"
+    },
+    {
+      "path": "packages/simulation/simulation/tests/personnel-counts.spec.ts",
+      "bytes": 12341,
+      "sha256": "d3176929d66443ce4fec7aa41858f82fd036b8f169c6978e804897f206fe6181"
+    }
+  ],
+  "checks": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation/tests/personnel-counts.spec.ts",
+      "exitCode": 0,
+      "log": {
+        "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-personnel-counts-unit3.log",
+        "bytes": 906,
+        "sha256": "29b7e26bcb8bab343e8b9a970fdf8d0f419a51a01bfa8024f886eeeac1c900ea"
+      }
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsx scripts/run-oxlint.ts packages/simulation/simulation/src/personnel-counts.ts packages/simulation/simulation/tests/personnel-counts.spec.ts",
+      "exitCode": 0,
+      "log": {
+        "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-personnel-counts-lint3.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -b packages/simulation/simulation/tsconfig.json",
+      "exitCode": 0,
+      "log": {
+        "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-personnel-counts-types-build.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -p tsconfig.host.json --noEmit",
+      "exitCode": 0,
+      "log": {
+        "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-personnel-counts-types-final.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "unitTests": 7,
+  "contract": {
+    "assignedPeople": "Distinct nonterminated person subjects with an assignment effective on [validFrom,validUntil) at Native time.",
+    "nonterminatedPeople": "All kind=person entities except terminated; includes inactive.",
+    "residentActors": "Currently Native-admitted active ready agent with canonical binding and active writer activation; not physical process liveness or all charged slots.",
+    "unreleasedWriters": "All entities retaining a writer with phase other than released, including reserved/revoked.",
+    "residentLimit": "Original spec.maxResidentActors",
+    "history": "Full confirmed canonical Team at exact Native/Team cursors; count all historical participant identities and activation epochs. Missing/unsupported/partial/source-moved stays unknown. Retained writer identity must match original epoch participant/session/reservation/provider."
+  },
+  "excludedClaims": [
+    "O15 full product/re-hire completion",
+    "physical process liveness",
+    "organization subgroup scope",
+    "private profile/message/task payload projection"
+  ]
+}

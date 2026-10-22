@@ -209,6 +209,7 @@ import type {
 } from '../src/index.ts'
 
 class FakeTeamRuntime extends TeamRuntime {
+  override getCreationLimits(): never { throw new Error('FakeTeamRuntime has no creation limits') }
   childAuthorization(scope: import('../src/types.ts').TeamChildRunScope,
     current: () => Promise<import('../src/types.ts').TeamChildRunScope>, live: () => boolean) {
     return this.createChildRunAuthorization(scope, current, live)

@@ -1,0 +1,370 @@
+{
+  "date": "2026-10-19T02:43:55.404506+08:00",
+  "complete": true,
+  "scope": [
+    "F0",
+    "A1",
+    "A2",
+    "A3"
+  ],
+  "checklistCount": 24,
+  "allChecklistItems": 98,
+  "newChecklistItems": 0,
+  "remainingRequestedItems": [],
+  "unrequestedGroupsUnchanged": [
+    "B",
+    "C",
+    "D",
+    "E",
+    "H"
+  ],
+  "items": {
+    "F01": {
+      "package": "F0",
+      "implementation": [
+        ".agents/plans/2026-10-16-world-post-mvp/development-plan.md",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-contracts.md"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-scene-freeze.json"
+      ],
+      "status": "verified"
+    },
+    "F03": {
+      "package": "F0",
+      "implementation": [
+        ".agents/plans/2026-10-16-world-post-mvp/development-plan.md",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-contracts.md"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-scene-freeze.json"
+      ],
+      "status": "verified"
+    },
+    "F05": {
+      "package": "F0",
+      "implementation": [
+        ".agents/plans/2026-10-16-world-post-mvp/development-plan.md",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-contracts.md"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-scene-freeze.json"
+      ],
+      "status": "verified"
+    },
+    "F02": {
+      "package": "F0",
+      "implementation": [
+        "packages/simulation/simulation-scenario/tests/post-mvp-baseline.spec.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-scenes-current.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-scene-freeze.json"
+      ],
+      "status": "verified"
+    },
+    "F04": {
+      "package": "F0",
+      "implementation": [
+        "scripts/world-post-mvp-baseline.py",
+        "scripts/world-post-mvp-acceptance.py"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/verification.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/summary.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/raw-copies.json"
+      ],
+      "status": "verified"
+    },
+    "A01": {
+      "package": "A1",
+      "implementation": [
+        "packages/simulation/simulation-product/src/draft-store.ts",
+        "packages/client/ui-simulation/src/client/WorldAuthorWorkbench.tsx",
+        "packages/client/ui-simulation/src/client/world-draft.ts",
+        "packages/simulation/simulation-scenario/src/v1-compiler.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-focused.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-source.log"
+      ],
+      "status": "verified"
+    },
+    "A02": {
+      "package": "A1",
+      "implementation": [
+        "packages/simulation/simulation-product/src/draft-store.ts",
+        "packages/client/ui-simulation/src/client/WorldAuthorWorkbench.tsx",
+        "packages/client/ui-simulation/src/client/world-draft.ts",
+        "packages/simulation/simulation-scenario/src/v1-compiler.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-focused.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-source.log"
+      ],
+      "status": "verified"
+    },
+    "A03": {
+      "package": "A1",
+      "implementation": [
+        "packages/simulation/simulation-product/src/draft-store.ts",
+        "packages/client/ui-simulation/src/client/WorldAuthorWorkbench.tsx",
+        "packages/client/ui-simulation/src/client/world-draft.ts",
+        "packages/simulation/simulation-scenario/src/v1-compiler.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-focused.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-source.log"
+      ],
+      "status": "verified"
+    },
+    "A05": {
+      "package": "A1",
+      "implementation": [
+        "packages/simulation/simulation-product/src/draft-store.ts",
+        "packages/client/ui-simulation/src/client/WorldAuthorWorkbench.tsx",
+        "packages/client/ui-simulation/src/client/world-draft.ts",
+        "packages/simulation/simulation-scenario/src/v1-compiler.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-focused.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-source.log"
+      ],
+      "status": "verified"
+    },
+    "A04": {
+      "package": "A1",
+      "implementation": [
+        "packages/client/ui-simulation/src/client/WorldOrganization.tsx",
+        "packages/client/ui-simulation/src/client/WorldDraftGraph.tsx",
+        "packages/simulation/simulation-scenario/src/template-package.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-boundaries.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-browser.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-gif.json"
+      ],
+      "status": "verified"
+    },
+    "A06": {
+      "package": "A1",
+      "implementation": [
+        "packages/client/ui-simulation/src/client/WorldOrganization.tsx",
+        "packages/client/ui-simulation/src/client/WorldDraftGraph.tsx",
+        "packages/simulation/simulation-scenario/src/template-package.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-boundaries.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-browser.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-gif.json"
+      ],
+      "status": "verified"
+    },
+    "A07": {
+      "package": "A1",
+      "implementation": [
+        "packages/client/ui-simulation/src/client/WorldOrganization.tsx",
+        "packages/client/ui-simulation/src/client/WorldDraftGraph.tsx",
+        "packages/simulation/simulation-scenario/src/template-package.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-boundaries.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-browser.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/a1-continuation-gif.json"
+      ],
+      "status": "verified"
+    },
+    "A08": {
+      "package": "A2",
+      "implementation": [
+        "packages/client/ui-simulation/src/client/WorldPersonaEditor.tsx",
+        "packages/simulation/simulation-local/tests/world-persona-management.spec.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-browser-integration.log"
+      ],
+      "status": "verified"
+    },
+    "A09": {
+      "package": "A2",
+      "implementation": [
+        "packages/client/ui-simulation/src/client/WorldPersonaEditor.tsx",
+        "packages/simulation/simulation-local/tests/world-persona-management.spec.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-browser-integration.log"
+      ],
+      "status": "verified"
+    },
+    "A10": {
+      "package": "A2",
+      "implementation": [
+        "packages/simulation/simulation-local/src/world-hiring-market.ts",
+        "packages/simulation/simulation-local/src/world-hire.ts",
+        "packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts",
+        "examples/simulation-company/tests/world-hiring-market-crash.snapshot.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-market-complete-snapshots.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-owner-race.log"
+      ],
+      "status": "verified"
+    },
+    "A11": {
+      "package": "A2",
+      "implementation": [
+        "packages/simulation/simulation-local/src/world-hiring-market.ts",
+        "packages/simulation/simulation-local/src/world-hire.ts",
+        "packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts",
+        "examples/simulation-company/tests/world-hiring-market-crash.snapshot.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-market-complete-snapshots.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-owner-race.log"
+      ],
+      "status": "verified"
+    },
+    "A12": {
+      "package": "A2",
+      "implementation": [
+        "packages/simulation/simulation-local/src/world-hiring-market.ts",
+        "packages/simulation/simulation-local/src/world-hire.ts",
+        "packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts",
+        "examples/simulation-company/tests/world-hiring-market-crash.snapshot.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-market-complete-snapshots.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-owner-race.log"
+      ],
+      "status": "verified"
+    },
+    "A13": {
+      "package": "A2",
+      "implementation": [
+        "packages/simulation/simulation-local/src/world-hiring-market.ts",
+        "packages/simulation/simulation-local/src/world-hire.ts",
+        "packages/simulation/simulation-local/tests/world-hiring-market-owner.spec.ts",
+        "examples/simulation-company/tests/world-hiring-market-crash.snapshot.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-market-complete-snapshots.log",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-owner-race.log"
+      ],
+      "status": "verified"
+    },
+    "A14": {
+      "package": "A2",
+      "implementation": [
+        "packages/simulation/simulation-world/README.md",
+        "packages/simulation/simulation-local/README.md"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a2-core.json"
+      ],
+      "status": "verified"
+    },
+    "A15": {
+      "package": "A3",
+      "implementation": [
+        "packages/simulation/simulation/src/world-calendar-civil.ts",
+        "packages/simulation/simulation-local/src/world-calendar.ts",
+        "packages/simulation/simulation-local/src/world-calendar-command.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-snapshot-processes.json"
+      ],
+      "status": "verified"
+    },
+    "A16": {
+      "package": "A3",
+      "implementation": [
+        "packages/simulation/simulation/src/world-calendar-civil.ts",
+        "packages/simulation/simulation-local/src/world-calendar.ts",
+        "packages/simulation/simulation-local/src/world-calendar-command.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-snapshot-processes.json"
+      ],
+      "status": "verified"
+    },
+    "A17": {
+      "package": "A3",
+      "implementation": [
+        "packages/simulation/simulation-local/src/world-governance.ts",
+        "packages/simulation/simulation/src/world-governance.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-snapshot-processes.json"
+      ],
+      "status": "verified"
+    },
+    "A18": {
+      "package": "A3",
+      "implementation": [
+        "packages/simulation/simulation-local/src/world-governance.ts",
+        "packages/simulation/simulation/src/world-governance.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-core.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-snapshot-processes.json"
+      ],
+      "status": "verified"
+    },
+    "A19": {
+      "package": "A3",
+      "implementation": [
+        "packages/simulation/simulation/src/world-norm-impact.ts",
+        "packages/client/ui-simulation/src/client/WorldNormImpact.tsx",
+        "apps/web/tests/world-post-mvp-governance.snapshot.ts"
+      ],
+      "evidence": [
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a19-browser.json",
+        ".agents/plans/2026-10-16-world-post-mvp/evidence/a3-core.json"
+      ],
+      "status": "verified"
+    }
+  },
+  "sharedVerification": {
+    "reusedBuildTypecheck": true,
+    "reusedLint": true,
+    "reusedGuiPassed": 5541,
+    "reusedPythonSdkPassed": 457,
+    "runtimeSourceRevalidation": "runtime-revalidation.json",
+    "f0PythonTestsPassed": 20,
+    "documentationGatesPassed": 29,
+    "longitudinalWarmRounds": 192,
+    "longitudinalSuccessfulProcesses": 12,
+    "longitudinalColdModelCalls": 0,
+    "threeInputDriftReceipts": []
+  },
+  "limitations": [
+    "Recurring payroll is explicitly unsupported; A14 permits this with the one-time-only contract.",
+    "Calendar events do not implicitly reserve room/equipment.",
+    "Laboratory cold scope is Native governance/norm replay; company and association include Team checkpoint restore.",
+    "Scripted keyless usage and sampled RSS are baseline measurements, not a B-stage optimization or live-provider cost claim."
+  ],
+  "artifacts": {
+    ".agents/plans/2026-10-16-world-post-mvp/checklist.md": "40891015a9845a393167afe0d73198a9f1ff6a5382f68eaadb322d72ab2e7053",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/final-validation.md": "bf210d063c3e02dda304aa5e8b161fe8842efb4e4441c9e6f54db0be01247ef1",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-completion-doc-sync.log": "76974b9b40711aa9a3c9df5128bf3bd7b6c23a91b09a19a77ed09b53a5f7b163",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-acceptance-tests.log": "a774207f7966d4df944adee1ebd7bf6375ee1502ba81532bcc0a72e5d81638eb",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-collection-final.log": "a44b0142747a598f2e2aa07e6e7f02c5ffc5c2690d9fbedb55473d1ee3802781",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/summary.json": "3e07dd83e7ceabaab38b63064fedebd75a8cfd5571ffb69ce1ce52be4a7bb6df",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/raw-copies.json": "8deff6f1013bc9986cf43b68683fd7b77429ffdd2f29579ce1253c5930f59ac4",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-longitudinal-collection/verification.json": "04bfc968b074f2712fa5ea9dea79855a4b377564a41b185aa75b8729ad682b8e",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/runtime-revalidation.json": "bebee6565768a0241a9a76fbc7ca22d0675b85557f8c4c15ccb1ef456c6f7998"
+  }
+}

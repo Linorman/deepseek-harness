@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-29-simulation-product-directory.md
-2026-09-29-simulation-product-directory.md: ba89879c50534ebdae2f4e435b4934080151f548
-2026-09-29-simulation-product-directory.zh.md: 99f574c2051b54573301da7852e2bd23c3208f60
+2026-09-29-simulation-product-directory.md: d72af08d7aab7f0e5c4916848abc313ce38b98c7
+2026-09-29-simulation-product-directory.zh.md: 14a19b37bc5afdc32ba073a50895022c614042e4

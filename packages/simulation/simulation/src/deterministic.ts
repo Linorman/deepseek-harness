@@ -1,7 +1,7 @@
 /** Versioned deterministic cognition policies and retained results. @module @clocky/clocky-simulation/deterministic */
 import { z } from 'zod'
 import type { Branded } from '@clocky/clocky-brand'
-import type { SimulationContextViewEventData } from '@clocky/clocky-session'
+import type { SimulationContextViewEventData } from '@clocky/clocky-session/types'
 import type { SimulationProposal } from './business-types.ts'
 
 /** Stable registered policy identity. */

@@ -1,0 +1,198 @@
+{
+  "date": "2026-10-12",
+  "timezone": "Asia/Tokyo",
+  "inputHash": "50c8d8a16aa656637ae1f844190c0e11b0ed43d4fffe07814151d1665cef3e8c",
+  "nativeStream": 61,
+  "scenarioVersion": "clocky.world/v0",
+  "driverVersion": "world/1",
+  "files": [
+    {
+      "path": ".agents/notes/proposed/feature/2026-10-08-world-director-mvp.md",
+      "sha256": "c33ba840be88baf2079e191bb282fa79935a3d3cc281ece39eeab1ffe026889c"
+    },
+    {
+      "path": ".agents/notes/proposed/feature/2026-10-08-world-director-mvp.zh.md",
+      "sha256": "6539765ae871efe681dbe1d9f7654d994e79c9e00ee86f8d6b6a28109aecde70"
+    },
+    {
+      "path": "docs/module-graph.md",
+      "sha256": "2cd75f14d163f04b5a5555de6ba9759ff1d37d1afdff11b6fa4abb8970d5d081"
+    },
+    {
+      "path": "docs/module-graph.zh.md",
+      "sha256": "6877af75a0c1c1c5503f5baf1c0088d63fb3bf9f4272d1f868666b5b1d948935"
+    },
+    {
+      "path": "docs/subsystems/simulation.md",
+      "sha256": "8102a974b7dfcf375239295889fa0471a8cf631050b8630c834a3e9cc5c9c9df"
+    },
+    {
+      "path": "docs/subsystems/simulation.zh.md",
+      "sha256": "d1d5b144e02e6b9276d7c97fce03617e7d27a56ffb4651f96834504af8bab5d7"
+    },
+    {
+      "path": "docs/tool-catalog.md",
+      "sha256": "0bca61d385f1b0c25b891bd3e89b6639a0ed010f7b0ec3049256a97181259a59"
+    },
+    {
+      "path": "docs/tool-catalog.zh.md",
+      "sha256": "b288b3c86eb8520672c6067eeec64d5734012573b5ae96b836839383874210f1"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-autonomous.snapshot.ts",
+      "sha256": "2075ae4d143b1b4ed1f33f8488b67331e3da71aa796c7d84596ccc4f4003fd08"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-driver-model.ts",
+      "sha256": "b74ef524e0194d33176952c2d7c33429788c754ad0cfdd9ce5924cb13d04d5a1"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-owner-scenario.ts",
+      "sha256": "ff4cf6de589a825904b4b85d18098dbdcf765a3e47e3cd887e6a2578b1c16843"
+    },
+    {
+      "path": "examples/simulation-company/tests/world-protocol-model.ts",
+      "sha256": "98fca47ad8271cc7e4f23375b95f452fa1dfaa91dbdc78a14e5f037552c21473"
+    },
+    {
+      "path": "packages/client/tsdown.client.ts",
+      "sha256": "99331d7153bcd66b011a5ebaf4a0b811d9a6e82388c7424f1a413f68eb8f092c"
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/locales.ts",
+      "sha256": "4ef65daa2b1aea471c8a2c252d09dfa10b08c678b5c30a635555d574892dbdce"
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/world/author/draft.ts",
+      "sha256": "363ed6f76c57e3aaf617f8b624ce68e184176b194c93c1533a40375fd0217221"
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/world/locales.ts",
+      "sha256": "da25f5a3c11f92e31d0ba9dca29facc007b21a959f8fe254dec0b6b528487ece"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/creation-preflight.client.spec.tsx",
+      "sha256": "0f768377e0b31017f8a0f1448156c786b4fac95aa1a90c23ef9e430621ce6aa5"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/needs-you.client.spec.tsx",
+      "sha256": "ca2f449ea4b087fb739f82fe6d0602efeec2518ff2d8ea1f3839108db43b7827"
+    },
+    {
+      "path": "packages/client/ui-simulation/tests/world-creation.client.spec.tsx",
+      "sha256": "352ebfcd09652277647be2bac88fd5e298edeee9b13f89da094db738121fe5b0"
+    },
+    {
+      "path": "packages/extensions/tool-cordis/src/api-catalog.ts",
+      "sha256": "34f2c6163a3a31760150813a4b61cf39ca9f33a84335b5bbbf6cac789f96b8a1"
+    },
+    {
+      "path": "packages/simulation/simulation-local/README.md",
+      "sha256": "da9e6f0290c1e98314a0f88878f5f480b1e844990856466818cbe61408b02afd"
+    },
+    {
+      "path": "packages/simulation/simulation-local/README.zh.md",
+      "sha256": "29ed42bec7f61d74d0f34e05653ffe51ad3658fd1cae92fec9f3a7b69ca5e6b1"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/decisions.ts",
+      "sha256": "f50b7d758538291c87140ae44c4e4eef5da1c3e9472249a3d3d95da4c18d423d"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/journal.ts",
+      "sha256": "a0bd3fe4dd2553c24da1a39d9abd6190ac591d974164c5241b9b3ab69802dd52"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world.ts",
+      "sha256": "72e2b090450278d71fc26c892b24542dedfacde1063f71672c9d04f047367c90"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/run.spec.ts",
+      "sha256": "c3ac26d587a66adf0c59245e8ab2886a5a4a5a0bdc46d8f3d4fa1b25ce4e3afe"
+    },
+    {
+      "path": "packages/simulation/simulation-team/tests/world.spec.ts",
+      "sha256": "3e875d3099860ae3d1ca1f366166975c38a40e735c5610c52562fa6c36449ab3"
+    },
+    {
+      "path": "packages/simulation/simulation-world/README.md",
+      "sha256": "6bece80b4e224b8755e23bf336d11613d1a7c5916ab2c98b43c267966c47a559"
+    },
+    {
+      "path": "packages/simulation/simulation-world/README.zh.md",
+      "sha256": "3cd1c2aa6d7c028594a8234bdd4626911cd7d2b526138101614064ed4a4f676f"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/driver.ts",
+      "sha256": "b881c4f0a9486829dbe4846ffec69911b51f0b1da08660edcaaa7658491ed9e0"
+    },
+    {
+      "path": "packages/simulation/simulation/README.md",
+      "sha256": "c1f56b63880078797e24e28d237b4565ecbe0a178a8552657b6a1710ee860500"
+    },
+    {
+      "path": "packages/simulation/simulation/README.zh.md",
+      "sha256": "6554e6205a7df9bff202da7c8c8fd016506b2724ee73bc0b5c96161d165d6414"
+    },
+    {
+      "path": "packages/simulation/simulation/package.json",
+      "sha256": "3b9bb724017c5ba4c43fac374c9cd4d05106fd97216e6061f1c156bc417f443b"
+    },
+    {
+      "path": "packages/simulation/simulation/src/business-types.ts",
+      "sha256": "ac131f5a1c413146026b3114715f302ffa13f59d4a53e2c8076032a8e319a643"
+    },
+    {
+      "path": "packages/simulation/simulation/src/index.ts",
+      "sha256": "499ce9f8837ff05b4416743d96ae7ca4338befd1ebea993a031c7dca4e110e97"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain-registry.ts",
+      "sha256": "76622bdd295ce23a83ff7739729908895e719413fe76182d7629900ef1e536a8"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain-types.ts",
+      "sha256": "8aa175872a85286cffe9fef3f4eb1b12c371e9122edef7ff3845e86941165900"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domain.ts",
+      "sha256": "d2e11ff1bb5c445b0b6a63d2c284e3d9682e487d7b2ebf0172b6b56da2430033"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-domains.ts",
+      "sha256": "8e4c7d82c4f44a8d14811ff409d8ec2b092ad0a08a64240a81a02c3cc4dda1b6"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-types.ts",
+      "sha256": "1a7dea7f4646c16cb6ee84060312ca223e88d85974de07b811cdab37af6a0d25"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world.ts",
+      "sha256": "a8d0b00451a6381790c8dcb9899da2119182a5f3aa7572870914121bd90c7332"
+    },
+    {
+      "path": "packages/simulation/simulation/tests/world-domain.spec.ts",
+      "sha256": "2db9b37e4a3e254942ee03628abede7f1afb75eb66646f21c684e64f7f2dee5e"
+    },
+    {
+      "path": "packages/simulation/simulation/tests/world.spec.ts",
+      "sha256": "59dd53b3838e3782a660a37281245674ecc48a37a1af73c22b8a625fe2694ea3"
+    },
+    {
+      "path": "packages/simulation/tool-simulation/README.md",
+      "sha256": "3ab66184db3b5ab8bf729d617a38d8742974d7638b323bcb9480d8e1b97c9d1d"
+    },
+    {
+      "path": "packages/simulation/tool-simulation/README.zh.md",
+      "sha256": "eda9d0871359f10b078a5aed9422f185ff3812491c59dfab3fcfd898992b442f"
+    },
+    {
+      "path": "packages/simulation/tool-simulation/src/schema.ts",
+      "sha256": "fa0e981c06f205c64700835b3a13a6a1ce9f4117a3deed0173c5309bd2e967e9"
+    },
+    {
+      "path": "scripts/client-bundle-purity.spec.ts",
+      "sha256": "fbd67ed867d9411445fee3133cc01945672344475aff746ca3e25d886f5ef7c9"
+    }
+  ]
+}

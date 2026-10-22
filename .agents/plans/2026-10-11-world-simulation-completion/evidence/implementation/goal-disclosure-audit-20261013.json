@@ -1,0 +1,800 @@
+{
+  "date": "2026-10-13 Asia/Tokyo",
+  "nativeVersion": 91,
+  "compilerVersion": 9,
+  "cases": [
+    {
+      "face": "src",
+      "backend": "json",
+      "scenario": "company",
+      "boundary": "cached",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scenario": "company",
+      "boundary": "pre-step",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scenario": "laboratory",
+      "boundary": "cached",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scenario": "laboratory",
+      "boundary": "pre-step",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scenario": "company",
+      "boundary": "cached",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scenario": "company",
+      "boundary": "pre-step",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "boundary": "cached",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "boundary": "pre-step",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scenario": "company",
+      "boundary": "cached",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scenario": "company",
+      "boundary": "pre-step",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scenario": "laboratory",
+      "boundary": "cached",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scenario": "laboratory",
+      "boundary": "pre-step",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scenario": "company",
+      "boundary": "cached",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scenario": "company",
+      "boundary": "pre-step",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "boundary": "cached",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0",
+      "modelCalls": 39,
+      "coldCalls": 0
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scenario": "laboratory",
+      "boundary": "pre-step",
+      "root": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj",
+      "modelCalls": 39,
+      "coldCalls": 0
+    }
+  ],
+  "processes": 32,
+  "modelCalls": 624,
+  "coldCalls": 0,
+  "artifacts": [
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP/process-cold.json",
+      "sha256": "99e0f0e25245d050136765c1600271be305a8953c8ec0e7150ed82dff0db015a",
+      "bytes": 838
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP/process-warm.json",
+      "sha256": "2246504e6908884f0b186e74429c7fa0dc254c60b2bfa1f44ca4874baf5abd8b",
+      "bytes": 841
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP/disclosure-cold.json",
+      "sha256": "51369c2d99ed13b1e0218cd0151d1212f2869e3ea5a3503e5ca2438fb11c9718",
+      "bytes": 1329836
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP/disclosure-warm.json",
+      "sha256": "b43ea6e0616522a9196ca1d36b53a6e0df474699b8e4321ed17cfad8b1f38bee",
+      "bytes": 4892376
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP/disclosure-original.json",
+      "sha256": "5cf198c99ee520791cd1c538bb8b9cc73f831d2c037d0b8379a8b0ace97026bf",
+      "bytes": 1329780
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP/disclosure-proof.json",
+      "sha256": "b4e0235ae9c42e9fd9a0bf07f312116cb2aa68b32abcce3747418f1059dea56c",
+      "bytes": 396117
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP/governance-proof.json",
+      "sha256": "396c7dc647dcd0f1a24ff71a9b89bbc8a5ab6672732b212c4ff886372dfbb8c9",
+      "bytes": 19610
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-cached-7uhYQP/complete.json",
+      "sha256": "eef3966fba71a6501cceca695a15a4cbb25e3e41889b67d28b1c9893662e45de",
+      "bytes": 203
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi/process-cold.json",
+      "sha256": "09c5ea59597ffccd6aa91f95da31845c380078674d45a1d64b80f5b2cc17c08e",
+      "bytes": 842
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi/process-warm.json",
+      "sha256": "66b09e9a9a1b3406f781484af4a7adfe7d303fe0fb70daa60c37891ee7bcca9d",
+      "bytes": 845
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi/disclosure-cold.json",
+      "sha256": "429ee22d0efa074993dd441af4fe9faf4960463ddee163ab3d5124ce9de930c8",
+      "bytes": 1331414
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi/disclosure-warm.json",
+      "sha256": "67997eb9a5cf1cbb106f98110ace64b9017be37c0a441d9e198e6fe920132f05",
+      "bytes": 4893954
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi/disclosure-original.json",
+      "sha256": "5aa262dd89c774957e699db8974e98a59863e7de29644f677843b45a80c051d3",
+      "bytes": 1331358
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi/disclosure-proof.json",
+      "sha256": "08743fb2171bde2a91e73d438ab242f6127518ddccf7b639660ad016b283d74b",
+      "bytes": 397572
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi/governance-proof.json",
+      "sha256": "6356a8bbe62c4f42c17b7839787fbb836d8fa55e9b58b3fa7cd7d797e5fd3196",
+      "bytes": 19610
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-company-pre-step-KdzBTi/complete.json",
+      "sha256": "4f2be5d4145205ba6d69ae866d1e5e69a3b3b4640857f65f68116d5b71e3aaa6",
+      "bytes": 207
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu/process-cold.json",
+      "sha256": "20a90799bad78cbc841c19f595e7e906fbd5b85f62d8fb3faca08ce14f38fe68",
+      "bytes": 844
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu/process-warm.json",
+      "sha256": "278f544a6f1684dd6dce9cdea563f23624826f1b49e46074d4fcb2c1de5397a0",
+      "bytes": 847
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu/disclosure-cold.json",
+      "sha256": "9bef7dfee508932fe4e289e7c3aef88c6f3dcd4a3af6dfc26870852399eaa3c9",
+      "bytes": 1332964
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu/disclosure-warm.json",
+      "sha256": "db1009bccb99bc31a29f042c660e39f4744433192c7e416cf0f43058d89c3173",
+      "bytes": 4899619
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu/disclosure-original.json",
+      "sha256": "95c0d27fc58b23dd39dd2cdb7a503c39fb413bfb0bf598180347ebcff3bba1ca",
+      "bytes": 1332908
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu/disclosure-proof.json",
+      "sha256": "ce112f6eedd91354786a88fd49315aa813d43e3d70ca9366b50f25034629b905",
+      "bytes": 396917
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu/governance-proof.json",
+      "sha256": "e1a5a22d872f12e598aa50dda4c63951a84445b47b7a1b3a3d419ceca6c1d997",
+      "bytes": 19627
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-cached-3VdIfu/complete.json",
+      "sha256": "90c28d3980b9c57dd415ab0fa577528e88b703c1194f9741c7ab4e3fabc379e1",
+      "bytes": 209
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv/process-cold.json",
+      "sha256": "db56543542499eb8f57e367f5f81fa5bb2a02bc721ec481e720c981137cd236b",
+      "bytes": 848
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv/process-warm.json",
+      "sha256": "88a10ea7949a62cda08fc332acaabca850d3e3229593ea1c6ab09776af4cf08c",
+      "bytes": 851
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv/disclosure-cold.json",
+      "sha256": "622979b69db31e2f5c702ad32eef4e7a0a2e03abf38af6a8c8f095086b27cfd3",
+      "bytes": 1334542
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv/disclosure-warm.json",
+      "sha256": "23b73bbd9de2c1eab6bf553dfa7883863937556b4a2af6b2930165e9c6e3ced1",
+      "bytes": 4901197
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv/disclosure-original.json",
+      "sha256": "cd076da27fa7636325d2c630d13a2af434413580adeb8c64525305d03c3e6890",
+      "bytes": 1334486
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv/disclosure-proof.json",
+      "sha256": "b5d7cb38975ca252e03653ff0ac804fcc2984e3beef7cdad4e0e590aa3bcbf41",
+      "bytes": 398372
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv/governance-proof.json",
+      "sha256": "86958ceba3725d7bba06fb6b9909b90bd8bd121c2844ed85a80d199a3ed4e2e0",
+      "bytes": 19627
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-json-laboratory-pre-step-Q2yumv/complete.json",
+      "sha256": "ecea89e010f5865839e32d8c41417c9dfa8d86e261f4f849c359e95218660efc",
+      "bytes": 213
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn/process-cold.json",
+      "sha256": "ddfa6fad311ce722a4d277da408d632bdc24358f639b2e3f9ae87a616f13b68e",
+      "bytes": 840
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn/process-warm.json",
+      "sha256": "2ceba5605339e3812780ad241027dca2c783e39373171678278be49cd8d516c7",
+      "bytes": 843
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn/disclosure-cold.json",
+      "sha256": "20b3bf1e3b62bba37d681d67405ac66eb33ef289e6ee961c851f7e3da14bebf8",
+      "bytes": 1329846
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn/disclosure-warm.json",
+      "sha256": "e67cdcb71860edb956068f3fd792bb9f69779e836499458368ac21b3a3fd5eab",
+      "bytes": 4892386
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn/disclosure-original.json",
+      "sha256": "5b0de7af2a1e71a30e7d1775dfd64e858b9e3a9322cd222e8832b8c392d45334",
+      "bytes": 1329790
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn/disclosure-proof.json",
+      "sha256": "c9de6556b5f3bf9df259672839e4951c92c652a015fc1eefe51ab753ee2582dc",
+      "bytes": 396119
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn/governance-proof.json",
+      "sha256": "974abdf250c976e025b4739c8287fba1db5b302f1c1def237c21100cc73682e0",
+      "bytes": 19610
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-cached-OEaoYn/complete.json",
+      "sha256": "7fa0ae5a0239fefe9b90bc07cd3e20075f6df18bb96583dc763966752ad719f5",
+      "bytes": 207
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO/process-cold.json",
+      "sha256": "79e59103024ec1691d035be4c8ef18ad752b98a2e23df77e1e2cf599f60408d9",
+      "bytes": 844
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO/process-warm.json",
+      "sha256": "34119f5319c6102c3c1a08df08471c6e03ff2c7e68880f25584d074ae0ee1638",
+      "bytes": 847
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO/disclosure-cold.json",
+      "sha256": "ea9ba9e6e001b20b207fd5c2094dd3bcb291489aca6aa5626dad215ebd5343ce",
+      "bytes": 1331424
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO/disclosure-warm.json",
+      "sha256": "0efd168f560dbc0c8ea919e2a8dc9f419064b13c8ebceb498e7b4b2ab7ff6e76",
+      "bytes": 4893964
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO/disclosure-original.json",
+      "sha256": "9013c08fca2857e4bf9479a0a867848b3fbcc03f8691dc70470dfc885b3114a1",
+      "bytes": 1331368
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO/disclosure-proof.json",
+      "sha256": "09dacedb35872d57d8253a5f03195a3bd7c854e3074bfb4418c4c1403d4e89eb",
+      "bytes": 397574
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO/governance-proof.json",
+      "sha256": "dbd521d974d86eed34512ab4c3d553535c12a1231575bbf5d5e5b853875dd2ae",
+      "bytes": 19610
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-company-pre-step-JpsADO/complete.json",
+      "sha256": "f22e99d9720de044531d6b674b1de21529918094b73456ba16873309a04b0ef1",
+      "bytes": 211
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial/process-cold.json",
+      "sha256": "f4aaad8775af736f846d050bc53841e0648b8871592851d080cf317e92251c44",
+      "bytes": 846
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial/process-warm.json",
+      "sha256": "6cb7b0b39373748976445b0d80881d61822f955a89028e4f4e4c26c2a71f4bfe",
+      "bytes": 849
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial/disclosure-cold.json",
+      "sha256": "ed1b690db945fbb167d3b67048fd04dee90dff4c66ed83af3b989659b9676d33",
+      "bytes": 1332974
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial/disclosure-warm.json",
+      "sha256": "a8174050570d8475957e143ab1cf6931ae9860c117eb9f131e03e1e89f89bd17",
+      "bytes": 4899629
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial/disclosure-original.json",
+      "sha256": "74a18a989f0fa87e3b9abfbbce8364aa5c695383a0932baf597261a868836df4",
+      "bytes": 1332918
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial/disclosure-proof.json",
+      "sha256": "f5a388a13d8b6e949b6a19f8a5f4714c75d6220d5809f0f246129d9a3d4645ff",
+      "bytes": 396919
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial/governance-proof.json",
+      "sha256": "297cbccde92e04e22dc4357edca242f1cc2e946c058e75eef55604528b5ffd93",
+      "bytes": 19627
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-cached-3gOial/complete.json",
+      "sha256": "6144395e94c9904e0f61f06f06f5f61d47edb844e51febed5978a329becce54f",
+      "bytes": 213
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG/process-cold.json",
+      "sha256": "7b686186d902d048f55ab6bf0608af62ba2f4daacc7f8fed0b88a30f2dd883d9",
+      "bytes": 850
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG/process-warm.json",
+      "sha256": "ebfffbd5911a877bf2e7ed8a1bbf888ccbfd03e663910d7345ea2db8cd3ea70b",
+      "bytes": 853
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG/disclosure-cold.json",
+      "sha256": "20451f9afae8474cb832e0eccb0550dc9a417c56dcbc15680af67da4efac59d4",
+      "bytes": 1334552
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG/disclosure-warm.json",
+      "sha256": "d99defac8f7f677c2366ae31e67a5eaa09b5936e4ca271fdd76bc43b9f440018",
+      "bytes": 4901207
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG/disclosure-original.json",
+      "sha256": "cf2204338b6b558189e923e9f238aa836b53741d19cd46a5cf575ba433107d4c",
+      "bytes": 1334496
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG/disclosure-proof.json",
+      "sha256": "f46f0cde643e1915d664b718dc09d89b3f1d3dd0469519fa71704e8d8cb7d2ad",
+      "bytes": 398374
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG/governance-proof.json",
+      "sha256": "3fc04def92afe2239a68beb6e2b409daa4adf0f1b7021fd365c5e34095fc7692",
+      "bytes": 19627
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/src-sqlite-laboratory-pre-step-jEIsAG/complete.json",
+      "sha256": "14bc3f5afd6f8b2c650b982659d6ffef025be296230375182f31149514115b3c",
+      "bytes": 217
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS/process-cold.json",
+      "sha256": "bd2773171fba5aebc23157e16fbfe2734c52ce6136638c04e11223753be59a05",
+      "bytes": 706
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS/process-warm.json",
+      "sha256": "dcfa4f28fb704ff512feaf78bd2590d3e4012338af94e008a4ae7bd4c2651a96",
+      "bytes": 709
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS/disclosure-cold.json",
+      "sha256": "bf39f341db2cf168c6e1c351e549d6b961a3a7c8f3e9ec3df0d51a07cee868c9",
+      "bytes": 1329836
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS/disclosure-warm.json",
+      "sha256": "24ea29dcfc8b0636bc1b89d3c8ea2900718d3654942b7b511e97e02c32ebfee0",
+      "bytes": 4892376
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS/disclosure-original.json",
+      "sha256": "37d1adcf9e027628c7cd95eaaee945943ee5f2bd9a9aafba48ca8700a97614f7",
+      "bytes": 1329780
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS/disclosure-proof.json",
+      "sha256": "6b0aaf528c01b15aab954966c4031da708f20aafeadfa4d46040ec55525f4c00",
+      "bytes": 396117
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS/governance-proof.json",
+      "sha256": "c0b869547d05808de989a697e2898ad558e56c19aa40d27e49dd82bb103c51f9",
+      "bytes": 19610
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-cached-iCavCS/complete.json",
+      "sha256": "a75fc2d51190961b4244877e073af7610c68825daeeb229e5816bf5505a5c3db",
+      "bytes": 203
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw/process-cold.json",
+      "sha256": "164795a440a16f1afc1ab2bd33435d81e65a5462cf07125006b5d29ad9326be5",
+      "bytes": 710
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw/process-warm.json",
+      "sha256": "8561131e3980d2a687f340a2af40384714d283024275537a6a66d5d1efae4231",
+      "bytes": 713
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw/disclosure-cold.json",
+      "sha256": "ce7f511a23bd416cc80a8e2cb68d8069a0d20bfa056306307e52a8699a2200fd",
+      "bytes": 1331414
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw/disclosure-warm.json",
+      "sha256": "dfbc3b90b4be3e53d4d2ab50d36bb59f820a5a044a763831d3f173d0cad33e61",
+      "bytes": 4893954
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw/disclosure-original.json",
+      "sha256": "d30e6d7fa8d999ddc8526a7c12f59c34b067b5ea97a889ed89ebbbf99dd535c5",
+      "bytes": 1331358
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw/disclosure-proof.json",
+      "sha256": "b116f05803e66452b4c79cd69f9df8932ee687c54e5f71af2db0f2a2aa161138",
+      "bytes": 397572
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw/governance-proof.json",
+      "sha256": "9cbb496100011f061d5358b10b44ad3e0dcd170fbbce407901c9a839e38891c7",
+      "bytes": 19610
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-company-pre-step-ePbEpw/complete.json",
+      "sha256": "191c6462cc0623bdae95227a0c7e7bea17b8a67fc567d6e72b82afe27c0705dc",
+      "bytes": 207
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ/process-cold.json",
+      "sha256": "6ac5b6a046e1014e5eb1923741b11d1fe72dfe6bb34fdf951f4e0a113d0ca49c",
+      "bytes": 712
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ/process-warm.json",
+      "sha256": "d65254b72e10c2f4846e8d10b41066faf2ba23e8b1529512932b838e5ed276e8",
+      "bytes": 715
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ/disclosure-cold.json",
+      "sha256": "aa995aec2583676465ffabcf42c39365f6f388e5d142fc3da380b072670edefe",
+      "bytes": 1332964
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ/disclosure-warm.json",
+      "sha256": "3e4ae386fbdf50a956ac0970cb1b7e0e80103cc36434c37e27f69ab825b13f5d",
+      "bytes": 4899619
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ/disclosure-original.json",
+      "sha256": "86b610456d7282ea8f615c180d00787cc544f6262e669bf1fbc4ddf0413303cf",
+      "bytes": 1332908
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ/disclosure-proof.json",
+      "sha256": "1ce160b92ff0dd1e8ee2c4795cc87b618e94dc01c7728bb068e4ed9b69ed36f3",
+      "bytes": 396917
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ/governance-proof.json",
+      "sha256": "9e5e49fa23171a4988f4179af3bb1d78bd773f6c35d10dbd3bfc346d59946c1f",
+      "bytes": 19627
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-cached-KpW8NJ/complete.json",
+      "sha256": "d8467ff7a4ad06024afbe910353113bc7d4ee87e70f7b2c4286d0331cc36be7c",
+      "bytes": 209
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW/process-cold.json",
+      "sha256": "6a7536e55161531216b42251a62ab9bc7385ac283b5a881ef51b9e344e38a1ae",
+      "bytes": 716
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW/process-warm.json",
+      "sha256": "c7ddc739c8e8147f5f19a65d432a40f41430f55bd3ae87a1b9f7cd36f3286ba2",
+      "bytes": 719
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW/disclosure-cold.json",
+      "sha256": "6c5ff10d599759d31a525969966f9cf525b1e3f7ce5b0c213e4784e75f2ae52b",
+      "bytes": 1334542
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW/disclosure-warm.json",
+      "sha256": "8ab0fd2fa43e1bb644ca0cf59cda17357620abac36a65d662497494b6952fe0c",
+      "bytes": 4901197
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW/disclosure-original.json",
+      "sha256": "fe2f708e3b9c481d322b45a4c1dd8645bb8c152d216481cbf0677ca36956c041",
+      "bytes": 1334486
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW/disclosure-proof.json",
+      "sha256": "a30d0bfe9557229d1551c6bc110a64cdde6979446d3f2e9b8e2930b59c066559",
+      "bytes": 398372
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW/governance-proof.json",
+      "sha256": "ff2a8007316c8c348fa45c5e99ad54418dfd920ccf9247848d63189092e13045",
+      "bytes": 19627
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-json-laboratory-pre-step-uMTcaW/complete.json",
+      "sha256": "6f2e833e25d3372f102dd14d42496944d253b703e1c2fd76e5e608b049c625f1",
+      "bytes": 213
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S/process-cold.json",
+      "sha256": "ea4b149b7acb2e7dc0f8c42e3a1e353d591cdb11aa4a39122057092eb62d7ffe",
+      "bytes": 708
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S/process-warm.json",
+      "sha256": "9eebce754e556cb4ea9127e8eb162f2826575fe82b185490a55b6ddcd967dc6c",
+      "bytes": 711
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S/disclosure-cold.json",
+      "sha256": "961881bf5c47d5bd298884b1d918371bc2273fc1b30ea27d4db274c6b543b58d",
+      "bytes": 1329846
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S/disclosure-warm.json",
+      "sha256": "aef70693d4d10ee50dd57b280f9412aaca882464c0a085ca05f91f037f9701ea",
+      "bytes": 4892386
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S/disclosure-original.json",
+      "sha256": "1f552e35013ed313fe0b4a7ffaf5eca8f6a189e36c7b4c731be85a8570bab743",
+      "bytes": 1329790
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S/disclosure-proof.json",
+      "sha256": "42ddb1cfce8631fdadc8940cdcdbd7f7d4196992f8c7d67a027537f3ab43f0ce",
+      "bytes": 396119
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S/governance-proof.json",
+      "sha256": "64a9c959dec76eb596b3dc417cdaa55990965fd5aa5247d17478be11ecb9ac5d",
+      "bytes": 19610
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-cached-EZpJ8S/complete.json",
+      "sha256": "affc4c1623c4f79e2153ab369edbed464a579c14e20207b035d6191ba23356b8",
+      "bytes": 207
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr/process-cold.json",
+      "sha256": "1860ccd7e79cba3bc7961dd4143ab95217a946cb6ccbc08a72c1581e5c9ffb39",
+      "bytes": 712
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr/process-warm.json",
+      "sha256": "9e1fccf8d4fbea7c5fd7f4370a847a2de12ba969b2dbba506688e9cd9fc911a2",
+      "bytes": 715
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr/disclosure-cold.json",
+      "sha256": "9abd86a055bec6db9332f795c93c9658abc1859cd0f57b71d83e78fabd0a0192",
+      "bytes": 1331424
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr/disclosure-warm.json",
+      "sha256": "e7e4d52f599c3efebfcd3c7081bbf6e6dcab2ab28c869422b13d041255331176",
+      "bytes": 4893964
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr/disclosure-original.json",
+      "sha256": "131a980bae3b291f3d49a57a35fb85b8ff7d226fc8def434744e4d05eb73c561",
+      "bytes": 1331368
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr/disclosure-proof.json",
+      "sha256": "bdad8cb3bc09d48b058f10f7b4ac2d8369fbf99b2e88ee6fa5163a2901192b42",
+      "bytes": 397574
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr/governance-proof.json",
+      "sha256": "566e0ab9d007f4d3d184c93064ebb32656272e6429cec87cd2f01744535a9b46",
+      "bytes": 19610
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-company-pre-step-Vj5cOr/complete.json",
+      "sha256": "b05ae0892cf0e40bfbe556798ade1e31532866ef2f3c9eca549a7d30f074aa9c",
+      "bytes": 211
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0/process-cold.json",
+      "sha256": "3b3b01e010f9ec29fba1b7ecb331ff256dba33909b81387c28e9b1d5c401c886",
+      "bytes": 714
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0/process-warm.json",
+      "sha256": "58c1265b8636fc1cad86b6cf0faef9acf420ad7a8fc6e79205c5ecff94076989",
+      "bytes": 717
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0/disclosure-cold.json",
+      "sha256": "8ed39fe65f4cd37746cff1c6f90adeb5f62e8eb760e7ce94d5d96d569031a630",
+      "bytes": 1332974
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0/disclosure-warm.json",
+      "sha256": "4fed84eecc6c3caeba379edd6fbcb8fe6f43400891ad12239e5e585e2395904d",
+      "bytes": 4899629
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0/disclosure-original.json",
+      "sha256": "aac123ef52c350aa046dc00c005240ab5a3fcd21254980695580e822d1c007e5",
+      "bytes": 1332918
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0/disclosure-proof.json",
+      "sha256": "73d406314f0e1eaef4ce191679142f4cf1dc1333d17750c0492810e64f39af46",
+      "bytes": 396919
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0/governance-proof.json",
+      "sha256": "29a362dd57771e531db2b52916aad08de9f56504b09618e8aeb8db2ed83230ef",
+      "bytes": 19627
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-cached-hagXq0/complete.json",
+      "sha256": "f0f812c4acc3682bf8a6532d68f4bc1ee51bad4df38e91bc9f9ba023a2f77e6b",
+      "bytes": 213
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj/process-cold.json",
+      "sha256": "e3f69ddc93b70e418ed1219aaa67351c82913d7a13a649c3dcae8aa40cdc6a91",
+      "bytes": 718
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj/process-warm.json",
+      "sha256": "db5e39bcde89828a1eeb5d99b3c35a94d6181b5a35a5d2fdd63b7233a815be0b",
+      "bytes": 721
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj/disclosure-cold.json",
+      "sha256": "4b76961e3bbb00570270934483caa64f7ebe2dae62fb4a4a4b31b1decc60a799",
+      "bytes": 1334552
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj/disclosure-warm.json",
+      "sha256": "c69e22964e3dd1b5e7da2c8bccf28dc109cb6afce1c8cbee4ff1f4a14494e114",
+      "bytes": 4901207
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj/disclosure-original.json",
+      "sha256": "c137a11f129f27f7c0b012b0f67aa69a2f98ce52611bb58fd003f941d1039593",
+      "bytes": 1334496
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj/disclosure-proof.json",
+      "sha256": "8f7d3aea31ad62065421301919627ac6c4df0dac82b0d994d10351dedf6f1962",
+      "bytes": 398374
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj/governance-proof.json",
+      "sha256": "356d5741a1062ddbf3152a27e0be4b3a56c617eee061c47076d6cc7f8e262b85",
+      "bytes": 19627
+    },
+    {
+      "path": ".local/world-completion/f07-goal-disclosure/loader/lib-sqlite-laboratory-pre-step-c4ToDj/complete.json",
+      "sha256": "2fb593831e75d1acdf2f27765bda96c18644633b319f6a9addcd2fd6446cb4bc",
+      "bytes": 217
+    }
+  ],
+  "inputs": 3332,
+  "inputBytes": 43601106,
+  "inputHash": "41be36a26000bea39ecfef477fde04ad169ca0e579c01b1e8c564831354ef575",
+  "scope": "Non-goal governance disclosure; earlier role/user evidence is separately linked in the checklist."
+}

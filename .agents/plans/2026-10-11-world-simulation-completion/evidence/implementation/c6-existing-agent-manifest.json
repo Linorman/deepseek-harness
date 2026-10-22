@@ -1,0 +1,64 @@
+{
+  "writtenAt": "2026-10-11T20:14:50.310674+00:00",
+  "scope": "O01 pure existing-person strict protocol and Native local module/fold tests only; root owns registry/driver/approval/SDK/real Loader composition. No existing file/checklist edits by this agent.",
+  "files": [
+    {
+      "path": "packages/simulation/simulation/src/world-hire-existing.ts",
+      "bytes": 2665,
+      "sha256": "f765b963eebf02d8a65b7188d504e9d4276555257bef51b775895042bba3cc96"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/world-hire-existing.ts",
+      "bytes": 19273,
+      "sha256": "cadefcad1c4b1174d1cb0a97e196d001db7924dde93f05debd68cea3bd9bf89c"
+    },
+    {
+      "path": "packages/simulation/simulation-local/tests/world-hire-existing.spec.ts",
+      "bytes": 22180,
+      "sha256": "8148205f7df4ccb08f652e18a97bacdac96b96f592f22d5c80d1e0216b25c9e7"
+    }
+  ],
+  "exports": [
+    "WORLD_HIRE_EXISTING_PIN",
+    "WORLD_HIRE_EXISTING_DEFINITION",
+    "simulationWorldHireExistingPayloadSchema",
+    "simulationWorldHireExistingPlanPayloadSchema",
+    "simulationWorldHireExistingMutationPayloadSchema",
+    "simulationWorldHireExistingCommittedResultPayloadSchema",
+    "simulationWorldHireExistingResultPayloadSchema",
+    "SimulationWorldHireExistingPayload",
+    "ExistingHireNativeWorldDomain"
+  ],
+  "verification": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation-local/tests/world-hire-existing.spec.ts",
+      "log": "c6-existing-unit.log",
+      "result": "16 passed"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec tsc -b tsconfig.host.json --pretty false",
+      "log": "c6-existing-types-final.log",
+      "result": "exit 0"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec oxlint packages/simulation/simulation/src/world-hire-existing.ts packages/simulation/simulation-local/src/world-hire-existing.ts packages/simulation/simulation-local/tests/world-hire-existing.spec.ts",
+      "log": "c6-existing-lint.log",
+      "result": "exit 0"
+    }
+  ],
+  "contracts": [
+    "Request/apply/mutation preserve exact organization, position, existing person and description; no Persona/binding/Session/Participant/requester injection accepted.",
+    "Person must be active, ready, cognition=agent, kind=person, bound to the confirmed canonical Team and have its original confirmed private candidate/director Channel. No repair, cloning or new Channel is performed.",
+    "Explicit live eligible-for-hire relation must have subject=person, object=organization and scope=organization; actual requester needs its current scoped can-hire operation grant and active canonical identity.",
+    "All current/future candidate assignments across every scope block employment; completed relation history remains untouched.",
+    "Open-ended target assignment checks peak simultaneous current/future occupancy plus every unconfirmed/cancel-requested generated-hire reservation.",
+    "Read-set covers candidate revision/binding fingerprint, eligibility/grants, candidate subject-assignment set and target assignments/reservations composite fingerprint; unrelated global revisions do not stale.",
+    "Commit is synchronous and revalidates all requirements plus current per-case approval; any globally unconfirmed generated-hire structural obligation blocks commit while preserving the request/plan.",
+    "Native fold creates only one deterministic assignment and result/mutation. All existing Entity/profile/cognition/binding objects are preserved.",
+    "Onboarding derives actual existing actor and original confirmed candidate/director Channel from original mutation/plan/result/binding-hash/assignment; it does not retry eligibility or new-grant checks after employment."
+  ],
+  "limits": [
+    "Root owns actual generic first-action wake atomic wiring and real Loader create/cold-restore composition evidence.",
+    "No offer/interview workflow, noncognitive upgrade, cross-employer forced hiring, monetary effect or identity/Channel preparation is supported."
+  ]
+}

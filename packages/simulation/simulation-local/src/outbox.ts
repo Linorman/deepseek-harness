@@ -1,3 +1,4 @@
+import { assertSimulationMaintenanceAdmission } from '@clocky/clocky-simulation'
 import { channelReceiptRecordSchema, channelDeliveryExpiredRecordSchema } from '@clocky/clocky-team'
 /** Durable technical attempts for exact, idempotent Team publication. @module @clocky/clocky-simulation-local/outbox */
 import { z } from 'zod'
@@ -183,6 +184,7 @@ export function foldOutboxRecord(state: SimulationSnapshot, record: OutboxRecord
     return unknownOutcome(state, operation)
   }
   if (record.kind === 'outbox/started') {
+    assertSimulationMaintenanceAdmission(state)
     if (state.phase !== 'running' || state.activeWindowId !== undefined || exhausted || record.number !== outbox.attempts.length + 1
       || outbox.nextAttemptAt !== undefined && record.at < outbox.nextAttemptAt) throw new Error('Simulation outbox attempt is not admissible')
     const next = { ...outbox, attempts: [...outbox.attempts, { number: record.number, startedAt: record.at, outcome: 'in-flight' as const }] }

@@ -34,6 +34,9 @@ export interface TeamViewState {
   taskDrafts: Record<string, TaskFormDraft>
   channelSearch: string
   channelDetails: boolean
+  /** Exact read-only Envelope deep link; every target is checked against the authenticated Channel page. */
+  channelEnvelope?: string | undefined
+  channelEnvelopeSequence?: number | undefined
 }
 
 /** Initial preferences for a Team without a retained view. */

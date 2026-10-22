@@ -1,6 +1,9 @@
 /** Native Simulation object identities without provider, Session or Cordis declarations. */
 import type { Branded } from '@clocky/clocky-brand'
 
+/** Stable run-local retry identity for a configured direct channel. */
+export type SimulationChannelKey = Branded<'SimulationChannelKey'>
+
 /** Durable entity identity within one run. */
 export type SimulationEntityId = Branded<'SimulationEntityId'>
 /** Stable business-decision identity within one run. */

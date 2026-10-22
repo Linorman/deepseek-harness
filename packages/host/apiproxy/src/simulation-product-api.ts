@@ -1,6 +1,26 @@
+import { simulationProductRawArchiveInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRunControlInputSchema } from '@clocky/clocky-simulation-product/schema'
+import {
+  simulationProductWorldBranchInputSchema,
+  simulationProductWorldBranchReadInputSchema,
+  simulationProductWorldCausalInputSchema,
+  simulationProductWorldCompareInputSchema,
+} from '@clocky/clocky-simulation-product/schema'
+import { simulationProductBackupExportInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRetentionPreviewInputSchema, simulationProductRetentionExecuteInputSchema, simulationProductRetentionReadInputSchema, simulationProductRetentionRecordsInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductGenerationRequestSchema, simulationProductGenerationReadSchema, simulationProductGenerationTransitionSchema, simulationProductGenerationPersonaDraftSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRebuildIndexInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCalendarCommandInputSchema, simulationProductCalendarCancelSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCalendarInputSchema, simulationProductCalendarSubmitSchema } from '@clocky/clocky-simulation-product/schema'
+import { scenarioDraftReadSchema, scenarioDraftSaveSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldManagementFieldsInputSchema, simulationProductWorldManagementDraftSchema, simulationProductWorldManagementSubmitInputSchema } from '@clocky/clocky-simulation-product/world-management-schema'
+import { simulationProductWorldDomainInputSchema } from '@clocky/clocky-simulation-product/world-read-schema'
+import { simulationProductWorldCasesInputSchema, simulationProductWorldCaseInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldCaseCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductTasksInputSchema, simulationProductTaskCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductRequestsInputSchema, simulationProductRetryRequestInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductPreflightInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldPreflightInputSchema, simulationProductWorldCreateInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductOperationRetryInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductRunStatusesInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductTaskReviewListInputSchema, simulationProductTaskReviewResolveInputSchema } from '@clocky/clocky-simulation-product/schema'
@@ -30,6 +50,8 @@ const codes = {
   SIMULATION_PRODUCT_FORBIDDEN: 'simulation-product-forbidden', SIMULATION_PRODUCT_INVALID: 'simulation-product-invalid',
   SIMULATION_PRODUCT_UNAVAILABLE: 'simulation-product-unavailable', SIMULATION_PRODUCT_STALE: 'simulation-product-stale',
   SIMULATION_PRODUCT_MODEL_CHANGED: 'simulation-product-model-changed',
+  SIMULATION_PRODUCT_PREFLIGHT_CHANGED: 'simulation-product-preflight-changed',
+  SIMULATION_PRODUCT_MANAGEMENT_PREVIEW_CHANGED: 'simulation-product-management-preview-changed',
 } as const satisfies Record<SimulationProductError['code'], string>
 
 /**
@@ -78,7 +100,41 @@ export function createSimulationProductApi(ctx: Context): SimulationsApi {
     operation: (service: SimulationAdministration, input: I, call: AuthenticatedProductCall) => Promise<O>) =>
     dispatch(request, parser, administration, operation)
   return {
+    readScenarioDraft: request => read(request, scenarioDraftReadSchema, (service, input, call) => service.readScenarioDraft(input, call)),
+    saveScenarioDraft: request => read(request, scenarioDraftSaveSchema, (service, input, call) => service.saveScenarioDraft(input, call)),
+    worldManagementFields: request => admin(request, simulationProductWorldManagementFieldsInputSchema,
+      (service, input, call) => service.worldManagementFields(input, call)),
+    retainWorldCalendar: request => admin(request, simulationProductCalendarSubmitSchema,
+      (service, input, call) => service.retainWorldCalendar(input, call)),
+    readWorldCalendarCommand: request => admin(request, simulationProductCalendarCommandInputSchema,
+      (service, input, call) => service.readWorldCalendarCommand(input, call)),
+    cancelWorldCalendar: request => admin(request, simulationProductCalendarCancelSchema,
+      (service, input, call) => service.cancelWorldCalendar(input, call)),
+    previewWorldCalendar: request => admin(request, simulationProductCalendarInputSchema,
+      (service, input, call) => service.previewWorldCalendar(input, call)),
+    submitWorldCalendar: request => admin(request, simulationProductCalendarSubmitSchema,
+      (service, input, call) => service.submitWorldCalendar(input, call)),
+    previewWorldManagement: request => admin(request, simulationProductWorldManagementDraftSchema,
+      (service, input, call) => service.previewWorldManagement(input, call)),
+    submitWorldManagement: request => admin(request, simulationProductWorldManagementSubmitInputSchema,
+      (service, input, call) => service.submitWorldManagement(input, call)),
+    preflightWorld: request => admin(request, simulationProductWorldPreflightInputSchema,
+      (service, input, call) => service.preflightWorld(input, call)),
+    createWorld: request => admin(request, simulationProductWorldCreateInputSchema,
+      (service, input, call) => service.createWorld(input, call)),
+    prepareWorld: request => admin(request, simulationProductPrepareInputSchema,
+      (service, input, call) => service.prepareWorld(input, call)),
+    exportWorldDefinition: request => admin(request, simulationProductControlInputSchema,
+      (service, input, call) => service.exportWorldDefinition(input, call)),
     listTasks: request => admin(request, simulationProductTasksInputSchema, (service, input, call) => service.listTasks(input, call)),
+    readWorldDomain: request => read(request, simulationProductWorldDomainInputSchema,
+      (service, input, call) => service.readWorldDomain(input, call)),
+    listWorldCases: request => read(request, simulationProductWorldCasesInputSchema,
+      (service, input, call) => service.listWorldCases(input, call)),
+    inspectWorldCase: request => read(request, simulationProductWorldCaseInputSchema,
+      (service, input, call) => service.inspectWorldCase(input, call)),
+    cancelWorldCase: request => admin(request, simulationProductWorldCaseCancelInputSchema,
+      (service, input, call) => service.cancelWorldCase(input, call)),
     cancelTask: request => admin(request, simulationProductTaskCancelInputSchema,
       (service, input, call) => service.cancelTask(input, call)),
     retryOperation: request => admin(request, simulationProductOperationRetryInputSchema,
@@ -92,6 +148,8 @@ export function createSimulationProductApi(ctx: Context): SimulationsApi {
       (service, input, call) => service.resolveTaskReview(input, call)),
     inspectSource: request => read(request, simulationProductSourceInputSchema,
       (products, input, call) => products.inspectSource(input, call)),
+    archiveRaw: request => read(request, simulationProductRawArchiveInputSchema,
+      (products, input, call) => products.archiveRaw(input, call)),
     records: request => read(request, simulationProductRecordsInputSchema, (products, input, call) => products.readRecords(input, call)),
     watch: request => read(request, simulationProductWatchInputSchema, (products, input, call) => products.watch(input, call)),
     checkpoint: request => admin(request, simulationProductCheckpointInputSchema,
@@ -101,6 +159,8 @@ export function createSimulationProductApi(ctx: Context): SimulationsApi {
     ingressRequest: request => admin(request, simulationProductIngressQuerySchema,
       (service, input, call) => service.ingressRequest(input, call)),
     control: request => admin(request, simulationProductControlInputSchema, (service, input, call) => service.control(input, call)),
+    updateRunControl: request => admin(request, simulationProductRunControlInputSchema,
+      (service, input, call) => service.updateRunControl(input, call)),
     manage: request => admin(request, simulationProductManageInputSchema, (service, input, call) => service.manage(input, call)),
     managementRequest: request => admin(request, simulationProductManagementInputSchema,
       (service, input, call) => service.managementRequest(input, call)),
@@ -116,6 +176,36 @@ export function createSimulationProductApi(ctx: Context): SimulationsApi {
     request: request => admin(request, simulationProductRequestInputSchema, (service, input, call) => service.request(input, call)),
     list: request => read(request, simulationProductListInputSchema, (products, input, call) => products.list(input, call)),
     inspect: request => read(request, simulationProductInspectInputSchema, (products, input, call) => products.inspect(input, call)),
+    branchWorld: request => admin(request, simulationProductWorldBranchInputSchema,
+      (service, input, call) => service.branchWorld(input, call)),
+    readWorldBranch: request => admin(request, simulationProductWorldBranchReadInputSchema,
+      (service, input, call) => service.readWorldBranch(input, call)),
+    queryWorldCausal: request => admin(request, simulationProductWorldCausalInputSchema,
+      (service, input, call) => service.queryWorldCausal(input, call)),
+    compareWorlds: request => admin(request, simulationProductWorldCompareInputSchema,
+      (service, input, call) => service.compareWorlds(input, call)),
+    backupExport: request => admin(request, simulationProductBackupExportInputSchema,
+      (service, input, call) => service.backupExport(input, call)),
+    retentionPreview: request => admin(request, simulationProductRetentionPreviewInputSchema,
+      (service, input, call) => service.retentionPreview(input, call)),
+    retentionExecute: request => admin(request, simulationProductRetentionExecuteInputSchema,
+      (service, input, call) => service.retentionExecute(input, call)),
+    retentionRead: request => admin(request, simulationProductRetentionReadInputSchema,
+      (service, input, call) => service.retentionRead(input, call)),
+    retentionRecords: request => admin(request, simulationProductRetentionRecordsInputSchema,
+      (service, input, call) => service.retentionRecords(input, call)),
+    generationRequest: request => admin(request, simulationProductGenerationRequestSchema,
+      (service, input, call) => service.generationRequest(input, call)),
+    generationRead: request => admin(request, simulationProductGenerationReadSchema,
+      (service, input, call) => service.generationRead(input, call)),
+    generationExecute: request => admin(request, simulationProductGenerationReadSchema,
+      (service, input, call) => service.generationExecute(input, call)),
+    generationTransition: request => admin(request, simulationProductGenerationTransitionSchema,
+      (service, input, call) => service.generationTransition(input, call)),
+    generationPersonaDraft: request => admin(request, simulationProductGenerationPersonaDraftSchema,
+      (service, input, call) => service.generationPersonaDraft(input, call)),
+    rebuildIndex: request => read(request, simulationProductRebuildIndexInputSchema,
+      (products, input, call) => products.rebuildIndex(input, call)),
     browse: request => read(request, simulationProductBrowseInputSchema, (products, input, call) => products.browse(input, call)),
     inspectObject: request => read(request, simulationProductObjectInputSchema,
       (products, input, call) => products.inspectObject(input, call)),

@@ -49,9 +49,11 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     }
     await route.continue()
   })
+  let lostQuery = true
   await page.route('**/api/simulation.requests.get', async (route) => {
     queries.push((route.request().postDataJSON() as { payload: { commandId: string } }).payload)
-    await route.fetch(); await route.abort('failed')
+    if (!lostQuery) { await route.continue(); return }
+    lostQuery = false; await route.fetch(); await route.abort('failed')
   })
   try {
     await scaffold.authenticateBrowserPage(page)
@@ -124,13 +126,16 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     expect(creates).toHaveLength(1)
     await dialog.getByRole('button', { name: '查询原结果', exact: true }).click()
     await expect.poll(() => queries.length).toBe(1)
-    await expect.poll(async () => await dialog.getByRole('button', { name: '重试原操作', exact: true }).isEnabled()).toBe(true)
+    // Lookup first: a lost query proves nothing, so retry stays withheld until a query reads the original receipt.
+    const retry = dialog.getByRole('button', { name: '重试原操作', exact: true })
+    expect(await retry.count() === 0 || await retry.isDisabled()).toBe(true)
     expect(queries[0]?.commandId).toBe(creates[0]?.commandId)
     await dialog.getByRole('button', { name: '关闭并保留输入', exact: true }).last().click()
     await workspace.locator('header').getByRole('button', { name: '新建仿真', exact: true }).click()
-    await dialog.getByRole('button', { name: '重试原操作', exact: true }).click()
+    await dialog.getByRole('button', { name: '查询原结果', exact: true }).click()
     await dialog.getByRole('button', { name: '打开已登记运行', exact: true }).waitFor()
-    expect(creates).toHaveLength(2); expect(creates[1]).toEqual(creates[0])
+    expect(queries).toHaveLength(2); expect(queries[1]).toEqual(queries[0])
+    expect(creates).toHaveLength(1)
     expect(probe.requests).toEqual([])
     expect(probe.run?.snapshot()).toMatchObject({ phase: 'paused', time: '0' })
     expect(probe.run?.snapshot().spec).toMatchObject({ maxEntities: 8, maxResidentActors: 2,
@@ -146,12 +151,12 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     await workspace.getByRole('button', { name: /^(开始|继续)调度$/, exact: true }).click()
     const start = page.getByRole('dialog', { name: /^(开始|继续)调度$/, exact: true })
     await start.getByText('company/scripted', { exact: true }).waitFor()
-    await start.getByText('主机共享模型并发上限', { exact: true }).waitFor()
+    await expect.poll(async () => await start.locator('[data-budget-group="host"]').textContent()).toContain('主机共享模型上限')
     await page.screenshot({ path: join(root, '02-start-budget-desktop.png'), animations: 'disabled' })
     await start.getByRole('button', { name: /^(开始|继续)调度$/, exact: true }).click()
     await expect.poll(() => probe.entered).toBe(true)
     await workspace.getByRole('button', { name: '暂停调度', exact: true }).click()
-    await workspace.getByText('仍有工作收尾', { exact: true }).waitFor()
+    await workspace.getByText('仍有工作收尾', { exact: true }).locator('visible=true').first().waitFor()
     await expect.poll(() => probe.run?.snapshot().phase).toBe('paused')
     const pausedMetrics = simulationRuntimeMetrics(probe.run!.snapshot(), 'this-provider')
     await workspace.getByRole('button', { name: '刷新', exact: true }).click()
@@ -164,12 +169,15 @@ it.each([['json', false], ['sqlite', false], ['json', true], ['sqlite', true]] a
     await expect.poll(async () => await nativeMetrics.getByText('正在处理的模型请求／上限', { exact: true }).evaluate(node =>
       node.nextElementSibling?.textContent)).toBe(`${pool.active} / ${pool.limit}`)
     const headerStatus = workspace.getByRole('region', { name: '当前仿真状态', exact: true })
-    await headerStatus.getByText('已暂停', { exact: true }).waitFor()
-    await headerStatus.getByText('仍有工作收尾', { exact: true }).waitFor()
-    for (const module of ['实体', '决策', '操作', '检查点', '记录', '概览']) {
+    // The chip names the synthesized state; the raw Host phase is in the run details beside it.
+    await headerStatus.locator('details').evaluateAll((elements) => { for (const element of elements) (element as HTMLDetailsElement).open = true })
+    await headerStatus.getByText('已暂停', { exact: true }).first().waitFor()
+    await expect.poll(async () => await headerStatus.textContent()).toContain('仍有工作收尾')
+    for (const module of ['实体', '决策', '操作', '检查点', '历史', '概览']) {
       await workspace.getByRole('navigation', { name: '仿真模块' }).getByRole('button', { name: module, exact: true }).click()
-      await headerStatus.getByText('仍有工作收尾', { exact: true }).waitFor()
-      expect(await workspace.getByRole('button', { name: '暂停调度', exact: true }).count()).toBe(1)
+      await expect.poll(async () => await headerStatus.textContent()).toContain('仍有工作收尾')
+      // Pause is never offered again once the Host phase is paused, even while admitted work drains.
+      expect(await workspace.getByRole('button', { name: '暂停调度', exact: true }).count()).toBe(0)
     }
     expect(scaffold.ctx.simulationTeams.modelUsage().active).toBe(1)
     probe.release()

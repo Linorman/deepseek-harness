@@ -1,0 +1,5 @@
+{
+  "sha256": "296ea8773263bff96cad15395225fecebe4930c3d6d4d7dcac7d4f41d5d5981c",
+  "files": 1130,
+  "timing": "after final build and final source fixture wrapping; runtime lib bytes unchanged"
+}

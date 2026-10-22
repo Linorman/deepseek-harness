@@ -1,0 +1,8 @@
+packages/simulation/simulation/src/world-domains.ts:31:1: error @stylistic(max-len): This line has a length of 152. Maximum allowed is 140.
+packages/simulation/simulation-world/src/execution.ts:54:75: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-world/src/execution.ts:88:1: error @stylistic(max-len): This line has a length of 142. Maximum allowed is 140.
+packages/simulation/simulation-world/tests/execution.spec.ts:75:36: error typescript(use-unknown-in-catch-callback-variable): Prefer the safe `: unknown` for a `catch` callback variable.
+packages/simulation/simulation-world/tests/execution.spec.ts:75:62: error typescript(no-unsafe-return): Unsafe return of a value of type `any`.
+packages/simulation/simulation-world/tests/execution.spec.ts:87:4: warning: Unused oxlint-disable directive (no problems were reported).
+packages/simulation/simulation-world/tests/execution.spec.ts:102:4: warning: Unused oxlint-disable directive (no problems were reported).
+packages/simulation/simulation-world/src/driver.ts:40:5: warning: Unused oxlint-disable directive (no problems were reported).

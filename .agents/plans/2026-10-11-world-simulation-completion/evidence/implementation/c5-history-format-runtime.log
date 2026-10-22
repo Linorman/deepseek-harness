@@ -1,0 +1,9 @@
+
+  .local/world-completion/tmp/history-runtime-before-format.js  21.8kb
+
+⚡ Done in 4ms
+
+  .local/world-completion/tmp/history-runtime-after-format.js  21.8kb
+
+⚡ Done in 2ms
+Type-annotation formatting leaves minified emitted JavaScript byte-identical. sha256:714d32336ae38ed0c7c33cd9267afd20429fa23ffb541d75719e8380a50f48c4

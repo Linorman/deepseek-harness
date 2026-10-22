@@ -1,5 +1,166 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`json company product driver > executes mode=automatic-residency 1`] = `
+{
+  "acceptedStages": [
+    "request",
+    "accept",
+    "transfer",
+    "result",
+    "report",
+  ],
+  "boundedBatches": true,
+  "cancelledDecisions": 0,
+  "commitment": "fulfilled",
+  "completedRetryWithoutInference": true,
+  "deliveries": 2,
+  "interaction": "completed",
+  "privateProfileWithheld": true,
+  "quantities": [
+    "1",
+    "1",
+  ],
+  "requests": [
+    {
+      "goal": "Request purchase from supplier: one stock item to received, then post the request to supplier with that request as dependency.",
+      "stage": "request",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Request purchase from supplier: one stock item to received, then post the request to supplier with that request as dependency.",
+      "stage": "request",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Request purchase from supplier: one stock item to received, then post the request to supplier with that request as dependency.",
+      "stage": "request",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Accept purchase at its current interaction revision. Submit only that acceptance.",
+      "stage": "accept",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Accept purchase at its current interaction revision. Submit only that acceptance.",
+      "stage": "accept",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Accept purchase at its current interaction revision. Submit only that acceptance.",
+      "stage": "accept",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Transfer one stock item to received for the accepted commitment, using the supplied resource revisions. Submit only the transfer.",
+      "stage": "transfer",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Transfer one stock item to received for the accepted commitment, using the supplied resource revisions. Submit only the transfer.",
+      "stage": "transfer",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Transfer one stock item to received for the accepted commitment, using the supplied resource revisions. Submit only the transfer.",
+      "stage": "transfer",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Record purchase result with the applied transfer as evidence, then post its evidenced result to buyer depending on that result.",
+      "stage": "result",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Record purchase result with the applied transfer as evidence, then post its evidenced result to buyer depending on that result.",
+      "stage": "result",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Record purchase result with the applied transfer as evidence, then post its evidenced result to buyer depending on that result.",
+      "stage": "result",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Inspect the delivered purchase evidence. Submit an empty proposal list to acknowledge this report.",
+      "stage": "report",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Inspect the delivered purchase evidence. Submit an empty proposal list to acknowledge this report.",
+      "stage": "report",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Inspect the delivered purchase evidence. Submit an empty proposal list to acknowledge this report.",
+      "stage": "report",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+  ],
+  "time": "6",
+}
+`;
+
 exports[`json company product driver > executes mode=normal 1`] = `
 {
   "acceptedStages": [
@@ -638,6 +799,167 @@ exports[`json company product driver > executes mode=transfer-applied 1`] = `
     "1",
   ],
   "requests": [
+    {
+      "goal": "Record purchase result with the applied transfer as evidence, then post its evidenced result to buyer depending on that result.",
+      "stage": "result",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Record purchase result with the applied transfer as evidence, then post its evidenced result to buyer depending on that result.",
+      "stage": "result",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Record purchase result with the applied transfer as evidence, then post its evidenced result to buyer depending on that result.",
+      "stage": "result",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Inspect the delivered purchase evidence. Submit an empty proposal list to acknowledge this report.",
+      "stage": "report",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Inspect the delivered purchase evidence. Submit an empty proposal list to acknowledge this report.",
+      "stage": "report",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Inspect the delivered purchase evidence. Submit an empty proposal list to acknowledge this report.",
+      "stage": "report",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+  ],
+  "time": "6",
+}
+`;
+
+exports[`sqlite company product driver > executes mode=automatic-residency 1`] = `
+{
+  "acceptedStages": [
+    "request",
+    "accept",
+    "transfer",
+    "result",
+    "report",
+  ],
+  "boundedBatches": true,
+  "cancelledDecisions": 0,
+  "commitment": "fulfilled",
+  "completedRetryWithoutInference": true,
+  "deliveries": 2,
+  "interaction": "completed",
+  "privateProfileWithheld": true,
+  "quantities": [
+    "1",
+    "1",
+  ],
+  "requests": [
+    {
+      "goal": "Request purchase from supplier: one stock item to received, then post the request to supplier with that request as dependency.",
+      "stage": "request",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Request purchase from supplier: one stock item to received, then post the request to supplier with that request as dependency.",
+      "stage": "request",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Request purchase from supplier: one stock item to received, then post the request to supplier with that request as dependency.",
+      "stage": "request",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Accept purchase at its current interaction revision. Submit only that acceptance.",
+      "stage": "accept",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Accept purchase at its current interaction revision. Submit only that acceptance.",
+      "stage": "accept",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Accept purchase at its current interaction revision. Submit only that acceptance.",
+      "stage": "accept",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Transfer one stock item to received for the accepted commitment, using the supplied resource revisions. Submit only the transfer.",
+      "stage": "transfer",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Transfer one stock item to received for the accepted commitment, using the supplied resource revisions. Submit only the transfer.",
+      "stage": "transfer",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
+    {
+      "goal": "Transfer one stock item to received for the accepted commitment, using the supplied resource revisions. Submit only the transfer.",
+      "stage": "transfer",
+      "tools": [
+        "simulation_observe",
+        "simulation_stage",
+        "simulation_submit",
+      ],
+    },
     {
       "goal": "Record purchase result with the applied transfer as evidence, then post its evidenced result to buyer depending on that result.",
       "stage": "result",

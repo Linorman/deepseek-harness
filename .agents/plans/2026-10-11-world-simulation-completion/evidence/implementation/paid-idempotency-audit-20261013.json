@@ -1,0 +1,125 @@
+{
+  "sourceHash": "5e8eef5696be0917f308b76c907f25947dcdfc31a9e76c641fff5daa8d1025c0",
+  "samples": [
+    {
+      "directory": ".local/world-completion/thread-01a1336a-idempotency/runs/json-KZx63m",
+      "backend": "json",
+      "commitSequence": 53,
+      "beforeRevision": 56,
+      "reopenedRevision": 66,
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/json-KZx63m/committed.json",
+          "sha256": "a2e82676d5667d6c7b694ca3e7036d9d6f0ecae5c987e681c3867c15cd3ac7c3"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/json-KZx63m/reopened.json",
+          "sha256": "ac28863574ae09f4852761f87f673f35e825c61df5a0beb884c165c0f3a3154c"
+        }
+      ]
+    },
+    {
+      "directory": ".local/world-completion/thread-01a1336a-idempotency/runs/json-wWW08B",
+      "backend": "json",
+      "commitSequence": 53,
+      "beforeRevision": 56,
+      "reopenedRevision": 66,
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/json-wWW08B/committed.json",
+          "sha256": "b577e7c9ae4ccaed7c40a8128dcd7943ac8b959f532bab45a8c277bca688af7e"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/json-wWW08B/reopened.json",
+          "sha256": "d8a6b568dab8daab66f98c51ad7ae26bee73809f371369972a1ac719438d45c8"
+        }
+      ]
+    },
+    {
+      "directory": ".local/world-completion/thread-01a1336a-idempotency/runs/json-wbCaeN",
+      "backend": "json",
+      "commitSequence": 53,
+      "beforeRevision": 56,
+      "reopenedRevision": 66,
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/json-wbCaeN/committed.json",
+          "sha256": "93b9ec8a7a288178fc9e0f5e25899275123a952549aa9a4802496ef866ca0d5b"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/json-wbCaeN/reopened.json",
+          "sha256": "c938a558ecb98b2060ccaf21c5d535a3d3bd985d7e5b90cf52be3a3ac2926040"
+        }
+      ]
+    },
+    {
+      "directory": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-COT80F",
+      "backend": "sqlite",
+      "commitSequence": 53,
+      "beforeRevision": 56,
+      "reopenedRevision": 66,
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-COT80F/committed.json",
+          "sha256": "ed089284ed04bd2ebb5d2f9762431877663f5245f4e5f0a7abf822e5d76837df"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-COT80F/reopened.json",
+          "sha256": "4b837769b935daddf3a1314895ce67b72a6356577db8cf7358a5431dc7b638c7"
+        }
+      ]
+    },
+    {
+      "directory": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-G3tlxl",
+      "backend": "sqlite",
+      "commitSequence": 53,
+      "beforeRevision": 56,
+      "reopenedRevision": 66,
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-G3tlxl/committed.json",
+          "sha256": "fedafab5c9ab1487d347763031038f0ceb6ba424cfa1d97fee6d2769907f46fb"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-G3tlxl/reopened.json",
+          "sha256": "ed5602e319460f1eb1e83983916a27ba87b7312a43227afba1c03118bee7ffff"
+        }
+      ]
+    },
+    {
+      "directory": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-UIUi8J",
+      "backend": "sqlite",
+      "commitSequence": 53,
+      "beforeRevision": 56,
+      "reopenedRevision": 66,
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-UIUi8J/committed.json",
+          "sha256": "a57645f44faf1253c15da11f8b3816a158fd45b09d964560a2488fd469e05764"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-UIUi8J/reopened.json",
+          "sha256": "79b43eabead27acd9a70ae36853aae8e63a772cd0de78be8c9ac06fcefbac08f"
+        }
+      ]
+    },
+    {
+      "directory": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-yCSf5s",
+      "backend": "sqlite",
+      "commitSequence": 53,
+      "beforeRevision": 56,
+      "reopenedRevision": 66,
+      "files": [
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-yCSf5s/committed.json",
+          "sha256": "a2801925e83571370ae54e185176a8f13b52acc4816ef06434d3fadfe3099fe3"
+        },
+        {
+          "path": ".local/world-completion/thread-01a1336a-idempotency/runs/sqlite-yCSf5s/reopened.json",
+          "sha256": "bab5aa62b75839929b3e734f270325b8e7d7b4d342e08b2cc50113ba21c25ea3"
+        }
+      ]
+    }
+  ],
+  "scope": "All retained successful same-process Native handle-reopen samples, including pilots; no separate process or compiled SDK claim"
+}

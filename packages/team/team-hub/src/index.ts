@@ -1,4 +1,7 @@
+import { captureLogArchive } from '@clocky/clocky-storage'
 import { sameUsageChargeProvenance } from './usage-provenance.ts'
+import { teamActivationHistoryLimitDetailsSchema } from '@clocky/clocky-team'
+import { fingerprintTeamEnvelopeDraft, teamEnvelopeByteLimitDetailsSchema } from '@clocky/clocky-team'
 import { deepFreeze as freeze } from '@clocky/clocky-llm'
 import { withTeamOperationTimeout } from '@clocky/clocky-team'
 import { teamSimulationTaskAssignInputSchema, teamSimulationTaskStartInputSchema, teamSimulationTaskSettleInputSchema } from '@clocky/clocky-team'
@@ -8,6 +11,7 @@ import { teamTaskUpdateLookupInputSchema, teamTaskUpdateLookupSchema, teamTaskDe
 import { resolveTaskReferences } from '@clocky/clocky-team/selection'
 import { teamTaskReferencesInputSchema, teamTaskReferencesPageSchema, type TeamTaskReferencesInput, type TeamTaskReferencesPage } from '@clocky/clocky-team'
 import { resolveTeamIdentities } from '@clocky/clocky-team/selection'
+import { teamLimitsSchema, type TeamLimits } from '@clocky/clocky-team'
 import { projectTeamAttention } from '@clocky/clocky-team/selection'
 import { humanActionHandling } from '@clocky/clocky-team/selection'
 import { teamActionInspectInputSchema, teamActionInspectionSchema, type TeamActionInspectRequest, type TeamActionInspection } from '@clocky/clocky-team'
@@ -76,7 +80,9 @@ import { isDeepStrictEqual } from 'node:util'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
 import { teamWorkspaceAllocationLossInputSchema } from '@clocky/clocky-team'
-import type { TeamWorkspaceAllocationLossRequest } from '@clocky/clocky-team'
+import type { TeamWorkspaceAllocationLossRequest, TeamPersonnelSettlementCutRequest,
+  TeamPersonnelSettlementCutSources, SimulationPersonnelSettlementCutScope, TeamSystemMaintenanceProof } from '@clocky/clocky-team'
+import { simulationPersonnelSettlementCutScopeSchema } from '@clocky/clocky-team'
 import { teamTaskExecutionSchema, teamDelegationIdSchema } from '@clocky/clocky-team'
 import type { TeamTaskExecution } from '@clocky/clocky-team'
 import { taskHasActiveExecution, taskHasSharedWriteConflict, taskConcurrencyUsage, taskChildTeamReservation } from '@clocky/clocky-team'
@@ -808,7 +814,7 @@ interface ChannelLifecycleAuthority {
   /** Immutable JSON-only closure input derived from the initial source scope. */
   readonly input: ChannelCloseInput
   /** Re-resolve the proof and return its exact lifecycle scope before a WAL append. */
-  revalidate(): Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-close' }>
+  revalidate(): Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-close' | 'simulation-channel-close' }>
 }
 
 /** Generic channel-open authority retained through one Team lock and WAL attachment interval. */
@@ -892,6 +898,7 @@ function rootCreationInput(scope: TeamSystemRootCreationProofResolution['scope']
     goal: structuredClone(scope.goal),
     rules: structuredClone(scope.rules),
     budgets: structuredClone(scope.budgets),
+    ...(scope.limits === undefined ? {} : { limits: structuredClone(scope.limits) }),
     ...(scope.authorityGrant === undefined ? {} : { authorityGrant: structuredClone(scope.authorityGrant) }),
   }
 }
@@ -910,6 +917,7 @@ function childCreationInput(scope: TeamSystemChildCreationProofResolution['scope
     goal: structuredClone(scope.goal),
     rules: structuredClone(scope.rules),
     budgets: structuredClone(scope.budgets),
+    ...(scope.limits === undefined ? {} : { limits: structuredClone(scope.limits) }),
     parentTeamId: scope.parentTeamId,
     parentTaskId: scope.parentTaskId,
     delegationId: scope.delegationId,
@@ -951,7 +959,7 @@ function sameChannelSummaryInput(
 
 /** Copy the JSON-only channel closure fields selected by a lifecycle source scope. */
 function channelCloseInput(
-  scope: Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-close' }>,
+  scope: Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-close' | 'simulation-channel-close' }>,
 ): ChannelCloseInput {
   return {
     channelId: scope.channelId,
@@ -965,7 +973,7 @@ function sameChannelCloseInput(
   resolved: TeamSystemChannelLifecycleProofResolution,
   input: ChannelCloseInput,
 ): boolean {
-  return resolved.scope.kind === 'channel-close'
+  return (resolved.scope.kind === 'channel-close' || resolved.scope.kind === 'simulation-channel-close')
     && isDeepStrictEqual(channelCloseInput(resolved.scope), input)
 }
 
@@ -1315,6 +1323,7 @@ export class TeamHub extends TeamRuntime {
         || record.createdBy?.kind !== 'system' || record.createdBy.name !== 'simulation-team'
         || record.goal.objective !== normalizedText(input.goal.objective, 'goal objective')
         || !isDeepStrictEqual(record.goal.budgets, input.goal.budgets) || !isDeepStrictEqual(record.budgets, input.budgets)
+        || input.limits !== undefined && !isDeepStrictEqual(record.rules.teamLimits, input.limits)
         || !isDeepStrictEqual(record.authorityGrant, resolveAuthorityGrant(input.authorityGrant, undefined))) {
         throw new TeamError('Simulation root identity has another creation payload', 'TEAM_ACTOR_PROOF_INVALID')
       }
@@ -1335,6 +1344,7 @@ export class TeamHub extends TeamRuntime {
     reservedId?: TeamId,
   ): Promise<TeamStateSnapshot> {
     const parent = isChildLineage(lineage) ? lineage : undefined
+    this.resolveLimits(input.limits)
     const creationSource = rootCreationAuthority?.sourceName ?? childCreationAuthority?.sourceName
     await this.authorizeOrThrow('register', parent?.parentTeamId, {
       goal: {
@@ -1379,7 +1389,7 @@ export class TeamHub extends TeamRuntime {
         depth: lineage.depth,
         maxTeamDepth: lineage.maxTeamDepth,
         goal,
-        rules: this.snapshotRules(acceptedInput.rules),
+        rules: this.snapshotRules(acceptedInput.rules, acceptedInput.limits),
         budgets: jsonObjectSchema.parse(acceptedInput.budgets),
         authorityGrant,
         ...(rootCreationAuthority === undefined ? {} : {
@@ -1531,8 +1541,8 @@ export class TeamHub extends TeamRuntime {
       throw new TeamError('Channel closure requires a live system channel-lifecycle proof', 'TEAM_ACTOR_PROOF_INVALID')
     }
     const initial = this.requireSystemChannelLifecycleProof(actor)
-    if (initial.sourceName !== TEAM_CHANNEL_LIFECYCLE_PROOF_SOURCE
-      || initial.scope.kind !== 'channel-close'
+    if ((initial.scope.kind !== 'channel-close' && initial.scope.kind !== 'simulation-channel-close')
+      || initial.sourceName !== (initial.scope.kind === 'simulation-channel-close' ? 'simulation-team' : TEAM_CHANNEL_LIFECYCLE_PROOF_SOURCE)
       || !sameChannelCloseInput(initial, input)) {
       throw new TeamError('Channel lifecycle proof does not authorize the supplied payload', 'TEAM_ACTOR_PROOF_INVALID')
     }
@@ -1540,11 +1550,10 @@ export class TeamHub extends TeamRuntime {
     return Object.freeze({
       sourceName: initial.sourceName,
       input: channelCloseInput(expected),
-      revalidate: (): Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-close' }> => {
+      revalidate: (): Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-close' | 'simulation-channel-close' }> => {
         const current = this.requireSystemChannelLifecycleProof(actor)
-        if (current.sourceName !== TEAM_CHANNEL_LIFECYCLE_PROOF_SOURCE
-          || current.sourceName !== initial.sourceName
-          || current.scope.kind !== 'channel-close'
+        if (current.sourceName !== initial.sourceName
+          || current.scope.kind !== expected.kind
           || !isDeepStrictEqual(current.scope, expected)) {
           throw new TeamError('Channel lifecycle proof changed before WAL admission', 'TEAM_ACTOR_PROOF_INVALID')
         }
@@ -1776,31 +1785,51 @@ export class TeamHub extends TeamRuntime {
     })
   }
 
-  /** Freeze deployment-varying per-Team limits in the creation record. */
-  private snapshotRules(rules: JsonObject): JsonObject {
+  /**
+   * Read current deployment ceilings for side-effect-free creation preflight.
+   * @returns detached complete limits; existing Team snapshots retain their original limits.
+   */
+  override getCreationLimits(): TeamLimits {
+    if (this.closing) throw new TeamError('Team Hub is disposed', 'TEAM_DISPOSED')
+    return this.resolveLimits()
+  }
+
+  /** Resolve a complete creation request against the owning deployment before any Team allocation. */
+  private resolveLimits(request?: TeamLimits): TeamLimits {
+    const ceilings: TeamLimits = {
+      maxParticipants: this.config.maxParticipantsPerTeam,
+      maxActivations: this.config.maxActivationsPerTeam,
+      maxTasks: this.config.maxTasksPerTeam,
+      maxChannels: this.config.maxChannelsPerTeam,
+      maxEnvelopeBytes: this.config.maxEnvelopeBytes,
+      maxChannelViewBytes: this.config.maxChannelViewBytes,
+      maxPendingDeliveriesPerChannel: this.config.maxPendingDeliveriesPerChannel,
+      maxPendingDeliveriesPerParticipant: this.config.maxPendingDeliveriesPerParticipant,
+      maxPendingDeliveryPageSize: this.config.maxPendingDeliveryPageSize,
+      maxPostIdempotencyEntriesPerChannel: this.config.maxPostIdempotencyEntriesPerChannel,
+      maxTaskAttemptsPerTask: this.config.maxTaskAttemptsPerTask,
+      maxTaskLeaseDurationMs: this.config.maxTaskLeaseDurationMs,
+      maxTurnsPerTeam: this.config.maxTurnsPerTeam,
+      maxModelTokensPerTeam: this.config.maxModelTokensPerTeam,
+      maxWallTimeMsPerTeam: this.config.maxWallTimeMsPerTeam,
+      maxCostUnitsPerTeam: this.config.maxCostUnitsPerTeam,
+      maxRetriesPerTeam: this.config.maxRetriesPerTeam,
+      maxInboxItemsPerParticipant: this.config.maxInboxItemsPerParticipant,
+      maxRatePerParticipantPerMinute: this.config.maxRatePerParticipantPerMinute,
+    }
+    if (request === undefined) return ceilings
+    const limits = teamLimitsSchema.parse(request)
+    for (const key of Object.keys(ceilings) as (keyof TeamLimits)[]) {
+      if (limits[key] > ceilings[key]) throw new TeamError(`Team limit '${key}' exceeds deployment ceiling ${ceilings[key]}`, 'TEAM_INVALID_ARGUMENT')
+    }
+    return limits
+  }
+
+  /** Freeze resolved creation limits; arbitrary rules cannot increase them. */
+  private snapshotRules(rules: JsonObject, limits?: TeamLimits): JsonObject {
     return jsonObjectSchema.parse({
       ...structuredClone(rules),
-      teamLimits: {
-        maxParticipants: this.config.maxParticipantsPerTeam,
-        maxActivations: this.config.maxActivationsPerTeam,
-        maxTasks: this.config.maxTasksPerTeam,
-        maxChannels: this.config.maxChannelsPerTeam,
-        maxEnvelopeBytes: this.config.maxEnvelopeBytes,
-        maxChannelViewBytes: this.config.maxChannelViewBytes,
-        maxPendingDeliveriesPerChannel: this.config.maxPendingDeliveriesPerChannel,
-        maxPendingDeliveriesPerParticipant: this.config.maxPendingDeliveriesPerParticipant,
-        maxPendingDeliveryPageSize: this.config.maxPendingDeliveryPageSize,
-        maxPostIdempotencyEntriesPerChannel: this.config.maxPostIdempotencyEntriesPerChannel,
-        maxTaskAttemptsPerTask: this.config.maxTaskAttemptsPerTask,
-        maxTaskLeaseDurationMs: this.config.maxTaskLeaseDurationMs,
-        maxTurnsPerTeam: this.config.maxTurnsPerTeam,
-        maxModelTokensPerTeam: this.config.maxModelTokensPerTeam,
-        maxWallTimeMsPerTeam: this.config.maxWallTimeMsPerTeam,
-        maxCostUnitsPerTeam: this.config.maxCostUnitsPerTeam,
-        maxRetriesPerTeam: this.config.maxRetriesPerTeam,
-        maxInboxItemsPerParticipant: this.config.maxInboxItemsPerParticipant,
-        maxRatePerParticipantPerMinute: this.config.maxRatePerParticipantPerMinute,
-      },
+      teamLimits: this.resolveLimits(limits),
       usageRates: structuredClone(this.config.usageRates),
       taskRanking: structuredClone(this.config.taskRanking),
     })
@@ -1859,6 +1888,81 @@ export class TeamHub extends TeamRuntime {
     })
   }
 
+  /** Hold exact Team then sorted Channel serializers until the original Native personnel commit settles. */
+  override async withPersonnelSettlementCut<T>(request: TeamPersonnelSettlementCutRequest,
+    commit: (sources: TeamPersonnelSettlementCutSources) => Promise<T>): Promise<T> {
+    return await this.admit(async () => {
+      const actor = request.actor, scope = freeze(simulationPersonnelSettlementCutScopeSchema.parse(request.scope))
+      const sourceName = this.personnelSettlementProof(actor, scope)
+      const team = await this.ensureTeam(scope.teamId)
+      // Loading remains outside source serializers; their original cursors are verified again under all locks.
+      const channels = await Promise.all(scope.channels.map(value => this.ensureAttachedChannel(value.channelId)))
+      return await team.queue.run(async () => {
+        this.personnelSettlementTeam(this.requireLiveTeam(team), scope)
+        return await this.withChannelQueues(channels, async () => {
+          const currentTeam = this.requireLiveTeam(team)
+          this.personnelSettlementTeam(currentTeam, scope)
+          this.personnelSettlementProof(actor, scope, sourceName)
+          const sources: TeamPersonnelSettlementCutSources['channels'][number][] = []
+          for (const [index, loaded] of channels.entries()) {
+            const channel = this.requireLiveChannel(loaded), expected = scope.channels[index]
+            if (expected === undefined || expected.channelId !== channel.id) {
+              throw new TeamHubError('Personnel cut loaded another original Channel vector', 'TEAM_CHANNEL_WAL_MALFORMED')
+            }
+            this.assertAttachedChannel(currentTeam, channel)
+            assertChannelCursor(channel.projection.cursor, expected.cursor)
+            assertChannelCursor(channel.stream.tailSequence, expected.cursor)
+            const pending: TeamPersonnelSettlementCutSources['channels'][number]['pending'][number][] = []
+            for (const [recipientId, deliveries] of channel.projection.pendingDeliveries) {
+              for (const delivery of deliveries.values()) {
+                // Unkeyed posts have no idempotency cache entry. Read the actual original WAL slot before invoking commit.
+                const entry = (await channel.stream.read(delivery.envelopeSequence - 1, 1))[0]
+                if (entry === undefined || entry.sequence !== delivery.envelopeSequence) {
+                  throw new TeamHubError('Personnel cut pending delivery has no retained original Envelope', 'TEAM_CHANNEL_WAL_MALFORMED')
+                }
+                const record = parseChannelRecord(entry.value, channel.id)
+                if (record.type !== 'channel/envelope' || record.envelope.id !== delivery.envelopeId
+                  || record.envelope.sequence !== delivery.envelopeSequence || record.envelope.teamId !== scope.teamId
+                  || record.envelope.channelId !== channel.id) {
+                  throw new TeamHubError('Personnel cut pending delivery differs from its original Envelope', 'TEAM_CHANNEL_WAL_MALFORMED')
+                }
+                pending.push({ envelopeId: delivery.envelopeId, senderId: record.envelope.senderId,
+                  recipientId, sequence: delivery.envelopeSequence })
+              }
+            }
+            sources.push({ channel: this.channelSnapshot(channel), pending })
+          }
+          this.personnelSettlementProof(actor, scope, sourceName)
+          return await commit(freeze({ team: this.teamState(currentTeam.projection), channels: sources }))
+        })
+      })
+    })
+  }
+
+  /** Reject revoked/replaced scope before the callback; a cut grants no other maintenance capability. */
+  private personnelSettlementProof(actor: TeamSystemMaintenanceProof, scope: SimulationPersonnelSettlementCutScope,
+    sourceName?: string): string {
+    const resolved = this.requireSystemMaintenanceProof(actor)
+    if (resolved.scope.kind !== 'simulation-personnel-cut' || !isDeepStrictEqual(resolved.scope, scope)
+      || sourceName !== undefined && sourceName !== resolved.sourceName) {
+      throw new TeamError('Personnel settlement cut requires its exact live original source scope', 'TEAM_ACTOR_PROOF_INVALID')
+    }
+    return resolved.sourceName
+  }
+
+  /** Validate complete current membership and exact durable Team basis, including policy-only cursor changes. */
+  private personnelSettlementTeam(team: LoadedTeam, scope: SimulationPersonnelSettlementCutScope): void {
+    if (team.projection.rules['simulationRunId'] !== scope.runId
+      || team.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner) {
+      throw new TeamError('Personnel settlement cut differs from its canonical Simulation owner', 'TEAM_ACTOR_PROOF_INVALID')
+    }
+    assertCursor(team.projection.team.cursor, scope.expectedTeamCursor, 'Team')
+    assertCursor(team.stream.tailSequence, scope.expectedTeamCursor, 'Team journal')
+    if (!isDeepStrictEqual([...team.projection.channelIds].sort(), scope.channels.map(value => value.channelId).sort())) {
+      throw new TeamError('Personnel settlement cut must cover every original attached Channel', 'TEAM_CURSOR_CONFLICT')
+    }
+  }
+
   override async getPersistenceReference(request: import('@clocky/clocky-team').TeamPersistenceReferenceRequest):
   Promise<import('@clocky/clocky-team').TeamPersistenceReference> {
     return await this.admit(async () => {
@@ -1890,6 +1994,38 @@ export class TeamHub extends TeamRuntime {
         return Promise.resolve(this.persistenceReference({ kind: 'channel', channelId: input.channelId }, current.stream,
           prefix.cursor, CHANNEL_CHECKPOINT_FORMAT_VERSION, channelProjectionData(prefix),
           currentTeam.projection.rules['simulationRunId'] !== undefined ? 'full' : 'compactable', input.expectedCursor))
+      }))
+    })
+  }
+
+  override async exportPersistenceArchive(request: import('@clocky/clocky-team').TeamPersistenceReferenceRequest,
+    limits: { readonly maxEntries: number; readonly maxBytes: number; readonly pageSize: number }):
+  Promise<import('@clocky/clocky-team').TeamPersistenceArchive> {
+    const input = teamPersistenceReferenceRequestSchema.parse(request)
+    if (input.prefixCursor !== undefined) throw new TeamError('Archive requires the complete current prefix', 'TEAM_INVALID_ARGUMENT')
+    return this.admit(async () => {
+      if (input.kind === 'team') {
+        const loaded = await this.ensureTeam(input.teamId)
+        return loaded.queue.run(async () => {
+          const current = this.requireLiveTeam(loaded)
+          this.assertTeamCursor(current, input.expectedCursor)
+          const reference = this.persistenceReference({ kind: 'team', teamId: input.teamId }, current.stream,
+            current.projection.team.cursor, TEAM_CHECKPOINT_FORMAT_VERSION, teamProjectionData(current.projection),
+            current.projection.rules['simulationRunId'] !== undefined ? 'full' : 'compactable', input.expectedCursor)
+          const archive = await captureLogArchive(current.stream, input.expectedCursor, limits)
+          return { reference, entries: archive.entries }
+        })
+      }
+      const loaded = await this.ensureAttachedChannel(input.channelId), team = await this.ensureTeam(loaded.projection.manifest.teamId)
+      return team.queue.run(() => loaded.queue.run(async () => {
+        const current = this.requireLiveChannel(loaded)
+        this.assertAttachedChannel(this.requireLiveTeam(team), current)
+        if (current.projection.cursor !== input.expectedCursor) throw new TeamError('Archive Channel moved', 'TEAM_CHANNEL_CURSOR_CONFLICT')
+        const reference = this.persistenceReference({ kind: 'channel', channelId: input.channelId }, current.stream,
+          current.projection.cursor, CHANNEL_CHECKPOINT_FORMAT_VERSION, channelProjectionData(current.projection),
+          team.projection.rules['simulationRunId'] !== undefined ? 'full' : 'compactable', input.expectedCursor)
+        const archive = await captureLogArchive(current.stream, input.expectedCursor, limits)
+        return { reference, entries: archive.entries }
       }))
     })
   }
@@ -4082,10 +4218,11 @@ export class TeamHub extends TeamRuntime {
           )
         } else {
           const scope = this.resolveTopologyParticipantPhaseAuthority(current, actor as TeamSystemTopologyProof, input)
-          await this.authorizeOrThrow(scope.kind === 'team-run-worker-retire' ? 'close' : 'activate', input.teamId, {
+          await this.authorizeOrThrow(scope.kind === 'team-run-worker-retire' || scope.kind === 'simulation-participant-retire' ? 'close' : 'activate', input.teamId, {
             operation: 'topology-participant-phase',
             topologyOperation: scope.kind,
-            sourceName: scope.kind === 'simulation-participant-phase' ? 'simulation-team' : TEAM_RUN_TOPOLOGY_PROOF_SOURCE,
+            sourceName: scope.kind === 'simulation-participant-phase' || scope.kind === 'simulation-participant-retire'
+              ? 'simulation-team' : TEAM_RUN_TOPOLOGY_PROOF_SOURCE,
             participantId: input.participantId,
             phase: input.phase,
             expectedCursor: input.expectedCursor,
@@ -4210,7 +4347,16 @@ export class TeamHub extends TeamRuntime {
         const current = this.requireLiveTeam(loaded)
         this.resolveActivationBindAuthority(actor, input)
         if (current.projection.activations.size >= this.teamLimit(current.projection, 'maxActivations', this.config.maxActivationsPerTeam)) {
-          throw new TeamError(`Team '${current.id}' reached its activation limit`, 'TEAM_CHANNEL_BACKPRESSURE')
+          throw new TeamError(`Team '${current.id}' reached its activation limit`, 'TEAM_CHANNEL_BACKPRESSURE', {
+            details: jsonObjectSchema.parse(teamActivationHistoryLimitDetailsSchema.parse({
+              kind: 'activation-history-limit', teamId: current.id,
+              teamCursor: current.projection.team.cursor, used: current.projection.activations.size,
+              limit: this.teamLimit(current.projection, 'maxActivations', this.config.maxActivationsPerTeam),
+              participantId: input.binding.activation.participantId, activationId: input.binding.activation.id,
+              sessionId: input.binding.sessionId,
+              ...input.binding.reservationId === undefined ? {} : { reservationId: input.binding.reservationId },
+              cleanup: 'pending' })),
+          })
         }
         const binding = this.normalizedActivationBinding(input.binding)
         this.assertTeamCursor(current, input.expectedCursor)
@@ -5182,6 +5328,7 @@ export class TeamHub extends TeamRuntime {
   }
 
   private assertChildDelegationPayload(parent: TeamProjection, task: ChildDelegationTask, child: TeamChildCreateInput): void {
+    this.resolveLimits(child.limits)
     const grant = child.authorityGrant
     if (grant === undefined || child.rules.workspacePath === undefined) throw new TeamError('Child creation requires an explicit grant and controlled workspace', 'TEAM_DELEGATION_INVALID')
     assertAuthorityGrantSubset(task.execution.authorityGrant, grant, 'delegated child')
@@ -8544,6 +8691,7 @@ export class TeamHub extends TeamRuntime {
     if (actor === undefined) return this.rejectTopologyActor()
     const resolution = this.requireSystemTopologyProof(actor)
     const simulation = resolution.scope.kind === 'simulation-participant-invite' || resolution.scope.kind === 'simulation-participant-phase'
+      || resolution.scope.kind === 'simulation-participant-retire'
     if (resolution.sourceName !== (simulation ? 'simulation-team' : TEAM_RUN_TOPOLOGY_PROOF_SOURCE)) return this.rejectTopologyActor()
     return resolution.scope
   }
@@ -8642,10 +8790,11 @@ export class TeamHub extends TeamRuntime {
     actor: TeamSystemTopologyProof | undefined,
     input: ParticipantPhaseTransitionInput,
   ): Extract<TeamSystemTopologyScope, {
-    readonly kind: 'simulation-participant-phase' | 'team-run-bootstrap-participant-phase' | 'team-run-worker-activate' | 'team-run-worker-retire' | 'team-run-reviewer-phase'
+    readonly kind: 'simulation-participant-phase' | 'simulation-participant-retire' | 'team-run-bootstrap-participant-phase' | 'team-run-worker-activate' | 'team-run-worker-retire' | 'team-run-reviewer-phase'
   }> {
     const scope = this.requireTeamRunTopologyScope(actor)
-    if ((scope.kind !== 'simulation-participant-phase' && scope.kind !== 'team-run-bootstrap-participant-phase'
+    if ((scope.kind !== 'simulation-participant-phase' && scope.kind !== 'simulation-participant-retire'
+      && scope.kind !== 'team-run-bootstrap-participant-phase'
       && scope.kind !== 'team-run-worker-activate'
       && scope.kind !== 'team-run-worker-retire'
       && scope.kind !== 'team-run-reviewer-phase')
@@ -8664,7 +8813,7 @@ export class TeamHub extends TeamRuntime {
     actor: TeamSystemTopologyProof | undefined,
     input: ParticipantPhaseTransitionInput,
   ): Extract<TeamSystemTopologyScope, {
-    readonly kind: 'simulation-participant-phase' | 'team-run-bootstrap-participant-phase' | 'team-run-worker-activate' | 'team-run-worker-retire' | 'team-run-reviewer-phase'
+    readonly kind: 'simulation-participant-phase' | 'simulation-participant-retire' | 'team-run-bootstrap-participant-phase' | 'team-run-worker-activate' | 'team-run-worker-retire' | 'team-run-reviewer-phase'
   }> {
     const scope = this.topologyParticipantPhaseScope(actor, input)
     const participant = team.projection.participants.get(scope.participantId)
@@ -8677,6 +8826,15 @@ export class TeamHub extends TeamRuntime {
       return this.rejectTopologyActor()
     }
     switch (scope.kind) {
+      case 'simulation-participant-retire':
+        this.assertSimulationTopologyTeam(team, scope)
+        if (participant.kind !== 'local-agent'
+          || participant.activationReservation !== undefined && participant.activationReservation.releasedAt === undefined
+          || [...team.projection.activations.values()].some(value => value.activation.participantId === participant.id
+            && value.quiescedAt === undefined)
+          || [...team.projection.tasks.values()].some(task => task.lease?.participantId === participant.id
+            && (task.phase === 'assigned' || task.phase === 'running'))) return this.rejectTopologyActor()
+        return scope
       case 'simulation-participant-phase':
         this.assertSimulationTopologyTeam(team, scope)
         if (participant.kind !== 'local-agent' || !isParticipantTopologyPhase(scope.expectedPhase, scope.phase)) return this.rejectTopologyActor()
@@ -10997,6 +11155,7 @@ export class TeamHub extends TeamRuntime {
           throw new TeamError('Channel lifecycle proof is invalid for the current channel attachment', 'TEAM_ACTOR_PROOF_INVALID')
         }
         const scope = authority.revalidate()
+        if (scope.kind === 'simulation-channel-close') this.assertSimulationTopologyTeam(currentTeam, scope)
         if (scope.teamId !== currentTeam.id
           || !currentTeam.projection.channelIds.has(currentChannel.id)
           || currentChannel.projection.manifest.teamId !== currentTeam.id) {
@@ -11012,6 +11171,7 @@ export class TeamHub extends TeamRuntime {
           const currentScope = authority.revalidate()
           const committedTeam = this.requireLiveTeam(team)
           const committedChannel = this.requireLiveChannel(channel)
+          if (currentScope.kind === 'simulation-channel-close') this.assertSimulationTopologyTeam(committedTeam, currentScope)
           if (currentScope.teamId !== committedTeam.id
             || !committedTeam.projection.channelIds.has(committedChannel.id)
             || committedChannel.projection.manifest.teamId !== committedTeam.id) {
@@ -13502,7 +13662,7 @@ export class TeamHub extends TeamRuntime {
       ...input.draft.ttlMs === undefined ? {} : { ttlMs: input.draft.ttlMs },
     }, input.senderId)
     const envelope = this.stampEnvelope(currentTeam.id, currentChannel, input.senderId, input.draft, priority)
-    this.assertEnvelopeByteLimit(envelope, currentTeam.projection)
+    this.assertEnvelopeByteLimit(envelope, currentTeam.projection, input)
     const adapter = currentChannel.adapter
     this.validateAdapterSend(adapter, currentChannel, input.senderId, input.draft)
     const envelopeRecord = prepareChannelEnvelopeRecord(currentChannel.projection, envelope, input.idempotencyKey, adapter)
@@ -13757,13 +13917,20 @@ export class TeamHub extends TeamRuntime {
   }
 
   /** Enforce the configured complete durable Envelope size before a WAL append. */
-  private assertEnvelopeByteLimit(envelope: TeamEnvelope, team: TeamProjection): void {
+  private assertEnvelopeByteLimit(envelope: TeamEnvelope, team: TeamProjection, input: ResolvedChannelEnvelopePost): void {
     const bytes = Buffer.byteLength(JSON.stringify(envelope), 'utf8')
     const maxBytes = this.teamLimit(team, 'maxEnvelopeBytes', this.config.maxEnvelopeBytes)
     if (bytes > maxBytes) {
       throw new TeamError(
         `channel Envelope is ${bytes} bytes, exceeding maxEnvelopeBytes ${maxBytes}`,
         'TEAM_INVALID_ARGUMENT',
+        { details: jsonObjectSchema.parse(teamEnvelopeByteLimitDetailsSchema.parse({ kind: 'envelope-byte-limit',
+          teamId: envelope.teamId, teamCursor: team.team.cursor, channelId: envelope.channelId,
+          channelCursor: envelope.sequence - 1, senderId: envelope.senderId,
+          ...input.idempotencyKey === undefined ? {} : { idempotencyKey: input.idempotencyKey },
+          ...input.draft.traceId === undefined ? {} : { traceId: input.draft.traceId },
+          ...input.draft.correlationId === undefined ? {} : { correlationId: input.draft.correlationId },
+          draftFingerprint: fingerprintTeamEnvelopeDraft(input.draft), bytes, limit: maxBytes })) },
       )
     }
   }

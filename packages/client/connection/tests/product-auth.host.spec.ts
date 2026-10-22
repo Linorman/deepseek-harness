@@ -1,7 +1,7 @@
 /** Local browser bootstrap and in-memory product-auth session behavior. */
 
 import { describe, expect, it, vi } from 'vitest'
-import { PRODUCT_AUTH_BOOTSTRAP_PATH } from '../src/product-auth-contract.ts'
+import { PRODUCT_AUTH_BOOTSTRAP_PATH, productAuthCookieName } from '../src/product-auth-contract.ts'
 import { ProductAuthSessions } from '../src/product-auth.ts'
 
 const credential = 'product-auth-test-credential'
@@ -38,6 +38,7 @@ class Lease {
 
 /** Build one manager and expose leases so each assertion can control a provider result. */
 function sessions(options: {
+  port?: number
   rejectAuthenticate?: boolean
   leases?: Lease[]
   onFormBootstrapAccepted?: (handoffId: string) => void
@@ -51,7 +52,7 @@ function sessions(options: {
       if (lease === undefined) throw invalidAuthentication
       return lease
     },
-  } as never, 'local', options.onFormBootstrapAccepted)
+  } as never, 'local', () => options.port ?? 3080, options.onFormBootstrapAccepted)
 }
 
 /** Read the opaque session cookie from a successful bootstrap response. */
@@ -169,7 +170,7 @@ describe('ProductAuthSessions', () => {
 
     const admitted = await auth.bootstrap(request())
     expect(admitted.status).toBe(204)
-    expect(cookie(admitted)).toMatch(/^clocky_product_auth=[A-Za-z0-9_-]{43}$/)
+    expect(cookie(admitted)).toMatch(/^clocky_product_auth_3080=[A-Za-z0-9_-]{43}$/)
     expect(cookie(admitted)).not.toContain(credential)
     const duplicate = await auth.bootstrap(request())
     expect(duplicate.status).toBe(401)
@@ -217,12 +218,12 @@ describe('ProductAuthSessions', () => {
     await expect(auth.withCall({ headers: {} }, async () => 'unreachable')).resolves.toEqual({ kind: 'required' })
     await expect(auth.withCall({ headers: { cookie: 'malformed; another=value' } }, async () => 'unreachable'))
       .resolves.toEqual({ kind: 'required' })
-    await expect(auth.withCall({ headers: { cookie: 'clocky_product_auth=short' } }, async () => 'unreachable'))
+    await expect(auth.withCall({ headers: { cookie: 'clocky_product_auth_3080=short' } }, async () => 'unreachable'))
       .resolves.toEqual({ kind: 'required' })
     await expect(auth.withCall({ headers: {
-      cookie: `clocky_product_auth=${'a'.repeat(43)}; clocky_product_auth=${'b'.repeat(43)}`,
+      cookie: `clocky_product_auth_3080=${'a'.repeat(43)}; clocky_product_auth_3080=${'b'.repeat(43)}`,
     } }, async () => 'unreachable')).resolves.toEqual({ kind: 'required' })
-    await expect(auth.withCall({ headers: { cookie: `clocky_product_auth=${'x'.repeat(43)}` } }, async () => 'unreachable'))
+    await expect(auth.withCall({ headers: { cookie: `clocky_product_auth_3080=${'x'.repeat(43)}` } }, async () => 'unreachable'))
       .resolves.toEqual({ kind: 'invalid' })
     await expect(auth.withCall({ headers: { cookie: sessionCookie } }, async call => call.principal.id))
       .resolves.toEqual({ kind: 'authenticated', value: 'test-principal' })
@@ -258,7 +259,7 @@ describe('ProductAuthSessions', () => {
   it('does not retain a bootstrap session when the transport closes during authentication', async () => {
     let release!: (lease: Lease) => void
     const pending = new Promise<Lease>((resolve) => { release = resolve })
-    const auth = new ProductAuthSessions({ authenticate: async () => await pending } as never, 'local')
+    const auth = new ProductAuthSessions({ authenticate: async () => await pending } as never, 'local', () => 3080)
     const exchange = auth.bootstrap(new Request('http://x/api/bootstrap', {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ credential }),
     }))
@@ -287,4 +288,34 @@ it('replacing the current browser credential aborts old calls and rejects the ol
   expect(await manager.withCall({ headers: { cookie: oldCookie } }, async () => 'old')).toEqual({ kind: 'invalid' })
   expect(await manager.withCall({ headers: { cookie: nextCookie } }, async () => 'new')).toEqual({ kind: 'authenticated', value: 'new' })
   await manager.close()
+})
+
+it('keeps simultaneous listener cookies independent during authentication, replacement and rejection', async () => {
+  const first = new Lease(), replacement = new Lease(), other = new Lease()
+  replacement.generation = 2
+  const a = sessions({ port: 3080, leases: [first, replacement] }), b = sessions({ port: 3081, leases: [other] })
+  const bootstrap = (port: number, cookies?: string) => new Request(`http://127.0.0.1:${port}/api/bootstrap`, {
+    method: 'POST', headers: { 'content-type': 'application/json', ...cookies === undefined ? {} : { cookie: cookies } },
+    body: JSON.stringify({ credential }),
+  })
+  try {
+    const ca = cookie(await a.bootstrap(bootstrap(3080))), cb = cookie(await b.bootstrap(bootstrap(3081)))
+    const shared = `${ca}; ${cb}`
+    expect(ca.startsWith(`${productAuthCookieName(3080)}=`)).toBe(true)
+    expect(cb.startsWith(`${productAuthCookieName(3081)}=`)).toBe(true)
+    expect(await a.withCall({ headers: { cookie: shared, host: '127.0.0.1:9999' } }, async () => 'a')).toEqual({ kind: 'authenticated', value: 'a' })
+    expect(await b.withCall({ headers: { cookie: shared } }, async () => 'b')).toEqual({ kind: 'authenticated', value: 'b' })
+    const next = cookie(await a.bootstrap(bootstrap(3080, shared)))
+    expect(first.revoked.count).toBe(1)
+    expect(other.revoked.count).toBe(0)
+    expect(await b.withCall({ headers: { cookie: `${next}; ${cb}` } }, async () => 'b')).toEqual({ kind: 'authenticated', value: 'b' })
+    expect(await b.withCall({ headers: { cookie: `clocky_product_auth_3080=malformed; ${cb}` } }, async () => 'b')).toEqual({ kind: 'authenticated', value: 'b' })
+    expect(a.rejection('invalid').headers.get('set-cookie')).toBe('clocky_product_auth_3080=; Path=/api; HttpOnly; SameSite=Strict; Max-Age=0')
+    expect(b.rejection('invalid').headers.get('set-cookie')).toBe('clocky_product_auth_3081=; Path=/api; HttpOnly; SameSite=Strict; Max-Age=0')
+  } finally { await a.close(); await b.close() }
+})
+
+it('requires a resolved listener port rather than deriving cookie names from request authorities', () => {
+  for (const port of [0, -1, 65536, 1.5, NaN, Infinity]) expect(() => productAuthCookieName(port)).toThrow('resolved listening port')
+  expect(productAuthCookieName(65535)).toBe('clocky_product_auth_65535')
 })

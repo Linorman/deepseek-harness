@@ -15,7 +15,7 @@ const constrained = process.env['SIMULATION_AUTO_RESIDENCY'] === 'true'
 const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ provider: 'local', mode: recovering ? 'open' : 'create', spec: {
   runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1',
   outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 32, maxMicrostepsPerTime: 32,
-  phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: constrained ? 1 : 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [],
+  phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: constrained ? 1 : 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [],
 } }))
 try {
   const team = await ctx.simulationTeams.ensureTeam(run, { goal: { objective: 'Deliver one inventory unit', budgets: {} }, budgets: {} }, 'simulation/company')
@@ -24,7 +24,7 @@ try {
   const supplier = simulationEntityIdSchema.parse('supplier')
   let bootstrapResponseRejected = false
   for (const id of [buyer, supplier]) {
-    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent',
+    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent',
       profile: { name: id, privateNote: `${id}-secret` } }), run.snapshot().revision)
     const participant = { displayName: id, role: id, capabilities: [],
       provider: 'in-process', preset: 'simulation', model: 'company/scripted' }
@@ -232,5 +232,6 @@ try {
       delivered: operation.delivery?.receipt !== undefined })),
     taskCreation: { phase: createdTask.phase, count: 1, fulfillment: 'task-completed' },
     delayedVisibility: true, privateProfilesHidden: allModelInputs.every(input => !input.includes('-secret')), effectRetryPreserved: true }
-  console.log(JSON.stringify(summary))
+  // Retain all recorded business material; only this fixture's canonical Channel allocation varies between processes.
+  console.log(JSON.stringify(summary).replaceAll(channel.manifest.id, '<purchase-channel>'))
 } finally { await run.close(); await ctx.fiber.dispose() }

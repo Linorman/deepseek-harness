@@ -312,7 +312,7 @@ exports[`json coordinated local writer recovery > context-consumed: proves termi
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:3fcf6061ec1359000ac607dea931487a27e44903435c2a835c6f2213574ae439. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -321,7 +321,7 @@ exports[`json coordinated local writer recovery > context-consumed: proves termi
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:5b1bae1b0d38fe8a2843dbeb16dcdcfc64b5ba0a646c5e13909ff71508cba8b2. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -385,7 +385,7 @@ exports[`json coordinated local writer recovery > context-flushed: proves termin
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:5b1bae1b0d38fe8a2843dbeb16dcdcfc64b5ba0a646c5e13909ff71508cba8b2. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -449,7 +449,7 @@ exports[`json coordinated local writer recovery > context-prepared: proves termi
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:5b1bae1b0d38fe8a2843dbeb16dcdcfc64b5ba0a646c5e13909ff71508cba8b2. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -513,7 +513,7 @@ exports[`json coordinated local writer recovery > context-queued: proves termina
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:5b1bae1b0d38fe8a2843dbeb16dcdcfc64b5ba0a646c5e13909ff71508cba8b2. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -1568,7 +1568,7 @@ exports[`sqlite coordinated local writer recovery > context-consumed: proves ter
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:3fcf6061ec1359000ac607dea931487a27e44903435c2a835c6f2213574ae439. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -1577,7 +1577,7 @@ exports[`sqlite coordinated local writer recovery > context-consumed: proves ter
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:5b1bae1b0d38fe8a2843dbeb16dcdcfc64b5ba0a646c5e13909ff71508cba8b2. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -1641,7 +1641,7 @@ exports[`sqlite coordinated local writer recovery > context-flushed: proves term
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:5b1bae1b0d38fe8a2843dbeb16dcdcfc64b5ba0a646c5e13909ff71508cba8b2. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -1705,7 +1705,7 @@ exports[`sqlite coordinated local writer recovery > context-prepared: proves ter
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:5b1bae1b0d38fe8a2843dbeb16dcdcfc64b5ba0a646c5e13909ff71508cba8b2. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],
@@ -1769,7 +1769,7 @@ exports[`sqlite coordinated local writer recovery > context-queued: proves termi
       {
         "content": [
           {
-            "text": "Process the prepared simulation decision.",
+            "text": "A new simulation decision is open: simulation-input:5b1bae1b0d38fe8a2843dbeb16dcdcfc64b5ba0a646c5e13909ff71508cba8b2. Call simulation_observe to read this decision’s current context before choosing actions. Earlier tool results and submissions belong to earlier decisions; they do not complete this one. Finish this decision with simulation_submit. If no action is needed, stage an empty proposal list and submit it. A written summary alone does not submit a decision.",
             "type": "text",
           },
         ],

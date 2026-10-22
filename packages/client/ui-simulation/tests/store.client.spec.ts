@@ -234,3 +234,18 @@ it('round-trips the requests module without carrying object filters or authored 
   view.actions.restore(selected)
   expect(view.store.getSnapshot().inputDrafts.run?.text).toBe('Private message body')
 })
+
+
+it('retains World case sections across history restoration and rejects cross-module section leakage', () => {
+  const view = createSimulationStore(4096, 4).create()
+  const selected: Route = { runId: 'world', module: 'cases', search: '', objectId: 'original-case', caseSection: 'plans' }
+  writeRoute(selected)
+  expect(route()).toMatchObject(selected)
+  view.actions.restore(route())
+  expect(view.getSnapshot().caseSection).toBe('plans')
+  view.actions.restore({ ...selected, caseSection: 'notification' })
+  expect(view.getSnapshot().caseSection).toBe('notification')
+  view.actions.restore({ ...selected, module: 'entities' })
+  expect(view.getSnapshot().caseSection).toBeUndefined()
+  expect(normalize({ ...selected, caseSection: 'unsupported' as never }).caseSection).toBe('request')
+})

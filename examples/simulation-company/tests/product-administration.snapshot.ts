@@ -7,7 +7,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { resolveExampleLaunch } from '@clocky/clocky-loader-smoke'
 
 describe.each(['json', 'sqlite'])('%s company product creation', (backend) => {
-  it.each([undefined, 'accepted', 'directory', 'native', 'entity', 'checkpoint', 'terminal'])('reconciles crash=%s before inference', async (crash) => {
+  it.each([undefined, 'accepted', 'directory', 'native', 'entity', 'ready', 'checkpoint', 'terminal'])('reconciles crash=%s before inference', async (crash) => {
     await mkdir(resolve('.tmp'), { recursive: true })
     const root = await mkdtemp(resolve('.tmp/company-product-creation-'))
     const fixture = resolve('examples/simulation-company/tests/product-administration-scenario.ts')

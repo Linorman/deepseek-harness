@@ -1,3 +1,4 @@
+import { productAuthCookieName } from '@clocky/clocky-client-connection/src/product-auth-contract.ts'
 // Real-host smoke: spawn `clocky web` with a configured real model, walk the full flow
 // list in a real chromium, screenshot every screen into .artifacts/ for the
 // figma comparison pass. Self-skips without DEEPSEEK_API_KEY or
@@ -29,7 +30,6 @@ import { REPO_ROOT, connectFreshWorkspace, newEnglishPage, probeFreePort, requir
 
 const WEB_SURFACE_PROMPT = fileURLToPath(new URL('./snapshots/web-runtime-context/web-surface-prompt.expected.md', import.meta.url))
 const PRODUCT_AUTH_CREDENTIAL = 'clocky-web-smoke-product-credential'
-const PRODUCT_AUTH_COOKIE_NAME = 'clocky_product_auth'
 const PRODUCT_AUTH_PROVIDER = pathToFileURL(fileURLToPath(new URL('../../../packages/host/product-principal-digest/src/index.ts', import.meta.url))).href
 const PRODUCT_AUTH_DIGEST = createHash('sha256').update(PRODUCT_AUTH_CREDENTIAL, 'utf8').digest('hex')
 
@@ -63,7 +63,7 @@ async function bootstrapProductAuth(baseUrl: string): Promise<ProductAuthSession
   if (cookie === undefined) throw new Error('product authentication bootstrap returned no session cookie')
   const separator = cookie.indexOf('=')
   const token = separator < 1 ? '' : cookie.slice(separator + 1)
-  if (cookie.slice(0, separator) !== PRODUCT_AUTH_COOKIE_NAME || token.length === 0) {
+  if (cookie.slice(0, separator) !== productAuthCookieName(Number(new URL(baseUrl).port || '80')) || token.length === 0) {
     throw new Error('product authentication bootstrap returned an invalid session cookie')
   }
   return { header: cookie, token }
@@ -660,7 +660,7 @@ describe.skipIf(!hasRealModel || notReady.length > 0)('web smoke (real host, con
     page.on('pageerror', e => pageErrors.push(String(e)))
     productAuth = await bootstrapProductAuth(baseUrl)
     await page.context().addCookies([{
-      name: PRODUCT_AUTH_COOKIE_NAME,
+      name: productAuthCookieName(Number(new URL(baseUrl).port || '80')),
       value: productAuth.token,
       url: baseUrl,
     }])

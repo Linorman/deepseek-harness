@@ -1,5 +1,9 @@
 # @clocky/clocky-storage-json
 
+`readJsonRawLogArchive()` 保留原子文档的精确字节及原始消费者版本，不选择消费者 parser。仍检查存储外层结构及保留条目数；有界 JSON 归档以 base64 包含原始文档，不迁移、修复或打开 writer。
+
+只读快照额度超限使用 `StorageError.code = read-limit`；无效观察配置仍为 `invalid-value`。版本不匹配和介质损坏保留各自错误码。
+
 [English](README.md) | 中文
 
 `readJsonLogSnapshot(root, descriptor, limits)` 只以只读文件描述符打开现有原子日志文档。缺失 root／stream 不会创建，不取得 backend owner，并限制编码文档／返回 JSON 字节和保留行数。stream version 与 sequence 连续性仍须验证；原地大小变化会拒绝，不返回混合数据。

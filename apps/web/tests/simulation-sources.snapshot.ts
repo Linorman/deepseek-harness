@@ -66,7 +66,7 @@ it.each(['json', 'sqlite'] as const)('reads frozen source links and clears text 
     await run.setPhase('running', 0)
     const entityId = 'source-reader' as never
     const decisionId = 'source-decision' as never
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId, entityKind: 'person',
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: entityId, entityKind: 'person',
       cognition: 'agent', profile: {} }), run.snapshot().revision)
     await run.bindEntity(entityId, { teamId: team.team.id, participantId: coordinator.id,
       sessionId: binding.sessionId }, run.snapshot().revision)
@@ -134,6 +134,24 @@ it.each(['json', 'sqlite'] as const)('reads frozen source links and clears text 
     await source.getByRole('link', { name: `查看关联 Team 频道: ${channelId}`, exact: true }).click()
     await teamWorkspace.getByRole('heading', { name: '来源权限验证', exact: true }).waitFor()
     await expect.poll(() => new URL(page.url()).searchParams.get('channel')).toBe(channelId)
+    const channelBeforeNavigation = await scaffold.ctx.teams.getChannel({ channelId })
+    const exactEnvelope = new URL(page.url())
+    exactEnvelope.searchParams.set('envelope', originalEnvelope.id)
+    exactEnvelope.searchParams.set('envelopeSequence', String(originalEnvelope.sequence))
+    await page.evaluate((url) => {
+      window.history.pushState(window.history.state, '', url); window.dispatchEvent(new PopStateEvent('popstate'))
+    }, exactEnvelope.href)
+    await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-channel-message'))).toBe(originalEnvelope.id)
+    expect(await scaffold.ctx.teams.getChannel({ channelId })).toEqual(channelBeforeNavigation)
+    const wrongPosition = new URL(exactEnvelope)
+    wrongPosition.searchParams.set('envelopeSequence', String(originalEnvelope.sequence + 1))
+    await page.evaluate((url) => {
+      window.history.pushState(window.history.state, '', url); window.dispatchEvent(new PopStateEvent('popstate'))
+    }, wrongPosition.href)
+    await page.getByText('此目标不存在或已不可用。', { exact: true }).waitFor()
+    expect(await teamWorkspace.count()).toBe(0)
+    await page.goBack()
+    await teamWorkspace.getByRole('heading', { name: '来源权限验证', exact: true }).waitFor()
     await teamWorkspace.getByRole('button', { name: '返回来源', exact: true }).click()
     await locate()
     expect(page.url()).toBe(sourceUrl)

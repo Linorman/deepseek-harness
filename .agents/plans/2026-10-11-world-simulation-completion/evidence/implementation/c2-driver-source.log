@@ -1,0 +1,91 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-driver.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts (8 tests | 8 failed) 21391ms
+     × drives 'company' with pauseDuringMaintenance=false to independent newborn and idle 3459ms
+     × drives 'company' with pauseDuringMaintenance=true to independent newborn and idle 2650ms
+     × drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle 2670ms
+     × drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle 2626ms
+     × drives 'company' with pauseDuringMaintenance=false to independent newborn and idle 2520ms
+     × drives 'company' with pauseDuringMaintenance=true to independent newborn and idle 2508ms
+     × drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle 2477ms
+     × drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle 2481ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'company' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'company' with pauseDuringMaintenance=true to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'company' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'company' with pauseDuringMaintenance=true to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:185
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:185:9) {
+  [cause]: SimulationWorldDomainError: World domain input does not satisfy its strict schema
+      at parse (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:226:11)
+      at SimulationWorldDomainRegistry.pin (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:110:27)
+      ... 2 lines matching cause stack trace ...
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1733:26) {
+    code: 'SIM_WORLD_SCHEMA',
+    [cause]: ZodError: [
+      {
+        "code": "unrecognized_keys",
+        "keys": [
+          "schemaRef",
+          "implementationRef",
+          "generation"
+        ],
+        "path": [],
+        "message": "Unrecognized keys: \"schemaRef\", \"implementationRef\", \"generation\""
+      }
+    ]
+        at parse (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:224:19)
+        at SimulationWorldDomainRegistry.pin (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:110:27)
+        at NativeWorldRuntime.admitting (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-runtime.ts:41:42)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:150:46)
+        at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1733:26)
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ parse packages/simulation/simulation/src/world-domain-registry.ts:226:11
+ ❯ SimulationWorldDomainRegistry.pin packages/simulation/simulation/src/world-domain-registry.ts:110:27
+ ❯ parse packages/simulation/simulation/src/world-domain-registry.ts:224:19
+ ❯ SimulationWorldDomainRegistry.pin packages/simulation/simulation/src/world-domain-registry.ts:110:27
+ ❯ NativeWorldRuntime.admitting packages/simulation/simulation-local/src/world-runtime.ts:41:42
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:150:46
+ ❯ <anonymous> packages/simulation/simulation-local/src/run.ts:1733:26
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed (8)
+   Start at  01:31:45
+   Duration  21.87s (transform 159ms, setup 254ms, import 117ms, tests 21.39s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

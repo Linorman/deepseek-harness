@@ -11,6 +11,7 @@ import type { Key } from '../src/client/locales.ts'
 import { EMPTY_CREATION } from '../src/client/store.ts'
 import type { SimulationCreationDraft } from '../src/client/store.ts'
 import type { SimulationProductCatalog, SimulationProductControl, SimulationCommand, SimulationCommandState } from '@clocky/clocky-client-runtime/client'
+import { simulationCommandKey } from '@clocky/clocky-client-runtime/client'
 
 afterEach(cleanup)
 const t = (key: Key) => en[key]
@@ -84,6 +85,7 @@ it('keeps later input across close/reopen and retries the exact original while i
   let original: SimulationCommand | undefined
   const retained = vi.fn((command: SimulationCommand, _version: number) => { original = command; return 'original-key' as never })
   const sends: SimulationCommand[] = []
+  const queried: string[] = []
   const opened = vi.fn()
   function Harness() {
     const [draft, change] = useState<SimulationCreationDraft | undefined>(raw)
@@ -95,8 +97,13 @@ it('keeps later input across close/reopen and retries the exact original while i
       const next: SimulationCommandState = { command: original, pending: false, unknown: true, notFound: false, error: 'network' }
       update(next); return next
     }
-    const query = async () => {
+    const query = async (key: string) => {
       if (original === undefined) throw new Error('No retained input')
+      queried.push(key)
+      if (queried.length === 1) {
+        const next: SimulationCommandState = { command: original, pending: false, unknown: true, notFound: true }
+        update(next); return next
+      }
       const next: SimulationCommandState = { command: original, pending: false, unknown: false, notFound: false,
         receipt: { kind: 'request', value: { commandId: 'original' as never, runId: 'run' as never, kind: 'create', acceptedAt: 1, status: 'completed' } } }
       update(next); return next
@@ -117,6 +124,13 @@ it('keeps later input across close/reopen and retries the exact original while i
   fireEvent.click(view.getAllByRole('button', { name: 'Close and keep input' }).at(-1)!)
   fireEvent.click(view.getByRole('button', { name: 'Reopen' }))
   expect((view.getByLabelText('Run name') as HTMLInputElement).value).toBe('Later input')
+  expect(view.queryByRole('button', { name: en.retryOriginal })).toBeNull()
+  expect(sends).toHaveLength(1)
+  fireEvent.click(view.getByRole('button', { name: en.queryOriginal }))
+  await view.findByText(en.commandNotFound)
+  if (original === undefined) throw new Error('Original creation was not retained')
+  expect(queried).toEqual([simulationCommandKey(original)])
+  expect(sends).toHaveLength(1)
   fireEvent.click(view.getByRole('button', { name: 'Retry original operation' }))
   await waitFor(() => { expect(sends).toHaveLength(2) })
   expect(sends[1]).toBe(sends[0]); expect(retained).toHaveBeenCalledTimes(1)
@@ -124,6 +138,7 @@ it('keeps later input across close/reopen and retries the exact original while i
   await view.findByRole('button', { name: 'Open registered run' })
   fireEvent.click(view.getByRole('button', { name: 'Open registered run' }))
   expect(opened).toHaveBeenCalledWith('run')
+  expect(queried).toEqual([simulationCommandKey(original), simulationCommandKey(original)])
   expect((view.getByLabelText('Run name') as HTMLInputElement).value).toBe('Later input')
 })
 
@@ -176,11 +191,16 @@ it('requires explicit start confirmation with exact budget time and permits a se
   const retain = vi.fn((_command: SimulationCommand, _version: number) => 'original' as never)
   const submit = vi.fn(async () => undefined)
   const refresh = vi.fn(async () => {})
+  const interpolate = (key: Key, vars?: Record<string, unknown>) =>
+    en[key].replace(/\{(\w+)\}/g, (_m, name: string) => String(vars?.[name]))
   const props = { name: 'Company', value: { value: control, loading: false, stale: false }, connected: true,
-    authorizationVersion: 1, blockedPhases: [], blockedMaintenance: [], openMaintenance: vi.fn(), retain, submit, refresh, t }
+    authorizationVersion: 1, blockedPhases: [], blockedMaintenance: [], openMaintenance: vi.fn(), retain, submit, refresh, t: interpolate }
   const view = render(<Controls {...props} />)
   fireEvent.click(view.getByRole('button', { name: 'Start scheduling' }))
-  expect(view.getByText('1000000 / 9007199254740993 simulation ticks')).toBeDefined()
+  // Grouped for reading, still exact beyond the safe-integer range; the allowance is an admission limit, not a bill.
+  const limits = document.querySelector('[data-budget-group="limits"]')!
+  expect(limits.textContent).toContain('1,000,000 per 9,007,199,254,740,993')
+  expect(document.querySelector('[data-budget-group="host"]')?.textContent).toContain(en['metrics.hostScope'])
   expect(retain).not.toHaveBeenCalled()
   fireEvent.click(view.getAllByRole('button', { name: 'Cancel' }).at(-1)!)
   view.rerender(<Controls {...props} blockedPhases={['running']} />)

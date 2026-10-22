@@ -1,0 +1,2 @@
+packages/simulation/simulation-local/src/run.ts(175,18): error TS2551: Property 'invalidateWorldPlan' does not exist on type 'LocalSimulationRun'. Did you mean 'revalidateWorldPlan'?
+packages/simulation/simulation-local/src/world-hire.ts(387,78): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?

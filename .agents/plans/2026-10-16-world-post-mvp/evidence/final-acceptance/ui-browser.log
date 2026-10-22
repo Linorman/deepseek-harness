@@ -1,0 +1,40 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ apps/web/tests/world-post-mvp-author.snapshot.ts (2 tests | 2 failed) 3854ms
+   × saves, conflicts and edits graph drafts through the actual json authoring service 2482ms
+   × saves, conflicts and edits graph drafts through the actual sqlite authoring service 1371ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/web/tests/world-post-mvp-author.snapshot.ts > saves, conflicts and edits graph drafts through the actual json authoring service
+AssertionError: expected 'none' not to be 'none' // Object.is equality
+ ❯ apps/web/tests/world-post-mvp-author.snapshot.ts:88:90
+     86|     const yInput = workspace.getByLabel('Y', { exact: true })
+     87|     expect(await yInput.evaluate(element => element === document.activ…
+     88|     expect(await yInput.evaluate(element => getComputedStyle(element).…
+       |                                                                                          ^
+     89|     await page.keyboard.press('ControlOrMeta+A')
+     90|     await page.keyboard.insertText('-123')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  apps/web/tests/world-post-mvp-author.snapshot.ts > saves, conflicts and edits graph drafts through the actual sqlite authoring service
+AssertionError: expected 'none' not to be 'none' // Object.is equality
+ ❯ apps/web/tests/world-post-mvp-author.snapshot.ts:88:90
+     86|     const yInput = workspace.getByLabel('Y', { exact: true })
+     87|     expect(await yInput.evaluate(element => element === document.activ…
+     88|     expect(await yInput.evaluate(element => getComputedStyle(element).…
+       |                                                                                          ^
+     89|     await page.keyboard.press('ControlOrMeta+A')
+     90|     await page.keyboard.insertText('-123')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 2 passed (4)
+   Start at  18:38:52
+   Duration  36.05s (transform 1.55s, setup 20ms, import 2.68s, tests 33.12s, environment 0ms)
+

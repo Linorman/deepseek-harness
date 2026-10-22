@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { rm } from 'node:fs/promises'
 import { simulationChangeSchema, simulationEntityIdSchema, simulationRunSelectionSchema } from '@clocky/clocky-simulation'
+import { activationIdSchema } from '@clocky/clocky-team'
 import { simulationTemp } from '../../simulation-local/tests/temp.ts'
 import { createContext } from './harness.ts'
 
@@ -8,23 +9,183 @@ const cleanups: Array<() => Promise<void>> = []
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup() })
 const participant = { displayName: 'Buyer', role: 'buyer', capabilities: [], provider: 'in-process', preset: 'simulation', model: 'mock/default' }
 const entityId = simulationEntityIdSchema.parse('buyer')
-async function setup(backend: 'json' | 'sqlite') {
+async function setup(backend: 'json' | 'sqlite', readiness: 'ready' | 'preparing' = 'ready') {
   const root = await simulationTemp('participants')
   const { ctx } = await createContext(root, backend)
   const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 'create', spec: {
     runId: 'company', tickUnit: 'minute', origin: '0', maxTime: '1000', rulesVersion: '1', policyVersion: '1',
     outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 16, maxMicrostepsPerTime: 32,
-    phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [],
+    phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2, maxIngressBytes: 65536, maxEntities: 1000, maxResidentActors: 16, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8, maxDecisionsPerWindow: 16, maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [],
   } })
   const run = await ctx.simulations.open(selection)
   cleanups.push(async () => { await run.close(); await ctx.fiber.dispose(); await rm(root, { recursive: true, force: true }) })
   const team = await ctx.simulationTeams.ensureTeam(run, { goal: { objective: 'Company', budgets: {} }, budgets: {} }, 'simulation/company')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness, id: entityId, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/company')
   return { ctx, run, connection, teamId: team.team.id, selection }
 }
 
 describe.each(['json', 'sqlite'] as const)('%s participant provisioning', (backend) => {
+  it('prepares Team membership without admitting a preparing entity through direct controller or restored connection', async () => {
+    const { ctx, run, connection, selection, teamId } = await setup(backend, 'preparing')
+    const binding = await connection.ensureParticipant(entityId, participant)
+    const placement = { provider: 'in-process', seed: { kind: 'fresh' as const }, agent: { options: {} }, signal: new AbortController().signal }
+    expect((await ctx.teams.getTeam({ teamId })).participants.find(value => value.id === binding.participantId)?.phase).toBe('active')
+    await expect(connection.activate(entityId, placement)).rejects.toThrow(/ready entity/)
+    const direct = async (seed: { kind: 'fresh' | 'resume' } = placement.seed) => ctx.teamActivations.activate({ ...placement, ...binding, seed,
+      expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor })
+    await expect(direct()).rejects.toThrow(/ready entity/)
+    const coldReplace = () => ctx.teamActivations.coldReplace({ teamId, participantId: binding.participantId,
+      activationId: activationIdSchema.parse('never-admitted'), signal: new AbortController().signal })
+    // Preparing entities cannot have an activation history through the actual lifecycle owner.
+    await expect(coldReplace()).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_NOT_FOUND' })
+    expect(run.snapshot().entities[entityId]?.writer).toBeUndefined()
+    expect((await ctx.teams.getTeam({ teamId })).activations).toEqual([])
+    expect(await ctx.sessionPersistence.isUnmaterialized(binding.sessionId)).toBe(true)
+    const checkpoint = await connection.checkpoint({ id: (await import('@clocky/clocky-simulation')).simulationCheckpointIdSchema.parse('preparing'),
+      implementationVersion: 'readiness/1', maxDrainRounds: 4, maxAttempts: 3 })
+    expect(checkpoint.status).toBe('completed')
+    await run.close()
+    const restored = await ctx.simulationTeams.restore({ ...selection, mode: 'open' }, {
+      id: checkpoint.request.id, implementationVersion: 'readiness/1', maxAttempts: 3,
+    })
+    cleanups.push(() => restored.run.close())
+    expect(restored.run.snapshot().phase).toBe('paused')
+    expect(restored.run.snapshot().entities[entityId]?.readiness).toBe('preparing')
+    await expect(direct()).rejects.toThrow(/ready entity/)
+    await expect(direct({ kind: 'resume' })).rejects.toThrow(/ready entity/)
+    await expect(restored.connection.activate(entityId, { ...placement, seed: { kind: 'resume' } })).rejects.toThrow(/ready entity/)
+    await expect(coldReplace()).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_NOT_FOUND' })
+    expect(restored.run.snapshot().entities[entityId]?.writer).toBeUndefined()
+    expect((await ctx.teams.getTeam({ teamId })).activations).toEqual([])
+    expect(await ctx.sessionPersistence.isUnmaterialized(binding.sessionId)).toBe(true)
+    await restored.run.change(simulationChangeSchema.parse({ kind: 'entity/readiness', id: entityId,
+      entityRevision: restored.run.snapshot().entities[entityId]!.revision, readiness: 'ready' }), restored.run.snapshot().revision)
+    const actor = await direct()
+    expect(actor.localAgent?.status).toBe('idle')
+    if (actor.localAgent === undefined) throw new Error('Prepared entity has no local Agent')
+    expect(await ctx.sessions.flush(actor.localAgent.session)).toBe(true)
+    await actor.dispose()
+    const resumed = await restored.connection.activate(entityId, { ...placement, seed: { kind: 'resume' } })
+    expect(resumed.binding.sessionId).toBe(binding.sessionId)
+    expect(resumed.binding.activation.id).not.toBe(actor.binding.activation.id)
+    expect(resumed.localAgent?.status).toBe('idle')
+    await resumed.dispose()
+  })
+
+  it('rejects cold replacement of a real retired local epoch without a recovery plan and still admits persisted resume', async () => {
+    const { ctx, run, connection, teamId } = await setup(backend)
+    const binding = await connection.ensureParticipant(entityId, participant)
+    const placement = { provider: 'in-process', agent: { options: {} }, signal: new AbortController().signal }
+    const actor = await connection.activate(entityId, { ...placement, seed: { kind: 'fresh' } })
+    if (actor.localAgent === undefined) throw new Error('Activated entity has no local Agent')
+    expect(await ctx.sessions.flush(actor.localAgent.session)).toBe(true)
+    await actor.dispose()
+    const state = await ctx.teams.getTeam({ teamId })
+    expect(state.activations).toHaveLength(1)
+    expect(state.activations[0]).toMatchObject({ activation: { id: actor.binding.activation.id, status: 'offline' },
+      sessionId: binding.sessionId })
+    expect(typeof state.activations[0]?.quiescedAt).toBe('number')
+    expect(state.activations[0]?.recovery).toBeUndefined()
+    const snapshot = run.snapshot()
+    const replacement = ctx.teamActivations.coldReplace({ teamId, participantId: binding.participantId,
+      activationId: actor.binding.activation.id, signal: new AbortController().signal })
+    await expect(replacement).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_RECOVERY_UNSUPPORTED' })
+    await expect(replacement).rejects.toThrow('no persisted cold-replacement plan')
+    expect(run.snapshot()).toEqual(snapshot)
+    expect(await ctx.teams.getTeam({ teamId })).toEqual(state)
+    expect(ctx.agents.get(binding.sessionId)).toBeUndefined()
+    const resumed = await connection.activate(entityId, { ...placement, seed: { kind: 'resume' } })
+    expect(resumed.binding.sessionId).toBe(binding.sessionId)
+    expect(resumed.binding.activation.id).not.toBe(actor.binding.activation.id)
+    expect(resumed.localAgent?.status).toBe('idle')
+    await resumed.dispose()
+  })
+
+  it('retains maintenance admission across checkpoint restore and rejects the direct controller until explicit completion', async () => {
+    const { ctx, run, connection, selection, teamId } = await setup(backend)
+    const binding = await connection.ensureParticipant(entityId, participant)
+    const { simulationMaintenanceRequestSchema, simulationCheckpointIdSchema } = await import('@clocky/clocky-simulation')
+    const maintenance = simulationMaintenanceRequestSchema.parse({ id: 'world-prepare', owner: 'world-owner' })
+    await run.beginMaintenance(maintenance)
+    const direct = async () => ctx.teamActivations.activate({ ...binding,
+      provider: 'in-process', seed: { kind: 'fresh' as const }, agent: { options: {} }, signal: new AbortController().signal,
+      expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor })
+    await expect(direct()).rejects.toMatchObject({ code: 'SIM_MAINTENANCE_ACTIVE' })
+    const checkpoint = await connection.checkpoint({ id: simulationCheckpointIdSchema.parse('maintenance'),
+      implementationVersion: 'maintenance/1', maxDrainRounds: 4, maxAttempts: 3 })
+    expect(checkpoint.status).toBe('completed')
+    await run.close()
+    const restored = await ctx.simulationTeams.restore({ ...selection, mode: 'open' }, {
+      id: checkpoint.request.id, implementationVersion: 'maintenance/1', maxAttempts: 3,
+    })
+    cleanups.push(() => restored.run.close())
+    expect(restored.run.snapshot().phase).toBe('paused')
+    expect((await restored.run.beginMaintenance(maintenance)).status).toBe('draining')
+    await expect(direct()).rejects.toMatchObject({ code: 'SIM_MAINTENANCE_ACTIVE' })
+    await restored.run.quiesceMaintenance(maintenance)
+    await restored.run.finishMaintenance(maintenance)
+    expect(restored.run.snapshot().phase).toBe('paused')
+    const actor = await direct()
+    expect(actor.localAgent?.status).toBe('idle')
+    await actor.dispose()
+  })
+
+  it('uses the real retirement owner for maintenance and retains occupied responsibility after an unconfirmed stop', async () => {
+    const { ctx, run, connection } = await setup(backend)
+    await connection.ensureParticipant(entityId, participant)
+    const actor = await connection.activate(entityId, { provider: 'in-process', seed: { kind: 'fresh' },
+      agent: { options: {} }, signal: new AbortController().signal })
+    await run.setPhase('running', run.snapshot().revision)
+    const { simulationMaintenanceRequestSchema, simulationDecisionIdSchema } = await import('@clocky/clocky-simulation')
+    const maintenance = simulationMaintenanceRequestSchema.parse({ id: 'retire-for-world', owner: 'world-owner' })
+    await connection.openDecision(entityId, simulationDecisionIdSchema.parse('unfinished'))
+    const stop = vi.spyOn(ctx.teamActivations, 'stopOwnedActivation').mockRejectedValueOnce(new Error('Retirement unconfirmed'))
+    const first = connection.quiesceForMaintenance(maintenance, 4, 3)
+    expect(connection.quiesceForMaintenance(maintenance, 4, 3)).toBe(first)
+    await expect(first).rejects.toThrow(/Retirement unconfirmed/)
+    expect(run.snapshot().maintenance?.[maintenance.id]?.status).toBe('draining')
+    expect(run.population().chargedActors).toBe(1)
+    stop.mockRestore()
+    expect((await connection.quiesceForMaintenance(maintenance, 4, 3)).status).toBe('quiescent')
+    expect(run.population().chargedActors).toBe(0)
+    expect(run.snapshot().decisions[simulationDecisionIdSchema.parse('unfinished')]?.status).toBe('cancelled')
+    expect(ctx.agents.get(actor.binding.sessionId)).toBeUndefined()
+    const revision = run.snapshot().revision
+    expect((await connection.quiesceForMaintenance(maintenance, 4, 3)).status).toBe('quiescent')
+    expect(run.snapshot().revision).toBe(revision)
+    await run.finishMaintenance(maintenance)
+    expect(run.snapshot().phase).toBe('paused')
+  })
+
+  it('waits for accepted maintenance retirement on close and never records a cancelled collection as quiescent', async () => {
+    const { ctx, run, connection } = await setup(backend)
+    await connection.ensureParticipant(entityId, participant)
+    await connection.activate(entityId, { provider: 'in-process', seed: { kind: 'fresh' },
+      agent: { options: {} }, signal: new AbortController().signal })
+    const { simulationMaintenanceRequestSchema } = await import('@clocky/clocky-simulation')
+    const maintenance = simulationMaintenanceRequestSchema.parse({ id: 'close-maintenance', owner: 'world-owner' })
+    const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    const stop = ctx.teamActivations.stopOwnedActivation.bind(ctx.teamActivations)
+    const delayed = vi.spyOn(ctx.teamActivations, 'stopOwnedActivation').mockImplementationOnce(async (input) => {
+      entered.resolve(undefined); await release.promise
+      await stop(input)
+    })
+    const work = connection.quiesceForMaintenance(maintenance, 4, 3)
+    const rejected = expect(work).rejects.toThrow(/no longer admitted|closed/)
+    await entered.promise
+    let closed = false
+    const closing = connection.close().then(() => { closed = true })
+    await new Promise(resolve => setImmediate(resolve))
+    expect(closed).toBe(false)
+    expect(run.population().chargedActors).toBe(1)
+    release.resolve(undefined)
+    await Promise.all([rejected, closing])
+    delayed.mockRestore()
+    expect(run.population().chargedActors).toBe(0)
+    expect(run.snapshot().maintenance?.[maintenance.id]?.status).toBe('draining')
+  })
+
   it('checkpoints a reserved Session without creating it and replays its absence', async () => {
     const { ctx, run, connection, selection, teamId } = await setup(backend)
     const binding = await connection.ensureParticipant(entityId, participant)
@@ -127,7 +288,7 @@ describe.each(['json', 'sqlite'] as const)('%s participant provisioning', (backe
   it('serializes concurrent members and rejects substituted target payloads', async () => {
     const { ctx, run, connection, teamId } = await setup(backend)
     const other = simulationEntityIdSchema.parse('supplier')
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: other, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: other, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
     const original = ctx.teams.inviteParticipant.bind(ctx.teams)
     vi.spyOn(ctx.teams, 'inviteParticipant').mockImplementationOnce(async (request) => {
       await expect(original({ ...request, role: 'intruder' })).rejects.toThrow(/invalid/)
@@ -195,7 +356,7 @@ describe.each(['json', 'sqlite'] as const)('%s participant provisioning', (backe
 it.each(['invitation', 'provisioning', 'active'] as const)('rejects another participant returned from %s before binding the reserved identity', async (stage) => {
   const { ctx, run, connection, teamId } = await setup('sqlite')
   const other = simulationEntityIdSchema.parse('supplier')
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: other, entityKind: 'person', cognition: 'agent', profile: {} }),
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: other, entityKind: 'person', cognition: 'agent', profile: {} }),
     run.snapshot().revision)
   const otherBinding = await connection.ensureParticipant(other, { ...participant, displayName: 'Supplier', role: 'supplier' })
   const foreign = (await ctx.teams.getTeam({ teamId })).participants.find(value => value.id === otherBinding.participantId)!

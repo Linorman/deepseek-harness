@@ -23,7 +23,7 @@ const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ prov
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2,
   maxIngressBytes: 65536, maxEntities: 2, maxResidentActors: 1, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8,
   maxDecisionsPerWindow: 2,
-  maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [],
+  maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [],
 } }))
 const release = Promise.withResolvers<undefined>()
 const hold = async (stage: string) => {
@@ -37,7 +37,7 @@ try {
   const a = simulationEntityIdSchema.parse('a')
   const b = simulationEntityIdSchema.parse('b')
   for (const id of [a, b]) {
-    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id,
+    if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id,
       entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
     await connection.ensureParticipant(id, { displayName: id, role: id, capabilities: [],
       provider: 'in-process', preset: 'simulation', model: 'unused' })
@@ -108,11 +108,11 @@ try {
     agent: { preset: 'simulation', options: {} }, signal: new AbortController().signal }, evict: [a] })
   assert.equal(restored.status, 'resident')
   assert.equal(second.binding.sessionId, run.snapshot().entities[b]?.binding?.sessionId)
-  await assert.rejects(run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'c', entityKind: 'person',
+  await assert.rejects(run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'c', entityKind: 'person',
     cognition: 'none', profile: {} }), run.snapshot().revision), /entity capacity/)
   await run.change(simulationChangeSchema.parse({ kind: 'entity/phase', id: a,
     entityRevision: run.snapshot().entities[a]!.revision, phase: 'terminated' }), run.snapshot().revision)
-  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'c', entityKind: 'person',
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'c', entityKind: 'person',
     cognition: 'none', profile: {} }), run.snapshot().revision)
   const beforeClose = run.population()
   assert.deepEqual(beforeClose, { entities: 2, chargedActors: 1 })

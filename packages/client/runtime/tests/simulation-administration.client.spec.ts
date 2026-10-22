@@ -13,7 +13,9 @@ const create: SimulationCommand = { kind: 'create', input: { commandId: 'origina
 const receipt: SimulationProductRequestReceipt = { commandId: 'original' as never, runId: 'run' as never,
   kind: 'create', status: 'accepted', acceptedAt: 1 }
 const call: SimulationProductPrepareInput = { runId: 'run' as never, commandId: 'original' as never }
-const cases: ReadonlyArray<[SimulationCommand, keyof FakeApiClient['simulations'], unknown]> = [
+type AdministrationMethod = 'create' | 'retryRequest' | 'retryOperation' | 'resolveTaskReview' | 'cancelTask'
+  | 'prepare' | 'checkpoint' | 'restore' | 'manage' | 'ingress'
+const cases: ReadonlyArray<[SimulationCommand, AdministrationMethod, unknown]> = [
   [create, 'create', receipt],
   [{ kind: 'retry-request', input: call }, 'retryRequest', receipt],
   [{ kind: 'retry-operation', input: { ...call, operationId: 'operation', expectedAttemptCount: 1,
@@ -118,12 +120,13 @@ it('preserves a refused review original and independent viewing until actual aut
     const version = h.source.state.getSnapshot().authorizationVersion
     vi.spyOn(h.api.simulations, 'resolveTaskReview').mockResolvedValueOnce(err({ code: 'simulation-product-forbidden',
       message: 'Review permission denied', details: {} }))
-      .mockResolvedValueOnce(err({ code: 'PRODUCT_AUTH_INVALID', message: 'Authentication retired', details: {} }))
+    vi.spyOn(h.api.simulations, 'request').mockResolvedValueOnce(err({
+      code: 'PRODUCT_AUTH_INVALID', message: 'Authentication retired', details: {} }))
     expect(await h.admin.submit(key)).toMatchObject({ command: review, pending: false, error: 'forbidden', unknown: true })
     expect(h.source.state.getSnapshot().authorizationVersion).toBe(version)
     expect(h.source.state.getSnapshot().connected).toBe(true)
     expect(h.admin.state.getSnapshot().commands[key]?.command).toEqual(review)
-    await h.admin.submit(key)
+    await h.admin.query(key)
     expect(h.admin.state.getSnapshot().commands).toEqual({})
     expect(h.source.state.getSnapshot().authorizationVersion).toBeGreaterThan(version)
   } finally { await h.ctx.fiber.dispose() }
@@ -179,6 +182,9 @@ it('keeps uncertain original input, ignores later input and explicitly retries a
     const send = vi.spyOn(h.api.simulations, 'create').mockRejectedValueOnce(new Error('Lost response')).mockResolvedValueOnce(ok(receipt))
     const key = h.retain(create)
     expect(await h.admin.submit(key)).toMatchObject({ unknown: true, error: 'network', command: create })
+    const originalUnknown = h.admin.state.getSnapshot().commands[key]
+    expect(await h.admin.submit(key)).toEqual(originalUnknown)
+    expect(send).toHaveBeenCalledOnce()
     vi.spyOn(h.api.simulations, 'request').mockResolvedValueOnce(ok({ status: 'not-found', commandId: 'original' }) as never)
     expect(await h.admin.query(key)).toMatchObject({ unknown: true, notFound: true })
     expect(() => h.retain({ ...create, input: { ...create.input, name: 'Later' } } as SimulationCommand)).toThrow('another payload')
@@ -308,6 +314,8 @@ it('rejects stale authoring context, retires before send when an observer discon
     expect(await h.admin.submit(key)).toBeUndefined()
     off(); expect(send).not.toHaveBeenCalled()
     h.source.connected('replacement' as ProductAuthorizationScope)
+    vi.spyOn(h.api.simulations, 'request').mockResolvedValueOnce(ok({ status: 'not-found', commandId: 'original' }) as never)
+    await h.admin.query(key)
     const response = Promise.withResolvers<ReturnType<typeof ok<SimulationProductRequestReceipt>>>()
     send.mockReturnValue(response.promise)
     const pending = h.admin.submit(key)

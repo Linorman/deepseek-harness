@@ -1,3 +1,4 @@
+import { acquireLocalFileOwner } from '@clocky/clocky-storage'
 /** Same-host kernel-backed ownership, independent of log CAS. @module @clocky/clocky-simulation-local/owner */
 import { DatabaseSync } from 'node:sqlite'
 import { stat } from 'node:fs/promises'
@@ -10,14 +11,8 @@ import { stat } from 'node:fs/promises'
  * @returns release callback, invoked only after run IO and cleanup settle.
  */
 export function acquireRunOwner(path: string): () => void {
-  const db = new DatabaseSync(path)
-  try {
-    db.exec('PRAGMA busy_timeout = 0; BEGIN EXCLUSIVE')
-  } catch (error) {
-    db.close()
-    throw new Error('Simulation run already has a coordinator or its owner database is unavailable', { cause: error })
-  }
-  return () => { db.close() }
+  try { return acquireLocalFileOwner(path) }
+  catch (error) { throw new Error('Simulation run already has a coordinator or its owner database is unavailable', { cause: error }) }
 }
 
 /**

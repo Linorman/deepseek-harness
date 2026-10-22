@@ -1,8 +1,13 @@
+import { simulationProductWorldManagementSubmitInputSchema, matchesWorldManagementAction } from './world-management-schema.ts'
+import { simulationWorldManagementSubmitRequestSchema } from '@clocky/clocky-simulation/world-management'
+import { simulationProductWorldCaseCancelInputSchema } from './case-cancel-schema.ts'
 /** Strict deployment and retained creation resolution validation before native IO. */
 import { simulationProductTaskReviewResolveInputSchema } from './review-schema.ts'
 import { simulationProductTaskCancelInputSchema } from './task-control-schema.ts'
 import { simulationProductOperationRetryInputSchema } from './operation-retry-schema.ts'
 import { z } from 'zod'
+import { simulationWorldCreationSchema } from './world-creation.ts'
+import { simulationProductWorldCreateInputSchema } from './world-schema.ts'
 import { isDeepStrictEqual } from 'node:util'
 import { simulationRunSpecSchema } from '@clocky/clocky-simulation'
 import { productPrincipalId } from '@clocky/clocky-product-principal'
@@ -69,18 +74,27 @@ const base = { ownerPrincipalId: z.string().min(1).transform(productPrincipalId)
 /** Every original command binds its exact payload and authenticated owning principal. */
 export const simulationCreationCommandSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('create'), ...base, input: simulationProductOriginalCreateInputSchema, creation: simulationCompanyCreationSchema }),
+  z.strictObject({ kind: z.literal('world-create'), ...base, input: simulationProductWorldCreateInputSchema, creation: simulationWorldCreationSchema }),
+  z.strictObject({ kind: z.literal('world-prepare'), ...base, input: simulationProductPrepareInputSchema }),
   z.strictObject({ kind: z.literal('prepare'), ...base, input: simulationProductPrepareInputSchema }),
   z.strictObject({ kind: z.literal('checkpoint'), ...base, input: simulationProductCheckpointInputSchema }),
   z.strictObject({ kind: z.literal('restore'), ...base, input: simulationProductRestoreInputSchema }),
   z.strictObject({ kind: z.literal('review'), ...base, input: simulationProductTaskReviewResolveInputSchema }),
+  z.strictObject({ kind: z.literal('world-management'), ...base, input: simulationProductWorldManagementSubmitInputSchema,
+    native: simulationWorldManagementSubmitRequestSchema }),
+  z.strictObject({ kind: z.literal('cancel-world-case'), ...base, input: simulationProductWorldCaseCancelInputSchema }),
   z.strictObject({ kind: z.literal('cancel-task'), ...base, input: simulationProductTaskCancelInputSchema }),
   z.strictObject({ kind: z.literal('retry-operation'), ...base, input: simulationProductOperationRetryInputSchema }),
 ]).refine(value => value.kind === value.receipt.kind && value.input.commandId === value.receipt.commandId
-  && (value.kind !== 'create' ? value.input.runId === value.receipt.runId
+  && (value.kind !== 'create' && value.kind !== 'world-create' ? value.input.runId === value.receipt.runId
     : value.creation.record.id === value.receipt.runId && value.creation.record.ownerPrincipalId === value.ownerPrincipalId
       && value.creation.record.registeredAt === value.receipt.acceptedAt
       && JSON.stringify(value.input) === JSON.stringify(value.creation.request)),
 'Administration receipt does not match its original command').refine(value =>
   value.kind === 'checkpoint' ? value.receipt.checkpointId === `product-checkpoint/${value.input.commandId}`
     : value.kind !== 'restore' || value.receipt.checkpointId === value.input.checkpointId,
-'Maintenance checkpoint identity differs from its original command') satisfies z.ZodType<SimulationCreationCommand>
+'Maintenance checkpoint identity differs from its original command').refine(value => value.kind !== 'world-management'
+  || String(value.native.commandId) === String(value.input.commandId)
+    && value.native.previewHash === value.input.previewHash && value.native.expectedRevision === value.input.previewRevision
+    && matchesWorldManagementAction(value.input.draft, value.native.action),
+'User management native commitment differs from its original form') satisfies z.ZodType<SimulationCreationCommand>

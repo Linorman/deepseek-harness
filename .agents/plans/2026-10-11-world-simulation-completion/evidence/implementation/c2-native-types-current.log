@@ -1,0 +1,16 @@
+packages/simulation/simulation-local/src/decisions.ts(495,100): error TS2339: Property 'domain' does not exist on type '{ businessKey: string; expectedTime: SimTime | null; evidence: ({ kind: "entity"; id: SimulationEntityId; revision: number; } | { kind: "relation"; id: SimulationRelationId; revision: number; effectiveFrom: SimTime; effectiveUntil: SimTime | null; } | ... 7 more ... | { ...; })[]; ... 4 more ...; kind: "world/reques...'.
+  Property 'domain' does not exist on type '{ kind: "world/resolve"; requestId: WorldRequestId; supersedes: WorldPlanId | null; resolution: { kind: "apply"; payload: JSONType; rationale: string; } | { ...; }; }'.
+packages/simulation/simulation-local/src/decisions.ts(496,58): error TS2339: Property 'operation' does not exist on type '{ businessKey: string; expectedTime: SimTime | null; evidence: ({ kind: "entity"; id: SimulationEntityId; revision: number; } | { kind: "relation"; id: SimulationRelationId; revision: number; effectiveFrom: SimTime; effectiveUntil: SimTime | null; } | ... 7 more ... | { ...; })[]; ... 4 more ...; kind: "world/reques...'.
+  Property 'operation' does not exist on type '{ kind: "world/resolve"; requestId: WorldRequestId; supersedes: WorldPlanId | null; resolution: { kind: "apply"; payload: JSONType; rationale: string; } | { ...; }; }'.
+packages/simulation/simulation-local/src/decisions.ts(496,109): error TS2339: Property 'version' does not exist on type '{ businessKey: string; expectedTime: SimTime | null; evidence: ({ kind: "entity"; id: SimulationEntityId; revision: number; } | { kind: "relation"; id: SimulationRelationId; revision: number; effectiveFrom: SimTime; effectiveUntil: SimTime | null; } | ... 7 more ... | { ...; })[]; ... 4 more ...; kind: "world/reques...'.
+  Property 'version' does not exist on type '{ kind: "world/resolve"; requestId: WorldRequestId; supersedes: WorldPlanId | null; resolution: { kind: "apply"; payload: JSONType; rationale: string; } | { ...; }; }'.
+packages/simulation/simulation-local/src/index.ts(70,14): error TS2420: Class 'LocalSimulationProvider' incorrectly implements interface 'SimulationProvider'.
+  Types of property 'worldDomains' are incompatible.
+    Type 'SimulationWorldDomainRegistry<NativeWorldDomain> | undefined' is not assignable to type 'SimulationWorldDomainRegistry<NativeWorldDomain>'.
+      Type 'undefined' is not assignable to type 'SimulationWorldDomainRegistry<NativeWorldDomain>'.
+packages/simulation/simulation-local/src/index.ts(244,57): error TS2379: Argument of type 'LocalSimulationProvider' is not assignable to parameter of type 'SimulationProvider' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'worldDomains' are incompatible.
+    Type 'SimulationWorldDomainRegistry<NativeWorldDomain> | undefined' is not assignable to type 'SimulationWorldDomainRegistry<NativeWorldDomain>'.
+      Type 'undefined' is not assignable to type 'SimulationWorldDomainRegistry<NativeWorldDomain>'.
+packages/simulation/simulation-local/src/run.ts(12,43): error TS6133: 'simulationHireIntentRequestSchema' is declared but its value is never read.
+packages/simulation/simulation-local/src/world-hire.ts(387,78): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?

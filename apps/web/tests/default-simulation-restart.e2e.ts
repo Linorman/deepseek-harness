@@ -131,7 +131,8 @@ it('retains the accepted model and identity through fresh Host processes and res
     await page.screenshot({ path: join(parent, 'default-simulation-restored.png') })
     await writeFile(join(parent, 'default-restart.json'), JSON.stringify(evidence, null, 2))
   } catch (cause: unknown) {
-    await writeFile(join(parent, 'default-restart-failure.json'), JSON.stringify({ evidence, observation: await host?.observe(),
+    await writeFile(join(parent, 'default-restart-failure.json'), JSON.stringify({ error: String(cause), evidence,
+      observation: await host?.observe().catch((error: unknown) => ({ unavailable: String(error) })),
       page: await page.locator('body').innerText() }, null, 2))
     await page.screenshot({ path: join(parent, 'default-restart-failure.png') })
     throw cause

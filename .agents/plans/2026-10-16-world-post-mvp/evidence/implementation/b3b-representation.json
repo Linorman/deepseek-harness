@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-19",
+  "items": [
+    "B13",
+    "B14"
+  ],
+  "files": {
+    "packages/simulation/simulation/src/world-representation.ts": "395e92307779d8e803e9962c86bdf143d5e6a169a48bb14f153febaf07e2c0c4",
+    "packages/simulation/simulation-local/src/world-representation-domain.ts": "745667a1d3b3bcfa18258fc24dc623d9cc9eac6d5f8d3f3abd38969f03d99b2e",
+    "packages/simulation/simulation-local/src/world-representation-access.ts": "1996dc11a8005f66e48a1535cb0a9273772aa24b44bd5df149c418d3dad94ff0",
+    "packages/simulation/simulation-world/src/representation.ts": "b288eddeb661b56c839af12862bc770eb03e9d54e7588700303db2b77a1b59bf",
+    "packages/simulation/simulation-local/tests/world-representation-scenario.ts": "c168856b57f1b8a3b677638067dd0ce8a84ddc3580ec0fc45b909db27d9b6c92",
+    "packages/simulation/simulation-local/tests/world-representation.spec.ts": "7deb487a248543b7286cbcdea028b4d9c9b2e41d64102b6b2f482c76808a7140",
+    "examples/simulation-company/tests/world-representation.snapshot.ts": "eed916ff9a29ac1040fff424402dabf6d5cc4d12ff395eb720a78c420d069ecc",
+    "examples/simulation-company/tests/world-representation-scenario.ts": "524c6d500577cac37bf888e3b4a10b8ddb395ca66f78e2726bdba1f29595c8a8",
+    "examples/simulation-company/tests/__snapshots__/world-representation.snapshot.ts.snap": "844a1a717e37e2f75e26cf209ebb1932650328692b9faf5727ee4311db0400c6",
+    "examples/simulation-company/tests/world-external-limits-scenario.ts": "cbe88414b55eccf75f34d7e6978b85f9dea72b9266646791e13915f0ec093f89",
+    "examples/simulation-company/tests/world-reconcile-observation-proof.ts": "16f915b37e9fdd2b4f9fd8dd09b54349cea3a306a0b9d0cef31315e89b8034bd",
+    "examples/simulation-company/tests/world-external-cancel-scenario.ts": "35472d92ca7b7c7520217b46967f4b22d38ddde2ef125359b31908967f20add1",
+    "examples/simulation-company/tests/world-external-contact-scenario.ts": "f20977863603b9200caef69443c0c8f02af1b9acf29d6df5a2f79f44657f5608",
+    "examples/simulation-company/tests/world-external-contract-scenario.ts": "c21eb8fc834187c7fef2133127c0152e6a10bc56ffe08046c4652cd7903ecfe4",
+    "examples/simulation-company/tests/world-external-shared-scenario.ts": "087dfcfdf79a4b004c70f1db93f9eccfe0591cdf8f46529a45dc53e89a7feec2"
+  },
+  "commands": [
+    {
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc\" pnpm exec vitest run packages/simulation/simulation-local/tests/world-representation.spec.ts",
+      "result": "4 passed; JSON + SQLite real Loader, canonical Sessions and Native registry",
+      "log": ".tmp/world-post-mvp-bc/representation-test.log"
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.tmp/world-post-mvp-bc\" pnpm exec vitest run examples/simulation-company/tests/world-representation.snapshot.ts --config vitest.snapshot.config.ts --maxWorkers 2 --update",
+      "result": "2 passed; subprocess Loader; 2 golden snapshots recorded",
+      "log": ".tmp/world-post-mvp-bc/representation-snapshot.log"
+    },
+    {
+      "command": "pnpm exec vitest run packages/simulation/simulation-team/tests/archive.spec.ts packages/simulation/simulation-local/tests/owner.spec.ts packages/simulation/simulation-scenario/tests/environment.spec.ts packages/simulation/simulation-local/tests/world-environment.spec.ts packages/simulation/simulation-local/tests/world-representation.spec.ts",
+      "result": "15 passed, including four representation backend/interruption cases after final unified build",
+      "log": ".tmp/world-post-mvp-bc/representation-review/final-owning.log"
+    },
+    {
+      "command": "pnpm exec vitest run examples/simulation-company/tests/world-archive.snapshot.ts examples/simulation-company/tests/world-environment.snapshot.ts examples/simulation-company/tests/world-representation.snapshot.ts examples/simulation-company/tests/world-external-shared.snapshot.ts --config vitest.snapshot.config.ts --maxWorkers=2",
+      "result": "4 files, 10 passed; existing golden snapshots unchanged after unified build",
+      "log": ".tmp/world-post-mvp-bc/representation-review/final-snapshots.log"
+    },
+    {
+      "command": "pnpm exec vitest run examples/simulation-company/tests/world-external-limits.snapshot.ts --config vitest.snapshot.config.ts --maxWorkers=2 -t 'births|expansions|entities|participants|channels|bytes-reserve'",
+      "result": "28 passed; exact armed/blocked pair for original plan and pin; unchanged business, occupancy, models and persisted Sessions",
+      "log": ".tmp/world-post-mvp-bc/representation-review/final-limits.log"
+    },
+    {
+      "command": "pnpm exec vitest run examples/simulation-company/tests/world-external-cancel.snapshot.ts --config vitest.snapshot.config.ts --maxWorkers=2 -t 'crash-channel-io|crash-abandon-before-append'",
+      "result": "8 passed after unified build; no fixture changes for transient source/lib mismatch",
+      "log": ".tmp/world-post-mvp-bc/representation-review/final-cancel.log"
+    }
+  ],
+  "supported": [
+    "memoryless simulated-rule and director-mediated identities only",
+    "actor representative history and cognitive downgrade explicitly refused",
+    "original subject, identity, resources and history unchanged",
+    "original callback unknown reconciled before retry",
+    "baseline fence rejects mediated v3 before switch; real v3 executes after forward switch and v1 after reverse switch",
+    "pending original request and delayed event refuse switching; cancellation releases fence without state effects",
+    "two transitions retain generations 1/2/3 and original entity/resource histories"
+  ],
+  "limitations": [
+    "No arbitrary actor upgrade or memory summarization equivalence is claimed.",
+    "Final aggregate gate results are owned by the integrating task."
+  ],
+  "assertionCorrections": {
+    "originalFailures": ".tmp/world-post-mvp-bc/representation-review/legacy-assertion-failures",
+    "semantics": "Explicit retries retain armed/blocked or armed/outcome-unknown audit observations; tests require exact same original plan/pin and unchanged business, occupancy and Session effects. The mutation quota gate returns exactly SIM_WORLD_LIMIT with limit=mutations before domain resolution. No widened code unions or budget increases were used."
+  }
+}

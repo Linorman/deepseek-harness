@@ -1,3 +1,22 @@
+import type { SimulationProductWorldBranchInput, SimulationProductWorldBranchReadInput, SimulationProductWorldBranchResult, SimulationProductWorldCausalInput, SimulationProductWorldCausalResult, SimulationProductWorldCompareInput, SimulationProductWorldCompareResult } from '@clocky/clocky-simulation-product/experiment-types'
+import { simulationProductWorldBranchInputSchema, simulationProductWorldBranchReadInputSchema, simulationProductWorldBranchResultSchema, simulationProductWorldCausalInputSchema, simulationProductWorldCausalResultSchema, simulationProductWorldCompareInputSchema, simulationProductWorldCompareResultSchema } from '@clocky/clocky-simulation-product/schema'
+import type { SimulationProductBackupExportInput, SimulationProductBackupExportResult } from '@clocky/clocky-simulation-product/types'
+import { simulationProductBackupExportInputSchema, simulationProductBackupExportResultSchema } from '@clocky/clocky-simulation-product/schema'
+import type { SimulationProductRetentionPreviewInput, SimulationProductRetentionExecuteInput, SimulationProductRetentionReadInput, SimulationProductRetentionRecordsInput, SimulationProductRetentionPlan, SimulationProductRetentionResult, SimulationProductRetentionRecordsResult } from '@clocky/clocky-simulation-product/types'
+import { simulationProductRetentionPreviewInputSchema, simulationProductRetentionExecuteInputSchema, simulationProductRetentionReadInputSchema, simulationProductRetentionRecordsInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRetentionPlanSchema, simulationProductRetentionResultSchema, simulationProductRetentionRecordsResultSchema } from '@clocky/clocky-simulation-product/schema'
+import type { SimulationProductGenerationRequest, SimulationProductGenerationRead, SimulationProductGenerationTransition, SimulationProductGenerationPersonaDraft, SimulationProductGenerationResult } from '@clocky/clocky-simulation-product/types'
+import { simulationProductGenerationRequestSchema, simulationProductGenerationReadSchema, simulationProductGenerationTransitionSchema, simulationProductGenerationPersonaDraftSchema, simulationProductGenerationResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRebuildIndexInputSchema, simulationProductRebuildIndexResultSchema } from '@clocky/clocky-simulation-product/schema'
+import type { SimulationProductRebuildIndexInput, SimulationProductRebuildIndexResult } from '@clocky/clocky-simulation-product/types'
+import { scenarioDraftSaveSchema } from '@clocky/clocky-simulation-product/schema'
+import { SimulationCalendarRuntime } from './calendar.ts'
+import { SimulationRunControlRuntime } from './run-control.ts'
+import type { SimulationRunControlOptions } from './run-control.ts'
+import type { SimulationCalendarOptions } from './calendar.ts'
+import type { ScenarioDraftSave, ScenarioDraftSaveResult, ScenarioDraftRead, ScenarioDraftReadResult } from '@clocky/clocky-simulation-product/types'
+import { SimulationWorldDomainReader } from './world-domain-reader.ts'
+import { SimulationWorldManagementReader } from './world-management-reader.ts'
 import type { SimulationProductTasksInput, SimulationProductTasksPage } from '@clocky/clocky-simulation-product/types'
 import { SimulationSourceReader } from './source-reader.ts'
 import type { SimulationProductSourceInput, SimulationProductSourceInspection } from '@clocky/clocky-simulation-product/types'
@@ -12,6 +31,9 @@ import type { SimulationProductListInput, SimulationProductRunPage, SimulationPr
   SimulationProductBrowseInput, SimulationProductCollectionPage, SimulationProductObjectInput,
   SimulationProductRunStatusesInput, SimulationProductRunStatusesPage, SimulationProductObjectInspection, SimulationProductCatalog, SimulationProductControl, SimulationProductTaskReviewListInput, SimulationProductTaskReviewPage } from '@clocky/clocky-simulation-product/types'
 import type { SimulationProductPreflightInput, SimulationProductPreflightResult } from '@clocky/clocky-simulation-product/types'
+import type { SimulationProductWorldPreflightInput, SimulationProductWorldPreflightResult, SimulationProductWorldCasesInput,
+  SimulationProductWorldCasesPage, SimulationProductWorldCaseInput, SimulationProductWorldCaseInspection,
+  SimulationProductWorldExportResult, SimulationProductControlInput } from '@clocky/clocky-simulation-product/types'
 import type { SimulationProductRequestsInput, SimulationProductRequestsPage } from '@clocky/clocky-simulation-product/types'
 import { SimulationAdministrationRuntime } from './administration.ts'
 import type { SimulationAdministrationOptions } from './administration.ts'
@@ -22,7 +44,7 @@ import type { SimulationProductWatchResult, SimulationProductRunId } from '@cloc
 export type * from '@clocky/clocky-simulation-product/types'
 
 /** Localized UI recovery category; private transport/provider diagnostics are not displayed. */
-export type SimulationReadError = 'forbidden' | 'unavailable' | 'stale' | 'invalid' | 'network' | 'internal' | 'model-changed'
+export type SimulationReadError = 'forbidden' | 'unavailable' | 'stale' | 'invalid' | 'network' | 'internal' | 'model-changed' | 'preflight-changed' | 'management-preview-changed'
 /** One bounded response, its selection identity and independent pending/freshness state. */
 export interface SimulationReadState<T> {
   readonly scope?: string | undefined
@@ -41,6 +63,10 @@ export interface SimulationRuntimeState {
   readonly reviews: SimulationReadState<SimulationProductTaskReviewPage>
   readonly catalog: SimulationReadState<SimulationProductCatalog>
   readonly preflight: SimulationReadState<SimulationProductPreflightResult>
+  readonly worldPreflight: SimulationReadState<SimulationProductWorldPreflightResult>
+  readonly worldCases: SimulationReadState<SimulationProductWorldCasesPage>
+  readonly worldCase: SimulationReadState<SimulationProductWorldCaseInspection>
+  readonly worldExport: SimulationReadState<SimulationProductWorldExportResult>
   readonly tasks: SimulationReadState<SimulationProductTasksPage>
   readonly persistentRequests: SimulationReadState<SimulationProductRequestsPage>
   readonly control: SimulationReadState<SimulationProductControl>
@@ -53,13 +79,23 @@ export interface SimulationRuntimeState {
   readonly record: SimulationReadState<SimulationProductRecordsPage>
   readonly source: SimulationReadState<SimulationProductSourceInspection>
   readonly observation: SimulationReadState<SimulationProductWatchResult>
+  /**
+   * Directory rows superseded by a terminal management, checkpoint or recovery receipt, keyed by run with an
+   * invalidation counter; a later successful status batch containing the run clears its entry.
+   */
+  readonly invalidatedRuns: Readonly<Record<string, number>>
 }
 type Key = 'unknownOperations' | 'statuses' | 'reviews' | 'records' | 'record' | 'directory' | 'run' | 'collection' | 'object'
   | 'tasks' | 'catalog' | 'preflight' | 'persistentRequests' | 'control' | 'recovery'
+  | 'worldPreflight' | 'worldCases' | 'worldCase' | 'worldExport'
 interface Values {
   tasks: SimulationProductTasksPage
   persistentRequests: SimulationProductRequestsPage
   preflight: SimulationProductPreflightResult
+  worldPreflight: SimulationProductWorldPreflightResult
+  worldCases: SimulationProductWorldCasesPage
+  worldCase: SimulationProductWorldCaseInspection
+  worldExport: SimulationProductWorldExportResult
   unknownOperations: SimulationProductCollectionPage
   statuses: SimulationProductRunStatusesPage
   reviews: SimulationProductTaskReviewPage
@@ -74,6 +110,8 @@ interface Values {
   object: SimulationProductObjectInspection
 }
 const empty = (): SimulationRuntimeState => ({ tasks: { loading: false, stale: false }, unknownOperations: { loading: false, stale: false },
+  worldPreflight: { loading: false, stale: false }, worldCases: { loading: false, stale: false },
+  worldCase: { loading: false, stale: false }, worldExport: { loading: false, stale: false },
   persistentRequests: { loading: false, stale: false },
   statuses: { loading: false, stale: false }, reviews: { loading: false, stale: false },
   connected: false, generation: 0, authorizationVersion: 0,
@@ -81,7 +119,8 @@ const empty = (): SimulationRuntimeState => ({ tasks: { loading: false, stale: f
   catalog: { loading: false, stale: false }, preflight: { loading: false, stale: false }, control: { loading: false, stale: false },
   directory: { loading: false, stale: false }, run: { loading: false, stale: false },
   collection: { loading: false, stale: false },
-  recovery: { loading: false, stale: false }, object: { loading: false, stale: false }, observation: { loading: false, stale: false } })
+  recovery: { loading: false, stale: false }, object: { loading: false, stale: false }, observation: { loading: false, stale: false },
+  invalidatedRuns: {} })
 
 /** React-free business reads; no browsing method opens execution or publishes a management request. */
 export class SimulationRuntime {
@@ -96,6 +135,8 @@ export class SimulationRuntime {
   private authority: ProductAuthorizationScope | undefined
   private observer: SimulationObserver | undefined
   private readonly observationJobs = new Set<Promise<void>>()
+  private controlRead: { runId: SimulationProductRunId; generation: number; promise: Promise<void> } | undefined
+  private invalidations = 0
 
   /** @param ctx - Owner of service and disposal. @param api - Shared authenticated transport. */
   constructor(ctx: Context, private readonly api: IApiClient) {
@@ -117,6 +158,43 @@ export class SimulationRuntime {
    */
   administration(ctx: Context, options: SimulationAdministrationOptions): SimulationAdministrationRuntime {
     return new SimulationAdministrationRuntime(ctx, this.api, this, options, () => { this.denied() })
+  }
+
+  /**
+   * Create a domain-window owner whose retained private pages follow this runtime's authority.
+   * @param ctx - Registering view lifetime.
+   * @returns independently bounded World reader; inspection never starts execution.
+   */
+  worldDomainReader(ctx: Context): SimulationWorldDomainReader {
+    return new SimulationWorldDomainReader(ctx, this.api, this, () => { this.denied() })
+  }
+
+  /** Create a single-original calendar command owner for this plugin's lifetime.
+   * @param ctx - Consumer registration and cleanup lifetime.
+   * @param options - Complete retained-byte and transport-time allowances.
+   * @returns command owner sharing the current authenticated connection.
+   */
+  worldCalendar(ctx: Context, options: SimulationCalendarOptions): SimulationCalendarRuntime {
+    return new SimulationCalendarRuntime(ctx, this.api, this, options)
+  }
+
+  /**
+   * Create a single-original stop-target command owner for this plugin's lifetime.
+   * @param ctx - Consumer registration and cleanup lifetime.
+   * @param options - Transport wait for one command.
+   * @returns command owner sharing the current authenticated connection; it never starts scheduling.
+   */
+  runControl(ctx: Context, options: SimulationRunControlOptions): SimulationRunControlRuntime {
+    return new SimulationRunControlRuntime(ctx, this.api, this, options)
+  }
+
+  /**
+   * Create an inert personnel form/preview owner bound to current run and credential observations.
+   * @param ctx - Registering view lifetime.
+   * @returns independently bounded metadata and quote reads; commands remain in the administration owner.
+   */
+  worldManagementReader(ctx: Context): SimulationWorldManagementReader {
+    return new SimulationWorldManagementReader(ctx, this.api, this, () => { this.denied() })
   }
 
   /**
@@ -157,6 +235,7 @@ export class SimulationRuntime {
       const state = this.authority === scope ? this.state.getSnapshot() : empty()
       this.authority = scope
       return { ...state, connected: true, generation: this.generation, record: { loading: false, stale: true },
+        worldCase: { scope: state.worldCase.scope, loading: false, stale: true },
         object: (state.object.value?.value?.section === 'context' || state.object.value?.value?.section === 'knowledge') ? { loading: false, stale: true } : state.object }
     })
   }
@@ -169,6 +248,8 @@ export class SimulationRuntime {
         statuses: { ...state.statuses, stale: true }, reviews: { ...state.reviews, stale: true },
         persistentRequests: { ...state.persistentRequests, stale: true }, tasks: { ...state.tasks, stale: true },
         catalog: { ...state.catalog, stale: true }, preflight: { ...state.preflight, stale: true },
+        worldPreflight: { ...state.worldPreflight, stale: true }, worldCases: { ...state.worldCases, stale: true },
+        worldCase: { scope: state.worldCase.scope, loading: false, stale: true }, worldExport: { ...state.worldExport, stale: true },
         control: { ...state.control, stale: true },
         directory: { ...state.directory, stale: true }, run: { ...state.run, stale: true },
         records: { ...state.records, stale: true }, record: { ...state.record, stale: true },
@@ -188,7 +269,8 @@ export class SimulationRuntime {
   pause(): void {
     this.transition(() => {
       const state = this.state.getSnapshot()
-      return { ...state, record: { loading: false, stale: true }, object: (state.object.value?.value?.section === 'context' || state.object.value?.value?.section === 'knowledge') ? { loading: false, stale: true } : state.object }
+      return { ...state, record: { loading: false, stale: true }, worldCase: { scope: state.worldCase.scope, loading: false, stale: true },
+        object: (state.object.value?.value?.section === 'context' || state.object.value?.value?.section === 'knowledge') ? { loading: false, stale: true } : state.object }
     })
   }
 
@@ -212,12 +294,14 @@ export class SimulationRuntime {
     this.transitions++
     try {
       this.observer = observer
-      const requests = this.retireReads(['object', 'record'])
+      const requests = this.retireReads(['object', 'record', 'worldCase'])
       const state = this.state.getSnapshot()
-      this.state.set({ ...state, record: { loading: false, stale: true }, object: (state.object.value?.value?.section === 'context' || state.object.value?.value?.section === 'knowledge')
-        ? { scope: state.object.scope, loading: false, stale: true }
-        : state.object.loading ? { ...state.object, loading: false, stale: true } : state.object,
-      observation: { scope: JSON.stringify(['watch', runId]), loading: true, stale: false } })
+      this.state.set({ ...state, record: { loading: false, stale: true },
+        worldCase: { scope: state.worldCase.scope, loading: false, stale: true },
+        object: (state.object.value?.value?.section === 'context' || state.object.value?.value?.section === 'knowledge')
+          ? { scope: state.object.scope, loading: false, stale: true }
+          : state.object.loading ? { ...state.object, loading: false, stale: true } : state.object,
+        observation: { scope: JSON.stringify(['watch', runId]), loading: true, stale: false } })
       for (const request of requests) request.controller.abort()
       old?.close()
     } finally { this.transitions-- }
@@ -238,6 +322,8 @@ export class SimulationRuntime {
     const previous = state.observation.value
     const context = state.object.value?.value
     const replaced = state.record.value !== undefined && state.record.value.readVersion !== value.readVersion
+      || state.worldCase.value !== undefined && state.worldCase.value.readVersion !== value.readVersion
+      || !state.worldCases.stale && state.worldCases.value !== undefined && state.worldCases.value.readVersion !== value.readVersion
       || state.records.value !== undefined && state.records.value.readVersion !== value.readVersion
       || value.status === 'reset' || previous !== undefined && previous.readVersion !== value.readVersion
       || (context?.section === 'context' || context?.section === 'knowledge') && context.readVersion !== value.readVersion
@@ -253,6 +339,7 @@ export class SimulationRuntime {
         && (revision === undefined || current.run.value.world.revision < revision) },
       unknownOperations: stalePage(current.unknownOperations),
       reviews: stalePage(current.reviews), records: stalePage(current.records), record: stalePage(current.record),
+      worldCases: stalePage(current.worldCases), worldCase: stalePage(current.worldCase),
       collection: stalePage(current.collection), object: stalePage(current.object), recovery: stalePage(current.recovery) })
   }
 
@@ -269,13 +356,18 @@ export class SimulationRuntime {
   private invalidateViews(all: boolean, error: SimulationReadError): void {
     this.transitions++
     try {
-      const requests = this.retireReads(all ? ['run', 'collection', 'object', 'recovery', 'records', 'record', 'reviews', 'unknownOperations'] : ['object', 'record'])
+      const requests = this.retireReads(all ? ['run', 'collection', 'object', 'recovery', 'records', 'record', 'reviews', 'unknownOperations',
+        'worldCases', 'worldCase', 'worldPreflight', 'worldExport'] : ['object', 'record', 'worldCase'])
       const state = this.state.getSnapshot()
       const object = (state.object.value?.value?.section === 'context' || state.object.value?.value?.section === 'knowledge') || state.object.scope?.endsWith(',"context"]') === true || state.object.scope?.endsWith(',"knowledge"]') === true ? { scope: state.object.scope, loading: false, stale: true, error }
         : { ...state.object, loading: false, stale: true }
       this.state.set({ ...state, object, record: { scope: state.record.scope, loading: false, stale: true, error },
+        worldCase: { scope: state.worldCase.scope, loading: false, stale: true, error },
         ...all ? { unknownOperations: { ...state.unknownOperations, loading: false, stale: true },
           reviews: { ...state.reviews, loading: false, stale: true },
+          worldCases: { ...state.worldCases, loading: false, stale: true },
+          worldPreflight: { ...state.worldPreflight, loading: false, stale: true },
+          worldExport: { ...state.worldExport, loading: false, stale: true },
           records: { ...state.records, loading: false, stale: true },
           run: { ...state.run, loading: false, stale: true },
           collection: { ...state.collection, loading: false, stale: true },
@@ -317,6 +409,8 @@ export class SimulationRuntime {
         persistentRequests: { ...state.persistentRequests, loading: false, stale: true },
         tasks: { ...state.tasks, loading: false, stale: true },
         catalog: { ...state.catalog, loading: false }, preflight: { ...state.preflight, loading: false, stale: true },
+        worldPreflight: { ...state.worldPreflight, loading: false, stale: true }, worldCases: { ...state.worldCases, loading: false },
+        worldCase: { ...state.worldCase, loading: false }, worldExport: { ...state.worldExport, loading: false },
         control: { ...state.control, loading: false },
         directory: { ...state.directory, loading: false }, run: { ...state.run, loading: false },
         collection: { ...state.collection, loading: false }, recovery: { ...state.recovery, loading: false },
@@ -383,13 +477,362 @@ export class SimulationRuntime {
     if (this.selections.get('preflight') !== selection) return
     this.state.set({ ...this.state.getSnapshot(), preflight: { loading: false, stale: false } })
   }
+  /** Resolve an exact experiment request under the current connection authority.
+   * @param input - Original command or bounded immutable cut selection.
+   * @returns parsed result; changed authority or original selections reject after IO.
+   */
+  async branchWorld(input: SimulationProductWorldBranchInput): Promise<SimulationProductWorldBranchResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Experiments require a connection')
+    const generation = this.generation, request = simulationProductWorldBranchInputSchema.parse(input)
+    const response = await this.api.simulations.branchWorld(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Experiment authorization changed')
+    if (!response.result.ok) throw new Error('Experiment request failed; reconcile the original command')
+    const value = simulationProductWorldBranchResultSchema.parse(response.result.value)
+    if (value.commandId !== request.commandId || value.status === 'not-found'
+      || value.source.runId !== request.source.runId || value.source.archiveCommandId !== request.source.archiveCommandId
+      || value.memoryPolicy !== request.memoryPolicy || value.runId === request.source.runId) throw new Error('Experiment response changed its original selection or bounds')
+    return value
+  }
+
+  /** Resolve an exact experiment request under the current connection authority.
+   * @param input - Original command or bounded immutable cut selection.
+   * @returns parsed result; changed authority or original selections reject after IO.
+   */
+  async readWorldBranch(input: SimulationProductWorldBranchReadInput): Promise<SimulationProductWorldBranchResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Experiments require a connection')
+    const generation = this.generation, request = simulationProductWorldBranchReadInputSchema.parse(input)
+    const response = await this.api.simulations.readWorldBranch(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Experiment authorization changed')
+    if (!response.result.ok) throw new Error('Experiment request failed; reconcile the original command')
+    const value = simulationProductWorldBranchResultSchema.parse(response.result.value)
+    if (value.commandId !== request.commandId) throw new Error('Experiment response changed its original selection or bounds')
+    return value
+  }
+
+  /** Resolve an exact experiment request under the current connection authority.
+   * @param input - Original command or bounded immutable cut selection.
+   * @returns parsed result; changed authority or original selections reject after IO.
+   */
+  async queryWorldCausal(input: SimulationProductWorldCausalInput): Promise<SimulationProductWorldCausalResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Experiments require a connection')
+    const generation = this.generation, request = simulationProductWorldCausalInputSchema.parse(input)
+    const response = await this.api.simulations.queryWorldCausal(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Experiment authorization changed')
+    if (!response.result.ok) throw new Error('Experiment request failed; reconcile the original command')
+    const value = simulationProductWorldCausalResultSchema.parse(response.result.value)
+    if (value.source.runId !== request.source.runId || value.source.archiveCommandId !== request.source.archiveCommandId
+      || value.nodes.length > request.maxNodes || new TextEncoder().encode(JSON.stringify(value)).length > request.maxBytes
+      || new Set(value.nodes.map(node => node.key)).size !== value.nodes.length
+      || value.edges.some(edge => !value.nodes.some(node => node.key === edge.from) || !value.nodes.some(node => node.key === edge.to))) throw new Error('Experiment response changed its original selection or bounds')
+    return value
+  }
+
+  /** Resolve an exact experiment request under the current connection authority.
+   * @param input - Original command or bounded immutable cut selection.
+   * @returns parsed result; changed authority or original selections reject after IO.
+   */
+  async compareWorlds(input: SimulationProductWorldCompareInput): Promise<SimulationProductWorldCompareResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Experiments require a connection')
+    const generation = this.generation, request = simulationProductWorldCompareInputSchema.parse(input)
+    const response = await this.api.simulations.compareWorlds(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Experiment authorization changed')
+    if (!response.result.ok) throw new Error('Experiment request failed; reconcile the original command')
+    const value = simulationProductWorldCompareResultSchema.parse(response.result.value)
+    if (value.observations.left.runId !== request.left.runId || value.observations.left.archiveCommandId !== request.left.archiveCommandId
+      || value.observations.right.runId !== request.right.runId
+      || value.observations.right.archiveCommandId !== request.right.archiveCommandId) throw new Error('Experiment response changed its original selection or bounds')
+    return value
+  }
+
+  /** Read the exact completed private backup; rejects changed authority or original selection.
+   * @param input - Original run and retention command identity.
+   * @returns bounded private bundle bytes without capture, restore or inference.
+   */
+  async backupExport(input: SimulationProductBackupExportInput): Promise<SimulationProductBackupExportResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Backup requires a connection')
+    const generation = this.generation, request = simulationProductBackupExportInputSchema.parse(input)
+    const response = await this.api.simulations.backupExport(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Backup authorization changed')
+    if (!response.result.ok) throw new Error('Backup request failed; reconcile the original command')
+    const value = simulationProductBackupExportResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.commandId !== request.commandId) throw new Error('Backup response changed its original selection')
+    return value
+  }
+
   /**
-   * Read action hints without acquiring ownership.
+   * Original retention preview with current connection authority checked after IO.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns source-bound conservative archive plan; a live or nonquiescent source refuses without pausing.
+   */
+  async retentionPreview(input: SimulationProductRetentionPreviewInput): Promise<SimulationProductRetentionPlan> {
+    if (!this.state.getSnapshot().connected) throw new Error('Retention requires a connection')
+    const generation = this.generation, request = simulationProductRetentionPreviewInputSchema.parse(input)
+    const response = await this.api.simulations.retentionPreview(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Retention authorization changed')
+    if (!response.result.ok) throw new Error('Retention request failed; reconcile the original command')
+    const value = simulationProductRetentionPlanSchema.parse(response.result.value)
+    if (value.runId !== request.runId) throw new Error('Retention response changed its original selection')
+    return value
+  }
+
+  /**
+   * Original retention execute with current connection authority checked after IO.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async retentionExecute(input: SimulationProductRetentionExecuteInput): Promise<SimulationProductRetentionResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Retention requires a connection')
+    const generation = this.generation, request = simulationProductRetentionExecuteInputSchema.parse(input)
+    const response = await this.api.simulations.retentionExecute(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Retention authorization changed')
+    if (!response.result.ok) throw new Error('Retention request failed; reconcile the original command')
+    const value = simulationProductRetentionResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.commandId !== request.commandId
+        || value.status === 'not-found' || value.plan.planHash !== request.planHash || value.plan.snapshotRevision !== request.expectedRevision) throw new Error('Retention response changed its original selection')
+    return value
+  }
+
+  /**
+   * Original retention read with current connection authority checked after IO.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async retentionRead(input: SimulationProductRetentionReadInput): Promise<SimulationProductRetentionResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Retention requires a connection')
+    const generation = this.generation, request = simulationProductRetentionReadInputSchema.parse(input)
+    const response = await this.api.simulations.retentionRead(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Retention authorization changed')
+    if (!response.result.ok) throw new Error('Retention request failed; reconcile the original command')
+    const value = simulationProductRetentionResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.commandId !== request.commandId) throw new Error('Retention response changed its original selection')
+    return value
+  }
+
+  /**
+   * Original retention records with current connection authority checked after IO.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns independently authorized original owner records in ascending sequence order.
+   */
+  async retentionRecords(input: SimulationProductRetentionRecordsInput): Promise<SimulationProductRetentionRecordsResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Retention requires a connection')
+    const generation = this.generation, request = simulationProductRetentionRecordsInputSchema.parse(input)
+    const response = await this.api.simulations.retentionRecords(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Retention authorization changed')
+    if (!response.result.ok) throw new Error('Retention request failed; reconcile the original command')
+    const value = simulationProductRetentionRecordsResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.commandId !== request.commandId
+        || value.owner !== request.owner || value.ownerId !== request.ownerId
+        || value.entries.length > request.limit || value.entries.some((entry, index, entries) =>
+      entry.sequence <= (entries[index - 1]?.sequence ?? request.afterSequence))) throw new Error('Retention response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit generation request under the current connection; late results from retired authority reject.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async generationRequest(input: SimulationProductGenerationRequest): Promise<SimulationProductGenerationResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Generation requires a connection')
+    const generation = this.generation, request = simulationProductGenerationRequestSchema.parse(input)
+    const response = await this.api.simulations.generationRequest(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Generation authorization changed')
+    if (!response.result.ok) throw new Error('Generation request failed; reconcile the original job')
+    const value = simulationProductGenerationResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.job !== null && value.job.job.id !== request.job.id || value.job === null)
+      throw new Error('Generation response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit generation read under the current connection; late results from retired authority reject.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns the original private job or absent history without any model request.
+   */
+  async generationRead(input: SimulationProductGenerationRead): Promise<SimulationProductGenerationResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Generation requires a connection')
+    const generation = this.generation, request = simulationProductGenerationReadSchema.parse(input)
+    const response = await this.api.simulations.generationRead(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Generation authorization changed')
+    if (!response.result.ok) throw new Error('Generation request failed; reconcile the original job')
+    const value = simulationProductGenerationResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.job !== null && value.job.job.id !== request.jobId)
+      throw new Error('Generation response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit generation execute under the current connection; late results from retired authority reject.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns retained output or explicit unresolved responsibility after the accepted model attempt.
+   */
+  async generationExecute(input: SimulationProductGenerationRead): Promise<SimulationProductGenerationResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Generation requires a connection')
+    const generation = this.generation, request = simulationProductGenerationReadSchema.parse(input)
+    const response = await this.api.simulations.generationExecute(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Generation authorization changed')
+    if (!response.result.ok) throw new Error('Generation request failed; reconcile the original job')
+    const value = simulationProductGenerationResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.job !== null && value.job.job.id !== request.jobId || value.job === null)
+      throw new Error('Generation response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit generation transition under the current connection; late results from retired authority reject.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns validated original state; replaced authority or mismatched selection rejects.
+   */
+  async generationTransition(input: SimulationProductGenerationTransition): Promise<SimulationProductGenerationResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Generation requires a connection')
+    const generation = this.generation, request = simulationProductGenerationTransitionSchema.parse(input)
+    const response = await this.api.simulations.generationTransition(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Generation authorization changed')
+    if (!response.result.ok) throw new Error('Generation request failed; reconcile the original job')
+    const value = simulationProductGenerationResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.job !== null && value.job.job.id !== request.change.id || value.job === null)
+      throw new Error('Generation response changed its original selection')
+    return value
+  }
+
+  /**
+   * Explicit generation persona-draft under the current connection; late results from retired authority reject.
+   * @param input - Original selection and payload; preserve its identity across uncertain outcomes.
+   * @returns original generation linked to its committed A2 draft revision and body hash.
+   */
+  async generationPersonaDraft(input: SimulationProductGenerationPersonaDraft): Promise<SimulationProductGenerationResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Generation requires a connection')
+    const generation = this.generation, request = simulationProductGenerationPersonaDraftSchema.parse(input)
+    const response = await this.api.simulations.generationPersonaDraft(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Generation authorization changed')
+    if (!response.result.ok) throw new Error('Generation request failed; reconcile the original job')
+    const value = simulationProductGenerationResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.job !== null && value.job.job.id !== request.jobId || value.job === null)
+      throw new Error('Generation response changed its original selection')
+    return value
+  }
+
+  /**
+   * Rebuild exact derived references through the current authenticated connection.
+   * @param input - Original source prefix, retained unchanged across retries.
+   * @returns published metadata; authority replacement rejects late results.
+   */
+  async rebuildIndex(input: SimulationProductRebuildIndexInput): Promise<SimulationProductRebuildIndexResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Index rebuild requires a connection')
+    const generation = this.generation, request = simulationProductRebuildIndexInputSchema.parse(input)
+    const response = await this.api.simulations.rebuildIndex(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Index authorization changed')
+    if (!response.result.ok) throw new Error('Index rebuild failed; retry the original source revision')
+    const value = simulationProductRebuildIndexResultSchema.parse(response.result.value)
+    if (value.runId !== request.runId || value.snapshotRevision !== request.expectedRevision) throw new Error('Index response changed source')
+    return value
+  }
+
+  /** Preserve one original save through the authenticated product transport.
+   * @param input - Original private save ID/payload.
+   * @returns saved revision or conflict; retired authority discards responses.
+   */
+  async saveScenarioDraft(input: ScenarioDraftSave): Promise<ScenarioDraftSaveResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Draft save requires a connection')
+    const generation = this.generation
+    const request = scenarioDraftSaveSchema.parse(input)
+    const response = await this.api.simulations.saveScenarioDraft(request)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Draft authorization changed')
+    if (!response.result.ok) throw new Error('Draft save failed; retry the original save')
+    const original = response.result.value.status === 'saved' ? response.result.value.value : response.result.value.attempted
+    if (JSON.stringify(scenarioDraftSaveSchema.parse({ draftId: original.draftId, saveId: original.saveId,
+      parentRevision: original.parentRevision, name: original.name, definition: original.definition,
+      layout: original.layout, templateManifest: original.templateManifest })) !== JSON.stringify(request))
+      throw new Error('Draft response changed original identity')
+    return response.result.value
+  }
+  /** Read one private saved revision under the current authority.
+   * @param input - Exact private draft/revision.
+   * @returns original document; stale authority never publishes content.
+   */
+  async readScenarioDraft(input: ScenarioDraftRead): Promise<ScenarioDraftReadResult> {
+    if (!this.state.getSnapshot().connected) throw new Error('Draft read requires a connection')
+    const generation = this.generation
+    const response = await this.api.simulations.readScenarioDraft(input)
+    if (generation !== this.generation || !this.state.getSnapshot().connected) throw new Error('Draft authorization changed')
+    if (!response.result.ok) throw new Error('Draft read failed')
+    const value = response.result.value.value
+    if (value !== null && (value.draftId !== input.draftId || input.revision !== undefined && value.revision !== input.revision))
+      throw new Error('Draft response changed selection')
+    return response.result.value
+  }
+  /** Validate one portable World definition without creating identities.
+   * @param input - Exact definition and public deployment preview selection.
+   * @returns only this generation's matching preview; retired drafts return undefined.
+   */
+  async preflightWorld(input: SimulationProductWorldPreflightInput):
+  Promise<SimulationReadState<SimulationProductWorldPreflightResult> | undefined> {
+    if (this.transitions !== 0 || !this.state.getSnapshot().connected) return undefined
+    const generation = this.generation, scope = JSON.stringify(['worldPreflight', input])
+    const selection = (this.selections.get('worldPreflight') ?? 0) + 1
+    await this.read('worldPreflight', scope, signal => this.api.simulations.preflightWorld(input, signal))
+    const state = this.state.getSnapshot()
+    return this.generation === generation && this.selections.get('worldPreflight') === selection && state.connected
+      && state.worldPreflight.scope === scope ? state.worldPreflight : undefined
+  }
+  /** Retire a changed or dismissed World definition and its late preview. */
+  closeWorldPreflight(): void {
+    const selection = this.cancel('worldPreflight')
+    if (this.selections.get('worldPreflight') !== selection) return
+    this.state.set({ ...this.state.getSnapshot(), worldPreflight: { loading: false, stale: false } })
+  }
+  /** Read one bounded World case page without retaining another run's cases.
+   * @param input - Exact run/filter/fences and opaque continuation.
+   * @returns this read's settlement; pages replace rather than append.
+   */
+  listWorldCases(input: SimulationProductWorldCasesInput): Promise<void> {
+    const { cursor: _cursor, limit: _limit, expectedRevision: _expectedRevision, ...query } = input
+    const scope = JSON.stringify(['worldCases', Object.fromEntries(Object.entries(query).sort(([a], [b]) => a.localeCompare(b)))])
+    return this.read('worldCases', scope, signal => this.api.simulations.listWorldCases(input, signal))
+  }
+  /** Read one independently authorized case section.
+   * @param input - Original request, finite section and revision/policy-bound continuation.
+   * @returns settlement; replaced or retired responses cannot restore prose or Persona.
+   */
+  inspectWorldCase(input: SimulationProductWorldCaseInput): Promise<void> {
+    return this.read('worldCase', JSON.stringify(['worldCase', input.runId, input.requestId, input.section]),
+      signal => this.api.simulations.inspectWorldCase(input, signal))
+  }
+  /** Clear dismissed case content and cancel its pending read. */
+  closeWorldCase(): void {
+    const selection = this.cancel('worldCase')
+    if (this.selections.get('worldCase') !== selection) return
+    this.state.set({ ...this.state.getSnapshot(), worldCase: { loading: false, stale: false } })
+  }
+  /** Read the original portable definition without returning a run backup.
+   * @param input - Exact registered World run.
+   * @returns bounded export read settlement.
+   */
+  exportWorldDefinition(input: SimulationProductControlInput): Promise<void> {
+    return this.read('worldExport', JSON.stringify(['worldExport', input.runId]),
+      signal => this.api.simulations.exportWorldDefinition(input, signal))
+  }
+  /** Retire a dismissed export, including pending reads from an earlier run. */
+  closeWorldExport(): void {
+    const selection = this.cancel('worldExport')
+    if (this.selections.get('worldExport') !== selection) return
+    this.state.set({ ...this.state.getSnapshot(), worldExport: { loading: false, stale: false } })
+  }
+  /**
+   * Read action hints without acquiring ownership; repeated polls share the current exact read.
    * @param runId - Exact registered run.
    * @returns read settlement.
    */
   control(runId: SimulationProductInspectInput['runId']): Promise<void> {
-    return this.read('control', JSON.stringify(['control', runId]), signal => this.api.simulations.control({ runId }, signal))
+    const current = this.controlRead
+    if (current?.runId === runId && current.generation === this.generation && this.requests.has('control')) return current.promise
+    const result = Promise.withResolvers<void>()
+    const pending = { runId, generation: this.generation, promise: result.promise }
+    this.controlRead = pending
+    const release = () => { if (this.controlRead === pending) this.controlRead = undefined }
+    void this.read('control', JSON.stringify(['control', runId]), signal => this.api.simulations.control({ runId }, signal))
+      .then(() => { release(); result.resolve() }, (cause: unknown) => { release(); result.reject(cause) })
+    return result.promise
   }
   /**
    * Read the authorized directory.
@@ -427,7 +870,31 @@ export class SimulationRuntime {
     if (this.transitions !== 0 || !this.state.getSnapshot().connected) return Promise.resolve()
     const ids = this.state.getSnapshot().directory.value?.items.map(item => item.id)
     if (ids === undefined || JSON.stringify(ids) !== JSON.stringify(input.runIds)) return Promise.resolve()
-    return this.read('statuses', JSON.stringify(['statuses', input.runIds]), signal => this.api.simulations.runStatuses(input, signal))
+    const scope = JSON.stringify(['statuses', input.runIds])
+    const invalidated = this.state.getSnapshot().invalidatedRuns
+    return this.read('statuses', scope, signal => this.api.simulations.runStatuses(input, signal)).then(() => {
+      const state = this.state.getSnapshot()
+      if (state.statuses.scope !== scope || state.statuses.loading || state.statuses.error !== undefined) return
+      // Only invalidations older than this batch's request are answered by it.
+      const answered = input.runIds.filter(id => invalidated[id] !== undefined && state.invalidatedRuns[id] === invalidated[id])
+      if (answered.length === 0) return
+      this.state.set({ ...state, invalidatedRuns: Object.fromEntries(Object.entries(state.invalidatedRuns)
+        .filter(([id]) => !answered.includes(id as SimulationProductRunId))) })
+    })
+  }
+  /**
+   * Mark one run's retained observations as superseded after a terminal command receipt, and reread the selected run.
+   * The directory row stays a "last observed" value until a later status batch answers it.
+   * @param runId - Run whose management, checkpoint, recovery or stop-target command reached a terminal receipt.
+   */
+  invalidateRun(runId: SimulationProductRunId): void {
+    if (this.transitions !== 0) return
+    const state = this.state.getSnapshot()
+    this.invalidations++
+    this.state.set({ ...state, invalidatedRuns: { ...state.invalidatedRuns, [runId]: this.invalidations } })
+    if (!state.connected) return
+    if (state.control.scope === JSON.stringify(['control', runId])) void this.control(runId)
+    if (state.run.scope === JSON.stringify(['run', runId])) void this.inspect({ runId })
   }
   /**
    * Read one exact run; changing identity cancels and clears dependent object pages.
@@ -462,10 +929,16 @@ export class SimulationRuntime {
       if (!current()) return Promise.resolve()
       this.cancel('record')
       if (!current()) return Promise.resolve()
+      for (const key of ['worldCases', 'worldCase', 'worldExport'] as const) {
+        this.cancel(key)
+        if (!current()) return Promise.resolve()
+      }
       this.state.set({ ...this.state.getSnapshot(), unknownOperations: { loading: false, stale: false },
         persistentRequests: { loading: false, stale: false }, tasks: { loading: false, stale: false },
         statuses: { loading: false, stale: false }, reviews: { loading: false, stale: false },
         records: { loading: false, stale: false }, record: { loading: false, stale: false },
+        worldCases: { loading: false, stale: false }, worldCase: { loading: false, stale: false },
+        worldExport: { loading: false, stale: false },
         collection: { loading: false, stale: false },
         recovery: { loading: false, stale: false }, object: { loading: false, stale: false } })
       if (!current()) return Promise.resolve()
@@ -560,17 +1033,25 @@ export class SimulationRuntime {
           this.clearAuthorization(); return
         }
         if (error === 'forbidden') {
-          if (key === 'control' || key === 'reviews' || key === 'preflight' || key === 'persistentRequests' || key === 'tasks') {
+          if (key === 'control' || key === 'reviews' || key === 'preflight' || key === 'worldPreflight'
+            || key === 'persistentRequests' || key === 'tasks') {
             this.publish(key, { scope, loading: false, stale: false, error }); return
           }
           this.denied(key, scope)
           return
         }
-        this.publish(key, { ...current, scope, loading: false, error, stale: current.stale || error === 'stale' || (key === 'statuses' || key === 'preflight') && current.value !== undefined,
-          value: current.value })
+        this.publish(key, { ...current, scope, loading: false, error,
+          stale: current.stale || error === 'stale' || (key === 'statuses' || key === 'preflight' || key === 'worldPreflight') && current.value !== undefined,
+          value: key === 'worldCase' ? undefined : current.value })
         return
       }
       const value = response.result.value
+      if (key === 'worldCase') {
+        const page = value as SimulationProductWorldCaseInspection, watched = this.state.getSnapshot().observation.value
+        if (this.observer !== undefined && (watched === undefined || page.readVersion !== watched.readVersion)) {
+          this.invalidateViews(false, 'stale'); return
+        }
+      }
       if (key === 'record') {
         const page = value as SimulationProductRecordsPage
         const watched = this.state.getSnapshot().observation.value
@@ -595,7 +1076,8 @@ export class SimulationRuntime {
       this.publish(key, { scope, value, loading: false, stale })
     } catch {
       if (active()) this.publish(key, { ...current, scope, loading: false, error: 'network',
-        stale: current.stale || (key === 'statuses' || key === 'preflight') && current.value !== undefined })
+        value: key === 'worldCase' ? undefined : current.value,
+        stale: current.stale || key !== 'worldCase' && current.value !== undefined })
     } finally { if (this.requests.get(key) === request) this.requests.delete(key) }
   }
   private denied(key?: Key, scope?: string): void {

@@ -48,6 +48,8 @@ it('shows a local transport error while the original outcome remains unknown', (
     retry={vi.fn(async () => undefined)} t={t} />)
   expect(view.getByRole('alert').textContent).toBe(en['commandError.network'])
   expect(view.getByText(en.commandUnknown)).toBeTruthy()
+  expect(view.queryByRole('button', { name: en.retryOriginal })).toBeNull()
+  expect(view.getByRole('button', { name: en.queryOriginal })).toBeDefined()
 })
 
 it('offers an explicit follow-up query for a completed original when its owner requests one', () => {
@@ -71,4 +73,26 @@ it('names a review that returns the selected attempt for rework', () => {
     retry={vi.fn(async () => undefined)} t={t} />)
   expect(view.getByText((_, element) => element?.tagName === 'P' && (element.textContent?.includes(en['reviews.rework']) ?? false))).toBeTruthy()
   expect(view.getByText('attempt')).toBeTruthy()
+})
+
+it('shows a real human case blocker independently of its accepted receipt and opens that original case', async () => {
+  const { managementSubmit } = await import('../../../simulation/simulation-product/tests/world-management-fixture.ts')
+  const { simulationProductWorldManagementOutcomeSchema } = await import('@clocky/clocky-simulation-product/world-management-schema')
+  const outcome = simulationProductWorldManagementOutcomeSchema.parse({ runId: 'run', commandId: 'original-user', acceptedSequence: 4,
+    requestId: 'case', intentId: 'intent', planId: 'plan', execution: { requestId: 'case', intentId: 'intent', planId: 'plan',
+      expectedSequence: 4, sequence: 5, updates: 1, time: '2', mode: 'execute', phase: 'blocked', reason: 'handoff-required',
+      pin: { domain: 'organization', operation: 'transfer', version: '1', schemaRef: 'clocky.organization.transfer/schema/1',
+        implementationRef: 'clocky.organization.transfer/native/1', generation: 1 } } })
+  const value: SimulationCommandState = { command: { kind: 'world-management', input: managementSubmit },
+    pending: false, unknown: false, notFound: false, receipt: { kind: 'request', worldManagementOutcome: outcome,
+      value: { commandId: managementSubmit.commandId, runId: managementSubmit.runId,
+        kind: 'world-management', acceptedAt: 1, status: 'accepted' } } }
+  const navigate = vi.fn()
+  const view = render(<CommandRecord value={value} connected navigate={navigate} query={vi.fn(async () => undefined)}
+    retry={vi.fn(async () => undefined)} t={t} />)
+  expect(view.getByText(en['status.stop.handoff-required'])).toBeTruthy()
+  expect(view.getByText(en['cases.noResult'])).toBeTruthy()
+  expect(view.getByText(`${en.originalResult}: ${en['receipt.accepted']}`)).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: en['cases.openOriginal'] }))
+  expect(navigate).toHaveBeenCalledWith({ runId: 'run', module: 'cases', objectId: 'case', caseSection: 'execution', search: '' })
 })

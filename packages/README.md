@@ -11,7 +11,7 @@ Groups hold `packages/<group>/<pkg>/`; names stay `@clocky/clocky-<pkg>`. **Grou
 | Group | Role | Release expectation |
 |---|---|---|
 | [`core/`](core/README.md) | Product API spine: sessions, prompts, tools, agent services, and the concrete loop | Product — stable API |
-| [`simulation/`](simulation/README.md) | Durable simulation runs, cognition coordination and model decision tools | Opt-in; pre-release |
+| [`simulation/`](simulation/README.md) | Durable simulation runs, scenario compilation, cognition coordination and model decision tools | Opt-in; pre-release |
 | [`team/`](team/README.md) | Durable Team work-system providers and local activation/delivery Consumers | Product — stable API |
 | [`agent-runtime/`](agent-runtime/README.md) | Participant activation placement providers | Product — stable API |
 | [`api/`](api/README.md) | Remote BFF assembly and Typert RPC gateway | Product — stable API |

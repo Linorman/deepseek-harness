@@ -1,0 +1,145 @@
+{
+  "scope": "O06 old prebuild lib smoke, source journal70 not yet reflected; final build verification pending",
+  "files": [
+    {
+      "path": "packages/simulation/simulation/lib/index.js",
+      "bytes": 201328,
+      "sha256": "2c090250a5f0dbfbc941c90de4007b94a745a06efc9a9037e893194101e49265"
+    },
+    {
+      "path": "packages/simulation/simulation-local/lib/index.js",
+      "bytes": 676248,
+      "sha256": "21af7ad96814d80eec093cd37507f0bf7bc852d5e040f1eb259b300902f4e946"
+    },
+    {
+      "path": "packages/simulation/simulation-team/lib/index.js",
+      "bytes": 268965,
+      "sha256": "5c9a7462383cd4c3595748c77ed6f293d71061ff30bfe9f87a15a23c165b0eee"
+    },
+    {
+      "path": "packages/simulation/simulation-world/lib/index.js",
+      "bytes": 42712,
+      "sha256": "460266ccaae4ba829c7d83c282f8984dd6a3a231b6bdf3bd7db9664d41836958"
+    },
+    {
+      "path": "packages/simulation/simulation-scenario/lib/index.js",
+      "bytes": 38157,
+      "sha256": "0f40ecc151025bebec9017c7eebff442965e6f81c89e5809fcbb6c771198251a"
+    },
+    {
+      "path": "packages/simulation/simulation-product/lib/index.js",
+      "bytes": 270733,
+      "sha256": "41b6680046f8cd83600abe695fbbaa463edb396c46b7ed8d5000313444f9ecf1"
+    },
+    {
+      "path": "packages/team/team-activation-controller/lib/index.js",
+      "bytes": 77501,
+      "sha256": "c534c4e5246128df4eec961ab8baaac3a3eacbba44dda466344dfc523b9b6a11"
+    },
+    {
+      "path": "packages/team/team-hub/lib/index.js",
+      "bytes": 956386,
+      "sha256": "bb95a037d75f04f6c8f9da122b00cb30c55127ca43a4f27658c6e773d6b0784c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-company-0.json",
+      "bytes": 748,
+      "sha256": "ec2d74ea4f3b03b66c4b629952445d64edd4a2f6f142475b1225675ef192413c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-company-1.json",
+      "bytes": 747,
+      "sha256": "19680da07f6165dc28336daeec3602f94fd41686b750d9791b28f328f4622a82"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-company-2.json",
+      "bytes": 747,
+      "sha256": "42816b8340c15b54e88ecfa57db80e65ce62dc074082e608995d77a68268b4b1"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-company-preparing-input.json",
+      "bytes": 13245,
+      "sha256": "673184d4253c78f4221607c83dbb427b9df2f72e9953b5796f5bdd1e5bc034fa"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-company-preparing-proof.json",
+      "bytes": 2992,
+      "sha256": "640b68b57d898727c58819ae21c814def155f5194084db786c004e05d8cd52f0"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-laboratory-0.json",
+      "bytes": 754,
+      "sha256": "3a05e014d6e5a347ea74de62a4d3e7b6742a1bf0c32611095e3978c9df46266c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-laboratory-1.json",
+      "bytes": 753,
+      "sha256": "c04ab6f8e2f7f96cd49cf89f34e30b94e0ed95c65226c32b21206f1cbac57e08"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-laboratory-2.json",
+      "bytes": 753,
+      "sha256": "60e5eb98a3b8968fcb96df37168ee903e6fb6dff0cf1b73e3d201c5daa195284"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-laboratory-preparing-input.json",
+      "bytes": 13406,
+      "sha256": "de8cc8ed3d8a5404be97f1db48664fe3d2656a8801b0c2e4a6316ee746f103cd"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-json-laboratory-preparing-proof.json",
+      "bytes": 2998,
+      "sha256": "68b5081fd9a58275abdac2b9e5eb0ab8fb48a1c23767f0dfef23d933fd048fd4"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-company-0.json",
+      "bytes": 750,
+      "sha256": "7e85a109129ca560930f284384dec9e4bc71174af09339888403a6a4f3ff8d02"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-company-1.json",
+      "bytes": 749,
+      "sha256": "0350af0832617dc80d0d2027862bb33e20bf5c2723525ef0545cf5a1734f452c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-company-2.json",
+      "bytes": 749,
+      "sha256": "2ce8d4d85cce5d99e78f45b8dae76a60a8e27f23e78c39bf2a50fdfce552a9b2"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-company-preparing-input.json",
+      "bytes": 13245,
+      "sha256": "673184d4253c78f4221607c83dbb427b9df2f72e9953b5796f5bdd1e5bc034fa"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-company-preparing-proof.json",
+      "bytes": 2992,
+      "sha256": "a06e7e82e802694050505ba946ee2c8e58757874d4cd4687d5fc5e989ae0ebdb"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-laboratory-0.json",
+      "bytes": 756,
+      "sha256": "b6d1d5847d7e45b6390623ab1e90ea374cdfbc5ca954bf2b9e81ac4e743b857c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-laboratory-1.json",
+      "bytes": 755,
+      "sha256": "98d32aaa0e81765f14381d322c1f3b15953be1b8392f550d9e76029d1eec5c89"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-laboratory-2.json",
+      "bytes": 755,
+      "sha256": "8212fb7fc46f2e032cd520cc8f83ef4d91821ff6ec7156a6fac3592c31c2ae68"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-laboratory-preparing-input.json",
+      "bytes": 13406,
+      "sha256": "de8cc8ed3d8a5404be97f1db48664fe3d2656a8801b0c2e4a6316ee746f103cd"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c14-preparing-raw-lib-before-build/lib-sqlite-laboratory-preparing-proof.json",
+      "bytes": 2998,
+      "sha256": "39b7b7bb22b3348acb5d310203d39db29cd01a7adbc93eb9aaf03b479ac75cea"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+packages/simulation/simulation/src/types.ts(169,51): error TS2694: Namespace '"/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-types"' has no exported member 'WorldIntentId'.
+packages/simulation/simulation/src/types.ts(175,50): error TS2694: Namespace '"/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-types"' has no exported member 'WorldIntentId'.
+packages/simulation/simulation/src/types.ts(189,62): error TS2694: Namespace '"/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-types"' has no exported member 'WorldIntentId'.
+packages/simulation/simulation/src/world-hire-types.ts(6,15): error TS2459: Module '"./world-types.ts"' declares 'WorldIntentId' locally, but it is not exported.
+packages/simulation/simulation/src/world-hire.ts(7,10): error TS2459: Module '"./world.ts"' declares 'worldIntentIdSchema' locally, but it is not exported.
+packages/simulation/simulation/src/world-hire.ts(67,4): error TS1360: Type 'ZodObject<{ id: any; requestId: ZodPipe<ZodString, ZodTransform<WorldRequestId, string>>; request: ZodObject<{ planId: ZodPipe<ZodString, ZodTransform<...>>; maintenance: ZodObject<...>; member: ZodObject<...>; }, $strict>; ... 4 more ...; cleanup: ZodOptional<...>; }, $strict>' does not satisfy the expected type 'ZodType<SimulationWorldHireReservation, unknown, $ZodTypeInternals<SimulationWorldHireReservation, unknown>>'.
+  Types of property '_output' are incompatible.
+    Property 'id' is missing in type '{ [x: string]: any; requestId: WorldRequestId; request: { planId: WorldPlanId; maintenance: { id: SimulationMaintenanceId; owner: string; }; member: { ...; }; }; ... 4 more ...; cleanup?: { ...; } | undefined; }' but required in type 'SimulationWorldHireReservation'.
+packages/simulation/simulation-local/src/decisions.ts(461,77): error TS2304: Cannot find name 'runtime'.
+packages/simulation/simulation-local/src/run.ts(3,10): error TS2724: '"./world.ts"' has no exported member named 'hireIntentIdentity'. Did you mean 'worldIntentIdentity'?
+packages/simulation/simulation-local/src/run.ts(143,38): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(61,33): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(130,32): error TS2345: Argument of type '{ id: WorldResultId; requestId: WorldRequestId; intentId: WorldIntentId; source: { kind: "cancel"; commandId: WorldCancelId; }; outcome: { kind: "cancelled"; }; time: SimTime; sequence: number; }' is not assignable to parameter of type '{ id: WorldResultId; requestId: WorldRequestId; intentId: WorldIntentId; source: { kind: "plan"; planId: WorldPlanId; } | { ...; }; outcome: { ...; } | ... 1 more ... | { ...; }; payload: JSONType; time: SimTime; sequence: number; }'.
+  Property 'payload' is missing in type '{ id: WorldResultId; requestId: WorldRequestId; intentId: WorldIntentId; source: { kind: "cancel"; commandId: WorldCancelId; }; outcome: { kind: "cancelled"; }; time: SimTime; sequence: number; }' but required in type '{ id: WorldResultId; requestId: WorldRequestId; intentId: WorldIntentId; source: { kind: "plan"; planId: WorldPlanId; } | { ...; }; outcome: { ...; } | ... 1 more ... | { ...; }; payload: JSONType; time: SimTime; sequence: number; }'.
+packages/simulation/simulation-local/src/world-hire.ts(189,52): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(196,83): error TS2339: Property 'templateId' does not exist on type '{ kind: "apply"; payload: JSONType; rationale: string; }'.
+packages/simulation/simulation-local/src/world-hire.ts(196,124): error TS2339: Property 'templateVersion' does not exist on type '{ kind: "apply"; payload: JSONType; rationale: string; }'.
+packages/simulation/simulation-local/src/world-hire.ts(198,27): error TS2339: Property 'persona' does not exist on type '{ kind: "apply"; payload: JSONType; rationale: string; }'.
+packages/simulation/simulation-local/src/world-hire.ts(198,94): error TS2339: Property 'persona' does not exist on type '{ kind: "apply"; payload: JSONType; rationale: string; }'.
+packages/simulation/simulation-local/src/world-hire.ts(221,89): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(222,68): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(242,117): error TS2339: Property 'persona' does not exist on type '{ kind: "apply"; payload: JSONType; rationale: string; }'.
+packages/simulation/simulation-local/src/world-hire.ts(281,87): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(282,66): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(288,64): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(289,19): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(293,94): error TS2353: Object literal may only specify known properties, and 'entityId' does not exist in type '{ kind: "committed"; }'.
+packages/simulation/simulation-local/src/world-hire.ts(313,94): error TS18048: 'request' is possibly 'undefined'.
+packages/simulation/simulation-local/src/world-hire.ts(346,55): error TS18048: 'request' is possibly 'undefined'.
+packages/simulation/simulation-local/src/world-hire.ts(347,92): error TS18048: 'request' is possibly 'undefined'.
+packages/simulation/simulation-local/src/world-hire.ts(352,11): error TS18048: 'request' is possibly 'undefined'.
+packages/simulation/simulation-local/src/world-hire.ts(370,108): error TS18048: 'request' is possibly 'undefined'.
+packages/simulation/simulation-local/src/world-hire.ts(383,11): error TS18048: 'request' is possibly 'undefined'.
+packages/simulation/simulation-local/src/world-hire.ts(383,100): error TS2339: Property 'entityId' does not exist on type '{ kind: "committed"; }'.
+packages/simulation/simulation-local/src/world-hire.ts(384,27): error TS2339: Property 'relationId' does not exist on type '{ kind: "committed"; }'.
+packages/simulation/simulation-local/src/world-hire.ts(386,78): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-hire.ts(387,38): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-local/src/world-organization.ts(58,3): error TS2416: Property 'admitRequest' in type 'OrganizationNativeWorldDomain' is not assignable to the same property in base type 'NativeWorldDomain'.
+  Type '(state: SimulationSnapshot, actorId: SimulationEntityId, request: { businessKey: string; expectedTime: SimTime | null; evidence: ({ ...; } | ... 8 more ... | { ...; })[]; ... 4 more ...; kind: "world/request"; }) => { ...; }' is not assignable to type '(state: SimulationSnapshot, actorId: SimulationEntityId, request: { businessKey: string; expectedTime: SimTime | null; evidence: ({ ...; } | ... 8 more ... | { ...; })[]; ... 4 more ...; kind: "world/request"; }) => DomainIntentAdmission'.
+    Call signature return types '{ scopeEntityId: SimulationEntityId; targetEntityId: SimulationEntityId; description: string; payload: { organizationEntityId: SimulationEntityId; positionEntityId: SimulationEntityId; description: string; priorRequestId?: WorldRequestId | undefined; }; }' and 'DomainIntentAdmission' are incompatible.
+      The types of 'payload' are incompatible between these types.
+        Type '{ organizationEntityId: SimulationEntityId; positionEntityId: SimulationEntityId; description: string; priorRequestId?: WorldRequestId | undefined; }' is not assignable to type 'JSONType'.
+          Type '{ organizationEntityId: SimulationEntityId; positionEntityId: SimulationEntityId; description: string; priorRequestId?: WorldRequestId | undefined; }' is not assignable to type '{ [key: string]: JSONType; }'.
+            Property 'priorRequestId' is incompatible with index signature.
+              Type 'WorldRequestId | undefined' is not assignable to type 'JSONType'.
+                Type 'undefined' is not assignable to type 'JSONType'.
+packages/simulation/simulation-local/src/world-organization.ts(79,3): error TS2416: Property 'planningContext' in type 'OrganizationNativeWorldDomain' is not assignable to the same property in base type 'NativeWorldDomain'.
+  Type '(state: SimulationSnapshot, intent: SimulationWorldIntent) => { application: { organizationEntityId: SimulationEntityId; positionEntityId: SimulationEntityId; requesterEntityId: SimulationEntityId; applicationId: string; priorRequestId?: WorldRequestId | undefined; }; position: { ...; } | null; templates: { ...; }[]...' is not assignable to type '(state: SimulationSnapshot, intent: SimulationWorldIntent) => JSONType'.
+    Type '{ application: { organizationEntityId: SimulationEntityId; positionEntityId: SimulationEntityId; requesterEntityId: SimulationEntityId; applicationId: string; priorRequestId?: WorldRequestId | undefined; }; position: { ...; } | null; templates: { ...; }[]; policyVersion: string; }' is not assignable to type 'JSONType'.
+      Type '{ application: { organizationEntityId: SimulationEntityId; positionEntityId: SimulationEntityId; requesterEntityId: SimulationEntityId; applicationId: string; priorRequestId?: WorldRequestId | undefined; }; position: { ...; } | null; templates: { ...; }[]; policyVersion: string; }' is not assignable to type '{ [key: string]: JSONType; }'.
+        Property 'application' is incompatible with index signature.
+          Type '{ organizationEntityId: SimulationEntityId; positionEntityId: SimulationEntityId; requesterEntityId: SimulationEntityId; applicationId: string; priorRequestId?: WorldRequestId | undefined; }' is not assignable to type 'JSONType'.
+            Type '{ organizationEntityId: SimulationEntityId; positionEntityId: SimulationEntityId; requesterEntityId: SimulationEntityId; applicationId: string; priorRequestId?: WorldRequestId | undefined; }' is not assignable to type '{ [key: string]: JSONType; }'.
+              Property 'priorRequestId' is incompatible with index signature.
+                Type 'WorldRequestId | undefined' is not assignable to type 'JSONType'.
+                  Type 'undefined' is not assignable to type 'JSONType'.
+packages/simulation/simulation-local/src/world.ts(10,48): error TS6196: 'SimulationHireIntentRequest' is declared but never used.
+packages/simulation/simulation-local/src/world.ts(102,54): error TS2345: Argument of type '{ payload: unknown; businessKey: string; expectedTime: SimTime | null; evidence: ({ kind: "entity"; id: SimulationEntityId; revision: number; } | { kind: "relation"; id: SimulationRelationId; revision: number; effectiveFrom: SimTime; effectiveUntil: SimTime | null; } | ... 7 more ... | { ...; })[]; domain: string; o...' is not assignable to parameter of type '{ businessKey: string; expectedTime: SimTime | null; evidence: ({ kind: "entity"; id: SimulationEntityId; revision: number; } | { kind: "relation"; id: SimulationRelationId; revision: number; effectiveFrom: SimTime; effectiveUntil: SimTime | null; } | ... 7 more ... | { ...; })[]; ... 4 more ...; kind: "world/reques...'.
+  Types of property 'payload' are incompatible.
+    Type 'unknown' is not assignable to type 'JSONType'.
+packages/simulation/simulation-local/src/world.ts(115,3): error TS2375: Type '{ id: WorldIntentId; pin: { schemaRef: WorldSchemaRef; implementationRef: WorldImplementationRef; generation: number; domain: string; operation: string; version: string; }; ... 5 more ...; requestId?: WorldRequestId | undefined; }' is not assignable to type 'SimulationWorldIntent' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'requestId' are incompatible.
+    Type 'WorldRequestId | undefined' is not assignable to type 'WorldRequestId'.
+      Type 'undefined' is not assignable to type 'WorldRequestId'.
+        Type 'undefined' is not assignable to type 'string'.
+packages/simulation/simulation-local/src/world.ts(179,44): error TS2353: Object literal may only specify known properties, and 'mutations' does not exist in type 'SimulationWorldState'.
+packages/simulation/simulation-local/src/world.ts(183,43): error TS18048: 'requester.binding' is possibly 'undefined'.
+packages/simulation/simulation-local/src/world.ts(183,72): error TS18048: 'director.binding' is possibly 'undefined'.
+packages/simulation/simulation-local/src/world.ts(502,30): error TS2304: Cannot find name 'authorization'.
+packages/simulation/simulation-local/src/world.ts(502,65): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?

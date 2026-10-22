@@ -1,3 +1,6 @@
+import { assertMaintenanceProjection } from './maintenance.ts'
+import { assertPersonnelProjection } from './world-personnel.ts'
+import { assertWorldExecutionTimeProjection } from './world-execution-time.ts'
 /** Check published projection revisions against durable log tails. @module @clocky/clocky-simulation-local/invariant */
 import type { Context } from '@clocky/cordis'
 import type { InvariantInstaller } from '@clocky/clocky-invariants'
@@ -13,6 +16,9 @@ const install: InvariantInstaller = (ctx, fail) => {
   ctx.on('simulation/committed', (snapshot, durableTail, previousRevision) => {
     if (snapshot.revision !== durableTail) fail('Published simulation revision differs from the committed journal tail')
     try {
+      assertMaintenanceProjection(snapshot)
+      assertPersonnelProjection(snapshot)
+      assertWorldExecutionTimeProjection(snapshot)
       assertWriterProjection(snapshot); assertBusinessProjection(snapshot); assertSchedulerProjection(snapshot)
       if (previousRevision !== undefined) assertWriterAdmission(snapshot, previousRevision)
     }

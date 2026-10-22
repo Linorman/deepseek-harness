@@ -1,0 +1,2 @@
+packages/simulation/simulation-product/src/world-preparation.ts(158,89): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?
+packages/simulation/simulation-product/src/world-preparation.ts(164,102): error TS2551: Property 'request' does not exist on type 'SimulationWorldIntent'. Did you mean 'requestId'?

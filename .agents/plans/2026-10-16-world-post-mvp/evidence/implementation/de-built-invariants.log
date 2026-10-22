@@ -1,0 +1,2 @@
+$ node scripts/verify-built-package-invariants.mjs
+verify-built-package-invariants: 269 compiled companion(s) passed plain-Node Loader checks.

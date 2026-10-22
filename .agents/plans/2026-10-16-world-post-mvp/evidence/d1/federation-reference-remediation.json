@@ -1,0 +1,28 @@
+{
+  "command": "TMPDIR=$PWD/.tmp pnpm exec vitest run packages/simulation/simulation-team/tests/backup.spec.ts packages/simulation/simulation-product/tests/federation-checkpoint.spec.ts packages/simulation/simulation-product/tests/federation-mailbox.spec.ts packages/simulation/simulation-local/tests/federation-time.spec.ts packages/simulation/simulation-product/tests/external-effect.spec.ts",
+  "tests": 39,
+  "log": "federation-reference-tests.log",
+  "regressions": [
+    "ordinary bundle refuses federated current/provenance/journal-hidden snapshot",
+    "required Native sourceSequence prefix owner/run/generation/hash linkage",
+    "latest Native projection matches original Native fence",
+    "forged Native limit/stop rejected with recomputed world hash",
+    "older Native cut remains valid when mailbox has later records",
+    "shared mailbox time fact reducer; one-pass hash copies",
+    "source tuple identity, causal ACL, actual principal and source-scoped receipt cursor",
+    "duplicate grant replay closes admission, zero dispatch",
+    "unclosed historical federated provenance rejects after enclosing hashes recompute"
+  ],
+  "sourceHashes": {
+    "packages/simulation/simulation-team/src/backup.ts": "73d9cd09212ef45e0a7b32877f663dbdb91ef49879d7a80a6e53e99c38e0445f",
+    "packages/simulation/simulation-team/tests/backup.spec.ts": "f3f8082991bc0be325f3eba4e2a3314bc856356e7452ef3c9ca74d860bcae524",
+    "packages/simulation/simulation-product/src/federation-checkpoint.ts": "7eb331affa9fec28a1e0f0cf60cf25deef4792bb30ed599dad4b34fa17455767",
+    "packages/simulation/simulation-product/tests/federation-checkpoint.spec.ts": "5b067f7456c34271f0614b1547f83187213c0ce1a9a7e00e279326a546ca7952",
+    "packages/simulation/simulation-product/src/federation-mailbox.ts": "78af1c42cda1a1bcd3959bb52ccd8b6a5dc75e0d887591fd645e5692843f7549",
+    "packages/simulation/simulation-product/src/external-effect-owner.ts": "ac98e8cc9436e5be46740bebea66ad8877366491ef4ea0d111688ce496b2bee4",
+    "packages/simulation/simulation-local/src/federation-time.ts": "e880a5d729ab7df0e5e71f8bd266a9bbd9586cee278c31ac78b275b92ebc7596",
+    "packages/simulation/simulation/src/federation-time.ts": "5d2b51ca40ed17514516c4228677ed5a41295dcf517839e9a96a3aeaefd79aa1"
+  },
+  "productionProviderCalls": 0,
+  "independentProductionApproval": false
+}

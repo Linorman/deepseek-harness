@@ -1,0 +1,23 @@
+$ tsx scripts/build.ts
+$ npm run build:lib:host && npm run build:lib:client
+
+> @clocky/clocky-root@0.1.1-rc.2 build:lib:host
+> tsc -b tsconfig.host.json && tsdown --env.CLOCKY_BUILD_FACE host
+
+packages/simulation/simulation-local/tests/world-execution-time.spec.ts(6,1): error TS6192: All imports in import declaration are unused.
+packages/simulation/simulation-local/tests/world-execution-time.spec.ts(8,26): error TS6133: 'companySettings' is declared but its value is never read.
+[ELIFECYCLE] Command failed with exit code 2.
+/Volumes/projects-mac/deepseek-harness/scripts/build.ts:26
+    throw new Error(`build: ${script} exited with ${String(result.status ?? result.signal)}`)
+          ^
+
+Error: build: build:lib exited with 2
+    at runScript (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:26:11)
+    at main (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:45:3)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/scripts/build.ts:53:23)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0
+[ELIFECYCLE] Command failed with exit code 1.

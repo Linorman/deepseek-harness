@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-20",
+  "status": "all selected checks passed",
+  "repairs": [
+    "archive complete Session header and image reference equality",
+    "current planner subtree budget checked against original retained allocation",
+    "evaluation metadata chronology and complete report field verification"
+  ],
+  "files": {
+    "packages/simulation/simulation-team/src/archive.ts": "bab3876656903276164a32878f31b7cff9a4a95814d71ac80da67c96f13d81ef",
+    "packages/simulation/simulation-team/tests/archive.spec.ts": "97b7fff01a798542d9cf965f3aabaa6fab5d73bd6b87b7777a25abdf28c11aaf",
+    "packages/simulation/simulation/src/world-generation.ts": "c35ae4f65366c1d6644f939694cf73dc42c823f1bd65e7dc55ffbed8e24957d6",
+    "packages/simulation/simulation-local/tests/planner-admission-budget.spec.ts": "6f6a39e8997baef7eea3fc83009d1b5154680070b2ee1f8978e545887c46b3da",
+    "packages/simulation/simulation/tests/environment-registered-evaluate-command.ts": "0d3a63fc3e661e4a9de74915601c459d8022ca70fd4ac6db0584b717c72edfbd",
+    "packages/simulation/simulation/tests/environment-registered-evaluate-command.spec.ts": "097aa9cdd9fd9e90bb98b01558c78c848d56c3676680b7232177c824e30c9e50"
+  },
+  "logs": {
+    ".tmp/b-review/tests.log": "e2931888b1f5f25416d0e12d17f1138d171fd40b297efc80ee69b862d685dc59",
+    ".tmp/c2-review/regression.log": "c8e146780f463ee305a78e337ff2b5cbf0ab8a4ac0a9467cb71744b1d4f3cfff",
+    ".tmp/c2-review/tests.log": "5569102025f9f42aa2a3dda8870db23c69a656c2105d82ec0b3a385279984f3f",
+    ".tmp/bc-review/evaluator-before.log": "d1c856041b21219752eda5e77f97a65d3bbe57a25c458925dae2e4552aad89d7",
+    ".tmp/bc-review/final-tests.log": "7f52ce7eded10f2a161774a6f5ee0d4e1cbf8cad8a5a769e3467ef7cc6a2f7e9",
+    ".tmp/bc-review/types-fixed.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".tmp/bc-review/lint-fixed.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".tmp/bc-review/doc-sync-fixed.log": "56eb0fe1208965a83cc3b2782782e4655980bceca089744c69e05d7f6871f407",
+    ".tmp/bc-review/register.log": "ec972968e0c4848c425e584d78744cb3b173d5d9b59b1d61cbfb55ec30cf0a4b",
+    ".tmp/bc-review/run.log": "18e801f4ac028a26b7335b31c3cecffa8fb7bcce8f30389af4328f0b0d359ab2",
+    ".tmp/bc-review/verify.log": "18e801f4ac028a26b7335b31c3cecffa8fb7bcce8f30389af4328f0b0d359ab2",
+    ".tmp/bc-review/diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".tmp/bc-review/snapshots.log": "c021857e633955a7ec0ad1a3429708fd64b31ee753f019e8904a58faddef8037"
+  },
+  "results": {
+    "BFocused": 43,
+    "CFocused": 15,
+    "finalCombined": 22,
+    "typecheck": "passed",
+    "lint": "passed",
+    "docSync": 29,
+    "generationAndArchiveSnapshots": 4
+  },
+  "commands": [
+    "TMPDIR=\"$PWD/.tmp/bc-review\" pnpm exec tsc -b tsconfig.host.json tsconfig.client.json --pretty false",
+    "TMPDIR=\"$PWD/.tmp/bc-review\" pnpm exec tsx scripts/run-oxlint.ts .",
+    "TMPDIR=\"$PWD/.tmp/bc-review\" pnpm run doc-sync",
+    "TMPDIR=\"$PWD/.tmp/bc-review\" pnpm exec vitest run packages/simulation/simulation-team/tests/archive.spec.ts packages/simulation/simulation-local/tests/planner-admission-budget.spec.ts packages/simulation/simulation-local/tests/world-generation.spec.ts packages/simulation/simulation-local/tests/world-planners.spec.ts packages/simulation/simulation-team/tests/generation-stream.spec.ts packages/simulation/simulation-team/tests/generation-middleware.spec.ts packages/simulation/simulation/tests/environment-registered-evaluate-command.spec.ts packages/simulation/simulation/tests/environment-registered-evaluation.spec.ts",
+    "TMPDIR=\"$PWD/.tmp/bc-review\" CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-archive.snapshot.ts examples/simulation-company/tests/world-generation.snapshot.ts --maxWorkers=2"
+  ],
+  "humanEvaluation": "deferred-by-user",
+  "priorEvidence": "Original receipts remain historical and are not rehashed to disguise changed implementation inputs."
+}

@@ -2,11 +2,64 @@
 import { expect, it, vi } from 'vitest'
 import { HarnessClient, Clocky, SdkProtocolError } from '../src/index.ts'
 
+function lifecycle(status: string, resultId = 'result') {
+  const business = ['committed', 'rejected', 'cancelled'].includes(status) ? { status, resultId } : { status: 'none' }
+  return { request: { status }, plan: { status: 'none' }, execution: { callback: { status: 'none' }, business },
+    notification: { request: null } }
+}
+
 const create = { commandId: 'original', templateId: 'company', templateVersion: '1' as const, expectedModel: { provider: 'company', name: 'scripted' }, name: 'Company',
   parameters: { buyerName: 'Buyer', supplierName: 'Supplier', initialStock: '2' } }
 const summary = { id: 'run', name: { text: 'Company', truncated: false }, registeredAt: 1, observation: 'not-observed' }
 const receipt = { commandId: 'original', runId: 'run', kind: 'create', acceptedAt: 1, status: 'accepted' }
 const selection = { collection: 'entities', id: 'entity', section: 'identity' }
+it.each(['open', 'awaiting-evidence'] as const)('correlates bounded %s World case pages and selected detail sections', async (status) => {
+  const client = new HarnessClient({ command: process.execPath })
+  const summary = { apiVersion: 'clocky.world-case/v4', businessSummary: { status: 'unsupported' }, origin: { kind: 'decision' }, domain: 'organization', operation: 'generate-and-hire', version: '1', requestId: 'case', intentId: 'intent', status, lifecycle: lifecycle(status), requesterEntityId: 'requester',
+    organizationEntityId: 'organization', targetEntityId: 'position', cancel: { allowed: false, reason: 'recovery-required' } }
+  const page = { runId: 'run', snapshotRevision: 3, readVersion: 'policy', observedAt: 1, total: 1, items: [summary] }
+  const input = { runId: 'run', expectedRevision: 3, limit: 1, status }
+  const send = vi.spyOn(client, 'request').mockResolvedValue(page)
+  expect(await client.listSimulationWorldCases(input)).toEqual(page)
+  expect(send).toHaveBeenCalledWith('simulation/world-cases-list', input)
+  for (const result of [{ ...page, runId: 'another' }, { ...page, snapshotRevision: 4 },
+    { ...page, items: [{ ...summary, status: 'cancelled', lifecycle: lifecycle('cancelled') }] }, { ...page, nativeSnapshot: {} }]) {
+    send.mockResolvedValue(result)
+    await expect(client.listSimulationWorldCases(input)).rejects.toBeInstanceOf(SdkProtocolError)
+  }
+  const selected = { runId: 'run', requestId: 'case', section: 'request' as const }
+  const detail = { ...page, items: undefined, total: undefined, requestId: 'case', section: 'request', status: 'found',
+    value: { section: 'request', summary, source: { kind: 'decision', operationId: 'source', sequence: 1, payloadHash: 'hash' },
+      description: { status: 'withheld' }, evidence: { inputRevision: 0, latestChallenge: { id: 'challenge',
+        status: 'awaiting', round: 1, fields: [{ code: 'invoice', description: { text: 'Original invoice', truncated: false } }],
+        responders: ['requester'], deadline: '100', maxAttempts: 2, attemptsUsed: 1 } } } }
+  const { items: _items, total: _total, ...result } = detail
+  send.mockResolvedValue(result)
+  expect(await client.inspectSimulationWorldCase(selected)).toEqual(result)
+  expect(send).toHaveBeenLastCalledWith('simulation/world-case-inspect', selected)
+  for (const changed of [{ ...result, runId: 'another' }, { ...result, requestId: 'another',
+    value: { ...result.value, summary: { ...summary, requestId: 'another' } } },
+  { ...result, value: { ...result.value, description: { status: 'withheld', text: { text: 'secret', truncated: false } } } }]) {
+    send.mockResolvedValue(changed)
+    await expect(client.inspectSimulationWorldCase(selected)).rejects.toBeInstanceOf(SdkProtocolError)
+  }
+})
+it('keeps the original World case cancellation and rejects another command, family or browser authority', async () => {
+  const client = new HarnessClient({ command: process.execPath })
+  const input = { runId: 'run', commandId: 'original', requestId: 'case', previewRevision: 3, previewHash: `sha256:${'a'.repeat(64)}` }
+  const original = { ...receipt, kind: 'cancel-world-case' }
+  const send = vi.spyOn(client, 'request').mockResolvedValue(original)
+  expect(await client.cancelSimulationWorldCase(input)).toEqual(original)
+  expect(send).toHaveBeenCalledWith('simulation/world-case-cancel', input)
+  for (const result of [{ ...original, runId: 'another' }, { ...original, commandId: 'another' }, receipt,
+    { ...original, privatePersona: {} }]) {
+    send.mockResolvedValue(result)
+    await expect(client.cancelSimulationWorldCase(input)).rejects.toBeInstanceOf(SdkProtocolError)
+  }
+  send.mockClear()
+  await expect(client.cancelSimulationWorldCase({ ...input, actor: 'injected' } as typeof input)).rejects.toBeInstanceOf(SdkProtocolError)
+  expect(send).not.toHaveBeenCalled()
+})
 const control = { runId: 'run', administration: { actions: { checkpoint: { allowed: true, reason: 'ready' }, restore: { allowed: false, reason: 'checkpoint-required' },
   prepare: { allowed: true, reason: 'ready' }, ingress: { allowed: true, reason: 'ready' } },
 ingress: { maxTime: '1000', maxBytes: 65536, targets: [{ id: 'buyer', name: { text: 'Buyer', truncated: false } }] } }, budget: { model: { provider: 'company', name: 'scripted' }, tokensPerRequest: 10000,
@@ -16,6 +69,12 @@ const management = { managementId: 'management', phase: 'running', status: 'comp
 const ingress = { runId: 'run', ingressId: 'input', entityId: 'entity', eventId: 'event', availableAt: '9007199254740993',
   assignedAt: '9007199254740993', sequence: 1, status: 'pending' }
 const cases = [
+  ['archiveRawSimulation', 'raw-archive', { runId: 'run', limit: 1 }, { runId: 'run', readVersion: 'policy', observedAt: 1,
+    source: { journalVersion: 101, firstSequence: 0, tailSequence: 0, entryCount: 1, representation: 'sqlite-logical-frames',
+      sourceHash: 'a'.repeat(64), nativeValidation: 'not-performed', physicalDatabaseCopy: false },
+    totalParts: 2, items: [{ part: 0, text: 'original-byte-preservation' }], nextCursor: 'cursor' }],
+  ['updateSimulationRunControl', 'runs-run-control', { runId: 'run', commandId: 'clear', target: null },
+    { runId: 'run', receipt: { commandId: 'clear', revision: 1, activation: 'effective', targetId: null }, control }],
   ['listSimulationTasks', 'tasks-list', { runId: 'run', limit: 1, expectedRevision: 1 },
     { runId: 'run', snapshotRevision: 1, observedAt: 1, total: 0, items: [] }],
   ['cancelSimulationTask', 'tasks-cancel', { runId: 'run', commandId: 'original', operationId: 'operation',
@@ -42,6 +101,8 @@ const cases = [
   ['simulationCatalog' , 'catalog', {}, { items: [] }],
   ['listSimulations', 'runs-list', {}, { items: [summary] }],
   ['inspectSimulation', 'runs-inspect', { runId: 'run' }, { run: summary, status: 'missing' }],
+  ['rebuildSimulationIndex', 'index-rebuild', { runId: 'run', expectedRevision: 1 },
+    { runId: 'run', snapshotRevision: 1, schema: 'clocky/simulation-inspection-index', version: 1, journalVersion: 98, sourceHash: 'a'.repeat(64) }],
   ['browseSimulation', 'collections-list', { runId: 'run', collection: 'entities' },
     { runId: 'run', collection: 'entities', snapshotRevision: 1, observedAt: 1, total: 0, items: [] }],
   ['inspectSimulationSource', 'sources-inspect', { runId: 'run', decisionId: 'decision', sourceIndex: 0 },
@@ -354,5 +415,46 @@ it('requires an explicit no-lease cancellation fence and correlates the original
   for (const output of [{ ...receipt, kind: 'cancel-task', commandId: 'another' }, { ...receipt, kind: 'review' }]) {
     send.mockResolvedValueOnce(output)
     await expect(client.cancelSimulationTask(input)).rejects.toBeInstanceOf(SdkProtocolError)
+  }
+})
+
+it.each(['idle', 'maintenance-blocked', 'position-capacity', 'authority-missing', 'approval-required', 'existing-obligations', 'plan-stale', 'plan-budget',
+  'entity-capacity', 'identity-capacity', 'channel-capacity', 'world-byte-limit', 'world-request-limit', 'world-command-limit',
+  'world-birth-limit', 'world-expansion-limit', 'world-mutation-limit', 'budget-limit', 'context-limit', 'microstep-limit', 'model-pool-capacity', 'activation-history-limit', 'message-byte-limit'] as const)(
+  'preserves the %s World stop through control and operational parsers in both public APIs', async (stop) => {
+    const scenario = { status: 'observed', templateId: { text: 'world-company', truncated: false },
+      version: '1', driverVersion: '1', execution: 'cognition-only' }
+    const operational = { status: 'observed', observedAt: 1, scenario, owner: 'held', driver: 'waiting', inFlight: false, stop }
+    const output = { ...control, stop, versions: { rulesVersion: { text: '1', truncated: false },
+      policyVersion: { text: '1', truncated: false }, tickUnit: { text: 'minute', truncated: false }, scenario } }
+    const statuses = { items: [{ run: summary, status: 'missing', operational }] }
+    const client = new HarnessClient({ command: process.execPath })
+    const high = new Clocky({ launch: { command: process.execPath }, credential: 'test', provider: 'test', model: 'test' })
+    vi.spyOn(high, 'start').mockResolvedValue()
+    const lowSend = vi.spyOn(client, 'request'), highSend = vi.spyOn(high.client, 'request')
+    for (const [api, send] of [[client, lowSend], [high, highSend]] as const) {
+      send.mockResolvedValueOnce(output)
+      expect(await api.getSimulationControl({ runId: 'run' })).toEqual(output)
+      send.mockResolvedValueOnce(statuses)
+      expect(await api.getSimulationRunStatuses({ runIds: ['run'] })).toEqual(statuses)
+    }
+  })
+
+it('rejects unknown World stops and new start reasons in both public APIs without substituting a fallback', async () => {
+  const client = new HarnessClient({ command: process.execPath })
+  const high = new Clocky({ launch: { command: process.execPath }, credential: 'test', provider: 'test', model: 'test' })
+  vi.spyOn(high, 'start').mockResolvedValue()
+  const lowSend = vi.spyOn(client, 'request'), highSend = vi.spyOn(high.client, 'request')
+  for (const [api, send] of [[client, lowSend], [high, highSend]] as const) {
+    for (const stop of ['unknown-world-stop', 'position-full', 'hire-required', '', 0]) {
+      send.mockResolvedValueOnce({ ...control, stop })
+      await expect(api.getSimulationControl({ runId: 'run' })).rejects.toBeInstanceOf(SdkProtocolError)
+      send.mockResolvedValueOnce({ items: [{ run: summary, status: 'missing', operational: { status: 'observed', observedAt: 1,
+        scenario: { status: 'unavailable' }, owner: 'held', driver: 'waiting', inFlight: false, stop } }] })
+      await expect(api.getSimulationRunStatuses({ runIds: ['run'] })).rejects.toBeInstanceOf(SdkProtocolError)
+    }
+    send.mockResolvedValueOnce({ ...control, stop: 'plan-stale',
+      actions: { ...control.actions, start: { allowed: false, reason: 'plan-stale' } } })
+    await expect(api.getSimulationControl({ runId: 'run' })).rejects.toBeInstanceOf(SdkProtocolError)
   }
 })

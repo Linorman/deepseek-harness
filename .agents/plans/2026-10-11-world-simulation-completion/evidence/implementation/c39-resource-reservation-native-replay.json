@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "reports": [
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-json-9o8Mm6",
+      "backend": "json",
+      "face": "src",
+      "observedRevision": 167,
+      "originalRevision": 167,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c39-resource-reservation/final-matrix-20261013/src/src-sqlite-Uv2cRv",
+      "backend": "sqlite",
+      "face": "src",
+      "observedRevision": 167,
+      "originalRevision": 167,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-sqlite-8gNhiK",
+      "backend": "sqlite",
+      "face": "lib",
+      "observedRevision": 167,
+      "originalRevision": 167,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c39-resource-reservation/final-matrix-20261013/lib/lib-json-o1FIOf",
+      "backend": "json",
+      "face": "lib",
+      "observedRevision": 167,
+      "originalRevision": 167,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    }
+  ]
+}

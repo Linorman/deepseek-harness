@@ -1,4 +1,8 @@
+import { StopCheckpointScheduler } from './stop-checkpoint.ts'
+import { SimulationRevisionConflictError, SimulationStopBoundaryError } from '@clocky/clocky-simulation'
 /** One product-held run serializes management while its bounded scenario driver owns independently drainable work. */
+import { randomUUID } from 'node:crypto'
+import { simulationProductFailure } from './failure.ts'
 import { observeModelPool } from './model-pool.ts'
 import { scenarioReviewSummary, scenarioHasReview, scenarioTaskStep } from './scenario-review.ts'
 import type { SimulationProductTaskReviewResolveInput } from './review-types.ts'
@@ -7,14 +11,13 @@ import type { SimulationProductOperationRetryInput, SimulationProductOperationRe
 import { simulationOutboxRetryRequestSchema, simulationOutboxRetryCapability } from '@clocky/clocky-simulation'
 import { isDeepStrictEqual } from 'node:util'
 import { simulationPhaseManagementRequestSchema } from '@clocky/clocky-simulation'
-import type { SimulationRun, SimulationSnapshot, SimulationManagementOperation, SimulationCheckpointRequest, SimulationCheckpointOperation, SimulationIngressRequest, SimulationIngress } from '@clocky/clocky-simulation'
+import type { SimulationRun, SimulationManagementOperation, SimulationCheckpointRequest, SimulationCheckpointOperation, SimulationIngressRequest, SimulationIngress } from '@clocky/clocky-simulation'
 import type { SimulationTeamConnection, SimulationTeams } from '@clocky/clocky-simulation-team'
 import { SimulationCompanyDriver } from './company-driver.ts'
 import type { SimulationCompanyDriveResult } from './company-driver.ts'
 import type { SimulationCompanyPreparation } from './company-preparation.ts'
 import type { SimulationCompanyCreation } from './creation-types.ts'
 import type { SimulationProductManageInput, SimulationProductControl, SimulationProductControlReason } from './control-types.ts'
-import { managementAt } from './management-read.ts'
 import { SimulationProductError } from './index.ts'
 import type { SimulationTaskExecutorOptions } from './task-executor.ts'
 
@@ -32,6 +35,7 @@ interface Options {
 /** A single administration-owned scheduler; construction and observation never attach or infer. */
 export class SimulationCompanyOwner {
   private readonly lifetime = new AbortController()
+  private readonly stopCheckpoint = new StopCheckpointScheduler()
   private connection: SimulationTeamConnection | undefined
   private driver: SimulationCompanyDriver | undefined
   private timer: ReturnType<typeof setTimeout> | undefined
@@ -39,6 +43,8 @@ export class SimulationCompanyOwner {
   private managementTail: Promise<unknown> = Promise.resolve()
   private last: SimulationCompanyDriveResult | undefined
   private failed = false
+  private readonly ownerId = randomUUID()
+  private failure: import('./control-types.ts').SimulationProductFailure | undefined
   private maintenance = false
   private closing = false
   private closeWork: Promise<void> | undefined
@@ -59,20 +65,57 @@ export class SimulationCompanyOwner {
    * @returns separate scheduling/driver observations and current action hints; hints are rechecked before writes.
    */
   observe(): Omit<SimulationProductControl, 'administration'> & { readonly unstarted: boolean } {
-    const state = this.run.snapshot()
+    const state = this.run.controlObservation(this.preparation.checkpoint.id)
     const reason = this.startReason(state)
     return { modelPool: observeModelPool(this.options.modelUsage), unstarted: this.connection === undefined,
       runId: this.creation.record.id, budget: { model: this.creation.driver.model,
-        tokensPerRequest: state.spec.tokensPerModelRequest, tokensPerInterval: state.spec.maxTokensPerInterval,
-        interval: state.spec.budgetInterval, residentActors: state.spec.maxResidentActors, sharedModelLimit: this.options.sharedModelLimit() }, owner: 'held', phase: state.phase, revision: state.revision, observedAt: Date.now(),
+        tokensPerRequest: state.budget.tokensPerModelRequest, tokensPerInterval: state.budget.maxTokensPerInterval,
+        interval: state.budget.budgetInterval, residentActors: state.budget.maxResidentActors, sharedModelLimit: this.options.sharedModelLimit() }, owner: 'held', phase: state.phase, revision: state.revision, observedAt: Date.now(),
       driver: this.closing ? 'retiring' : this.maintenance ? 'checkpointing' : this.failed ? 'failed' : this.pending !== undefined ? 'advancing'
         : this.timer !== undefined ? 'scheduled' : this.last?.reason === 'completed' ? 'completed'
           : this.last !== undefined && this.last.reason !== 'paused' ? 'waiting' : 'idle',
+      ...state.stopTarget === undefined ? {} : { stopTarget: state.stopTarget },
+      driverSource: { status: 'live', observedAt: state.driverObservation?.ownerId === this.ownerId
+        ? state.driverObservation.observedAt : Date.now(),
+      ...state.driverObservation?.ownerId !== this.ownerId ? {} : { revision: state.driverObservation.revision } },
+      ...this.failure === undefined ? {} : { failure: this.failure },
       inFlight: this.pending !== undefined || this.maintenance,
       ...this.last === undefined ? {} : { stop: this.last.reason },
       ...this.last?.nextAttemptAt === undefined ? {} : { nextAttemptAt: this.last.nextAttemptAt },
       actions: { start: { allowed: reason === 'ready', reason }, pause: { allowed: !this.closing && !this.maintenance,
         reason: this.closing ? 'retiring' : this.maintenance ? 'checkpoint-in-progress' : 'ready' } } }
+  }
+
+  /**
+   * Persist an authenticated stop update without waiting for an admitted model turn to drain.
+   * @param request - Retained original identity and complete target, or explicit null clear.
+   * @param authorize - Rechecked at the Native queue boundary; never inferred from an earlier observation.
+   * @returns original durable receipt; pending activation does not claim external work has stopped.
+   */
+  updateRunControl(request: import('./control-types.ts').SimulationProductRunControlInput, authorize: () => void):
+  Promise<import('@clocky/clocky-simulation').SimulationRunControlReceipt> {
+    const work = this.managementTail.then(async () => {
+      if (this.closing) throw unavailable('Simulation scheduling owner is retiring')
+      authorize()
+      const command = { commandId: request.commandId, target: request.target }
+      const prior = this.run.runControlCommandObservation(request.commandId)
+      if (prior !== undefined && !isDeepStrictEqual(prior.command, command))
+        throw invalid('Stop control command identity has another original target')
+      const maxRetries = this.run.controlObservation().budget.maxConflictRetries
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const receipt = await this.run.updateRunControl(command, this.run.controlObservation().revision, authorize)
+          if (prior === undefined) this.synchronize()
+          return receipt
+        } catch (cause: unknown) {
+          if (cause instanceof SimulationRevisionConflictError && attempt < maxRetries) continue
+          if (cause instanceof SimulationStopBoundaryError) { this.synchronize(); throw invalid(cause.message) }
+          throw cause
+        }
+      }
+    })
+    this.managementTail = work.then(() => {}, () => {})
+    return work
   }
 
   /**
@@ -85,18 +128,19 @@ export class SimulationCompanyOwner {
     const work = this.managementTail.then(async () => {
       if (this.closing) throw unavailable('Simulation scheduling owner is retiring')
       authorize()
+      if (request.tokenRecovery !== undefined) throw invalid('Token recovery is supported by World runs')
       const input = simulationPhaseManagementRequestSchema.parse({ id: request.managementId, phase: request.phase })
-      const state = this.run.snapshot()
-      const prior = managementAt(state, input.id)
+      const state = this.run.controlObservation(this.preparation.checkpoint.id)
+      const prior = this.run.managementObservation(input.id)
       if (prior !== undefined) {
-        if (prior.request.phase !== input.phase) throw invalid('Simulation management identity has another original phase')
+        if (!isDeepStrictEqual(prior.request, input)) throw invalid('Simulation management identity has another original phase')
         if (prior.status !== 'in-progress') return prior
       } else {
-        if (Object.keys(state.management ?? {}).length >= this.options.maxManagementRequests) {
+        if (state.managementCount >= this.options.maxManagementRequests) {
           throw unavailable('Simulation retained management capacity is occupied')
         }
         if (request.phase === 'running') {
-          const reason = this.startReason(state)
+          const reason = this.startReason(this.run.controlObservation(this.preparation.checkpoint.id))
           if (reason !== 'ready') throw unavailable(`Simulation scheduling cannot start: ${reason}`)
         }
       }
@@ -111,7 +155,7 @@ export class SimulationCompanyOwner {
         return operation
       } finally {
         // A committed running phase owns scheduling even when only its response or post-append housekeeping fails.
-        if (managementAt(this.run.snapshot(), input.id)?.status === 'completed') this.synchronize()
+        if (this.run.managementObservation(input.id)?.status === 'completed') this.synchronize()
       }
     })
     this.managementTail = work.then(() => {}, () => {})
@@ -137,11 +181,24 @@ export class SimulationCompanyOwner {
   /**
    * Pause, retire supported work and publish one complete native checkpoint without automatically resuming.
    * @param request - Original Host-derived checkpoint identity and retained collector policy.
+   * @param expectedStopCommand - Automatic saves recheck this original target at their queued admission.
    * @returns original checkpoint result; failed collection preserves the previous successful anchor.
    */
-  checkpoint(request: SimulationCheckpointRequest): Promise<SimulationCheckpointOperation> {
+  checkpoint(request: SimulationCheckpointRequest, expectedStopCommand?: string): Promise<SimulationCheckpointOperation> {
     const work = this.managementTail.then(async () => {
       if (this.closing) throw unavailable('Simulation scheduling owner is retiring')
+      if (expectedStopCommand !== undefined) {
+        const stop = this.run.controlObservation().stopTarget
+        if (stop?.commandId !== expectedStopCommand || stop.state !== 'paused' || stop.checkpoint !== 'pending')
+          throw unavailable('Automatic stop checkpoint target changed before collection')
+      }
+      if (expectedStopCommand === undefined) {
+        const stop = this.run.controlObservation().stopTarget
+        if (stop?.state === 'paused' && stop.checkpoint === 'failed' && stop.checkpointId !== null
+          && stop.checkpointId !== request.id) {
+          await this.run.retryRunControlCheckpoint(stop.commandId, stop.checkpointId, request.id)
+        }
+      }
       this.maintenance = true
       this.clearTimer()
       try {
@@ -152,6 +209,14 @@ export class SimulationCompanyOwner {
         const result = await connection.checkpoint(request)
         await this.driver?.drain()
         await this.pending
+        const stop = this.run.snapshot().runControl?.current
+        if (stop?.target?.checkpointPolicy === 'request' && stop.cut !== null && stop.state === 'paused'
+          && (stop.checkpoint === 'pending' || stop.checkpointId === request.id)) {
+          const status = result.status === 'completed'
+            ? this.run.controlObservation().checkpointCoverage === 'native' ? 'completed' : 'external-state-required'
+            : result.status === 'failed' ? 'failed' : undefined
+          if (status !== undefined) await this.run.recordRunControlCheckpoint(stop.commandId, request.id, status)
+        }
         if (result.status === 'completed') {
           await connection.close()
           this.connection = undefined
@@ -159,6 +224,7 @@ export class SimulationCompanyOwner {
           this.preparation = { ...this.preparation, checkpoint: { id: request.id,
             maxDrainRounds: request.maxDrainRounds, maxAttempts: request.maxAttempts } }
           this.failed = false
+          this.failure = undefined
           this.last = undefined
         }
         return result
@@ -395,22 +461,21 @@ export class SimulationCompanyOwner {
     this.driver = new SimulationCompanyDriver(this.run, connection, this.preparation, this.creation.driver, this.lifetime.signal,
       { readTask: this.options.readTask })
   }
-  private startReason(state: SimulationSnapshot): SimulationProductControlReason {
+  private startReason(state: import('@clocky/clocky-simulation').SimulationControlObservation): SimulationProductControlReason {
     if (this.closing) return 'retiring'
+    const stop = state.stopTarget
+    if (stop?.target != null && stop.activation !== 'effective') return 'stop-target-pending'
+    if (stop?.target != null && stop.state !== 'armed') return 'stop-target-reached'
     if (this.maintenance) return 'checkpoint-in-progress'
     if (this.failed) return 'driver-failed'
     if (!this.options.executionAvailable()) return 'execution-unavailable'
-    if (Object.values(state.checkpoints ?? {}).some(value => value.status === 'in-progress')) return 'checkpoint-in-progress'
-    if (Object.values(state.management ?? {}).some(value => value.status === 'in-progress')) return 'management-in-progress'
-    if (Object.values(state.operations).some(operation => operation.status === 'outcome-unknown')) return 'outcome-unknown'
-    const stalledOperation = state.stall?.code === 'SIM_OUTBOX_OUTCOME_UNKNOWN' ? state.operations[state.stall.operationId] : undefined
-    /* v8 ignore next -- a stalled outbox returns to pending only through a retained retry authorization. */
-    const retryAuthorized = stalledOperation?.status === 'pending' && Object.values(stalledOperation.outbox?.retryAuthorizations ?? {})
-      .some(grant => grant.budgetStart === stalledOperation.outbox?.budgetStart)
-    if (state.phase === 'stalled' && !retryAuthorized || this.last?.reason === 'stalled') return 'stalled'
-    const initial = state.checkpoints?.[this.preparation.checkpoint.id]
-    if (initial?.status !== 'completed' || initial.manifest.implementationVersion !== 'company/1'
-      || initial.manifest.team.owner.teamId !== state.teamReservation?.teamId) return 'recovery-required'
+    if (state.checkpointInProgress) return 'checkpoint-in-progress'
+    if (state.managementInProgress) return 'management-in-progress'
+    if (state.unknownOperations) return 'outcome-unknown'
+    if (state.phase === 'stalled' && !state.retryAuthorized || this.last?.reason === 'stalled') return 'stalled'
+    const initial = state.selectedCheckpoint
+    if (initial?.status !== 'completed' || initial.implementationVersion !== 'company/1'
+      || initial.teamId !== state.teamId) return 'recovery-required'
     if (this.last?.reason === 'review-required') return 'review-required'
     if (this.last?.reason === 'completed') return 'scenario-completed'
     if (this.last?.reason === 'scenario-blocked') return 'scenario-blocked'
@@ -420,7 +485,13 @@ export class SimulationCompanyOwner {
   }
   private clearTimer(): void { if (this.timer !== undefined) { clearTimeout(this.timer); this.timer = undefined } }
   private synchronize(): void {
-    if (this.closing || this.maintenance || this.run.snapshot().phase !== 'running') { this.clearTimer(); return }
+    const state = this.run.controlObservation()
+    if (!this.closing && !this.maintenance && this.pending === undefined && state.phase === 'paused') {
+      this.stopCheckpoint.schedule(state.stopTarget, { implementationVersion: 'company/1',
+        maxDrainRounds: this.preparation.checkpoint.maxDrainRounds, maxAttempts: this.preparation.checkpoint.maxAttempts },
+      (request, commandId) => this.checkpoint(request, commandId))
+    }
+    if (this.closing || this.maintenance || state.phase !== 'running') { this.clearTimer(); return }
     if (this.pending !== undefined || this.timer !== undefined || this.driver === undefined || this.failed) return
     const stopped = this.last?.reason
     if (stopped !== undefined && !['paused', 'work-limit', 'coordination-limit', 'retry', 'resident-capacity', 'recipient-busy'].includes(stopped)) return
@@ -431,9 +502,30 @@ export class SimulationCompanyOwner {
     this.timer = setTimeout(() => { this.timer = undefined; this.advance() }, wait)
   }
   private advance(): void {
-    if (this.closing || this.run.snapshot().phase !== 'running' || this.driver === undefined) return
+    if (this.closing || this.run.controlObservation().phase !== 'running' || this.driver === undefined) return
     const driver = this.driver
-    const work = driver.advance().then((result) => { this.last = result }, () => { this.failed = true }).finally(() => {
+    const batchId = randomUUID()
+    const work = (async () => {
+      let admitted = false
+      try {
+        await this.run.recordDriverObservation({ status: 'advancing', ownerId: this.ownerId, batchId, observedAt: Date.now() })
+        admitted = true
+        const result = await driver.advance()
+        await this.run.recordDriverObservation({ status: 'settled', ownerId: this.ownerId, batchId, observedAt: Date.now() })
+        this.last = result
+        this.failure = undefined
+      } catch (error: unknown) {
+        this.failure = simulationProductFailure(error, { ownerId: this.ownerId, batchId, revision: this.run.controlObservation().revision })
+        this.failed = true
+        this.last = undefined
+        if (admitted) {
+          try {
+            await this.run.recordDriverObservation({ status: 'failed', ownerId: this.ownerId, batchId,
+              observedAt: this.failure.occurredAt, failure: this.failure })
+          } catch { /* A failed journal write cannot confirm durable failure; driverSource retains the last confirmed revision. */ }
+        }
+      }
+    })().finally(() => {
       this.pending = undefined
       this.synchronize()
     })

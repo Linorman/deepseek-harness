@@ -1,0 +1,200 @@
+{
+  "format": "clocky.simulation.static-review/1",
+  "capturedAt": "2026-10-21T10:18:04.574875+00:00",
+  "head": "b49dd0edfddb2f19e27110576c5a0f2089cc30ba",
+  "baselineKind": "selected-working-tree-files-with-existing-uncommitted-changes",
+  "scope": "SYS-01 through SYS-14 backend/system review and development plan",
+  "actions": {
+    "staticReview": true,
+    "testsRerun": false,
+    "modelsInvoked": false,
+    "runResumed": false,
+    "businessCodeEdited": false,
+    "subtasksDelegated": false
+  },
+  "limitations": [
+    "Selected source hashes do not constitute a complete buildable snapshot.",
+    "Retained test logs describe earlier executions, not verification of the captured source.",
+    "Temporary evidence paths may be removed; the durable original evidence manifest remains the prior owner.",
+    "No whole-year reliability, migration completion or provider billing claim."
+  ],
+  "sourceFiles": [
+    {
+      "path": "packages/simulation/simulation-local/src/run-control.ts",
+      "bytes": 24032,
+      "sha256": "fc9460b6c1dd73fe5d4d5f159fa7d33c688e2b582e884e4989abd3d3ab0e72bb"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/control-observation.ts",
+      "bytes": 7948,
+      "sha256": "963d51452bccb728bb40be9e7013be08594ddc275af8f48deaacb2f05a16a778"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/index.ts",
+      "bytes": 29157,
+      "sha256": "5ef7ea27736097f203e8bc50cf1ff1bbaeae3df1306661bacee207154897c1cd"
+    },
+    {
+      "path": "packages/simulation/simulation-local/src/journal.ts",
+      "bytes": 29587,
+      "sha256": "1f06e2201842472c8c7b42e0c24c09869c87812fb84afa84ba5233e09668ecf2"
+    },
+    {
+      "path": "packages/simulation/simulation/src/run-control-observation.ts",
+      "bytes": 2553,
+      "sha256": "58a6084878e88906c28423301ae5c30a11a3dba41b8670dc2c71bf4b44aabb76"
+    },
+    {
+      "path": "packages/simulation/simulation/src/world-summary.ts",
+      "bytes": 3866,
+      "sha256": "70041d82ccef8ecb646c692c761a5afb8d8eb461ea56bbcfb6c56f9daa11569f"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/preflight.ts",
+      "bytes": 6215,
+      "sha256": "8202730d7ceeb946b981cafaefd5fa224f98d31884ba66de772940c254648878"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/request-budget.ts",
+      "bytes": 4618,
+      "sha256": "2110f20540eeeafeea8fefd8e18fc56db32fbdeb9f57c70e681132e6dcb90183"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/input.ts",
+      "bytes": 2826,
+      "sha256": "ee8261ee4120e467604c2836c6de28cdf12fd7b9f5fcd8515cbb1b534fc9532e"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/model.ts",
+      "bytes": 9488,
+      "sha256": "e1db6c596536acbf23baaad231298c8f0299059623d1074c3ff47993f1c25bb6"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/external-archive.ts",
+      "bytes": 1891,
+      "sha256": "6edae54abe5dd193833385de8c4dc4b97b7145f945959060577f2688ceb8cd79"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/index.ts",
+      "bytes": 120299,
+      "sha256": "4d22ebcf57e1202644722b3eb3be9f97fc82d9404915118ffd4e76d671f14e87"
+    },
+    {
+      "path": "packages/simulation/simulation-team/src/backup.ts",
+      "bytes": 14465,
+      "sha256": "e7fe4edbbedb78564c0f158ea6382deef23da082984166b3ea322b071b46bdde"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor.ts",
+      "bytes": 1982,
+      "sha256": "96637e462d2dd1a18fdf85132ddb6a63844f4a0d158d3a465fae304948ca7457"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-case.ts",
+      "bytes": 17089,
+      "sha256": "b4eae8719f6edc2471b90cbd57c546b01f24bb5d1ada76e1bbe6740907cf5dc5"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-execution.ts",
+      "bytes": 13748,
+      "sha256": "3dd7b0f625da08d3adf83076aa1495ba9b973e0bea06fb733d84f153fc5f3900"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-domain.ts",
+      "bytes": 19383,
+      "sha256": "0cad88c0561a88f5287b9aa740eaff2effe8ec73a7b9fb72f34af9fcdb11d0b6"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-summary.ts",
+      "bytes": 6282,
+      "sha256": "901950bf496d50ed44a67888b7469d72f3a2a6d71f74a01d6beb487ebe379439"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-backup.ts",
+      "bytes": 17263,
+      "sha256": "9add002880666ef6f2dac2469f4a7cd6ad3fd403a8e08ce9b7f6544321ee9492"
+    },
+    {
+      "path": "packages/simulation/simulation-world/src/harbor-archive-provider.ts",
+      "bytes": 4068,
+      "sha256": "b997b4e8f20ecd7b1ef04de20b64a39dae3803271a6b997f0c2c60d489b372d3"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/index.ts",
+      "bytes": 89750,
+      "sha256": "6f8ac372b33ba8efe786fb2be97b1feea7b24afa71ac520803fd43c580929f3f"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/failure.ts",
+      "bytes": 5844,
+      "sha256": "687334cdfab4d961b08b7e8102dd06f1ed62302c7fc6829f1550128fe14f7238"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/stop-checkpoint.ts",
+      "bytes": 1967,
+      "sha256": "c7ac89d0d4cf2b46d96a5b9aaed6ff338576050dfdc8f464449b2faa57fa5e36"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/company-owner.ts",
+      "bytes": 32232,
+      "sha256": "e46f9faa273d50a1f8fd1fb156206bfcd39887e13ed1d8dc769a840ac8bd8874"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-owner.ts",
+      "bytes": 49940,
+      "sha256": "6eb843863bc344938033f666d8fcb09e91e2a9ab1a98fb8f13ce9b5439ca63af"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/world-preflight.ts",
+      "bytes": 9560,
+      "sha256": "2b556d7ba6ddc9ccdcda15d8052b5ecd7862ba38c41dc70a97dfab50f62ead76"
+    },
+    {
+      "path": "packages/simulation/simulation-product/src/creation-preflight.ts",
+      "bytes": 3805,
+      "sha256": "71b97ded5c8ca224c0d527c3c498ebca05a77d8b06adfac1b8c2edc8a9881783"
+    },
+    {
+      "path": "packages/compaction/compaction/src/no-gain.ts",
+      "bytes": 2457,
+      "sha256": "a715782ad8b7316ba094419ac776f351f1017fcc2691e3aa27b7b86cfadf1329"
+    },
+    {
+      "path": "packages/compaction/compaction-basic/src/index.ts",
+      "bytes": 24614,
+      "sha256": "800282cac819bd4a161ccf8e31676f5a7ea8031e24593b92184e38505a5015d9"
+    },
+    {
+      "path": "packages/compaction/compaction-basic/src/region.ts",
+      "bytes": 21328,
+      "sha256": "50fe54239cd5f54c46a4f3a91ee140e157ad8d0df504ddc1e486b950deb2751b"
+    },
+    {
+      "path": "packages/storage/storage-sqlite/src/raw-log.ts",
+      "bytes": 5013,
+      "sha256": "db42d57204603469981a4abac754f6e71432ce90126a19f5c498e3cf5ed5db2f"
+    }
+  ],
+  "existingEvidenceRead": [
+    {
+      "path": ".tmp/simulation-webui-20261021/system-business-issues.md",
+      "bytes": 19620,
+      "sha256": "5bba36b5cf38c6dd32f25b257f0e326122635e427d4ce7e58f35ac3df8e8ed7d"
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/static-review-baseline/sqlite-1-report.json",
+      "bytes": 1852,
+      "sha256": "06d33322f9d50404e332c005ca46cb45a1a5d41ff3bb173a14a5cb76c0f6fae3"
+    },
+    {
+      "path": ".agents/plans/2026-10-21-simulation-system-reliability/evidence/capacity/static-review-baseline/json-1-report.json",
+      "bytes": 1851,
+      "sha256": "838e1b4d4980383f204b1076743585451f0652fe160d4c65bd87cf45d0b52a7c"
+    },
+    {
+      "path": ".tmp/w6/harbor-full-backup-snapshot.log",
+      "bytes": 562,
+      "sha256": "cbfdf29159253250735bdb64348dd4a2bb15385d1d563982022201b26f340710"
+    }
+  ]
+}

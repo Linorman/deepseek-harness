@@ -2,6 +2,8 @@
 
 [English](README.md) | 中文
 
+历史 `maxActivations` 拒绝保留 `TEAM_CHANNEL_BACKPRESSURE` 和 Hub 的精确尝试身份。仅当 raw disposal、binding 回读、启动预留释放和领域责任释放全部成功时，controller 才以类型化 details 报告 `cleanup: confirmed`。失败报告 `cleanup: unconfirmed`，cause 保留原拒绝与清理错误；原待办责任继续允许重试，也保留已确认的部分清理。消费者直接读取 `activationHistoryLimitDetails()`，不从 aggregate cause 推断清理状态。历史 epoch 和其冻结上限不变。
+
 `@clocky/clocky-team-activation-controller`是 Team Consumer，用于把已发布的 `AgentRuntime` handle 接入其权威的持久 Team binding，并在 `ctx.teamActivations`公开该 owner。它依赖 `clocky-team`和 `clocky-agent-runtime`；不导入 `team-hub` 或任何 AgentLoop 实现。
 
 Team 设置 `maxLiveActivations` 时，`activate()` 首先提交 Participant 启动预留，raw binding 保留 `reservationId`，第二个 epoch 不能复用。未发布启动只在确认清理后释放额度，已绑定 epoch 通过 quiescence 释放。未知启动跨重启保留额度，关闭恢复记录 `ACTIVATION_STARTUP_UNCONFIRMED`；即使没有容量上限，清理失败的 raw handle 仍归 controller 拥有并重试。reservation release 重试时保留已确认的 raw termination，不重复释放 handle。关闭失败可以重试，但 activation 接纳仍保持关闭。已知 provider 未启动的拒绝在存储失败后仍保留 reservation-release 责任。Bind 响应丢失时按准确的持久 epoch 核对，通过 quiescence 结算；readback 或 quiescence 重试不重复已确认的 raw termination。插件通过 `ctx.effect()` 注册 disposal，等待已接纳的启动和清理完成后再撤销 proof source。
@@ -26,7 +28,7 @@ controller 会合并相同 Team、Participant 和 Session 的并发请求。替�
 
 ## Health 与 teardown
 
-controller 会订阅已接收 handle 的 status stream，并在其 Team 记录持久 cancellation 时释放每个已拥有 activation。进程内 provider 将本地 Agent 的转换映射为 `running`、`idle`、`stopping` 和 `offline`；远程 provider 可以报告同一组状态，而不需要全局 local-Agent observer。lease 释放会写入 `stopping`、释放 raw handle，然后记录 quiescence。若远程 provider 在持久 cancellation 中无法证明终止，controller 会保留 stopping entry，并将 `REMOTE_CANCELLATION_UNCONFIRMED`记录为 Team stall；绝不会把该 epoch 报为 offline。status 写入按 activation 串行，并重试受配置限制的 Team-cursor 冲突。卸载会等待已接收的 cold replacement 和普通 activation 工作。
+controller 会订阅已接收 handle 的 status stream，并在其 Team 记录持久 cancellation 时释放每个已拥有 activation。进程内 provider 将本地 Agent 的转换映射为 `running`、`idle`、`stopping` 和 `offline`；远程 provider 可以报告同一组状态，而不需要全局 local-Agent observer。lease 释放会写入 `stopping`、释放 raw handle，然后记录 quiescence。若远程 provider 在持久 cancellation 中无法证明终止，controller 会保留 stopping entry，并将 `REMOTE_CANCELLATION_UNCONFIRMED`记录为 Team stall；绝不会把该 epoch 报为 offline。status 观测保留 activation 内的顺序；读取、proof 和写回按 Team 串行，避免兄弟 epoch 消耗彼此的 cursor 重试额度。其他 Team 变更仍使用配置限定的重试次数。raw handle 的释放仍可并发。卸载会等待已接收的 cold replacement 和普通 activation 工作。
 
 `disposalTimeoutMs` 限制卸载结算，默认值为 `5000`，不得超过 Node 的 `2147483647` 毫秒 timer 上限。`statusSyncAttempts`限制一次观测 status 的 cursor-conflict 重试，默认值为 `8`。
 

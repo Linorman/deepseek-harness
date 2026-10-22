@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import { AttachmentId } from '@clocky/clocky-attachment'
@@ -22,8 +24,9 @@ import type {
   StreamChunk,
   TokenUsage,
 } from '@clocky/clocky-llm'
-import SessionStore, { Session, SessionId } from '@clocky/clocky-session'
-import TokenMeter from '@clocky/clocky-token-meter'
+import SessionStore, { Session, SessionId, decodeStorageRecord } from '@clocky/clocky-session'
+import TokenMeter, { estimateRequestTokens } from '@clocky/clocky-token-meter'
+import { COMPACTION_INSTRUCTION } from '@clocky/clocky-compaction-basic/src/summarizer.ts'
 import { agentEvents, type Agent, type RequestErrorAction } from '@clocky/clocky-agent'
 import ToolResultPruner from '@clocky/clocky-compaction-tool-result-pruner'
 
@@ -297,6 +300,9 @@ describe('compact configuration and defaults', () => {
       compactionRetries: 1,
       maxOverflowRetries: 1,
       modelPolicies: [],
+      noGainMinTokens: 256,
+      noGainCooldownNodes: 8,
+      noGainHistoryLimit: 32,
       auto: true,
     })
     expect(Object.isFrozen(resolved)).toBe(true)
@@ -1811,7 +1817,7 @@ describe('automatic listener and loader composition', () => {
     expect(compactSpy).not.toHaveBeenCalled()
   })
 
-  it('does not retry when cancellation lands during an awaited compaction', async () => {
+  it('does not commit or retry when cancellation lands during an awaited compaction', async () => {
     const ctx = createContext()
     const compact = new TestCompactionEngine(ctx)
     const controller = new AbortController()
@@ -1820,7 +1826,7 @@ describe('automatic listener and loader composition', () => {
     const generation = session.surface.replaceGeneration
 
     expect(await recover(ctx, agent(session, MODEL), overflow(), controller.signal)).toBe(false)
-    expect(session.surface.replaceGeneration).toBe(generation + 1)
+    expect(session.surface.replaceGeneration).toBe(generation)
   })
 
   it('maxOverflowRetries:0 disables recovery without disabling post-step pressure', async () => {
@@ -1879,5 +1885,149 @@ describe('automatic listener and loader composition', () => {
     await preStep(ctx, agent(session, MODEL))
     expect(session.events.some(event => event.type === 'compaction/start')).toBe(false)
     expect(await recover(ctx, agent(session, MODEL), overflow())).toBe(false)
+  })
+})
+
+
+it('bounds compaction pressure by the deployment allowance even for a large model context window', () => {
+  const policy = resolveTargetPolicy(resolveConfig({ thresholdTokens: 32768, retainTokens: 8192 }), { provider: MODEL, model: MODEL })
+  expect(resolveCompactSpec(policy, 1048576)).toMatchObject({ thresholdTokens: 32768, retainTokens: 8192 })
+  expect(resolveCompactSpec(policy, 32768)).toMatchObject({ thresholdTokens: 26214, retainTokens: 8192 })
+  expect(() => resolveConfig({ thresholdTokens: 8192, retainTokens: 8192 })).toThrow(/retainTokens/)
+})
+
+
+describe('durable no-gain suppression', () => {
+  function noGainEngine(ctx: Context): TestCompactionEngine {
+    const engine = new TestCompactionEngine(ctx, {
+      auto: false, thresholdTokens: 1, retainTokens: 0,
+    })
+    engine.summary = [{ type: 'text', text: 'unhelpful summary '.repeat(3000) }]
+    return engine
+  }
+
+  it('pays once across identical pressure steps, bookkeeping changes and cold session reconstruction', async () => {
+    const ctx = createContext()
+    const session = conversation()
+    const engine = noGainEngine(ctx)
+    const originalSurface = [...session.surface.nodes]
+    const started = performance.now()
+    expect(await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)).toBeNull()
+    expect(engine.calls).toHaveLength(1)
+    const end = session.events.findLast(event => event.type === 'compaction/end')
+    expect(end?.data.noGain?.fingerprint).toMatch(/^[a-f0-9]{64}$/)
+    expect(end?.data.noGain?.selectedNodes).toBe(7)
+    for (let i = 0; i < 10; i += 1) {
+      session.append('request/header', { header: { config: { provider: MODEL, model: MODEL } }, reason: 'initial' })
+      expect(await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)).toBeNull()
+    }
+    expect(engine.calls).toHaveLength(1)
+    expect(session.events.filter(event => event.type === 'compaction/assessment' && event.data.reason === 'no-gain')).toHaveLength(10)
+    const elapsedMs = performance.now() - started
+    expect(session.surface.nodes).toEqual(originalSurface)
+    const input = engine.calls[0]!.input
+    const estimatedInputTokens = estimateRequestTokens({ provider: MODEL, model: MODEL,
+      ...input.system === undefined ? {} : { system: input.system },
+      ...input.tools === undefined ? {} : { tools: [...input.tools] },
+      messages: [...input.messages, createUserMessage({
+        content: [{ type: 'text', text: COMPACTION_INSTRUCTION }], source: { kind: 'plugin', plugin: 'compaction-basic' },
+      })] })
+    const evidenceDirectory = resolve('.tmp/w5-evidence')
+    await mkdir(evidenceDirectory, { recursive: true })
+    await writeFile(resolve(evidenceDirectory, 'no-gain-benchmark.json'), JSON.stringify({
+      fixture: 'compaction-basic.spec.ts/durable no-gain suppression',
+      pressureChecks: 11, summaryCalls: engine.calls.length, skippedEquivalentCalls: 10,
+      estimatedAvoidedInputTokens: estimatedInputTokens * 10,
+      actualProviderReportedTokens: null, elapsedMs,
+      quality: { noGainAccepted: false, originalSurfacePreserved: true, sourceNodes: originalSurface.length },
+      limitations: 'Keyless deterministic summarizer; avoided requests are against repeated equivalent checks, not an actual provider bill.',
+    }, null, 2) + '\n')
+    const restored = Session.create(SessionId('no-gain-restored'), session.events.flatMap(event =>
+      decodeStorageRecord(JSON.parse(JSON.stringify(event)) as unknown)))
+    const restartedContext = createContext()
+    const restarted = noGainEngine(restartedContext)
+    expect(await restarted.compactIfNeeded(agent(restored, MODEL), 'pressure', SIGNAL)).toBeNull()
+    expect(restarted.calls).toHaveLength(0)
+    expect(await restarted.compactIfNeeded(agent(restored, MODEL), 'context-overflow', SIGNAL)).toBeNull()
+    expect(restarted.calls).toHaveLength(0)
+  })
+
+  it('coalesces tiny additions but reconsiders meaningful new history and changed policy', async () => {
+    const ctx = createContext()
+    const session = conversation()
+    const engine = noGainEngine(ctx)
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    // A newly appended tail moves the old tail into the selection: its small
+    // size remains below the configured token and node cooldown thresholds.
+    session.append('user/message', createUserMessage({ content: [{ type: 'text', text: 'tiny' }], source: { kind: 'user' } }), { surfaceOp: 'append' })
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    expect(engine.calls).toHaveLength(1)
+    session.append('user/message', createUserMessage({ content: [{ type: 'text', text: 'meaningful history '.repeat(300) }], source: { kind: 'user' } }), { surfaceOp: 'append' })
+    session.append('user/message', createUserMessage({ content: [{ type: 'text', text: 'tail' }], source: { kind: 'user' } }), { surfaceOp: 'append' })
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    expect(engine.calls).toHaveLength(2)
+    const changedContext = createContext()
+    const changed = new TestCompactionEngine(changedContext, { auto: false, thresholdTokens: 1, retainTokens: 0, maxTokens: 1024 })
+    await changed.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    expect(changed.calls.length).toBeGreaterThan(0)
+  })
+
+  it('reports fixed-envelope pressure without paying to compress a tiny history', async () => {
+    const ctx = createContext(1000)
+    const session = conversation(1, 'tiny')
+    session.append('request/header', { header: { config: { provider: MODEL, model: MODEL, maxTokens: 100 },
+      system: 'fixed system '.repeat(500) }, reason: 'initial' })
+    const engine = noGainEngine(ctx)
+    expect(await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)).toBeNull()
+    expect(engine.calls).toHaveLength(0)
+    const assessment = session.events.findLast(event => event.type === 'compaction/assessment')
+    expect(assessment?.data).toMatchObject({ reason: 'fixed-context', selectedTokens: 0, outputReserveTokens: 100 })
+    expect(assessment?.data.fixedTokens).toBeGreaterThanOrEqual(1000)
+  })
+
+  it('gives cancellation precedence over no-gain suppression and leaves retry eligibility intact', async () => {
+    const ctx = createContext()
+    const session = conversation()
+    const engine = noGainEngine(ctx)
+    const cancellation = new AbortController()
+    const reason = new Error('caller stopped summary')
+    engine.mutateDuringSummary = () => { cancellation.abort(reason) }
+    await expect(engine.compactIfNeeded(agent(session, MODEL), 'pressure', cancellation.signal)).rejects.toBe(reason)
+    expect(session.events.findLast(event => event.type === 'compaction/end')?.data.noGain).toBeUndefined()
+    engine.mutateDuringSummary = undefined
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    expect(engine.calls).toHaveLength(2)
+  })
+
+  it('permits exactly one explicit retry and invalidates suppression for a new routed model', async () => {
+    const ctx = createContext()
+    const session = conversation()
+    const engine = noGainEngine(ctx)
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    const range = selectCompactableRange(session, ctx.tokenMeter.measure(session), 0)!
+    await expect(engine.compactRegion(range.start, range.end, agent(session, MODEL), SIGNAL)).rejects.toThrow(/summary is not smaller/)
+    expect(engine.calls).toHaveLength(2)
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    expect(engine.calls).toHaveLength(2)
+    session.append('request/header', { header: { config: { provider: MODEL, model: 'changed-model' } }, reason: 'initial' })
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    expect(engine.calls).toHaveLength(3)
+  })
+
+  it('enforces the configured replay history capacity', async () => {
+    const ctx = createContext()
+    const session = conversation()
+    const engine = new TestCompactionEngine(ctx, { auto: false, thresholdTokens: 1, retainTokens: 0, noGainHistoryLimit: 1 })
+    engine.summary = [{ type: 'text', text: 'unhelpful '.repeat(5000) }]
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    session.append('compaction/start', { compactionId: CompactionId('unrelated'), turn: 5 })
+    session.append('compaction/end', { compactionId: CompactionId('unrelated'), turn: 5, error: 'provider unavailable' })
+    await engine.compactIfNeeded(agent(session, MODEL), 'pressure', SIGNAL)
+    expect(engine.calls).toHaveLength(2)
+  })
+
+  it.each(['noGainMinTokens', 'noGainCooldownNodes', 'noGainHistoryLimit'] as const)('validates %s at plugin load', (key) => {
+    expect(() => resolveConfig({ [key]: 0 })).toThrow(/positive integer/)
+    expect(() => resolveConfig({ [key]: 1.5 })).toThrow(/positive integer/)
   })
 })

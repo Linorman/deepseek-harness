@@ -1,5 +1,25 @@
+import { simulationProductRawArchiveInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRunControlInputSchema } from '@clocky/clocky-simulation-product/schema'
+import {
+  simulationProductWorldBranchInputSchema,
+  simulationProductWorldBranchReadInputSchema,
+  simulationProductWorldCausalInputSchema,
+  simulationProductWorldCompareInputSchema,
+} from '@clocky/clocky-simulation-product/schema'
+import { simulationProductBackupExportInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRetentionPreviewInputSchema, simulationProductRetentionExecuteInputSchema, simulationProductRetentionReadInputSchema, simulationProductRetentionRecordsInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductGenerationRequestSchema, simulationProductGenerationReadSchema, simulationProductGenerationTransitionSchema, simulationProductGenerationPersonaDraftSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRebuildIndexInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCalendarCommandInputSchema, simulationProductCalendarCancelSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCalendarInputSchema, simulationProductCalendarSubmitSchema } from '@clocky/clocky-simulation-product/schema'
+import { scenarioDraftReadSchema, scenarioDraftSaveSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldManagementFieldsInputSchema, simulationProductWorldManagementDraftSchema, simulationProductWorldManagementSubmitInputSchema } from '@clocky/clocky-simulation-product/world-management-schema'
+import { simulationProductWorldDomainInputSchema } from '@clocky/clocky-simulation-product/world-read-schema'
+import { simulationProductWorldCasesInputSchema, simulationProductWorldCaseInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldCaseCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductRequestsInputSchema, simulationProductRetryRequestInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductPreflightInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWorldPreflightInputSchema, simulationProductWorldCreateInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductOperationRetryInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductRunStatusesInputSchema } from '@clocky/clocky-simulation-product/schema'
 import { simulationProductTasksInputSchema, simulationProductTaskCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
@@ -168,6 +188,62 @@ const UNARY_ROUTES: UnaryRoutes = {
     if (api.simulations === undefined) throw new Error('Simulations API is not available')
     return api.simulations.listTasks(r)
   } },
+  'simulation.world.calendar.retain': { schema: simulationProductCalendarSubmitSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.retainWorldCalendar(r)
+  } },
+  'simulation.world.calendar.command': { schema: simulationProductCalendarCommandInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.readWorldCalendarCommand(r)
+  } },
+  'simulation.world.calendar.cancel': { schema: simulationProductCalendarCancelSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.cancelWorldCalendar(r)
+  } },
+  'simulation.world.calendar.preview': { schema: simulationProductCalendarInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.previewWorldCalendar(r)
+  } },
+  'simulation.world.calendar.submit': { schema: simulationProductCalendarSubmitSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.submitWorldCalendar(r)
+  } },
+  'simulation.world.management.fields': { schema: simulationProductWorldManagementFieldsInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.worldManagementFields(r)
+  } },
+  'simulation.world.management.preview': { schema: simulationProductWorldManagementDraftSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.previewWorldManagement(r)
+  } },
+  'simulation.world.management.submit': { schema: simulationProductWorldManagementSubmitInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.submitWorldManagement(r)
+  } },
+  'simulation.world.drafts.read': { schema: scenarioDraftReadSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.readScenarioDraft(r)
+  } },
+  'simulation.world.drafts.save': { schema: scenarioDraftSaveSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.saveScenarioDraft(r)
+  } },
+  'simulation.world.domain.read': { schema: simulationProductWorldDomainInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.readWorldDomain(r)
+  } },
+  'simulation.world.cases.list': { schema: simulationProductWorldCasesInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.listWorldCases(r)
+  } },
+  'simulation.world.cases.inspect': { schema: simulationProductWorldCaseInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.inspectWorldCase(r)
+  } },
+  'simulation.world.cases.cancel': { schema: simulationProductWorldCaseCancelInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.cancelWorldCase(r)
+  } },
   'simulation.tasks.cancel': { schema: simulationProductTaskCancelInputSchema, invoke: (api, r) => {
     if (api.simulations === undefined) throw new Error('Simulations API is not available')
     return api.simulations.cancelTask(r)
@@ -192,6 +268,10 @@ const UNARY_ROUTES: UnaryRoutes = {
     if (api.simulations === undefined) throw new Error('Simulations API is not available')
     return api.simulations.control(r)
   } },
+  'simulation.runs.run-control': { schema: simulationProductRunControlInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.updateRunControl(r)
+  } },
   'simulation.runs.manage': { schema: simulationProductManageInputSchema, invoke: (api, r) => {
     if (api.simulations === undefined) throw new Error('Simulations API is not available')
     return api.simulations.manage(r)
@@ -209,6 +289,22 @@ const UNARY_ROUTES: UnaryRoutes = {
     if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
       error: { code: 'simulation-product-unavailable' as const, message: 'Simulation products are not deployed.', details: {} } } })
     return api.simulations.preflight(r)
+  } },
+  'simulation.world.preflight': { schema: simulationProductWorldPreflightInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.preflightWorld(r)
+  } },
+  'simulation.world.create': { schema: simulationProductWorldCreateInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.createWorld(r)
+  } },
+  'simulation.world.prepare': { schema: simulationProductPrepareInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.prepareWorld(r)
+  } },
+  'simulation.world.export': { schema: simulationProductControlInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.exportWorldDefinition(r)
   } },
   'simulation.runs.create': { schema: simulationProductCreateInputSchema, invoke: (api, r) => {
     if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
@@ -253,6 +349,81 @@ const UNARY_ROUTES: UnaryRoutes = {
       error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
     return api.simulations.inspect(r)
   } },
+  'simulation.world.branch': { schema: simulationProductWorldBranchInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'World experiments are not deployed.', details: {} } } })
+    return api.simulations.branchWorld(r)
+  } },
+  'simulation.world.branch.read': { schema: simulationProductWorldBranchReadInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'World experiments are not deployed.', details: {} } } })
+    return api.simulations.readWorldBranch(r)
+  } },
+  'simulation.world.causal': { schema: simulationProductWorldCausalInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'World experiments are not deployed.', details: {} } } })
+    return api.simulations.queryWorldCausal(r)
+  } },
+  'simulation.world.compare': { schema: simulationProductWorldCompareInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'World experiments are not deployed.', details: {} } } })
+    return api.simulations.compareWorlds(r)
+  } },
+  'simulation.backup.export': { schema: simulationProductBackupExportInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation backup is not deployed.', details: {} } } })
+    return api.simulations.backupExport(r)
+  } },
+  'simulation.retention.preview': { schema: simulationProductRetentionPreviewInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation retention is not deployed.', details: {} } } })
+    return api.simulations.retentionPreview(r)
+  } },
+  'simulation.retention.execute': { schema: simulationProductRetentionExecuteInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation retention is not deployed.', details: {} } } })
+    return api.simulations.retentionExecute(r)
+  } },
+  'simulation.retention.read': { schema: simulationProductRetentionReadInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation retention is not deployed.', details: {} } } })
+    return api.simulations.retentionRead(r)
+  } },
+  'simulation.retention.records': { schema: simulationProductRetentionRecordsInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation retention is not deployed.', details: {} } } })
+    return api.simulations.retentionRecords(r)
+  } },
+  'simulation.generation.request': { schema: simulationProductGenerationRequestSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation generation is not deployed.', details: {} } } })
+    return api.simulations.generationRequest(r)
+  } },
+  'simulation.generation.read': { schema: simulationProductGenerationReadSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation generation is not deployed.', details: {} } } })
+    return api.simulations.generationRead(r)
+  } },
+  'simulation.generation.execute': { schema: simulationProductGenerationReadSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation generation is not deployed.', details: {} } } })
+    return api.simulations.generationExecute(r)
+  } },
+  'simulation.generation.transition': { schema: simulationProductGenerationTransitionSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation generation is not deployed.', details: {} } } })
+    return api.simulations.generationTransition(r)
+  } },
+  'simulation.generation.persona-draft': { schema: simulationProductGenerationPersonaDraftSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation generation is not deployed.', details: {} } } })
+    return api.simulations.generationPersonaDraft(r)
+  } },
+  'simulation.index.rebuild': { schema: simulationProductRebuildIndexInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation index maintenance is not deployed.', details: {} } } })
+    return api.simulations.rebuildIndex(r)
+  } },
   'simulation.collections.list': { schema: simulationProductBrowseInputSchema, invoke: (api, r) => {
     if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
       error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
@@ -262,6 +433,10 @@ const UNARY_ROUTES: UnaryRoutes = {
     if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
       error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
     return api.simulations.inspectSource(r)
+  } },
+  'simulation.raw.archive': { schema: simulationProductRawArchiveInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.archiveRaw(r)
   } },
   'simulation.records.list': { schema: simulationProductRecordsInputSchema, invoke: (api, r) => {
     if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,

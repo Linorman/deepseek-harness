@@ -1,0 +1,8 @@
+examples/simulation-company/tests/world-norm-crash.snapshot.ts:32:15: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+examples/simulation-company/tests/world-norm-crash.snapshot.ts:32:69: error typescript(no-unsafe-return): Unsafe return of a value of type `any`.
+examples/simulation-company/tests/world-norm-crash-scenario.ts:86:107: error typescript(no-deprecated): `passthrough` is deprecated. Use `z.looseObject()` or `.loose()` instead.
+examples/simulation-company/tests/world-norm-crash-scenario.ts:87:65: error typescript(no-deprecated): `passthrough` is deprecated. Use `z.looseObject()` or `.loose()` instead.
+examples/simulation-company/tests/world-norm-crash-scenario.ts:87:82: error typescript(no-deprecated): `passthrough` is deprecated. Use `z.looseObject()` or `.loose()` instead.
+examples/simulation-company/tests/world-norm-crash-scenario.ts:88:83: error typescript(no-deprecated): `passthrough` is deprecated. Use `z.looseObject()` or `.loose()` instead.
+examples/simulation-company/tests/world-norm-crash-scenario.ts:89:4: error typescript(no-deprecated): `passthrough` is deprecated. Use `z.looseObject()` or `.loose()` instead.
+examples/simulation-company/tests/world-norm-crash-scenario.ts:89:32: error typescript(no-deprecated): `passthrough` is deprecated. Use `z.looseObject()` or `.loose()` instead.

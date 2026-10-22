@@ -1,0 +1,5 @@
+packages/simulation/simulation-local/tests/personnel-admission.spec.ts:187:54: error typescript(no-unsafe-member-access): Unsafe member access .status on an `error` typed value.
+packages/simulation/simulation-local/tests/personnel-admission.spec.ts:216:50: error typescript(no-unsafe-member-access): Unsafe member access .status on an `error` typed value.
+packages/simulation/simulation-local/tests/personnel-admission.spec.ts:235:54: error typescript(no-unsafe-member-access): Unsafe member access .status on an `error` typed value.
+packages/simulation/simulation-local/tests/personnel-admission.spec.ts:236:53: error typescript(no-unsafe-member-access): Unsafe member access .status on an `error` typed value.
+packages/simulation/simulation-local/tests/personnel-admission.spec.ts:240:124: error typescript(no-unsafe-member-access): Unsafe member access .status on an `error` typed value.

@@ -1,0 +1,93 @@
+{
+  "passed": true,
+  "reports": [
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq",
+      "backend": "json",
+      "face": "src",
+      "mode": "generate-and-hire",
+      "observedRevision": 186,
+      "originalRevision": 186,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp",
+      "backend": "sqlite",
+      "face": "src",
+      "mode": "generate-and-hire",
+      "observedRevision": 186,
+      "originalRevision": 186,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk",
+      "backend": "json",
+      "face": "src",
+      "mode": "hire-existing",
+      "observedRevision": 178,
+      "originalRevision": 178,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3",
+      "backend": "sqlite",
+      "face": "src",
+      "mode": "hire-existing",
+      "observedRevision": 178,
+      "originalRevision": 178,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA",
+      "backend": "json",
+      "face": "lib",
+      "mode": "generate-and-hire",
+      "observedRevision": 186,
+      "originalRevision": 186,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5",
+      "backend": "sqlite",
+      "face": "lib",
+      "mode": "hire-existing",
+      "observedRevision": 178,
+      "originalRevision": 178,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK",
+      "backend": "json",
+      "face": "lib",
+      "mode": "hire-existing",
+      "observedRevision": 178,
+      "originalRevision": 178,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    },
+    {
+      "root": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje",
+      "backend": "sqlite",
+      "face": "lib",
+      "mode": "generate-and-hire",
+      "observedRevision": 186,
+      "originalRevision": 186,
+      "owner": "unowned",
+      "actualReadonlyNativeReplay": true,
+      "execArgv": []
+    }
+  ]
+}

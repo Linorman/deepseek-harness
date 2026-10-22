@@ -1,3 +1,4 @@
+import { externalRepresentativeChannelCleanup, externalContactChannelCleanup } from './world-external-actor.ts'
 /** Checkpoint request outcomes and atomic publication of exact run-prefix manifests. @module @clocky/clocky-simulation-local/checkpoints */
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
@@ -5,6 +6,7 @@ import { simulationCheckpointRequestSchema, simulationCheckpointIdSchema, simula
   checkpointState, assertCanonicalTeam, simulationCheckpointDiagnosticSchema } from '@clocky/clocky-simulation'
 import type { SimulationSnapshot } from '@clocky/clocky-simulation'
 import { businessFingerprint } from './business.ts'
+import { worldHireChannelCleanup } from './world-hire.ts'
 
 /** Checkpoint requests and their terminal outcomes are durable run events. */
 export const checkpointRecordSchema = z.discriminatedUnion('kind', [
@@ -55,7 +57,8 @@ export function foldCheckpoint(state: SimulationSnapshot, record: CheckpointReco
       value.sessionId === binding.sessionId && value.teamId === binding.teamId && value.participantId === binding.participantId))
     || new Set(manifest.channels.map(value => value.owner.channelId)).size !== manifest.channels.length
     || Object.values(state.channelReservations ?? {}).some(channel =>
-      !manifest.channels.some(value => value.owner.channelId === channel.channelId))) {
+      (worldHireChannelCleanup(state, channel) ?? externalRepresentativeChannelCleanup(state, channel) ?? externalContactChannelCleanup(state, channel))?.phase !== 'absent'
+      && !manifest.channels.some(value => value.owner.channelId === channel.channelId))) {
     throw new Error('Checkpoint manifest omits or changes canonical owner references')
   }
   if (Object.values(state.entities).some(entity => entity.writer !== undefined && manifest.sessions.some(reference =>

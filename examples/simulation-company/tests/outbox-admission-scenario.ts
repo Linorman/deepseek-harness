@@ -16,7 +16,7 @@ const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2,
   maxIngressBytes: 65536, maxEntities: 2, maxResidentActors: 1, maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, budgetInterval: '100', maxDecisionsPerInterval: 1000, maxMessagesPerInterval: 1000, maxPendingEvents: 1000, maxPendingInteractions: 1000, maxKnowledgeBytes: 65536, maxKnowledgePerQuery: 32, maxQueuedDecisions: 1000, maxDispatchWaitRounds: 8,
   maxDecisionsPerWindow: 2,
-  maxOperationsPerDecision: 16, maxResourceQuantity: '10000', relationRules: [],
+  maxOperationsPerDecision: 16, maxResourceReservationHistory: 128, maxResourceQuantity: '10000', relationRules: [],
 } })
 if (process.env['SIMULATION_OUTBOX_RECOVER'] === 'true') {
   try {
@@ -34,7 +34,7 @@ if (process.env['SIMULATION_OUTBOX_RECOVER'] === 'true') {
     const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/outbox-admission')
     const sender = simulationEntityIdSchema.parse('sender'), recipient = simulationEntityIdSchema.parse('recipient')
     for (const id of [sender, recipient]) {
-      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }),
+      await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }),
         run.snapshot().revision)
       await connection.ensureParticipant(id, { displayName: id, role: id, capabilities: [],
         provider: 'in-process', preset: 'simulation', model: 'unused' })

@@ -1,0 +1,4 @@
+- name: cordis:include
+  config:
+    path: ../../../cordis.yml
+- name: ../../world-longitudinal-company-model.ts

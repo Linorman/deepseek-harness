@@ -60,7 +60,11 @@ function styleInjectionModule(
  */
 export const INLINE_SAFE = new RegExp(
   '^@clocky/clocky-(host-apiproxy|file-reference|session|llm|tools|brand|timeout|team/(schema|selection)'
-  + '|simulation-product/schema|simulation/checkpoint-diagnostics-schema)(/|$)',
+  + '|simulation-product/schema|simulation-product/world-schema(?=$)|simulation-product/world-read-schema(?=$)|simulation-product/world-management-schema(?=$)'
+  + '|simulation/checkpoint-diagnostics-schema|simulation/world(?=$)'
+  + '|simulation/world-domain(s|-types|-registry)?(?=$)|simulation/world-execution(?=$)|simulation/world-management(?=$)|simulation/personnel-obligations(?=$)'
+  + '|simulation/tokens(?=$)|simulation/world-authoring(?=$)|simulation/world-generation(?=$)|simulation/world-summary(?=$)'
+  + '|simulation/run-control(?=$)|simulation/run-control-observation(?=$)|simulation/driver-observation(?=$)|simulation-scenario(?=$))(/|$)',
 )
 
 /**
@@ -437,6 +441,35 @@ function matchesSpecifier(patterns: readonly RegExp[], specifier: string): boole
   return patterns.some(pattern => pattern.test(specifier))
 }
 
+const browserFieldCache = new Map<string, { root: string; browser: Readonly<Record<string, unknown>> } | null>()
+
+/**
+ * Map a resolved dependency file through its package's object `browser` field.
+ * Packages such as `yaml` publish a Node build under their `node` export condition that
+ * imports `process`; the browser module table cannot answer that request, so plugin bundles
+ * must take the package's own browser build instead.
+ * @param file - Absolute resolved module path.
+ * @returns the browser replacement path, or undefined when the package declares none for this file.
+ */
+export function browserFieldTarget(file: string): string | undefined {
+  let directory = dirname(file)
+  while (!existsSync(resolvePath(directory, 'package.json'))) {
+    const parent = dirname(directory)
+    if (parent === directory) return undefined
+    directory = parent
+  }
+  let entry = browserFieldCache.get(directory)
+  if (entry === undefined) {
+    const manifest = JSON.parse(readFileSync(resolvePath(directory, 'package.json'), 'utf8')) as { browser?: unknown }
+    entry = manifest.browser !== null && typeof manifest.browser === 'object'
+      ? { root: directory, browser: manifest.browser as Readonly<Record<string, unknown>> } : null
+    browserFieldCache.set(directory, entry)
+  }
+  if (entry === null) return undefined
+  const target = entry.browser[`./${relative(entry.root, file).split(sep).join('/')}`]
+  return typeof target === 'string' ? resolvePath(entry.root, target) : undefined
+}
+
 function clientConfig(id: string, entry: string): UserConfig {
   const isRequested = (specifier: string): boolean => clientExternals(id).has(specifier)
   return {
@@ -480,6 +513,16 @@ function clientConfig(id: string, entry: string): UserConfig {
       'import.meta.env': JSON.stringify({ MODE: process.env.NODE_ENV ?? 'production' }),
     },
     plugins: [{
+      // Dependencies inlined into a browser bundle use their declared browser build.
+      name: 'clocky-browser-field',
+      async resolveId(source: string, importer: string | undefined, options) {
+        if (importer === undefined || source.startsWith('.') || source.startsWith('\0') || isAbsolute(source) || isBuiltin(source)) return null
+        const resolved = await this.resolve(source, importer, { ...options, skipSelf: true })
+        if (resolved === null || resolved.external === true || !resolved.id.includes(`${sep}node_modules${sep}`)) return resolved
+        const target = browserFieldTarget(resolved.id)
+        return target === undefined ? resolved : { ...resolved, id: target }
+      },
+    }, {
       // Bundle purity gate (build-time mirror of the module-edge rules): the
       // baseline and package-specific requests stay external, inline-safe wire layers
       // inline, and every other @clocky value import is a build error — a

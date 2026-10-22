@@ -4,7 +4,8 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector, makeTranslate } from '@clocky/clocky-client-test-runtime'
 import { createSnapshotStore, simulationCommandKey } from '@clocky/clocky-client-runtime/client'
-import type { SimulationRuntimeState, SimulationAdministrationState, SimulationRecordExportState, SimulationCommand,
+import type { SimulationRuntimeState, SimulationAdministrationState, SimulationRecordExportState, SimulationRunControlState,
+  SimulationCommand,
   SimulationProductControl, SimulationProductRunInspection } from '@clocky/clocky-client-runtime/client'
 import { Workspace, type Props } from '../src/client/Workspace.tsx'
 import { createSimulationStore, operationRetryDraftKey, taskCancelDraftKey, reviewDraftKey } from '../src/client/store.ts'
@@ -13,6 +14,10 @@ import { collectionInput } from '../src/client/selection.ts'
 import { Navigation } from '../src/client/Navigation.tsx'
 import { WORKSPACE_NAVIGATION_EVENT } from '@clocky/clocky-client-ui-layout/client'
 import type {} from '../src/client/index.ts'
+import { UNPUBLISHED_WORLD_DOMAIN } from '../src/client/world-domain.ts'
+import type { WorldDomainReads, WorldDomainState } from '../src/client/world-domain.ts'
+import { organization, overview, person } from './world-fixtures.client.ts'
+import { simulationRuntimeFixture } from './simulation-fixtures.client.ts'
 
 // jsdom has no layout observer; browser evidence owns real measurements.
 beforeEach(() => { vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} }) })
@@ -20,11 +25,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals() })
 
 function fixture(href = '?workspace=simulation', visible = true) {
   window.history.replaceState(null, '', href)
-  const empty = { loading: false, stale: false }
-  const state = createSnapshotStore<SimulationRuntimeState>({ connected: true, generation: 1, authorizationVersion: 1,
-    unknownOperations: empty, statuses: empty, reviews: empty, catalog: empty, preflight: empty, tasks: empty,
-    persistentRequests: empty, control: empty, directory: empty, run: empty, collection: empty, recovery: empty,
-    object: empty, records: empty, record: empty, source: empty, observation: empty })
+  const state = createSnapshotStore<SimulationRuntimeState>(simulationRuntimeFixture())
   const administration = createSnapshotStore<SimulationAdministrationState>({ connected: true, authorizationVersion: 1, commands: {} })
   const exportState = createSnapshotStore<SimulationRecordExportState>({ pending: false, records: 0, bytes: 0, status: 'idle' })
   const view = createSimulationStore(65536, 16).create()
@@ -35,18 +36,34 @@ function fixture(href = '?workspace=simulation', visible = true) {
     listTasks: vi.fn(async () => {}), listRequests: vi.fn(async () => {}), navigateApplication: vi.fn(), watchSource: vi.fn(() => off),
     inspectSource: vi.fn(async () => {}), refreshSource: vi.fn(async () => {}), readRecords: vi.fn(async () => {}), closeRecords: vi.fn(),
     exportRecords: vi.fn(async () => {}), cancelExport: vi.fn(), observe: vi.fn(() => off), catalog: vi.fn(async () => {}),
+    listWorldCases: vi.fn(async () => {}), inspectWorldCase: vi.fn(async () => {}), closeWorldCase: vi.fn(),
+    exportWorldDefinition: vi.fn(async () => {}), preflightWorld: vi.fn(async () => undefined), closeWorldPreflight: vi.fn(),
     preflight: vi.fn(async () => undefined), closePreflight: vi.fn(), control: vi.fn(async () => {}),
     retain: vi.fn(() => 'original' as never), submit: vi.fn(async () => undefined), query: vi.fn(async () => undefined), release: vi.fn(() => true),
     directory: vi.fn(async () => {}), inspect: vi.fn(async () => {}), browse: vi.fn(async () => {}), readRecovery: vi.fn(async () => {}),
     closeRecovery: vi.fn(), inspectObject: vi.fn(async () => {}), closeObject: vi.fn(), pause: vi.fn(),
   }
+  const runControl = createSnapshotStore<SimulationRunControlState>({ status: 'idle' })
+  const world = createSnapshotStore<WorldDomainState>(UNPUBLISHED_WORLD_DOMAIN)
+  const worldReads: WorldDomainReads = { hiringMarket: vi.fn(async () => {}), closeDetails: vi.fn(), templates: vi.fn(async () => {}),
+    overview: vi.fn(async () => {}),
+    organization: vi.fn(async () => {}),
+    person: vi.fn(async () => {}), governance: vi.fn(async () => {}), proposal: vi.fn(async () => {}), norm: vi.fn(async () => {}),
+    external: vi.fn(async () => {}), identity: vi.fn(async () => {}), caseExtensions: vi.fn(async () => {}),
+    actionFields: vi.fn(async () => {}), previewAction: vi.fn(async () => {}), closeActionPreview: vi.fn() }
   const neverHook = (() => { throw new Error('Workspace must not read unrelated global stores') }) as never
-  const props: Props = { ...methods, visible, actions: view.actions, renderSlot: () => null, useStore: bindSnapshotSelector(view.store),
+  const props: Props = { useCalendar: bindSnapshotSelector(createSnapshotStore({ status: 'idle' as const })),
+    previewCalendar: vi.fn(), submitCalendar: vi.fn(), closeCalendar: () => true, saveScenarioDraft: vi.fn(),
+    readScenarioDraft: vi.fn(), ...methods, visible, actions: view.actions,
+    renderSlot: () => null, useStore: bindSnapshotSelector(view.store),
     useSimulation: bindSnapshotSelector(state), useAdministration: bindSnapshotSelector(administration),
     useRecordsExport: bindSnapshotSelector(exportState), useFormatLocale: bindSnapshotSelector(format),
     useSessions: neverHook, useWorkspaces: neverHook, t: makeTranslate(en), maxDraftBytes: 65536,
-    controlRefreshMs: 60000, pageSize: 2 }
-  return { state, administration, view, props, methods, off, format }
+    controlRefreshMs: 60000, pageSize: 2, useWorldDomain: bindSnapshotSelector(world), worldReads, downloadText: vi.fn(),
+    maxWorldDraftBytes: 262144, maxWorldDrafts: 2, undoDepth: 20, inspectorMaxWidth: 520, staleAfterMs: 900000,
+    useRunControl: bindSnapshotSelector(runControl), updateRunControl: vi.fn(async () => {}), retryRunControl: vi.fn(async () => {}),
+    dismissRunControl: vi.fn(() => true), stopDrain: { maxSteps: 32, maxTokens: 262144, maxWallTimeMs: 600000 } }
+  return { state, administration, view, props, methods, off, format, world, worldReads, runControl }
 }
 
 it('restores the retained safe selection before opening the same-level Simulation navigation', () => {
@@ -82,6 +99,17 @@ it('refreshes only the current bounded directory status batch and cancels pollin
   h.methods.runStatuses.mockClear()
   act(() => { vi.advanceTimersByTime(60000) })
   expect(h.methods.runStatuses).not.toHaveBeenCalled()
+})
+
+it('refreshes the current World case list and selected section without restarting scheduling', () => {
+  const h = fixture('?workspace=simulation&simulation=run&simulationModule=cases&simulationObject=case&simulationCaseSection=execution')
+  render(<Workspace {...h.props} />)
+  h.methods.listWorldCases.mockClear(); h.methods.inspectWorldCase.mockClear()
+  fireEvent.click(screen.getAllByRole('button', { name: en.refresh })[0]!)
+  expect(h.methods.listWorldCases).toHaveBeenCalledWith({ runId: 'run', limit: 2, status: undefined })
+  expect(h.methods.inspectWorldCase).toHaveBeenCalledWith({ runId: 'run', requestId: 'case', section: 'execution', limit: 2 })
+  expect(h.methods.submit).not.toHaveBeenCalled()
+  expect(h.methods.retain).not.toHaveBeenCalled()
 })
 
 it('refreshes the exact records module and follows independently committed browser navigation', () => {
@@ -247,6 +275,10 @@ it('opens a retained maintenance original from the directory in its exact regist
   render(<Workspace {...h.props} />)
   fireEvent.click(screen.getByRole('button', { name: en.queryOriginal }))
   expect(h.methods.query).toHaveBeenCalledWith(simulationCommandKey(command))
+  expect(screen.queryByRole('button', { name: en.retryOriginal })).toBeNull()
+  act(() => { h.administration.set({ connected: true, authorizationVersion: 1, commands: {
+    [simulationCommandKey(command)]: { command, pending: false, unknown: true, notFound: true },
+  } }) })
   fireEvent.click(screen.getByRole('button', { name: en.retryOriginal }))
   expect(h.methods.submit).toHaveBeenCalledWith(simulationCommandKey(command))
   fireEvent.click(screen.getByRole('button', { name: en.inspectOriginal }))
@@ -289,7 +321,7 @@ it('renders unknown-operation work with exact navigation and bounded list reads'
   const runPage = { run: { id: 'run' as never, name: { text: 'Run', truncated: false }, registeredAt: 1 },
     operational: { scenario: { status: 'observed', execution: 'automatic-tasks',
       templateId: { text: 'Scenario' }, version: '1', driverVersion: '1' } },
-    world: { metrics: { unknownOperationCount: 2 } } }
+    world: { tickUnit: { text: 'minute', truncated: false }, metrics: { unknownOperationCount: 2 } } }
   h.state.set({ ...h.state.getSnapshot(),
     run: { loading: false, stale: false, scope: JSON.stringify(['run', 'run']), value: runPage as never },
     unknownOperations: { loading: false, stale: false, value: { runId: 'run' as never, collection: 'operations',
@@ -501,7 +533,7 @@ it('pages the selected operation attempt history with its exact revision and ret
 it('refreshes the displayed Host control and opens only an allowed maintenance action', () => {
   const h = fixture('?workspace=simulation&simulation=run')
   const control: SimulationProductControl = { runId: 'run' as never, owner: 'held', phase: 'paused', revision: 1,
-    driver: 'idle', inFlight: false, observedAt: 1,
+    driver: 'idle', inFlight: false, observedAt: Date.now(),
     actions: { start: { allowed: true, reason: 'ready' }, pause: { allowed: false, reason: 'stalled' } },
     budget: { model: { provider: 'company', name: 'scripted' }, tokensPerRequest: 1000,
       tokensPerInterval: 10000, interval: '100' as never, residentActors: 2, sharedModelLimit: 4 },
@@ -748,4 +780,257 @@ it('shows only the decision knowledge result for the exact selected reference an
       selection: { ...selection, reference } }, loading: false, stale: false } }) })
     expect(screen.queryByText(en.detailMissing)).toBeNull()
   }
+})
+
+function worldRun(h: ReturnType<typeof fixture>, version = 'v0') {
+  const runId = 'run' as never
+  const run: SimulationProductRunInspection = { run: { id: runId, name: { text: 'Horizon', truncated: false }, registeredAt: 1,
+    observation: 'not-observed' }, status: 'missing', operational: { status: 'observed', observedAt: 1, owner: 'held', driver: 'idle',
+    inFlight: false, scenario: { status: 'observed', templateId: { text: `clocky.world/${version}/laboratory`, truncated: false }, version: '1',
+      driverVersion: '1', execution: 'cognition-only' } } }
+  h.state.set({ ...h.state.getSnapshot(), run: { loading: false, stale: false, scope: JSON.stringify(['run', runId]), value: run } })
+}
+
+function observeRevision(h: ReturnType<typeof fixture>, revision: number) {
+  h.state.set({ ...h.state.getSnapshot(), observation: { loading: false, stale: false, value: {
+    runId: 'run' as never, readVersion: 'policy' as never, cursor: `cursor-${revision}` as never,
+    status: 'changed', observedAt: revision, world: { status: 'observed', revision },
+  } } })
+}
+
+it('surfaces a stalled world even when the scheduler itself has not thrown', () => {
+  const h = fixture('?workspace=simulation&simulation=run')
+  worldRun(h)
+  const control: SimulationProductControl = { runId: 'run' as never, owner: 'held', observedAt: 1,
+    phase: 'stalled', driver: 'waiting', inFlight: false, stop: 'budget-limit',
+    actions: { start: { allowed: false, reason: 'scenario-blocked' }, pause: { allowed: true, reason: 'ready' } },
+    budget: { model: { provider: 'fixture', name: 'scripted' }, tokensPerRequest: 1, tokensPerInterval: 10,
+      interval: '100' as never, residentActors: 2, sharedModelLimit: 2 },
+    administration: { actions: { checkpoint: { allowed: true, reason: 'ready' },
+      restore: { allowed: false, reason: 'checkpoint-required' }, prepare: { allowed: false, reason: 'scenario-progressed' },
+      ingress: { allowed: true, reason: 'ready' } }, ingress: { maxTime: '1000' as never, maxBytes: 1000, targets: [] } } }
+  h.state.set({ ...h.state.getSnapshot(), control: { scope: JSON.stringify(['control', 'run']),
+    loading: false, stale: false, value: control } })
+  render(<Workspace {...h.props} />)
+  const attention = within(screen.getByRole('region', { name: en['needsYou.title'] }))
+  expect(attention.getByRole('button', { name: en['needsYou.scheduler'] })).toBeDefined()
+  expect(attention.queryByText(en['world.overview.attention.none'])).toBeNull()
+})
+
+it('automatically rereads the visible World and person after commits without clearing the selection', () => {
+  const h = fixture('?workspace=simulation&simulation=run&simulationModule=organization&simulationLens=people&simulationObject=wang')
+  worldRun(h)
+  observeRevision(h, 1)
+  const ui = render(<Workspace {...h.props} />)
+  vi.mocked(h.worldReads.organization).mockClear(); vi.mocked(h.worldReads.person).mockClear()
+  h.methods.inspect.mockClear()
+  act(() => { observeRevision(h, 2) })
+  expect(h.methods.inspect).toHaveBeenCalledWith('run')
+  expect(h.worldReads.organization).toHaveBeenCalledOnce()
+  expect(h.worldReads.person).toHaveBeenCalledWith({ runId: 'run', personId: 'wang', section: 'identity', at: undefined, cursor: undefined })
+  expect(h.view.getSnapshot().objectId).toBe('wang')
+  expect(h.worldReads.closeDetails).not.toHaveBeenCalled()
+  act(() => { observeRevision(h, 2) })
+  expect(h.worldReads.organization).toHaveBeenCalledOnce()
+  ui.rerender(<Workspace {...h.props} visible={false} />)
+  act(() => { observeRevision(h, 3) })
+  expect(h.worldReads.organization).toHaveBeenCalledOnce()
+  expect(h.methods.submit).not.toHaveBeenCalled()
+})
+
+it('rereads the selected collection and inspector when execution advances without a page reload', () => {
+  const h = fixture('?workspace=simulation&simulation=run&simulationModule=entities&simulationObject=buyer')
+  observeRevision(h, 1)
+  render(<Workspace {...h.props} />)
+  h.methods.browse.mockClear(); h.methods.inspectObject.mockClear()
+  act(() => { observeRevision(h, 2) })
+  expect(h.methods.browse).toHaveBeenCalledOnce()
+  expect(h.methods.inspectObject).toHaveBeenCalledOnce()
+  expect(h.view.getSnapshot()).toMatchObject({ module: 'entities', objectId: 'buyer' })
+})
+
+it.each(['cases', 'records'] as const)('updates visible %s after a native commit without issuing commands', (module) => {
+  const h = fixture(`?workspace=simulation&simulation=run&simulationModule=${module}&simulationObject=case&simulationCaseSection=execution`)
+  observeRevision(h, 1)
+  render(<Workspace {...h.props} />)
+  h.methods.listWorldCases.mockClear(); h.methods.inspectWorldCase.mockClear(); h.methods.readRecords.mockClear()
+  act(() => { observeRevision(h, 2) })
+  if (module === 'cases') {
+    expect(h.methods.listWorldCases).toHaveBeenCalledOnce()
+    expect(h.methods.inspectWorldCase).toHaveBeenCalledWith({ runId: 'run', requestId: 'case', section: 'execution', limit: 2 })
+  } else {
+    expect(h.methods.readRecords).toHaveBeenCalledWith({ runId: 'run', mode: 'metadata', kind: undefined, limit: 2 })
+  }
+  expect(h.methods.submit).not.toHaveBeenCalled()
+})
+
+it('updates overview counts on scheduler transitions but ignores observation timestamps', () => {
+  const h = fixture('?workspace=simulation&simulation=run')
+  observeRevision(h, 1)
+  const control: SimulationProductControl = { runId: 'run' as never, owner: 'held', phase: 'paused', revision: 1,
+    driver: 'idle', inFlight: false, observedAt: 1, actions: { start: { allowed: true, reason: 'ready' },
+      pause: { allowed: false, reason: 'ready' } },
+    budget: { model: { provider: 'company', name: 'scripted' }, tokensPerRequest: 1000,
+      tokensPerInterval: 10000, interval: '100' as never, residentActors: 2, sharedModelLimit: 4 },
+    administration: { actions: { checkpoint: { allowed: true, reason: 'ready' },
+      restore: { allowed: false, reason: 'checkpoint-required' }, prepare: { allowed: true, reason: 'ready' },
+      ingress: { allowed: true, reason: 'ready' } }, ingress: { maxTime: '1000' as never, maxBytes: 1000, targets: [] } } }
+  h.state.set({ ...h.state.getSnapshot(), control: { loading: false, stale: false, value: control } })
+  render(<Workspace {...h.props} />)
+  h.methods.inspect.mockClear()
+  act(() => { h.state.set({ ...h.state.getSnapshot(), control: { loading: false, stale: false, value: { ...control, observedAt: 2 } } }) })
+  expect(h.methods.inspect).not.toHaveBeenCalled()
+  act(() => { h.state.set({ ...h.state.getSnapshot(), control: { loading: false, stale: false, value: { ...control, driver: 'completed' } } }) })
+  expect(h.methods.inspect).toHaveBeenCalledOnce()
+})
+
+it('waits for a slow World window then reads the newest commit once', () => {
+  const h = fixture('?workspace=simulation&simulation=run')
+  worldRun(h)
+  observeRevision(h, 1)
+  render(<Workspace {...h.props} />)
+  vi.mocked(h.worldReads.overview).mockClear()
+  act(() => { h.world.set({ ...h.world.getSnapshot(), overview: { status: 'loading' } }) })
+  act(() => { observeRevision(h, 2) })
+  act(() => { observeRevision(h, 3) })
+  expect(h.worldReads.overview).not.toHaveBeenCalled()
+  act(() => { h.world.set({ ...h.world.getSnapshot(), overview: { status: 'ready', value: overview, stale: true } }) })
+  expect(h.worldReads.overview).toHaveBeenCalledOnce()
+})
+
+it('waits for actual World preparation before reading domain windows and loads them when readiness changes', () => {
+  const h = fixture('?workspace=simulation&simulation=run&simulationModule=organization')
+  worldRun(h, 'v1')
+  const control: SimulationProductControl = { runId: 'run' as never, owner: 'held', driver: 'idle', inFlight: true, observedAt: 1,
+    actions: { start: { allowed: false, reason: 'preparation-in-progress' }, pause: { allowed: false, reason: 'preparation-in-progress' } },
+    budget: { model: { provider: 'fixture', name: 'scripted' }, tokensPerRequest: 1, tokensPerInterval: 10,
+      interval: '100' as never, residentActors: 2, sharedModelLimit: 2 }, administration: { actions: {
+      checkpoint: { allowed: false, reason: 'preparation-in-progress' }, restore: { allowed: false, reason: 'preparation-in-progress' },
+      prepare: { allowed: false, reason: 'preparation-in-progress' }, ingress: { allowed: false, reason: 'preparation-in-progress' },
+    }, ingress: { maxTime: '100' as never, maxBytes: 100, targets: [] } } }
+  h.state.set({ ...h.state.getSnapshot(), control: { scope: JSON.stringify(['control', 'run']), loading: false, stale: false, value: control } })
+  render(<Workspace {...h.props} />)
+  expect(h.worldReads.organization).not.toHaveBeenCalled()
+  act(() => { h.state.set({ ...h.state.getSnapshot(), control: { scope: JSON.stringify(['control', 'run']), loading: false, stale: false,
+    value: { ...control, inFlight: false, actions: { start: { allowed: true, reason: 'ready' }, pause: { allowed: false, reason: 'ready' } } } } }) })
+  expect(h.worldReads.organization).toHaveBeenCalledOnce()
+})
+
+it.each(['v0', 'v1'])('shows World modules first and collects engine modules under one menu for a %s World run', (version) => {
+  const h = fixture('?workspace=simulation&simulation=run')
+  worldRun(h, version)
+  render(<Workspace {...h.props} />)
+  expect(screen.getByText(en['world.ext.notice']).closest('[role="note"]')).toBeTruthy()
+  const navigation = screen.getByRole('navigation', { name: en.modules })
+  for (const key of ['world.nav.overview', 'world.nav.cases', 'world.nav.organization', 'world.nav.governance', 'world.nav.external', 'records'] as const) {
+    expect(within(navigation).getAllByRole('button', { name: en[key] }).length).toBeGreaterThan(0)
+  }
+  // History is first-level; the remaining engine modules sit under Diagnostics with unchanged route IDs.
+  expect(en.records).toBe('History')
+  expect(en['world.nav.engine']).toBe('Diagnostics')
+  expect(within(navigation).queryByRole('button', { name: en.entities })).toBeNull()
+  fireEvent.click(within(navigation).getByRole('button', { name: en['world.nav.engine'] }))
+  fireEvent.click(screen.getByRole('menuitem', { name: en.entities }))
+  expect(new URL(window.location.href).searchParams.get('simulationModule')).toBe('entities')
+  expect(within(navigation).getByRole('button', { name: 'Diagnostics: Entities' }).getAttribute('aria-current')).toBe('page')
+  fireEvent.click(within(navigation).getAllByRole('button', { name: en.records })[0]!)
+  expect(new URL(window.location.href).searchParams.get('simulationModule')).toBe('records')
+  expect(screen.getByText(en['world.ext.notice']).closest('[role="note"]')).toBeTruthy()
+  expect(h.worldReads.overview).toHaveBeenCalledWith({ runId: 'run' })
+})
+
+it('keeps the engine-only module row for a non-World run', () => {
+  const h = fixture('?workspace=simulation&simulation=run')
+  render(<Workspace {...h.props} />)
+  const navigation = screen.getByRole('navigation', { name: en.modules })
+  expect(screen.queryByText(en['world.ext.notice'])).toBeNull()
+  expect(within(navigation).getByRole('button', { name: en.entities })).toBeTruthy()
+  expect(within(navigation).queryByRole('button', { name: en['world.nav.engine'] })).toBeNull()
+  expect(h.worldReads.overview).not.toHaveBeenCalled()
+})
+
+it('reads an initialized cold World without an administrative scenario owner or execution capability', () => {
+  const h = fixture('?workspace=simulation&simulation=run&simulationModule=external&simulationObject=vendor&simulationWorldSection=interactions')
+  const run: SimulationProductRunInspection = { run: { id: 'run' as never, name: { text: 'Cold World', truncated: false },
+    registeredAt: 1, observation: 'not-observed' }, status: 'observed',
+  operational: { status: 'unavailable', observedAt: 1, scenario: { status: 'unavailable' } },
+  world: { revision: 3, phase: 'paused', time: '0' as never, tickUnit: { text: 'minute', truncated: false }, worldInitialized: true,
+    owner: 'unowned', entityCount: 2, decisionCount: 1, operationCount: 1, observedAt: 1 } }
+  h.state.set({ ...h.state.getSnapshot(), run: { scope: JSON.stringify(['run', 'run']), value: run, loading: false, stale: false } })
+  render(<Workspace {...h.props} />)
+  const navigation = screen.getByRole('navigation', { name: en.modules })
+  expect(within(navigation).getAllByRole('button', { name: en['world.nav.external'] }).length).toBeGreaterThan(0)
+  expect(screen.queryByText(en['world.nav.fallback'])).toBeNull()
+  expect(h.worldReads.external).toHaveBeenCalledWith({ runId: 'run' })
+  expect(h.worldReads.identity).toHaveBeenCalledWith({ runId: 'run', key: 'vendor', section: 'interactions', cursor: undefined, at: undefined })
+  expect(h.methods.retain).not.toHaveBeenCalled()
+  expect(h.methods.submit).not.toHaveBeenCalled()
+})
+
+it('reads the organization lens and viewing time from the URL and opens a management flow from Host hints', () => {
+  const h = fixture('?workspace=simulation&simulation=run&simulationModule=organization&simulationLens=people&simulationObject=wang&simulationWorldSection=actions')
+  worldRun(h)
+  h.world.set({ ...UNPUBLISHED_WORLD_DOMAIN, organization: { status: 'ready', value: organization, stale: false },
+    person: { status: 'ready', value: person, stale: false } })
+  render(<Workspace {...h.props} />)
+  expect(h.worldReads.organization).toHaveBeenCalledWith({ runId: 'run', lens: 'people', at: undefined })
+  expect(h.worldReads.person).toHaveBeenCalledWith({ runId: 'run', personId: 'wang', section: 'identity', cursor: undefined, at: undefined })
+  fireEvent.click(screen.getByRole('button', { name: en['world.action.transfer'] }))
+  expect(h.worldReads.actionFields).toHaveBeenCalledWith({ runId: 'run', action: 'transfer', targetId: 'wang' })
+  expect(screen.getByRole('dialog', { name: en['world.action.transfer'] })).toBeTruthy()
+  expect(h.view.getSnapshot().worldAction).toMatchObject({ action: 'transfer', targetId: 'wang', expectedRevision: 7, open: true })
+})
+
+it('renders the World overview from the domain window and keeps unpublished reads explicit', () => {
+  const h = fixture('?workspace=simulation&simulation=run')
+  worldRun(h)
+  render(<Workspace {...h.props} />)
+  expect(screen.getByText(en['world.unpublished'])).toBeTruthy()
+  act(() => { h.world.set({ ...UNPUBLISHED_WORLD_DOMAIN, overview: { status: 'ready', value: overview, stale: false } }) })
+  expect(screen.getByRole('button', { name: /1 handoffs unresolved/ })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: /1 handoffs unresolved/ }))
+  const query = new URL(window.location.href).searchParams
+  expect(query.get('simulationModule')).toBe('organization')
+  expect(query.get('simulationStatus')).toBe('handoff-required')
+})
+
+it('opens a blank authoring slot from the chooser, keeps its body out of the URL and protects it from unload', () => {
+  const h = fixture()
+  render(<Workspace {...h.props} />)
+  fireEvent.click(screen.getByRole('button', { name: en['world.new'] }))
+  expect(h.worldReads.templates).toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: en['world.new.blank.start'] }))
+  const slot = new URL(window.location.href).searchParams.get('simulationAuthor')
+  expect(slot).toMatch(/^[A-Za-z0-9-]+$/)
+  expect(window.location.href).not.toContain('apiVersion')
+  expect(screen.getByRole('navigation', { name: en['world.author.sections'] })).toBeTruthy()
+  const unload = new Event('beforeunload', { cancelable: true })
+  window.dispatchEvent(unload)
+  expect(unload.defaultPrevented).toBe(true)
+  fireEvent.click(screen.getByRole('button', { name: `← ${en['world.author.back']}` }))
+  expect(new URL(window.location.href).searchParams.get('simulationAuthor')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: en['world.new'] }))
+  expect(screen.getByText('“Untitled world” · 0 diagnostics')).toBeTruthy()
+})
+
+
+it('keeps automatic rereads silent without changing the refresh icon or inserting freshness banners', () => {
+  const h = fixture('?workspace=simulation&simulation=run')
+  worldRun(h)
+  observeRevision(h, 1)
+  render(<Workspace {...h.props} />)
+  const refresh = screen.getAllByRole('button', { name: en.refresh })[0]!
+  const icon = refresh.innerHTML
+  act(() => {
+    h.state.set({ ...h.state.getSnapshot(), run: { ...h.state.getSnapshot().run, loading: true, stale: true } })
+    observeRevision(h, 2)
+  })
+  expect(refresh.innerHTML).toBe(icon)
+  expect(refresh.hasAttribute('data-loading')).toBe(false)
+  expect(refresh.hasAttribute('aria-busy')).toBe(false)
+  expect(refresh.hasAttribute('disabled')).toBe(false)
+  expect(screen.queryByText(en.stale)).toBeNull()
+  expect(screen.queryByText(en['status.stale'])).toBeNull()
+  expect(screen.queryByText(en['world.stale'])).toBeNull()
+  expect(h.methods.submit).not.toHaveBeenCalled()
 })

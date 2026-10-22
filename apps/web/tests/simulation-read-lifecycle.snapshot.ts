@@ -62,7 +62,7 @@ it.each(['json', 'sqlite'] as const)('waits for the deep-link handshake, discard
     await step('opening native writer')
     run = await scaffold.ctx.simulations.open(scaffold.ctx.simulations.resolve({ provider: 'local', spec, mode: 'create' }))
     await step('creating native fixture entity')
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'original-entity', entityKind: 'org', cognition: 'none',
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: 'original-entity', entityKind: 'org', cognition: 'none',
       profile: { name: '原始实体', private: 'never disclose this body' } }), run.snapshot().revision)
     const before = run.snapshot()
     const open = vi.spyOn(scaffold.ctx.simulations, 'open')
@@ -86,6 +86,16 @@ it.each(['json', 'sqlite'] as const)('waits for the deep-link handshake, discard
     await page.unroute('**/api/host.describe')
     await step('waiting for initial entity table')
     await workspace.getByRole('table').getByText('原始实体', { exact: true }).waitFor({ timeout: 30000 })
+    await step('retaining content after an isolated HTTP failure')
+    await page.route('**/api/simulation.collections.list', route => route.abort('connectionreset'))
+    await workspace.getByRole('button', { name: '刷新', exact: true }).click()
+    await workspace.getByText('读取失败，已保留可读内容；连接恢复后可重试。', { exact: true }).waitFor()
+    expect(await workspace.getByRole('table').getByText('原始实体', { exact: true }).count()).toBe(1)
+    expect(await workspace.getByText('连接已断开，保留最后一次可读观察。', { exact: true }).count()).toBe(0)
+    await page.screenshot({ path: join(root, 'http-failure-retained.png') })
+    await page.unroute('**/api/simulation.collections.list')
+    await workspace.getByRole('button', { name: '刷新', exact: true }).click()
+    await expect.poll(() => workspace.getByText('读取失败，已保留可读内容；连接恢复后可重试。', { exact: true }).count()).toBe(0)
     const oldEntered = Promise.withResolvers<undefined>(), oldRelease = Promise.withResolvers<undefined>()
     const oldSettled = Promise.withResolvers<undefined>()
     releaseOldRead = () => { oldRelease.resolve(undefined) }
@@ -142,7 +152,8 @@ it.each(['json', 'sqlite'] as const)('waits for the deep-link handshake, discard
     expect(await page.locator('vite-error-overlay').count()).toBe(0)
     await writeFile(join(root, 'lifecycle-evidence.json'), JSON.stringify({ backend, url: page.url(), before, after: run.snapshot(),
       openCalls: open.mock.calls.length, requests, queries, errors, assertions: ['no read before handshake', 'old response does not replace selection',
-        'retained stale read during disconnect', 'real Loader disable and remount', 'no second owner', 'no model catalog stream permitted'] }, null, 2) + '\n')
+        'isolated HTTP failure retains content until refresh', 'retained stale read during disconnect',
+        'real Loader disable and remount', 'no second owner', 'no model catalog stream permitted'] }, null, 2) + '\n')
   } catch (cause: unknown) {
     await page.screenshot({ path: join(root, 'failure.png') })
     await writeFile(join(root, 'failure.txt'), JSON.stringify({ body: await page.locator('body').innerText(), errors, requests }, null, 2))

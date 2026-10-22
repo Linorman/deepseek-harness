@@ -1,0 +1,14 @@
+{
+  "source": "validation-20261012T134007Z-dbd14113",
+  "lib": "validation-20261012T134447Z-fce28f2d",
+  "cases": 72,
+  "processes": 144,
+  "cold0model": 72,
+  "sourceCount": 776,
+  "compiledJSCount": 865,
+  "sourceHash": "d6f0eb54ad5a0bf5a0594c8398e13c726c173da0f58e1d6b9e11044ce384b59c",
+  "compiledHash": "4f2edd82212aba4490476eeeae99b1354f546ba05c99d7133f32789d3ce546cc",
+  "currentInputsMatch": true,
+  "scope": "Conservative runtime inventory, not exact full import trace; plain Node lib consumes native-stripped fixture TS and built runtime artifact paths asserted under lib",
+  "retainedFailedNonce": "validation-20261012T133620Z-097c338e"
+}

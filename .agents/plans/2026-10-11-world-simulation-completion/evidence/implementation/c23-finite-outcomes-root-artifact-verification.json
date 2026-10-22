@@ -1,0 +1,19 @@
+{
+  "format": "clocky-world-c23-root-artifact-audit/1",
+  "rounds": [
+    {
+      "mode": "source",
+      "filesVerified": 662,
+      "artifactDigest": "c113774a7f9f3a5b33ef83ff6db3edffb254c85458d54c3a59bcda55372da8ae"
+    },
+    {
+      "mode": "lib",
+      "filesVerified": 662,
+      "artifactDigest": "e579ac7c37fdcb70376f0265dd64b9758b8ef1e81a6f4cc978acccf1123d73a5"
+    }
+  ],
+  "totalFilesVerified": 1324,
+  "sameOriginalSourceAndJSInputsBothModes": true,
+  "scope": "finite mediation regular create/cold; actor/nonempty contract/fault acceptance pending",
+  "acceptedChecklistItems": []
+}

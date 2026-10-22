@@ -11,6 +11,7 @@ const selection = simulationRunSelectionSchema.parse({ provider: 'local', mode: 
   outboxMaxAttempts: 3, outboxRetryDelayMs: 10, maxDriveSteps: 32, maxMicrostepsPerTime: 64,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 2,
   maxIngressBytes: 65536, maxEntities: 16, maxResidentActors: 3, maxDecisionsPerWindow: 3, maxOperationsPerDecision: 16,
+  maxResourceReservationHistory: 128,
   maxResourceQuantity: '10000', maxQueuedDecisions: 32, maxDispatchWaitRounds: 8,
   budgetInterval: '100', maxDecisionsPerInterval: 100, maxMessagesPerInterval: 100,
   maxTokensPerInterval: 1000000, tokensPerModelRequest: 10000, maxPendingEvents: 100, maxPendingInteractions: 100,
@@ -26,7 +27,7 @@ try {
   const team = await ctx.simulationTeams.ensureTeam(run, { goal: { objective: 'Checkpoint startup ownership', budgets: {} }, budgets: {} }, 'simulation/startup')
   const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/startup')
   const id = simulationEntityIdSchema.parse('actor')
-  if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+  if (!recovering) await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
   const binding = await connection.ensureParticipant(id, { displayName: 'Actor', role: 'actor', capabilities: [],
     provider: 'in-process', preset: 'simulation', model: 'unused/model' })
   const activate = () => connection.activate(id, { provider: 'in-process', seed: { kind: 'fresh' },

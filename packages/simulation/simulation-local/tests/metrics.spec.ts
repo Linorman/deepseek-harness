@@ -28,6 +28,9 @@ it.each(['json', 'sqlite'] as const)('projects charged unknown usage and writer 
       tokens: { charged: 100, limit: 250, unknownAttempts: 1 }, decisions: { used: 1 }, messages: { used: 1 } },
     residentSlots: { used: 2, limit: 16, recoveryRequired: 0 }, pendingDecisionCount: 0,
     pendingExternalOperationCount: 1, unknownOperationCount: 0 })
+    expect(metrics.tokenAttribution.total).toMatchObject({ attempts: 1, outstandingReservedTokens: 100,
+      statuses: { unknown: 1 }, unknownReported: { inputTokens: 50, outputTokens: 0 } })
+    expect(metrics.tokenAttribution.categories.unknown).toEqual(metrics.tokenAttribution.total)
     expect(metrics.budgets.tokens.charged).toBe(budgetUsage(before).tokens.used)
     expect(metrics.residentSlots.used).toBe(h.run.population().chargedActors)
     expect(JSON.stringify(metrics)).not.toContain('Private body')

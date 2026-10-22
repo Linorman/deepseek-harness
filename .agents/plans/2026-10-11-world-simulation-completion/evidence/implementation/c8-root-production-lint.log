@@ -1,0 +1,6 @@
+packages/simulation/simulation-local/src/world.ts:192:1: error @stylistic(max-len): This line has a length of 211. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:189:1: error @stylistic(max-len): This line has a length of 144. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:207:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:211:1: error @stylistic(max-len): This line has a length of 141. Maximum allowed is 140.
+packages/simulation/simulation-local/src/run.ts:235:1: error @stylistic(max-len): This line has a length of 147. Maximum allowed is 140.
+packages/simulation/simulation-local/src/personnel-obligations.ts:197:23: error typescript(no-unnecessary-boolean-literal-compare): This expression unnecessarily compares a boolean value to a boolean instead of using it directly.

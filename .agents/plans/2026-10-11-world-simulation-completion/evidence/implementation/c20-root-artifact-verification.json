@@ -1,0 +1,605 @@
+{
+  "nativeStream": 74,
+  "verifiedFrozenSources": 1963,
+  "verifiedFrozenBuiltJS": 2572,
+  "verifiedFrozenFixtures": 4,
+  "consumedDirectory": ".local/world-completion/c20-external-contact/consumed-inputs-native74",
+  "verifiedRawAndLogs": 610,
+  "totals": {
+    "cases": 64,
+    "processes": 192,
+    "intentionalKills": 24,
+    "normalExit0": 168,
+    "cold0Model": 128,
+    "coldPending": 16,
+    "coldTerminal": 112,
+    "rawArtifacts": 608,
+    "logs": 2
+  },
+  "matrix": [
+    {
+      "prefix": "src-company-json-retained-keeper",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-json-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-json-commit-wins",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "committed"
+    },
+    {
+      "prefix": "src-company-json-unknown-read",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-json-unknown-close",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-json-crash-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-json-crash-cleanup-before-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-json-crash-cleanup-after-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-sqlite-retained-keeper",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-sqlite-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-sqlite-commit-wins",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "committed"
+    },
+    {
+      "prefix": "src-company-sqlite-unknown-read",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-sqlite-unknown-close",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-sqlite-crash-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-sqlite-crash-cleanup-before-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-company-sqlite-crash-cleanup-after-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-json-retained-keeper",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-json-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-json-commit-wins",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "committed"
+    },
+    {
+      "prefix": "src-laboratory-json-unknown-read",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-json-unknown-close",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-json-crash-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-json-crash-cleanup-before-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-json-crash-cleanup-after-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-sqlite-retained-keeper",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-sqlite-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-sqlite-commit-wins",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "committed"
+    },
+    {
+      "prefix": "src-laboratory-sqlite-unknown-read",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-sqlite-unknown-close",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-sqlite-crash-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-sqlite-crash-cleanup-before-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "src-laboratory-sqlite-crash-cleanup-after-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-json-retained-keeper",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-json-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-json-commit-wins",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "committed"
+    },
+    {
+      "prefix": "lib-company-json-unknown-read",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-json-unknown-close",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-json-crash-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-json-crash-cleanup-before-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-json-crash-cleanup-after-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-sqlite-retained-keeper",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-sqlite-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-sqlite-commit-wins",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "committed"
+    },
+    {
+      "prefix": "lib-company-sqlite-unknown-read",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-sqlite-unknown-close",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-sqlite-crash-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-sqlite-crash-cleanup-before-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-company-sqlite-crash-cleanup-after-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-json-retained-keeper",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-json-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-json-commit-wins",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "committed"
+    },
+    {
+      "prefix": "lib-laboratory-json-unknown-read",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-json-unknown-close",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-json-crash-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-json-crash-cleanup-before-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-json-crash-cleanup-after-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-retained-keeper",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-commit-wins",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "committed"
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-unknown-read",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-unknown-close",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-crash-channel-io",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-crash-cleanup-before-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    },
+    {
+      "prefix": "lib-laboratory-sqlite-crash-cleanup-after-append",
+      "resources": "one supplier-stock=7 inventory; no money accounts",
+      "contracts": "empty; not a nonempty contract proof",
+      "representativeSessionExact": true,
+      "firstCallerWALExact": true,
+      "originalResultCount": 1,
+      "resultOutcome": "cancelled"
+    }
+  ],
+  "inventorySha256": "3b1fd94984c988b7bb28f3fad02d1de065f8471fc07306e307a61126384eb8eb",
+  "reportSha256": "31c1214541fdf8eb5878378c88334fa09408aed37c3fe8e78fd99bef388293d0",
+  "currentSourceDifferences": [
+    "packages/simulation/simulation-local/src/index.ts",
+    "packages/simulation/simulation-world/src/external-actor.ts",
+    "packages/simulation/simulation/src/types.ts"
+  ],
+  "checkedX12": false
+}

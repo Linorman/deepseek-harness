@@ -1,0 +1,169 @@
+{
+  "date": "2026-10-12",
+  "verifiedCurrentSourceRawAndBuildHashEntries": 37,
+  "historicalPreNarrowHashes": "Retained as historical input, not compared against current changed source bytes",
+  "rawArtifacts": [
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-json-company-create.stdout.json",
+      "bytes": 720,
+      "sha256": "63bf6441ffb49bbd108a5ccf1da885844eb88bd8cf534af1db43e0debcc54606"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-json-company-create.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-json-company-cold.stdout.json",
+      "bytes": 717,
+      "sha256": "2c0f29d5fc6812afde5e76942836b8cfab6a233f29a506236e008ee2a777fc0c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-json-company-cold.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-json-laboratory-create.stdout.json",
+      "bytes": 723,
+      "sha256": "7e5aa2edf5707bf3460d4eb04d1fa38247c0f70ddb6cdd1d12ef456c7008e604"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-json-laboratory-create.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-json-laboratory-cold.stdout.json",
+      "bytes": 720,
+      "sha256": "3234b101b4500f118bb778f002e644505e13270e4ec6cf51e7c58208e3321436"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-json-laboratory-cold.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-sqlite-company-create.stdout.json",
+      "bytes": 720,
+      "sha256": "63bf6441ffb49bbd108a5ccf1da885844eb88bd8cf534af1db43e0debcc54606"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-sqlite-company-create.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-sqlite-company-cold.stdout.json",
+      "bytes": 717,
+      "sha256": "2c0f29d5fc6812afde5e76942836b8cfab6a233f29a506236e008ee2a777fc0c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-sqlite-company-cold.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-sqlite-laboratory-create.stdout.json",
+      "bytes": 723,
+      "sha256": "7e5aa2edf5707bf3460d4eb04d1fa38247c0f70ddb6cdd1d12ef456c7008e604"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-sqlite-laboratory-create.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-sqlite-laboratory-cold.stdout.json",
+      "bytes": 720,
+      "sha256": "3234b101b4500f118bb778f002e644505e13270e4ec6cf51e7c58208e3321436"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-source-sqlite-laboratory-cold.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-json-company-create.stdout.json",
+      "bytes": 720,
+      "sha256": "63bf6441ffb49bbd108a5ccf1da885844eb88bd8cf534af1db43e0debcc54606"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-json-company-create.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-json-company-cold.stdout.json",
+      "bytes": 717,
+      "sha256": "2c0f29d5fc6812afde5e76942836b8cfab6a233f29a506236e008ee2a777fc0c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-json-company-cold.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-json-laboratory-create.stdout.json",
+      "bytes": 723,
+      "sha256": "7e5aa2edf5707bf3460d4eb04d1fa38247c0f70ddb6cdd1d12ef456c7008e604"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-json-laboratory-create.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-json-laboratory-cold.stdout.json",
+      "bytes": 720,
+      "sha256": "3234b101b4500f118bb778f002e644505e13270e4ec6cf51e7c58208e3321436"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-json-laboratory-cold.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-sqlite-company-create.stdout.json",
+      "bytes": 720,
+      "sha256": "63bf6441ffb49bbd108a5ccf1da885844eb88bd8cf534af1db43e0debcc54606"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-sqlite-company-create.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-sqlite-company-cold.stdout.json",
+      "bytes": 717,
+      "sha256": "2c0f29d5fc6812afde5e76942836b8cfab6a233f29a506236e008ee2a777fc0c"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-sqlite-company-cold.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-sqlite-laboratory-create.stdout.json",
+      "bytes": 723,
+      "sha256": "7e5aa2edf5707bf3460d4eb04d1fa38247c0f70ddb6cdd1d12ef456c7008e604"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-sqlite-laboratory-create.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-sqlite-laboratory-cold.stdout.json",
+      "bytes": 720,
+      "sha256": "3234b101b4500f118bb778f002e644505e13270e4ec6cf51e7c58208e3321436"
+    },
+    {
+      "path": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c13-world-rehire-raw/world-rehire-lib-sqlite-laboratory-cold.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "independentColdProcesses": 8,
+  "allOriginalBusinessProofsRetained": true
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "科研编辑风格"
+  short_description: "复现暗色科研编辑视觉中的排版、信息图、动效与交互规则，并支持跨产品适配"
+  default_prompt: "使用 $scientific-editorial-style 将我的页面实现为暗色科研编辑风格，保留现有内容和功能，按任务选择还原或阅读优化模式。"

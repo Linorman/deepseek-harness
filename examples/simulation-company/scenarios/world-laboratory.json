@@ -1,0 +1,94 @@
+{
+  "apiVersion": "clocky.world/v0",
+  "metadata": {
+    "id": "laboratory",
+    "name": "Horizon Laboratory",
+    "description": "One organization with a bounded request for one new colleague."
+  },
+  "organization": {
+    "id": "laboratory",
+    "name": "Horizon Laboratory",
+    "description": "Members collaborate through private channels."
+  },
+  "positions": [
+    {
+      "id": "research",
+      "name": "Research assistant",
+      "capacity": 2
+    }
+  ],
+  "runtimeProfile": {
+    "id": "world-agent",
+    "version": "1"
+  },
+  "templates": [
+    {
+      "id": "laboratory-person",
+      "version": "1"
+    }
+  ],
+  "actors": [
+    {
+      "id": "director",
+      "role": "director",
+      "template": {
+        "id": "laboratory-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Coordinator"
+      }
+    },
+    {
+      "id": "requester",
+      "role": "member",
+      "template": {
+        "id": "laboratory-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Research Lead"
+      }
+    },
+    {
+      "id": "observer",
+      "role": "member",
+      "template": {
+        "id": "laboratory-person",
+        "version": "1"
+      },
+      "persona": {
+        "name": "Observer"
+      }
+    }
+  ],
+  "assignments": [
+    {
+      "id": "initial-assignment",
+      "personId": "requester",
+      "positionId": "research"
+    }
+  ],
+  "authorizations": [
+    {
+      "id": "hiring-authority",
+      "requesterId": "requester",
+      "positionId": "research"
+    }
+  ],
+  "initialEvents": [
+    {
+      "kind": "hire-request",
+      "applicationId": "first-colleague",
+      "requesterId": "requester",
+      "positionId": "research",
+      "at": "0",
+      "description": "We need one additional colleague for this position."
+    }
+  ],
+  "limits": {
+    "world": {
+      "maxPlansPerRequest": 3
+    }
+  }
+}

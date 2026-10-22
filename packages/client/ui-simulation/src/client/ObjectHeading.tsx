@@ -1,6 +1,6 @@
 /** A long object name remains readable without consuming the narrow inspector's first screen. */
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Button } from '@clocky/clocky-client-ui-primitives'
+import { Button, IconButton, IconCloseOutline16 } from '@clocky/clocky-client-ui-primitives'
 import type { Key } from './locales.ts'
 import css from './Workspace.module.css'
 
@@ -23,10 +23,12 @@ export function ObjectHeading({ name, domain, close, t }: {
     observer.observe(element)
     return () => { observer.disconnect() }
   }, [name, expanded])
+  // An opaque identifier (one long token) reads as a monospace identity rather than a display title.
+  const opaque = name.length > 24 && !/\s/.test(name)
   return <header className={css.objectHeading}>
-    <Button onClick={close}>{t('close')}</Button>
-    <p className={css.muted}>{domain}</p>
-    <h2 ref={heading} tabIndex={-1} data-expanded={expanded || undefined}>{name}</h2>
+    <div className={css.objectHeadingTop}><p className={css.objectDomain}>{domain}</p>
+      <IconButton size="sm" label={t('close')} icon={<IconCloseOutline16 />} onClick={close} /></div>
+    <h2 ref={heading} tabIndex={-1} data-expanded={expanded || undefined} data-opaque={opaque || undefined}>{name}</h2>
     {(clipped || expanded) && <Button size="sm" aria-expanded={expanded} onClick={() => { setExpanded(!expanded) }}>
       {t(expanded ? 'object.collapseName' : 'object.expandName')}
     </Button>}

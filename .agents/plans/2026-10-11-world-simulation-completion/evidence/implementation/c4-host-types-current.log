@@ -1,0 +1,14 @@
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(88,56): error TS1005: ',' expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(88,64): error TS1005: ',' expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(88,65): error TS1128: Declaration or statement expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(89,102): error TS1005: ']' expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(89,114): error TS1005: ',' expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(90,11): error TS1005: ',' expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(90,14): error TS1005: ',' expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(107,3): error TS1472: 'catch' or 'finally' expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(159,1): error TS1128: Declaration or statement expected.
+examples/simulation-company/tests/world-governance-deadline-scenario.ts(159,3): error TS1005: 'try' expected.
+examples/simulation-company/tests/world-norm-scenario.ts(112,118): error TS1005: ',' expected.
+examples/simulation-company/tests/world-norm-scenario.ts(112,127): error TS1005: ',' expected.
+examples/simulation-company/tests/world-norm-scenario.ts(112,128): error TS1109: Expression expected.
+examples/simulation-company/tests/world-norm-scenario.ts(112,138): error TS1005: ';' expected.

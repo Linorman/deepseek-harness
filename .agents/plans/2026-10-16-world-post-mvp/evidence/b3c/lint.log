@@ -1,0 +1,5 @@
+packages/simulation/simulation-local/tests/world-local-object-benchmark.spec.ts:14:42: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/tests/world-local-object-benchmark.spec.ts:14:73: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/tests/world-local-object-benchmark.spec.ts:14:92: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/tests/world-local-object-benchmark.spec.ts:15:26: error @stylistic(member-delimiter-style): Unexpected separator (;).
+packages/simulation/simulation-local/tests/world-local-object-benchmark.spec.ts:15:50: error @stylistic(member-delimiter-style): Unexpected separator (;).

@@ -90,7 +90,7 @@ describe.each(['json', 'sqlite'] as const)('%s ordered windows', (backend) => {
     try {
       const actor = await h.actor('a')
       const other = simulationEntityIdSchema.parse('unbound')
-      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: other, entityKind: 'person',
+      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id: other, entityKind: 'person',
         cognition: 'agent', profile: {} }), h.run.snapshot().revision)
       const request = simulationWindowRequestSchema.parse({ id: 'owned-context', decisions: [{
         id: 'decision', entityId: actor.id, context: contextRequest(),

@@ -16,6 +16,32 @@ const channelId = 'selected-channel' as ChannelId
 const channel = { manifest: { id: channelId, teamId: state.team.id, adapter: { type: 'direct', version: 4 },
   participants: [{ id: 'participant-one' as never, role: 'human' }], limits: {} }, phase: 'active' as const, cursor: 3 }
 
+it('focuses the exact admitted Envelope without acknowledging or posting and retires the marker on explicit page navigation', () => {
+  const scrollIntoView = vi.fn(), updateView = vi.fn(), acknowledgeChannel = vi.fn(async () => {})
+  const readChannel = vi.fn(async () => ({ channel, records: [] }))
+  const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView')
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true })
+  try {
+    const page: ChannelReadPageResult = { channel, records: [{ type: 'channel/envelope', envelope: {
+      id: 'target-envelope' as never, teamId: state.team.id, channelId, sequence: 7, senderId: 'participant-one' as never,
+      audience: null, kind: 'message', payload: { text: 'Exact original message' }, delivery: 'context', priority: 'normal', createdAt: 1,
+    }, deliveryIntents: [] }] }
+    const view = render(<ChannelHub state={state} translate={makeTranslate(en)} updateView={updateView}
+      viewState={{ ...DEFAULT_TEAM_VIEW, channelEnvelope: 'target-envelope', channelEnvelopeSequence: 7 }}
+      acknowledgeChannel={acknowledgeChannel} readChannel={readChannel}
+      channelState={{ channelId, page, startCursor: 6, loading: false, acknowledging: false, hasNewer: false }} />)
+    const envelope = view.container.querySelector('[data-channel-message="target-envelope"]')
+    expect(document.activeElement).toBe(envelope)
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
+    expect(acknowledgeChannel).not.toHaveBeenCalled(); expect(readChannel).not.toHaveBeenCalled()
+    fireEvent.click(within(view.getByLabelText(en['detail.readChannel'])).getByRole('button', { name: en['detail.firstPage'] }))
+    expect(updateView).toHaveBeenCalledWith({ channelEnvelope: undefined, channelEnvelopeSequence: undefined })
+  } finally {
+    if (original === undefined) Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView')
+    else Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', original)
+  }
+})
+
 it('filters loaded channels, pages and refreshes the list, then opens and refreshes the selected conversation', async () => {
   const readChannels = vi.fn(async () => {})
   const readChannel = vi.fn(async () => ({ channel, records: [], nextCursor: 7 }))

@@ -1,0 +1,11 @@
+Building wheel...
+Successfully built .local/world-completion/sdk-wheels/clocky_sdk-0.0.0.dev0-py3-none-any.whl
+Using CPython 3.10.19 interpreter at: python/sdk/.venv/bin/python
+Resolved 1 package in 1ms
+Prepared 1 package in 2ms
+Installed 1 package in 2ms
+ + clocky-sdk==0.0.0.dev0 (from file:///Volumes/projects-mac/deepseek-harness/.local/world-completion/sdk-wheels/clocky_sdk-0.0.0.dev0-py3-none-any.whl)
+Installed wheel imported: /Volumes/projects-mac/deepseek-harness/.local/world-completion/sdk-wheel-installed/clocky/__init__.py
+........................................................................ [ 53%]
+...............................................................          [100%]
+135 passed in 0.06s

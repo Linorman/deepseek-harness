@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-19",
+  "workPackage": "B1",
+  "sourceMode": "source; TypeScript compiler declaration outputs under project lib",
+  "sourceSha256": {
+    "packages/simulation/simulation-local/src/inspection-index.ts": "567d9c4457ce12c2c88e8057047aaa5c9947dd6c2abaf29e17bb3f4b44000e16",
+    "packages/simulation/simulation-local/src/index.ts": "2261aa1ec8a0deedf413f2caad2a916fa8e3ec430db89cb4b8e620c85d548ad6",
+    "packages/simulation/simulation/src/inspection.ts": "fdb8b1e45c671bea67a468bc25887faa29a2d59ea5d514e166ed75416d4ba83b",
+    "packages/simulation/simulation/src/types.ts": "15f580199117efe31be319295f09ac7b2708b939e88ea9d6921d5f730ce4c619",
+    "packages/simulation/simulation/src/index.ts": "6fa20683776c67539c1d0a5497450de432a437b9aad0f416d16cb288ae088ff3",
+    "packages/simulation/simulation-product/src/index-maintenance-schema.ts": "4d8a79efb93b2be138943317624c3f539e2f26c4c54949c4108a03abc3d3bafd",
+    "packages/simulation/simulation-product/src/index.ts": "5620a2cf86b411a15f0b3e26bc5e93153d868ad6829ecabd775814939e02df05",
+    "packages/host/apiproxy/src/simulation-product-api.ts": "c1fc4af81fc02e10ee070f2adbaf22162e9c1affd1a7c53c8fd84ac48773c3b9",
+    "packages/host/apiproxy/src/fetch/client.ts": "29b3bd50a2d5c49647a7b46f833eb2fbb05fbab31752928736c82f3ca8060969",
+    "packages/host/apiproxy/src/fetch/handler.ts": "e2534fa46269441626b6be23057257be5115f1f53ccc46efac0cc2779b9eb3cb",
+    "packages/sdk/client/src/client.ts": "e895d7b8ada68c0f280ad10e882de59cf03b52c33ed01531ba700d66fba6a441",
+    "packages/sdk/client/src/api.ts": "d8b47f3c4a23034e155d826fb1aa8f6045f1cd207c489fd938800adb277a4c0d",
+    "packages/sdk/server/src/simulation.ts": "85024c787f43e758371d8aa066f4f77ee022ee463ad472c1352232bcc0e6731f",
+    "packages/sdk/protocol/src/simulation.ts": "8f2be7585024fb710229247754ef7829756163ad73dfa2598fa8bed0fb4455bc",
+    "python/sdk/src/clocky/simulation_index.py": "02b1e8389b8b30dedac3dd2eaf43d6235056a4c49149dbdb0ab6adab27309d8d",
+    "python/sdk/src/clocky/client.py": "049a52514604188d3e2a631fd9920a454c0faba4030787a413351fda7ba64e94",
+    "python/sdk/src/clocky/api.py": "e6eb85e9cbe09a1bd8a6ae16dd143240c654cec60f9c1e93e59a4202b553bc04",
+    "packages/client/runtime/src/client/simulations/service.ts": "8b5f997e319a25b76ef725e7a79696cf4a38632fcb71921562749bb3aae5cbae"
+  },
+  "implemented": [
+    "strict source-prefix reference index manifest",
+    "explicit staging/fsync/atomic rename publication via Native/Product/Host/Client runtime/TS+Python SDK",
+    "single private incremental replay cache verified against complete bounded source",
+    "original domain availability and all final Native invariants rechecked",
+    "policy-generation cursor and late-result fencing"
+  ],
+  "commands": [
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" pnpm exec vitest run packages/simulation/simulation-local/tests/inspection.spec.ts packages/simulation/simulation-local/tests/inspection-index.spec.ts packages/simulation/simulation-product/tests/collections.spec.ts packages/simulation/simulation-product/tests/index-fencing.spec.ts packages/host/apiproxy/tests/simulation-index.spec.ts packages/sdk/client/tests/simulation.spec.ts packages/sdk/server/tests/simulation.spec.ts",
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" CLOCKY_B1_BENCHMARK=1 pnpm exec vitest run packages/simulation/simulation-local/tests/inspection-index-benchmark.spec.ts",
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" pnpm exec tsc -b packages/core/session packages/simulation/simulation-local packages/simulation/simulation-product packages/host/apiproxy packages/sdk/client packages/sdk/server packages/client/runtime",
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=\"$PWD/python/sdk/src\" python/sdk/.venv/bin/python -m pytest python/sdk/tests/test_simulation_index.py -q",
+    "python3 scripts/world-post-mvp-baseline.py",
+    "python3 scripts/world-post-mvp-report.py .local/world-post-mvp/f0-longitudinal/1792387319584824000",
+    "python3 .tmp/world-post-mvp/verify-b1-v2.py",
+    "python3 scripts/world-b1-maintenance.py",
+    "TMPDIR=\"$PWD/.tmp/world-post-mvp\" CLOCKY_B3C_BENCHMARK=1 pnpm exec vitest run packages/simulation/simulation-local/tests/world-local-object-benchmark.spec.ts"
+  ],
+  "evidence": {
+    "focusedIntegration": "integration-tests.log (185 passed)",
+    "python": "python-tests.log (2 passed)",
+    "typecheck": "typecheck.log (exit 0 after session rebuild)",
+    "performance": ".agents/plans/2026-10-16-world-post-mvp/evidence/b1/index-benchmark-1792387237598-74e024f5-30ee-4758-9a24-a755d4b306b4.json",
+    "performanceThreshold": "index-workload.json",
+    "generatedHireMaintenance": ".local/world-post-mvp/b1-maintenance/1792387277795586000/results.json",
+    "companyProbe": ".local/world-post-mvp/f0-longitudinal/1792379723536063000/results.json",
+    "finalLongitudinal": ".local/world-post-mvp/f0-longitudinal/1792387319584824000/summary.json"
+  },
+  "checklistAssessment": {
+    "B03": "Implemented with strict manifest, publication and process-exit tests",
+    "B04": "Implemented; two backends rebuild after deletion/corruption; authority always re-read",
+    "B05": "Implemented; exact revision/credential/policy/query cursors and bounded full-source fallback",
+    "B06": "Implemented for existing collection/record query surfaces; authorization before/after IO and late/cursor tests",
+    "B01": "Complete: fixed v2 matrix (6 pairs, 192 rounds, 12 successful processes) plus readonly index queries and 12 generated-hire maintenance/recovery processes, all original samples retained.",
+    "B02": "Complete: per-round active/native identities, assigned/nonterminated/resident/unreleased writers and Team history, nearest-rank p50/p95/p99, observed/high-water RSS, maintenance intervals and conservative categorized usage; monetary cost explicitly unknown.",
+    "B19": "Original registered scoped index and independent local rename targets pass on both backends with unchanged history/limits; cold index overhead and generated-hire full maintenance costs remain explicit. No overall long-run speedup or arbitrary personnel mutation claim."
+  },
+  "limits": [
+    "full original journal remains read and hashed under existing inspection bounds",
+    "persistent index does not accelerate cold replay or alter history capacity",
+    "monetary costs remain unknown without frozen provider pricing",
+    "no GUI changed; no GIF required",
+    "Generated-hire maintenance has 3 original warm/cold repetitions per backend; 12/12 processes pass and source drift is empty.",
+    "Earlier drifting/pre-freeze attempts remain retained; final evidence is explicitly bound to the final frozen batches."
+  ],
+  "finalPerformance": {
+    "evidence": "final-performance.json",
+    "sha256": "3f91d2cb3a7816e808cd628e1533f022a0a27e45a48d5b314ceb32d4348b3cb4",
+    "matrix": ".local/world-post-mvp/f0-longitudinal/1792387319584824000",
+    "integrity": "v2-integrity.json",
+    "complete": true
+  }
+}

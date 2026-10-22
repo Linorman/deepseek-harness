@@ -1,0 +1,1620 @@
+{
+  "passed": true,
+  "auditedAt": "2026-10-13T02:14:19.326553+00:00",
+  "matrix": "/Volumes/projects-mac/deepseek-harness/.local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable",
+  "inputHash": "95a5fd3427b278765a0d6e7414b9ad146d2e67b85f7e5ce26179d074a436d78a",
+  "inputFiles": 5398,
+  "inputBytes": 60374542,
+  "nativeVersion": 79,
+  "compilerVersion": "5",
+  "cases": [
+    {
+      "root": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq",
+      "face": "src",
+      "backend": "json",
+      "mode": "generate-and-hire",
+      "revision": 186,
+      "modelCalls": 18,
+      "reserveSequence": 78,
+      "planOperationResultSequence": 97,
+      "commitSequence": 91,
+      "actualCanonicalPosts": 3,
+      "actualMaterializedSessions": 3,
+      "rawFiles": 36
+    },
+    {
+      "root": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp",
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "generate-and-hire",
+      "revision": 186,
+      "modelCalls": 18,
+      "reserveSequence": 78,
+      "planOperationResultSequence": 97,
+      "commitSequence": 91,
+      "actualCanonicalPosts": 3,
+      "actualMaterializedSessions": 3,
+      "rawFiles": 29
+    },
+    {
+      "root": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk",
+      "face": "src",
+      "backend": "json",
+      "mode": "hire-existing",
+      "revision": 178,
+      "modelCalls": 18,
+      "reserveSequence": 79,
+      "planOperationResultSequence": 85,
+      "commitSequence": 81,
+      "actualCanonicalPosts": 3,
+      "actualMaterializedSessions": 3,
+      "rawFiles": 32
+    },
+    {
+      "root": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3",
+      "face": "src",
+      "backend": "sqlite",
+      "mode": "hire-existing",
+      "revision": 178,
+      "modelCalls": 18,
+      "reserveSequence": 79,
+      "planOperationResultSequence": 85,
+      "commitSequence": 81,
+      "actualCanonicalPosts": 3,
+      "actualMaterializedSessions": 3,
+      "rawFiles": 29
+    },
+    {
+      "root": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA",
+      "face": "lib",
+      "backend": "json",
+      "mode": "generate-and-hire",
+      "revision": 186,
+      "modelCalls": 18,
+      "reserveSequence": 78,
+      "planOperationResultSequence": 97,
+      "commitSequence": 91,
+      "actualCanonicalPosts": 3,
+      "actualMaterializedSessions": 3,
+      "rawFiles": 36
+    },
+    {
+      "root": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5",
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "hire-existing",
+      "revision": 178,
+      "modelCalls": 18,
+      "reserveSequence": 79,
+      "planOperationResultSequence": 85,
+      "commitSequence": 81,
+      "actualCanonicalPosts": 3,
+      "actualMaterializedSessions": 3,
+      "rawFiles": 29
+    },
+    {
+      "root": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK",
+      "face": "lib",
+      "backend": "json",
+      "mode": "hire-existing",
+      "revision": 178,
+      "modelCalls": 18,
+      "reserveSequence": 79,
+      "planOperationResultSequence": 85,
+      "commitSequence": 81,
+      "actualCanonicalPosts": 3,
+      "actualMaterializedSessions": 3,
+      "rawFiles": 32
+    },
+    {
+      "root": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje",
+      "face": "lib",
+      "backend": "sqlite",
+      "mode": "generate-and-hire",
+      "revision": 186,
+      "modelCalls": 18,
+      "reserveSequence": 78,
+      "planOperationResultSequence": 97,
+      "commitSequence": 91,
+      "actualCanonicalPosts": 3,
+      "actualMaterializedSessions": 3,
+      "rawFiles": 29
+    }
+  ],
+  "processes": 24,
+  "coldProcesses": 16,
+  "coldModelCalls": 0,
+  "warmModelCalls": 144,
+  "canonicalPosts": 24,
+  "materializedSessions": 24,
+  "rawOriginalFiles": 252,
+  "nativeReadonlyReplays": 8,
+  "nativeReplayOwner": "unowned",
+  "pids": [
+    34899,
+    35034,
+    35049,
+    35302,
+    35325,
+    35328,
+    35056,
+    35185,
+    35189,
+    35459,
+    35463,
+    35467,
+    35620,
+    35621,
+    35622,
+    35760,
+    35762,
+    35763,
+    35623,
+    35627,
+    35735,
+    35739,
+    35758,
+    35759
+  ],
+  "canonical": [
+    {
+      "case": "src/src-json-generate-and-hire-kE2Lfq",
+      "operationId": "simulation-operation:5a6c65af2394e93484ae5b4f09c0ee5a46df234ca7281c847874c1a6c34c39c2",
+      "envelopeId": "envelope-7a2fcae2-b5bb-4f22-87e0-703db24801a1",
+      "senderId": "participant-231bfa8c-2bc8-491c-8062-5b3ef5f9536f",
+      "recipientId": "participant-5c558ce6-ef0c-47ac-9778-e876ae7bc870",
+      "channelId": "channel-19898087-b39f-40ed-9656-ac9ebd072967"
+    },
+    {
+      "case": "src/src-json-generate-and-hire-kE2Lfq",
+      "operationId": "simulation-operation:24ab52ac96466c1711fcb344d9ff5324fe5f33514fdf44f4b7283d23bce563dd",
+      "envelopeId": "envelope-79d0f9d1-228c-4871-ba0e-d65953bf27f8",
+      "senderId": "participant-5ea601b7-e416-4249-beeb-960496be780d",
+      "recipientId": "participant-231bfa8c-2bc8-491c-8062-5b3ef5f9536f",
+      "channelId": "channel-261c87ee-83f7-4017-8873-19defc6e9465"
+    },
+    {
+      "case": "src/src-json-generate-and-hire-kE2Lfq",
+      "operationId": "simulation-operation:39bea7def7678aee2fdca623d2b03526b6a0e1cb4bb7c5b4ea17b833753c57dc",
+      "envelopeId": "envelope-384c15a8-6001-48c1-9830-cde1626878f1",
+      "senderId": "participant-231bfa8c-2bc8-491c-8062-5b3ef5f9536f",
+      "recipientId": "participant-5ea601b7-e416-4249-beeb-960496be780d",
+      "channelId": "channel-261c87ee-83f7-4017-8873-19defc6e9465"
+    },
+    {
+      "case": "src/src-sqlite-generate-and-hire-c2RZEp",
+      "operationId": "simulation-operation:5a6c65af2394e93484ae5b4f09c0ee5a46df234ca7281c847874c1a6c34c39c2",
+      "envelopeId": "envelope-48eb7903-2c69-42a8-8cb1-1a436c191954",
+      "senderId": "participant-abbab593-c8df-4291-ac9a-1df736fef9a1",
+      "recipientId": "participant-583a27d3-d76d-4c01-ac9e-fea325e24cd1",
+      "channelId": "channel-6281eb1e-90e7-4426-a205-48e10eb75931"
+    },
+    {
+      "case": "src/src-sqlite-generate-and-hire-c2RZEp",
+      "operationId": "simulation-operation:24ab52ac96466c1711fcb344d9ff5324fe5f33514fdf44f4b7283d23bce563dd",
+      "envelopeId": "envelope-37ecf0dc-507e-4594-8d39-f0cb7686fbcf",
+      "senderId": "participant-d5b9dda3-9610-4574-b9d9-3ded9fa7b48f",
+      "recipientId": "participant-abbab593-c8df-4291-ac9a-1df736fef9a1",
+      "channelId": "channel-8ac38376-df26-4825-84ce-4783ec177550"
+    },
+    {
+      "case": "src/src-sqlite-generate-and-hire-c2RZEp",
+      "operationId": "simulation-operation:39bea7def7678aee2fdca623d2b03526b6a0e1cb4bb7c5b4ea17b833753c57dc",
+      "envelopeId": "envelope-93aab208-a835-4940-994a-57bf6f262572",
+      "senderId": "participant-abbab593-c8df-4291-ac9a-1df736fef9a1",
+      "recipientId": "participant-d5b9dda3-9610-4574-b9d9-3ded9fa7b48f",
+      "channelId": "channel-8ac38376-df26-4825-84ce-4783ec177550"
+    },
+    {
+      "case": "src/src-json-hire-existing-bYR1bk",
+      "operationId": "simulation-operation:5a6c65af2394e93484ae5b4f09c0ee5a46df234ca7281c847874c1a6c34c39c2",
+      "envelopeId": "envelope-493f2816-baa1-4292-815b-44436d2f4169",
+      "senderId": "participant-46f434c0-d2ef-479f-8011-7076c51400fb",
+      "recipientId": "participant-8015c63e-613c-427a-90da-ac12efb1d398",
+      "channelId": "channel-4077d838-914d-44e3-8d53-581752340ecd"
+    },
+    {
+      "case": "src/src-json-hire-existing-bYR1bk",
+      "operationId": "simulation-operation:24ab52ac96466c1711fcb344d9ff5324fe5f33514fdf44f4b7283d23bce563dd",
+      "envelopeId": "envelope-bafe713f-2b46-4c72-8ae0-12eb7bcc8f67",
+      "senderId": "participant-50f5839f-6f55-4ebd-8523-a1aa55ca8661",
+      "recipientId": "participant-8015c63e-613c-427a-90da-ac12efb1d398",
+      "channelId": "channel-ab1531a4-3cd9-4adb-8fc1-923a64c57ca8"
+    },
+    {
+      "case": "src/src-json-hire-existing-bYR1bk",
+      "operationId": "simulation-operation:39bea7def7678aee2fdca623d2b03526b6a0e1cb4bb7c5b4ea17b833753c57dc",
+      "envelopeId": "envelope-809cd95d-dbbc-481e-9616-f092aa8361c5",
+      "senderId": "participant-46f434c0-d2ef-479f-8011-7076c51400fb",
+      "recipientId": "participant-8015c63e-613c-427a-90da-ac12efb1d398",
+      "channelId": "channel-4077d838-914d-44e3-8d53-581752340ecd"
+    },
+    {
+      "case": "src/src-sqlite-hire-existing-paqlR3",
+      "operationId": "simulation-operation:5a6c65af2394e93484ae5b4f09c0ee5a46df234ca7281c847874c1a6c34c39c2",
+      "envelopeId": "envelope-056839ca-7d60-45e9-ad05-0e82eab583ae",
+      "senderId": "participant-38816b85-2860-4ff0-ad45-24473b5835ae",
+      "recipientId": "participant-520538c0-3038-4895-8e4d-f01fb77906b3",
+      "channelId": "channel-95013890-12cd-481d-af3b-df9e13cb284e"
+    },
+    {
+      "case": "src/src-sqlite-hire-existing-paqlR3",
+      "operationId": "simulation-operation:24ab52ac96466c1711fcb344d9ff5324fe5f33514fdf44f4b7283d23bce563dd",
+      "envelopeId": "envelope-371ce2aa-7b63-422a-aa8b-3ed4c8b325ff",
+      "senderId": "participant-96c5764a-8ee9-45a3-a0c3-d4be3c2e52e7",
+      "recipientId": "participant-520538c0-3038-4895-8e4d-f01fb77906b3",
+      "channelId": "channel-49c35b10-a2c8-4deb-b781-2402cc68a0f5"
+    },
+    {
+      "case": "src/src-sqlite-hire-existing-paqlR3",
+      "operationId": "simulation-operation:39bea7def7678aee2fdca623d2b03526b6a0e1cb4bb7c5b4ea17b833753c57dc",
+      "envelopeId": "envelope-94a61288-74a7-468a-aa89-21fc0349e465",
+      "senderId": "participant-38816b85-2860-4ff0-ad45-24473b5835ae",
+      "recipientId": "participant-520538c0-3038-4895-8e4d-f01fb77906b3",
+      "channelId": "channel-95013890-12cd-481d-af3b-df9e13cb284e"
+    },
+    {
+      "case": "lib/lib-json-generate-and-hire-7QCPDA",
+      "operationId": "simulation-operation:5a6c65af2394e93484ae5b4f09c0ee5a46df234ca7281c847874c1a6c34c39c2",
+      "envelopeId": "envelope-6e279af4-dade-4c09-addd-6deac3b3f27c",
+      "senderId": "participant-4fe64866-ca47-4e2b-ae72-ef1259b17824",
+      "recipientId": "participant-a2b3bb69-f372-48b8-b19a-76ebb10170d0",
+      "channelId": "channel-5179b4dc-b41d-4ede-9ee7-093a88f7f7c7"
+    },
+    {
+      "case": "lib/lib-json-generate-and-hire-7QCPDA",
+      "operationId": "simulation-operation:24ab52ac96466c1711fcb344d9ff5324fe5f33514fdf44f4b7283d23bce563dd",
+      "envelopeId": "envelope-980668dd-3e87-4c41-8848-58d71b435008",
+      "senderId": "participant-bad8c65a-e6d7-4cce-8bcc-5b72f00346a1",
+      "recipientId": "participant-4fe64866-ca47-4e2b-ae72-ef1259b17824",
+      "channelId": "channel-b0b694b4-29a9-4187-8fae-630e4ccee78e"
+    },
+    {
+      "case": "lib/lib-json-generate-and-hire-7QCPDA",
+      "operationId": "simulation-operation:39bea7def7678aee2fdca623d2b03526b6a0e1cb4bb7c5b4ea17b833753c57dc",
+      "envelopeId": "envelope-2e1fbe40-a7b4-44b4-838b-f5af206769a4",
+      "senderId": "participant-4fe64866-ca47-4e2b-ae72-ef1259b17824",
+      "recipientId": "participant-bad8c65a-e6d7-4cce-8bcc-5b72f00346a1",
+      "channelId": "channel-b0b694b4-29a9-4187-8fae-630e4ccee78e"
+    },
+    {
+      "case": "lib/lib-sqlite-hire-existing-XWadL5",
+      "operationId": "simulation-operation:5a6c65af2394e93484ae5b4f09c0ee5a46df234ca7281c847874c1a6c34c39c2",
+      "envelopeId": "envelope-a8bd72d6-238b-4d6d-9443-09db3f6024d1",
+      "senderId": "participant-8fa9bd7a-0973-4ea3-80b8-92a131bbe06c",
+      "recipientId": "participant-fecd9022-0c01-4058-b7cb-557a9239a540",
+      "channelId": "channel-104dd4d9-c94c-4d56-9977-d6d677b3ec9a"
+    },
+    {
+      "case": "lib/lib-sqlite-hire-existing-XWadL5",
+      "operationId": "simulation-operation:24ab52ac96466c1711fcb344d9ff5324fe5f33514fdf44f4b7283d23bce563dd",
+      "envelopeId": "envelope-0b5ca99d-45d0-4c7f-a118-e08924960866",
+      "senderId": "participant-3de686d0-7355-4f82-a276-d6c39ea54fb9",
+      "recipientId": "participant-fecd9022-0c01-4058-b7cb-557a9239a540",
+      "channelId": "channel-86c8835b-5d1a-41c1-a00f-b46e8854ccef"
+    },
+    {
+      "case": "lib/lib-sqlite-hire-existing-XWadL5",
+      "operationId": "simulation-operation:39bea7def7678aee2fdca623d2b03526b6a0e1cb4bb7c5b4ea17b833753c57dc",
+      "envelopeId": "envelope-7d0b3eb1-1abc-447e-9a1a-dc9fc38ce90c",
+      "senderId": "participant-8fa9bd7a-0973-4ea3-80b8-92a131bbe06c",
+      "recipientId": "participant-fecd9022-0c01-4058-b7cb-557a9239a540",
+      "channelId": "channel-104dd4d9-c94c-4d56-9977-d6d677b3ec9a"
+    },
+    {
+      "case": "lib/lib-json-hire-existing-avTEvK",
+      "operationId": "simulation-operation:5a6c65af2394e93484ae5b4f09c0ee5a46df234ca7281c847874c1a6c34c39c2",
+      "envelopeId": "envelope-5856c85d-59c3-41dc-990a-6a8f288bd2c2",
+      "senderId": "participant-84055f32-1c66-4e24-934c-5c909b7f2f25",
+      "recipientId": "participant-e7a7d1c3-42a3-4c80-9c10-8f519566a137",
+      "channelId": "channel-1f845663-f6ec-438e-9f50-63e09f430697"
+    },
+    {
+      "case": "lib/lib-json-hire-existing-avTEvK",
+      "operationId": "simulation-operation:24ab52ac96466c1711fcb344d9ff5324fe5f33514fdf44f4b7283d23bce563dd",
+      "envelopeId": "envelope-fde55e00-b5cb-4812-8ccf-84a6b21d57a8",
+      "senderId": "participant-77a0f580-bf09-4cb4-bd63-6e907eb62b2f",
+      "recipientId": "participant-e7a7d1c3-42a3-4c80-9c10-8f519566a137",
+      "channelId": "channel-454b4cfe-e940-4d3f-862e-92bb1d3b4b30"
+    },
+    {
+      "case": "lib/lib-json-hire-existing-avTEvK",
+      "operationId": "simulation-operation:39bea7def7678aee2fdca623d2b03526b6a0e1cb4bb7c5b4ea17b833753c57dc",
+      "envelopeId": "envelope-b432665a-0cef-4884-a11d-08668ab4c57c",
+      "senderId": "participant-84055f32-1c66-4e24-934c-5c909b7f2f25",
+      "recipientId": "participant-e7a7d1c3-42a3-4c80-9c10-8f519566a137",
+      "channelId": "channel-1f845663-f6ec-438e-9f50-63e09f430697"
+    },
+    {
+      "case": "lib/lib-sqlite-generate-and-hire-XMHCje",
+      "operationId": "simulation-operation:5a6c65af2394e93484ae5b4f09c0ee5a46df234ca7281c847874c1a6c34c39c2",
+      "envelopeId": "envelope-5492e370-4ed3-4733-8975-5d4de2f52c61",
+      "senderId": "participant-c5b8ea0d-b5b3-486a-b7a8-247779958819",
+      "recipientId": "participant-b1a54d07-ddd5-4195-ab9b-7b2fb6e1692b",
+      "channelId": "channel-b9ad251c-67e6-42c4-be91-5e74594bf21c"
+    },
+    {
+      "case": "lib/lib-sqlite-generate-and-hire-XMHCje",
+      "operationId": "simulation-operation:24ab52ac96466c1711fcb344d9ff5324fe5f33514fdf44f4b7283d23bce563dd",
+      "envelopeId": "envelope-bc7bb91b-f8bb-42f6-9443-8b848153854f",
+      "senderId": "participant-e6361eef-f657-4ee8-8455-c989153f0756",
+      "recipientId": "participant-c5b8ea0d-b5b3-486a-b7a8-247779958819",
+      "channelId": "channel-3a318a8e-f1bf-45d8-9398-4994dfcffd87"
+    },
+    {
+      "case": "lib/lib-sqlite-generate-and-hire-XMHCje",
+      "operationId": "simulation-operation:39bea7def7678aee2fdca623d2b03526b6a0e1cb4bb7c5b4ea17b833753c57dc",
+      "envelopeId": "envelope-ab0fb96a-b1f6-4e1f-9b6c-fce932891e63",
+      "senderId": "participant-c5b8ea0d-b5b3-486a-b7a8-247779958819",
+      "recipientId": "participant-e6361eef-f657-4ee8-8455-c989153f0756",
+      "channelId": "channel-3a318a8e-f1bf-45d8-9398-4994dfcffd87"
+    }
+  ],
+  "raw": [
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/complete.json",
+      "bytes": 212,
+      "sha256": "d1ead13374eee510b1ff139d3e6cb9c8b0956bc4951a2fc382b2c4f98c3d75a2"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/fixture-inputs.json",
+      "bytes": 1504,
+      "sha256": "0f666aeda295ecaaa54c809998310fe9802aaceca59deece0359fe540dd8143c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/initial.json",
+      "bytes": 57631,
+      "sha256": "fd5f360161dd2563c68cea39015db5e7cb35eb0854adb2a2d09f0e2b555fdfc8"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/input-cordis.yml",
+      "bytes": 82,
+      "sha256": "ba287c663090703aa7925761828aebb3003ee728aec3d363c792777c30186a0b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/input-deployment.ts",
+      "bytes": 7268,
+      "sha256": "c8e808bbdae68c690c72f40acd9631bbe6f00ca4acde7529d219fc831d33093f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/input-hiring-resources-scenario.ts",
+      "bytes": 8206,
+      "sha256": "89e639b74399b2c7066637109e634314cf2634ff728f52c5775ff6b3c0dd9a0f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/input-hiring-resources.snapshot.ts",
+      "bytes": 4031,
+      "sha256": "2f3e88922b50ae58c7ce4d4bab49fdafb6407e65f8cdfd4c00dc6462817c01fe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/input-model.ts",
+      "bytes": 5786,
+      "sha256": "ff2d53a64dd70724e72c92f21a479c68e01b79cd2e35db7f4c128d7911dcaf07"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/input-source.ts",
+      "bytes": 2890,
+      "sha256": "b1b2bedde846a29890469611a9a59ecfb46097510e46630e6be5ae0b28274248"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/input.json",
+      "bytes": 44903,
+      "sha256": "d12b2a89c7ad3a298592c27c5cdbbc093901ed105fd499fbcd370e48ddd86d9d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/original.json",
+      "bytes": 1022223,
+      "sha256": "6a4018141a6815dcef6b4933b9c4c740195565a32b927db7fe6ccbead2ed0651"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/process-0.json",
+      "bytes": 1058,
+      "sha256": "2e1953f31b33890ca7fd10a914ff2ebb4e1762e8f9f7af6f494eef99b3396e2e"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/process-1.json",
+      "bytes": 1057,
+      "sha256": "e68f2c4c3cdd625fb192b4dc43dd6df9f49df32761f2f5ae18619868f1cf14af"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/process-2.json",
+      "bytes": 1057,
+      "sha256": "0cef9826a5adaab31caea6a164bec5e9f77780bf3afb52afd7ab55818afd1710"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/progress.json",
+      "bytes": 448409,
+      "sha256": "32981b6bc15ad4e44658eb0aab44ff99cbd50150f03f463a2b443ec17487d37e"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/root-readonly-native.json",
+      "bytes": 304768,
+      "sha256": "6e836842e2f5168f82dbdeddd76d9b7d5d45aa50738db9516f1cc469bef1ffd0"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/round-0.json",
+      "bytes": 727237,
+      "sha256": "28d8c378b2af0136a997f3d8d7a81091de946b5b0efdf69395f96679e836fe03"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/round-1.json",
+      "bytes": 727236,
+      "sha256": "53d0576ba0bbd1c99271e926f15c9cd213682276938d8827ec5f7d213f0fa00e"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/round-2.json",
+      "bytes": 727236,
+      "sha256": "092f23a275d3799865509d735cad28c2ad28c9b367577be1942cc67fc7e65279"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/sessions/_no-cwd/54cd74c3-aa42-4a20-8b8a-a633157d2683/session.jsonl",
+      "bytes": 79256,
+      "sha256": "8084feecb0497a76a127b8b8dce630d68ea0edfbe1f31c2cc9a7197ea5d7e635"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/sessions/_no-cwd/b49a267f-7553-40eb-b7d4-e4f2312bdfd5/session.jsonl",
+      "bytes": 47319,
+      "sha256": "4b2cdde5fb932bcf60ec2e99d4c253ea3354257ec71b1849c317602a48664ade"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/sessions/_no-cwd/d2d29130-e245-4593-9447-8b8a5728fd5d/session.jsonl",
+      "bytes": 38291,
+      "sha256": "66d6ce57d96e7830025fcf62c29e79557890dfce26a8ca737e0384e681affaef"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "bytes": 140638,
+      "sha256": "771b88e5acabfd14b81959abe3c8e618fea58217588671a11e6023bd7d189fdc"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTA5NmVhNTA3LTFhZTUtNDViZS05ZDY2LTg3MjA3NTI3MTMxOQ.json",
+      "bytes": 6927,
+      "sha256": "69bb8d59d908c5579dfca5916bc53631a5557216fcf94cb98e7240e1dee4e7f1"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTE5ODk4MDg3LWIzOWYtNDBlZC05NjU2LWFjOWViZDA3Mjk2Nw.json",
+      "bytes": 10516,
+      "sha256": "c5eabe2a37e60b5cc54c10710c109ad8e6d29bd8e30d3d2654acc29317a64d1b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTI2MWM4N2VlLTgzZjctNDAxNy04ODczLTE5ZGVmYzZlOTQ2NQ.json",
+      "bytes": 14317,
+      "sha256": "06797e203d99d323b654991beb2d5c4743eb4f79529f5588f2a5b1b945e0a44e"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTdkNGE0ZDg0LTdkNWEtNDFjYi1hMjY2LWJhM2E0MTQwOTU0ZA.json",
+      "bytes": 9413,
+      "sha256": "9c3ec3933aaddfb10f87d66f25d5499e15cbbdb895f00006fae415f5f49cc3a0"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/Y2hhbm5lbC9jaGFubmVsLWYwMjQ3YWJjLWRiNjktNDI3NS04MmQxLTRmNmYzNzRjYTkzNg.json",
+      "bytes": 6845,
+      "sha256": "176d91406ada2ba8ec511c9fecbd9b35c7696554cbbe62f8438f9447360a519b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/YXVkaXQvdGVhbS05OWY4OGY5ZS0xNDExLTRjYmYtOTI2Ni0zNGQ5MmM5OTRmYzA.json",
+      "bytes": 55981,
+      "sha256": "ced15fd1b2d4c52ce94efb86c76aae25de69b071da59bc6b6f7bf7e60ba85dc2"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/YXVkaXQvdGVhbS05OWY4OGY5ZS0xNDExLTRjYmYtOTI2Ni0zNGQ5MmM5OTRmYzAvY2hhbm5lbC9jaGFubmVsLTA5NmVhNTA3LTFhZTUtNDViZS05ZDY2LTg3MjA3NTI3MTMxOQ.json",
+      "bytes": 6094,
+      "sha256": "a15159c839aa04802de17e810894dd8f0a819839f280355c8899e6bee7680ce8"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/YXVkaXQvdGVhbS05OWY4OGY5ZS0xNDExLTRjYmYtOTI2Ni0zNGQ5MmM5OTRmYzAvY2hhbm5lbC9jaGFubmVsLTE5ODk4MDg3LWIzOWYtNDBlZC05NjU2LWFjOWViZDA3Mjk2Nw.json",
+      "bytes": 8580,
+      "sha256": "bbd06dcc44b736aab8158ae194b357286f8fdaf945d4d2be19bb7859a2f4ec1b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/YXVkaXQvdGVhbS05OWY4OGY5ZS0xNDExLTRjYmYtOTI2Ni0zNGQ5MmM5OTRmYzAvY2hhbm5lbC9jaGFubmVsLTI2MWM4N2VlLTgzZjctNDAxNy04ODczLTE5ZGVmYzZlOTQ2NQ.json",
+      "bytes": 11182,
+      "sha256": "4ff43c3e970d7bcce92b2b0115c46109065da36e370ab0db9dd3de185f7bcc27"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/YXVkaXQvdGVhbS05OWY4OGY5ZS0xNDExLTRjYmYtOTI2Ni0zNGQ5MmM5OTRmYzAvY2hhbm5lbC9jaGFubmVsLTdkNGE0ZDg0LTdkNWEtNDFjYi1hMjY2LWJhM2E0MTQwOTU0ZA.json",
+      "bytes": 8248,
+      "sha256": "0da3c4f7c3fdb2fd7ecc966dd41ed443c65ac8cb79fe185feffe35f9c9050b41"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/YXVkaXQvdGVhbS05OWY4OGY5ZS0xNDExLTRjYmYtOTI2Ni0zNGQ5MmM5OTRmYzAvY2hhbm5lbC9jaGFubmVsLWYwMjQ3YWJjLWRiNjktNDI3NS04MmQxLTRmNmYzNzRjYTkzNg.json",
+      "bytes": 6053,
+      "sha256": "2ee0d0236ac9c09a549d815f2b3dd05bc4111b6b1a048644e3a316ddd19954cb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-generate-and-hire-kE2Lfq/team-json/logs/dGVhbS90ZWFtLTk5Zjg4ZjllLTE0MTEtNGNiZi05MjY2LTM0ZDkyYzk5NGZjMA.json",
+      "bytes": 61462,
+      "sha256": "d1503db2655cd54fb5fbb62d6f2ac9bd91b7526cea2fdd17e22aac4e7ed7cb69"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/complete.json",
+      "bytes": 216,
+      "sha256": "de96b8d17e6afe35afdf374b0e0a214aebc0d698c98c824d8959a928b2a945cd"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/fixture-inputs.json",
+      "bytes": 1504,
+      "sha256": "0f666aeda295ecaaa54c809998310fe9802aaceca59deece0359fe540dd8143c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/initial.json",
+      "bytes": 57637,
+      "sha256": "82edbd6bd2a7b524184b322e6f29fa4d8839ca87bab8ed17a56d4e91101f8443"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/input-cordis.yml",
+      "bytes": 82,
+      "sha256": "ba287c663090703aa7925761828aebb3003ee728aec3d363c792777c30186a0b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/input-deployment.ts",
+      "bytes": 7268,
+      "sha256": "c8e808bbdae68c690c72f40acd9631bbe6f00ca4acde7529d219fc831d33093f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/input-hiring-resources-scenario.ts",
+      "bytes": 8206,
+      "sha256": "89e639b74399b2c7066637109e634314cf2634ff728f52c5775ff6b3c0dd9a0f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/input-hiring-resources.snapshot.ts",
+      "bytes": 4031,
+      "sha256": "2f3e88922b50ae58c7ce4d4bab49fdafb6407e65f8cdfd4c00dc6462817c01fe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/input-model.ts",
+      "bytes": 5786,
+      "sha256": "ff2d53a64dd70724e72c92f21a479c68e01b79cd2e35db7f4c128d7911dcaf07"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/input-source.ts",
+      "bytes": 2890,
+      "sha256": "b1b2bedde846a29890469611a9a59ecfb46097510e46630e6be5ae0b28274248"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/input.json",
+      "bytes": 44903,
+      "sha256": "d12b2a89c7ad3a298592c27c5cdbbc093901ed105fd499fbcd370e48ddd86d9d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/original.json",
+      "bytes": 1022233,
+      "sha256": "3fead72278fe30abfe4ae95e53c7049c5b7dd4785b0e55cbb6df7eb02d877249"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/process-0.json",
+      "bytes": 1062,
+      "sha256": "fc709aaeea414eca06577ea27dffb1d3ad6648935c5acba63a7b5a910a8f7fc3"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/process-1.json",
+      "bytes": 1061,
+      "sha256": "954d3d9eb80560f301ca308b3bc262b4624196ff769e021a83604f2b72a810c5"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/process-2.json",
+      "bytes": 1061,
+      "sha256": "a2de0ffde68062ff54c7634b85ef85edc9a30e82679edf569e5f5e7db87d68d3"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/progress.json",
+      "bytes": 448411,
+      "sha256": "67d0a1c1d7cb1fb81d2ba6f99a88a7c995995f466213db476617e2ae9679c6d1"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/root-readonly-native.json",
+      "bytes": 304778,
+      "sha256": "a0197797e375b22eb2f9de0145422e4559679be1c169319781725c4bedcacdb6"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/round-0.json",
+      "bytes": 727249,
+      "sha256": "0759f75bb57b6395e7ab07fc37a6eeadfc6bbb4907419b284c700c839f25141d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/round-1.json",
+      "bytes": 727248,
+      "sha256": "1088097abec1af7f914099c8e0ffde6a4b745d5ca2db4db1f9ae9665aece559d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/round-2.json",
+      "bytes": 727248,
+      "sha256": "d283cd8d54911fbce37d16ea41c8ec94c651ce05e456e4c7ed0a2cc5aa5795d2"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/sessions/_no-cwd/301aa3c5-7f7a-4707-a604-9ad6b7f680f2/session.jsonl",
+      "bytes": 38291,
+      "sha256": "96215d7e3d3bc5a70dafc4fc064035a6ea2fcb785ee55b97cb0ece729d5bd091"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/sessions/_no-cwd/7e3dea17-3b4a-418e-b9ed-febae4bdf050/session.jsonl",
+      "bytes": 79256,
+      "sha256": "f656943fd1222fabb73584c43cd91ddd96d8132fa6a853e8fbd59096381fe5f6"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/sessions/_no-cwd/9c981fad-94c3-4e6b-8d5b-fd02e76b9e58/session.jsonl",
+      "bytes": 47319,
+      "sha256": "d6d58ae35966a86c066d41596a8084a92cd60ee780fbb20818e7fe71c63fa66b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "bytes": 139264,
+      "sha256": "e78ab2c4c7fea3ef68b648d250001c46380586f62fd775272d196346b8618057"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/team.sqlite",
+      "bytes": 221184,
+      "sha256": "f992c500043eccde941ddc305e0ee2da52db91ec2bdd636e87ae70f86016d6e6"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/team.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-generate-and-hire-c2RZEp/team.sqlite-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/complete.json",
+      "bytes": 208,
+      "sha256": "0d3714b3ce21649fb27f26131d54f73d1c405a570e03c8513669b77fd65dc729"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/fixture-inputs.json",
+      "bytes": 1504,
+      "sha256": "0f666aeda295ecaaa54c809998310fe9802aaceca59deece0359fe540dd8143c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/initial.json",
+      "bytes": 59554,
+      "sha256": "0c3cb1af5ed4f160f0d8cec4011b037766495441cb7061741dfbf2e00aff84a6"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/input-cordis.yml",
+      "bytes": 82,
+      "sha256": "ba287c663090703aa7925761828aebb3003ee728aec3d363c792777c30186a0b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/input-deployment.ts",
+      "bytes": 7268,
+      "sha256": "c8e808bbdae68c690c72f40acd9631bbe6f00ca4acde7529d219fc831d33093f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/input-hiring-resources-scenario.ts",
+      "bytes": 8206,
+      "sha256": "89e639b74399b2c7066637109e634314cf2634ff728f52c5775ff6b3c0dd9a0f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/input-hiring-resources.snapshot.ts",
+      "bytes": 4031,
+      "sha256": "2f3e88922b50ae58c7ce4d4bab49fdafb6407e65f8cdfd4c00dc6462817c01fe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/input-model.ts",
+      "bytes": 5786,
+      "sha256": "ff2d53a64dd70724e72c92f21a479c68e01b79cd2e35db7f4c128d7911dcaf07"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/input-source.ts",
+      "bytes": 2890,
+      "sha256": "b1b2bedde846a29890469611a9a59ecfb46097510e46630e6be5ae0b28274248"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/input.json",
+      "bytes": 46311,
+      "sha256": "f8774a67582efd5dd37ce58c25385cf7181d4aad4deed0ad3b33c1742a9b149c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/original.json",
+      "bytes": 1039715,
+      "sha256": "a3954f18a947015fcb46c7f3d925ce6de5cbada7f0e42b3ca26cbea4a67eff94"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/process-0.json",
+      "bytes": 1054,
+      "sha256": "901eeb3663cad2fb759db1a9c70e1a6430662dd00ff19464ba51fb55af0de6cb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/process-1.json",
+      "bytes": 1053,
+      "sha256": "14980cb962b0a422557d439c186b0bd4b4992e5f903fae035afed56977aafbbe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/process-2.json",
+      "bytes": 1053,
+      "sha256": "88511f8a2fe4b374f90a74725d441f806275c45ed6a2d4efd28238f590da6dab"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/progress.json",
+      "bytes": 473308,
+      "sha256": "5ad6a7978115044a4a0db3571145838683e1e0cdf2ca16d73a6d2b2d1a79c993"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/root-readonly-native.json",
+      "bytes": 295489,
+      "sha256": "fc2eee7a9f4faadaaad1480a03e0b3074ffbd01314a8e27e477c5185ecf7a3f0"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/round-0.json",
+      "bytes": 717624,
+      "sha256": "4fa242016449824da706393d6aa97ccf40dc60969a7acbe2b49c8c03a9d780c6"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/round-1.json",
+      "bytes": 717623,
+      "sha256": "9a717204e7631dd47602e7f4cc14c3a0d091614d873b0d61e684e9e570145b92"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/round-2.json",
+      "bytes": 717623,
+      "sha256": "de50896b6f67703be95b793cfb5ea0320bbf09e17805ce6624c05aeeb98de3a4"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/sessions/_no-cwd/58b8fb97-3875-42f9-adf0-09619ecc764a/session.jsonl",
+      "bytes": 84094,
+      "sha256": "4143bfb2f1b4e55276b77dba30444d7f5540023d3c11c0db9f2e3f3571825311"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/sessions/_no-cwd/842f593f-b0ee-4cd9-b45a-df1f6ee2449b/session.jsonl",
+      "bytes": 51101,
+      "sha256": "36b71f72d96ed6645238c3471335753291f74c87a850c4979a031f31e31d9747"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/sessions/_no-cwd/a4da8bff-9b9f-413c-bc80-fd79b7f4e99f/session.jsonl",
+      "bytes": 29473,
+      "sha256": "80410c26c4b355e06c2f15c4a1b40076784c7f3d27d800b1388d2b6706ce6933"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "bytes": 135014,
+      "sha256": "3b991847a250a53122b6a6f5ed99df90d2594b4787411b027829f4a18c05abbb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTQwNzdkODM4LTkxNGQtNDRlMy04ZDUzLTU4MTc1MjM0MGVjZA.json",
+      "bytes": 14298,
+      "sha256": "870638275641e3770058a428f1c93331e7a3f02ec942e2978c8d0501727ef493"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTVkMGRkMzMyLTcxMmYtNDQ1ZC1hMmM0LTJkNDMwMTE1ZDY2Mw.json",
+      "bytes": 9413,
+      "sha256": "c91c6cd7d671ff80624d74acc9220c56e225058b5085b5d9231c287ab2761e83"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/team-json/logs/Y2hhbm5lbC9jaGFubmVsLWFiMTUzMWE0LTNjZDktNGFkYi04ZmMxLTkyM2E2NGM1N2NhOA.json",
+      "bytes": 10252,
+      "sha256": "dd0c068cdba67006466ef2f50b2b6ebb1509f1d622287fd9cbac337d095a0814"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/team-json/logs/YXVkaXQvdGVhbS0zNTkzMmM0NC05NjRkLTQ5ZjYtODc1Mi03MDVlZTNmMmI2MTM.json",
+      "bytes": 50464,
+      "sha256": "155f417b3763c8b01f25b05c026919d0fff05546289be946a83a0531bfeee998"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/team-json/logs/YXVkaXQvdGVhbS0zNTkzMmM0NC05NjRkLTQ5ZjYtODc1Mi03MDVlZTNmMmI2MTMvY2hhbm5lbC9jaGFubmVsLTQwNzdkODM4LTkxNGQtNDRlMy04ZDUzLTU4MTc1MjM0MGVjZA.json",
+      "bytes": 11237,
+      "sha256": "a1b95da023171ef664887f4cb2b5c375182fe9512365ee973649ef25d8735d5d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/team-json/logs/YXVkaXQvdGVhbS0zNTkzMmM0NC05NjRkLTQ5ZjYtODc1Mi03MDVlZTNmMmI2MTMvY2hhbm5lbC9jaGFubmVsLTVkMGRkMzMyLTcxMmYtNDQ1ZC1hMmM0LTJkNDMwMTE1ZDY2Mw.json",
+      "bytes": 8248,
+      "sha256": "66fc61cc5b8f169835a9e3a3ce72eed04eb2be296e8be024d1f78ea0e8c7943c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/team-json/logs/YXVkaXQvdGVhbS0zNTkzMmM0NC05NjRkLTQ5ZjYtODc1Mi03MDVlZTNmMmI2MTMvY2hhbm5lbC9jaGFubmVsLWFiMTUzMWE0LTNjZDktNGFkYi04ZmMxLTkyM2E2NGM1N2NhOA.json",
+      "bytes": 8448,
+      "sha256": "e94493a5929f4e35c75e7090a9c57cc481fa583af775343b6c83d6a4a4b0ec2c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-json-hire-existing-bYR1bk/team-json/logs/dGVhbS90ZWFtLTM1OTMyYzQ0LTk2NGQtNDlmNi04NzUyLTcwNWVlM2YyYjYxMw.json",
+      "bytes": 55477,
+      "sha256": "669d31ae3da370ca3baecc503ce8ca705d3e109f891830cf1d55f3ee3f4d5a6e"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/complete.json",
+      "bytes": 212,
+      "sha256": "d9ee7d9065d02cf6a99cefd41ac0afe974db4f554be2c9cadd3c9b2ad0c2cccd"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/fixture-inputs.json",
+      "bytes": 1504,
+      "sha256": "0f666aeda295ecaaa54c809998310fe9802aaceca59deece0359fe540dd8143c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/initial.json",
+      "bytes": 59560,
+      "sha256": "ab56b7e5c65ae1c4aea9d00b5f322ea178cab19014ee62a82638305e27958208"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/input-cordis.yml",
+      "bytes": 82,
+      "sha256": "ba287c663090703aa7925761828aebb3003ee728aec3d363c792777c30186a0b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/input-deployment.ts",
+      "bytes": 7268,
+      "sha256": "c8e808bbdae68c690c72f40acd9631bbe6f00ca4acde7529d219fc831d33093f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/input-hiring-resources-scenario.ts",
+      "bytes": 8206,
+      "sha256": "89e639b74399b2c7066637109e634314cf2634ff728f52c5775ff6b3c0dd9a0f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/input-hiring-resources.snapshot.ts",
+      "bytes": 4031,
+      "sha256": "2f3e88922b50ae58c7ce4d4bab49fdafb6407e65f8cdfd4c00dc6462817c01fe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/input-model.ts",
+      "bytes": 5786,
+      "sha256": "ff2d53a64dd70724e72c92f21a479c68e01b79cd2e35db7f4c128d7911dcaf07"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/input-source.ts",
+      "bytes": 2890,
+      "sha256": "b1b2bedde846a29890469611a9a59ecfb46097510e46630e6be5ae0b28274248"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/input.json",
+      "bytes": 46311,
+      "sha256": "f8774a67582efd5dd37ce58c25385cf7181d4aad4deed0ad3b33c1742a9b149c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/original.json",
+      "bytes": 1039725,
+      "sha256": "3acb9d754f1edf158c95a3a954ee10724a50d8edf241e1a139891c3aeeb03c13"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/process-0.json",
+      "bytes": 1058,
+      "sha256": "4aaa52add175692b641f3d387aa1a0457351fcb7f1d27bea8e65491491cac7ba"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/process-1.json",
+      "bytes": 1057,
+      "sha256": "37a2b95bde05c6fe2932ffc52f9a1ab7e2794c2f8b7ec57c112250fe8b5d3f14"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/process-2.json",
+      "bytes": 1057,
+      "sha256": "0d1df60284d466c466522f351fcb624ca55de406091d322a39559cf36ebfe2d1"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/progress.json",
+      "bytes": 473310,
+      "sha256": "a7cb61145257f47ac8b4bbe7bf402055d8e388bce8f816d53e622dc76b9400b0"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/root-readonly-native.json",
+      "bytes": 295499,
+      "sha256": "eb64ef840ad7f12bb28efe787825913b56098a0ee96c7a890efc9c7ad90bf6f5"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/round-0.json",
+      "bytes": 717636,
+      "sha256": "a6fa7aaa6cc1eaed0fe6cff267f28af46ead364d11e1b824e0f1a08d554d2e98"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/round-1.json",
+      "bytes": 717635,
+      "sha256": "fcb1d2c30c7051f447012c1ce9d6ebe483c955ae1fd8f31f2df65d7ca4679075"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/round-2.json",
+      "bytes": 717635,
+      "sha256": "b712daf50cd8794acff03ef1f59db0fde6f549bb89f09723fdf450a7ae62b170"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/sessions/_no-cwd/21642365-6311-4ea6-b4f8-7042efb5831a/session.jsonl",
+      "bytes": 29473,
+      "sha256": "bcf44f4b0a8b931b3d86b6535f81ce3c93432569ff9c36e69423302bbd7265cb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/sessions/_no-cwd/53a15a01-ffed-4223-a00f-e82260d0b332/session.jsonl",
+      "bytes": 84094,
+      "sha256": "a1143439dcdedffccd2858efecc7ab419f8f9878d78ac9564acba7e46150505c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/sessions/_no-cwd/de3313d5-77db-4b95-82f4-b49a8d631f5b/session.jsonl",
+      "bytes": 51101,
+      "sha256": "5ed16b38e186a9437877ba802e3664e2076f06d94b583baed586f03d75c13810"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "bytes": 143360,
+      "sha256": "561c4768349c52b6bee0c648e75c4b5ccad3cd995057fb8e733168dd5ecadb5a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/team.sqlite",
+      "bytes": 188416,
+      "sha256": "689ec52cd56b38adcc645dbb87e066754805e39077b5d2b7d37c139a58aa4a40"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/team.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/src/src-sqlite-hire-existing-paqlR3/team.sqlite-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/complete.json",
+      "bytes": 212,
+      "sha256": "3bc7caa3bcd35ab77c9af9730190b39295c5436110f158c72ff1ef2e1ed9f0e9"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/fixture-inputs.json",
+      "bytes": 1504,
+      "sha256": "0f666aeda295ecaaa54c809998310fe9802aaceca59deece0359fe540dd8143c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/initial.json",
+      "bytes": 57631,
+      "sha256": "b7fc11a761e1e4d8d829740ebfc87486533094140d9f73e5c7417c5cc5f3daf2"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/input-cordis.yml",
+      "bytes": 82,
+      "sha256": "ba287c663090703aa7925761828aebb3003ee728aec3d363c792777c30186a0b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/input-deployment.ts",
+      "bytes": 7268,
+      "sha256": "c8e808bbdae68c690c72f40acd9631bbe6f00ca4acde7529d219fc831d33093f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/input-hiring-resources-scenario.ts",
+      "bytes": 8206,
+      "sha256": "89e639b74399b2c7066637109e634314cf2634ff728f52c5775ff6b3c0dd9a0f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/input-hiring-resources.snapshot.ts",
+      "bytes": 4031,
+      "sha256": "2f3e88922b50ae58c7ce4d4bab49fdafb6407e65f8cdfd4c00dc6462817c01fe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/input-model.ts",
+      "bytes": 5786,
+      "sha256": "ff2d53a64dd70724e72c92f21a479c68e01b79cd2e35db7f4c128d7911dcaf07"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/input-source.ts",
+      "bytes": 2890,
+      "sha256": "b1b2bedde846a29890469611a9a59ecfb46097510e46630e6be5ae0b28274248"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/input.json",
+      "bytes": 44903,
+      "sha256": "d12b2a89c7ad3a298592c27c5cdbbc093901ed105fd499fbcd370e48ddd86d9d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/original.json",
+      "bytes": 1022223,
+      "sha256": "527655303c307fdcbc8517ae5869e76d6541d475807e0e10e559b80498fd0183"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/process-0.json",
+      "bytes": 926,
+      "sha256": "f034ae2e46b5394c5540b939b30a67df5045a8787c8b876841c1a3ed01c31e74"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/process-1.json",
+      "bytes": 925,
+      "sha256": "2c0eeead6dbc6b5497d2dab8e59b39977cd529b60a516c18300af942dbf18a9d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/process-2.json",
+      "bytes": 925,
+      "sha256": "5eb01cfc4744c2cb6dde2c6d460cd394db611e2a7b5b6cb785c170152580ecdf"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/progress.json",
+      "bytes": 448409,
+      "sha256": "5ae207cd97b56a5755587b249f69743679a5aaf9c69ef7044a2658708c36b7d2"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/root-readonly-native.json",
+      "bytes": 304768,
+      "sha256": "ff14ee776f79437656ddbb329fceed8ddf51de212368b50f42ace52e68bb597d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/round-0.json",
+      "bytes": 727237,
+      "sha256": "515d0d931de598c28363c005833cfc3b24bf4176fc45f2ba9dc37c6c7c7e111a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/round-1.json",
+      "bytes": 727236,
+      "sha256": "2fd8917a4936910053cea74897d80c50b019085607a439140697883d893ed3ce"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/round-2.json",
+      "bytes": 727236,
+      "sha256": "b4078ecea03a78ed545776b5829ef4daf18adcb55e4e4639cac8373eb68059e7"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/sessions/_no-cwd/3dcdf752-b1d5-4111-9839-2e2e5ddceede/session.jsonl",
+      "bytes": 47319,
+      "sha256": "83940ca4ae1c0bcbfd1e48702eceb907d844ffb7b3f86a1b7e37efb157db9994"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/sessions/_no-cwd/b5768285-b051-40f1-b392-79f240e813d3/session.jsonl",
+      "bytes": 38291,
+      "sha256": "4b03fddf5af780ab8103688bcc85e4d16edc098b527a8678dc0a80fe3afdb1f5"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/sessions/_no-cwd/b8b14e77-1181-4efb-9045-d9faf344fbfa/session.jsonl",
+      "bytes": 79256,
+      "sha256": "ff6ac57a9e2fc5fa2430cfa663f9512249773b010e7ce55937fd27d8818fb699"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "bytes": 140638,
+      "sha256": "6ea825a31ba3f1edfc62049b047adedcdad5e48f2ce188275c21e966d3b1eb3f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTUxNzliNGRjLWI0MWQtNGVkZS05ZWU3LTA5M2E4OGY3ZjdjNw.json",
+      "bytes": 10516,
+      "sha256": "691c55f798dc5f7663e54497ebbf2b08a62b4df97a7ce85837c53adfc2ecc5ac"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/Y2hhbm5lbC9jaGFubmVsLWIwYjY5NGI0LTI5YTktNDE4Ny04ZmFlLTYzMGU0Y2NlZTc4ZQ.json",
+      "bytes": 14317,
+      "sha256": "ed05d5864f8436740763b1bda8506bde127672bd26748ded8d1018f3d8e5740c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/Y2hhbm5lbC9jaGFubmVsLWNlZGU4MzVkLTczMDAtNGQxZC1hMmMyLWE3ZDUzYWQ0ZWEwOQ.json",
+      "bytes": 6845,
+      "sha256": "b27f7617d3c8e19067fc228eb3b449ebe2080acb0b8c8f48e63b8eb1af912ded"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/Y2hhbm5lbC9jaGFubmVsLWVmNThmMmRiLTMzZTgtNGI1Yy04ZDY2LTFlMjU0MTYyMjQyYQ.json",
+      "bytes": 6927,
+      "sha256": "72363562921f921262f6ae129f27735066ab7072c02a5601d141f34f65f454da"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/Y2hhbm5lbC9jaGFubmVsLWZmNjQ0YzE2LWUwYzgtNDcwOC1hMTc3LWUxYWVjODZlOWIwNw.json",
+      "bytes": 9413,
+      "sha256": "8e84b7b8326326829c44c603cc47469327bdd392dfccc732d22ec4308a4a5ea6"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/YXVkaXQvdGVhbS0yNjIwOTUzZS1hZGU0LTRmYzYtYjAwYi1hZTU4ZWUzNGU2YTM.json",
+      "bytes": 55981,
+      "sha256": "db7a3b326e06758ca66cf9705d6e6300a9399ca9a7f615b76f1fa8b7a2cdac20"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/YXVkaXQvdGVhbS0yNjIwOTUzZS1hZGU0LTRmYzYtYjAwYi1hZTU4ZWUzNGU2YTMvY2hhbm5lbC9jaGFubmVsLTUxNzliNGRjLWI0MWQtNGVkZS05ZWU3LTA5M2E4OGY3ZjdjNw.json",
+      "bytes": 8580,
+      "sha256": "7bc3f469bc0b8510f6c86640d7e559f44e2332a1a551e6db76844ea210f22886"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/YXVkaXQvdGVhbS0yNjIwOTUzZS1hZGU0LTRmYzYtYjAwYi1hZTU4ZWUzNGU2YTMvY2hhbm5lbC9jaGFubmVsLWIwYjY5NGI0LTI5YTktNDE4Ny04ZmFlLTYzMGU0Y2NlZTc4ZQ.json",
+      "bytes": 11182,
+      "sha256": "004c364fbf9b6aa67d6c0ad6539758bb0766a974a88b4f7b6f0b6b426bea5358"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/YXVkaXQvdGVhbS0yNjIwOTUzZS1hZGU0LTRmYzYtYjAwYi1hZTU4ZWUzNGU2YTMvY2hhbm5lbC9jaGFubmVsLWNlZGU4MzVkLTczMDAtNGQxZC1hMmMyLWE3ZDUzYWQ0ZWEwOQ.json",
+      "bytes": 6053,
+      "sha256": "272b0b810af26e77d6055f5e2f5dde6fe3535fd13e56fc6036e414342b9e494d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/YXVkaXQvdGVhbS0yNjIwOTUzZS1hZGU0LTRmYzYtYjAwYi1hZTU4ZWUzNGU2YTMvY2hhbm5lbC9jaGFubmVsLWVmNThmMmRiLTMzZTgtNGI1Yy04ZDY2LTFlMjU0MTYyMjQyYQ.json",
+      "bytes": 6094,
+      "sha256": "5332b0ca47cae86f71550759c2b241bfc07aa3b672b53d5f03cf1b38de06ac0c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/YXVkaXQvdGVhbS0yNjIwOTUzZS1hZGU0LTRmYzYtYjAwYi1hZTU4ZWUzNGU2YTMvY2hhbm5lbC9jaGFubmVsLWZmNjQ0YzE2LWUwYzgtNDcwOC1hMTc3LWUxYWVjODZlOWIwNw.json",
+      "bytes": 8248,
+      "sha256": "c23be506cb8a01d8b04dea17eac195d89ba51b2810a024825b186d4ecd8b6714"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-generate-and-hire-7QCPDA/team-json/logs/dGVhbS90ZWFtLTI2MjA5NTNlLWFkZTQtNGZjNi1iMDBiLWFlNThlZTM0ZTZhMw.json",
+      "bytes": 61462,
+      "sha256": "e5b45c436c0827effbc49d8119c89497bb3b5acb0faadf2d1aeff585ef831431"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/complete.json",
+      "bytes": 212,
+      "sha256": "89a9b21b747b7c679fe174a7b3afd316a23cb2601bb4d2a857cbdd669da6fb90"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/fixture-inputs.json",
+      "bytes": 1504,
+      "sha256": "0f666aeda295ecaaa54c809998310fe9802aaceca59deece0359fe540dd8143c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/initial.json",
+      "bytes": 59560,
+      "sha256": "82c5cd3a11d1fd345c83132f337d6c2fe8c57b8e2ca82ab8b3f4682b5f426f57"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/input-cordis.yml",
+      "bytes": 82,
+      "sha256": "ba287c663090703aa7925761828aebb3003ee728aec3d363c792777c30186a0b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/input-deployment.ts",
+      "bytes": 7268,
+      "sha256": "c8e808bbdae68c690c72f40acd9631bbe6f00ca4acde7529d219fc831d33093f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/input-hiring-resources-scenario.ts",
+      "bytes": 8206,
+      "sha256": "89e639b74399b2c7066637109e634314cf2634ff728f52c5775ff6b3c0dd9a0f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/input-hiring-resources.snapshot.ts",
+      "bytes": 4031,
+      "sha256": "2f3e88922b50ae58c7ce4d4bab49fdafb6407e65f8cdfd4c00dc6462817c01fe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/input-model.ts",
+      "bytes": 5786,
+      "sha256": "ff2d53a64dd70724e72c92f21a479c68e01b79cd2e35db7f4c128d7911dcaf07"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/input-source.ts",
+      "bytes": 2890,
+      "sha256": "b1b2bedde846a29890469611a9a59ecfb46097510e46630e6be5ae0b28274248"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/input.json",
+      "bytes": 46311,
+      "sha256": "f8774a67582efd5dd37ce58c25385cf7181d4aad4deed0ad3b33c1742a9b149c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/original.json",
+      "bytes": 1039725,
+      "sha256": "47aba2c4c4572229e1082fdf7afabed24f36630ae40b3eae5780afcaafb5495d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/process-0.json",
+      "bytes": 926,
+      "sha256": "cd232de2db33042ffa46ef97bacb862becaee881070faf4b21bac504b434fb2c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/process-1.json",
+      "bytes": 925,
+      "sha256": "3860a948743db0f570ce76a675e292892a8d26cfb591304a83616af049019744"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/process-2.json",
+      "bytes": 925,
+      "sha256": "636125104f7395fdb20e3dbe51394dafcefb223b9097db87cd6814ba7a52716a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/progress.json",
+      "bytes": 473310,
+      "sha256": "6d8c7763abae9411c45d1f537fb1baeeaf361ac65b5ecb47ecca014b8161671a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/root-readonly-native.json",
+      "bytes": 295499,
+      "sha256": "19de5d679d4b915f863c526eed02002e0e0c6594857c83bd919e6358d787d168"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/round-0.json",
+      "bytes": 717636,
+      "sha256": "a0fca14afe89bd9209f78148d95b13799e2956e55f2febb56cdc50e3349282f9"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/round-1.json",
+      "bytes": 717635,
+      "sha256": "7e3c5b7726debafb47a4f89811f804e0049730ce7edfdbff9eef8f3d764ea787"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/round-2.json",
+      "bytes": 717635,
+      "sha256": "b510357b8d037fea00833bf5f97b59e860522133e744957640fa2ea56eae60dc"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/sessions/_no-cwd/66ed2510-b466-4c28-afc0-2c788c5376af/session.jsonl",
+      "bytes": 84094,
+      "sha256": "9679f120c2a4487570a936c51545f3c815ec218f6e12e1472c57be92c7dc8a2a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/sessions/_no-cwd/95ac4ef4-598b-4f1a-847f-e54091f45256/session.jsonl",
+      "bytes": 29473,
+      "sha256": "97dd623811f3b72126cce59730849d1d1cd90d18870a0af344ca25a2a45b77e9"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/sessions/_no-cwd/e7cf8980-3eb5-4b2c-9c9b-c819bc476ca6/session.jsonl",
+      "bytes": 51101,
+      "sha256": "51d1c09385e1cc3e3b97dfbb91c2b081edead0a1a3c5a483a31eb86bc3a82a8a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "bytes": 143360,
+      "sha256": "e491fa81ac05f865505b14b172225347b3c90a743b378c446f8354dae3a198a8"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/team.sqlite",
+      "bytes": 188416,
+      "sha256": "094641a3081829b50ea6de6703274d455e837bf786d1857584040b6fdc9c35d5"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/team.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-hire-existing-XWadL5/team.sqlite-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/complete.json",
+      "bytes": 208,
+      "sha256": "3002cbe55bd73e060b75d6c0882a588a7fd70412062b4d8e3a649efa92c47688"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/fixture-inputs.json",
+      "bytes": 1504,
+      "sha256": "0f666aeda295ecaaa54c809998310fe9802aaceca59deece0359fe540dd8143c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/initial.json",
+      "bytes": 59554,
+      "sha256": "686b70984bc5a85f8342c34c773b0faaed2b78011fc8ab2ae67a67b4f6664db2"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/input-cordis.yml",
+      "bytes": 82,
+      "sha256": "ba287c663090703aa7925761828aebb3003ee728aec3d363c792777c30186a0b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/input-deployment.ts",
+      "bytes": 7268,
+      "sha256": "c8e808bbdae68c690c72f40acd9631bbe6f00ca4acde7529d219fc831d33093f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/input-hiring-resources-scenario.ts",
+      "bytes": 8206,
+      "sha256": "89e639b74399b2c7066637109e634314cf2634ff728f52c5775ff6b3c0dd9a0f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/input-hiring-resources.snapshot.ts",
+      "bytes": 4031,
+      "sha256": "2f3e88922b50ae58c7ce4d4bab49fdafb6407e65f8cdfd4c00dc6462817c01fe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/input-model.ts",
+      "bytes": 5786,
+      "sha256": "ff2d53a64dd70724e72c92f21a479c68e01b79cd2e35db7f4c128d7911dcaf07"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/input-source.ts",
+      "bytes": 2890,
+      "sha256": "b1b2bedde846a29890469611a9a59ecfb46097510e46630e6be5ae0b28274248"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/input.json",
+      "bytes": 46311,
+      "sha256": "f8774a67582efd5dd37ce58c25385cf7181d4aad4deed0ad3b33c1742a9b149c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/original.json",
+      "bytes": 1039715,
+      "sha256": "51e1e1022c02cf9bed2ac2b386d2510b84c873838f53b8efa439fc5f1c5438a2"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/process-0.json",
+      "bytes": 922,
+      "sha256": "8082c5a6a9a3ad1ec451bb7f786e2468b2bf9f8bcb1a700a63448c9dcfe58a92"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/process-1.json",
+      "bytes": 921,
+      "sha256": "c1784310c9537acabb9de36beb874d86caa2038b5f0e0eb09d13fe855a516904"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/process-2.json",
+      "bytes": 921,
+      "sha256": "e57bab11e9079c0c3fdeeb392e24273897b0563f85d002c2663fd41e8e90b33a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/progress.json",
+      "bytes": 473308,
+      "sha256": "9cdd70267bef08cf7f85d75e3d4bcecafc1c09915af8cb5ad7df721ee8b13ca9"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/root-readonly-native.json",
+      "bytes": 295489,
+      "sha256": "6c84bf652e99882de05ef7f406f2c7d5a15426c78c7904075036e7646c2f276a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/round-0.json",
+      "bytes": 717624,
+      "sha256": "8c0b942fc5fbd3fe89d9502134e7d52598a9080ad22b162e25e91de219e92e54"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/round-1.json",
+      "bytes": 717623,
+      "sha256": "96f52981f60e4468f6c83f29548093e9e20c64bae3f2ebeae0551a39b5d3684b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/round-2.json",
+      "bytes": 717623,
+      "sha256": "28c8f32bac61d65598c509efd1fb5492dc6944b7694cbbf0e127cca0eee98876"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/sessions/_no-cwd/0cb81a82-831d-4cb4-88e0-5cf0bfb9a24b/session.jsonl",
+      "bytes": 84094,
+      "sha256": "55ed76346b346e51e57f3674849ef7294e961339433ce6d938a239a415bc73b5"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/sessions/_no-cwd/45eb3311-32a0-4c1e-a080-4808e52a6866/session.jsonl",
+      "bytes": 51101,
+      "sha256": "59ee01696ad00c658a9b6dd3fa2a62c7289fa4d105ee5ce5c0c091a532c5f19e"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/sessions/_no-cwd/d400c71f-2602-498b-be57-b066b63fe1cd/session.jsonl",
+      "bytes": 29473,
+      "sha256": "afa1221baaf73d867af7aa8715e25613ec66aba33c872ee65a6be7587726cae1"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal/logs/c2ltdWxhdGlvbg.json",
+      "bytes": 135014,
+      "sha256": "f5873bc57edbb64936d8f30cfe6ff9508a035cb3b447f6e0f77756b47b126a68"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTFmODQ1NjYzLWY2ZWMtNDM4ZS05ZjUwLTYzZTA5ZjQzMDY5Nw.json",
+      "bytes": 14298,
+      "sha256": "9556610de579267944e0da58ca4082047680743b97f61de2be2ed8a08374413d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTQ1NGI0Y2ZlLWU5NDAtNGQzZi04NjJlLTkyYmIxZDNiNGIzMA.json",
+      "bytes": 10252,
+      "sha256": "f28bcace003019e9a28fd0e4e6deee0f5dda1991de351c1ceb3144bf4bbf6a0e"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/team-json/logs/Y2hhbm5lbC9jaGFubmVsLTcxMDk4ODQyLTZhYTAtNGFhOS05MDM1LTU1NmFiZDM4YmI0Mw.json",
+      "bytes": 9413,
+      "sha256": "cdca56f2f096488e65283ab145c7ef5b7f7b1230660c8efe73af982a9d08e405"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/team-json/logs/YXVkaXQvdGVhbS0zOGYyODBmOS1mNTBhLTQyMDQtOTgwMS1lNWU5MWE0ZTdkMGU.json",
+      "bytes": 50464,
+      "sha256": "0609a92a2c13e34b67cbe53fbbe2c60bee08727ba9a8eb1b9ace44e376b5b48d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/team-json/logs/YXVkaXQvdGVhbS0zOGYyODBmOS1mNTBhLTQyMDQtOTgwMS1lNWU5MWE0ZTdkMGUvY2hhbm5lbC9jaGFubmVsLTFmODQ1NjYzLWY2ZWMtNDM4ZS05ZjUwLTYzZTA5ZjQzMDY5Nw.json",
+      "bytes": 11237,
+      "sha256": "da481dcd55b0a5c533ae6d75f96d748c2b8bcbeeeb7fc9aca174db4fb31febcf"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/team-json/logs/YXVkaXQvdGVhbS0zOGYyODBmOS1mNTBhLTQyMDQtOTgwMS1lNWU5MWE0ZTdkMGUvY2hhbm5lbC9jaGFubmVsLTQ1NGI0Y2ZlLWU5NDAtNGQzZi04NjJlLTkyYmIxZDNiNGIzMA.json",
+      "bytes": 8448,
+      "sha256": "07491af60e581cb4cd508b9a557b64fca08c4b32ef2be1b84af019b126e7d53f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/team-json/logs/YXVkaXQvdGVhbS0zOGYyODBmOS1mNTBhLTQyMDQtOTgwMS1lNWU5MWE0ZTdkMGUvY2hhbm5lbC9jaGFubmVsLTcxMDk4ODQyLTZhYTAtNGFhOS05MDM1LTU1NmFiZDM4YmI0Mw.json",
+      "bytes": 8248,
+      "sha256": "17c2bc600d6c4450836c05fefafc2a55cf84032301ba5a6b76e033293967bdc5"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-json-hire-existing-avTEvK/team-json/logs/dGVhbS90ZWFtLTM4ZjI4MGY5LWY1MGEtNDIwNC05ODAxLWU1ZTkxYTRlN2QwZQ.json",
+      "bytes": 55477,
+      "sha256": "94b4d209d8aabbd44fa4bbc7699a1d50b2144b3460b399bbeb8e8a187cc69fd1"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/complete.json",
+      "bytes": 216,
+      "sha256": "7f41971aa8e759188f0462373807601f1a80fdc764a07df8bdf4e56c0f2197db"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/fixture-inputs.json",
+      "bytes": 1504,
+      "sha256": "0f666aeda295ecaaa54c809998310fe9802aaceca59deece0359fe540dd8143c"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/initial.json",
+      "bytes": 57637,
+      "sha256": "dbd036d4b67949527f1df71767df0688371bebfb87101e1cc4058e9346e178ae"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/input-cordis.yml",
+      "bytes": 82,
+      "sha256": "ba287c663090703aa7925761828aebb3003ee728aec3d363c792777c30186a0b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/input-deployment.ts",
+      "bytes": 7268,
+      "sha256": "c8e808bbdae68c690c72f40acd9631bbe6f00ca4acde7529d219fc831d33093f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/input-hiring-resources-scenario.ts",
+      "bytes": 8206,
+      "sha256": "89e639b74399b2c7066637109e634314cf2634ff728f52c5775ff6b3c0dd9a0f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/input-hiring-resources.snapshot.ts",
+      "bytes": 4031,
+      "sha256": "2f3e88922b50ae58c7ce4d4bab49fdafb6407e65f8cdfd4c00dc6462817c01fe"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/input-model.ts",
+      "bytes": 5786,
+      "sha256": "ff2d53a64dd70724e72c92f21a479c68e01b79cd2e35db7f4c128d7911dcaf07"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/input-source.ts",
+      "bytes": 2890,
+      "sha256": "b1b2bedde846a29890469611a9a59ecfb46097510e46630e6be5ae0b28274248"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/input.json",
+      "bytes": 44903,
+      "sha256": "d12b2a89c7ad3a298592c27c5cdbbc093901ed105fd499fbcd370e48ddd86d9d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/original.json",
+      "bytes": 1022233,
+      "sha256": "30445527ed5b1ffb78b8d5645fd92012b5bfc06f7ebad206890837488088464f"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/process-0.json",
+      "bytes": 930,
+      "sha256": "b6b9aee8986234437a55855a0b5dec8d203f9695e80eb04bbb3ba9ec2b5561ee"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/process-1.json",
+      "bytes": 929,
+      "sha256": "a0251d359341bad676aa5cffd1102fd03bb3a6e4046eab01403a7602728b39aa"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/process-2.json",
+      "bytes": 929,
+      "sha256": "9d1bfaf77078e152bad3b94a73391bfffb8572d64c30e33cf3f494e223fb0edc"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/progress.json",
+      "bytes": 448411,
+      "sha256": "e5ae708a29dc8b3f13fc58082ea91a2372d768294c420e1d0163ac737cfb1147"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/root-readonly-native.json",
+      "bytes": 304778,
+      "sha256": "e9ee0f7a9e42ab79350c82b55e29429225ed366c061408a57d44f3ed604dffc6"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/round-0.json",
+      "bytes": 727249,
+      "sha256": "6c107e22127e3809916604ea44626a20b1a2c7b02bdd842709eff92cf1ae15f4"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/round-1.json",
+      "bytes": 727248,
+      "sha256": "46c681adb30ad430c9757c68d823eb78ab9171b71027ce3e4519c930ff576a01"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/round-2.json",
+      "bytes": 727248,
+      "sha256": "c643be98f3cefa4e16686d259a2c3a439c2feef246ff00c65b6cd7d38fece4d9"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/sessions/_no-cwd/12c5fa14-3a52-4bf2-be15-469eaf15e0b0/session.jsonl",
+      "bytes": 79256,
+      "sha256": "bc9913a35ac281bbf72a1ed38ac81ece626eab6a25b0600284af1d01af721060"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/sessions/_no-cwd/25892730-d744-4604-97b7-8a25f3792b4e/session.jsonl",
+      "bytes": 47319,
+      "sha256": "da13bc831693d2fa04dbfa7b40b30a625134845b26b280592f7b6ecd9a7b4c4d"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/sessions/_no-cwd/562a0e43-f463-4964-ab00-7e19e1cf0036/session.jsonl",
+      "bytes": 38291,
+      "sha256": "9f108b98e0153ee4da6ed2cc9c1c2b3fdcd44fa6df83769412676ff99abc2c00"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite",
+      "bytes": 139264,
+      "sha256": "bcb2bd9de44777190b9a32737e2fd3a54bccf5085dc79886e825b998b4f1166a"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/journal.sqlite-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/simulation/4eda554118c18f66ab17e8db02034248ded18db291798e839760ac84bd49b144/owner.sqlite",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/team.sqlite",
+      "bytes": 221184,
+      "sha256": "e50055cccf4b856833f26dca822f9606ee1e1c6f0649a5a8407bc63e06131b9b"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/team.sqlite-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "path": ".local/world-completion/c40-hire-resource-integration/final-matrix-20261013-stable/lib/lib-sqlite-generate-and-hire-XMHCje/team.sqlite-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "limitations": [
+    "No new fees SIGKILL matrix claimed.",
+    "Warm cases use direct-controller funding and no validated hiring Norm; grant/approval/stale/unknown IO require separate owner evidence.",
+    "Native commit records derive payment/assignment/ready/result atomically; records do not inline arbitrary balance deltas."
+  ]
+}

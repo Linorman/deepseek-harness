@@ -1,5 +1,7 @@
 # clocky-session
 
+`simulation/generation-input` retains the exact serialized tool-free helper request and its disclosure scope; `simulation/generation-output` retains raw output before validation and optional usage. These required events have strict durable-read validation and do not enter ordinary actor message surfaces. The generation owner reconstructs its separate request from the recorded bytes.
+
 English | [中文](README.zh.md)
 
 Event-sourced session log and in-memory store. A `Session` is the append-only source of truth for an agent's whole interaction history — the LLM message history is *derived* from it. A **surface** layer (an ordered projection of message-producing events) is maintained on top of the raw log for efficient derivation and compaction.

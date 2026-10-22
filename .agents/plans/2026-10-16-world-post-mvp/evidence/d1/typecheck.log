@@ -1,0 +1,2 @@
+packages/simulation/simulation-team/src/experiments.ts(91,86): error TS2322: Type 'string' is not assignable to type 'ContentBlock[]'.
+packages/simulation/simulation-team/src/experiments.ts(110,190): error TS2339: Property 'transferable' does not exist on type 'SimulationResource'.

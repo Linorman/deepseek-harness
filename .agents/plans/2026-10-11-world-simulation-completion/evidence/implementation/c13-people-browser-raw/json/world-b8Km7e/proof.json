@@ -1,0 +1,18 @@
+{
+  "backend": "json",
+  "phase": "paused",
+  "nativeRevision": 27,
+  "originalTeamCursor": 12,
+  "employed": 1,
+  "nonTerminalPersons": 3,
+  "resident": 0,
+  "unreleasedWriters": 0,
+  "historyParticipants": 3,
+  "historyActivations": 0,
+  "preservedAfterKeyboardRefreshReload": true,
+  "historyFailureNotZero": true,
+  "modelCalls": 0,
+  "browserPlugin": "not available; project Playwright lane",
+  "pageErrors": [],
+  "consoleErrors": []
+}

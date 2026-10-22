@@ -1,4 +1,6 @@
+import { requiredCompanyContext } from './required-company-context.ts'
 import { driverActivation } from './driver-residency.ts'
+import { simulationResidencyPolicySchema } from '@clocky/clocky-simulation-team'
 /** Bounded version 1 procurement driver over canonical actors and retained decision windows. */
 import { z } from 'zod'
 import { isDeepStrictEqual } from 'node:util'
@@ -17,6 +19,7 @@ import { SimulationTaskScenarioDriver } from './task-scenario-driver.ts'
 
 /** Structural driver policy shared by installed late binding and frozen execution; it selects no model. */
 export const simulationCompanyDriverParametersSchema = z.strictObject({ version: z.literal('1'), maxControlSteps: z.number().int().positive(),
+  residency: simulationResidencyPolicySchema.optional(),
   requestDelay: simTimeSchema, reportDelay: simTimeSchema, replyDelay: simTimeSchema, completeDelay: simTimeSchema,
   tasks: z.strictObject({ version: z.literal('1'), cognition: z.enum(['model', 'deterministic']),
     leaseDurationMs: z.number().int().positive(), maxAttempts: z.number().int().positive(),
@@ -281,7 +284,7 @@ export class SimulationCompanyDriver {
 
   private residency(entityId: SimulationEntityId) {
     return { activation: driverActivation(this.run, entityId, this.preparation.participant, this.config.model, this.lifetime),
-      evict: [buyer, supplier] }
+      evict: [buyer, supplier], ...this.config.residency === undefined ? {} : { policy: this.config.residency } }
   }
   private context(state: SimulationSnapshot, stage: SimulationCompanyStage, entityId: SimulationEntityId,
     taskOperationId?: import('@clocky/clocky-simulation').SimulationOperationId, reviewedTask?: TeamTaskSnapshot):
@@ -332,9 +335,7 @@ export class SimulationCompanyDriver {
     }
     return { personaVersion: 'company/1', modelVersion: `${this.config.model.provider}/${this.config.model.name}`,
       sources: [{ kind: 'run-event', runId: state.spec.runId, sequence: state.revision }],
-      sections: [{ kind: 'identity', required: true, blocks: [{ type: 'text', text: `You are ${entityId}.` }] },
-        { kind: 'authority', required: true, blocks: [{ type: 'text',
-          text: 'Use only Simulation observe, stage and submit. Effects follow their dependencies.' }] },
+      sections: [...requiredCompanyContext(entityId),
         { kind: 'input', required: true, blocks: [{ type: 'text', text: `Company decision: ${JSON.stringify(input)}` },
           ...this.config.tasks === undefined || stage !== 'transfer' ? [] : [{ type: 'text' as const,
             text: `Task inventory: ${JSON.stringify(reporting ? { kind: 'report', channelId: input.channelId,

@@ -1,0 +1,17 @@
+packages/simulation/simulation-scenario/src/input.ts:34:18: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-scenario/src/input.ts:58:19: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-scenario/src/input.ts:61:26: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-scenario/src/input.ts:111:18: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-scenario/src/input.ts:126:22: error typescript(no-non-null-assertion): Forbidden non-null assertion.
+packages/simulation/simulation-scenario/src/input.ts:30:1: error @stylistic(max-len): This line has a length of 160. Maximum allowed is 140.
+packages/simulation/simulation-scenario/src/input.ts:64:1: error @stylistic(max-len): This line has a length of 146. Maximum allowed is 140.
+packages/simulation/simulation-scenario/src/input.ts:134:1: error @stylistic(max-len): This line has a length of 160. Maximum allowed is 140.
+packages/simulation/simulation-scenario/tests/input.spec.ts:7:10: error eslint(no-unused-vars): Identifier 'decodeScenarioInput' is imported but never used. help: Consider removing this import.
+packages/simulation/simulation-scenario/tests/input.spec.ts:10:27: error typescript(no-unsafe-return): Unsafe return of a value of type `any`.
+packages/simulation/simulation-scenario/tests/input.spec.ts:23:9: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-scenario/tests/input.spec.ts:84:11: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-scenario/tests/input.spec.ts:85:16: error typescript(no-unsafe-member-access): Unsafe member access .metadata on an `any` value.
+packages/simulation/simulation-scenario/tests/input.spec.ts:86:16: error typescript(no-unsafe-member-access): Unsafe member access .initialEvents on an `any` value.
+packages/simulation/simulation-scenario/tests/input.spec.ts:110:11: error typescript(no-unsafe-assignment): Unsafe assignment of an any value.
+packages/simulation/simulation-scenario/tests/input.spec.ts:111:16: error typescript(no-unsafe-member-access): Unsafe member access .metadata on an `any` value.
+packages/simulation/simulation-scenario/tests/input.spec.ts:127:51: error typescript(no-unsafe-return): Unsafe return of a value of type `any[]`.

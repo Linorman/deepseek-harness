@@ -1,0 +1,30 @@
+{
+  "scene": "laboratory",
+  "backend": "sqlite",
+  "mode": "source",
+  "round": 2,
+  "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+  "args": [
+    "--import",
+    "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-external-scenario.ts",
+    "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-external/cordis.yml"
+  ],
+  "pid": 79223,
+  "exitCode": 0,
+  "signal": null,
+  "stdout": "{\"identities\":2,\"evaluations\":3,\"stableKey\":true,\"unknownPreserved\":true,\"resourcesUnchanged\":true,\"unsafePayloadRejected\":true,\"recordedOutcome\":true,\"checkpointComplete\":true,\"modelCalls\":0,\"phase\":\"paused\"}\n",
+  "stderr": "",
+  "result": {
+    "identities": 2,
+    "evaluations": 3,
+    "stableKey": true,
+    "unknownPreserved": true,
+    "resourcesUnchanged": true,
+    "unsafePayloadRejected": true,
+    "recordedOutcome": true,
+    "checkpointComplete": true,
+    "modelCalls": 0,
+    "phase": "paused"
+  }
+}

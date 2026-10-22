@@ -3334,7 +3334,41 @@ export class FixtureApiClient extends AbstractApiClient {
     signal: AbortSignal,
   ): Promise<RpcResponse<unknown>> {
     switch (method) {
+      case 'simulation.raw.archive':
+      case 'simulation.runs.run-control':
+      case 'simulation.generation.request':
+      case 'simulation.generation.read':
+      case 'simulation.generation.execute':
+      case 'simulation.generation.transition':
+      case 'simulation.generation.persona-draft':
+      case 'simulation.world.branch':
+      case 'simulation.world.branch.read':
+      case 'simulation.world.causal':
+      case 'simulation.world.compare':
+      case 'simulation.backup.export':
+      case 'simulation.retention.preview':
+      case 'simulation.retention.execute':
+      case 'simulation.retention.read':
+      case 'simulation.retention.records':
       case 'simulation.operation.retry':
+      case 'simulation.world.drafts.read':
+      case 'simulation.world.drafts.save':
+      case 'simulation.world.calendar.retain':
+      case 'simulation.world.calendar.command':
+      case 'simulation.world.calendar.cancel':
+      case 'simulation.world.calendar.preview':
+      case 'simulation.world.calendar.submit':
+      case 'simulation.world.preflight':
+      case 'simulation.world.create':
+      case 'simulation.world.prepare':
+      case 'simulation.world.export':
+      case 'simulation.world.domain.read':
+      case 'simulation.world.management.fields':
+      case 'simulation.world.management.preview':
+      case 'simulation.world.management.submit':
+      case 'simulation.world.cases.list':
+      case 'simulation.world.cases.inspect':
+      case 'simulation.world.cases.cancel':
       case 'simulation.runs.statuses':
       case 'simulation.tasks.list':
       case 'simulation.tasks.cancel':
@@ -3355,6 +3389,7 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'simulation.requests.get':
       case 'simulation.runs.control':
       case 'simulation.runs.create':
+      case 'simulation.index.rebuild':
       case 'simulation.runs.inspect':
       case 'simulation.runs.list':
       case 'simulation.runs.manage':

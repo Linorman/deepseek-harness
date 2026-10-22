@@ -1,0 +1,46 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-case-cancel.snapshot.ts (12 tests | 4 failed) 73468ms
+     × settles 'company' at 'accepted-before-reserve' and preserves the original cold receipt 4092ms
+     × settles 'laboratory' at 'accepted-before-reserve' and preserves the original cold receipt 4428ms
+     × settles 'company' at 'accepted-before-reserve' and preserves the original cold receipt 3638ms
+     × settles 'laboratory' at 'accepted-before-reserve' and preserves the original cold receipt 3577ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-case-cancel.snapshot.ts > json World product cancellation > settles 'company' at 'accepted-before-reserve' and preserves the original cold receipt
+ FAIL  examples/simulation-company/tests/world-case-cancel.snapshot.ts > json World product cancellation > settles 'laboratory' at 'accepted-before-reserve' and preserves the original cold receipt
+ FAIL  examples/simulation-company/tests/world-case-cancel.snapshot.ts > sqlite World product cancellation > settles 'company' at 'accepted-before-reserve' and preserves the original cold receipt
+ FAIL  examples/simulation-company/tests/world-case-cancel.snapshot.ts > sqlite World product cancellation > settles 'laboratory' at 'accepted-before-reserve' and preserves the original cold receipt
+AssertionError: Warning: Detected unsettled top-level await at /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-case-cancel-scenario.ts:218
+} finally { release.resolve(undefined); await ctx.fiber.dispose() }
+                                        ^
+
+
+
+: expected 13 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 13
+
+ ❯ examples/simulation-company/tests/world-case-cancel.snapshot.ts:31:34
+     29|           try {
+     30|             const [code] = await exited as unknown[]
+     31|             expect(code, errors).toBe(0)
+       |                                  ^
+     32|             expect(JSON.parse(output)).toEqual({ scenario, stage, rest…
+     33|           } finally { child.kill('SIGKILL'); await exited }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  4 failed | 20 passed (24)
+   Start at  05:07:07
+   Duration  239.27s (transform 1.70s, setup 1.49s, import 1.06s, tests 236.32s, environment 0ms)
+

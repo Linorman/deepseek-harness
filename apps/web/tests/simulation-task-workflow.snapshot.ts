@@ -147,7 +147,7 @@ it.each([
     await dialog.getByRole('button', { name: '请求返工', exact: true }).click()
     await dialog.getByLabel('审核原因', { exact: true }).fill('Add forecast period')
     await dialog.getByRole('button', { name: '请求返工', exact: true }).last().click()
-    await dialog.getByText('响应丢失，请查询或重试原操作。', { exact: true }).waitFor()
+    await dialog.getByText('结果尚不确定，请先查询原操作；未分配新身份。', { exact: true }).waitFor()
     expect(writes).toHaveLength(1)
     await dialog.getByRole('button', { name: '查询原结果', exact: true }).click()
     await expect.poll(async () => {

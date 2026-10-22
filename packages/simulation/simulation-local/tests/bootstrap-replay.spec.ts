@@ -34,7 +34,7 @@ it('rejects missing, foreign and repeated topology confirmations before appendin
     expect(() => fold(h.run.snapshot(), { ...confirmation, teamId: team })).toThrow(/no matching reservation/)
     const member = async (name: string, bind: boolean) => {
       const id = simulationEntityIdSchema.parse(name)
-      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }),
+      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }),
         h.run.snapshot().revision)
       if (bind) await h.run.bindEntity(id, simulationEntityBindingSchema.parse({ teamId: team, participantId: name, sessionId: name }),
         h.run.snapshot().revision)

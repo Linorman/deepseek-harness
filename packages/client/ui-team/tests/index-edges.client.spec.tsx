@@ -367,7 +367,10 @@ it('keeps the latest URL restoration when an earlier exact Team read settles aft
   expect(update).not.toHaveBeenCalled()
   finish[1]?.(selection)
   await second
-  expect(update).toHaveBeenCalledExactlyOnceWith(teamId, { view: 'members', taskForm: undefined, actionId: undefined })
+  expect(update.mock.calls).toEqual([
+    [teamId, { view: 'members', taskForm: undefined, actionId: undefined }],
+    [teamId, { channelEnvelope: undefined, channelEnvelopeSequence: undefined }],
+  ])
 })
 
 it('opens only loaded palette Teams and members, and preserves failures in the command owner', async () => {

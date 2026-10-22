@@ -1,0 +1,6 @@
+{
+  "date": "2026-10-13 Asia/Tokyo",
+  "scopedLint": "TMPDIR=\"$PWD/.local/world-completion/tmp\" node --import tsx scripts/run-oxlint.ts packages/simulation/simulation/src/world-types.ts packages/simulation/simulation/src/world-membership.ts packages/simulation/simulation-local/src/world-organization.ts packages/simulation/simulation-local/src/world-hire-approval.ts packages/simulation/simulation-local/src/world-norm-bootstrap.ts packages/simulation/simulation-local/src/world-personnel-domain.ts packages/simulation/simulation-local/src/world-hire-existing.ts packages/simulation/simulation-local/src/journal.ts packages/simulation/simulation-local/tests/world-goal-disclosure.spec.ts packages/simulation/simulation-local/tests/world-hire-approval.spec.ts packages/simulation/simulation-local/tests/world-bootstrap.spec.ts packages/simulation/simulation-local/tests/world-personnel-domain.spec.ts packages/simulation/simulation-local/tests/world-governance.spec.ts examples/simulation-company/tests/world-governance-disclosure.snapshot.ts examples/simulation-company/tests/world-governance-scenario.ts examples/simulation-company/tests/world-governance-model.ts > .local/world-completion/f07-goal-disclosure/lint91-final.log 2>&1",
+  "otherCommands": "goal-disclosure-proof-20261013.md",
+  "actualLoaderCommands": "goal-disclosure-audit-20261013.json"
+}

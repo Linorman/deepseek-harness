@@ -1,5 +1,6 @@
-/* Static ambient backdrop: a faint dot grid plus two mode-tinted glows.
-   Chrome only: the mode identity ramp tints it, no state reads from it. */
+/* Ambient field: a faint dot grid plus two mode-tinted glows; Simulation adds a seeded contour terrain and
+   live-observation rings. Chrome only: the mode identity ramp tints it, no state reads from it. Working
+   surfaces are opaque, so the field only shows through the whitespace around them. */
 
 .backdrop {
   position: absolute;
@@ -9,6 +10,7 @@
   z-index: var(--clocky-layer-behind);
   background-image: radial-gradient(var(--clocky-viz-grid) 1px, transparent 1.4px);
   background-size: 22px 22px;
+  contain: strict;
 }
 
 .glow {
@@ -16,7 +18,7 @@
   width: 60vmax;
   height: 60vmax;
   border-radius: var(--clocky-radius-full);
-  opacity: 0.22;
+  opacity: 0.12;
   filter: blur(90px);
 }
 
@@ -28,10 +30,83 @@
 .glow:nth-child(2) {
   bottom: -36vmax;
   left: -22vmax;
-  opacity: 0.12;
+  opacity: 0.07;
 }
 
 .backdrop[data-mode="team"] .glow { background: var(--clocky-mode-team-gradient); }
 .backdrop[data-mode="simulation"] .glow { background: var(--clocky-mode-simulation-gradient); }
 /* The magenta ramp reads hotter than cyan at equal opacity; calm it. */
-.backdrop[data-mode="simulation"] .glow:nth-child(1) { opacity: 0.15; }
+.backdrop[data-mode="simulation"] .glow:nth-child(1) { opacity: 0.09; }
+
+/* Breathing air masses, out of phase with the terrain drift. */
+.backdrop[data-mode="simulation"] .glow {
+  animation: breathe calc(var(--clocky-duration-drift) * 1.3) ease-in-out infinite alternate;
+  transition: opacity var(--clocky-duration-deliberate) var(--clocky-ease-standard);
+}
+.backdrop[data-mode="simulation"] .glow:nth-child(2) { animation-delay: calc(var(--clocky-duration-drift) * -0.6); }
+.backdrop[data-mode="simulation"][data-tone="muted"] .glow:nth-child(1) { opacity: 0.06; }
+.backdrop[data-mode="simulation"][data-tone="muted"] .glow:nth-child(2) { opacity: 0.05; }
+
+/* Terrain: contour lines (or the neutral star map) faded toward the edges so they never meet chrome hard. */
+.terrain {
+  position: absolute;
+  inset: -48px;
+  width: calc(100% + 96px);
+  height: calc(100% + 96px);
+  color: var(--clocky-ambient-terrain-ink);
+  /* Decoration stays well below content contrast; state and alerts own the strong colors. */
+  opacity: calc(var(--clocky-ambient-terrain-opacity) * 0.6);
+  mask-image: radial-gradient(ellipse 75% 70% at 58% 55%, currentcolor 35%, transparent 100%);
+  animation:
+    terrain-in var(--clocky-duration-deliberate) var(--clocky-ease-standard) both,
+    drift var(--clocky-duration-drift) ease-in-out infinite alternate;
+  transition: opacity var(--clocky-duration-deliberate) var(--clocky-ease-standard), filter var(--clocky-duration-deliberate) var(--clocky-ease-standard);
+}
+.terrain path { fill: none; stroke: currentColor; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.terrain path:nth-child(6n + 1) { stroke-width: 1.6; }
+.terrain line { stroke: currentColor; stroke-width: 0.8; vector-effect: non-scaling-stroke; opacity: 0.6; }
+.terrain circle { fill: currentColor; }
+.backdrop[data-tone="muted"] .terrain { opacity: calc(var(--clocky-ambient-terrain-opacity) * 0.42); filter: saturate(0.6); }
+/* The neutral star map is sparse points rather than lines, so it needs more ink to read at the same weight. */
+.backdrop .terrain[data-variant="stars"] { opacity: calc(var(--clocky-ambient-terrain-opacity) * 1.2); filter: none; }
+
+/* One live-observation ring; WAAPI animates it from the signalled point. */
+.ring {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  width: 640px;
+  height: 640px;
+  border-radius: var(--clocky-radius-full);
+  border: 1.5px solid var(--clocky-ambient-terrain-ink);
+  box-shadow: 0 0 48px color-mix(in srgb, var(--clocky-ambient-terrain-ink) 30%, transparent),
+    inset 0 0 48px color-mix(in srgb, var(--clocky-ambient-terrain-ink) 18%, transparent);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.12);
+  --ring-peak: var(--clocky-ambient-pulse-opacity);
+  filter: opacity(var(--ring-peak));
+}
+
+/* Hidden page, idle viewer, reduced motion or the viewer's off switch: everything holds its place. */
+/* Only the endless motion holds; the one-shot entrance still completes so the terrain never freezes half faded. */
+.backdrop[data-still] .glow { animation-play-state: paused; }
+.backdrop[data-still] .terrain { animation-play-state: running, paused; }
+
+@keyframes drift {
+  from { transform: translate3d(-12px, 8px, 0) rotate(-0.6deg); }
+  to { transform: translate3d(12px, -8px, 0) rotate(0.6deg); }
+}
+@keyframes breathe { to { transform: scale(1.06); } }
+@keyframes terrain-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop[data-mode="simulation"] .glow { animation: none; }
+  .terrain, .backdrop[data-still] .terrain { animation: terrain-in var(--clocky-duration-fade) linear both; animation-play-state: running; }
+}
+@media (prefers-contrast: more), print {
+  .terrain, .ring { display: none; }
+}
+/* Reduced transparency: no translucent glows, terrain or rings over content; only the faint grid remains. */
+@media (prefers-reduced-transparency: reduce) {
+  .glow, .terrain, .ring { display: none; }
+}

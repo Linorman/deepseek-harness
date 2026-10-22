@@ -3,6 +3,7 @@ import { expect, it } from 'vitest'
 import { simulationProductSourceInputSchema, simulationProductSourceInspectionSchema,
   simulationProductRecordsInputSchema, simulationProductRecordsPageSchema } from '@clocky/clocky-simulation-product/schema'
 import { InProcessApiClient } from '../src/fetch/client.ts'
+import { simulationProductWorldDomainInputSchema, simulationProductWorldDomainResultSchema } from '@clocky/clocky-simulation-product/world-read-schema'
 
 function responseClient(value: unknown) {
   return new InProcessApiClient({ fetch: async (request, init) => {
@@ -11,6 +12,26 @@ function responseClient(value: unknown) {
       { headers: { 'content-type': 'application/json' } })
   } })
 }
+
+const domainQuery = simulationProductWorldDomainInputSchema.parse({ runId: 'run', kind: 'identity', key: 'supplier', section: 'facts',
+  at: '0', limit: 1, cursor: 'cursor', readVersion: 'policy', expectedRevision: 3 })
+const domain = simulationProductWorldDomainResultSchema.parse({ apiVersion: 'clocky.world-read/v1', kind: 'identity', runId: 'run',
+  selection: domainQuery, snapshotRevision: 3, readVersion: 'policy', observedAt: 1, status: 'missing',
+  coverage: { loaded: 0, total: 0, scope: 'identity/facts', revision: 3, complete: true, at: '0' } })
+
+it.each([{ key: 'other' }, { section: 'record' }, { at: '1' }, { cursor: 'another' }, { limit: 2 }])(
+  'refuses an otherwise valid domain response replacing the exact original selector: %j', async (change) => {
+    const changed = simulationProductWorldDomainResultSchema.parse({ ...domain, selection: { ...domainQuery, ...change },
+      coverage: { ...domain.coverage, ...'at' in change ? { at: change.at } : {} } })
+    await expect(responseClient(changed).simulations.readWorldDomain(domainQuery)).rejects.toThrow('does not match its original selection')
+  })
+
+it('accepts the exact bounded domain query without treating absent optional undefined fields as new selectors', async () => {
+  expect((await responseClient(domain).simulations.readWorldDomain(domainQuery)).result).toMatchObject({ ok: true, value: domain })
+  const input = simulationProductWorldDomainInputSchema.parse({ runId: 'run', kind: 'external', at: undefined })
+  const output = simulationProductWorldDomainResultSchema.parse({ ...domain, kind: 'external', selection: { runId: 'run', kind: 'external' } })
+  expect((await responseClient(output).simulations.readWorldDomain(input)).result.ok).toBe(true)
+})
 
 const source = simulationProductSourceInspectionSchema.parse({ runId: 'run', decisionId: 'decision', sourceIndex: 0,
   snapshotRevision: 2, readVersion: 'policy', observedAt: 1, status: 'found',

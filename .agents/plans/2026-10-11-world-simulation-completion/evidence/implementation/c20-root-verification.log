@@ -1,0 +1,1 @@
+{"report":".local/world-completion/c20-external-contact/verification-report.json","totals":{"cases":64,"processes":192,"intentionalKills":24,"normalExit0":168,"cold0Model":128,"coldPending":16,"coldTerminal":112,"rawArtifacts":608,"logs":2}}

@@ -33,6 +33,10 @@ it('retains normalized original grants and later raw input after transport loss 
     })
     query.mockImplementation(async () => {
       if (command?.kind !== 'retry-operation') throw new Error('Original missing')
+      if (query.mock.calls.length === 1) {
+        const current: SimulationCommandState = { command, pending: false, unknown: true, notFound: true }
+        setCommands({ original: current }); return current
+      }
       const current: SimulationCommandState = { command, pending: false, unknown: false, notFound: false,
         receipt: { kind: 'request', value: { commandId: command.input.commandId, runId: command.input.runId,
           kind: 'retry-operation', status: 'completed', acceptedAt: 1 } } }
@@ -49,11 +53,18 @@ it('retains normalized original grants and later raw input after transport loss 
   expect(command).toMatchObject({ kind: 'retry-operation', input: { operationId: 'operation', expectedAttemptCount: 1,
     reason: 'Original evidence' } })
   fireEvent.change(view.getByLabelText(en['operationRetry.reason']), { target: { value: '  Original evidence   ' } })
+  expect(view.queryByRole('button', { name: en.retryOriginal })).toBeNull()
+  expect(submit).toHaveBeenCalledOnce()
+  fireEvent.click(view.getByRole('button', { name: en.queryOriginal }))
+  await view.findByText(en.commandNotFound)
+  expect(query).toHaveBeenCalledWith('original')
+  expect(submit).toHaveBeenCalledOnce()
   fireEvent.click(view.getByRole('button', { name: en.retryOriginal }))
   await waitFor(() => { expect(submit).toHaveBeenCalledTimes(2) })
   expect(retain).toHaveBeenCalledOnce()
   fireEvent.click(view.getByRole('button', { name: en.queryOriginal }))
   await view.findByText(en['operationRetry.granted'])
+  expect(query).toHaveBeenCalledTimes(2)
   expect((view.getByLabelText(en['operationRetry.reason']) as HTMLTextAreaElement).value).toBe('  Original evidence   ')
   expect(close).not.toHaveBeenCalled()
 })

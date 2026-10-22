@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-16",
+  "scope": "Post-MVP P1-P5; proposal only; not MVP finalization",
+  "sources": {
+    "packages/simulation/simulation-world/README.md": "9ce14b3811f909065db00dc85118a9ad21e7d948c08b1ee00edf4d5d72e7914e",
+    "packages/simulation/simulation-team/README.md": "42e83ece9fe2395a953787d1219b73ec42026e56614082ab646c1281e188570d",
+    "packages/simulation/simulation-product/README.md": "8809a2e356b628f3f0a1e5f67d077d4528a386cb37d680867874880c5e5d7f11",
+    "packages/simulation/simulation-scenario/README.md": "d4e178e0721fe7b7caf53a42c609c30b30aa453f1548389abbef694656ed10ae",
+    ".agents/plans/2026-10-11-world-simulation-completion/evidence/source-design.html": "e63bcbf66050e4c3e9761f2aa65dacbbf17179d286603678406aa692796fbe25"
+  }
+}

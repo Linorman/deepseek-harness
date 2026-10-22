@@ -8,6 +8,8 @@ import type { LlmCallConfig } from '@clocky/clocky-llm'
 
 /** Policy fields shared by the default policy and exact model overrides. */
 export interface CompactionPolicyConfig {
+  /** Absolute pressure ceiling, combined with the routed model ratio using the smaller threshold. */
+  thresholdTokens?: number
   /** Compact at this fraction of the model's context window. Defaults to `0.8`. */
   thresholdRatio?: number
   /** Recent context retained as a fraction of the model's window. Defaults to `0.16`. */
@@ -38,6 +40,12 @@ export interface ModelCompactPolicyConfig extends CompactionPolicyConfig {
 export interface BasicCompactionConfig extends CompactionPolicyConfig {
   /** Exact provider/model overrides; duplicate targets fail plugin load. */
   modelPolicies?: ModelCompactPolicyConfig[]
+  /** New compressible tokens required after no gain, unless the node cooldown is reached. Defaults to 256. */
+  noGainMinTokens?: number
+  /** New selected surface nodes that permit reevaluation of a changed prefix. Defaults to 8. */
+  noGainCooldownNodes?: number
+  /** Maximum recent closed attempts consulted when reconstructing suppression. Defaults to 32. */
+  noGainHistoryLimit?: number
   /** Enable automatic step-boundary pressure and overflow-recovery listeners. Defaults to `true`. */
   auto?: boolean
 }
@@ -49,6 +57,7 @@ export type ResolvedRetention =
 
 /** Validated policy fields shared before and after exact-target matching. */
 interface ResolvedPolicyFields {
+  readonly thresholdTokens?: number
   readonly thresholdRatio: number
   readonly summarizationProvider: string
   readonly summarizationModel: string
@@ -60,6 +69,9 @@ interface ResolvedPolicyFields {
 /** Validated immutable config whose target-specific defaults remain unresolved. */
 export type ResolvedConfig = ResolvedPolicyFields & ResolvedRetention & {
   readonly modelPolicies: readonly Readonly<ModelCompactPolicyConfig>[]
+  readonly noGainMinTokens: number
+  readonly noGainCooldownNodes: number
+  readonly noGainHistoryLimit: number
   readonly auto: boolean
 }
 
@@ -69,7 +81,7 @@ export type ResolvedTargetPolicy = ResolvedPolicyFields & ResolvedRetention & {
 }
 
 /** One routed model's concrete pressure and retention budget. */
-export type ResolvedCompactSpec = Omit<ResolvedTargetPolicy, 'retainRatio' | 'retainTokens'> & {
+export type ResolvedCompactSpec = Omit<ResolvedTargetPolicy, 'retainRatio' | 'retainTokens' | 'thresholdTokens'> & {
   readonly contextWindow: number
   readonly thresholdTokens: number
   readonly retainTokens: number

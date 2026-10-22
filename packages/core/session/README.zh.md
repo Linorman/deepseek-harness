@@ -1,5 +1,7 @@
 # clocky-session
 
+`simulation/generation-input` 保留无工具助手请求的精确序列化内容及披露 scope；`simulation/generation-output` 在校验前保留原输出与可选 usage。这些必读事件在持久读取时执行严格校验，不进入普通角色的消息 surface。生成所有者从已记录字节重建独立请求。
+
 [English](README.md) | 中文
 
 事件溯源的会话日志和内存存储。`Session` 是 agent（智能体）全部交互历史的仅追加真源，LLM（大语言模型）消息历史由它*派生*。原始日志之上维护一个 **surface** 层（产生消息事件的有序投影），以便高效派生和压缩（compaction）。

@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "backend": "json",
+  "sizeMiB": 1,
+  "physicalBytes": 1057408,
+  "budgets": {
+    "controlP95Ms": 250,
+    "controlRssGrowthBytes": 8388608,
+    "detailMs": 30000,
+    "runtimeBaselineBytes": 268435456,
+    "readerPeakGrowthBytes": 75497472,
+    "inspectionMaxBytes": 268435456
+  },
+  "host": {
+    "node": "v25.9.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro"
+  },
+  "control": {
+    "calls": 100,
+    "p95Ms": 0.008499999999912689,
+    "rssGrowthBytes": 65536
+  },
+  "reads": {
+    "baselineRssBytes": 195084288,
+    "samples": [
+      {
+        "mode": "cold-provider",
+        "elapsedMs": 10.653874999999971,
+        "rssBefore": 195084288,
+        "rssAfterRead": 205619200,
+        "rssAfterVerification": 208928768,
+        "maxRSSKiB": 204032,
+        "identical": true,
+        "readers": 1
+      },
+      {
+        "mode": "warm-provider",
+        "elapsedMs": 5.768166000000065,
+        "rssBefore": 208961536,
+        "rssAfterRead": 218759168,
+        "rssAfterVerification": 219824128,
+        "maxRSSKiB": 214672,
+        "identical": true,
+        "readers": 1
+      },
+      {
+        "mode": "concurrent-two",
+        "elapsedMs": 4.666167000000087,
+        "rssBefore": 219824128,
+        "rssAfterRead": 227229696,
+        "rssAfterVerification": 229376000,
+        "maxRSSKiB": 224000,
+        "identical": true,
+        "readers": 2
+      }
+    ],
+    "emittedPageBytes": 1053578,
+    "largestPageBytes": 1053578,
+    "pages": 1,
+    "payloadBytes": 1053030,
+    "limitations": "Cold means fresh provider/process, not OS cache eviction. Peak RSS includes verification; bytes describe application output, not physical IO."
+  },
+  "passed": true,
+  "unchangedSource": true,
+  "modelCalls": 0,
+  "expectedHash": "fc0300f5fbdc5cdf15b6f602d70644a0aa8392b267089512cc0062ef280439ae"
+}

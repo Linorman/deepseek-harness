@@ -1,0 +1,820 @@
+{"stream":{"name":"simulation","version":102,"tailSequence":27},
+  "entries": [
+    {
+      "sequence": 0,
+      "value": {
+        "kind": "run/created",
+        "spec": {
+          "maxQueuedDecisions": 100,
+          "maxDispatchWaitRounds": 8,
+          "maxTokensPerInterval": 1000000,
+          "tokensPerModelRequest": 10000,
+          "budgetInterval": "100",
+          "maxDecisionsPerInterval": 100,
+          "maxMessagesPerInterval": 100,
+          "maxPendingEvents": 100,
+          "maxPendingInteractions": 100,
+          "maxResourceReservationHistory": 128,
+          "maxKnowledgeBytes": 65536,
+          "maxKnowledgePerQuery": 32,
+          "maxEntities": 16,
+          "maxResidentActors": 2,
+          "maxIngressBytes": 65536,
+          "maxConflictRetries": 2,
+          "decisionTimeoutMs": 60000,
+          "maxDecisionsPerWindow": 2,
+          "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+          "tickUnit": "minute",
+          "origin": "0",
+          "maxTime": "1000",
+          "rulesVersion": "world-rules-1",
+          "policyVersion": "world-policy-1",
+          "outboxMaxAttempts": 3,
+          "outboxRetryDelayMs": 10,
+          "maxDriveSteps": 32,
+          "maxMicrostepsPerTime": 32,
+          "phaseOrder": [
+            "delivery",
+            "decision",
+            "deadline"
+          ],
+          "maxOperationsPerDecision": 16,
+          "maxResourceQuantity": "10000",
+          "relationRules": [
+            {
+              "relation": "assignment",
+              "subjectKinds": [
+                "person"
+              ],
+              "objectKinds": [
+                "position"
+              ],
+              "acyclic": true,
+              "scopeKinds": [
+                "organization"
+              ]
+            },
+            {
+              "relation": "can-hire",
+              "subjectKinds": [
+                "person"
+              ],
+              "objectKinds": [
+                "position"
+              ],
+              "acyclic": true,
+              "scopeKinds": [
+                "organization"
+              ]
+            }
+          ]
+        },
+        "backend": "json"
+      }
+    },
+    {
+      "sequence": 1,
+      "value": {
+        "kind": "run/team-reserved",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 0,
+        "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+        "creation": {
+          "goal": {
+            "objective": "One organization with a bounded request for one new colleague.",
+            "budgets": {}
+          },
+          "rules": {
+            "simulationRunId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+            "activationLifecycleOwner": "simulation-product/9c41d956-7ae2-47d8-8df1-2a14a67d406a/resolved-b2d023c6d54f4e29f007cc886c62c2049f8c351a5fd04ebb9afb1084bd95fda5"
+          },
+          "budgets": {},
+          "limits": {
+            "maxParticipants": 16,
+            "maxActivations": 100,
+            "maxTasks": 100,
+            "maxChannels": 100,
+            "maxEnvelopeBytes": 65536,
+            "maxChannelViewBytes": 65536,
+            "maxPendingDeliveriesPerChannel": 100,
+            "maxPendingDeliveriesPerParticipant": 100,
+            "maxPendingDeliveryPageSize": 100,
+            "maxPostIdempotencyEntriesPerChannel": 100,
+            "maxTaskAttemptsPerTask": 3,
+            "maxTaskLeaseDurationMs": 60000,
+            "maxTurnsPerTeam": 1000,
+            "maxModelTokensPerTeam": 1000000,
+            "maxWallTimeMsPerTeam": 100000,
+            "maxCostUnitsPerTeam": 1000,
+            "maxRetriesPerTeam": 100,
+            "maxInboxItemsPerParticipant": 100,
+            "maxRatePerParticipantPerMinute": 100
+          }
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "value": {
+        "kind": "run/team-confirmed",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 1,
+        "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939"
+      }
+    },
+    {
+      "sequence": 3,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 2,
+        "command": {
+          "kind": "entity/create",
+          "id": "studio",
+          "entityKind": "organization",
+          "cognition": "none",
+          "readiness": "ready",
+          "profile": {
+            "name": "Northstar Studio",
+            "description": "Members collaborate through private channels."
+          }
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 3,
+        "command": {
+          "kind": "entity/create",
+          "id": "engineering",
+          "entityKind": "position",
+          "cognition": "none",
+          "readiness": "ready",
+          "profile": {
+            "name": "Engineer",
+            "description": "Engineer"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 5,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 4,
+        "command": {
+          "kind": "entity/create",
+          "id": "director",
+          "entityKind": "person",
+          "cognition": "agent",
+          "readiness": "preparing",
+          "profile": {
+            "name": "Director",
+            "description": "A colleague at Northstar Studio.",
+            "persona": {
+              "name": "Director",
+              "skills": [
+                "engineering"
+              ],
+              "traits": [
+                "patient"
+              ],
+              "goals": [
+                "build"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "sequence": 6,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 5,
+        "command": {
+          "kind": "entity/create",
+          "id": "requester",
+          "entityKind": "person",
+          "cognition": "agent",
+          "readiness": "preparing",
+          "profile": {
+            "name": "Recruiter",
+            "description": "A colleague at Northstar Studio.",
+            "persona": {
+              "name": "Recruiter",
+              "skills": [
+                "engineering"
+              ],
+              "traits": [
+                "patient"
+              ],
+              "goals": [
+                "build"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "sequence": 7,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 6,
+        "command": {
+          "kind": "entity/create",
+          "id": "observer",
+          "entityKind": "person",
+          "cognition": "agent",
+          "readiness": "preparing",
+          "profile": {
+            "name": "Observer",
+            "description": "A colleague at Northstar Studio.",
+            "persona": {
+              "name": "Observer",
+              "skills": [
+                "engineering"
+              ],
+              "traits": [
+                "patient"
+              ],
+              "goals": [
+                "build"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "sequence": 8,
+      "value": {
+        "kind": "run/participant-reserved",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 7,
+        "entityId": "director",
+        "binding": {
+          "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+          "participantId": "participant-c47247e1-bfd1-432a-9625-5ff7664d4f2c",
+          "sessionId": "878ef7b9-bfa6-4193-a202-abe9f62ee82b"
+        },
+        "participant": {
+          "displayName": "Director",
+          "role": "director",
+          "capabilities": [],
+          "provider": "in-process",
+          "preset": "simulation",
+          "model": "world-driver-scripted/scripted"
+        }
+      }
+    },
+    {
+      "sequence": 9,
+      "value": {
+        "kind": "run/writer",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 8,
+        "change": {
+          "kind": "entity/bound",
+          "entityId": "director",
+          "binding": {
+            "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+            "participantId": "participant-c47247e1-bfd1-432a-9625-5ff7664d4f2c",
+            "sessionId": "878ef7b9-bfa6-4193-a202-abe9f62ee82b"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 10,
+      "value": {
+        "kind": "run/participant-reserved",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 9,
+        "entityId": "requester",
+        "binding": {
+          "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+          "participantId": "participant-1c297d48-08b5-492b-bb94-2b7378e0fdbc",
+          "sessionId": "eef9ad98-2f55-41fa-9e24-4233e786d557"
+        },
+        "participant": {
+          "displayName": "Recruiter",
+          "role": "member",
+          "capabilities": [],
+          "provider": "in-process",
+          "preset": "simulation",
+          "model": "world-driver-scripted/scripted"
+        }
+      }
+    },
+    {
+      "sequence": 11,
+      "value": {
+        "kind": "run/writer",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 10,
+        "change": {
+          "kind": "entity/bound",
+          "entityId": "requester",
+          "binding": {
+            "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+            "participantId": "participant-1c297d48-08b5-492b-bb94-2b7378e0fdbc",
+            "sessionId": "eef9ad98-2f55-41fa-9e24-4233e786d557"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 12,
+      "value": {
+        "kind": "run/participant-reserved",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 11,
+        "entityId": "observer",
+        "binding": {
+          "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+          "participantId": "participant-0277f821-778f-4839-bbf8-d737ebbb1658",
+          "sessionId": "bc9e6df5-719c-4a32-b74b-cf60ff06ba87"
+        },
+        "participant": {
+          "displayName": "Observer",
+          "role": "member",
+          "capabilities": [],
+          "provider": "in-process",
+          "preset": "simulation",
+          "model": "world-driver-scripted/scripted"
+        }
+      }
+    },
+    {
+      "sequence": 13,
+      "value": {
+        "kind": "run/writer",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 12,
+        "change": {
+          "kind": "entity/bound",
+          "entityId": "observer",
+          "binding": {
+            "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+            "participantId": "participant-0277f821-778f-4839-bbf8-d737ebbb1658",
+            "sessionId": "bc9e6df5-719c-4a32-b74b-cf60ff06ba87"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 14,
+      "value": {
+        "kind": "run/channel-reserved",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 13,
+        "channelId": "channel-104c9c72-746b-4de7-a883-3b017e7c689a",
+        "spec": {
+          "key": "world-director:requester",
+          "members": [
+            {
+              "entityId": "requester",
+              "role": "member"
+            },
+            {
+              "entityId": "director",
+              "role": "director"
+            }
+          ],
+          "limits": {}
+        }
+      }
+    },
+    {
+      "sequence": 15,
+      "value": {
+        "kind": "run/channel-confirmed",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 14,
+        "key": "world-director:requester",
+        "channelId": "channel-104c9c72-746b-4de7-a883-3b017e7c689a"
+      }
+    },
+    {
+      "sequence": 16,
+      "value": {
+        "kind": "run/channel-reserved",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 15,
+        "channelId": "channel-5a046586-b536-4f13-af79-4b7ac1b56e30",
+        "spec": {
+          "key": "world-director:observer",
+          "members": [
+            {
+              "entityId": "observer",
+              "role": "member"
+            },
+            {
+              "entityId": "director",
+              "role": "director"
+            }
+          ],
+          "limits": {}
+        }
+      }
+    },
+    {
+      "sequence": 17,
+      "value": {
+        "kind": "run/channel-confirmed",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 16,
+        "key": "world-director:observer",
+        "channelId": "channel-5a046586-b536-4f13-af79-4b7ac1b56e30"
+      }
+    },
+    {
+      "sequence": 18,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 17,
+        "command": {
+          "kind": "relation/create",
+          "id": "initial-assignment",
+          "subject": "requester",
+          "relation": "assignment",
+          "object": "engineering",
+          "scope": "studio",
+          "validFrom": "0",
+          "validUntil": null
+        }
+      }
+    },
+    {
+      "sequence": 19,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 18,
+        "command": {
+          "kind": "relation/create",
+          "id": "hiring-authority",
+          "subject": "requester",
+          "relation": "can-hire",
+          "object": "engineering",
+          "scope": "studio",
+          "validFrom": "0",
+          "validUntil": null
+        }
+      }
+    },
+    {
+      "sequence": 20,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 19,
+        "command": {
+          "kind": "entity/readiness",
+          "id": "director",
+          "entityRevision": 2,
+          "readiness": "ready"
+        }
+      }
+    },
+    {
+      "sequence": 21,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 20,
+        "command": {
+          "kind": "entity/readiness",
+          "id": "requester",
+          "entityRevision": 2,
+          "readiness": "ready"
+        }
+      }
+    },
+    {
+      "sequence": 22,
+      "value": {
+        "kind": "run/change",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 21,
+        "command": {
+          "kind": "entity/readiness",
+          "id": "observer",
+          "entityRevision": 2,
+          "readiness": "ready"
+        }
+      }
+    },
+    {
+      "sequence": 23,
+      "value": {
+        "kind": "run/world",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 22,
+        "change": {
+          "kind": "world/defined",
+          "definition": {
+            "directorEntityId": "director",
+            "organizationEntityId": "studio",
+            "operations": [
+              {
+                "domain": "organization",
+                "operation": "generate-and-hire",
+                "version": "1",
+                "schemaRef": "clocky.organization.generate-and-hire/schema/3",
+                "implementationRef": "clocky.organization.generate-and-hire/native/5",
+                "generation": 1
+              }
+            ],
+            "positionRolePermissions": [],
+            "operationGrants": [
+              {
+                "domain": "organization",
+                "operation": "generate-and-hire",
+                "version": "1",
+                "requesterEntityId": "requester",
+                "scopeEntityId": "studio",
+                "targetEntityId": "engineering",
+                "relationId": "hiring-authority",
+                "relation": "can-hire"
+              }
+            ],
+            "positions": [
+              {
+                "entityId": "engineering",
+                "capacity": 2
+              }
+            ],
+            "authorizations": [
+              {
+                "requesterEntityId": "requester",
+                "positionEntityId": "engineering",
+                "relationId": "hiring-authority"
+              }
+            ],
+            "templates": [
+              {
+                "id": "company-person",
+                "version": "1",
+                "names": [
+                  "Director",
+                  "Recruiter",
+                  "Observer",
+                  "Lin"
+                ],
+                "skills": [
+                  "engineering"
+                ],
+                "traits": [
+                  "patient"
+                ],
+                "goals": [
+                  "build"
+                ],
+                "description": "A colleague at Northstar Studio."
+              }
+            ],
+            "policyVersion": "world-policy-1",
+            "limits": {
+              "maxRequests": 10,
+              "maxRequestsPerActorPerInterval": 10,
+              "maxBirthsPerInterval": 10,
+              "maxExternalExpansionsPerInterval": 10,
+              "maxPendingMutations": 1,
+              "maxEvidenceAttemptsPerRequest": 3,
+              "maxPlansPerRequest": 3,
+              "maxBytesPerRequest": 4096,
+              "maxBytesPerPlan": 4096
+            }
+          }
+        }
+      }
+    },
+    {
+      "sequence": 24,
+      "value": {
+        "kind": "run/world",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 23,
+        "change": {
+          "kind": "world/intent",
+          "intent": {
+            "id": "world-intent:b9fc1897fc38e81eef4ed36ecb79270441805f1fa7b94f16f12c483c3f1517fa",
+            "pin": {
+              "domain": "organization",
+              "operation": "generate-and-hire",
+              "version": "1",
+              "schemaRef": "clocky.organization.generate-and-hire/schema/3",
+              "implementationRef": "clocky.organization.generate-and-hire/native/5",
+              "generation": 1
+            },
+            "businessKey": "first-colleague",
+            "requesterEntityId": "requester",
+            "scopeEntityId": "studio",
+            "targetEntityId": "engineering",
+            "expectedTime": null,
+            "evidence": [],
+            "description": "We need one additional colleague for this position.",
+            "payload": {
+              "organizationEntityId": "studio",
+              "positionEntityId": "engineering",
+              "description": "We need one additional colleague for this position."
+            },
+            "sequence": 24
+          }
+        }
+      }
+    },
+    {
+      "sequence": 25,
+      "value": {
+        "kind": "run/scheduler",
+        "change": {
+          "kind": "event/queued",
+          "id": "world-initial:world-intent:b9fc1897fc38e81eef4ed36ecb79270441805f1fa7b94f16f12c483c3f1517fa",
+          "key": {
+            "time": "0",
+            "microstep": "0",
+            "phase": "decision",
+            "slot": "0"
+          },
+          "action": {
+            "kind": "wake",
+            "entityId": "requester",
+            "reason": "We need one additional colleague for this position."
+          }
+        },
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 24
+      }
+    },
+    {
+      "sequence": 26,
+      "value": {
+        "kind": "run/checkpoint",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 25,
+        "change": {
+          "kind": "checkpoint/requested",
+          "request": {
+            "id": "product-initial/df04e836-81fa-4abd-880e-b0713c43e093",
+            "implementationVersion": "world/1",
+            "maxDrainRounds": 4,
+            "maxAttempts": 3
+          }
+        }
+      }
+    },
+    {
+      "sequence": 27,
+      "value": {
+        "kind": "run/checkpoint",
+        "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+        "expectedRevision": 26,
+        "change": {
+          "kind": "checkpoint/published",
+          "publishedAt": 1792632659615,
+          "manifest": {
+            "version": 8,
+            "id": "product-initial/df04e836-81fa-4abd-880e-b0713c43e093",
+            "implementationVersion": "world/1",
+            "rulesVersion": "world-rules-1",
+            "policyVersion": "world-policy-1",
+            "rng": {
+              "kind": "none"
+            },
+            "run": {
+              "runId": "9c41d956-7ae2-47d8-8df1-2a14a67d406a",
+              "backend": "json",
+              "stream": {
+                "name": "simulation",
+                "version": 102
+              },
+              "cursor": 26,
+              "firstSequence": 0,
+              "retention": "full",
+              "fingerprint": "sha256:98cad4fb9a32108d38c2d9f81f96d97ebaef826158796c2a281d45b941912303"
+            },
+            "team": {
+              "stream": {
+                "name": "team/team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+                "version": 40
+              },
+              "cursor": 12,
+              "firstSequence": 0,
+              "retention": "full",
+              "projectionVersion": 40,
+              "fingerprint": "sha256:c5134b3308b040e9c55ee424e04b66678fa7172a55d40525fa398ab16f92bf4a",
+              "owner": {
+                "kind": "team",
+                "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939"
+              }
+            },
+            "channels": [
+              {
+                "stream": {
+                  "name": "channel/channel-104c9c72-746b-4de7-a883-3b017e7c689a",
+                  "version": 7
+                },
+                "cursor": 6,
+                "firstSequence": 0,
+                "retention": "full",
+                "projectionVersion": 10,
+                "fingerprint": "sha256:8979cd98488346f138cd4bd6bcb83ed477ae964eff9291d0d42c16bdf4778006",
+                "owner": {
+                  "kind": "channel",
+                  "channelId": "channel-104c9c72-746b-4de7-a883-3b017e7c689a"
+                }
+              },
+              {
+                "stream": {
+                  "name": "channel/channel-5a046586-b536-4f13-af79-4b7ac1b56e30",
+                  "version": 7
+                },
+                "cursor": 6,
+                "firstSequence": 0,
+                "retention": "full",
+                "projectionVersion": 10,
+                "fingerprint": "sha256:c511388c6ed9e5d3a2595281119cd3dc4bfafde87749aca63628f88a7125775f",
+                "owner": {
+                  "kind": "channel",
+                  "channelId": "channel-5a046586-b536-4f13-af79-4b7ac1b56e30"
+                }
+              }
+            ],
+            "sessions": [
+              {
+                "kind": "unmaterialized",
+                "sessionId": "878ef7b9-bfa6-4193-a202-abe9f62ee82b",
+                "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+                "participantId": "participant-c47247e1-bfd1-432a-9625-5ff7664d4f2c"
+              },
+              {
+                "kind": "unmaterialized",
+                "sessionId": "bc9e6df5-719c-4a32-b74b-cf60ff06ba87",
+                "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+                "participantId": "participant-0277f821-778f-4839-bbf8-d737ebbb1658"
+              },
+              {
+                "kind": "unmaterialized",
+                "sessionId": "eef9ad98-2f55-41fa-9e24-4233e786d557",
+                "teamId": "team-6b9cae9d-1cd6-4a8c-bae1-60e88b2b7939",
+                "participantId": "participant-1c297d48-08b5-492b-bb94-2b7378e0fdbc"
+              }
+            ],
+            "state": {
+              "time": "0",
+              "nextEventSlot": "1",
+              "nextDecisionSlot": "0",
+              "nextIngressSlot": "0",
+              "activeWindowId": null,
+              "world": {
+                "domains": [
+                  {
+                    "domain": "organization",
+                    "operation": "generate-and-hire",
+                    "version": "1",
+                    "schemaRef": "clocky.organization.generate-and-hire/schema/3",
+                    "implementationRef": "clocky.organization.generate-and-hire/native/5",
+                    "generation": 1
+                  }
+                ],
+                "definitionFingerprint": "sha256:af246424b3ef4eb63bbe34e8f7c8c575faaad5bc91a135d2529a016d8b6157c9",
+                "projectionFingerprint": "sha256:9543bb93d0ba96229f9156bf2a15689c9212125d398ce77eb73cf205c14b6083",
+                "records": [
+                  {
+                    "kind": "intent",
+                    "id": "world-intent:b9fc1897fc38e81eef4ed36ecb79270441805f1fa7b94f16f12c483c3f1517fa",
+                    "version": null,
+                    "sequence": 24,
+                    "fingerprint": "sha256:b3de0d4c86abc0c56485d9f079c1d83db8141ea98833cc0aaa2e05d50ed8b97a"
+                  }
+                ]
+              },
+              "contextVersions": {
+                "personas": [],
+                "models": [],
+                "policies": []
+              },
+              "pendingEvents": [
+                "world-initial:world-intent:b9fc1897fc38e81eef4ed36ecb79270441805f1fa7b94f16f12c483c3f1517fa"
+              ],
+              "pendingOperations": [],
+              "pendingWakes": [],
+              "writers": []
+            }
+          }
+        }
+      }
+    }
+  ]
+}

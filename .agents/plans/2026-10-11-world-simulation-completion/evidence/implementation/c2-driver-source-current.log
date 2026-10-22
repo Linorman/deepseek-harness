@@ -1,0 +1,82 @@
+$ vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-driver.snapshot.ts
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts (8 tests | 8 failed) 20766ms
+     × drives 'company' with pauseDuringMaintenance=false to independent newborn and idle 2690ms
+     × drives 'company' with pauseDuringMaintenance=true to independent newborn and idle 2646ms
+     × drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle 2684ms
+     × drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle 2702ms
+     × drives 'company' with pauseDuringMaintenance=false to independent newborn and idle 2477ms
+     × drives 'company' with pauseDuringMaintenance=true to independent newborn and idle 2487ms
+     × drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle 2566ms
+     × drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle 2512ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'company' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'company' with pauseDuringMaintenance=true to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > json World driver > drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'company' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'company' with pauseDuringMaintenance=true to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'laboratory' with pauseDuringMaintenance=false to independent newborn and idle
+ FAIL  examples/simulation-company/tests/world-driver.snapshot.ts > sqlite World driver > drives 'laboratory' with pauseDuringMaintenance=true to independent newborn and idle
+AssertionError: /Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:185
+  throw new Error(JSON.stringify({ requests, details, failures }), { cause })
+        ^
+
+Error: {"requests":[],"details":[],"failures":[]}
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-driver-scenario.ts:185:9) {
+  [cause]: SimulationWorldDomainError: The schema or implementation pin does not match an installed generation
+      at SimulationWorldDomainRegistry.original (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:204:11)
+      at SimulationWorldDomainRegistry.acquire (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/world-domain-registry.ts:120:31)
+      at NativeWorldRuntime.original (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-runtime.ts:30:33)
+      at NativeWorldRuntime.manifest (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world-runtime.ts:19:51)
+      at foldWorld (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/world.ts:176:34)
+      at fold (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:218:48)
+      at foldEntries (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/journal.ts:107:13)
+      at LocalSimulationRun.commitValues (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1713:18)
+      at LocalSimulationRun.commit (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:1710:63)
+      at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/run.ts:137:18) {
+    code: 'SIM_WORLD_IMPLEMENTATION_MISMATCH'
+  }
+}
+
+Node.js v25.9.0
+: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ SimulationWorldDomainRegistry.original packages/simulation/simulation/src/world-domain-registry.ts:204:11
+ ❯ SimulationWorldDomainRegistry.acquire packages/simulation/simulation/src/world-domain-registry.ts:120:31
+ ❯ NativeWorldRuntime.original packages/simulation/simulation-local/src/world-runtime.ts:30:33
+ ❯ NativeWorldRuntime.manifest packages/simulation/simulation-local/src/world-runtime.ts:19:51
+ ❯ foldWorld packages/simulation/simulation-local/src/world.ts:176:34
+ ❯ fold packages/simulation/simulation-local/src/journal.ts:218:48
+ ❯ foldEntries packages/simulation/simulation-local/src/journal.ts:107:13
+ ❯ LocalSimulationRun.commitValues packages/simulation/simulation-local/src/run.ts:1713:18
+ ❯ LocalSimulationRun.commit packages/simulation/simulation-local/src/run.ts:1710:63
+ ❯ execute examples/simulation-company/tests/world-driver.snapshot.ts:29:32
+     27|         try {
+     28|           const [code] = await exited as unknown[]
+     29|           expect(code, errors).toBe(0)
+       |                                ^
+     30|           expect(JSON.parse(output)).toEqual({ scenario, result: 'comm…
+     31|             newborn: scenario === 'company' ? 'Lin' : 'Kai', independe…
+ ❯ examples/simulation-company/tests/world-driver.snapshot.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed (8)
+   Start at  01:33:27
+   Duration  21.43s (transform 146ms, setup 266ms, import 301ms, tests 20.77s, environment 0ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

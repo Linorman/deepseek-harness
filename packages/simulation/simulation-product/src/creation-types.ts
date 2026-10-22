@@ -1,3 +1,6 @@
+import type { SimulationProductWorldManagementSubmitInput } from './world-management-types.ts'
+import type { SimulationWorldManagementSubmitRequest } from '@clocky/clocky-simulation/world-management-types'
+import type { SimulationProductWorldCaseCancelInput } from './case-cancel-types.ts'
 /** Private product creation intent and attempt history; never a browser-selected native run configuration. */
 import type { SimulationProductCheckpointInput, SimulationProductRestoreInput } from './maintenance-types.ts'
 import type { SimulationProductTaskReviewResolveInput } from './review-types.ts'
@@ -10,6 +13,8 @@ import type { SimulationCompanyDriverConfig } from './company-driver.ts'
 import type { SimulationProductPrepareInput, SimulationProductRequestReceipt,
   SimulationProductTemplateId, SimulationProductLimits, SimulationProductOriginalCreateInput } from './administration-types.ts'
 import type { SimulationProductRecord } from './registration-types.ts'
+import type { SimulationWorldCreation } from './world-creation.ts'
+import type { SimulationProductWorldCreateInput } from './world-types.ts'
 
 /** Trusted installed template; native run identity is allocated separately by the product owner. */
 export interface SimulationCompanyTemplate {
@@ -44,15 +49,25 @@ export type SimulationCreationCommand = {
   readonly receipt: SimulationProductRequestReceipt
 } & (
   | { readonly kind: 'create'; readonly input: SimulationProductOriginalCreateInput; readonly creation: SimulationCompanyCreation }
+  | { readonly kind: 'world-create'; readonly input: SimulationProductWorldCreateInput; readonly creation: SimulationWorldCreation }
+  | { readonly kind: 'world-prepare'; readonly input: SimulationProductPrepareInput }
   | { readonly kind: 'prepare'; readonly input: SimulationProductPrepareInput }
   | { readonly kind: 'checkpoint'; readonly input: SimulationProductCheckpointInput }
   | { readonly kind: 'restore'; readonly input: SimulationProductRestoreInput }
   | { readonly kind: 'review'; readonly input: SimulationProductTaskReviewResolveInput }
+  | { readonly kind: 'world-management'
+    readonly input: SimulationProductWorldManagementSubmitInput
+    readonly native: SimulationWorldManagementSubmitRequest }
+  | { readonly kind: 'cancel-world-case'; readonly input: SimulationProductWorldCaseCancelInput }
   | { readonly kind: 'cancel-task'; readonly input: SimulationProductTaskCancelInput }
   | { readonly kind: 'retry-operation'; readonly input: SimulationProductOperationRetryInput }
 )
+/** The command kind fixes the immutable creation family; Native remains the only world-fact owner. */
+export type SimulationCreation = ({ readonly kind: 'company' } & SimulationCompanyCreation)
+  | ({ readonly kind: 'world' } & SimulationWorldCreation)
+  | import('./experiment-store.ts').SimulationWorldBranchCreation
 /** Entire bounded replay projection, independent of native world phase/effects. */
 export interface SimulationCreationBook {
   readonly commands: ReadonlyMap<string, SimulationCreationCommand>
-  readonly creations: ReadonlyMap<string, SimulationCompanyCreation>
+  readonly creations: ReadonlyMap<string, SimulationCreation>
 }

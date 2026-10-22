@@ -2,6 +2,8 @@
 
 English | [中文](team.zh.md)
 
+`TeamRootCreateInput.limits` optionally supplies complete `TeamLimits` parsed by `teamLimitsSchema`. TeamHub validates new creation values against deployment ceilings and freezes them in `rules.teamLimits`; original Simulation root retries retain those accepted values across Host configuration changes. These limits govern history, delivery and model usage independently of typed resource budgets.
+
 `TeamHumanReaderProof` carries revocable principal identity for product discovery, not membership or mutation. `TeamProductDirectoryPage` contains safe metadata and encrypted reader-bound continuation under complete response limits. `ChannelOwnerSnapshot` is the attached owner tuple used before authorization of raw reads. The [principal directory decision](../../.agents/notes/implemented/architecture/2026-09-28-principal-team-directory-and-readers.md) owns their security and scope rules.
 
 `TeamHumanReadAuthority` identifies the nearest active principal-owned human and its membership Team across validated task reservations. The Hub rechecks ancestry for supported read proofs; mutation and consent proofs retain target-Team membership. Host selection publishes a bounded, authenticated `readAccess` observation. The [product inspection decision](../../.agents/notes/implemented/architecture/2026-09-28-parent-team-product-inspection.md) owns the security rules and verification scope.
@@ -1016,7 +1018,7 @@ registerSystemPhaseProofSource(source: TeamSystemPhaseProofSource): () => void
 
 /**
  * Register one system owner that privately resolves opaque proofs for exact
- * destructive Team-maintenance operations. Registration is effect-scoped:
+ * closed Team-maintenance operations. Registration is effect-scoped:
  * disposing the contributing fiber immediately makes all of its proofs invalid.
  * @param source - named resolver that owns proof construction and lifetime.
  * @returns an HMR-safe disposer that removes exactly this source.
@@ -1034,6 +1036,12 @@ registerSystemMaintenanceProofSource(source: TeamSystemMaintenanceProofSource): 
  * @throws {@link TeamError} when the source name is invalid or already registered.
  */
 registerSystemInterruptProofSource(source: TeamSystemInterruptProofSource): () => void
+
+/**
+ * Read current complete deployment ceilings before preview or root creation.
+ * @returns detached creation limits without Team allocation, storage writes or inference; these do not authorize creation.
+ */
+abstract getCreationLimits(): TeamLimits
 
 /**
  * Create one Team, mint its identity, and commit its initial durable state.
@@ -1059,6 +1067,22 @@ abstract getTeam(request: TeamGetRequest): Promise<TeamStateSnapshot>
  * @returns owner-issued prefix reference; moved current cursors or missing prefixes reject.
  */
 getPersistenceReference(request: import('./persistence-reference.ts').TeamPersistenceReferenceRequest): Promise<import('./persistence-reference.ts').TeamPersistenceReference>
+
+/**
+ * Export complete original records while the owning queue validates its observed cursor.
+ * @param request - Exact original Team or Channel and current cursor; prefix selection is unsupported.
+ * @param limits - Finite entry, serialized-byte and page bounds.
+ * @returns full original records and their owner reference; unsupported providers reject.
+ */
+exportPersistenceArchive(request: import('./persistence-reference.ts').TeamPersistenceReferenceRequest, limits: { readonly maxEntries: number; readonly maxBytes: number; readonly pageSize: number }): Promise<import('./persistence-reference.ts').TeamPersistenceArchive>
+
+/**
+ * Hold the complete original Team/Channel source vector while its owning Simulation commits one Native settlement.
+ * @param request - Exact observed cursors and a live source-owned personnel-intent proof.
+ * @param commit - Original Native ledger submission only; must not call Team/Channel methods or models while their serializers are held.
+ * @returns the callback's original commit result after all held serializers are released; unsupported providers reject before callback.
+ */
+withPersonnelSettlementCut<T>(request: import('./types.ts').TeamPersonnelSettlementCutRequest, commit: (sources: import('./types.ts').TeamPersonnelSettlementCutSources) => Promise<T>): Promise<T>
 
 /** Read one current human action without copying the Team projection.
  * @param request - Exact Team and action identity.

@@ -9,6 +9,9 @@
   ],
   "references": [
     {
+      "path": "../../compaction/compaction"
+    },
+    {
       "path": "../../../vendor/cosmokit"
     },
     {

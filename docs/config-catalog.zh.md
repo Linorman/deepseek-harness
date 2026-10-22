@@ -614,12 +614,20 @@ Requires: `llm` · `tokenMeter` · `sessions`
 export interface BasicCompactionConfig extends CompactionPolicyConfig {
   /** Exact provider/model overrides; duplicate targets fail plugin load. */
   modelPolicies?: ModelCompactPolicyConfig[]
+  /** New compressible tokens required after no gain, unless the node cooldown is reached. Defaults to 256. */
+  noGainMinTokens?: number
+  /** New selected surface nodes that permit reevaluation of a changed prefix. Defaults to 8. */
+  noGainCooldownNodes?: number
+  /** Maximum recent closed attempts consulted when reconstructing suppression. Defaults to 32. */
+  noGainHistoryLimit?: number
   /** Enable automatic step-boundary pressure and overflow-recovery listeners. Defaults to `true`. */
   auto?: boolean
 }
 
 /** Policy fields shared by the default policy and exact model overrides. */
 export interface CompactionPolicyConfig {
+  /** Absolute pressure ceiling, combined with the routed model ratio using the smaller threshold. */
+  thresholdTokens?: number
   /** Compact at this fraction of the model's context window. Defaults to `0.8`. */
   thresholdRatio?: number
   /** Recent context retained as a fraction of the model's window. Defaults to `0.16`. */
@@ -647,7 +655,7 @@ export interface ModelCompactPolicyConfig extends CompactionPolicyConfig {
 }
 ```
 
-Source: [`packages/compaction/compaction-basic/src/types.ts:38`](../packages/compaction/compaction-basic/src/types.ts)
+Source: [`packages/compaction/compaction-basic/src/types.ts:40`](../packages/compaction/compaction-basic/src/types.ts)
 
 <a id="clockyclocky-compaction-tool-result-pruner"></a>
 
@@ -1992,7 +2000,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/simulation/simulation-local/src/index.ts:27`](../packages/simulation/simulation-local/src/index.ts)
+Source: [`packages/simulation/simulation-local/src/index.ts:60`](../packages/simulation/simulation-local/src/index.ts)
 
 <a id="clockyclocky-simulation-product"></a>
 
@@ -2009,6 +2017,8 @@ export interface Config {
   readonly imports?: SimulationProductImport[]
   /** Maximum retained registered runs on this Host. */
   readonly maxRuns?: number
+  /** Maximum immutable authoring revisions in the dedicated draft journal; ancestors are never silently evicted. */
+  readonly maxDraftRevisions?: number
   /** Maximum entries read per directory recovery page. */
   readonly recoveryPageSize?: number
   /** Maximum admitted reads, including those waiting for directory initialization. */
@@ -2023,6 +2033,8 @@ export interface Config {
   readonly maxTextBytes?: number
   /** Trusted private-body readers; omitted means every context body is withheld, including from run owners. */
   readonly contextReaders?: SimulationProductContextReader[]
+  /** Separate trusted World case prose and Persona grants; owning a run grants neither. */
+  readonly caseReaders?: SimulationProductCaseReader[]
   /** Whole-run original journal readers; includes retained private history, independently of entity-context grants. */
   readonly recordReaders?: SimulationProductRecordReader[]
   /** Maximum bytes in one Unicode-safe text part, before complete-response accounting. Must be at least four. */
@@ -2061,21 +2073,35 @@ export interface SimulationProductContextReader {
   readonly content?: readonly ('context' | 'knowledge' | 'sources')[] | undefined
 }
 
+/** Separate private-case disclosure policy; neither registration nor Session grants imply either content domain. */
+export interface SimulationProductCaseReader {
+  /** Current registration owner; the grant never permits another principal's run. */
+  readonly principalId: ProductPrincipalId
+  /** Omission applies only to this principal's owned registrations. */
+  readonly runId?: SimulationProductRunId | undefined
+  /** Omission permits this principal's owned cases; an explicit selection is exact and run-local. */
+  readonly requestIds?: readonly WorldRequestId[] | undefined
+  /** Case description/rationale and finite generated Persona are independently selected. */
+  readonly content: readonly ('case' | 'persona')[]
+}
+
 /** Trusted whole-run journal disclosure, including historical private inputs and deployment reservations. */
 export interface SimulationProductRecordReader {
   /** Current authenticated registration owner; this grants no access to another owner's run. */
   readonly principalId: ProductPrincipalId
   /** Exact owned registration; omission permits this principal's owned registrations. */
   readonly runId?: SimulationProductRunId | undefined
+  /** Explicit whole retained ancestor closure disclosure; requires an exact runId and never transfers principal ownership. */
+  readonly includeProvenance?: boolean | undefined
 }
 
 /** Stable directory identity independent of storage paths and provider-local run IDs. */
 export type SimulationProductRunId = Branded<'SimulationProductRunId'>
 ```
 
-Depends on: [`Branded`](../packages/util/brand/src/index.ts) · [`ProductPrincipalId`](../packages/core/product-principal/src/index.ts) · `SimulationEntityId` (`@clocky/clocky-simulation/identities`) · [`SimulationRunSpec`](subsystems/simulation.zh.md)
+Depends on: [`Branded`](../packages/util/brand/src/index.ts) · [`ProductPrincipalId`](../packages/core/product-principal/src/index.ts) · `SimulationEntityId` (`@clocky/clocky-simulation/identities`) · [`SimulationRunSpec`](subsystems/simulation.zh.md) · `WorldRequestId` (`@clocky/clocky-simulation/world-types`)
 
-Source: [`packages/simulation/simulation-product/src/index.ts:49`](../packages/simulation/simulation-product/src/index.ts)
+Source: [`packages/simulation/simulation-product/src/index.ts:82`](../packages/simulation/simulation-product/src/index.ts)
 
 <a id="clockyclocky-simulation-team"></a>
 
@@ -2086,6 +2112,17 @@ Requires: `simulations` · `teams` · `teamActivations` · `agentRuntimes` · `a
 ```ts config-catalog
 /** Context budget and bounded recipient discovery for Simulation cognition. */
 export interface Config {
+  /** Full-envelope admission and bounded compaction; omitted preserves explicitly composed legacy deployments. */
+  readonly requestPolicy?: RequestBudgetPolicy | null
+  /** Optional automatic eviction policy shared by attached drivers; explicit choices may select their retained policy. */
+  readonly residencyPolicy?: {
+    /** Exact idle-selection policy version. */
+    readonly version: '1'
+    /** Minimum inactivity in canonical simulated ticks. */
+    readonly idleFor: string
+    /** Maximum eligible candidates retired by one residency request. */
+    readonly maxCandidates: number
+  } | null
   /** Maximum simultaneously reserved or executing Simulation model streams across this service. */
   readonly maxConcurrentModels: number
   /** Maximum model requests waiting for a permit; zero rejects when all permits are held. */
@@ -2097,9 +2134,14 @@ export interface Config {
   /** Maximum local-drive/Team-IO rounds in one coordinator call. */
   readonly maxCoordinationRounds: number
 }
+
+/** Validated deployment policy, never a model-selected allowance. */
+export type RequestBudgetPolicy = z.infer<typeof requestBudgetPolicySchema>
 ```
 
-Source: [`packages/simulation/simulation-team/src/index.ts:59`](../packages/simulation/simulation-team/src/index.ts)
+Depends on: `z` (`zod`)
+
+Source: [`packages/simulation/simulation-team/src/index.ts:81`](../packages/simulation/simulation-team/src/index.ts)
 
 <a id="clockyclocky-skill"></a>
 
@@ -2364,7 +2406,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-activation-controller/src/index.ts:73`](../packages/team/team-activation-controller/src/index.ts)
+Source: [`packages/team/team-activation-controller/src/index.ts:74`](../packages/team/team-activation-controller/src/index.ts)
 
 <a id="clockyclocky-team-activation-recovery"></a>
 
@@ -2632,7 +2674,7 @@ export interface Config {
 
 Depends on: [`TeamUsageRate`](../packages/core/team/src/index.ts)
 
-Source: [`packages/team/team-hub/src/index.ts:1023`](../packages/team/team-hub/src/index.ts)
+Source: [`packages/team/team-hub/src/index.ts:1031`](../packages/team/team-hub/src/index.ts)
 
 <a id="clockyclocky-team-human-client"></a>
 
@@ -3915,6 +3957,8 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@clocky/clocky-sdk-protocol` ([`packages/sdk/protocol/src/index.ts`](../packages/sdk/protocol/src/index.ts))
 - `@clocky/clocky-session-telemetry` ([`packages/session/session-telemetry/src/index.ts`](../packages/session/session-telemetry/src/index.ts))
 - `@clocky/clocky-session-title-llm` ([`packages/session/session-title-llm/src/index.ts`](../packages/session/session-title-llm/src/index.ts))
+- `@clocky/clocky-simulation-scenario` ([`packages/simulation/simulation-scenario/src/index.ts`](../packages/simulation/simulation-scenario/src/index.ts))
+- `@clocky/clocky-simulation-world` ([`packages/simulation/simulation-world/src/index.ts`](../packages/simulation/simulation-world/src/index.ts))
 - `@clocky/clocky-team` ([`packages/core/team/src/index.ts`](../packages/core/team/src/index.ts))
 - `@clocky/clocky-team-human-actor` ([`packages/team/team-human-actor/src/index.ts`](../packages/team/team-human-actor/src/index.ts))
 - `@clocky/clocky-team-link-websocket-hub` ([`packages/team/team-link-websocket-hub/src/index.ts`](../packages/team/team-link-websocket-hub/src/index.ts))

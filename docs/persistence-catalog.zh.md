@@ -93,7 +93,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 }[T]
 ```
 
-Sources: [`packages/core/session/src/types.ts:414`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:421`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:452`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:484`](../packages/core/session/src/types.ts)
+Sources: [`packages/core/session/src/types.ts:437`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:444`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:475`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:507`](../packages/core/session/src/types.ts)
 
 ## Events
 
@@ -179,7 +179,7 @@ Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:101`](../package
 
 Types: [CallId](subsystems/core.zh.md)
 
-Source: [`packages/interaction/user-approval/src/index.ts:67`](../packages/interaction/user-approval/src/index.ts)
+Source: [`packages/interaction/user-approval/src/index.ts:44`](../packages/interaction/user-approval/src/index.ts)
 
 <a id="approvaldecided--log-only"></a>
 
@@ -197,7 +197,7 @@ Source: [`packages/interaction/user-approval/src/index.ts:67`](../packages/inter
 }
 ```
 
-Source: [`packages/interaction/user-approval/src/index.ts:67`](../packages/interaction/user-approval/src/index.ts)
+Source: [`packages/interaction/user-approval/src/index.ts:55`](../packages/interaction/user-approval/src/index.ts)
 
 <a id="approvalpolicy--log-only"></a>
 
@@ -234,7 +234,7 @@ Source: [`packages/interaction/user-approval/src/index.ts:67`](../packages/inter
 
 Types: [StreamChunk](subsystems/llm-streaming.zh.md)
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:363`](../packages/core/session/src/types.ts)
 
 <a id="assistantmessage--surface"></a>
 
@@ -256,7 +256,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 
 Types: [TokenUsage](subsystems/llm-streaming.zh.md)
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:374`](../packages/core/session/src/types.ts)
 
 ### `command/*`
 
@@ -279,7 +279,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 }
 ```
 
-Source: [`packages/interaction/commands/src/types.ts:96`](../packages/interaction/commands/src/types.ts)
+Source: [`packages/interaction/commands/src/types.ts:103`](../packages/interaction/commands/src/types.ts)
 
 <a id="commandrun--log-only"></a>
 
@@ -303,6 +303,17 @@ Source: [`packages/interaction/commands/src/types.ts:96`](../packages/interactio
 
 ### `compaction/*`
 
+<a id="compactionassessment--log-only"></a>
+
+#### `compaction/assessment` — log-only
+
+```ts persistence-catalog
+/** Diagnostic estimate; carries no model-visible input or surface mutation. */
+'compaction/assessment': CompactionAssessment
+```
+
+Source: [`packages/compaction/compaction/src/types.ts:19`](../packages/compaction/compaction/src/types.ts)
+
 <a id="compactionend--log-only"></a>
 
 #### `compaction/end` — log-only
@@ -312,10 +323,10 @@ Source: [`packages/interaction/commands/src/types.ts:96`](../packages/interactio
  * Marks the end of a compaction — log-only, releases the lock. Its owner
  * matches `compaction/start`; `error` records an unsuccessful attempt.
  */
-'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string }
+'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; noGain?: CompactionNoGain }
 ```
 
-Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:74`](../packages/compaction/compaction/src/types.ts)
 
 <a id="compactionprune--log-only"></a>
 
@@ -341,7 +352,7 @@ Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compactio
 }
 ```
 
-Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:84`](../packages/compaction/compaction/src/types.ts)
 
 <a id="compactionrequest--log-only"></a>
 
@@ -352,7 +363,7 @@ Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compactio
 'compaction/request': { compactionId: CompactionId; startSequence: number; request: Omit<GenerateOptions, 'signal' | 'sessionId' | 'purpose'> }
 ```
 
-Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:26`](../packages/compaction/compaction/src/types.ts)
 
 <a id="compactionstart--log-only"></a>
 
@@ -366,7 +377,7 @@ Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compactio
 'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null }
 ```
 
-Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:24`](../packages/compaction/compaction/src/types.ts)
 
 <a id="compactionsummary--log-only"></a>
 
@@ -420,7 +431,7 @@ Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compactio
 
 Types: [ContentBlock](subsystems/core.zh.md) · [TokenUsage](subsystems/llm-streaming.zh.md)
 
-Source: [`packages/compaction/compaction/src/types.ts:34`](../packages/compaction/compaction/src/types.ts)
+Source: [`packages/compaction/compaction/src/types.ts:36`](../packages/compaction/compaction/src/types.ts)
 
 ### `feedback/*`
 
@@ -478,7 +489,7 @@ Source: [`packages/compat/goal/src/domain.ts:66`](../packages/compat/goal/src/do
 }
 ```
 
-Source: [`packages/hooks/hook-protocol/src/types.ts:31`](../packages/hooks/hook-protocol/src/types.ts)
+Source: [`packages/hooks/hook-protocol/src/types.ts:19`](../packages/hooks/hook-protocol/src/types.ts)
 
 <a id="hookresult--log-only"></a>
 
@@ -514,7 +525,7 @@ Source: [`packages/hooks/hook-protocol/src/types.ts:31`](../packages/hooks/hook-
 'llm/retry': LlmRetryEventData
 ```
 
-Source: [`packages/llm/llm-retry/src/types.ts:11`](../packages/llm/llm-retry/src/types.ts)
+Source: [`packages/llm/llm-retry/src/types.ts:9`](../packages/llm/llm-retry/src/types.ts)
 
 <a id="llmretry-started--log-only"></a>
 
@@ -576,7 +587,7 @@ Source: [`packages/plan/plan-mode/src/index.ts:53`](../packages/plan/plan-mode/s
 'request/context': RequestContext
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:410`](../packages/core/session/src/types.ts)
 
 <a id="requestheader--log-only"></a>
 
@@ -590,7 +601,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 'request/header': { header: EpochHeader; reason: RequestHeaderReason }
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:405`](../packages/core/session/src/types.ts)
 
 ### `sandbox/*`
 
@@ -665,7 +676,7 @@ Source: [`packages/schedule/schedule/src/types.ts:219`](../packages/schedule/sch
 'session/end-seed': Record<string, never>
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:433`](../packages/core/session/src/types.ts)
 
 <a id="sessiontitle--log-only"></a>
 
@@ -707,7 +718,48 @@ Source: [`packages/session/session-title-llm/src/index.ts:43`](../packages/sessi
 'simulation/context-view': SimulationContextViewEventData
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:361`](../packages/core/session/src/types.ts)
+
+<a id="simulationgeneration-input--log-only"></a>
+
+#### `simulation/generation-input` — log-only
+
+```ts persistence-catalog
+/** Exact tool-free helper input, persisted before provider admission. @mode append */
+'simulation/generation-input': {
+  jobId: string
+  scope: string
+  audience: readonly string[]
+  message: string
+  provider: string
+  model: string
+  modelVersion: string
+  promptVersion: string
+  policyVersion: string
+}
+```
+
+Source: [`packages/core/session/src/types.ts:338`](../packages/core/session/src/types.ts)
+
+<a id="simulationgeneration-output--log-only"></a>
+
+#### `simulation/generation-output` — log-only
+
+```ts persistence-catalog
+/** Original raw helper output retained before schema validation. @mode append */
+'simulation/generation-output': {
+  jobId: string
+  content: string
+  usage?: {
+    inputTokens: number
+    outputTokens: number
+    cacheReadTokens?: number | undefined
+    cacheWriteTokens?: number | undefined
+  }
+}
+```
+
+Source: [`packages/core/session/src/types.ts:350`](../packages/core/session/src/types.ts)
 
 ### `step/*`
 
@@ -720,7 +772,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 'step/end': { turn: number; step: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:322`](../packages/core/session/src/types.ts)
 
 <a id="stepstart--log-only"></a>
 
@@ -731,7 +783,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 'step/start': { turn: number; step: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:320`](../packages/core/session/src/types.ts)
 
 ### `subagent/*`
 
@@ -767,7 +819,7 @@ Source: [`packages/compat/subagent/src/descriptor.ts:37`](../packages/compat/sub
 'team/channel-view': TeamChannelViewEventData
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:336`](../packages/core/session/src/types.ts)
 
 ### `todo/*`
 
@@ -782,7 +834,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 
 Types: [TodoItem](subsystems/session.zh.md)
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:400`](../packages/core/session/src/types.ts)
 
 ### `tool/*`
 
@@ -801,7 +853,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 
 Types: [CallId](subsystems/core.zh.md)
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:380`](../packages/core/session/src/types.ts)
 
 <a id="toolcode-dispatch--log-only"></a>
 
@@ -826,7 +878,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 'tool/code-dispatch': CodeDispatchEventData
 ```
 
-Source: [`packages/core/tools/src/types.ts:40`](../packages/core/tools/src/types.ts)
+Source: [`packages/core/tools/src/types.ts:56`](../packages/core/tools/src/types.ts)
 
 <a id="toolcode-dispatch-start--log-only"></a>
 
@@ -876,7 +928,7 @@ Source: [`packages/core/tools/src/types.ts:40`](../packages/core/tools/src/types
 }
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:392`](../packages/core/session/src/types.ts)
 
 ### `tool-workflow/*`
 
@@ -892,7 +944,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 'tool-workflow/agent-end': ToolWorkflowAgentEndData
 ```
 
-Source: [`packages/compat/tool-workflow/src/types.ts:47`](../packages/compat/tool-workflow/src/types.ts)
+Source: [`packages/compat/tool-workflow/src/types.ts:57`](../packages/compat/tool-workflow/src/types.ts)
 
 <a id="tool-workflowagent-start--log-only"></a>
 
@@ -906,7 +958,7 @@ Source: [`packages/compat/tool-workflow/src/types.ts:47`](../packages/compat/too
 'tool-workflow/agent-start': ToolWorkflowAgentStartData
 ```
 
-Source: [`packages/compat/tool-workflow/src/types.ts:47`](../packages/compat/tool-workflow/src/types.ts)
+Source: [`packages/compat/tool-workflow/src/types.ts:52`](../packages/compat/tool-workflow/src/types.ts)
 
 <a id="tool-workflowrun-end--log-only"></a>
 
@@ -920,7 +972,7 @@ Source: [`packages/compat/tool-workflow/src/types.ts:47`](../packages/compat/too
 'tool-workflow/run-end': ToolWorkflowRunEndData
 ```
 
-Source: [`packages/compat/tool-workflow/src/types.ts:47`](../packages/compat/tool-workflow/src/types.ts)
+Source: [`packages/compat/tool-workflow/src/types.ts:62`](../packages/compat/tool-workflow/src/types.ts)
 
 <a id="tool-workflowrun-start--log-only"></a>
 
@@ -956,7 +1008,7 @@ Source: [`packages/compat/tool-workflow/src/types.ts:47`](../packages/compat/too
 
 Types: [TurnEndReason](subsystems/session.zh.md)
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:318`](../packages/core/session/src/types.ts)
 
 <a id="turnstart--log-only"></a>
 
@@ -972,7 +1024,7 @@ Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/
 'turn/start': { turn: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:330`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:309`](../packages/core/session/src/types.ts)
 
 ### `user/*`
 

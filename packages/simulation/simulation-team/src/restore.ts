@@ -1,3 +1,10 @@
+import { assertGenerationEvidence, generationRequiresHistory } from './generation-evidence.ts'
+import { contextConsumption } from './context-consumption.ts'
+import { activationAdmissionEvidenceMatches } from './activation-admission-evidence.ts'
+import { worldSubmissionEvidenceMatches } from './world-submission-evidence.ts'
+import { modelAdmissionEvidenceMatches, compactionAdmissionEvidenceMatches } from './model-admission-evidence.ts'
+import { validateWorldCleanupHistory } from './world-cleanup.ts'
+import { assertParticipantReservationSource, assertReservedChannelSource } from './owner-references.ts'
 /** Cross-owner prefix validation before exposing a restored run for execution. @module @clocky/clocky-simulation-team/restore */
 import { isDeepStrictEqual } from 'node:util'
 import type { Context } from '@clocky/cordis'
@@ -27,12 +34,21 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
     try {
       check()
       const team = await checkpointSource('restore', teamSubject, () => ctx.teams.getTeam({ teamId }))
+      if (!activationAdmissionEvidenceMatches(state, team)) {
+        throw checkpointRule('Activation refusal lost its original Team history or startup evidence', 'restore', 'binding-mismatch', teamSubject)
+      }
       const ownerName = team.rules['activationLifecycleOwner']
       if (team.rules['simulationRunId'] !== state.spec.runId || typeof ownerName !== 'string' || ownerName.length === 0) {
         throw checkpointRule('Checkpoint Team has another run or lifecycle owner', 'restore', 'owner-conflict', teamSubject)
       }
       if (team.team.parentTeamId !== undefined || team.tasks.some(task => task.execution.kind === 'child-team')) {
         throw checkpointRule('Checkpoint recovery does not cover child-Team owners', 'restore', 'unsupported-ownership', teamSubject)
+      }
+      await checkpointSource('restore', teamSubject, () => validateWorldCleanupHistory(ctx, state, team, check))
+      const bindings = Object.values(state.entities).flatMap(entity => entity.binding === undefined ? [] : [entity.binding])
+      if (manifest.sessions.some(prefix => !bindings.some(binding => binding.sessionId === prefix.sessionId
+        && binding.teamId === prefix.teamId && binding.participantId === prefix.participantId))) {
+        throw checkpointRule('Checkpoint Session binding differs from the restored run', 'restore', 'binding-mismatch', teamSubject)
       }
       const references: TeamPersistenceReference[] = []
       const capture = async (owner: TeamPersistenceReference['owner'], cursor: number,
@@ -58,6 +74,8 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
         const subject = { kind: 'channel' as const, teamId, channelId }
         const channel = await checkpointSource('restore', subject, () => ctx.teams.getChannel({ channelId }))
         if (channel.manifest.teamId !== teamId) throw checkpointRule('Checkpoint channel belongs to another Team', 'restore', 'binding-mismatch', subject)
+        const admission = await checkpointSource('restore', subject, () => ctx.teams.getChannelAdmission({ channelId }))
+        assertReservedChannelSource(state, channelId, admission, teamId)
         await capture({ kind: 'channel', channelId }, channel.cursor,
           manifest.channels.find(value => value.owner.channelId === channelId))
       }
@@ -66,11 +84,6 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
       }
       const sessions: SessionPersistenceReference[] = []
       const absent: SessionId[] = []
-      const bindings = Object.values(state.entities).flatMap(entity => entity.binding === undefined ? [] : [entity.binding])
-      if (manifest.sessions.some(prefix => !bindings.some(binding => binding.sessionId === prefix.sessionId
-        && binding.teamId === prefix.teamId && binding.participantId === prefix.participantId))) {
-        throw checkpointRule('Checkpoint Session binding differs from the restored run', 'restore', 'binding-mismatch', teamSubject)
-      }
       for (const entity of Object.values(state.entities)) {
         const binding = entity.binding
         if (binding === undefined) continue
@@ -79,6 +92,7 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
         if (binding.teamId !== teamId || !team.participants.some(value => value.id === binding.participantId)) {
           throw checkpointRule('Restored entity has no canonical Team participant', 'restore', 'binding-mismatch', { kind: 'entity', entityId: entity.id })
         }
+        assertParticipantReservationSource(entity, team.participants.find(value => value.id === binding.participantId), teamId)
         if (entity.writer?.activationId !== undefined && !team.activations.some(value =>
           value.activation.id === entity.writer?.activationId && value.sessionId === binding.sessionId
           && value.activation.participantId === binding.participantId)) {
@@ -86,7 +100,7 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
         }
         const prefix = manifest.sessions.find(value => value.sessionId === binding.sessionId)
         if (await checkpointSource('restore', subject, () => ctx.sessionPersistence.isUnmaterialized(binding.sessionId, signal))) {
-          if (prefix?.kind === 'materialized' || team.activations.some(value => value.sessionId === binding.sessionId
+          if (prefix?.kind === 'materialized' || generationRequiresHistory(state, binding) || team.activations.some(value => value.sessionId === binding.sessionId
             || value.activation.participantId === binding.participantId)) {
             throw checkpointRule('Checkpoint Session history is missing', 'restore', 'history-incomplete', subject)
           }
@@ -94,6 +108,27 @@ export async function validateCheckpointOwners(ctx: Context, run: SimulationRun,
           continue
         }
         const stored = await checkpointSource('restore', subject, () => ctx.sessionPersistence.readFrom(binding.sessionId, 0, signal))
+        assertGenerationEvidence(state, binding, stored.meta, stored.events)
+        for (const block of state.compactionAdmissionBlocks ?? []) {
+          if (block.entityId === entity.id && (block.sessionId !== binding.sessionId
+            || !compactionAdmissionEvidenceMatches(block, stored.events))) {
+            throw checkpointRule('Auxiliary refusal lost its exact durable request', 'restore', 'binding-mismatch', subject)
+          }
+        }
+        for (const decision of Object.values(state.decisions)) {
+          if (decision.entityId !== entity.id) continue
+          if (decision.worldSubmissionBlock !== undefined && !worldSubmissionEvidenceMatches(decision, stored.events)) {
+            throw checkpointRule('World refusal lost its exact staged/submitted Session input', 'restore', 'binding-mismatch', subject)
+          }
+          if (decision.modelAdmissionBlock !== undefined
+            && !modelAdmissionEvidenceMatches(decision, binding.sessionId, stored.events, state)) {
+            throw checkpointRule('Model refusal lost its exact durable request input', 'restore', 'binding-mismatch', subject)
+          }
+          if (decision.consumption === undefined) continue
+          if (!isDeepStrictEqual(contextConsumption(decision, binding.sessionId, stored.events, state), decision.consumption)) {
+            throw checkpointRule('Native consumption differs from its durable Session evidence', 'restore', 'binding-mismatch', subject)
+          }
+        }
         const current = await checkpointSource('restore', subject,
           () => ctx.sessionPersistence.getPersistenceReference(binding.sessionId, stored.events.length - 1, signal))
         if (current.retention !== 'full' || current.header.teamId !== teamId || current.header.participantId !== binding.participantId) {

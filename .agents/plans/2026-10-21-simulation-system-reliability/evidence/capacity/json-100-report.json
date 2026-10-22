@@ -1,0 +1,85 @@
+{
+  "version": 2,
+  "backend": "json",
+  "sizeMiB": 100,
+  "physicalBytes": 105563883,
+  "budgets": {
+    "controlP95Ms": 250,
+    "controlRssGrowthBytes": 8388608,
+    "detailMs": 30000,
+    "runtimeBaselineBytes": 268435456,
+    "readerPeakGrowthBytes": 905969664,
+    "inspectionMaxBytes": 268435456
+  },
+  "host": {
+    "node": "v25.9.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro"
+  },
+  "control": {
+    "calls": 100,
+    "p95Ms": 0.0860000000002401,
+    "rssGrowthBytes": 16384
+  },
+  "reads": {
+    "baselineRssBytes": 217923584,
+    "samples": [
+      {
+        "mode": "cold-provider",
+        "elapsedMs": 408.76649999999995,
+        "rssBefore": 175669248,
+        "rssAfterRead": 597295104,
+        "rssAfterVerification": 990953472,
+        "maxRSSKiB": 967728,
+        "readPeakRSSKiB": 583296,
+        "identical": true,
+        "readers": 1,
+        "baselineRssBytes": 175669248
+      },
+      {
+        "mode": "warm-provider",
+        "elapsedMs": 282.00587500000006,
+        "rssBefore": 615645184,
+        "rssAfterRead": 817381376,
+        "rssAfterVerification": 1096073216,
+        "maxRSSKiB": 1077200,
+        "readPeakRSSKiB": 798240,
+        "identical": true,
+        "readers": 1,
+        "baselineRssBytes": 208977920
+      },
+      {
+        "mode": "concurrent-two",
+        "elapsedMs": 670.6105419999999,
+        "rssBefore": 217923584,
+        "rssAfterRead": 954417152,
+        "rssAfterVerification": 1336262656,
+        "maxRSSKiB": 1304944,
+        "readPeakRSSKiB": 932048,
+        "identical": true,
+        "readers": 2,
+        "baselineRssBytes": 217923584
+      }
+    ],
+    "emittedPageBytes": 105254342,
+    "largestPageBytes": 105254342,
+    "pages": 1,
+    "payloadBytes": 105212086,
+    "limitations": "Each mode uses a fresh process; warm includes one prior read. Cold is not OS cache eviction. Read peak excludes later assertion hashing; verification peak is separate. Bytes describe application output, not physical IO."
+  },
+  "passed": true,
+  "unchangedSource": true,
+  "sourceFiles": [
+    {
+      "name": "/Volumes/projects-mac/deepseek-harness/.tmp/simulation-business-GbwMJ4/11d40417959631d3d2420e8cd8709893c11cd7a4db737af63e8d56cfa7866f85/journal/logs/.clocky-log-owner.lock",
+      "sha256": "3efd851e9bb63ceb33ffc27cd5a902fb30e50cc5325cb11c4963a46b4eb4c860"
+    },
+    {
+      "name": "/Volumes/projects-mac/deepseek-harness/.tmp/simulation-business-GbwMJ4/11d40417959631d3d2420e8cd8709893c11cd7a4db737af63e8d56cfa7866f85/journal/logs/c2ltdWxhdGlvbg.json",
+      "sha256": "1985856d084910dcf9eea863fc316e98938db2b1469453249763ed2a75b1fe10"
+    }
+  ],
+  "modelCalls": 0,
+  "expectedHash": "fbd4f009d7925923b7dd9441a79a1488b8dd62e52e847f5e74752f14a9ff093c"
+}

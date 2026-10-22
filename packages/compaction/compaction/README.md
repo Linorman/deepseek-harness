@@ -1,5 +1,7 @@
 # @clocky/clocky-compaction
 
+The `./no-gain` leaf exports pure validators for durable no-gain and assessment payloads. It imports no runtime service or Node module and is shared with the SDK transcript boundary.
+
 English | [中文](README.zh.md)
 
 The **`CompactionEngine`** (`ctx.compaction`) defines WHAT compaction does — decide when history is too large and summarize an older range into a single surface node — without saying HOW.

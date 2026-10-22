@@ -1,0 +1,2227 @@
+{
+  "passed": true,
+  "auditedAt": "2026-10-13T19:03:01.782994+00:00",
+  "nativeVersion": 93,
+  "compilerVersion": 9,
+  "manifestVersion": 4,
+  "completeColdProcesses": 24,
+  "authenticatedPoolCases": 16,
+  "poolProcesses": 32,
+  "observedUniquePids": 56,
+  "complete": [
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "company",
+      "round": 3,
+      "pid": 56903,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-company-82iuEj/original.json",
+          "bytes": 29143108,
+          "sha256": "0c8a10ea9735ef26b46adb5e38309c503db70b0025df7de0dc5adf5e37e284fb"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-company-82iuEj/process-3.json",
+          "bytes": 1189,
+          "sha256": "86317d3c6f63257d2e20d04a2bc5366f414480943ee593ca462506f903949576"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-company-82iuEj/replay-probe-3.json",
+          "bytes": 474,
+          "sha256": "28b2ca30541012b2049a095e382fd3873d249394cf0caa6f8c5d128e5acb76f4"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-company-82iuEj/round-3.json",
+          "bytes": 7901739,
+          "sha256": "e48e588c5cf874b50f66835e0f73760b2727f17d4b01649781bc64ded5deba22"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "company",
+      "round": 4,
+      "pid": 56937,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-company-82iuEj/original.json",
+          "bytes": 29143108,
+          "sha256": "0c8a10ea9735ef26b46adb5e38309c503db70b0025df7de0dc5adf5e37e284fb"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-company-82iuEj/process-4.json",
+          "bytes": 1189,
+          "sha256": "235b92cf7242fc6dcd5c606d5a1287d8fdf7a6a4f264fdc997fbe1ee8b710464"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-company-82iuEj/replay-probe-4.json",
+          "bytes": 474,
+          "sha256": "aaafad09a16f9f1aaadfce8035c43c36f9b48cc99a930cbf9369c8d47e091734"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-company-82iuEj/round-4.json",
+          "bytes": 7901739,
+          "sha256": "64c86201e6be13d8a7627bd9c4e8bb854313ca5bbd045dfd106367cf753619ae"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "laboratory",
+      "round": 3,
+      "pid": 57058,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-laboratory-tBXW97/original.json",
+          "bytes": 29196326,
+          "sha256": "74d82560798721b96db005e4cdc0e24357a7356e84d2f373c6e04bd095baab24"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-laboratory-tBXW97/process-3.json",
+          "bytes": 1195,
+          "sha256": "f8fe0359e34c89c179d8b8b8a7f53ab3cddd988215ed27ffcc071f48ed7cdc68"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-laboratory-tBXW97/replay-probe-3.json",
+          "bytes": 477,
+          "sha256": "a288b637b23cd548d53026b6763952c71aa9cb6f14e3eadfc4c9765c0061002e"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-laboratory-tBXW97/round-3.json",
+          "bytes": 7909171,
+          "sha256": "1d7b3df3d5565d087facf05489a1104e080880e0e77eccc474c00f0c1b4ae1af"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "laboratory",
+      "round": 4,
+      "pid": 57077,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-laboratory-tBXW97/original.json",
+          "bytes": 29196326,
+          "sha256": "74d82560798721b96db005e4cdc0e24357a7356e84d2f373c6e04bd095baab24"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-laboratory-tBXW97/process-4.json",
+          "bytes": 1195,
+          "sha256": "b597dd603e86dee404a0a8a0ff2de6e752eb56bec12f138ee337ed422a03c718"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-laboratory-tBXW97/replay-probe-4.json",
+          "bytes": 477,
+          "sha256": "cfb19534f864f0bf0ac21b43ccf024d2bae863e5883e10d52f00bce92110558b"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-json-laboratory-tBXW97/round-4.json",
+          "bytes": 7909171,
+          "sha256": "b5199c89b164bc7c213d7487dc2575a74bd450dc0ab84a7105a3a218f05d5913"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "company",
+      "round": 3,
+      "pid": 57211,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-company-w8b8xG/original.json",
+          "bytes": 29143118,
+          "sha256": "8ee41c74fdb8f74ed49fb1e1c4037ecd27ccb72c9b3bfd2704aea5e9341cc255"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-company-w8b8xG/process-3.json",
+          "bytes": 1193,
+          "sha256": "3f7b6aad6b05e88f8f02682fb0ff26c9d64fc0c563d9716d0e3f6fd3291daa15"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-company-w8b8xG/replay-probe-3.json",
+          "bytes": 476,
+          "sha256": "6256a63005a125a59baa5898c68674a81227ba4f148db7c3acd984672269f5b0"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-company-w8b8xG/round-3.json",
+          "bytes": 7901751,
+          "sha256": "39ccfccf164e3bf695040074ffa9ea6651df1c44e18b3f15b409dd83c65cbf7a"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "company",
+      "round": 4,
+      "pid": 57254,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-company-w8b8xG/original.json",
+          "bytes": 29143118,
+          "sha256": "8ee41c74fdb8f74ed49fb1e1c4037ecd27ccb72c9b3bfd2704aea5e9341cc255"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-company-w8b8xG/process-4.json",
+          "bytes": 1193,
+          "sha256": "0bb43a3419a208da5b04d7f44e49867b8320c6616958e2948db6c2a43402148b"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-company-w8b8xG/replay-probe-4.json",
+          "bytes": 476,
+          "sha256": "4ccc270bd70338d03d85245d7f803e3340cbef176c9b37a90417ce65906105fb"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-company-w8b8xG/round-4.json",
+          "bytes": 7901751,
+          "sha256": "2c0226b0eee987a9e26d3803f266f2691f0f6fdb3e7d694430c3e559211969b9"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "laboratory",
+      "round": 3,
+      "pid": 57373,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-laboratory-I7HCYa/original.json",
+          "bytes": 29196336,
+          "sha256": "4fd0e8529d362db882db6d218eaaf3d5652e9eadc0593a4351a26755fcb6af7a"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-laboratory-I7HCYa/process-3.json",
+          "bytes": 1199,
+          "sha256": "ec0464fb27202db799a4bcdb63f5101999fb25ab6d9b6854c18f3f1bb22c5762"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-laboratory-I7HCYa/replay-probe-3.json",
+          "bytes": 479,
+          "sha256": "94203883408e4631d9ec7b057031b615097b6a3273c8c0d03f2fac3823817e6c"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-laboratory-I7HCYa/round-3.json",
+          "bytes": 7909183,
+          "sha256": "820d92d7847363d179781a62e87aaf67b4e7b5f37f7cc94241ee8406fa00065d"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "laboratory",
+      "round": 4,
+      "pid": 57399,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-laboratory-I7HCYa/original.json",
+          "bytes": 29196336,
+          "sha256": "4fd0e8529d362db882db6d218eaaf3d5652e9eadc0593a4351a26755fcb6af7a"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-laboratory-I7HCYa/process-4.json",
+          "bytes": 1199,
+          "sha256": "9c359e74e02a7b26142414d6fe21d9dd5bfed59b67d372a0df198e4ff332fb17"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-laboratory-I7HCYa/replay-probe-4.json",
+          "bytes": 479,
+          "sha256": "3945cdee39c897d62aadf0f157ce1e06bb0b738841027eb6edfc28e87889d733"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-source/src-sqlite-laboratory-I7HCYa/round-4.json",
+          "bytes": 7909183,
+          "sha256": "7d3244f0e9e572515823c59af6bb0295f61f6cf606c32f36e1926ea06f00a125"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "association",
+      "round": 1,
+      "pid": 57210,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-json-association-r3imV3/original.json",
+          "bytes": 12649810,
+          "sha256": "b03aa4dfef045b9699b1d580c1e9226efe5133784987e641a0350cb1e7399278"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-json-association-r3imV3/process-1.json",
+          "bytes": 1197,
+          "sha256": "f487e24533b4b493deb507169585f3d3e08fcd8773a2598f071ee08670f287d5"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-json-association-r3imV3/replay-probe-1.json",
+          "bytes": 476,
+          "sha256": "64d30644333d08fb20af88620d1d3d31d9b3bbd4ecf74e293052c2194fdee9d6"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-json-association-r3imV3/round-1.json",
+          "bytes": 4442393,
+          "sha256": "2050839c88ce4db25a26d313e71b2d402ea5a3c57c01de3baa4269033fc4348c"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "association",
+      "round": 2,
+      "pid": 57247,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-json-association-r3imV3/original.json",
+          "bytes": 12649810,
+          "sha256": "b03aa4dfef045b9699b1d580c1e9226efe5133784987e641a0350cb1e7399278"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-json-association-r3imV3/process-2.json",
+          "bytes": 1197,
+          "sha256": "30e18149eb6c14e03f3b92999391b3cf01c4c824e30f44997ad434ed2a85d6c2"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-json-association-r3imV3/replay-probe-2.json",
+          "bytes": 476,
+          "sha256": "2c7a7af09f2420e2d6da577ed191a5fe3a01280b7d1a3069c901e42cc8870521"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-json-association-r3imV3/round-2.json",
+          "bytes": 4442393,
+          "sha256": "fea86fc9e07a73f78be0d90c309af34b3712e451b5c466f6b66645581a8a3dab"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "association",
+      "round": 1,
+      "pid": 57519,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-sqlite-association-bPCUmq/original.json",
+          "bytes": 12649820,
+          "sha256": "439e7f5cbdb17f99f50a992ad8f7a01286ee33813f7907ff0208c81f12e3a6ae"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-sqlite-association-bPCUmq/process-1.json",
+          "bytes": 1201,
+          "sha256": "438e75c9d8c941a33b1a6aa01fb64be1c30df852fa5f98cff79c6d20dfa8fb3f"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-sqlite-association-bPCUmq/replay-probe-1.json",
+          "bytes": 478,
+          "sha256": "0a0c7aa483b6f0d4ba11ce699c4c576c11591c5b9e6997102494129b29ebf5a5"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-sqlite-association-bPCUmq/round-1.json",
+          "bytes": 4442405,
+          "sha256": "0e48420a5167e57a09e4807eb8c2a8f09c2d49d4300cb9d068d38e08f6955866"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "association",
+      "round": 2,
+      "pid": 57542,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/index.ts",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/src/index.ts",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/src/index.ts"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-sqlite-association-bPCUmq/original.json",
+          "bytes": 12649820,
+          "sha256": "439e7f5cbdb17f99f50a992ad8f7a01286ee33813f7907ff0208c81f12e3a6ae"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-sqlite-association-bPCUmq/process-2.json",
+          "bytes": 1201,
+          "sha256": "ff8a2ead456d2d773ac9def4ab570315ddb8b7e9330bee8e49eb20fddf26a4ae"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-sqlite-association-bPCUmq/replay-probe-2.json",
+          "bytes": 478,
+          "sha256": "5eeaab557ca5b268cf446e4ca50fab832ad9adb3cd96642234c12f0a1d82d00c"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-source/src-sqlite-association-bPCUmq/round-2.json",
+          "bytes": 4442405,
+          "sha256": "2e622802018284eb4863e11d8561b11389866ec2856ff40b34e4d69c8e3a70e1"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "company",
+      "round": 3,
+      "pid": 59860,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-company-6IyusE/original.json",
+          "bytes": 29143108,
+          "sha256": "7d16f89b7b6858c54cfd7b14be0716e03f1ba07c89b62f8df0ea999eb98ba8fd"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-company-6IyusE/process-3.json",
+          "bytes": 1057,
+          "sha256": "54476dec201d4fd9b16c22983a2bcfa4af58eab4fe8104a611a3bf6f0cc223f4"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-company-6IyusE/replay-probe-3.json",
+          "bytes": 474,
+          "sha256": "49bb87c7e2b0427f34791d3d0d494418b5ca390e5d9ea8b6e7e39b8ddd2f14ca"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-company-6IyusE/round-3.json",
+          "bytes": 7901739,
+          "sha256": "7c3936d0f03de460d753dde9047677b6293363a6b36c2836d4046559a8f23c5c"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "company",
+      "round": 4,
+      "pid": 59871,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-company-6IyusE/original.json",
+          "bytes": 29143108,
+          "sha256": "7d16f89b7b6858c54cfd7b14be0716e03f1ba07c89b62f8df0ea999eb98ba8fd"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-company-6IyusE/process-4.json",
+          "bytes": 1057,
+          "sha256": "ef720d9132af24082e2a9cca35410f0cd7d3ba11dd20a244dced94f117df7a3e"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-company-6IyusE/replay-probe-4.json",
+          "bytes": 474,
+          "sha256": "2a5fc2e895579cd1f5f42969d998a562e69a9ff619fd86cc581e232b8607f787"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-company-6IyusE/round-4.json",
+          "bytes": 7901739,
+          "sha256": "9d3d390b99c7b7dd466cc3c1e13635ca83f89ec645f3943c013e517744c96cfd"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "laboratory",
+      "round": 3,
+      "pid": 59894,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-laboratory-axXZFH/original.json",
+          "bytes": 29196326,
+          "sha256": "9155f62280a04526c8ede2672eab59cf125fe3e53ffb65277e1b50d4059be1de"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-laboratory-axXZFH/process-3.json",
+          "bytes": 1063,
+          "sha256": "08fb0d3bb86c5661373171e66e2945989627401479726abd556da404d7d43e20"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-laboratory-axXZFH/replay-probe-3.json",
+          "bytes": 477,
+          "sha256": "15458d4b860a5816d53a75e78d6e1370fea679a660500ebd3f186c2bb67b30a5"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-laboratory-axXZFH/round-3.json",
+          "bytes": 7909171,
+          "sha256": "6137b2929534f55830ed8b48d71814e9b01f4a1b35ef88cc4e631f70f5823365"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "laboratory",
+      "round": 4,
+      "pid": 59895,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-laboratory-axXZFH/original.json",
+          "bytes": 29196326,
+          "sha256": "9155f62280a04526c8ede2672eab59cf125fe3e53ffb65277e1b50d4059be1de"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-laboratory-axXZFH/process-4.json",
+          "bytes": 1063,
+          "sha256": "209cdc76c2e22f4c980ac9b4eaf8168e9189f64f72c06538eab9421862a70389"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-laboratory-axXZFH/replay-probe-4.json",
+          "bytes": 477,
+          "sha256": "64e615f7206ea84dab8ffcab2c8190c29711e6ead05b07e91f650f74623e05fe"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-json-laboratory-axXZFH/round-4.json",
+          "bytes": 7909171,
+          "sha256": "5ead904e156195464512769fac94b16edff016949aabfa4d8249cb18f608323a"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "company",
+      "round": 3,
+      "pid": 59897,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-company-KHPhNZ/original.json",
+          "bytes": 29143118,
+          "sha256": "5a1f8e36664af02fbd3f594ceb4cc9fd7d5bdc92ab237e3b5776a01cc82537a0"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-company-KHPhNZ/process-3.json",
+          "bytes": 1061,
+          "sha256": "52f0d7f9f372c66ed36be26a28a5fb4c8f614bb7f853ccd4346a7e05f700eab2"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-company-KHPhNZ/replay-probe-3.json",
+          "bytes": 476,
+          "sha256": "f3836d986efc49d38d05f822999a2e5e4daba928be60370f4a0dde9df8027254"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-company-KHPhNZ/round-3.json",
+          "bytes": 7901751,
+          "sha256": "61c6ed3381669526e2722d8dd48eb020105560c93944c1af222d3f64d6d247cf"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "company",
+      "round": 4,
+      "pid": 59900,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-company-KHPhNZ/original.json",
+          "bytes": 29143118,
+          "sha256": "5a1f8e36664af02fbd3f594ceb4cc9fd7d5bdc92ab237e3b5776a01cc82537a0"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-company-KHPhNZ/process-4.json",
+          "bytes": 1061,
+          "sha256": "1e835e3af2fcf1af4f56b32d6217e09a21285f931a6fdbfa08f0fb8070d05d93"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-company-KHPhNZ/replay-probe-4.json",
+          "bytes": 476,
+          "sha256": "c5a6f3c0eb4cc34ed5791f60c3d167f7dc96e69a675dd6f813f1d411db36d819"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-company-KHPhNZ/round-4.json",
+          "bytes": 7901751,
+          "sha256": "f3f949cd9de2f4c4e2226f4ad2a2ab1807180fe857e1e352a4743d6b650c37e8"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "laboratory",
+      "round": 3,
+      "pid": 59905,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-laboratory-pjfEBa/original.json",
+          "bytes": 29196336,
+          "sha256": "6ad98b92e891f5f93636ec6dba2e85f0d576626ab578779ecad48f3f83ecd446"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-laboratory-pjfEBa/process-3.json",
+          "bytes": 1067,
+          "sha256": "29d8a060b761ac7768fc1888521b3d27f67b11b7f5186c69e88ac77652be19eb"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-laboratory-pjfEBa/replay-probe-3.json",
+          "bytes": 479,
+          "sha256": "84c699bb48aad19c798db5cce7bbe2dcdab265cc33f276370be7f330e3471e6a"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-laboratory-pjfEBa/round-3.json",
+          "bytes": 7909183,
+          "sha256": "d6babb3c72add2b08da8b468ae6b8bad83a8ae28c2288f09bf5149d665cc7d69"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "laboratory",
+      "round": 4,
+      "pid": 60012,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-laboratory-pjfEBa/original.json",
+          "bytes": 29196336,
+          "sha256": "6ad98b92e891f5f93636ec6dba2e85f0d576626ab578779ecad48f3f83ecd446"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-laboratory-pjfEBa/process-4.json",
+          "bytes": 1067,
+          "sha256": "3b11ccfb666a854f8a3e992b95f0d98e094e9e397673b2af71e9fde4694e58da"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-laboratory-pjfEBa/replay-probe-4.json",
+          "bytes": 479,
+          "sha256": "acdec9960a7284ac9753d8617ba9aa0c7668e37c55501ce1dd5876416cbb440d"
+        },
+        {
+          "path": ".local/world-completion/r02-canonical-restore/seeds-lib/lib-sqlite-laboratory-pjfEBa/round-4.json",
+          "bytes": 7909183,
+          "sha256": "2fbef10b664c456635676a5c3454720ceea80f187580fbb658458dc7cc671b28"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "association",
+      "round": 1,
+      "pid": 60042,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-json-association-m0XVt6/original.json",
+          "bytes": 12649810,
+          "sha256": "ebc09dca78b22f69099310e8506009e9046a553f344f2e18ce1996ee3132c279"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-json-association-m0XVt6/process-1.json",
+          "bytes": 1065,
+          "sha256": "33dd7934a0d74c135138868c08b79b9f47ea63c0c78efb4b595bceba46560e95"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-json-association-m0XVt6/replay-probe-1.json",
+          "bytes": 476,
+          "sha256": "537a56de54c112c2297fd48e75bec15d9a33643731f78fb765bc65ad35362364"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-json-association-m0XVt6/round-1.json",
+          "bytes": 4442393,
+          "sha256": "3b4a5ae330af2c295edf785d75b4d167a0c8900ee40d822e1280a364457f1a58"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "association",
+      "round": 2,
+      "pid": 60046,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-json-association-m0XVt6/original.json",
+          "bytes": 12649810,
+          "sha256": "ebc09dca78b22f69099310e8506009e9046a553f344f2e18ce1996ee3132c279"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-json-association-m0XVt6/process-2.json",
+          "bytes": 1065,
+          "sha256": "00cd083a12fb6137d3735ad4b60ef4b88a7799db719c0bec5813bfb829f39fe8"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-json-association-m0XVt6/replay-probe-2.json",
+          "bytes": 476,
+          "sha256": "4e068f17343af4acab0fec5975af9babe0a5b27eadd5e5607d294507a213a6b6"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-json-association-m0XVt6/round-2.json",
+          "bytes": 4442393,
+          "sha256": "d14cbaa2b7002f511e77103859d7cd732bb47dbeb15e459dfef5081e687d7b40"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "association",
+      "round": 1,
+      "pid": 60198,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-sqlite-association-0odvF7/original.json",
+          "bytes": 12649820,
+          "sha256": "8fa0a33b8f16fc17f6a50f2a6923820cb36cd7441c47c81c589b2425b5f8d292"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-sqlite-association-0odvF7/process-1.json",
+          "bytes": 1069,
+          "sha256": "2ceb5cd150436727955fb5544b14cf5d31aad965520847a9214bc331eeec95fd"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-sqlite-association-0odvF7/replay-probe-1.json",
+          "bytes": 478,
+          "sha256": "4f4512d3ba26d236d1505cecca3828bd7c933f1d75595baccf6630a8a766b21f"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-sqlite-association-0odvF7/round-1.json",
+          "bytes": 4442405,
+          "sha256": "d3bc66deb2356dc34b0c935b311edd7e6998d75f5c15c4980211ddb56649547c"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "association",
+      "round": 2,
+      "pid": 60200,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/complete-world-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/complete-world/cordis.yml"
+      ],
+      "runtimePaths": {
+        "@clocky/clocky-simulation": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/index.js",
+        "@clocky/clocky-simulation-local": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-local/lib/index.js",
+        "@clocky/clocky-simulation-world": "file:///Volumes/projects-mac/deepseek-harness/packages/simulation/simulation-world/lib/index.js"
+      },
+      "counters": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "unchanged": [
+        "state",
+        "sessions",
+        "journal"
+      ],
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-sqlite-association-0odvF7/original.json",
+          "bytes": 12649820,
+          "sha256": "8fa0a33b8f16fc17f6a50f2a6923820cb36cd7441c47c81c589b2425b5f8d292"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-sqlite-association-0odvF7/process-2.json",
+          "bytes": 1069,
+          "sha256": "30f598008e1f380100996261b1615cab586f0b4a475b41bcfc2715c1424d352e"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-sqlite-association-0odvF7/replay-probe-2.json",
+          "bytes": 478,
+          "sha256": "d352f731f519d05633ef3f68c2e1cc0def23cf33544aa28e073419e43ca94105"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/association-lib/lib-sqlite-association-0odvF7/round-2.json",
+          "bytes": 4442405,
+          "sha256": "ad60f719e62abac9cd88fc2f5fb4ef827e95f60890e380723a77ffd44f1f2509"
+        }
+      ]
+    }
+  ],
+  "pool": [
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "company",
+      "mode": "director",
+      "warmPid": 56607,
+      "coldPid": 56615,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 15,
+        "execution": 1,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-director-false-0jFRHg/process-warm.json",
+          "bytes": 986,
+          "sha256": "a571daaf32a165a12fe4e27a6661e6caca5d5f5130d5b46d983ee8988754911d"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-director-false-0jFRHg/process-cold.json",
+          "bytes": 985,
+          "sha256": "3c3cf597adf9623ae424cc75db4a8698f278b1db73976f84dca95126a4db00dd"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-director-false-0jFRHg/world-product-model-pool.json",
+          "bytes": 4423,
+          "sha256": "8c7eb957ecef0b9cf5d457cd8ad30046be9c1d2cd0da10621cde8c908a674e64"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-director-false-0jFRHg/explicit-start-replay-proof.json",
+          "bytes": 169748,
+          "sha256": "01736716010e5c384c67826d4efe665cb69244a36530d770f7867ea32fcaaa01"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-director-false-0jFRHg/world-owner-input.json",
+          "bytes": 1455,
+          "sha256": "a362a50f734b31942292177c1b767afbb13531dcd8180fefbf09c848345046cf"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "company",
+      "mode": "newcomer",
+      "warmPid": 56751,
+      "coldPid": 56867,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 12,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-newcomer-false-lfwLgd/process-warm.json",
+          "bytes": 986,
+          "sha256": "9e8dcfc89aa5876e970ba83a76733d995eee097d3c98da93e150252bdf9af6f5"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-newcomer-false-lfwLgd/process-cold.json",
+          "bytes": 985,
+          "sha256": "8d14b53c3ba0512c1ac90ac90c22f7a5d5e0b4bcbfe19f5f080c233b4b50d9d7"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-newcomer-false-lfwLgd/world-product-model-pool.json",
+          "bytes": 8864,
+          "sha256": "b673ff13afa47f04f08d2253c319520e0a921f3e09fba95a15bcd0db8f83ff14"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-newcomer-false-lfwLgd/explicit-start-replay-proof.json",
+          "bytes": 176734,
+          "sha256": "b8eb92496fe1eecadb9b946258cd4f8b97f71ac92389af9965067ddb411098d0"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-company-newcomer-false-lfwLgd/world-owner-input.json",
+          "bytes": 1455,
+          "sha256": "a362a50f734b31942292177c1b767afbb13531dcd8180fefbf09c848345046cf"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "laboratory",
+      "mode": "director",
+      "warmPid": 56934,
+      "coldPid": 57057,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 15,
+        "execution": 1,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-director-false-nI3Cql/process-warm.json",
+          "bytes": 995,
+          "sha256": "d34735f5c59d89640cc4d2536453b67bf52230261f7548f2a3c4769e46d952c8"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-director-false-nI3Cql/process-cold.json",
+          "bytes": 994,
+          "sha256": "bb7be4c01938807adb3c08352ce6879e6277f425192f052f7a6d3f95fa7832d4"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-director-false-nI3Cql/world-product-model-pool.json",
+          "bytes": 4437,
+          "sha256": "4cbd7edb20130922a043241998f888ea0045e36a3a22c5a728713576dd84f2cc"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-director-false-nI3Cql/explicit-start-replay-proof.json",
+          "bytes": 170178,
+          "sha256": "1b90c7a847502fa26128dd9a998d4885c9814570bd31ef4a167fedb1f292ad65"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-director-false-nI3Cql/world-owner-input.json",
+          "bytes": 1483,
+          "sha256": "a6e8c16e4a811c1a1170451f2c9f773fb844e287c3d850c6ac4b67f9ebf5548c"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "json",
+      "scene": "laboratory",
+      "mode": "newcomer",
+      "warmPid": 57084,
+      "coldPid": 57246,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 12,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-newcomer-false-YgocrC/process-warm.json",
+          "bytes": 995,
+          "sha256": "732824b5b28a8f826863710d3497aff3581bca01c0cf0164895850172d74f11c"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-newcomer-false-YgocrC/process-cold.json",
+          "bytes": 994,
+          "sha256": "ae78664c8abe9e8f0a16a439f4da9a650d8bd0253bb310143a999fddfd62200a"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-newcomer-false-YgocrC/world-product-model-pool.json",
+          "bytes": 8879,
+          "sha256": "faea4e3e985fe62fc431b68b5e895e9ab8f8a13ec8e01c3250126f1aa7411dc1"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-newcomer-false-YgocrC/explicit-start-replay-proof.json",
+          "bytes": 177190,
+          "sha256": "57d39cd0359ed52633a8d2d07283c5384a9b76b0c9a043125dbfbe8950527ed9"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-json-laboratory-newcomer-false-YgocrC/world-owner-input.json",
+          "bytes": 1483,
+          "sha256": "a6e8c16e4a811c1a1170451f2c9f773fb844e287c3d850c6ac4b67f9ebf5548c"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "company",
+      "mode": "director",
+      "warmPid": 57372,
+      "coldPid": 57400,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 15,
+        "execution": 1,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-director-false-YvDm8j/process-warm.json",
+          "bytes": 990,
+          "sha256": "51c85bbc112d383138fac44faa5bd81454d63cd913d00026107f36ad00994443"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-director-false-YvDm8j/process-cold.json",
+          "bytes": 989,
+          "sha256": "2b2f1697fe5b530337464a5800caaec5b0547af80b9b2d90535b4c4d73421fb5"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-director-false-YvDm8j/world-product-model-pool.json",
+          "bytes": 4423,
+          "sha256": "ed8a7a764f04c09e8b29106f1ab87eda11523a473341f6bf8af9dfcd89a13537"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-director-false-YvDm8j/explicit-start-replay-proof.json",
+          "bytes": 169754,
+          "sha256": "5c24039fc1278b775f536b08f638f75277336944322d8538a4bd953bf44403f3"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-director-false-YvDm8j/world-owner-input.json",
+          "bytes": 1455,
+          "sha256": "a362a50f734b31942292177c1b767afbb13531dcd8180fefbf09c848345046cf"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "company",
+      "mode": "newcomer",
+      "warmPid": 57516,
+      "coldPid": 57539,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 12,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-newcomer-false-v2Hkid/process-warm.json",
+          "bytes": 990,
+          "sha256": "8ac6dcd193fbe53da12f9e56b825a871737c90d1a2d9a2f3c6ad99eece7a0c60"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-newcomer-false-v2Hkid/process-cold.json",
+          "bytes": 989,
+          "sha256": "2a81582d22fb7fa95aed5acef379efe44e62c675b25a2d83adffd177c6b47a2f"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-newcomer-false-v2Hkid/world-product-model-pool.json",
+          "bytes": 8864,
+          "sha256": "f602cfe9da1cf5fbb2980699bc25b4b881f64149e65b3df4a7306e7c05f5f121"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-newcomer-false-v2Hkid/explicit-start-replay-proof.json",
+          "bytes": 176740,
+          "sha256": "d46a4c0410a438896dae257fb6f20c00bd52d652bff2887b2132f49a87341cb7"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-company-newcomer-false-v2Hkid/world-owner-input.json",
+          "bytes": 1455,
+          "sha256": "a362a50f734b31942292177c1b767afbb13531dcd8180fefbf09c848345046cf"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "laboratory",
+      "mode": "director",
+      "warmPid": 57650,
+      "coldPid": 57675,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 15,
+        "execution": 1,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-director-false-xjMuxj/process-warm.json",
+          "bytes": 999,
+          "sha256": "28bf26a132736779fb7dbdf854b49e9729088440f4484b42cfcd6f77bd22b967"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-director-false-xjMuxj/process-cold.json",
+          "bytes": 998,
+          "sha256": "8486c0f4466893f79ff5be483b13360b4d0f13cfdd8ae6bbe91cd1e83c26d3ee"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-director-false-xjMuxj/world-product-model-pool.json",
+          "bytes": 4437,
+          "sha256": "c19470c0eef05b9bac574423ece0deb69922a5a29a042f976cf6e5329179b6cd"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-director-false-xjMuxj/explicit-start-replay-proof.json",
+          "bytes": 170184,
+          "sha256": "7bdabd184cd5848ac7a06b03704698147f794c38a00dc75c5c0a62ead779684f"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-director-false-xjMuxj/world-owner-input.json",
+          "bytes": 1483,
+          "sha256": "a6e8c16e4a811c1a1170451f2c9f773fb844e287c3d850c6ac4b67f9ebf5548c"
+        }
+      ]
+    },
+    {
+      "face": "src",
+      "backend": "sqlite",
+      "scene": "laboratory",
+      "mode": "newcomer",
+      "warmPid": 57687,
+      "coldPid": 57815,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "--import",
+        "file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/tsx@4.22.4/node_modules/tsx/dist/loader.mjs",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 12,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-newcomer-false-DZOtZW/process-warm.json",
+          "bytes": 999,
+          "sha256": "c25e83870405d1d3a69fa2107b22b6f14bb3cd728e63b4a0a07c34f6ec9b608f"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-newcomer-false-DZOtZW/process-cold.json",
+          "bytes": 998,
+          "sha256": "c429aafe13d6062eb50dd0453c553ff7968b42e8aed1fce56229d6bf1c47bec7"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-newcomer-false-DZOtZW/world-product-model-pool.json",
+          "bytes": 8879,
+          "sha256": "ae17edd365cc631881ece4b678ccd2e86a29ee2cdeee67ac1f7c3ed24b42bc2a"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-newcomer-false-DZOtZW/explicit-start-replay-proof.json",
+          "bytes": 177196,
+          "sha256": "5da4d1860fe32a386a3a2b6d9f0077e4ea18a7ccdf1fdbfd06c9ccfd7bf5e072"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-source-final/src-sqlite-laboratory-newcomer-false-DZOtZW/world-owner-input.json",
+          "bytes": 1483,
+          "sha256": "a6e8c16e4a811c1a1170451f2c9f773fb844e287c3d850c6ac4b67f9ebf5548c"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "company",
+      "mode": "director",
+      "warmPid": 59859,
+      "coldPid": 59890,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 15,
+        "execution": 1,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-director-false-Oq7deQ/process-warm.json",
+          "bytes": 851,
+          "sha256": "f36b166814103b34d891c636c38cca41eebc27dda96904763e1c7199fd150ef0"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-director-false-Oq7deQ/process-cold.json",
+          "bytes": 850,
+          "sha256": "41c44e8a20809736158f7e379465d45378db2a1ebc9bd2803fe5f68c33eda398"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-director-false-Oq7deQ/world-product-model-pool.json",
+          "bytes": 4423,
+          "sha256": "79ec4d7d45d846d6b4bd3ce33a4d1ac982310bea37db428dcb9a50247ed1b75f"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-director-false-Oq7deQ/explicit-start-replay-proof.json",
+          "bytes": 169748,
+          "sha256": "8cc96ab4ad13d3c227de361f1e7a9fe0c01c10f02748fb13504e58fd1af1741a"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-director-false-Oq7deQ/world-owner-input.json",
+          "bytes": 1455,
+          "sha256": "a362a50f734b31942292177c1b767afbb13531dcd8180fefbf09c848345046cf"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "company",
+      "mode": "newcomer",
+      "warmPid": 59896,
+      "coldPid": 59902,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 12,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-newcomer-false-n6DEG3/process-warm.json",
+          "bytes": 851,
+          "sha256": "a16b52f3eec686d57f27ae1a3dc9777b82fe990b1390b18a00d8463c470a25a0"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-newcomer-false-n6DEG3/process-cold.json",
+          "bytes": 850,
+          "sha256": "9fe25ac367b576b9689b13a770b67cbf2a149254850aa09d28da8518919275b0"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-newcomer-false-n6DEG3/world-product-model-pool.json",
+          "bytes": 8864,
+          "sha256": "7698779fd97ea8f2d2bc9dee1ee4750128e1b61c2386ace5d7e54cee278f0986"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-newcomer-false-n6DEG3/explicit-start-replay-proof.json",
+          "bytes": 176734,
+          "sha256": "12705a71f60b919ce9aea1ecddb755ec06bdec0f53f52ffc78d9c892007dc89d"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-company-newcomer-false-n6DEG3/world-owner-input.json",
+          "bytes": 1455,
+          "sha256": "a362a50f734b31942292177c1b767afbb13531dcd8180fefbf09c848345046cf"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "laboratory",
+      "mode": "director",
+      "warmPid": 60013,
+      "coldPid": 60017,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 15,
+        "execution": 1,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-director-false-GhSQlS/process-warm.json",
+          "bytes": 860,
+          "sha256": "3d77fdd67502442b9ed8b19f4e14e1edf92b3ba6b8bf8e353bee4dc6643724e3"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-director-false-GhSQlS/process-cold.json",
+          "bytes": 859,
+          "sha256": "13dbb5c1b7b1311dded09d7c457ce8ca9715c4a39efeba11061d396b47120f89"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-director-false-GhSQlS/world-product-model-pool.json",
+          "bytes": 4437,
+          "sha256": "e1a824057a6c15c68e6269a3a6eedc4dfe6479d4fa17d998cba06a2cb743050b"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-director-false-GhSQlS/explicit-start-replay-proof.json",
+          "bytes": 170178,
+          "sha256": "686c8cfbf50030217ff9e2310853baccd2e350ef8704a3fef9d0c18fe70c541e"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-director-false-GhSQlS/world-owner-input.json",
+          "bytes": 1483,
+          "sha256": "a6e8c16e4a811c1a1170451f2c9f773fb844e287c3d850c6ac4b67f9ebf5548c"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "json",
+      "scene": "laboratory",
+      "mode": "newcomer",
+      "warmPid": 60038,
+      "coldPid": 60039,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 12,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-newcomer-false-9jO7C4/process-warm.json",
+          "bytes": 860,
+          "sha256": "349a5b76e14d99448be47a44ce692d10642315b01b60f28ea2551a5893badb51"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-newcomer-false-9jO7C4/process-cold.json",
+          "bytes": 859,
+          "sha256": "5b08ba0e37b7e276b61f6a24225c51e5439511d8b375d4a840e914566ef6c9fd"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-newcomer-false-9jO7C4/world-product-model-pool.json",
+          "bytes": 8879,
+          "sha256": "3064d03c130a3ce5d1e07d3120c2e4cbbd84e7991f4a2324c46cbeff07a2b6b5"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-newcomer-false-9jO7C4/explicit-start-replay-proof.json",
+          "bytes": 177190,
+          "sha256": "0259339b9b8180375c9aacb73bc9a5f8383d41ad57024b6afef31bd723e2364d"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-json-laboratory-newcomer-false-9jO7C4/world-owner-input.json",
+          "bytes": 1483,
+          "sha256": "a6e8c16e4a811c1a1170451f2c9f773fb844e287c3d850c6ac4b67f9ebf5548c"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "company",
+      "mode": "director",
+      "warmPid": 60047,
+      "coldPid": 60050,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 15,
+        "execution": 1,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-director-false-VJoWkM/process-warm.json",
+          "bytes": 855,
+          "sha256": "0ef53503369b89f13b15296d3a789d6ab72f12944d4c4c64ed2315dd8c56950a"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-director-false-VJoWkM/process-cold.json",
+          "bytes": 854,
+          "sha256": "71ffa82ac58d4f18f0a4034a322c49b01ef4f09c60af5d7fc5fd1e3326dbb451"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-director-false-VJoWkM/world-product-model-pool.json",
+          "bytes": 4423,
+          "sha256": "20eba6801e08ca47bf80b62f46cec21bc7e477fd21a82f0f79ac21cfd3bca026"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-director-false-VJoWkM/explicit-start-replay-proof.json",
+          "bytes": 169754,
+          "sha256": "9ea3a74c619ed25a1d506b0ddeaead0c0ec229f14f0d7ec7fe3cdd5d3f033873"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-director-false-VJoWkM/world-owner-input.json",
+          "bytes": 1455,
+          "sha256": "a362a50f734b31942292177c1b767afbb13531dcd8180fefbf09c848345046cf"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "company",
+      "mode": "newcomer",
+      "warmPid": 60159,
+      "coldPid": 60165,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 12,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-newcomer-false-xxevkD/process-warm.json",
+          "bytes": 855,
+          "sha256": "28bd1f7951dbc7954dcfe5d5c13da8724453880d18bd96464d74af5da8933f6a"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-newcomer-false-xxevkD/process-cold.json",
+          "bytes": 854,
+          "sha256": "bf7a2cf1dac09eb0aed3fa2e2769176d2e8153a1a33ddb906e3e61c98a6e1d5c"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-newcomer-false-xxevkD/world-product-model-pool.json",
+          "bytes": 8864,
+          "sha256": "cef59bdb7dce2e770212f8d8dd9e486dbe37e8414695010c4bea16b26c8ecbc3"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-newcomer-false-xxevkD/explicit-start-replay-proof.json",
+          "bytes": 176740,
+          "sha256": "cb57361cb5dc008f6adf806ffba74d0f104a1d5f5b18970047f49c20587ccac1"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-company-newcomer-false-xxevkD/world-owner-input.json",
+          "bytes": 1455,
+          "sha256": "a362a50f734b31942292177c1b767afbb13531dcd8180fefbf09c848345046cf"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "laboratory",
+      "mode": "director",
+      "warmPid": 60166,
+      "coldPid": 60171,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 15,
+        "execution": 1,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-director-false-CPDgmi/process-warm.json",
+          "bytes": 864,
+          "sha256": "ebcbd3e460850f278ab2bb6a3e2688af67daeb6727f76cb2c9ffece56dcafcf1"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-director-false-CPDgmi/process-cold.json",
+          "bytes": 863,
+          "sha256": "5e6def7b2d321dbe4ef9b94fd9a31da0ba60116a66b90a60048830c76ec21153"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-director-false-CPDgmi/world-product-model-pool.json",
+          "bytes": 4437,
+          "sha256": "5795f65331addbd7e50f9ec1556700c5ed51e7a8bc54fa4ac9e0f2c4220d045e"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-director-false-CPDgmi/explicit-start-replay-proof.json",
+          "bytes": 170184,
+          "sha256": "430bf0256554cf60deff61c3650be1d3c0eedca8a761e9d3ce16fee96fcfb6af"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-director-false-CPDgmi/world-owner-input.json",
+          "bytes": 1483,
+          "sha256": "a6e8c16e4a811c1a1170451f2c9f773fb844e287c3d850c6ac4b67f9ebf5548c"
+        }
+      ]
+    },
+    {
+      "face": "lib",
+      "backend": "sqlite",
+      "scene": "laboratory",
+      "mode": "newcomer",
+      "warmPid": 60191,
+      "coldPid": 60192,
+      "command": "/opt/homebrew/Cellar/node/25.9.0_2/bin/node",
+      "args": [
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/world-owner-scenario.ts",
+        "/Volumes/projects-mac/deepseek-harness/examples/simulation-company/tests/fixtures/world-owner/cordis.yml"
+      ],
+      "beforeStart": {
+        "model": 0,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": false
+      },
+      "afterStart": {
+        "model": 12,
+        "execution": 0,
+        "randomSample": 0,
+        "fetch": 0,
+        "socket": 0,
+        "productionAllowed": true
+      },
+      "managementId": "explicit-continue-model-pool",
+      "files": [
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-newcomer-false-mzs4fi/process-warm.json",
+          "bytes": 864,
+          "sha256": "a5a36b067ff195d3c8f686335042218c05c421ce18fafaff594514d90f5da4af"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-newcomer-false-mzs4fi/process-cold.json",
+          "bytes": 863,
+          "sha256": "94c17d75bd950317dd6d47620798000ee95977a858ba235e3195f43ba445b596"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-newcomer-false-mzs4fi/world-product-model-pool.json",
+          "bytes": 8879,
+          "sha256": "913f5d87d7920e9b9d64cff18969605913b21d196bad5e42cae1047793403325"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-newcomer-false-mzs4fi/explicit-start-replay-proof.json",
+          "bytes": 177196,
+          "sha256": "819a0ff7d04e3956e776083a765bf5224e6d7fb0473ef9172d68b285dc3e4818"
+        },
+        {
+          "path": ".local/world-completion/r03-paused-replay/pool-lib-final/lib-sqlite-laboratory-newcomer-false-mzs4fi/world-owner-input.json",
+          "bytes": 1483,
+          "sha256": "a6e8c16e4a811c1a1170451f2c9f773fb844e287c3d850c6ac4b67f9ebf5548c"
+        }
+      ]
+    }
+  ],
+  "auditProgram": {
+    "path": ".local/world-completion/r03-paused-replay/audit.py",
+    "bytes": 5764,
+    "sha256": "a86ba50b4efddad01fcde62802b164142f50fffe206c59f16fb49dd46665ea36"
+  },
+  "limitations": [
+    "Keyless real Agent/tool flow, not external real-provider quality",
+    "Deterministic simulated-rule implementation has no stochastic sampler; accepted persisted profiles and external outcomes compared in full",
+    "Complete company/lab reuse actual R02 seeds; association creates current warm seeds",
+    "Traps are installed after Loader boot; these probes cover restore, reads, paused driver and explicit start, not arbitrary host startup IO",
+    "Failure history retained: disposed Context lookup and bypassed Context-bound model counter fixed without threshold or budget changes"
+  ]
+}

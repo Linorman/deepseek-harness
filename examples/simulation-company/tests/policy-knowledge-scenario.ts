@@ -13,6 +13,7 @@ const run = await ctx.simulations.open(simulationRunSelectionSchema.parse({ prov
   outboxMaxAttempts: 1, outboxRetryDelayMs: 0, maxDriveSteps: 16, maxMicrostepsPerTime: 32,
   phaseOrder: ['delivery', 'decision', 'deadline'], decisionTimeoutMs: 60000, maxConflictRetries: 0,
   maxIngressBytes: 4096, maxEntities: 2, maxResidentActors: 2, maxDecisionsPerWindow: 1, maxOperationsPerDecision: 1,
+  maxResourceReservationHistory: 128,
   maxResourceQuantity: '1', maxQueuedDecisions: 2, maxDispatchWaitRounds: 2, budgetInterval: '10',
   maxDecisionsPerInterval: 10, maxMessagesPerInterval: 1, maxTokensPerInterval: 0, tokensPerModelRequest: 1,
   maxPendingEvents: 16, maxPendingInteractions: 0, maxKnowledgeBytes: 4096, maxKnowledgePerQuery: 1, relationRules: [],
@@ -22,7 +23,7 @@ try {
   const team = await ctx.simulationTeams.ensureTeam(run, { goal: { objective: 'Read the complete authorized report', budgets: {} }, budgets: {} }, 'simulation/policy-knowledge')
   const connection = await ctx.simulationTeams.attach(run, team.team.id, 'simulation/policy-knowledge')
   for (const id of [sender, reader]) {
-    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+    await run.change(simulationChangeSchema.parse({ kind: 'entity/create', readiness: 'ready', id, entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
     await connection.ensureParticipant(id, { displayName: id, role: id, capabilities: [], provider: 'in-process', preset: 'simulation', model: 'unused' })
     await connection.activate(id, { provider: 'in-process', seed: { kind: 'fresh' }, agent: { preset: 'simulation', options: {} }, signal: new AbortController().signal })
   }

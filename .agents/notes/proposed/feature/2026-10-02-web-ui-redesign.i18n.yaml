@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/proposed/feature/2026-10-02-web-ui-redesign.md
-2026-10-02-web-ui-redesign.md: 01a8ba6a20c1bab45bcbfdf0d0c01e52c2509698
-2026-10-02-web-ui-redesign.zh.md: c1df75a0ec0039cef9c2c0e9389d6f72cbb47f95
+2026-10-02-web-ui-redesign.md: d3f6db3785cec2ec821c1956965ca8cf45b98540
+2026-10-02-web-ui-redesign.zh.md: 979e12d2971634d099c571e68accc8a65c9170ca

@@ -1,0 +1,1 @@
+packages/simulation/simulation/tests/personnel-counts.spec.ts(15,87): error TS6305: Output file '/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/lib/types/personnel-counts.d.ts' has not been built from source file '/Volumes/projects-mac/deepseek-harness/packages/simulation/simulation/src/personnel-counts.ts'.

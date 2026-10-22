@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-12",
+  "scope": "O14 original actual Controller stop, default close timeout, plugin fiber unload, connection closure and old epoch callbacks; source owner tests only",
+  "nativeStream": 69,
+  "files": [
+    {
+      "path": "packages/simulation/simulation-team/tests/personnel-retirement-unknown.spec.ts",
+      "sha256": "567c5f511a8f04398916894cc22fb27b15ea659f944a27d324970badb4dfa9c5",
+      "bytes": 26547
+    }
+  ],
+  "checks": [
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation-team/tests/personnel-retirement-unknown.spec.ts",
+      "log": ".local/world-completion/tmp/personnel-retirement-c12-tests-final.log",
+      "tests": 10,
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/team/team-activation-controller/tests/controller.spec.ts packages/team/team-activation-controller/tests/closure-recovery.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-controller-regression.log",
+      "tests": 59,
+      "exitCode": 0
+    },
+    {
+      "command": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/team/team-activation-controller/tests/index.spec.ts packages/simulation/simulation-team/tests/checkpoint-failure.spec.ts packages/simulation/simulation-team/tests/participants.spec.ts",
+      "log": ".agents/plans/2026-10-11-world-simulation-completion/evidence/implementation/c12-retirement-regression.log",
+      "tests": 40,
+      "exitCode": 0,
+      "scopeNote": "index.spec.ts does not exist and selected no tests; the actual executed files are checkpoint-failure and participants."
+    }
+  ],
+  "backends": [
+    "json",
+    "sqlite"
+  ],
+  "mode": "source",
+  "compiledFaultTests": "not claimed by this owner unit evidence"
+}

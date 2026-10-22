@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-20",
+  "checklist": [
+    "D10",
+    "D11",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+    "D16"
+  ],
+  "command": "TMPDIR=\"$PWD/.tmp\" pnpm exec vitest run packages/simulation/simulation-team/tests/experiments.spec.ts packages/simulation/simulation-world/tests/branch-runtime.spec.ts packages/simulation/simulation-team/tests/archive.spec.ts packages/simulation/simulation-team/tests/backup.spec.ts",
+  "mode": "source owners/API + real Loader; JSON/SQLite; built host libraries for independent snapshot subprocesses",
+  "result": "4 files, 19 tests passed; built two-process snapshots: 2 tests passed",
+  "log": "d2-final-tests.log",
+  "hashes": {
+    "packages/simulation/simulation/src/experiment.ts": "43f894343473c1c81a86580fdba1aac22d97bfc18c7e46c4833c3886811f29af",
+    "packages/simulation/simulation/src/index.ts": "fad95b9c43c883367df751e88f86fb7e7bc25e46ad9313328e00d07c3fb7de3a",
+    "packages/simulation/simulation/src/types.ts": "77dc2f1488cadcc28d9fe908f38c813d9f4addc57efd87c54984e29e051bb30b",
+    "packages/simulation/simulation-local/src/index.ts": "4363637340fc0db62d7c1fcf30e1d4c90ed4793a5128552160e81e6654d85562",
+    "packages/simulation/simulation-local/src/journal.ts": "a4aecb6274f808bfc5db894ba32b12f2ba50f7de69eab2117d918eec494e5fba",
+    "packages/simulation/simulation-local/src/run.ts": "e658ecdd257c2f44fd7c545de8e669876d6d7260b6aaee9ae79fe59429dbcda5",
+    "packages/simulation/simulation-team/src/experiments.ts": "848dcc0826f8cb91f295192cc3fe03ce09ab4b21a6695f3cff0edeb6bd9b7391",
+    "packages/simulation/simulation-team/src/experiment-query.ts": "579b38e3b0ef6b29fed3b4ede0c7194df51675e954efc8300c2ecd69d1630766",
+    "packages/simulation/simulation-team/src/archive.ts": "9bdeb13b2c854588a77efd8e2d5929a68915bf53d391b30fae4284dd8bdef7b7",
+    "packages/simulation/simulation-team/tests/experiments.spec.ts": "b14fd7f1936fa533811632907fc46efae990e1fae1ebb00875ffb16bd84614c2",
+    "packages/simulation/simulation-world/src/branch-runtime.ts": "52c89b63c1a5fcf6f3ba00c74485d045c7db8a1184fe476bf41cb22b0b25d5d0",
+    "packages/simulation/simulation-world/tests/branch-runtime.spec.ts": "6fa6856ef62d7eb4397ba5272c1c28180297a2d759be9b7ff9260b39002ce9cf",
+    "examples/simulation-company/tests/world-experiments.snapshot.ts": "6130a8afffe9b1038adb0f31bb32e9b1920c497f5e0910f7642be992e5700b2b",
+    "examples/simulation-company/tests/world-experiments-scenario.ts": "4a7379b08ab706fd68d3155f9484bd47a9467a462861f5df4aa7902c5382fa27",
+    "packages/simulation/simulation-world/src/driver.ts": "07c4a26770a77de852050a5e2694ffb031e5ee0fb012506c2df2e3d518160701",
+    "packages/simulation/simulation-team/tests/archive.spec.ts": "a2b26dd79e175a0ff590e278611c21320b0337f10033a2d901421eb277d100a5"
+  },
+  "scope": {
+    "source": "pure Native prefix replay + original reducers/projection invariants; accepts offline and older immutable cuts with no source storage",
+    "seed": "Initial/settled cut with time preserved; unmappable obligations/institutions/committees/external/environment/evolution and any federation source/provenance explicitly refused before acceptance.",
+    "identity": "Fresh run/entity/canonical Team/Participant/Session/Channel; only declared Entity-ID references remap. Facts/resource IDs retain independent domains and opaque statement/content/name/Persona text remains exact. Missing source owners refuse before acceptance. Actual activation/coordinator differs from parent; foreign parent bindings/channel writes reject.",
+    "memory": "Detached source Session.deriveMessages supplies only actual model-visible history to a detached new Session persisted before runtime. First activation resumes it. Actual Agent-to-adapter requests include authorized private user/message canary and exclude private history for public-facts; nonsurface internal event canary never enters either request. Real PNG/nontext history refuses in pure preflight. Raw events remain readonly provenance.",
+    "provenance": "exact source body retained in separate storage owner and recursively included in export/restore; eight-parent depth, aggregate entries and whole bytes bounded",
+    "driver": "recompiled V1 metadata has fresh compiler hash and matches actual Native/world; new world/1 checkpoint; real driver transitions paused -> running -> idle without inference",
+    "comparison": "same original Native branch-init parent source and lineage; budget/memory/variables explicit; quality and cost unknown without separate evidence; stops/nondeterminism explicit; no causal conclusion",
+    "causal": "actual event/decision/operation/plan/effect log references only; exact plan identity/sequence checked; bounded graph with permission fences, no snapshot-forged edges",
+    "product": "separate Product branch command journal plus Host/Client/TS/Python API; Product tests and evidence recorded separately by product owner",
+    "keylessProviderCalls": {
+      "purpose": "Actual Agent request assembly verifies new inherited model input; fake adapter intentionally refuses inference",
+      "calls": 4,
+      "realProviderCalls": 0,
+      "sourceRunMutationsFromBranch": 0
+    },
+    "format": "Internal experiment-init and inherited-memory payload version 2; old version 1 branch records reject, with no migration; ordinary version-101 nonbranch Native histories remain readable."
+  },
+  "pending": "D17 final joint D1/D2 matrix and global gates recorded by root; owner, model-input, new-host and process tests completed.",
+  "snapshot": {
+    "command": "TMPDIR=\"$PWD/.tmp\" pnpm exec vitest run --config vitest.snapshot.config.ts examples/simulation-company/tests/world-experiments.snapshot.ts --maxWorkers=1",
+    "result": "2/2 passed",
+    "log": "d2-process-snapshot.log"
+  },
+  "evidenceHashes": {
+    "d2-final-tests.log": "797969f5c140dc0c6c360083c2b27efe266ad7424b8e6f2590b0de3d6636b1d7",
+    "d2-process-snapshot.log": "c0911329fa81b942c43c4e9f6a6de9010b9b43ce9e484eeb6f0dcaeb8a0789ee"
+  }
+}

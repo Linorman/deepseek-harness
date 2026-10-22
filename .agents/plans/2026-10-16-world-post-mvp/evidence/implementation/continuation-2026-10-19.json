@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-19",
+  "scope": "F0/A1-A3 continuation; only F04 remains incomplete",
+  "completedChecklistCount": 23,
+  "totalRequestedChecklistCount": 24,
+  "completedNow": [
+    "F02"
+  ],
+  "remaining": [
+    "F04"
+  ],
+  "newChecklistItems": 0,
+  "runtimeEvidenceReuse": {
+    "sourceHashesChecked": 70,
+    "changes": [],
+    "sourceIndex": "final-inputs.json",
+    "sourceIndexMatches": 941,
+    "sourceIndexChanges": [
+      "scripts/world-post-mvp-baseline.py"
+    ],
+    "explanation": "The changed Python recorder adds company-only fixture Team limits. The current company manifest freezes the revised runner; production runtime source and previously built artifacts remain unchanged."
+  },
+  "checks": {
+    "pythonF0Tests": 20,
+    "docSyncPassed": 29,
+    "gitDiffCheck": "passed",
+    "collectionProbe": {
+      "complete": false,
+      "acceptedRows": 4,
+      "issuesOnly": "company results and drift receipt not yet complete",
+      "commandLog": "f0-collection-probe.log",
+      "report": ".tmp/world-post-mvp/f0-collection-probe/summary.json"
+    }
+  },
+  "activeBaseline": {
+    "directory": ".local/world-post-mvp/f0-longitudinal/1792338832170825000",
+    "runnerPid": 24808,
+    "nodePidAtRecording": 14114,
+    "scene": "company",
+    "roundsPerBackend": 32,
+    "backendOrder": [
+      "json",
+      "sqlite"
+    ],
+    "warmThenCold": true,
+    "lastObservedJsonRound": 32,
+    "doNotChangeFrozenInputs": true,
+    "lastObservedSqliteRound": 5,
+    "completedProcesses": 2,
+    "jsonOutcome": {
+      "warmExitCode": 0,
+      "coldExitCode": 0,
+      "rounds": 32,
+      "offers": 32,
+      "warmElapsedMs": 5273403.701874998,
+      "coldRestoreMs": 38411.333209,
+      "coldModelCalls": 0,
+      "finalSample": {
+        "round": 32,
+        "time": "192",
+        "elapsedMs": 334791.7027500002,
+        "modelCalls": 2496,
+        "offers": 32,
+        "assignments": 32,
+        "rss": 2387738624,
+        "people": {
+          "scope": {
+            "kind": "run"
+          },
+          "runId": "company-longitudinal",
+          "cursor": 20743,
+          "time": "192",
+          "assignedPeople": 33,
+          "nonterminatedPeople": 34,
+          "residentActors": 3,
+          "unreleasedWriters": 3,
+          "residentLimit": 3,
+          "historicalParticipants": {
+            "kind": "known",
+            "value": 34,
+            "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+            "cursor": 4023
+          },
+          "historicalActivations": {
+            "kind": "known",
+            "value": 557,
+            "teamId": "team-da8a4842-82dd-4f87-88c2-a1752cba6e63",
+            "cursor": 4023
+          }
+        },
+        "activeActors": 34
+      },
+      "remaining": "SQLite warm/cold and final inventory drift verification"
+    }
+  },
+  "sourceHashes": {
+    "scripts/world-post-mvp-acceptance.py": "9d22802bcde4b199aeab42d58cbb818786ca30edc6af250006288363c33892be",
+    "scripts/tests/test_world_post_mvp_acceptance.py": "7de3862639f295934b883ff2d334dabae5e175729777e0c2804a44c2f901c471",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-acceptance-tests.log": "a774207f7966d4df944adee1ebd7bf6375ee1502ba81532bcc0a72e5d81638eb",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-collection-probe.log": "5b0ea8c7f38dbed772c5f5de8d5b7f887cd7d4108545d7221f787e980196d875",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/doc-sync-continuation.log": "d12bb72a0175f746f3a2799e6de1469ca3a7ce9a2479d348fa3e4bcf2f393c8f",
+    ".agents/plans/2026-10-16-world-post-mvp/evidence/implementation/f0-scene-freeze.json": "7e8964c92deaa903ed9533c2b1cf1f161df22bbca740f6225500586b23fbb969",
+    ".local/world-post-mvp/f0-longitudinal/1792338832170825000/manifest.json": "6a83dd54e99171b17271500f821de217d2cb29cbd2662563ea08d3acbfb13d61",
+    ".local/world-post-mvp/f0-longitudinal/1792338832170825000/company-json/warm.stdout": "2a626b5e96e0b55edf063af7e8d3433cccd9afc620264c61a836a542d8c4cff2",
+    ".local/world-post-mvp/f0-longitudinal/1792338832170825000/company-json/warm.stderr": "0f87fabe73c180be68b42140f921aeae948db1b302641be00f59850b4df41c1b",
+    ".local/world-post-mvp/f0-longitudinal/1792338832170825000/company-json/cold.stdout": "5d73053cf9a4eebc3434df3db274b4d5b20454f94be95148feef5b91eff66f5a",
+    ".local/world-post-mvp/f0-longitudinal/1792338832170825000/company-json/cold.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".local/world-post-mvp/f0-longitudinal/1792338832170825000/company-json/company-input.json": "3e8d2e63394531c03cf99959b94a257d9611aff22eaabc4b251f70006e3ff100",
+    ".local/world-post-mvp/f0-longitudinal/1792338832170825000/company-json/company-proof.json": "08a181a0e66cbf09ae07ecaa107aa8df251d249fdcfba2bbfac1192249b46cc8"
+  },
+  "lastObservedAt": "2026-10-19T01:24:34.839130+08:00"
+}

@@ -1,0 +1,11 @@
+{
+  "focused": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation-local/tests/world-external-actor.spec.ts packages/simulation/simulation-local/tests/world-external.spec.ts packages/simulation/simulation-local/tests/world-hire.spec.ts packages/simulation/simulation-local/tests/world-control.spec.ts packages/simulation/simulation-local/tests/budget.spec.ts packages/simulation/simulation-local/tests/capacity.spec.ts packages/simulation/simulation-team/tests/model-capacity.spec.ts packages/simulation/simulation-world/tests/external-actor.spec.ts packages/simulation/simulation-world/tests/execution.spec.ts",
+  "focusedActualFiles": 7,
+  "focusedActualTests": 67,
+  "focusedFilterNote": "world-hire.spec.ts and world-control.spec.ts filters did not match files; actual hiring ownership is tested separately below.",
+  "hiring": "TMPDIR=\"$PWD/.local/world-completion/tmp\" pnpm exec vitest run packages/simulation/simulation-local/tests/world-hire-approval.spec.ts packages/simulation/simulation-local/tests/world-hire-existing.spec.ts packages/simulation/simulation-local/tests/world-domain-disposal.spec.ts",
+  "lint": "pnpm exec tsx scripts/run-oxlint.ts packages/simulation/simulation-world/src/external-actor.ts packages/simulation/simulation-world/tests/external-actor.spec.ts packages/simulation/simulation-local/src/run.ts packages/simulation/simulation-local/tests/world-external-actor.spec.ts",
+  "build": "pnpm run build",
+  "types": "pnpm exec tsc -p tsconfig.host.json --noEmit",
+  "docs": "pnpm run doc-sync"
+}

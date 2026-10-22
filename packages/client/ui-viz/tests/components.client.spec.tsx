@@ -45,6 +45,20 @@ describe('GraphView', () => {
     expect(onSelect).toHaveBeenCalledWith('w2')
   })
 
+  it.each(['svg', 'canvas'] as const)('requests a draft connection on node drop without moving authoritative geometry in %s', (renderer) => {
+    const onConnect = vi.fn()
+    render(<GraphView label="草稿" description="预览" nodes={nodes} edges={edges} renderer={renderer} controls={controls} onConnect={onConnect} />)
+    const frame = screen.getByRole('group', { name: '草稿' })
+    const start = screen.getByRole('button', { name: /^协调者/ }), end = screen.getByRole('button', { name: /^工人一/ })
+    const from = { clientX: Number.parseFloat(start.style.left), clientY: Number.parseFloat(start.style.top), button: 0 }
+    const to = { clientX: Number.parseFloat(end.style.left), clientY: Number.parseFloat(end.style.top), button: 0 }
+    fireEvent.pointerDown(frame, from); fireEvent.pointerMove(frame, to); fireEvent.pointerUp(frame, to)
+    expect(onConnect).toHaveBeenCalledWith('c', 'w1')
+    expect(Number.parseFloat(start.style.left)).toBe(from.clientX)
+    fireEvent.pointerDown(frame, from); fireEvent.pointerMove(frame, to); fireEvent.pointerCancel(frame); fireEvent.pointerUp(frame, to)
+    expect(onConnect).toHaveBeenCalledTimes(1)
+  })
+
   it('moves focus spatially with arrow keys and activates with Enter', () => {
     const onActivate = vi.fn()
     render(<GraphView label="蜂群" description="摘要" nodes={nodes} edges={edges} controls={controls} onActivate={onActivate} />)
